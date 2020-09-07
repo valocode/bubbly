@@ -2,7 +2,11 @@
 
 **Bubbly - Release Readiness in a bubble**
 
-Bubbly provides a declarative approach for defining metrics associated with *release readiness* to be aggregated and queried to answer the important question: *"Are we ready for a release?"*
+Bubbly provides a declarative approach for defining metrics associated with *release readiness* to be aggregated and queried to objectively answer the important question: *"Are we ready for a release?"*
+
+This specification is more concerned with describing what Bubbly is and how it will be used.
+This specification is not concerned with how Bubbly will be implemented.
+For that, see the [implementation documentation](./IMPLEMENTATION.md).
 
 ## 1. Introduction
 
@@ -229,3 +233,11 @@ data "test_run" "test_run" {
     }
 }
 ```
+
+### 4.4 Queries
+
+Once a suitable data model has been created and data has been populated using the client configs and importers, it is time to make use of this data.
+
+Queries are defined as HCL and can be sent to the Bubbly server and the Bubbly server will process the query and return the relevant data.
+
+THIS IS A SIGNIFICANT #TODO
