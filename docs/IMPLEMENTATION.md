@@ -40,13 +40,18 @@ Given the Bubbly CLI commands in the above section, let's look at the different 
 
 Here's a list of the packages for Bubbly:
 
-1. api - implements the RESTful API that clients interact with, and delegates all logic to other packages
-2. cmd - defines the CLI commands using cobra and viper
-3. data - responsible for fetching input data from multiple sources (input), and also for converting data before sending to client based on a query (output)
-4. db - responsible for handling the backend database input and output, based on the schema defined in bubbly
-5. importer - implements the importer and converters of input data to the schema, as specified by `importers` in HCL
-6. logging - responsible for setting up logging
-7. schema - responsible for creating the schema to be used as bubbly's data model, based on provided HCL schema
-8. server - main package for implementing bubbly's server functionality
-9. upload - main package for implementing bubbly's client upload functionality
-10. query - main package for implementing bubbly's client query functionality
+1. **api** - implements the RESTful API that clients interact with, and delegates all logic to other packages
+2. **cmd** - defines the CLI commands using cobra and viper
+3. **data** - responsible for fetching input data from multiple sources (input), and also for converting data before sending to client based on a query (output)
+4. **db** - responsible for handling the backend database input and output, based on the schema defined in bubbly
+5. **importer** - implements the importer that converts input data to a `cty.Value` representation that can be used by the `translator`
+6. **translator** - implements the translator that translates the `cty.Value` representation of the input data into the schema
+7. **logging** - responsible for setting up logging
+8. **schema** - responsible for creating the schema to be used as bubbly's data model, based on provided HCL schema
+9. **server** - main package for implementing bubbly's server functionality
+10. **upload** - main package for implementing bubbly's client upload functionality
+11. **query** - main package for implementing bubbly's client query functionality
+
+### 2.2.1 Importer
+
+![HCL Schema Translator Workflow](./images/hcl-schema-translation-workflow.drawio.svg)

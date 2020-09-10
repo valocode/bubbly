@@ -37,27 +37,7 @@ Then, whether through an automated deployment or a manual delivery of software, 
 
 An additional benefit to aggregating data into a queryable API is that dashboards can be created using tools like Grafana and Kibana to visualize any particular metrics of interest.
 
-## 2. Techical Requirements
-
-The list of technical requirements are very high level, and the Architecture and Design sections will provide more detail on how these requirements are implemented.
-
-Bubbly will provide 3 main requirements:
-
-1. Data conversion - the ability to convert data into different structures/types using declarative HCL
-2. Data digestion - the ability to digest and store data in a specified backend database
-3. Data querying - the ability to query the stored data for visualization and calculation of the different metrics for release readiness
-
-### 2.1. Data Conversion
-
-This requirement is concerned with being able to take lots of different formats of data and convert them into a defined common structure.
-The goal with Bubbly is to make this easy, maintainable and reliable.
-As such, the HCL declarative language is used to define the data conversion and bubbly takes care of the heavy lifting and error handling - consider it a reusable library or framework.
-
-### 2.2. Data Digestion
-
-### 2.2. Data Querying
-
-## 3. Architecture
+## 2. Architecture
 
 The high-level architecture for Bubbly consist of two parts:
 
@@ -74,7 +54,8 @@ The other relevant parts in this diagram are:
 1. The **Client Configs** tell the Bubbly client everything it needs to know about what to do. This includes: the location of the *Bubbly server*, where the *input data* is, what to upload to the *Bubbly server*, etc. All the client configs are defined in HCL files.
 2. The **Input Data** is the data which should be uploaded to the Bubbly server and can come from any source, such as a JSON or XML file, or by querying a REST API or by executing a command line tool. Before it is uploaded it needs to be converted into the expected format, which is defined by the *schema*, and the *importers* are used to convert the data.
 3. The **Schema** defines the format to store the data in Bubbly. It is not strictly SQL but follows a similar approach of defining tables with relations. The schema is defined using HCL and uploaded to the Bubbly server or provided as a config during startup.
-4. The **Importers** define the expected *input data* and how to convert that into a data structure defined by the *schema* so that Bubbly can store understand the *input data*.
+4. The **Importers** define the expected *input data* and how to convert that into an internal data structure that can be later processed in-memory.
+5. The **Translators** define how to use the imported data from the *importers* and how to translate that into a data structure defined by the defined *schema*.
 
 All of the configurations, schemas, importers and such are defined as HCL, which provides the necessary high level abstraction to make configuring Bubbly easy, but still provides the necessary flexibility to process lots of different types of data.
 
@@ -175,7 +156,12 @@ importer "xunit_report" {
                 name: string,
                 package: string,
                 tests: number,
-                time: number
+                time: number,
+                testcase: list(object({
+                    classname: string
+                    name: string
+                    time: number
+                }))
             }))
         })
     })
@@ -191,7 +177,38 @@ importer "xunit_report" {
 }
 ```
 
-### 4.3 Client Configs
+### 4.3 Translators
+
+A translator takes the output from an `importer` and translates that data according to the defined `schema`.
+
+```hcl
+translator "xunit_report" {
+    importer = "xunit_report"
+
+    // this should not be read in detail, as it is not defined properly and needs some
+    // of bubbly's magic sauce to make it work, but this should give you an idea
+    translate {
+        // the data label needs to match a table name, e.g. this data will be
+        // associated with the "test_run" table
+        data "test_run" {
+            name = nil // this should be defined during execution
+            repo_version_id = nil // this should be defined during execution
+
+            data "test_set" {
+                // flatten the testsuites list of lists, and iterate over it
+                for_each = setproduct(importer.xunit_report.testsuites.testsuite)
+                name = each.name
+
+                data "test_case" {
+                    name = each.testcase.name
+                }
+            }
+        }
+    }
+}
+```
+
+### 4.4 Client Configs
 
 The client configs tell the Bubbly client what data to upload to the Bubbly server.
 
@@ -234,7 +251,7 @@ data "test_run" "test_run" {
 }
 ```
 
-### 4.4 Queries
+### 4.5 Queries
 
 Once a suitable data model has been created and data has been populated using the client configs and importers, it is time to make use of this data.
 
