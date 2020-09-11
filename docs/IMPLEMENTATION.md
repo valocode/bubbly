@@ -52,6 +52,8 @@ Here's a list of the packages for Bubbly:
 10. **upload** - main package for implementing bubbly's client upload functionality
 11. **query** - main package for implementing bubbly's client query functionality
 
-### 2.2.1 Importer
+### 2.3 HCL - Schema, Importers and Translator Workflow
+
+To help communicate the workflow of inputs, outputs and how the schema, importers and translators "connect" we put together a visual aid with some descriptions.
 
 ![HCL Schema Translator Workflow](./images/hcl-schema-translation-workflow.drawio.svg)

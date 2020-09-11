@@ -165,15 +165,6 @@ importer "xunit_report" {
             }))
         })
     })
-
-    // this is part of bubbly's magic sauce and needs to be created...
-    // basically prepare the data for use to follow the schema
-    convert {
-        // do something like setproduct to make the data ready to process in HCL
-        // https://www.terraform.io/docs/configuration/functions/setproduct.html
-        // idea is to do as much heavy liftin on the import and make the
-        // consumption of the import as easy as possible, and keep things DRY
-    }
 }
 ```
 
@@ -181,7 +172,15 @@ importer "xunit_report" {
 
 A translator takes the output from an `importer` and translates that data according to the defined `schema`.
 
+TODO: make translators like functions (modules in TF) with inputs, so that all you do to use a translator is provide the inputs/parameters when providing the client configs.
+
 ```hcl
+
+inputs {
+    test_run_name {}
+    repo_version_id {}
+}
+
 translator "xunit_report" {
     importer = "xunit_report"
 
@@ -195,6 +194,11 @@ translator "xunit_report" {
             repo_version_id = nil // this should be defined during execution
 
             data "test_set" {
+                // do something like setproduct to make the data ready to process in HCL
+                // https://www.terraform.io/docs/configuration/functions/setproduct.html
+                // idea is to do as much heavy liftin on the import and make the
+                // consumption of the import as easy as possible, and keep things DRY
+
                 // flatten the testsuites list of lists, and iterate over it
                 for_each = setproduct(importer.xunit_report.testsuites.testsuite)
                 name = each.name
@@ -212,14 +216,25 @@ translator "xunit_report" {
 
 The client configs tell the Bubbly client what data to upload to the Bubbly server.
 
-First we would need to provide some of the contextual data, such as the project name, the repository name, the version of the codem and generic things which having nothing to do with parsing data, but will feed into the schema and data model.
+First we would need to provide some of the contextual data, such as the project name, the repository name, the version of the code and generic things which having nothing to do with parsing data, but will feed into the schema and data model.
+As the translators are defined as re-usable modules, we only need to provide the necessary inputs (or parameters) to the translator in the client configs.
 
-In the following short example we set the name of the `repo` to `test-repo`.
-The idea is if this `repo` already exists on the bubbly server then it would associate the data we are about to produce with that existing `repo`.
-Next we create a `repo_verion`, which may exist if we have already uploaded data against the same `repo_version`.
+In the following short example we:
+
+1. First set the bubbly server to talk with (should be possible to use env vars or similar)
+2. Set the name of the `repo` to `test-repo`. The idea is that if this `repo` already exists on the bubbly server then it would associate the data we are about to produce with that existing `repo`, and not create a new `repo` -- so the bubbly client will need to query the bubbly server before uploading.
+3. Next we create a `repo_verion`, which may exist if we have already uploaded data against the same `repo_version`.
+4. Next we specify the module (or translator) that we want to use, and then provide the inputs in the `modules` block.
 
 ```hcl
+
+server "bubbly_server" {
+    url = "https://api.bubbly.dev"
+}
+
 // retrieve the repo called "test-repo"
+// bubbly should also support a native git integration to fetch this
+// information automatically
 data "repo" "test_repo" {
     name = "test-repo"
 }
@@ -232,23 +247,18 @@ data "repo_version" "test_version" {
         branch = env.GIT_BRANCH
     }
 }
-```
 
-Now that we have a `repo_version` to associate our `test_run` with, we can create the `test_run` together with its associated instances of `test_suite` and `test_case`.
-We simply say that we want to use the importer called `xunit_report` and tell it where to get the `input_data` from, which is a glob expression for the XML files under the directory `xunit`, in this example.
-
-```hcl
-// create a test_run called test-run-XYZ
-data "test_run" "test_run" {
-    name = "test-run-${env.JOB_NUMBER}"
-    // specify the importer to use
-    importer = "xunit_report"
-    // specify the input data
-    input_data {
-        type = "xml"
-        source = "./xunit/*.xml"
+modules "xunit_report" {
+    translator {
+        source = server.bubbly_server.translators
+        // or maybe just the local source?
+        // source = "../../relative/path/to/xunit_report
     }
+
+    test_run_name = "test-run-${env.JOB_NUMBER}"
+    repo_version_id = data.repo_version.test_version.id
 }
+
 ```
 
 ### 4.5 Queries
