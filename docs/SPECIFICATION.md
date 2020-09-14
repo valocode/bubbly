@@ -2,7 +2,9 @@
 
 **Bubbly - Release Readiness in a bubble**
 
-Bubbly provides a declarative approach for defining metrics associated with *release readiness* to be aggregated and queried to objectively answer the important question: *"Are we ready for a release?"*
+Bubbly provides a declarative approach for defining metrics associated with *release readiness* to be aggregated and queried to objectively answer the important question: *"Are we ready for a release?"*.
+
+In the case that *"we are not ready"* then Bubbly should provide the data which causes this to be the case and answer the question: *"Why are we not ready for a release?"*
 
 This specification is more concerned with describing what Bubbly is and how it will be used.
 This specification is not concerned with how Bubbly will be implemented.
@@ -39,11 +41,13 @@ An additional benefit to aggregating data into a queryable API is that dashboard
 
 ## 2. Architecture
 
-The high-level architecture for Bubbly consist of two parts:
+The high-level architecture for Bubbly consist of the following parts:
 
 1. The **Bubbly Server** is a long-running backend process that is available to upload new data or return data based on a provided query
 
 2. The **Bubbly Client** is executed in an automated manner (e.g. CI pipeline) or manually by a user to perform operations agains the Bubbly Server
+
+3. The **Bubbly Dashboard** will be how the data is represented. The idea is to create a Grafana plugin, for the rich and real-time dashboards. Bubbly will also provide a minimal UI to explore the data, but will not be so feature rich (at least in the beginning).
 
 These main components can be illustrated using the following simple diagram:
 
@@ -267,4 +271,39 @@ Once a suitable data model has been created and data has been populated using th
 
 Queries are defined as HCL and can be sent to the Bubbly server and the Bubbly server will process the query and return the relevant data.
 
-THIS IS A SIGNIFICANT #TODO
+TODO: this needs to be better defined, but using HCL it is possible to do this a number of ways.
+
+### 4.5 Dashboard and UI
+
+As well as providing queries that can be integrated into your release process and pipelines, Bubbly will also provide a dashboard and UI.
+
+For the full-featured dashboard we will support Grafana and create a plugin.
+Bubbly will also come with a less powerful built-in UI for exploring the data and configurations on the Bubbly server.
+
+#### 4.5.1 Grafana
+
+The idea will be to develop a Grafana [App Plugin](https://grafana.com/docs/grafana/latest/developers/plugins/) to provide both a new data source (the Bubbly server) but also new panels.
+
+Firstly, users can create a standard [Dashboard list](https://grafana.com/docs/grafana/latest/panels/visualizations/dashboard-list-panel/) as an entry point for Bubbly.
+
+![Grafana Dashboard List](./images/grafana-dashboard-list-panels.png)
+
+And an example dashboard could be a [Table panel](https://grafana.com/docs/grafana/latest/panels/visualizations/table-panel/) that would show a list of versions for a product, and an indicator of their release readiness.
+
+![Grafana Table Panel](./images/grafana-table-panel.png)
+
+The main visualisation that Bubbly will offer will be related to the data structure that that you define.
+For example, something like the following:
+
+![Grafana Bubbles](./images/grafana-dashboard-bubbles.drawio.svg)
+
+Grafana provides [Data Links](https://grafana.com/docs/grafana/latest/linking/data-links/) and the idea would be that you can click on any `NOT READY` bubble, or cell in a table, and it will take you to the data as to *why* it is not ready.
+
+This answers the follow up question, that if we are not ready for a release: *"Why are we not ready for a release?"*
+
+#### 4.5.2 Bubbly Built-in UI
+
+The built-in Bubbly UI will not be for the same purpose as the Grafana integration.
+Instead, it is made for the development of Bubbly HCL files and for investigating the data, schemas, importers, translators, etc.
+
+As such, the built-in UI will be very minimalistic and very lightweight, and can be disabled if wanted.
