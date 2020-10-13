@@ -10,6 +10,8 @@ func NewResource(resBlock *core.ResourceBlock) core.Resource {
 	// TODO: use resBlock.apiVersion to get version of resource...
 	case core.ImporterResourceKind:
 		return v1.NewImporter(resBlock)
+	case core.TranslatorResourceKind:
+		return v1.NewTranslator(resBlock)
 	}
 
 	return nil

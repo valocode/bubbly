@@ -35,14 +35,9 @@ resource "importer" "junit" {
 		})
     }
 }
-// basicblock "first_label" "second_label" {
-// 	number = input.answer_to_life
-// 	string = input.weather_today
-// 	// optstring is optional :)
-// }
+
+
 
 output "first_output" {
     value = "wooooaaaw!"
 }
-
-// optblock {} is optional

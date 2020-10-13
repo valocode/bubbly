@@ -67,14 +67,17 @@ func walkVariablesWithImpliedType(node dynblock.WalkVariablesNode, ty reflect.Ty
 	// the corresponding hcl tag in the struct (e.g. `hcl:"myblock,block"` will
 	// be matched by any child block type called "myblock")
 	vars, children := node.Visit(schema)
-	if len(children) > 0 {
-		for _, child := range children {
-			fieldIdx, exists := tags.Blocks[child.BlockTypeName]
-			if !exists {
-				panic(fmt.Sprintf(`Could not find HCL block type "%s" in type "%s"`, child.BlockTypeName, ty.String()))
+	// Make sure there is not ",remain" hcl tag
+	if tags.Remain == nil {
+		if len(children) > 0 {
+			for _, child := range children {
+				fieldIdx, exists := tags.Blocks[child.BlockTypeName]
+				if !exists {
+					panic(fmt.Sprintf(`Could not find HCL block type "%s" in type "%s"`, child.BlockTypeName, ty.String()))
+				}
+				field := nestedElem(ty.Field(fieldIdx).Type)
+				vars = append(vars, walkVariablesWithImpliedType(child.Node, field)...)
 			}
-			field := nestedElem(ty.Field(fieldIdx).Type)
-			vars = append(vars, walkVariablesWithImpliedType(child.Node, field)...)
 		}
 	}
 

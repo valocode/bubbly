@@ -104,13 +104,13 @@ func (s *Scope) Decode(body hcl.Body, val interface{}) hcl.Diagnostics {
 		return diags
 	}
 
-	// second resolve all references that are needed to decode the entire body
-	// traversals = dynblock.VariablesHCLDec(body, spec)
-	traversals = walkVariables(decodeCtx.Body, decodeCtx.Type())
-	fmt.Sprintf("TRAVERSALS SCOPE: %s", traversalsString(traversals))
 	// we have to expand before we resolve variables, otherwise the variables
 	// will not exist
-	decodeCtx.Body = dynblock.Expand(decodeCtx.Body, s.EvalContext())
+	decodeCtx.Body = s.expandBody(body)
+
+	// second resolve all references that are needed to decode the entire body
+	traversals = walkVariables(decodeCtx.Body, decodeCtx.Type())
+	fmt.Sprintf("TRAVERSALS SCOPE: %s", traversalsString(traversals))
 	// resolve the remaining variables on the expanded body
 	diags = append(diags, s.resolveVariables(decodeCtx, traversals)...)
 
@@ -234,6 +234,10 @@ func (s *Scope) traverseBodyToBlock(body hcl.Body, ty *reflect.Type, traversal *
 	// if there are no more matching blocks then there is an attribute that
 	// needs to be resolved in traversal so return the matched block (if any)
 	return parent, content, diags
+}
+
+func (s *Scope) expandBody(body hcl.Body) hcl.Body {
+	return dynblock.Expand(body, s.EvalContext())
 }
 
 // resolveExpr resolves an expression and adds the value to the symbol table.

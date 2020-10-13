@@ -21,7 +21,8 @@ type ResourceKind string
 
 const (
 	// ImporterResourceKind represents the kind importer
-	ImporterResourceKind ResourceKind = "importer"
+	ImporterResourceKind   ResourceKind = "importer"
+	TranslatorResourceKind              = "translator"
 )
 
 // APIVersion represents the apiVersion of different resources

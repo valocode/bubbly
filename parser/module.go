@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/imdario/mergo"
 	"github.com/rs/zerolog/log"
 	"github.com/verifa/bubbly/api"
 	"github.com/verifa/bubbly/api/core"
@@ -95,12 +96,18 @@ func (m *Module) Resolve() error {
 	if err != nil {
 		return fmt.Errorf(`Failed to resolve module "%s". Could not get hcl.Body: %s`, m.Name, err.Error())
 	}
-	// assign the body to the ModuleBody
 	m.ModuleBody = body
 
-	// resolve only the module blocks, if any
+	body, err = m.expandBody(body, reflect.TypeOf(m.Value))
+	if err != nil {
+		return fmt.Errorf(`Failed to expand body for module "%s": %s`, m.Name, err.Error())
+	}
+	// assign the expanded body to the ModuleBody
+	m.ModuleBody = body
+
+	// resolve the expanded body variables
 	traversals := walkVariables(body, reflect.TypeOf(m.Value))
-	if err = m.resolveVariables(body, traversals); err != nil {
+	if err = m.resolveVariables(traversals); err != nil {
 		return fmt.Errorf(`Failed to resolve variables for module "%s": %s`, m.Name, err.Error())
 	}
 
@@ -125,9 +132,16 @@ func (m *Module) Resolve() error {
 			// fmt.Printf("ASDASDASD: %s", err.Error())
 			return fmt.Errorf("Failed to resolve sub module %s. %v", subModule.Name, err)
 		}
-		// TODO merge subModule.Value
+		// merge values from submodule to parent module Value
+		if err := mergo.Merge(m.Value, subModule.Value, mergo.WithAppendSlice); err != nil {
+			return fmt.Errorf(
+				`Failed to merge value from module submodule "%s" into parent module "%s": %s`,
+				subModule.Name, m.Name, err.Error(),
+			)
+		}
 	}
 
+	// post process modules... this probably belongs somewhere else!
 	for _, resBlock := range m.Value.ResourceBlocks {
 		resource := api.NewResource(resBlock)
 		if err := resource.Decode(m.decodeBody); err != nil {
@@ -139,7 +153,13 @@ func (m *Module) Resolve() error {
 			if err != nil {
 				return fmt.Errorf(`Failed to resolve importer "%s": %s`, resType.String(), err.Error())
 			}
-			fmt.Printf("Importer Value: %s\n", value.GoString())
+			fmt.Printf("Importer %s Value: %s\n", resType.String(), value.GoString())
+		case core.Translator:
+			json, err := resType.JSON()
+			if err != nil {
+				return fmt.Errorf(`Failed to resolve translator "%s": %s`, resType.String(), err.Error())
+			}
+			fmt.Printf("Translator %s Value: %s\n", resType.String(), json)
 		default:
 			log.Warn().Msgf(`Resource Type "%s" not implemented yet...`, resType.String())
 		}
@@ -183,9 +203,13 @@ func (m *Module) resolveSubModule(body hcl.Body, subModule *Module) error {
 // to decode themselves without requiring a dependency on the parser
 func (m *Module) decodeBody(body hcl.Body, val interface{}) error {
 	ty := reflect.TypeOf(val)
-	traversals := walkVariables(body, ty)
+	body, err := m.expandBody(body, ty)
+	if err != nil {
+		return fmt.Errorf(`Failed to expand body using type "%s": %s`, ty.String(), err.Error())
+	}
 
-	if err := m.resolveVariables(m.ModuleBody, traversals); err != nil {
+	traversals := walkVariables(body, ty)
+	if err := m.resolveVariables(traversals); err != nil {
 		return fmt.Errorf(`Failed to resolve variables of body using type "%s": %s`, ty.String(), err.Error())
 	}
 
@@ -195,12 +219,21 @@ func (m *Module) decodeBody(body hcl.Body, val interface{}) error {
 	return nil
 }
 
+func (m *Module) expandBody(body hcl.Body, ty reflect.Type) (hcl.Body, error) {
+	traversals := walkExpandVariables(body, ty)
+	if err := m.resolveVariables(traversals); err != nil {
+		return nil, fmt.Errorf(`Failed to resolve variables of body using type "%s": %s`, ty.String(), err.Error())
+	}
+
+	return m.Scope.expandBody(body), nil
+}
+
 // resolveVariables is responsible for handling the logic to resolve variables
 // (traversals). If the variable is an ordinary variable that does not require
 // resolving a Module to obtain the value, then the work is delegated to the
 // Scope to resolve the variable. If however, the variable references an output
 // from a Module, then that Module is first resolved.
-func (m *Module) resolveVariables(body hcl.Body, traversals []hcl.Traversal) error {
+func (m *Module) resolveVariables(traversals []hcl.Traversal) error {
 
 	for _, traversal := range traversals {
 		// check first of all if the variable/traversal has already been
@@ -223,7 +256,7 @@ func (m *Module) resolveVariables(body hcl.Body, traversals []hcl.Traversal) err
 			moduleTraversal := traversal[:2]
 			ty := reflect.TypeOf(m.Value)
 			// get the block for the module traversal
-			block, _, diags := m.Scope.traverseBodyToBlock(body, &ty, &moduleTraversal, nil)
+			block, _, diags := m.Scope.traverseBodyToBlock(m.ModuleBody, &ty, &moduleTraversal, nil)
 			if diags.HasErrors() {
 				return fmt.Errorf(`Failed to traverse body for module "%s": %s`, moduleName, diags.Error())
 			}
@@ -235,12 +268,12 @@ func (m *Module) resolveVariables(body hcl.Body, traversals []hcl.Traversal) err
 			}
 
 			// resolve the sub module to get the necessary variable
-			if err := m.resolveSubModule(body, subModule); err != nil {
+			if err := m.resolveSubModule(m.ModuleBody, subModule); err != nil {
 				return fmt.Errorf(`Failed to resolve module sub "%s": %s`, subModule.Name, err.Error())
 			}
 		default:
 			// if default then delete the resolving to the scope
-			diags := m.Scope.ResolveVariable(body, m.Value, traversal)
+			diags := m.Scope.ResolveVariable(m.ModuleBody, m.Value, traversal)
 			if diags.HasErrors() {
 				return fmt.Errorf(`Failed to resolve variable "%s": %s`, traversalString(traversal), diags.Error())
 			}

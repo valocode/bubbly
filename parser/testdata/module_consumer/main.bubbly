@@ -10,13 +10,15 @@ local "module_type" {
 module "root_module" {
 	type = local.module_type
 	source {
-		path = "../simple_module"
+		path = "../example_translator"
+		// path = "../simple_module"
 	}
     input "answer_to_life" {
 		value = local.answer_to_life
     }
     input "weather_today" {
-        value = module.dep_module.first_output
+        value = "something"
+        // value = module.dep_module.first_output
 	}
 }
 
