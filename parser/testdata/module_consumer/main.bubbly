@@ -1,0 +1,51 @@
+local "answer_to_life" {
+    value = 42
+}
+
+local "module_type" {
+    value = "local"
+}
+
+
+module "root_module" {
+	type = local.module_type
+	source {
+		path = "../simple_module"
+	}
+    input "answer_to_life" {
+		value = local.answer_to_life
+    }
+    input "weather_today" {
+        value = module.dep_module.first_output
+	}
+}
+
+module "dep_module" {
+	type = local.module_type
+	source {
+		path = "../simple_module"
+	}
+    input "answer_to_life" {
+		value = local.answer_to_life
+    }
+    input "weather_today" {
+        value = "spiffing"
+	}
+}
+
+module "another_module" {
+	type = local.module_type
+	source {
+		path = local.module_path
+	}
+	input "answer_to_life" {
+		value = local.answer_to_life
+    }
+    input "weather_today" {
+        value = module.root_module.first_output
+	}
+}
+
+local "module_path" {
+    value = "../simple_module"
+}
