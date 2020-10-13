@@ -4,45 +4,35 @@ import (
 	"github.com/hashicorp/hcl/v2"
 )
 
-type HCLMainType struct {
-	ResourceBlocks ResourceBlocks `hcl:"resource,block"`
-	ModuleBlocks   ModuleBlocks   `hcl:"module,block"`
-	Locals         Locals         `hcl:"local,block"`
-	Inputs         Inputs         `hcl:"input,block"`
-	Outputs        Outputs        `hcl:"output,block"`
-}
-
+// ResourceBlocks is a wrapper for a slice of type ResourceBlock
 type ResourceBlocks []*ResourceBlock
 
+// ResourceBlock represents the resource{} block in HCL.
 type ResourceBlock struct {
 	Kind       string            `hcl:",label"`
 	Name       string            `hcl:",label"`
 	APIVersion APIVersion        `hcl:"apiVersion,attr"`
 	Metadata   *Metadata         `hcl:"metadata,block"`
 	Spec       ResourceBlockSpec `hcl:"spec,block"`
-	// Resource   Resource
 }
 
-// func (r *ResourceBlock) Resource() Resource {
-// 	switch ResourceKind(r.Kind) {
-// 	case importerResource:
-// 		return v1.NewImporter(r.Spec.Body)
-// 	}
-
-// 	return nil
-// }
-
+// ResourceKind represents the different kinds of resources
 type ResourceKind string
 
 const (
+	// ImporterResourceKind represents the kind importer
 	ImporterResourceKind ResourceKind = "importer"
 )
 
+// APIVersion represents the apiVersion of different resources
 type APIVersion string
 
+// Metadata represents the metadata{} block in a resource... This could
+// probably also be versioned?
 type Metadata struct {
 }
 
+// ResourceBlockSpec represents the spec{} block within a resource
 type ResourceBlockSpec struct {
 	Body hcl.Body `hcl:",remain"`
 }

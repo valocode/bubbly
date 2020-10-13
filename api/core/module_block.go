@@ -10,25 +10,30 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+// ModuleBlocks is a wrapper type for a list of ModuleBlock instances
 type ModuleBlocks []*ModuleBlock
 
+// Ensure that ModuleBlock implements the Block interface
 var _ Block = (*ModuleBlock)(nil)
 
+// ModuleBlock represents a block of type module in HCL.
 type ModuleBlock struct {
 	Name      string     `hcl:",label"`
-	Type      ModuleType `hcl:"type,attr"`
+	Type      moduleType `hcl:"type,attr"`
 	SourceHCL *struct {
 		Body hcl.Body `hcl:",remain"`
 	} `hcl:"source,block"`
-	Inputs []ModuleInput `hcl:"input,block"`
+	Inputs []moduleInput `hcl:"input,block"`
 
-	Source ModuleSource
+	Source moduleSource
 }
 
+// NewLocalModuleBlock returns a new ModuleBlock of type "local".
+// This method is used when creating the "root" module.
 func NewLocalModuleBlock(baseDir string) *ModuleBlock {
 	return &ModuleBlock{
 		Name:      "root",
-		Type:      LocalModuleType,
+		Type:      localmoduleType,
 		SourceHCL: nil,
 		Source: &ModuleLocalSource{
 			BaseDir: baseDir,
@@ -37,19 +42,23 @@ func NewLocalModuleBlock(baseDir string) *ModuleBlock {
 	}
 }
 
-func (m *ModuleBlock) Decode(decFn DecodeBodyFn) error {
-
+// Decode decodes any hcl.Bodies inside ModuleBlock
+func (m *ModuleBlock) Decode(decode DecodeBodyFn) error {
+	// Make sure there is an hcl.Body to decode. The root module does not have
+	// a body, for example, because it is constructed manually and not through
+	// HCL
 	if m.SourceHCL == nil {
 		return nil
 	}
-	// if module is root then the Source is already configured
-	switch t := ModuleType(m.Type); t {
-	case LocalModuleType:
-		// if local then the parent module must be local as well
-		// localSource, ok := m.Source.(*ModuleLocalSource)
+	// Behaviour based on the module type
+	switch t := moduleType(m.Type); t {
+	case localmoduleType:
+		// If local type then we need to get the location of this ModuleBlock
+		// definition so that we can retrieve the actual module based on this
+		// relative path
 		mFile := m.SourceHCL.Body.MissingItemRange().Filename
 		if mFile == "" {
-			panic(fmt.Sprintf(`Error: trying to create local module from non-local parent module "%s"`, mFile))
+			panic(fmt.Sprintf(`Error: could not get location of HCL Body for module "%s"`, m.Name))
 		}
 		mDir := filepath.Dir(mFile)
 		m.Source = &ModuleLocalSource{
@@ -59,82 +68,50 @@ func (m *ModuleBlock) Decode(decFn DecodeBodyFn) error {
 			// is the relative path from
 			BaseDir: mDir,
 		}
-	case RemoteModuleType:
+	case remotemoduleType:
 		// TODO
-		panic("ModuleType remote not implemented yet...")
+		panic(fmt.Sprintf(`Module type "%s" not implemented yet...`, t))
 	default:
 		panic(fmt.Sprintf(`Invalid module type "%s"`, t))
 	}
 
-	decFn(m.SourceHCL.Body, m.Source)
-	return nil
+	// Finally decode the source{} block into the specific type of Source set
+	// above
+	return decode(m.SourceHCL.Body, m.Source)
 }
 
-// func (m *ModuleBlock) Variables() []hcl.Traversal {
-// 	traversals := []hcl.Traversal{}
-// 	// for _, attr := range m.Params.Attributes {
-// 	// 	traversals = append(traversals, attr.Expr.Variables()...)
-// 	// }
-// 	return traversals
-// }
-
-// func (m *ModuleBlock) DecodeTasks() DecodeTasks {
-// 	if m.SourceHCL == nil {
-// 		return nil
-// 	}
-// 	// if module is root then the Source is already configured
-// 	switch t := ModuleType(m.Type); t {
-// 	case LocalModuleType:
-// 		// if local then the parent module must be local as well
-// 		// localSource, ok := m.Source.(*ModuleLocalSource)
-// 		mFile := m.SourceHCL.Body.MissingItemRange().Filename
-// 		if mFile == "" {
-// 			panic(fmt.Sprintf(`Error: trying to create local module from non-local parent module "%s"`, mFile))
-// 		}
-// 		mDir := filepath.Dir(
-// 			m.SourceHCL.Body.MissingItemRange().Filename,
-// 		)
-// 		// println(localSource.BaseDir)
-// 		m.Source = &ModuleLocalSource{
-// 			// set the base directory for the ModuleLocalSource to be the
-// 			// directory containing the block of hcl that contains the
-// 			// definition of this module... from which the "path" attribute
-// 			// is the relative path from
-// 			BaseDir: mDir,
-// 		}
-// 	case RemoteModuleType:
-// 		// TODO
-// 		panic("ModuleType remote not implemented yet...")
-// 	default:
-// 		panic(fmt.Sprintf(`Invalid module type "%s"`, t))
-// 	}
-
-// 	// decode the module source
-// 	return DecodeTasks{NewDecodeTask(m.SourceHCL.Body, m.Source)}
-// }
-
+// Body returns the Body of HCL that is referenced by the module source.
+// If the module is a local module, then this is just parsing the HCL files
+// and merging the hcl.Body together.
 func (m *ModuleBlock) Body() (hcl.Body, error) {
 	return m.Source.Body()
 }
 
-type ModuleType string
+// moduleType represents the different types of modules
+type moduleType string
 
 const (
-	LocalModuleType  ModuleType = "local"
-	RemoteModuleType            = "remote"
+	localmoduleType  moduleType = "local"
+	remotemoduleType            = "remote"
 )
 
-type ModuleSource interface {
+// moduleSource creates an interface for the different module source blocks
+// to implement.
+type moduleSource interface {
+	// Body returns the Body of HCL referenced by the source block
 	Body() (hcl.Body, error)
 }
 
-var _ ModuleSource = &ModuleLocalSource{}
+// Ensure that ModuleLocalSource implements the moduleSource interface
+var _ moduleSource = &ModuleLocalSource{}
 
+// ModuleLocalSource represents the source block of local module types
 type ModuleLocalSource struct {
 	BaseDir string
 	Path    string `hcl:"path,attr"`
 }
 
+// Body returns the hcl.Body for local modules
 func (m *ModuleLocalSource) Body() (hcl.Body, error) {
 	modulePath := filepath.Join(m.BaseDir, m.Path)
 	files, err := filepath.Glob(fmt.Sprintf("%s/**.bubbly", modulePath))
@@ -159,7 +136,8 @@ func (m *ModuleLocalSource) Body() (hcl.Body, error) {
 	return hcl.MergeFiles(hclFiles), nil
 }
 
-type ModuleInput struct {
+// moduleInput represent the input{} block in a module
+type moduleInput struct {
 	Name  string    `hcl:",label"`
 	Value cty.Value `hcl:"value,attr"`
 }
