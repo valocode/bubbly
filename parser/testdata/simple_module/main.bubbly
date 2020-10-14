@@ -1,0 +1,43 @@
+
+input "answer_to_life" {
+	// default = 42
+}
+
+input "weather_today" {
+	// default = "spiffing"
+}
+
+resource "importer" "junit" {
+    apiVersion = "v1"
+    spec {
+        type = "xml"
+
+        source {
+			file = "testdata/importer/junit.xml"
+		}
+		
+        format = object({
+			testsuites: object({
+				duration: number,
+				testsuite: list(object({
+					failures: number,
+					name: string,
+					package: string,
+					tests: number,
+					time: number,
+					testcase: list(object({
+						classname: string
+						name: string
+						time: number
+					}))
+				}))
+			})
+		})
+    }
+}
+
+
+
+output "first_output" {
+    value = "wooooaaaw!"
+}
