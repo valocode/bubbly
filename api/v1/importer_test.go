@@ -52,6 +52,8 @@ func TestImporterJSON(t *testing.T) {
 		t.Errorf("Received Null type value")
 	}
 	t.Logf("JSON Importer returned value: %s", val.GoString())
+
+	// TODO test the quality of the actual cty.Value by comparing with hand-made (JSON source) to cty.Value conversion
 }
 
 func TestImporterXML(t *testing.T) {

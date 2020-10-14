@@ -1,11 +1,16 @@
 package v1
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/ext/typeexpr"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 )
 
 var _ core.Importer = (*Importer)(nil)
@@ -61,7 +66,31 @@ func (i *Importer) String() string {
 
 // Resolve returns the cty.Value of the importer, or an error
 func (i *Importer) Resolve() (cty.Value, error) {
-	return cty.NilVal, nil
+
+	if i == nil {
+		return cty.NilVal, errors.New("importer is nil")
+	}
+
+	if i.Source == nil {
+		return cty.NilVal, errors.New("importer source is not set")
+	}
+
+	val, err := i.Source.Resolve()
+	if err != nil {
+		return cty.NilVal, err
+	}
+
+	ctyType, tyerr := typeexpr.TypeConstraint(i.Spec.Format)
+	if tyerr != nil {
+		return cty.NilVal, tyerr
+	}
+
+	ctyval, ctyerr := gocty.ToCtyValue(val, ctyType)
+	if ctyerr != nil {
+		return cty.NilVal, ctyerr
+	}
+
+	return ctyval, nil
 }
 
 var _ core.ResourceSpec = (*ImporterSpec)(nil)
@@ -86,7 +115,7 @@ const (
 type Source interface {
 	// returns an interface{} containing the parsed XML, JSON data, that should
 	// be converted into the Output cty.Value
-	Resolve() interface{}
+	Resolve() (interface{}, error)
 }
 
 var _ Source = (*JSONSource)(nil)
@@ -95,8 +124,25 @@ type JSONSource struct {
 	File string `hcl:"file,attr"`
 }
 
-func (s *JSONSource) Resolve() interface{} {
-	return nil
+func (s *JSONSource) Resolve() (interface{}, error) {
+
+	var barr []byte
+	var err error
+
+	// FIXME reading the whole file at once may be too much
+	barr, err = ioutil.ReadFile(s.File)
+	if err != nil {
+		return nil, err
+	}
+
+	// Attempt to unmarshall the data into an empty interface data type
+	var data interface{}
+	err = json.Unmarshal(barr, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 var _ Source = (*XMLSource)(nil)
@@ -105,6 +151,6 @@ type XMLSource struct {
 	File string `hcl:"file,attr"`
 }
 
-func (s *XMLSource) Resolve() interface{} {
-	return nil
+func (s *XMLSource) Resolve() (interface{}, error) {
+	return nil, errors.New("not implemented")
 }
