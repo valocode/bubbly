@@ -9,10 +9,7 @@ import (
 // This basically describes the entire schema of parseable HCL.
 type HCLMainType struct {
 	ResourceBlocks ResourceBlocks `hcl:"resource,block"`
-	ModuleBlocks   ModuleBlocks   `hcl:"module,block"`
 	Locals         Locals         `hcl:"local,block"`
-	Inputs         Inputs         `hcl:"input,block"`
-	Outputs        Outputs        `hcl:"output,block"`
 }
 
 // Locals is a wrapper for a slice of Local
@@ -25,26 +22,58 @@ type Local struct {
 	Value       cty.Value `hcl:"value,attr"`
 }
 
-// Inputs is a wrapper for a slice of Input
-type Inputs []*Input
-
-// Input is the type representing any "input {...}" blocks in HCL
-type Input struct {
-	Name        string         `hcl:",label"`
-	Description string         `hcl:"description,optional"`
-	Default     cty.Value      `hcl:"default,optional"`
-	Type        hcl.Expression `hcl:"type,optional"`
+// Refernce returns a local's traversal to refernce this local in HCL, together
+// with its associated cty.Value. This is used so that locals can be added
+// to an EvalContext
+func (l *Local) Reference() (hcl.Traversal, cty.Value) {
+	return hcl.Traversal{
+		hcl.TraverseRoot{Name: "local"},
+		hcl.TraverseAttr{Name: l.Name},
+	}, l.Value
 }
 
-// Outputs is a wrapper for a slice of Output
-type Outputs []*Output
-
-// Output is the type representing any "output {...}" blocks in HCL
-type Output struct {
-	Name        string    `hcl:",label"`
-	Description string    `hcl:"description,optional"`
-	Value       cty.Value `hcl:"value,attr"`
+// Data will reference a Table name, and assign the Field values into the
+// corresponding Field values in the Table
+type Data struct {
+	Name   string
+	Fields []Field
+	Data   []Data
 }
 
-// DecodeBodyFn represents the function that will decode any HCL Bodies.
-type DecodeBodyFn func(body hcl.Body, val interface{}) error
+type Field struct {
+	Name  string
+	Value cty.Value
+}
+
+type ResourceOutput struct {
+	ID     string
+	Status ResourceOutputStatus
+	Error  error
+	Value  cty.Value
+}
+
+// Output returns a cty.Value which can be used inside an HCL EvalContext
+// to resolve variables/traversals
+func (r *ResourceOutput) Output() cty.Value {
+	return cty.ObjectVal(
+		map[string]cty.Value{
+			"id":     cty.StringVal(r.ID),
+			"status": cty.StringVal(r.Status.String()),
+			"value":  r.Value,
+		},
+	)
+}
+
+type ResourceOutputStatus string
+
+func (r *ResourceOutputStatus) String() string {
+	return string(*r)
+}
+
+const (
+	ResourceOutputSuccess ResourceOutputStatus = "Success"
+	ResourceOutputFailure ResourceOutputStatus = "Failure"
+)
+
+// DecodeResourceFn represents the function that will decode any HCL Bodies.
+type DecodeResourceFn func(resource Resource, body hcl.Body, val interface{}) error

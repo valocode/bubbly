@@ -3,102 +3,85 @@ package v1
 import (
 	"testing"
 
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestImporterJSON(t *testing.T) {
-	formatString := `
-	object({
-		issues: list(object({
-			engineId: string,
-			ruleId: string,
-			severity: string,
-			type: string,
-			primaryLocation: object({
-				message: string,
-				filePath: string,
-				textRange: object({
-					startLine: number,
-					endLine: number,
-					startColumn: number,
-					endColumn: number
-				})
-			})
-		}))
+	ctyType := cty.Object(map[string]cty.Type{
+		"issues": cty.List(cty.Object(map[string]cty.Type{
+			"engineId": cty.String,
+			"ruleId":   cty.String,
+			"severity": cty.String,
+			"type":     cty.String,
+			"primaryLocation": cty.Object(map[string]cty.Type{
+				"message":  cty.String,
+				"filePath": cty.String,
+				"textRange": cty.Object(map[string]cty.Type{
+					"startLine":   cty.Number,
+					"endLine":     cty.Number,
+					"startColumn": cty.Number,
+					"endColumn":   cty.Number,
+				}),
+			}),
+		})),
 	})
-	`
-	expr, diags := hclsyntax.ParseExpression([]byte(formatString), "", hcl.Pos{Line: 1, Column: 1})
-	if diags.HasErrors() {
-		t.Errorf("Failed to create expression: %s", diags.Error())
-		t.FailNow()
-	}
+
 	importer := Importer{
 		Spec: ImporterSpec{
 			Type:   jsonImporterType,
-			Format: expr,
-		},
-		Source: &JSONSource{
-			File: "testdata/importer/json/sonarqube-example.json",
+			Format: ctyType,
+			Source: &JSONSource{
+				File: "testdata/importer/json/sonarqube-example.json",
+			},
 		},
 	}
 
-	val, err := importer.Resolve()
-	if err != nil {
-		t.Errorf("Failed to Resolve() JSON importer: %s", err.Error())
+	val := importer.Output()
+	if val.Error != nil {
+		t.Errorf("Failed to Resolve() JSON importer: %s", val.Error.Error())
 		t.Fail()
 	}
-	if val.IsNull() {
+	if val.Value.IsNull() {
 		t.Errorf("Received Null type value")
 	}
-	t.Logf("JSON Importer returned value: %s", val.GoString())
-
-	// TODO test the quality of the actual cty.Value by comparing with hand-made (JSON source) to cty.Value conversion
+	t.Logf("JSON Importer returned value: %s", val.Value.GoString())
 }
 
 func TestImporterXML(t *testing.T) {
-	formatString := `
-	object({
-		testsuites: object({
-			duration: number,
-			testsuite: list(object({
-				failures: number,
-				name: string,
-				package: string,
-				tests: number,
-				time: number,
-				testcase: list(object({
-					classname: string
-					name: string
-					time: number
-				}))
-			}))
-		})
+	ctyType := cty.Object(map[string]cty.Type{
+		"testsuites": cty.Object(map[string]cty.Type{
+			"duration": cty.Number,
+			"testsuite": cty.List(cty.Object(map[string]cty.Type{
+				"failures": cty.Number,
+				"name":     cty.String,
+				"package":  cty.String,
+				"tests":    cty.Number,
+				"time":     cty.Number,
+				"testcase": cty.List(cty.Object(map[string]cty.Type{
+					"classname": cty.String,
+					"name":      cty.String,
+					"time":      cty.Number,
+				})),
+			})),
+		}),
 	})
-	`
-	expr, diags := hclsyntax.ParseExpression([]byte(formatString), "", hcl.Pos{Line: 1, Column: 1})
-	if diags.HasErrors() {
-		t.Errorf("Failed to create expression: %s", diags.Error())
-		t.FailNow()
-	}
 	importer := Importer{
 		Spec: ImporterSpec{
 			Type:   xmlImporterType,
-			Format: expr,
-		},
-		Source: &XMLSource{
-			File: "testdata/importer/xml/junit.xml",
+			Format: ctyType,
+			Source: &XMLSource{
+				File: "testdata/importer/json/sonarqube-example.json",
+			},
 		},
 	}
 
-	val, err := importer.Resolve()
-	if err != nil {
-		t.Errorf("Failed to Resolve() XML importer: %s", err.Error())
+	val := importer.Output()
+	if val.Error != nil {
+		t.Errorf("Failed to Resolve() XML importer: %s", val.Error.Error())
 		t.Fail()
 	}
-	if val.IsNull() {
+	if val.Value.IsNull() {
 		t.Errorf("Received Null type value")
 	}
-	t.Logf("XML Importer returned value: %s", val.GoString())
-
+	t.Logf("XML Importer returned value: %s", val.Value.GoString())
 }

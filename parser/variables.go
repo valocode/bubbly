@@ -7,15 +7,16 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/dynblock"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // walkVariables takes a body and a type, and returns the complete list of
 // traversals (i.e. variables) that are referenced in the body
-func walkVariables(body hcl.Body, ty reflect.Type) []hcl.Traversal {
-	node := dynblock.WalkVariables(body)
-	traversals := walkVariablesWithImpliedType(node, ty)
-	return traversals
-}
+// func walkVariables(body hcl.Body, ty reflect.Type) []hcl.Traversal {
+// 	node := dynblock.WalkVariables(body)
+// 	traversals := walkVariablesWithImpliedType(node, ty)
+// 	return traversals
+// }
 
 // walkExpandVariables takes a body and a type, and returns the list of
 // traversals (i.e. variables) that are referenced in any for_each attribute
@@ -36,19 +37,16 @@ func walkVariablesWithImpliedType(node dynblock.WalkVariablesNode, ty reflect.Ty
 	zeroVal := reflect.Zero(ty)
 	schema, _ := gohcl.ImpliedBodySchema(zeroVal.Interface())
 
-	// before we get the vars with node.Visit we need to remove any of the
-	// fields in the reflect.Typ that represent a typeexpr in cty as this causes
-	// the hcl.Expression.Variables() to return variables that don't exist.
-	// What this means in practice is that we cannot refer to a variable that is
-	// of type hcl.Expression
 	ty = nestedElem(ty)
 	tags := getFieldTags(ty)
 	// cycle through attributes by tags in struct
 	for attr, fieldIdx := range tags.Attributes {
 		// get the nested elem type
 		field := nestedElem(ty.Field(fieldIdx).Type)
-		// if the field is an hcl.Expression
-		if field.Implements(reflect.TypeOf((*hcl.Expression)(nil)).Elem()) {
+		var ctyType cty.Type
+		// if the field is an hcl.Expression or a cty.Type
+		if field.Implements(reflect.TypeOf((*hcl.Expression)(nil)).Elem()) ||
+			field == reflect.TypeOf(ctyType) {
 			// find the schema attribute that matches this type, and remove it
 			for i, attrName := range schema.Attributes {
 				if attr == attrName.Name {
@@ -57,7 +55,10 @@ func walkVariablesWithImpliedType(node dynblock.WalkVariablesNode, ty reflect.Ty
 				}
 			}
 		}
+	}
 
+	if tags.Remain != nil {
+		return nil
 	}
 
 	// Now let's process the children and recurse this function.
@@ -67,6 +68,7 @@ func walkVariablesWithImpliedType(node dynblock.WalkVariablesNode, ty reflect.Ty
 	// the corresponding hcl tag in the struct (e.g. `hcl:"myblock,block"` will
 	// be matched by any child block type called "myblock")
 	vars, children := node.Visit(schema)
+
 	// Make sure there is not ",remain" hcl tag
 	if tags.Remain == nil {
 		if len(children) > 0 {

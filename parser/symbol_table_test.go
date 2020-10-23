@@ -3,7 +3,6 @@ package parser
 import (
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/likexian/gokit/assert"
 	"github.com/zclconf/go-cty/cty"
@@ -21,7 +20,7 @@ func TestInsertBasic(t *testing.T) {
 	sym := NewSymbolTable()
 	sym.insert(simpleCtyObject, traversal)
 
-	assert.Equal(t, sym.Variables["root"], simpleCtyObject)
+	assert.Equal(t, sym.EvalContext.Variables["root"], simpleCtyObject)
 }
 
 func TestInsertNested(t *testing.T) {
@@ -35,7 +34,6 @@ func TestInsertNested(t *testing.T) {
 		Name: "nested",
 	})
 
-	spew.Dump(sym.Variables)
 	first := append(traversal, hcl.TraverseAttr{
 		Name: "first",
 	})
@@ -47,8 +45,6 @@ func TestInsertNested(t *testing.T) {
 	})
 	secondVal := cty.StringVal("yoohoo!")
 	sym.insert(secondVal, second)
-
-	spew.Dump(sym.Variables)
 
 	val, exists := sym.lookup(first)
 	assert.Equal(t, exists, true)

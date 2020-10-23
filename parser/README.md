@@ -2,15 +2,18 @@
 
 This package contains the implementation for parsing HCL.
 
-The design is such that the HCL is structured into modules, and there is a *"root"* module which is ultimately what should be resolved, and any sub modules are merely designed to keep things DRY (Don't Repeat Yourself) and enable reuse.
+The methods used by other packages should be placed in the `parser*.go` files.
+The parser takes care of parsing `*.bubbly` files written in HCL (JSON not supported) to get the list of resources.
 
-## Module
+## Parser
 
-TODO: describe a Module, how it works and how to use it
+The `Parser` type is the top-level type in this package and should be considered the entrypoint for calling programs.
 
 ## Scope
 
-TODO: describe a Scope, how it works and how to use it
+The `Scope` type is a wrapper around our `SymbolTable` implementation, which takes care of the EvalContext for resolving variables in HCL.
+
+The main difference between `Parser` and `Scope` is that `Scope` does not maintain state of the HCL files to decode, it only maintains state of the EvalContext and is capable of producing *nested* EvalContexts, e.g. when a resource needs to reference its `self`, as that scope needs to be contained to just that resource.
 
 ## Useful knowledge
 
@@ -105,8 +108,29 @@ for _, importer := range hcl.Importers {
 
 ### 2. Traversals - what are they
 
-// TODO
+A traversal in HCL can be seen as a *path* in HCL to a node in the Abstract Syntax Tree (AST).
+
+For example, given the following HCL snippet, the traversal `myblock.block_label.my_attr` would point the the attribute `my_attr` which will be evaluated to a `cty.StringVal("xyz")`.
+
+```hcl
+my_block "block_label" {
+    my_attr = "xyz"
+}
+```
 
 ### 3. EvalContext - how is it used
 
-// TODO
+Extending our earlier example of HCL to include a `local` value, we could use the traversal `local.my_local.value` to reference the attribute `value` in the local `my_local`.
+
+```hcl
+local "my_local" {
+    value = "xyz"
+}
+
+my_block "block_label" {
+    my_attr = local.my_local.value
+}
+```
+
+How does the expression evaluator in HCL know what the value of `local.my_local.value` is?
+It needs to be in the `EvalContext.Variables` map in order to be "known", and this is the purpose of the EvalContext - to store variables/traversals as well as pre-defined functions.

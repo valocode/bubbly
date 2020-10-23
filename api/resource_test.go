@@ -12,14 +12,14 @@ package api
 // func TestResource(t *testing.T) {
 // 	hclString := `
 // resource "upload" "sonarqube" {
-// 	apiVersion = "v1"
+// 	api_version = "v1"
 // 	spec {
 // 		contents = translator.sonarqube.output
 // 	}
 // }
 
 // resource "upload" "git" {
-// 	apiVersion = "v1"
+// 	api_version = "v1"
 // 	spec {
 // 		contents = translator.git.output
 // 	}
@@ -32,7 +32,7 @@ package api
 // bubbly apply -f . --filter upload.sonarqube
 
 // resource "importer" "default" {
-// 	apiVersion = "v1"
+// 	api_version = "v1"
 // 	spec {
 // 		type = "xml"
 // 		source {

@@ -4,47 +4,40 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/function"
 )
 
 // SymbolTable is our wrapper around the hcl.EvalContext type.
 // It is capable of insert and lookup of cty.Values, and can return the a
 // hcl.EvalContext based on its contents
 type SymbolTable struct {
-	Variables map[string]cty.Value
-	Functions map[string]function.Function
+	EvalContext *hcl.EvalContext
 }
 
 // NewSymbolTable creates a new SymbolTable
 func NewSymbolTable() *SymbolTable {
 	return &SymbolTable{
-		Variables: make(map[string]cty.Value),
-		Functions: stdfunctions(),
+		EvalContext: &hcl.EvalContext{
+			Variables: make(map[string]cty.Value),
+			Functions: stdfunctions(),
+		},
 	}
 }
 
-// NewSymbolTableWithInputs creates a new SymbolTable with some inputs.
-// Parsing modules will require some inputs, and this is how a new SymbolTable
-// for a Scope can be created with the necessary inputs.
-func NewSymbolTableWithInputs(inputs map[string]cty.Value) *SymbolTable {
+// NestedSymbolTable creates a new SymbolTable which includes a new child
+// EvalContext, and also assigns the given inputs to the "self" value.
+func (s *SymbolTable) NestedSymbolTable(inputs cty.Value) *SymbolTable {
+	childEvalContext := s.EvalContext.NewChild()
+	childEvalContext.Variables = map[string]cty.Value{
+		"self": inputs,
+	}
 	return &SymbolTable{
-		Variables: inputs,
-		Functions: stdfunctions(),
-	}
-}
-
-// EvalContext creates and returns an hcl.EvalContext which is used for
-// resolving variables and functions when decoding hcl
-func (s *SymbolTable) EvalContext() *hcl.EvalContext {
-	return &hcl.EvalContext{
-		Variables: s.Variables,
-		Functions: s.Functions,
+		EvalContext: childEvalContext,
 	}
 }
 
 // SetInputs sets the input value
 func (s *SymbolTable) SetInputs(inputs cty.Value) {
-	s.Variables["input"] = inputs
+	s.EvalContext.Variables["input"] = inputs
 }
 
 // SetOutputs sets the output from a module (moduleName).
@@ -61,14 +54,15 @@ func (s *SymbolTable) SetOutputs(moduleName string, outputs cty.Value) {
 // insert takes a cty.Value and a hcl.Traversal and adds the given value at the
 // given hcl.Traversal path
 func (s *SymbolTable) insert(val cty.Value, traversal hcl.Traversal) {
+	// fmt.Printf("\nINSERTING: %s --> %s\n\n", val.GoString(), traversalString(traversal))
 	if len(traversal) < 1 {
 		panic("Cannot insert in symbol table with an empty traversal")
 	}
 	rootName := traverserName(traversal[0])
 	// get the root value in the Variables map
-	rootVal := s.Variables[traverserName(traversal[0])]
+	rootVal := s.EvalContext.Variables[traverserName(traversal[0])]
 
-	s.Variables[rootName] = s.insertCtyValue(rootVal, val, traversal[1:])
+	s.EvalContext.Variables[rootName] = s.insertCtyValue(rootVal, val, traversal[1:])
 }
 
 // inserCtyValue does the heavy lifsting with the insert of a value.
@@ -113,7 +107,7 @@ func (s *SymbolTable) lookup(traversal hcl.Traversal) (cty.Value, bool) {
 		return cty.NilVal, false
 	}
 	// get the base value
-	rootVal, exists := s.Variables[traverserName(traversal[0])]
+	rootVal, exists := s.EvalContext.Variables[traverserName(traversal[0])]
 	if !exists {
 		return cty.NilVal, false
 	}

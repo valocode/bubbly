@@ -12,8 +12,8 @@ import (
 var _ core.Translator = (*Translator)(nil)
 
 type Translator struct {
-	ResourceBlock *core.ResourceBlock
-	Spec          TranslatorSpec
+	*core.ResourceBlock
+	Spec TranslatorSpec
 }
 
 func NewTranslator(resBlock *core.ResourceBlock) *Translator {
@@ -22,9 +22,9 @@ func NewTranslator(resBlock *core.ResourceBlock) *Translator {
 	}
 }
 
-func (t *Translator) Decode(decode core.DecodeBodyFn) error {
+func (t *Translator) Decode(decode core.DecodeResourceFn) error {
 	// decode the resource spec into the importer's Spec
-	if err := decode(t.ResourceBlock.Spec.Body, &t.Spec); err != nil {
+	if err := decode(t, t.SpecHCL.Body, &t.Spec); err != nil {
 		return fmt.Errorf(`Failed to decode translator body spec: %s`, err.Error())
 	}
 	return nil
@@ -34,16 +34,22 @@ func (t *Translator) JSON() ([]byte, error) {
 	return json.Marshal(t.Spec.Data)
 }
 
-// String returns a string representation of the resource
-func (t *Translator) String() string {
-	return fmt.Sprintf(
-		"%s.%s.%s",
-		t.ResourceBlock.APIVersion, t.ResourceBlock.Kind, t.ResourceBlock.Name,
-	)
+// Output returns ...
+func (t *Translator) Output() core.ResourceOutput {
+	return core.ResourceOutput{
+		Status: core.ResourceOutputSuccess,
+		Error:  nil,
+		Value:  cty.NilVal,
+	}
+}
+
+func (t *Translator) SpecValue() core.ResourceSpec {
+	return &t.Spec
 }
 
 type TranslatorSpec struct {
-	Data DataBlocks `hcl:"data,block"`
+	Inputs InputDeclarations `hcl:"input,block"`
+	Data   DataBlocks        `hcl:"data,block"`
 }
 
 type DataBlocks []*Data
