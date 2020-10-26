@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"net/http"
+
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
@@ -11,6 +13,7 @@ import (
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/interim"
 	"github.com/zclconf/go-cty/cty"
+	"golang.org/x/sync/errgroup"
 )
 
 var router *gin.Engine
@@ -108,7 +111,7 @@ func getSchema() []core.Table {
 			Name: "repository_version",
 			Fields: []core.TableField{
 				{
-					Name:   "Id",
+					Name:   "Commit",
 					Type:   cty.String,
 					Unique: true,
 				},
@@ -122,13 +125,39 @@ func getSchema() []core.Table {
 					Type:   cty.String,
 					Unique: false,
 				},
+			},
+		},
+		{
+			Name: "linter_issue",
+			Fields: []core.TableField{
 				{
-					Name:   "RepositoryId",
+					Name:   "Name",
 					Type:   cty.String,
-					Unique: false,
+					Unique: true,
+				},
+				{
+					Name:   "Severity",
+					Type:   cty.String,
+					Unique: true,
+				},
+				{
+					Name:   "Type",
+					Type:   cty.String,
+					Unique: true,
 				},
 			},
 		},
 	}
 	return tables
+}
+
+func ListenAndServe(s *http.Server) error {
+	var g errgroup.Group
+	g.Go(func() error {
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return err
+		}
+		return nil
+	})
+	return g.Wait()
 }

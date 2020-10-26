@@ -25,12 +25,16 @@ func upload(c *gin.Context) {
 		return
 	}
 
+	log.Debug().Msgf("Loading data `%+v` into memdb...", upload)
+
 	importErr := db.Import(upload.Data)
 	if importErr != nil {
 		log.Error().Msg(importErr.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": importErr.Error()})
 		return
 	}
+
+	// TODO when Uploader is ready, send data here
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "uploaded",

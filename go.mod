@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/Jeffail/gabs v1.4.0
-	github.com/Jeffail/gabs/v2 v2.6.0
+	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/appleboy/gofight v2.0.0+incompatible
 	github.com/appleboy/gofight/v2 v2.1.2
 	github.com/buger/jsonparser v1.0.0
@@ -17,11 +17,15 @@ require (
 	github.com/hashicorp/go-memdb v1.3.0
 	github.com/hashicorp/hcl/v2 v2.6.0
 	github.com/hashicorp/terraform v0.13.4
+	github.com/imdario/mergo v0.3.9
 	github.com/likexian/gokit v0.23.3
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nedscode/memdb v0.0.0-20190730235322-b1504ff22569
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.20.0
 	github.com/sergi/go-diff v1.1.0 // indirect
+	github.com/spf13/cobra v1.1.1
+	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/buntdb v1.1.2
 	github.com/tidwall/gjson v1.6.1 // indirect

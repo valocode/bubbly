@@ -1,0 +1,56 @@
+[
+    {
+        "table": "repository_version",
+        "fields": [
+            {
+                "name": "Commit",
+                "Value": "39489ef"
+            },
+            {
+                "name": "Tag",
+                "Value": "v0.0.1"
+            },
+            {
+                "name": "Branch",
+                "Value": "master"
+            }
+        ],
+        "data": null
+    },
+    {
+        "table": "linter_issue",
+        "fields": [
+            {
+                "name": "Severity",
+                "Value": "BLOCKER"
+            },
+            {
+                "name": "Name",
+                "Value": "fully-fleshed issue"
+            },
+            {
+                "name": "Type",
+                "Value": "CODE_SMELL"
+            }
+        ],
+        "data": null
+    },
+    {
+        "table": "linter_issue",
+        "fields": [
+            {
+                "name": "Severity",
+                "Value": "INFO"
+            },
+            {
+                "name": "Name",
+                "Value": "minimal issue raised at file level"
+            },
+            {
+                "name": "Type",
+                "Value": "BUG"
+            }
+        ],
+        "data": null
+    }
+]

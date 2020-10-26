@@ -1,0 +1,132 @@
+
+resource "importer" "sonarqube" {
+    api_version = "v1"
+    spec {
+        input "file" {}
+        type = "json"
+        source {
+            file = self.input.file
+            format = object({
+                issues: list(object({
+                    engineId: string,
+                    ruleId: string,
+                    severity: string,
+                    type: string,
+                    primaryLocation: object({
+                        message: string,
+                        filePath: string,
+                        textRange: object({
+                            startLine: number,
+                            endLine: number,
+                            startColumn: number,
+                            endColumn: number
+                        })
+                    })
+                }))
+            })
+        }
+    }
+}
+
+resource "translator" "sonarqube" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        input "repository" {}
+        // this is some crazy dynamic HCL stuff to create the "data" blocks
+
+        data "repository_version" {
+            field "Commit" {
+                value = "39489ef"
+            }
+            field "Tag" {
+                value = "v0.0.1"
+            }
+            field "Branch" {
+                value = "master"
+            }
+        }
+
+        dynamic "data" {
+            for_each = self.input.data.issues
+            iterator = issue
+            labels = ["linter_issue"]
+            content {
+                // if the "id" field is blank, it should be auto-generated
+                // field "id" {}
+
+                field "Severity" {
+                    value = issue.value.severity
+                }
+                field "Name" {
+                    value = issue.value.primaryLocation.message
+                }
+                field "Type" {
+                    value = issue.value.type
+                }
+
+                // TODO: need to figure out how this will work
+                // field "repository_version_id" {
+                //     value = self.data.repository_version.id
+                // }
+            }
+        }
+    }
+}
+
+// This is the upload step, just renamed to publish...
+resource "publish" "sonarqube" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        // what do we need here?!
+        data = self.input.data
+    }
+}
+
+// How do we tie all the above resources together...? In a pipeline!
+// A pipeline is just another reusable resource, and only a pipelineRun
+// actually triggers a pipeline to run
+resource "pipeline" "sonarqube" {
+    api_version = "v1"
+    spec {
+        input "file" {}
+        // Each task in a pipeline has an output, similar to resources,
+        // so that task outputs can be referenced
+        task "import" {
+            resource = "importer/sonarqube"
+            input "repository" {
+                value = "0.0.1"
+            }
+            input "file" {
+                value = self.input.file
+            }
+        }
+        task "translator" {
+            resource = "translator/sonarqube"
+            input "data" {
+                // here we reference the output of the task "importer"
+                value = self.task.import.value
+            }
+        }
+        task "publish" {
+            resource = "publish/sonarqube"
+            input "data" {
+                value = self.task.translator.value
+            }
+        }
+    }
+}
+
+// A pipeline_run resources executes a pipeline resource.
+resource "pipeline_run" "sonarqube" {
+    api_version = "v1"
+    spec {
+        // specify the name of the pipeline
+        pipeline = "sonarqube"
+        // specify the input required
+        input "file" {
+            value = "./testdata/sonarqube/sonarqube-example.json"
+        }
+    }
+}

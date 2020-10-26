@@ -9,7 +9,7 @@ import (
 	testData "github.com/verifa/bubbly/server/testdata/upload"
 )
 
-// This creates a passing test for the Upload route
+// This creates a passing test for the upload route
 func TestUploadPassing(t *testing.T) {
 	r := gofight.New()
 
