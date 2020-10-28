@@ -47,7 +47,7 @@ The high-level architecture for Bubbly consist of the following parts:
 
 2. The **Bubbly Client** is executed in an automated manner (e.g. CI pipeline) or manually by a user to perform operations agains the Bubbly Server
 
-3. The **Bubbly Dashboard** will be how the data is represented. The idea is to create a Grafana plugin, for the rich and real-time dashboards. Bubbly will also provide a minimal UI to explore the data, but will not be so feature rich (at least in the beginning).
+3. The **Bubbly Web UI** will be how the data is represented. The idea is to create a Grafana plugin, for the rich and real-time dashboards. Bubbly will also provide a minimal UI to explore the data, but will not be so feature rich (at least in the beginning).
 
 These main components can be illustrated using the following simple diagram:
 
@@ -56,12 +56,15 @@ These main components can be illustrated using the following simple diagram:
 The other relevant parts in this diagram are:
 
 1. The **Client Configs** tell the Bubbly client everything it needs to know about what to do. This includes: the location of the *Bubbly server*, where the *input data* is, what to upload to the *Bubbly server*, etc. All the client configs are defined in HCL files.
-2. The **Input Data** is the data which should be uploaded to the Bubbly server and can come from any source, such as a JSON or XML file, or by querying a REST API or by executing a command line tool. Before it is uploaded it needs to be converted into the expected format, which is defined by the *schema*, and the *importers* are used to convert the data.
+2. The **Data Source** is the data which should be uploaded to the Bubbly server and can come from any source, such as a JSON or XML file, or by querying a REST API or by executing a command line tool. Before it is uploaded it needs to be converted into the expected format, which is defined by the *schema*, and the *importers* are used to convert the data.
 3. The **Schema** defines the format to store the data in Bubbly. It is not strictly SQL but follows a similar approach of defining tables with relations. The schema is defined using HCL and uploaded to the Bubbly server or provided as a config during startup.
-4. The **Importers** define the expected *input data* and how to convert that into an internal data structure that can be later processed in-memory.
-5. The **Translators** define how to use the imported data from the *importers* and how to translate that into a data structure defined by the defined *schema*.
+4. The **Resources** are the drivers for the data pipeline and consist of the importers, translators, publishers, pipeline and so on.
 
 All of the configurations, schemas, importers and such are defined as HCL, which provides the necessary high level abstraction to make configuring Bubbly easy, but still provides the necessary flexibility to process lots of different types of data.
+
+The main resources involved in defining a data pipeline can be illustrated by the following pipeline:
+
+![Bubbly High Level Pipeline](./images/high-level-pipeline.drawio.svg)
 
 The above architecture can be further elaborated using the following sequence diagram:
 
