@@ -1,11 +1,10 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 )
 
+// InitializeRoutes sets up the endpoints and groupings
 func InitializeRoutes(router *gin.Engine) {
 	// Keep Alive Test
 	router.GET("/healthz", func(c *gin.Context) {
@@ -18,7 +17,7 @@ func InitializeRoutes(router *gin.Engine) {
 	{
 		v1.GET("/test", test)
 		v1.GET("/status", status)
-		v1.GET("/version", version)
+		v1.GET("/version", versionHandler)
 	}
 
 	v2 := router.Group("/v2")
@@ -36,13 +35,6 @@ func InitializeRoutes(router *gin.Engine) {
 func test(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"hey": "hey",
-	})
-}
-
-func version(c *gin.Context) {
-	fmt.Println(c.Request.Header["Accept-Version"])
-	c.JSON(200, gin.H{
-		"version": "0.0.0.1",
 	})
 }
 

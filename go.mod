@@ -7,6 +7,7 @@ require (
 	github.com/Jeffail/gabs/v2 v2.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gin-contrib/logger v0.0.2
+	github.com/gin-gonic/autotls v0.0.3
 	github.com/gin-gonic/gin v1.6.3
 	github.com/google/uuid v1.1.2
 	github.com/graphql-go/graphql v0.7.9
@@ -21,4 +22,5 @@ require (
 	github.com/vektah/gqlparser/v2 v2.1.0
 	github.com/zclconf/go-cty v1.6.1
 	github.com/zclconf/go-cty-yaml v1.0.2
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 )

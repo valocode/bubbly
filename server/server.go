@@ -11,6 +11,8 @@ import (
 
 var router *gin.Engine
 
+// SetupRouter returns a pointer to a gin engine after setting up middleware
+// and initializing routes
 func SetupRouter() *gin.Engine {
 	// Enable Production Mode
 	// gin.SetMode(gin.ReleaseMode)
@@ -32,7 +34,7 @@ func SetupRouter() *gin.Engine {
 	// router := gin.Default()  // Sets the Gin defaults
 	router := gin.New() // Use a blank Gin server with no middleware loaded
 	router.Use(logger.SetLogger())
-
+	router.Use(VersionMiddleware())
 	// Initialize HTTP Routes
 	InitializeRoutes(router)
 
