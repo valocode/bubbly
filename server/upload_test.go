@@ -20,9 +20,11 @@ func TestUploadPassing(t *testing.T) {
 		})
 }
 
-// This creates a failing test case. The struct binding should fail on account of improperly named fields
-func TestUploadFailing(t *testing.T) {
-	r := gofight.New()
+	jsonReq, _ := json.Marshal(data)
+	r := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/alpha1/upload", bytes.NewBuffer(jsonReq))
+	router.ServeHTTP(r, req)
+	fmt.Println(r.Body)
 
 	r.POST("/upload/alpha1/").
 		SetJSON(testData.DataStructFailing()).

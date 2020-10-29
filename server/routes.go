@@ -4,12 +4,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// InitializeRoutes sets up the endpoints and groupings
+// InitializeRoutes Builds the endpoints and grouping for a gin router
 func InitializeRoutes(router *gin.Engine) {
 	// Keep Alive Test
 	router.GET("/healthz", func(c *gin.Context) {
 		c.String(200, "pong")
 	})
+
+	api := router.Group("/api")
+	{
+		api.POST("/resource", PostResource)
+		api.GET("/resource/:id", GetResource)
+	}
 
 	// API level versioning
 	// Establish grouping rules for versioning
@@ -26,9 +32,9 @@ func InitializeRoutes(router *gin.Engine) {
 	}
 
 	// Resource Level Versioning
-	alpha1 := router.Group("/upload/alpha1")
+	alpha1 := router.Group("/alpha1")
 	{
-		alpha1.POST("/", upload)
+		alpha1.POST("/upload", upload)
 	}
 }
 
