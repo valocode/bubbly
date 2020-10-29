@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
@@ -15,26 +14,26 @@ import (
 )
 
 // ResourceToJSON takes a resource and produces a JSON representation of it
-func (p *Parser) ResourceToJSON(resource core.Resource) ([]byte, error) {
+// func (p *Parser) ResourceToJSON(resource core.Resource) ([]byte, error) {
 
-	// get the resource spec{} block as JSON
-	sBody := resource.SpecHCLBody().(*hclsyntax.Body)
-	bodyJSON := p.bodyToJSON(sBody)
+// 	// get the resource spec{} block as JSON
+// 	sBody := resource.SpecHCLBody().(*hclsyntax.Body)
+// 	bodyJSON := p.bodyToJSON(sBody)
 
-	// create the resource{} block as JSON
-	resObj := gabs.New()
-	resObj.Set(resource.APIVersion(), "api_version")
-	resObj.Set(bodyJSON, "spec")
+// 	// create the resource{} block as JSON
+// 	resObj := gabs.New()
+// 	resObj.Set(resource.APIVersion(), "api_version")
+// 	resObj.Set(bodyJSON, "spec")
 
-	// create the top level JSON object that contains the resource
-	jsonObj := gabs.New()
-	jsonObj.Set(resObj.Data(), "resource", string(resource.Kind()), resource.Name())
-	return jsonObj.Bytes(), nil
-}
+// 	// create the top level JSON object that contains the resource
+// 	jsonObj := gabs.New()
+// 	jsonObj.Set(resObj.Data(), "resource", string(resource.Kind()), resource.Name())
+// 	return jsonObj.Bytes(), nil
+// }
 
 // JSONToResource takes a JSON representation of HCL as input and returns a
-// core.Resource, whilst also adding it to the Parser store of Resources.
-func (p *Parser) JSONToResource(json []byte) (core.Resource, error) {
+// core.Resource.
+func (p *Parser) JSONToResource(json []byte) (*core.ResourceBlock, error) {
 	// parse the json and pass in a unique filename for the parser, because
 	// otherwise it returns the same json file again...
 	file, diags := p.HCLParser.ParseJSON(json, fmt.Sprintf("json-%d", len(p.HCLParser.Files())))
@@ -47,18 +46,22 @@ func (p *Parser) JSONToResource(json []byte) (core.Resource, error) {
 		return nil, fmt.Errorf("Failed to decode JSON: %s", diags.Error())
 	}
 
-	resource := p.Resources.NewResource(&resWrap.ResourceBlock)
+	// create a resource and store it in the parser
+	p.Resources.NewResource(&resWrap.ResourceBlock)
 
-	return resource, nil
+	return &resWrap.ResourceBlock, nil
 }
 
-// bodyToJSON converts an hcl body written in hcl, to a JSON equivalent
-func (p *Parser) bodyToJSON(body *hclsyntax.Body) interface{} {
+// BodyToJSON converts an hcl body written in hcl, to a JSON equivalent
+func (p *Parser) BodyToJSON(body *hclsyntax.Body) (interface{}, error) {
 
 	bodyJSON := gabs.New()
 
 	for _, block := range body.Blocks {
-		childJSON := p.bodyToJSON(block.Body)
+		childJSON, err := p.BodyToJSON(block.Body)
+		if err != nil {
+			return nil, fmt.Errorf(`Failed to convert block %s to json: %s`, block.Type, err.Error())
+		}
 
 		path := append([]string{block.Type}, block.Labels...)
 		bodyJSON.Set(childJSON, path...)
@@ -67,103 +70,119 @@ func (p *Parser) bodyToJSON(body *hclsyntax.Body) interface{} {
 	for _, attr := range body.Attributes {
 		obj, err := p.exprToContainer(attr.Expr)
 		if err != nil {
-			log.Fatalf(`Failed to convert expression to string: %s`, err.Error())
+			return nil, fmt.Errorf(`Failed to convert expression for attribute %s to json: %s`, attr.Name, err.Error())
 		}
-		bodyJSON.Set(obj.Data(), attr.Name)
+		bodyJSON.Set(obj, attr.Name)
 	}
 
-	return bodyJSON.Data()
+	return bodyJSON.Data(), nil
 }
 
-func (p *Parser) exprToContainer(expr hcl.Expression) (*gabs.Container, error) {
+func (p *Parser) exprToContainer(expr hcl.Expression) (interface{}, error) {
 	// first try to evaluate the expression... if that works, great,
 	// otherwise we store the raw value
 	val, diags := expr.Value(p.Scope.EvalContext)
 	if !diags.HasErrors() {
-		return ctyValueToGabs(val)
+		return ctyValueToJSON(val)
 	}
 	switch ty := expr.(type) {
 	case *hclsyntax.LiteralValueExpr:
-		// LiteralValueExpr ar ejust literal expressions, so there already is
+		// LiteralValueExpr are just literal expressions, so there already is
 		// a cty.Value
-		return ctyValueToGabs(ty.Val)
+		return ctyValueToJSON(ty.Val)
 	case *hclsyntax.FunctionCallExpr:
 		// FunctionCallExpr is a function call
 		ctyType, diags := typeexpr.TypeConstraint(expr)
 		if !diags.HasErrors() {
-			return gabs.Consume(typeexpr.TypeString(ctyType))
+			return typeexpr.TypeString(ctyType), nil
+			// return gabs.Consume(typeexpr.TypeString(ctyType))
 		}
 		// TODO... what about ordinary function calls?
 	case *hclsyntax.ScopeTraversalExpr:
 		// ScopeTraversalExpr is a simple traversal, like my.variable.reference
 		if len(ty.Traversal) == 1 {
-			return gabs.Consume(traversalString(ty.Traversal))
+			return traversalString(ty.Traversal), nil
 		}
-		return gabs.Consume(fmt.Sprintf("${%s}", traversalString(ty.Traversal)))
+		return fmt.Sprintf("${%s}", traversalString(ty.Traversal)), nil
 	case *hclsyntax.TemplateExpr:
 		// TemplateExpr is an expression like: "raw_string_with_${a.var}"
 		exprs := []string{}
 		for _, exprEl := range ty.Parts {
-			retStr, err := p.exprToContainer(exprEl)
+			ret, err := p.exprToContainer(exprEl)
 			if err != nil {
 				return nil, err
 			}
-			exprs = append(exprs, strings.Trim(retStr.String(), "\""))
+			// TODO: this might not work so well... let's see
+			if retStr, ok := ret.(string); ok {
+				exprs = append(exprs, retStr)
+			} else {
+				return nil, fmt.Errorf("Failed to convert return value to string: %v", ret)
+			}
 		}
-		obj, err := gabs.Consume(strings.Join(exprs, ""))
-		return obj, err
+		return strings.Join(exprs, ""), nil
 	case *hclsyntax.TupleConsExpr:
 		// TupleConsExpr is a tuple of expressions... so store those in an
 		// interface{} list for gabs to deal with
 		var list []interface{}
 		for _, exprEl := range ty.ExprList() {
-			retStr, err := p.exprToContainer(exprEl)
+			ret, err := p.exprToContainer(exprEl)
 			if err != nil {
 				return nil, err
 			}
-			list = append(list, retStr.Data())
+			if retStr, ok := ret.(string); ok {
+				list = append(list, strings.Trim(retStr, "\""))
+			} else {
+				return nil, fmt.Errorf("Failed to convert return value to string: %v", ret)
+			}
 		}
-		return gabs.Consume(list)
+		return list, nil
 	default:
 	}
 	panic(fmt.Sprintf(`exprToContainer: unsupported expression type "%s"`, reflect.TypeOf(expr).String()))
 }
 
-// TODO: this has not been tested at all
-func (p *Parser) callExprToString(expr *hclsyntax.FunctionCallExpr) string {
-	fmt.Printf("CALL EXPR!")
-	static := expr.ExprCall()
-	var retStr strings.Builder
-	retStr.WriteString(static.Name)
-	// for _, arg := range static.Arguments {
-	// 	retStr.WriteString(" .. ")
-	// 	// retStr.WriteString(p.exprToContainer(arg))
-	// }
-
-	return retStr.String()
-}
-
-func ctyValueToGabs(val cty.Value) (*gabs.Container, error) {
+// ctyValueToJSON takes a cty value and returns a go interface that will be
+// consumed by gabs to create a JSON representation
+func ctyValueToJSON(val cty.Value) (interface{}, error) {
 	if !val.IsKnown() {
-		return nil, fmt.Errorf("trying to convern not known cty.Value to a go value")
+		return "", fmt.Errorf("trying to convert not known cty.Value to a go value")
 	}
 	if val.IsNull() {
-		return gabs.New(), nil
+		return "nil", nil
 	}
 
 	t := val.Type()
 
 	switch {
-	case t == cty.Bool:
-		return gabs.Consume(val.True())
-	case t == cty.String:
-		return gabs.Consume(val.AsString())
-	case t == cty.Number:
-		return gabs.Consume(val.AsBigFloat())
-	case t.IsListType() || t.IsSetType() || t.IsTupleType():
+	case t.IsPrimitiveType():
+		switch {
+		case t == cty.Bool:
+			if val.True() {
+				return true, nil
+			}
+			return false, nil
+		case t == cty.String:
+			return val.AsString(), nil
+		case t == cty.Number:
+			return val.AsBigFloat(), nil
+		default:
+			panic(fmt.Sprintf("Unknown primitive cty type %s", t.GoString()))
+		}
+	case t.IsListType(), t.IsSetType(), t.IsTupleType():
+		var list []interface{}
+		it := val.ElementIterator()
+		for it.Next() {
+			_, eVal := it.Element()
+			e, err := ctyValueToJSON(eVal)
+			if err != nil {
+				return "", fmt.Errorf(`Failed to get cty value of element %s: %s`, eVal.GoString(), err.Error())
+			}
+			list = append(list, e)
+		}
+		return list, nil
+	case t.IsMapType(), t.IsObjectType():
 		// TODO
-	case t.IsMapType() || t.IsObjectType():
-		// TODO
+		// var obj map[string]interface{}
 	}
 	panic(fmt.Sprintf(`Unsupported cty.Value type %s`, t.GoString()))
 }

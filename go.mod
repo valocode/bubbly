@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/99designs/gqlgen v0.13.0
+	github.com/Jeffail/gabs v1.4.0
 	github.com/Jeffail/gabs/v2 v2.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gin-contrib/logger v0.0.2

@@ -10,10 +10,10 @@ import (
 )
 
 func TestNewDB(t *testing.T) {
-	zooTables := []Table{
+	zooTables := []core.Table{
 		{
 			Name: "zoo",
-			Fields: []Field{
+			Fields: []core.TableField{
 				{
 					Name:   "Name",
 					Unique: true,
@@ -24,10 +24,10 @@ func TestNewDB(t *testing.T) {
 					Type: cty.String,
 				},
 			},
-			Tables: []Table{
+			Tables: []core.Table{
 				{
 					Name: "restaraunts",
-					Fields: []Field{
+					Fields: []core.TableField{
 						{
 							Name:   "Name",
 							Unique: true,
@@ -42,7 +42,7 @@ func TestNewDB(t *testing.T) {
 				},
 				{
 					Name: "shops",
-					Fields: []Field{
+					Fields: []core.TableField{
 						{
 							Name:   "Name",
 							Unique: true,
@@ -57,10 +57,10 @@ func TestNewDB(t *testing.T) {
 				},
 				{
 					Name: "mammals",
-					Tables: []Table{
+					Tables: []core.Table{
 						{
 							Name: "giraffes",
-							Fields: []Field{
+							Fields: []core.TableField{
 								{
 									Name:   "Name",
 									Unique: true,
@@ -75,7 +75,7 @@ func TestNewDB(t *testing.T) {
 						},
 						{
 							Name: "elephants",
-							Fields: []Field{
+							Fields: []core.TableField{
 								{
 									Name:   "Name",
 									Unique: true,
@@ -92,10 +92,10 @@ func TestNewDB(t *testing.T) {
 				},
 				{
 					Name: "reptiles",
-					Tables: []Table{
+					Tables: []core.Table{
 						{
 							Name: "crocodiles",
-							Fields: []Field{
+							Fields: []core.TableField{
 								{
 									Name:   "Name",
 									Unique: true,
@@ -118,10 +118,10 @@ func TestNewDB(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, db)
 
-	zooData := []core.Data{
+	zooData := core.DataBlocks{
 		{
-			Name: "zoo",
-			Fields: []core.Field{
+			TableName: "zoo",
+			Fields: core.DataFields{
 				{
 					Name:  "Name",
 					Value: cty.StringVal("Boise Zoo"),

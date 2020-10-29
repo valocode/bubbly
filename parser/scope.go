@@ -43,6 +43,20 @@ func (s *Scope) NestedScope(inputs cty.Value) *Scope {
 	}
 }
 
+// InsertValue takes a cty.Value and a path, denoted as a slice of strings,
+// and inserts the given value at the location given by the path (in the form
+// of a traversal), e.g. cty.StringVal("hello"), ["self", "hello"]
+// will make the StringVal "hello" available at the traversal "self.hello"
+func (s *Scope) InsertValue(val cty.Value, path []string) {
+	traversal := hcl.Traversal{
+		hcl.TraverseRoot{Name: path[0]},
+	}
+	for _, step := range path[1:] {
+		traversal = append(traversal, hcl.TraverseAttr{Name: step})
+	}
+	s.insert(val, traversal)
+}
+
 // resolveVariables takes a list of traversals and rsolves them
 func (s *Scope) resolveVariables(decodeCtx *decodeContext, traversals []hcl.Traversal) error {
 

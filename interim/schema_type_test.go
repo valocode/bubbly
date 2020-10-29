@@ -21,7 +21,7 @@ func TestSchemaType(t *testing.T) {
 		desc string
 		id   string
 		fk   string
-		t    Table
+		t    core.Table
 		d    core.Data
 		out  interface{}
 	}{
@@ -29,9 +29,9 @@ func TestSchemaType(t *testing.T) {
 			desc: "basic",
 			id:   "abc123",
 			fk:   "def456",
-			t: Table{
+			t: core.Table{
 				Name: "tortoise",
-				Fields: []Field{
+				Fields: []core.TableField{
 					{
 						Name: "Name",
 						Type: cty.String,
@@ -47,8 +47,8 @@ func TestSchemaType(t *testing.T) {
 				},
 			},
 			d: core.Data{
-				Name: "tortoise",
-				Fields: []core.Field{
+				TableName: "tortoise",
+				Fields: core.DataFields{
 					{
 						Name:  "Name",
 						Value: cty.StringVal("Harold"),
@@ -74,7 +74,7 @@ func TestSchemaType(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.desc, func(t *testing.T) {
-			st := newSchemaTypes([]Table{c.t})
+			st := newSchemaTypes([]core.Table{c.t})
 			assert.Contains(t, st, c.t.Name)
 
 			val, err := st["tortoise"].New(c.d, c.id, c.fk)

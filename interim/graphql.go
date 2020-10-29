@@ -3,13 +3,14 @@ package interim
 import (
 	"github.com/graphql-go/graphql"
 	"github.com/hashicorp/go-memdb"
+	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // newGraphQL creates a new GraphQL schema
 // wrapping the given memDB with a schmea that
 // corresponds to the given set of tables.
-func newGraphQL(tables []Table, memDB *memdb.MemDB) (graphql.Schema, error) {
+func newGraphQL(tables []core.Table, memDB *memdb.MemDB) (graphql.Schema, error) {
 	// These are the top-level query fields. Each of these fields
 	// will correspond to each of the tables in the entire hierarchy.
 	queryFields := make(graphql.Fields)
@@ -40,7 +41,7 @@ func newGraphQL(tables []Table, memDB *memdb.MemDB) (graphql.Schema, error) {
 
 // addTableToGraphQL adds as table to queryFields and returns the GraphQL type
 // corresponding to the table so it can be included in parent tables (if they exist).
-func addTableToGraphQL(t Table, memDB *memdb.MemDB, queryFields graphql.Fields) graphql.Type {
+func addTableToGraphQL(t core.Table, memDB *memdb.MemDB, queryFields graphql.Fields) graphql.Type {
 	var (
 		// These are the fields for this specific table
 		// which will correspond to fields on the GraphQL
@@ -99,7 +100,7 @@ func addTableToGraphQL(t Table, memDB *memdb.MemDB, queryFields graphql.Fields) 
 	return tType
 }
 
-func resolveScalar(memDB *memdb.MemDB, t Table, p graphql.ResolveParams) (interface{}, error) {
+func resolveScalar(memDB *memdb.MemDB, t core.Table, p graphql.ResolveParams) (interface{}, error) {
 	txn := memDB.Txn(false)
 	defer txn.Abort()
 
@@ -115,7 +116,7 @@ func resolveScalar(memDB *memdb.MemDB, t Table, p graphql.ResolveParams) (interf
 	return n, err
 }
 
-func resolveList(memDB *memdb.MemDB, t Table, p graphql.ResolveParams) (interface{}, error) {
+func resolveList(memDB *memdb.MemDB, t core.Table, p graphql.ResolveParams) (interface{}, error) {
 	txn := memDB.Txn(false)
 	defer txn.Abort()
 
@@ -131,7 +132,7 @@ func resolveList(memDB *memdb.MemDB, t Table, p graphql.ResolveParams) (interfac
 	return n, err
 }
 
-func graphQLFieldType(f Field) *graphql.Scalar {
+func graphQLFieldType(f core.TableField) *graphql.Scalar {
 	switch f.Type {
 	case cty.Bool:
 		return graphql.Boolean

@@ -11,14 +11,16 @@ import (
 	"github.com/hashicorp/hcl/v2/ext/dynblock"
 	"github.com/hashicorp/hcl/v2/ext/typeexpr"
 	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/zclconf/go-cty/cty/convert"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
 
-// decodeResource is a wrapper around decodeBody which also expands dynamic
+// DecodeExpandBody is a wrapper around decodeBody which also expands dynamic
 // blocks
-func (s *Scope) decodeResource(resource core.Resource, body hcl.Body, val interface{}) error {
+func (s *Scope) DecodeExpandBody(resource core.Resource, body hcl.Body, val interface{}) error {
+	// fmt.Printf("DECODING RESOURCE!! %s\n", reflect.TypeOf(val).String())
+	// spew.Dump(s.EvalContext.Variables["self"])
+
 	// create a decode context which will be passed around
 	decodeCtx := newDecodeContext(body, val)
 
@@ -299,15 +301,15 @@ func (s *Scope) decodeExpression(ctx *decodeContext, expr hcl.Expression, val in
 		return diags
 	}
 
-	switch ty := expr.(type) {
-	case *hclsyntax.ScopeTraversalExpr:
-		if ty.Traversal.RootName() == "self" {
-			// TODO this should not just set zero...
-			target := reflect.ValueOf(val).Elem()
-			target.Set(reflect.Zero(target.Type()))
-			return hcl.Diagnostics{}
-		}
-	}
+	// switch ty := expr.(type) {
+	// case *hclsyntax.ScopeTraversalExpr:
+	// 	if ty.Traversal.RootName() == "self" {
+	// 		// TODO this should not just set zero...
+	// 		target := reflect.ValueOf(val).Elem()
+	// 		target.Set(reflect.Zero(target.Type()))
+	// 		return hcl.Diagnostics{}
+	// 	}
+	// }
 
 	// TODO get traversals and resolve!
 	traversals := expr.Variables()
@@ -326,6 +328,17 @@ func (s *Scope) decodeExpression(ctx *decodeContext, expr hcl.Expression, val in
 	convTy, err := gocty.ImpliedType(val)
 	if err != nil {
 		panic(fmt.Sprintf("unsuitable DecodeExpression target: %s", err))
+	}
+
+	if srcVal.IsNull() {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "Null pointer dereference",
+			Detail:   fmt.Sprintf("Null pointer dereference: trying to assign from cty NilVal"),
+			Subject:  expr.StartRange().Ptr(),
+			Context:  expr.Range().Ptr(),
+		})
+		return diags
 	}
 
 	srcVal, err = convert.Convert(srcVal, convTy)

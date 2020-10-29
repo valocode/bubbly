@@ -26,25 +26,23 @@ func TestImporterJSON(t *testing.T) {
 		})),
 	})
 
-	importer := Importer{
-		Spec: ImporterSpec{
-			Type:   jsonImporterType,
-			Format: ctyType,
-			Source: &JSONSource{
-				File: "testdata/importer/json/sonarqube-example.json",
-			},
-		},
+	source := jsonSource{
+		File:   "testdata/importer/json/sonarqube-example.json",
+		Format: ctyType,
 	}
 
-	val := importer.Output()
-	if val.Error != nil {
-		t.Errorf("Failed to Resolve() JSON importer: %s", val.Error.Error())
-		t.Fail()
+	val, err := source.Resolve()
+	if err != nil {
+		t.Errorf("Failed to Resolve() JSON importer: %s", err.Error())
+		t.FailNow()
+
 	}
-	if val.Value.IsNull() {
+
+	if val.IsNull() {
 		t.Errorf("Received Null type value")
 	}
-	t.Logf("JSON Importer returned value: %s", val.Value.GoString())
+
+	t.Logf("JSON Importer returned value: %s", val.GoString())
 }
 
 func TestImporterXML(t *testing.T) {
@@ -65,23 +63,21 @@ func TestImporterXML(t *testing.T) {
 			})),
 		}),
 	})
-	importer := Importer{
-		Spec: ImporterSpec{
-			Type:   xmlImporterType,
-			Format: ctyType,
-			Source: &XMLSource{
-				File: "testdata/importer/json/sonarqube-example.json",
-			},
-		},
+	source := xmlSource{
+		Format: ctyType,
+		File:   "testdata/importer/json/sonarqube-example.json",
 	}
 
-	val := importer.Output()
-	if val.Error != nil {
-		t.Errorf("Failed to Resolve() XML importer: %s", val.Error.Error())
-		t.Fail()
+	val, err := source.Resolve()
+	if err != nil {
+		t.Errorf("Failed to Resolve() XML importer: %s", err.Error())
+		t.FailNow()
+
 	}
-	if val.Value.IsNull() {
+
+	if val.IsNull() {
 		t.Errorf("Received Null type value")
 	}
-	t.Logf("XML Importer returned value: %s", val.Value.GoString())
+
+	t.Logf("XML Importer returned value: %s", val.GoString())
 }

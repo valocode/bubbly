@@ -11,7 +11,7 @@ var _ core.PipelineRun = (*PipelineRun)(nil)
 
 type PipelineRun struct {
 	*core.ResourceBlock
-	Spec PipelineRunSpec
+	Spec pipelineRunSpec
 }
 
 func NewPipelineRun(resBlock *core.ResourceBlock) *PipelineRun {
@@ -20,44 +20,40 @@ func NewPipelineRun(resBlock *core.ResourceBlock) *PipelineRun {
 	}
 }
 
-func (p *PipelineRun) Decode(decode core.DecodeResourceFn) error {
-	// decode the resource spec into the pipeline runs's Spec
-	if err := decode(p, p.SpecHCL.Body, &p.Spec); err != nil {
-		return fmt.Errorf(`Failed to decode "%s" body spec: %s`, p.String(), err.Error())
-	}
-	return nil
-}
-
 func (p *PipelineRun) SpecValue() core.ResourceSpec {
 	return &p.Spec
 }
 
-// Output returns ...
-func (p *PipelineRun) Output() core.ResourceOutput {
+// Apply returns ...
+func (p *PipelineRun) Apply(ctx *core.ResourceContext) core.ResourceOutput {
+	// decode the resource spec into the pipeline runs's Spec
+	if err := ctx.DecodeBody(p, p.SpecHCL.Body, &p.Spec); err != nil {
+		return core.ResourceOutput{
+			Status: core.ResourceOutputFailure,
+			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %s`, p.String(), err.Error()),
+			Value:  cty.NilVal,
+		}
+	}
+
+	pipeline, err := ctx.GetResource(core.PipelineResourceKind, p.Spec.PipelineID)
+	if err != nil {
+		return core.ResourceOutput{
+			Status: core.ResourceOutputFailure,
+			Error:  fmt.Errorf(`Pipeline "%s" does not exist: %s`, p.Spec.PipelineID, err.Error()),
+			Value:  cty.NilVal,
+		}
+	}
+
+	out := pipeline.Apply(ctx.NewContext(p.Spec.Inputs.Value()))
+
 	return core.ResourceOutput{
-		Status: core.ResourceOutputSuccess,
-		Error:  nil,
+		Status: out.Status,
+		Error:  out.Error,
 		Value:  cty.NilVal,
 	}
 }
 
-func (p *PipelineRun) Pipeline() string {
-	return p.Spec.PipelineID
-}
-
-func (p *PipelineRun) Inputs() cty.Value {
-	inputs := map[string]cty.Value{}
-	for _, input := range p.Spec.Inputs {
-		inputs[input.Name] = input.Value
-	}
-	return cty.ObjectVal(
-		map[string]cty.Value{
-			"input": cty.ObjectVal(inputs),
-		},
-	)
-}
-
-type PipelineRunSpec struct {
+type pipelineRunSpec struct {
 	Inputs     InputDefinitions `hcl:"input,block"`
 	PipelineID string           `hcl:"pipeline,attr"`
 }

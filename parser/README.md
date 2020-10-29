@@ -2,8 +2,9 @@
 
 This package contains the implementation for parsing HCL.
 
-The methods used by other packages should be placed in the `parser*.go` files.
-The parser takes care of parsing `*.bubbly` files written in HCL (JSON not supported) to get the list of resources.
+The parser takes care of parsing `*.bubbly` files written in HCL (JSON not supported directly) to get the list of resources.
+If you want to parse json, e.g. from the bubbly server, the `parser_json.go` file contains what you need.
+The reason for handling these differently is because of HCL's underlying representation of the HCL AST, when it is parsed from HCL or JSON.
 
 ## Parser
 
@@ -40,69 +41,6 @@ type HCLBody struct {
         // MyAttr is the attribute inside the block "my_block"
         MyAttr cty.Value `hcl:"my_attr,attr"`
     } `hcl:"my_block,block"`
-}
-```
-
-#### How to use a runtime defined body
-
-Let's take the example of an `importer`:
-
-```hcl
-importer "importer_name" {
-    type = "json"
-
-    // The source block schema, is defined by the above attribute type...
-    // Thus, if we have a json type, this block will look different to a rest
-    // type.
-    source {
-        file = "./my-file.json"
-    }
-    // Using typeexpr to define a cty.Type, which in this case is a list of
-    // strings.
-    format = list(string)
-}
-```
-
-So how do we parse this into a struct? Quite easily...
-
-```go
-type HCLBody struct {
-    Importers []Importer `hcl:"importer,block"`
-}
-
-type Importer struct {
-    Name string `hcl:",label"`
-    Type string `hcl:"type,attr"`
-    // The hcl tag "remain" means that it will not be decoded as part of the
-    // decode procedure... i.e. it remains!
-    // This means we can post-porcess it however we want :)
-    SourceBody hcl.Body `hcl:"source,remain"`
-
-    // hcl.Expressions are also not decoded, so that we can post-process them
-    Format hcl.Expression `hcl:"format,attr"`
-}
-
-type JSONSource struct {
-    File string `hcl:"file,attr"`
-}
-```
-
-After we decode the `HCLBody`, we can do something like:
-
-```go
-hcl := HCLBody{}
-// now decode the HCL body into hcl...
-gohcl.Decode(body, &hcl)
-
-for _, importer := range hcl.Importers {
-    switch ty := importer.Type {
-    case "json":
-        jsonSource := JSONSource{}
-        // now decode the importer.SourceBody into jsonSource...
-        gohcl.Decode(importer.SourceBody, &jsonSource)
-    default:
-        panic(fmt.Sprintf("unknown importer type: %s", ty))
-    }
 }
 ```
 

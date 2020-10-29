@@ -1,60 +1,47 @@
 
-local "importer_type" {
-    value = "xml"
-}
-
-local "api_version" {
-    value = "v1"
-}
-
-// Everything is a resource, and all resources have an output.
-// The output can be something like:
-// output:
-//   - status: sucess
-//   - value: <the value from the importer>
-resource "importer" "junit" {
-    api_version = local.api_version
+resource "importer" "sq_json" {
+    api_version = "v1"
     // this is an input to the importer to make it reusable
     spec {
         input "file" {}
-        type = local.importer_type
+        type = "json"
         source {
-            // reference the "self" here to get the input
             file = self.input.file
             format = object({
-                testsuites: object({
-                    duration: number,
-                    testsuite: list(object({
-                        failures: number,
-                        name: string,
-                        package: string,
-                        tests: number,
-                        time: number,
-                        testcase: list(object({
-                            classname: string
-                            name: string
-                            time: number
-                        }))
-                    }))
-                })
+                issues: list(object({
+                    engineId: string,
+                    ruleId: string,
+                    severity: string,
+                    type: string,
+                    primaryLocation: object({
+                        message: string,
+                        filePath: string,
+                        textRange: object({
+                            startLine: number,
+                            endLine: number,
+                            startColumn: number,
+                            endColumn: number
+                        })
+                    })
+                }))
             })
         }
     }
 }
 
 
-resource "translator" "junit" {
+resource "translator" "sq_json" {
     api_version = "v1"
     spec {
         input "data" {}
         // this is some crazy dynamic HCL stuff to create the "data" blocks
         dynamic "data" {
-            for_each = self.input.data
-            iterator = it
+            for_each = self.input.data.issues
+            iterator = issue
             labels = ["test_table"]
             content {
                 field "test_field" {
-                    value = "This field exists in table_${it.value}"
+                    value = "This field exists in table_${issue.value.ruleId}"
                 }
             }
         }
@@ -62,7 +49,7 @@ resource "translator" "junit" {
 }
 
 // This is the upload step, just renamed to publish...
-resource "publish" "junit" {
+resource "publish" "sq_json" {
     api_version = "v1"
     spec {
         input "data" {}
@@ -74,27 +61,27 @@ resource "publish" "junit" {
 // How do we tie all the above resources together...? In a pipeline!
 // A pipeline is just another reusable resource, and only a pipelineRun
 // actually triggers a pipeline to run
-resource "pipeline" "junit" {
+resource "pipeline" "sq_json" {
     api_version = "v1"
     spec {
         input "file" {}
         // Each task in a pipeline has an output, similar to resources,
         // so that task outputs can be referenced
         task "import" {
-            resource = "importer.junit"
-            input "xml_file" {
+            resource = "importer/sq_json"
+            input "file" {
                 value = self.input.file
             }
         }
         task "translator" {
-            resource = "translator.junit"
-            input "results" {
+            resource = "translator/sq_json"
+            input "data" {
                 // here we reference the output of the task "importer"
                 value = self.task.import.value
             }
         }
         task "publish" {
-            resource = "publish.junit"
+            resource = "publish/sq_json"
             input "data" {
                 value = self.task.translator.value
             }
@@ -103,14 +90,14 @@ resource "pipeline" "junit" {
 }
 
 // A pipeline_run resources executes a pipeline resource.
-resource "pipeline_run" "junit" {
+resource "pipeline_run" "sq_json" {
     api_version = "v1"
     spec {
         // specify the name of the pipeline
-        pipeline = "junit"
+        pipeline = "sq_json"
         // specify the input required
         input "file" {
-            value = "testdata/importer/junit.xml"
+            value = "../parser/testdata/local-sq-json/sonarqube-example.json"
         }
     }
 }

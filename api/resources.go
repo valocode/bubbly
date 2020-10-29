@@ -20,13 +20,22 @@ func NewResources() *Resources {
 	return &resources
 }
 
+// NewResourcesFromBlocks takes a list of ResourceBlock and creates a Resources
+// container for them, by converting each of them into a Resource.
+func NewResourcesFromBlocks(blocks core.ResourceBlocks) *Resources {
+	res := NewResources()
+	for _, block := range blocks {
+		res.NewResource(block)
+	}
+	return res
+}
+
 // NewResource creates a new resource from the given ResourceBlock, and adds
 // it to Resources and also returns a pointer to it for convenience.
 func (r *Resources) NewResource(resBlock *core.ResourceBlock) core.Resource {
 	var resource core.Resource
 	switch resBlock.Kind() {
 	// TODO: use resBlock.APIVersion to get version of resource...
-	// TODO: automate decoding of resBlock.SpecHCL.Body into Resource.Spec()
 	case core.ImporterResourceKind:
 		resource = v1.NewImporter(resBlock)
 	case core.TranslatorResourceKind:
@@ -50,10 +59,10 @@ func (r *Resources) NewResource(resBlock *core.ResourceBlock) core.Resource {
 	return resource
 }
 
-// Resource returns the desired resource based on the ResourceKind and the name
+// Get returns the desired resource based on the ResourceKind and the name
 // of the resource.
 // It returns nil if the resource does not exist.
-func (r *Resources) Resource(kind core.ResourceKind, name string) core.Resource {
+func (r *Resources) Get(kind core.ResourceKind, name string) core.Resource {
 	if resource, exists := (*r)[kind][name]; exists {
 		return resource
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-memdb"
+	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -14,7 +15,7 @@ const (
 )
 
 // newMemDB creates a new memdb for the given tables.
-func newMemDB(tables []Table) (*memdb.MemDB, error) {
+func newMemDB(tables []core.Table) (*memdb.MemDB, error) {
 	if len(tables) == 0 {
 		return nil, errors.New("at least one table is required")
 	}
@@ -39,7 +40,7 @@ func newMemDB(tables []Table) (*memdb.MemDB, error) {
 // into a single layer of *memdb.TableSchemas. The names of the
 // table schemas are namespaces to represent where they were in
 // the original nested hierarchy.
-func addTableToMemDB(t Table, schema *memdb.DBSchema) {
+func addTableToMemDB(t core.Table, schema *memdb.DBSchema) {
 	schema.Tables[t.Name] = tableSchema(t)
 	for _, subT := range t.Tables {
 		addTableToMemDB(subT, schema)
@@ -48,7 +49,7 @@ func addTableToMemDB(t Table, schema *memdb.DBSchema) {
 
 // tableSchema returns a *memdb.TableSchema representation
 // of the current table recursively.
-func tableSchema(t Table) *memdb.TableSchema {
+func tableSchema(t core.Table) *memdb.TableSchema {
 	schema := &memdb.TableSchema{
 		Name:    t.Name,
 		Indexes: make(map[string]*memdb.IndexSchema, len(t.Fields)),
@@ -79,7 +80,7 @@ func tableSchema(t Table) *memdb.TableSchema {
 
 // fieldSchema returns a *memdb.IndexSchema representation
 // of the current field and the name that it be stored under.
-func fieldSchema(f Field) *memdb.IndexSchema {
+func fieldSchema(f core.TableField) *memdb.IndexSchema {
 	schema := &memdb.IndexSchema{
 		Name:   f.Name,
 		Unique: f.Unique,

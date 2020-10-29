@@ -54,18 +54,18 @@ func (s *SymbolTable) SetOutputs(moduleName string, outputs cty.Value) {
 // insert takes a cty.Value and a hcl.Traversal and adds the given value at the
 // given hcl.Traversal path
 func (s *SymbolTable) insert(val cty.Value, traversal hcl.Traversal) {
-	// fmt.Printf("\nINSERTING: %s --> %s\n\n", val.GoString(), traversalString(traversal))
+	// log.Debug().Msgf("Inserting into symbol table: %#v --> %s", val, traversalString(traversal))
 	if len(traversal) < 1 {
 		panic("Cannot insert in symbol table with an empty traversal")
 	}
-	rootName := traverserName(traversal[0])
+	rootName := traversal.RootName()
 	// get the root value in the Variables map
-	rootVal := s.EvalContext.Variables[traverserName(traversal[0])]
+	rootVal := s.EvalContext.Variables[rootName]
 
 	s.EvalContext.Variables[rootName] = s.insertCtyValue(rootVal, val, traversal[1:])
 }
 
-// inserCtyValue does the heavy lifsting with the insert of a value.
+// inserCtyValue does the heavy lifting with the insert of a value.
 // cty.Values are immutable, and as such, we have to create them in a functional
 // way
 func (s *SymbolTable) insertCtyValue(pathVal cty.Value, val cty.Value, traversal hcl.Traversal) cty.Value {

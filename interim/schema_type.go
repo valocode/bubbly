@@ -18,7 +18,7 @@ var (
 // newSchemaType creates a map of names->reflect.Type
 // based on the given Tables. This function processes
 // all subtables recursively
-func newSchemaTypes(tables []Table) map[string]schemaType {
+func newSchemaTypes(tables []core.Table) map[string]schemaType {
 	types := make(map[string]schemaType)
 	for _, t := range tables {
 		addSchemaType(t, types)
@@ -26,7 +26,7 @@ func newSchemaTypes(tables []Table) map[string]schemaType {
 	return types
 }
 
-func addSchemaType(t Table, types map[string]schemaType) {
+func addSchemaType(t core.Table, types map[string]schemaType) {
 	// Initalize the list with the "id" and "fk" index fields
 	// that are required for memdb.
 	fields := []reflect.StructField{
@@ -64,7 +64,7 @@ func addSchemaType(t Table, types map[string]schemaType) {
 	}
 }
 
-func reflectFieldType(f Field) reflect.Type {
+func reflectFieldType(f core.TableField) reflect.Type {
 	switch f.Type {
 	case cty.Bool:
 		return reflectBool
@@ -96,20 +96,20 @@ func (t schemaType) New(d core.Data, id, fk string) (interface{}, error) {
 		case cty.Bool:
 			var n bool
 			if err := gocty.FromCtyValue(f.Value, &n); err != nil {
-				return nil, fmt.Errorf("falied to extract bool value for %s[%s]: %w", d.Name, f.Name, err)
+				return nil, fmt.Errorf("falied to extract bool value for %s[%s]: %w", d.TableName, f.Name, err)
 			}
 			fval.SetBool(n)
 		case cty.Number:
 			// TODO: Support different numeric types.
 			var n int64
 			if err := gocty.FromCtyValue(f.Value, &n); err != nil {
-				return nil, fmt.Errorf("falied to extract numeric value for %s[%s]: %w", d.Name, f.Name, err)
+				return nil, fmt.Errorf("falied to extract numeric value for %s[%s]: %w", d.TableName, f.Name, err)
 			}
 			fval.SetInt(n)
 		case cty.String:
 			var n string
 			if err := gocty.FromCtyValue(f.Value, &n); err != nil {
-				return nil, fmt.Errorf("falied to extract string value for %s[%s]: %w", d.Name, f.Name, err)
+				return nil, fmt.Errorf("falied to extract string value for %s[%s]: %w", d.TableName, f.Name, err)
 			}
 			fval.SetString(n)
 		}

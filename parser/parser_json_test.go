@@ -3,20 +3,18 @@ package parser
 import (
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/verifa/bubbly/api/core"
-	v1 "github.com/verifa/bubbly/api/v1"
 	"github.com/zclconf/go-cty/cty"
 )
 
 func TestJSON(t *testing.T) {
 
-	p, err := NewParser("testdata/example")
+	p, err := NewParserFromFilename("testdata/example")
 	if err != nil {
 		t.Errorf("Failed to create parser: %s", err.Error())
 		t.FailNow()
 	}
-	if err := p.Decode(); err != nil {
+	if err := p.Parse(); err != nil {
 		t.Errorf("Failed to decode parser: %s", err.Error())
 		t.FailNow()
 	}
@@ -26,7 +24,7 @@ func TestJSON(t *testing.T) {
 	for _, resMap := range p.Resources {
 		for _, resource := range resMap {
 			t.Logf("Converting resource %s to JSON", resource.String())
-			bJSON, err := p2.ResourceToJSON(resource)
+			bJSON, err := resource.JSON(p.Context(cty.NilVal))
 			if err != nil {
 				t.Errorf("Failed to convert to json for resource %s: %s", resource.String(), err.Error())
 			}
@@ -37,26 +35,22 @@ func TestJSON(t *testing.T) {
 			if err != nil {
 				t.Errorf("Failed to convert json to resource %s: %s", resource.String(), err.Error())
 			}
-
-			// if err := retRes.Decode(p2.Scope.decodeResource); err != nil {
-			// 	t.Errorf("Failed to decode resource %s: %s", retRes.String(), err.Error())
-			// }
 		}
 	}
 
-	res := p2.Resources.Resource(core.TranslatorResourceKind, "junit")
-	p2.Scope = p2.Scope.NestedScope(cty.ObjectVal(map[string]cty.Value{
+	res, err := p2.GetResource(core.TranslatorResourceKind, "junit")
+	if err != nil {
+		t.Errorf("Couldnt get resource: %s", "junit")
+		t.FailNow()
+	}
+	inputs := cty.ObjectVal(map[string]cty.Value{
 		"input": cty.ObjectVal(
 			map[string]cty.Value{
 				"data": cty.ListVal([]cty.Value{cty.StringVal("WALALALALA")}),
 			},
 		),
-	}))
-	if err := res.Decode(p2.Scope.decodeResource); err != nil {
-		t.Errorf("Failed to decode translator at the end: %s", err.Error())
-	}
-
-	for _, d := range res.(*v1.Translator).Spec.Data {
-		spew.Dump(d)
+	})
+	if out := res.Apply(p2.Context(inputs)); out.Error != nil {
+		t.Errorf("Failed to decode translator at the end: %s", out.Error.Error())
 	}
 }

@@ -3,14 +3,21 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/verifa/bubbly/api"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/zclconf/go-cty/cty"
 )
 
+// Parser is the main type in the parser package and represents a type for
+// parsing HCL code, and maintaining the known resources.
+//
+// The parser can be used for both HCL and a JSON representations of HCL,
+// however the Body member of Parser must be from an HCL file.
 type Parser struct {
 	Body      hcl.Body
 	Scope     *Scope
@@ -20,12 +27,19 @@ type Parser struct {
 	HCLParser *hclparse.Parser
 }
 
-func NewParser(baseDir string) (*Parser, error) {
-	files, err := filepath.Glob(fmt.Sprintf("%s/**.bubbly", baseDir))
-
-	if err != nil {
-		return nil, err
+// NewParserFromFilename creates a new parser from the given filename.
+func NewParserFromFilename(filename string) (*Parser, error) {
+	files := []string{}
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		files = append(files, filename)
+	} else {
+		globFiles, err := filepath.Glob(fmt.Sprintf("%s/**.bubbly", filename))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get bubbly files using glob: %s", err.Error())
+		}
+		files = globFiles
 	}
+
 	if len(files) == 0 {
 		return nil, errors.New("No bubbly files found to parse")
 	}
@@ -59,7 +73,12 @@ func newParser(body hcl.Body, hclparser *hclparse.Parser) *Parser {
 	}
 }
 
-func (p *Parser) Decode() error {
+// Parse performs the actual parsing for the parser
+func (p *Parser) Parse() error {
+	if p.Body == nil {
+		return errors.New("Trying to run the parser on an empty body")
+	}
+
 	if err := p.Scope.decodeBody(p.Body, &p.Value); err != nil {
 		return fmt.Errorf(`Failed to decode main body: %s`, err.Error())
 	}
@@ -71,6 +90,34 @@ func (p *Parser) Decode() error {
 	p.populateResources()
 
 	return nil
+}
+
+// Context produces a context for resources to decode themselves and get
+// resources, as well as managing some of the EvalContext scope and creating
+// a nested context.
+func (p *Parser) Context(inputs cty.Value) *core.ResourceContext {
+	// create the nested scope to assign the "self" traversal
+	nestedScope := p.Scope.NestedScope(inputs)
+	return &core.ResourceContext{
+		GetResource: p.GetResource,
+		DecodeBody:  nestedScope.DecodeExpandBody,
+		NewContext:  p.Context,
+		InsertValue: nestedScope.InsertValue,
+		BodyToJSON:  p.BodyToJSON,
+		Debug: func() *hcl.EvalContext {
+			return nestedScope.EvalContext
+		},
+	}
+}
+
+// GetResource takes a given resource kind and name and returns the resource
+// if it exists, either locally in parsed HCL files or on the bubbly server.
+func (p *Parser) GetResource(kind core.ResourceKind, name string) (core.Resource, error) {
+	if resource := p.Resources.Get(kind, name); resource != nil {
+		return resource, nil
+	}
+	// TODO: we should fetch a resource using the bubbly server REST API
+	return nil, fmt.Errorf(`Could not obtain resource "%s" of kind %s`, name, string(kind))
 }
 
 func (p *Parser) populateEvalContext() {

@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# Build directory
+build/
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -15,7 +18,4 @@
 # vendor/
 .DS_Store
 
-bubbly
 *workspace
-.DS_STORE
-docs/.DS_STORE

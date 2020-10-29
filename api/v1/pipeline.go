@@ -3,6 +3,7 @@ package v1
 import (
 	"fmt"
 
+	"github.com/rs/zerolog/log"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -11,42 +12,48 @@ var _ core.Pipeline = (*Pipeline)(nil)
 
 type Pipeline struct {
 	*core.ResourceBlock
-	Spec  PipelineSpec
-	Tasks Tasks
+	Spec  pipelineSpec
+	Tasks core.Tasks
 }
 
 func NewPipeline(resBlock *core.ResourceBlock) *Pipeline {
 	return &Pipeline{
 		ResourceBlock: resBlock,
-		Tasks:         Tasks{},
+		Tasks:         core.Tasks{},
 	}
-}
-
-func (p *Pipeline) Decode(decode core.DecodeResourceFn) error {
-	// decode the resource spec into the importer's Spec
-	if err := decode(p, p.SpecHCL.Body, &p.Spec); err != nil {
-		return fmt.Errorf(`Failed to decode "%s" body spec: %s`, p.String(), err.Error())
-	}
-
-	for _, taskSpec := range p.Spec.TaskBlocks {
-		println(taskSpec.Name)
-		task := &Task{
-			Name: taskSpec.Name,
-		}
-		if err := decode(p, taskSpec.Body, task); err != nil {
-			return fmt.Errorf(`Failed to decode task "%s" in pipeline "%s": %s`, taskSpec.Name, p.String(), err.Error())
-		}
-		p.Tasks[task.Name] = task
-	}
-	return nil
 }
 
 func (p *Pipeline) SpecValue() core.ResourceSpec {
 	return &p.Spec
 }
 
-// Output returns ...
-func (p *Pipeline) Output() core.ResourceOutput {
+// Apply returns ...
+func (p *Pipeline) Apply(ctx *core.ResourceContext) core.ResourceOutput {
+
+	if err := ctx.DecodeBody(p, p.SpecHCL.Body, &p.Spec); err != nil {
+		return core.ResourceOutput{
+			Status: core.ResourceOutputFailure,
+			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %s`, p.String(), err.Error()),
+			Value:  cty.NilVal,
+		}
+	}
+
+	for idx, taskSpec := range p.Spec.TaskBlocks {
+		log.Debug().Msgf("Applying task: %s", taskSpec.Name)
+		t := NewTask(taskSpec)
+
+		err := t.Apply(ctx)
+		if err != nil {
+			return core.ResourceOutput{
+				Status: core.ResourceOutputFailure,
+				Error:  fmt.Errorf(`Failed to apply task "%s" with index %d in pipeline "%s": %s"`, taskSpec.Name, idx, p.String(), err.Error()),
+				Value:  cty.NilVal,
+			}
+		}
+		p.Tasks[t.Name] = t
+
+	}
+
 	return core.ResourceOutput{
 		Status: core.ResourceOutputSuccess,
 		Error:  nil,
@@ -54,11 +61,7 @@ func (p *Pipeline) Output() core.ResourceOutput {
 	}
 }
 
-func (p *Pipeline) Task(name string) core.Task {
-	return p.Tasks[name]
-}
-
-type PipelineSpec struct {
+type pipelineSpec struct {
 	Inputs     InputDeclarations `hcl:"input,block"`
-	TaskBlocks []TaskBlockSpec   `hcl:"task,block"`
+	TaskBlocks []*taskBlockSpec  `hcl:"task,block"`
 }

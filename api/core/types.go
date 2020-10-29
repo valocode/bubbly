@@ -22,7 +22,7 @@ type Local struct {
 	Value       cty.Value `hcl:"value,attr"`
 }
 
-// Refernce returns a local's traversal to refernce this local in HCL, together
+// Reference returns a local's traversal to refernce this local in HCL, together
 // with its associated cty.Value. This is used so that locals can be added
 // to an EvalContext
 func (l *Local) Reference() (hcl.Traversal, cty.Value) {
@@ -32,19 +32,10 @@ func (l *Local) Reference() (hcl.Traversal, cty.Value) {
 	}, l.Value
 }
 
-// Data will reference a Table name, and assign the Field values into the
-// corresponding Field values in the Table
-type Data struct {
-	Name   string
-	Fields []Field
-	Data   []Data
-}
+// Tasks stores a map of Task by name
+type Tasks map[string]Task
 
-type Field struct {
-	Name  string
-	Value cty.Value
-}
-
+// ResourceOutput represents the output from applying a resource
 type ResourceOutput struct {
 	ID     string
 	Status ResourceOutputStatus
@@ -64,16 +55,17 @@ func (r *ResourceOutput) Output() cty.Value {
 	)
 }
 
+// ResourceOutputStatus represents the output statuses for a resource
 type ResourceOutputStatus string
 
+// String gets a string value of a ResourceOutputStatus
 func (r *ResourceOutputStatus) String() string {
 	return string(*r)
 }
 
 const (
+	// ResourceOutputSuccess represents success
 	ResourceOutputSuccess ResourceOutputStatus = "Success"
+	// ResourceOutputFailure represents failure
 	ResourceOutputFailure ResourceOutputStatus = "Failure"
 )
-
-// DecodeResourceFn represents the function that will decode any HCL Bodies.
-type DecodeResourceFn func(resource Resource, body hcl.Body, val interface{}) error
