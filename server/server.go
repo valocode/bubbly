@@ -34,7 +34,9 @@ func SetupRouter() *gin.Engine {
 	// router := gin.Default()  // Sets the Gin defaults
 	router := gin.New() // Use a blank Gin server with no middleware loaded
 	router.Use(logger.SetLogger())
+	router.Use(gin.Recovery())
 	router.Use(VersionMiddleware())
+
 	// Initialize HTTP Routes
 	InitializeRoutes(router)
 

@@ -6,6 +6,8 @@ require (
 	github.com/99designs/gqlgen v0.13.0
 	github.com/Jeffail/gabs v1.4.0
 	github.com/Jeffail/gabs/v2 v2.6.0 // indirect
+	github.com/appleboy/gofight v2.0.0+incompatible
+	github.com/appleboy/gofight/v2 v2.1.2
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gin-contrib/logger v0.0.2
 	github.com/gin-gonic/autotls v0.0.3

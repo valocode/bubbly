@@ -1,52 +1,32 @@
 package server
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
+	"github.com/appleboy/gofight/v2"
 	"github.com/stretchr/testify/assert"
+	testData "github.com/verifa/bubbly/server/testdata/upload"
 )
 
-func TestUpload(t *testing.T) {
-	router := SetupRouter()
+// This creates a passing test for the Upload route
+func TestUploadPassing(t *testing.T) {
+	r := gofight.New()
+	r.POST("/upload/alpha1/").
+		SetJSON(testData.DataStruct()).
+		Run(SetupRouter(), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
+			assert.Equal(t, "{\"status\":\"uploaded\"}", r.Body.String())
+		})
+}
 
-	// Define Json structure
-	jsonString := `{
-		"name": "test1",
-		"table": [
-			{
-				"name": "sub",
-				"fields": [
-					{
-						"name": "testField1",
-						"value": "testValue1"
-					},
-					{
-						"name": "testField2",
-						"value": "testValue2"
-					}
-				]
-			}
-		]
-	}`
+// This creates a failing test case. The struct binding should fail on account of improperly named fields
+func TestUploadFailing(t *testing.T) {
+	r := gofight.New()
 
-	var data Data
-	// Create a Data struct based on the Json structure
-	err := json.Unmarshal([]byte(jsonString), &data)
-	if err != nil {
-		panic(err.Error)
-	}
-
-	jsonReq, _ := json.Marshal(data)
-	r := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/upload/alpha1/", bytes.NewBuffer(jsonReq))
-	router.ServeHTTP(r, req)
-	fmt.Println(r.Body)
-
-	assert.Equal(t, 200, r.Code)
-	assert.Equal(t, "{\"status\":\"uploaded\"}", r.Body.String())
+	r.POST("/upload/alpha1/").
+		SetJSON(testData.DataStructFailing()).
+		Run(SetupRouter(), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusBadRequest, r.Code)
+		})
 }
