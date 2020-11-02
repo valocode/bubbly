@@ -1,0 +1,13 @@
+
+// A pipeline_run resources executes a pipeline resource.
+resource "pipeline_run" "junit" {
+    api_version = "v1"
+    spec {
+        // specify the name of the pipeline
+        pipeline = "junit"
+        // specify the input required
+        input "file" {
+            value = "testdata/importer/junit.xml"
+        }
+    }
+}

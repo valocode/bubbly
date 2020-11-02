@@ -1,0 +1,74 @@
+
+// TODO: once the git importer exists
+resource "importer" "git" {
+    api_version = "v1"
+    spec {
+        input "dir" {}
+        type = "git"
+    }
+}
+
+
+resource "translator" "git" {
+    api_version = "v1"
+    spec {
+        input "git" {}
+        
+        data "repository" {
+            field "id" {
+                value = self.input.git.name
+            }
+        }
+
+        data "repository_version" {
+            field "id" {
+                value = self.input.git.commit_id
+            }
+            field "tag" {
+                value = self.input.git.tag
+            }
+            field "branch" {
+                value = self.input.git.branch
+            }
+            // TODO: this is currently not supported, how do we do this???
+            // field "respository_id" {
+            //     value self.data.repository.id
+            // }
+        }
+    }
+}
+
+// This is the upload step, just renamed to publish...
+resource "publish" "git" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        data = self.input.data
+    }
+}
+
+resource "pipeline" "git" {
+    api_version = "v1"
+    spec {
+        input "dir" {}
+        task "import" {
+            resource = "importer.git"
+            input "dir" {
+                value = self.input.dir
+            }
+        }
+        task "translator" {
+            resource = "translator.git"
+            input "git" {
+                value = self.task.import.value
+            }
+        }
+        task "publish" {
+            resource = "publish.git"
+            input "data" {
+                value = self.task.translator.value
+            }
+        }
+    }
+}
+

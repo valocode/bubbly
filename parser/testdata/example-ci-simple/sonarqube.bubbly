@@ -1,0 +1,13 @@
+
+// A pipeline_run resources executes a pipeline resource.
+resource "pipeline_run" "sonarqube" {
+    api_version = "v1"
+    spec {
+        // specify the name of the pipeline
+        pipeline = "sonarqube"
+        // specify the input required
+        input "file" {
+            value = "../parser/testdata/local-sq-json/sonarqube-example.json"
+        }
+    }
+}

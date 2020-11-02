@@ -1,25 +1,16 @@
 
-local "importer_type" {
-    value = "xml"
-}
-
-local "api_version" {
-    value = "v1"
-}
-
 // Everything is a resource, and all resources have an output.
 // The output can be something like:
 // output:
 //   - status: sucess
 //   - value: <the value from the importer>
 resource "importer" "junit" {
-    api_version = local.api_version
+    api_version = "v1"
     // this is an input to the importer to make it reusable
     spec {
         input "file" {}
-        type = local.importer_type
+        type = "xml"
         source {
-            // reference the "self" here to get the input
             file = self.input.file
             format = object({
                 testsuites: object({
@@ -48,6 +39,7 @@ resource "translator" "junit" {
     spec {
         input "data" {}
         // this is some crazy dynamic HCL stuff to create the "data" blocks
+        // TODO
         dynamic "data" {
             for_each = self.input.data
             iterator = it
@@ -102,15 +94,3 @@ resource "pipeline" "junit" {
     }
 }
 
-// A pipeline_run resources executes a pipeline resource.
-resource "pipeline_run" "junit" {
-    api_version = "v1"
-    spec {
-        // specify the name of the pipeline
-        pipeline = "junit"
-        // specify the input required
-        input "file" {
-            value = "testdata/importer/junit.xml"
-        }
-    }
-}
