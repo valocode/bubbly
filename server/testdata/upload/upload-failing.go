@@ -9,8 +9,8 @@ import (
 func DataStructFailing() map[string]interface{} {
 	dataMap := gofight.D{
 		"badName": "test",
-		"nofields": []core.Field{
-			core.Field{
+		"nofields": []core.DataField{
+			core.DataField{
 				Name: "help",
 				Value: cty.ObjectVal(map[string]cty.Value{
 					"value": cty.StringVal("TestValue1"),
