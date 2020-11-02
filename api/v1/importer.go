@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/clbanning/mxj"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
@@ -70,6 +71,7 @@ func (i *Importer) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	}
 }
 
+// SpecValue method returns resource specification structure
 func (i *Importer) SpecValue() core.ResourceSpec {
 	return &i.Spec
 }
@@ -121,14 +123,14 @@ const (
 	xmlImporterType               = "xml"
 )
 
-// source is an interface for the different data sources that an Importer
-// can have
+// Source is an interface for the different data sources that an Importer can have
 type source interface {
 	// returns an interface{} containing the parsed XML, JSON data, that should
 	// be converted into the Output cty.Value
 	Resolve() (cty.Value, error)
 }
 
+// Compiler check to see that v1.JSONSource implements the Source interface
 var _ source = (*jsonSource)(nil)
 
 // jsonSource represents the importer type for using a JSON file as the input
@@ -144,7 +146,7 @@ func (s *jsonSource) Resolve() (cty.Value, error) {
 	var barr []byte
 	var err error
 
-	// FIXME reading the whole file at once may be too much
+	// FIXME GitHub issue #39
 	barr, err = ioutil.ReadFile(s.File)
 	if err != nil {
 		return cty.NilVal, err
@@ -165,6 +167,7 @@ func (s *jsonSource) Resolve() (cty.Value, error) {
 	return val, nil
 }
 
+// Compiler check to see that v1.XMLSource implements the Source interface
 var _ source = (*xmlSource)(nil)
 
 // xmlSource represents the importer type for using an XML file as the input
@@ -176,5 +179,29 @@ type xmlSource struct {
 
 // Resolve returns a cty.Value representation of the XML file
 func (s *xmlSource) Resolve() (cty.Value, error) {
-	return cty.NilVal, errors.New("not implemented")
+
+	var barr []byte
+	var err error
+
+	// FIXME GitHub issue #39
+	barr, err = ioutil.ReadFile(s.File)
+	if err != nil {
+		return cty.NilVal, err
+	}
+
+	mxj.PrependAttrWithHyphen(false) // no "-" prefix on attributes
+	mxj.CastNanInf(true)             // use float64, not string for extremes
+
+	// Unmarshall the XML data into a Go object
+	data, err := mxj.NewMapXml(barr, true)
+	if err != nil {
+		return cty.NilVal, err
+	}
+
+	val, err := gocty.ToCtyValue(data, s.Format)
+	if err != nil {
+		return cty.NilVal, nil
+	}
+
+	return val, nil
 }

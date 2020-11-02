@@ -1,30 +1,19 @@
 package v1
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/pkg/errors"
+	testDataJSON "github.com/verifa/bubbly/api/v1/testdata/importer/json"
+	testDataXML "github.com/verifa/bubbly/api/v1/testdata/importer/xml"
 	"github.com/zclconf/go-cty/cty"
 )
 
 func TestImporterJSON(t *testing.T) {
-	ctyType := cty.Object(map[string]cty.Type{
-		"issues": cty.List(cty.Object(map[string]cty.Type{
-			"engineId": cty.String,
-			"ruleId":   cty.String,
-			"severity": cty.String,
-			"type":     cty.String,
-			"primaryLocation": cty.Object(map[string]cty.Type{
-				"message":  cty.String,
-				"filePath": cty.String,
-				"textRange": cty.Object(map[string]cty.Type{
-					"startLine":   cty.Number,
-					"endLine":     cty.Number,
-					"startColumn": cty.Number,
-					"endColumn":   cty.Number,
-				}),
-			}),
-		})),
-	})
+
+	ctyType := testDataJSON.ExpectedType()
+	expVal := testDataJSON.ExpectedValue()
 
 	source := jsonSource{
 		File:   "testdata/importer/json/sonarqube-example.json",
@@ -34,50 +23,65 @@ func TestImporterJSON(t *testing.T) {
 	val, err := source.Resolve()
 	if err != nil {
 		t.Errorf("Failed to Resolve() JSON importer: %s", err.Error())
-		t.FailNow()
-
 	}
-
 	if val.IsNull() {
 		t.Errorf("Received Null type value")
+	}
+	if val.Equals(expVal).False() {
+		t.Errorf("JSON Importer returned unexpected value.\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s",
+			expVal.GoString(), val.GoString())
 	}
 
 	t.Logf("JSON Importer returned value: %s", val.GoString())
 }
 
-func TestImporterXML(t *testing.T) {
-	ctyType := cty.Object(map[string]cty.Type{
-		"testsuites": cty.Object(map[string]cty.Type{
-			"duration": cty.Number,
-			"testsuite": cty.List(cty.Object(map[string]cty.Type{
-				"failures": cty.Number,
-				"name":     cty.String,
-				"package":  cty.String,
-				"tests":    cty.Number,
-				"time":     cty.Number,
-				"testcase": cty.List(cty.Object(map[string]cty.Type{
-					"classname": cty.String,
-					"name":      cty.String,
-					"time":      cty.Number,
-				})),
-			})),
-		}),
-	})
+// runXMLSubtestHelper is a helper which runs tests for a variety of XML input files
+func runXMLSubtestHelper(t *testing.T, xmlFile string, ctyType cty.Type, expected cty.Value) string {
+	t.Helper()
+
 	source := xmlSource{
+		File:   xmlFile,
 		Format: ctyType,
-		File:   "testdata/importer/json/sonarqube-example.json",
 	}
 
 	val, err := source.Resolve()
+
 	if err != nil {
-		t.Errorf("Failed to Resolve() XML importer: %s", err.Error())
-		t.FailNow()
-
+		t.Error(errors.Wrap(err, "failed to Resolve() XML importer"))
+		return ""
 	}
-
 	if val.IsNull() {
-		t.Errorf("Received Null type value")
+		t.Error(errors.New("source.Resolve() returned Null type value"))
+		return ""
+	}
+	if val.Equals(expected).False() {
+		t.Error(errors.New(fmt.Sprintf("XML Importer returned unexpected value,\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s", expected.GoString(), val.GoString())))
+		return ""
 	}
 
 	t.Logf("XML Importer returned value: %s", val.GoString())
+	return ""
+}
+func TestImporterXML(t *testing.T) {
+
+	ctyType := testDataXML.ExpectedType()
+
+	// Baseline XML file with no surprises
+	t.Run("baseline", func(t *testing.T) {
+
+		xmlFileName := "testdata/importer/xml/junit.xml"
+		expected := testDataXML.ExpectedValue()
+
+		runXMLSubtestHelper(t, xmlFileName, ctyType, expected)
+	})
+
+	// This XML file has a list of length one, as it has only one instance of "testsuite" element
+	// FIXME GitHub issue #28
+	t.Run("oneElementList", func(t *testing.T) {
+
+		xmlFileName := "testdata/importer/xml/junit-one-element.xml"
+		expected := testDataXML.ExpectedValueOneElement()
+
+		runXMLSubtestHelper(t, xmlFileName, ctyType, expected)
+	})
 }
