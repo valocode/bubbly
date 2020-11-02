@@ -90,7 +90,7 @@ func TestIssueTable(t *testing.T) {
 				Unique: true,
 			},
 			{
-				Name:   "repo_version_id",
+				Name:   "repository_version_id",
 				Type:   cty.String,
 				Unique: true,
 			},

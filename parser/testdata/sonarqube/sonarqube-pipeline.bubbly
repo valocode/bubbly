@@ -44,11 +44,22 @@ resource "translator" "sonarqube" {
         dynamic "data" {
             for_each = self.input.data.issues
             iterator = issue
-            labels = ["test_table"]
+            labels = ["linter_issue"]
             content {
-                field "test_field" {
-                    value = "This field exists in table_${issue.value.ruleId}"
+                // if the "id" field is blank, it should be auto-generated
+                // field "id" {}
+
+                field "severity" {
+                    value = issue.value.severity
                 }
+                field "type" {
+                    value = issue.value.type
+                }
+
+                // TODO: need to figure out how this will work
+                // field "repository_version_id" {
+                //     value = self.data.repository_version.id
+                // }
             }
         }
     }
