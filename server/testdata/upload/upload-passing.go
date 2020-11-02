@@ -7,11 +7,12 @@ import (
 )
 
 func DataStruct() map[string]interface{} {
-	dataMap := gofight.D{"name": "test1",
-		"table": []core.Data{
+	dataMap := gofight.D{
+		"table": "test1",
+		"data": []core.Data{
 			{
-				Name: "sub",
-				Fields: []core.Field{
+				TableName: "sub",
+				Fields: []core.DataField{
 					{
 						Name: "testField1",
 						Value: cty.ObjectVal(map[string]cty.Value{

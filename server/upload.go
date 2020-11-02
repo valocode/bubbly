@@ -4,22 +4,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zclconf/go-cty/cty/json"
+	"github.com/verifa/bubbly/api/core"
 )
 
-type Data struct {
-	Name   string      `json:"name" binding:"required"`
-	Fields []DataField `json:"fields"`
-	Table  []Data      `json:"table"`
-}
-
-type DataField struct {
-	Name  string               `json:"name"`
-	Value json.SimpleJSONValue `json:"value"`
-}
-
 func upload(c *gin.Context) {
-	var data Data
+	var data core.Data
+
 	if err := c.ShouldBindJSON(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
