@@ -1,4 +1,4 @@
-// This file provides support for the REST "resource"
+// Package server provides support for the REST "resource"
 package server
 
 import (

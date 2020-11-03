@@ -12,8 +12,9 @@ import (
 // This creates a passing test for the Upload route
 func TestUploadPassing(t *testing.T) {
 	r := gofight.New()
+
 	r.POST("/alpha1/upload").
-		SetJSON(testData.DataStruct()).
+		SetJSON(gofight.D{"data": testData.DataStruct()}).
 		Run(SetupRouter(), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, "{\"status\":\"uploaded\"}", r.Body.String())

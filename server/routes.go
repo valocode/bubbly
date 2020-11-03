@@ -15,20 +15,16 @@ func InitializeRoutes(router *gin.Engine) {
 	{
 		api.POST("/resource", PostResource)
 		api.GET("/resource/:id", GetResource)
+
+		api.POST("/graphql", Query)
 	}
 
 	// API level versioning
 	// Establish grouping rules for versioning
 	v1 := router.Group("/v1")
 	{
-		v1.GET("/test", test)
 		v1.GET("/status", status)
 		v1.GET("/version", versionHandler)
-	}
-
-	v2 := router.Group("/v2")
-	{
-		v2.GET("/test", test)
 	}
 
 	// Resource Level Versioning
@@ -36,12 +32,6 @@ func InitializeRoutes(router *gin.Engine) {
 	{
 		alpha1.POST("/upload", upload)
 	}
-}
-
-func test(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"hey": "hey",
-	})
 }
 
 func status(c *gin.Context) {
