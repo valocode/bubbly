@@ -29,15 +29,9 @@ type Parser struct {
 
 // NewParserFromFilename creates a new parser from the given filename.
 func NewParserFromFilename(filename string) (*Parser, error) {
-	files := []string{}
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		files = append(files, filename)
-	} else {
-		globFiles, err := filepath.Glob(fmt.Sprintf("%s/**.bubbly", filename))
-		if err != nil {
-			return nil, fmt.Errorf("Failed to get bubbly files using glob: %s", err.Error())
-		}
-		files = globFiles
+	files, err := bubblyFiles(filename)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get bubbly files: %s", err.Error())
 	}
 
 	if len(files) == 0 {
@@ -130,5 +124,28 @@ func (p *Parser) populateEvalContext() {
 func (p *Parser) populateResources() {
 	for _, resBlock := range p.Value.ResourceBlocks {
 		p.Resources.NewResource(resBlock)
+	}
+}
+
+func bubblyFiles(filename string) ([]string, error) {
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return nil, fmt.Errorf(`Cannot read from filename "%s"`, filename)
+	}
+	switch mode := fi.Mode(); {
+	case mode.IsRegular():
+		return []string{filename}, nil
+	case mode.IsDir():
+		// walk the directory and get .bubbly files
+		files := []string{}
+		filepath.Walk(filename, func(path string, file os.FileInfo, err error) error {
+			if filepath.Ext(path) == ".bubbly" {
+				files = append(files, path)
+			}
+			return nil
+		})
+		return files, nil
+	default:
+		return nil, fmt.Errorf(`Unknown filename mode %s`, mode.String())
 	}
 }

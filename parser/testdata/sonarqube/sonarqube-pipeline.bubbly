@@ -1,7 +1,6 @@
 
-resource "importer" "sq_json" {
+resource "importer" "sonarqube" {
     api_version = "v1"
-    // this is an input to the importer to make it reusable
     spec {
         input "file" {}
         type = "json"
@@ -29,27 +28,45 @@ resource "importer" "sq_json" {
     }
 }
 
-
-resource "translator" "sq_json" {
+resource "translator" "sonarqube" {
     api_version = "v1"
     spec {
         input "data" {}
+        input "repository" {}
         // this is some crazy dynamic HCL stuff to create the "data" blocks
+
+        data "repository_version" {
+            field "id" {
+                value = self.input.repository.version
+            }
+        }
+
         dynamic "data" {
             for_each = self.input.data.issues
             iterator = issue
-            labels = ["test_table"]
+            labels = ["linter_issue"]
             content {
-                field "test_field" {
-                    value = "This field exists in table_${issue.value.ruleId}"
+                // if the "id" field is blank, it should be auto-generated
+                // field "id" {}
+
+                field "severity" {
+                    value = issue.value.severity
                 }
+                field "type" {
+                    value = issue.value.type
+                }
+
+                // TODO: need to figure out how this will work
+                // field "repository_version_id" {
+                //     value = self.data.repository_version.id
+                // }
             }
         }
     }
 }
 
 // This is the upload step, just renamed to publish...
-resource "publish" "sq_json" {
+resource "publish" "sonarqube" {
     api_version = "v1"
     spec {
         input "data" {}
@@ -61,43 +78,30 @@ resource "publish" "sq_json" {
 // How do we tie all the above resources together...? In a pipeline!
 // A pipeline is just another reusable resource, and only a pipelineRun
 // actually triggers a pipeline to run
-resource "pipeline" "sq_json" {
+resource "pipeline" "sonarqube" {
     api_version = "v1"
     spec {
         input "file" {}
         // Each task in a pipeline has an output, similar to resources,
         // so that task outputs can be referenced
         task "import" {
-            resource = "importer/sq_json"
+            resource = "importer/sonarqube"
             input "file" {
                 value = self.input.file
             }
         }
         task "translator" {
-            resource = "translator/sq_json"
+            resource = "translator/sonarqube"
             input "data" {
                 // here we reference the output of the task "importer"
                 value = self.task.import.value
             }
         }
         task "publish" {
-            resource = "publish/sq_json"
+            resource = "publish/sonarqube"
             input "data" {
                 value = self.task.translator.value
             }
-        }
-    }
-}
-
-// A pipeline_run resources executes a pipeline resource.
-resource "pipeline_run" "sq_json" {
-    api_version = "v1"
-    spec {
-        // specify the name of the pipeline
-        pipeline = "sq_json"
-        // specify the input required
-        input "file" {
-            value = "../parser/testdata/local-sq-json/sonarqube-example.json"
         }
     }
 }

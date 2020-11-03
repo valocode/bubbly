@@ -9,7 +9,7 @@ import (
 
 func TestJSON(t *testing.T) {
 
-	p, err := NewParserFromFilename("testdata/example")
+	p, err := NewParserFromFilename("testdata")
 	if err != nil {
 		t.Errorf("Failed to create parser: %s", err.Error())
 		t.FailNow()

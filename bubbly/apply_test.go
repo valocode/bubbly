@@ -5,7 +5,8 @@ import (
 )
 
 func TestApply(t *testing.T) {
-	if err := Apply("../parser/testdata/local-sq-json"); err != nil {
+	// TODO: should provide an apply that has a pipeline_run
+	if err := Apply("../parser/testdata/git"); err != nil {
 		t.Errorf("Failed to apply resources: %s", err.Error())
 	}
 }

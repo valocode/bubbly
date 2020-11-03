@@ -5,7 +5,7 @@ import (
 )
 
 func TestParser(t *testing.T) {
-	p, err := NewParserFromFilename("testdata/example")
+	p, err := NewParserFromFilename("testdata")
 	if err != nil {
 		t.Errorf("Could not initialise parser: %s", err.Error())
 		t.FailNow()
