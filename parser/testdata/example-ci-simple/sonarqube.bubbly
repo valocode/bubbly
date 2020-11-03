@@ -7,7 +7,7 @@ resource "pipeline_run" "sonarqube" {
         pipeline = "sonarqube"
         // specify the input required
         input "file" {
-            value = "../parser/testdata/local-sq-json/sonarqube-example.json"
+            value = "../sonarqube/sonarqube-example.json"
         }
     }
 }

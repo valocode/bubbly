@@ -108,7 +108,7 @@ type importerSpec struct {
 	Inputs InputDeclarations `hcl:"input,block"`
 	// the type is either json, xml, rest, etc.
 	Type      importerType `hcl:"type,attr"`
-	SourceHCL struct {
+	SourceHCL *struct {
 		Body hcl.Body `hcl:",remain"`
 	} `hcl:"source,block"`
 	// Source stores the actual value for SourceHCL

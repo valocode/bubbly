@@ -7,7 +7,7 @@ resource "pipeline_run" "junit" {
         pipeline = "junit"
         // specify the input required
         input "file" {
-            value = "testdata/importer/junit.xml"
+            value = "../junit/junit.xml"
         }
     }
 }

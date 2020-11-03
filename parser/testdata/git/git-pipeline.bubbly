@@ -52,19 +52,19 @@ resource "pipeline" "git" {
     spec {
         input "dir" {}
         task "import" {
-            resource = "importer.git"
+            resource = "importer/git"
             input "dir" {
                 value = self.input.dir
             }
         }
         task "translator" {
-            resource = "translator.git"
+            resource = "translator/git"
             input "git" {
                 value = self.task.import.value
             }
         }
         task "publish" {
-            resource = "publish.git"
+            resource = "publish/git"
             input "data" {
                 value = self.task.translator.value
             }
