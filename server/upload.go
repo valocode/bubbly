@@ -18,15 +18,18 @@ func upload(c *gin.Context) {
 	if err := c.ShouldBindJSON(&upload); err != nil {
 		log.Error().Msg(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 	if upload.Data == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "malformed request"})
+		return
 	}
 
 	importErr := db.Import(upload.Data)
 	if importErr != nil {
 		log.Error().Msg(importErr.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": importErr.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{

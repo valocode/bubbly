@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/buntdb"
 	"github.com/verifa/bubbly/api/core"
@@ -35,6 +37,7 @@ func PostResource(c *gin.Context) {
 	var resourceMap map[string]map[string]map[string]interface{}
 	if err := c.ShouldBindJSON(&resourceMap); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	// The json body that will be stored as core.ResourceJSON.Resource
@@ -51,6 +54,7 @@ func PostResource(c *gin.Context) {
 	}
 	if resourceKind == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Resource not defined"})
+		return
 	}
 
 	// get the resource name
@@ -60,6 +64,7 @@ func PostResource(c *gin.Context) {
 	}
 	if resourceName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Resource Name not defined"})
+		return
 	}
 
 	resource := core.ResourceJSON{
@@ -70,6 +75,7 @@ func PostResource(c *gin.Context) {
 
 	if err := uploadResouce(&resource); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -97,7 +103,9 @@ func uploadResouce(resource *core.ResourceJSON) error {
 func GetResource(c *gin.Context) {
 	db, dbErr := buntdb.Open(DbPath())
 	if dbErr != nil {
-		fmt.Println(dbErr)
+		log.Error().Msg(dbErr.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": dbErr.Error()})
+		return
 	}
 
 	db.CreateIndex(dbIndexName(), "*", buntdb.IndexJSON("name"))
