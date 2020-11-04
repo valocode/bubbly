@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"reflect"
+	"strings"
 
 	"github.com/clbanning/mxj"
 	"github.com/hashicorp/hcl/v2"
@@ -198,10 +200,71 @@ func (s *xmlSource) Resolve() (cty.Value, error) {
 		return cty.NilVal, err
 	}
 
+	if err := walkTypeTransformData(&data, s.Format); err != nil {
+		return cty.NilVal, err
+	}
+
 	val, err := gocty.ToCtyValue(data, s.Format)
 	if err != nil {
-		return cty.NilVal, nil
+		return cty.NilVal, err
 	}
 
 	return val, nil
+}
+
+func walkTypeTransformData(data *mxj.Map, ty cty.Type) error {
+	path := make([]string, 0)
+	return walk(data, ty, path, 0)
+}
+
+func walk(data *mxj.Map, ty cty.Type, path []string, idx int) error {
+
+	pathStr := strings.Join(path, ".")
+
+	if idx > 0 {
+		pathStr += fmt.Sprint("[", idx, "]")
+	}
+
+	if ty.IsObjectType() {
+		for x := range ty.AttributeTypes() {
+			path = append(path, x)
+			pathIdx := len(path) - 1
+
+			walk(data, ty.AttributeType(x), path, 0)
+			path = path[0:pathIdx]
+		}
+	}
+
+	if ty.IsListType() {
+
+		vs, err := data.ValuesForPath(pathStr)
+		if err != nil {
+			return fmt.Errorf("wrong path (%s) in xml structure: %w", pathStr, err)
+		}
+
+		n := len(vs)
+		//t.Logf("ValuesForPath(%s): %d", pathStr, n)
+
+		switch n {
+		case 0:
+			return fmt.Errorf("xml data structure inconsistent state, ValuesForPath are zero at %s", pathStr)
+		case 1:
+			v := vs[0]
+
+			if reflect.TypeOf(v).Kind() == reflect.Map {
+				vv := make([]interface{}, 0)
+				vv = append(vv, v)
+				if err := data.SetValueForPath(vv, pathStr); err != nil {
+					return fmt.Errorf("cannot convert at path %s, error %w", pathStr, err)
+				}
+			}
+			fallthrough
+		default:
+			for i := range vs {
+				return walk(data, ty.ElementType(), path, i)
+			}
+		}
+	}
+
+	return nil
 }

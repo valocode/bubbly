@@ -36,7 +36,8 @@ func TestImporterJSON(t *testing.T) {
 }
 
 // runXMLSubtestHelper is a helper which runs tests for a variety of XML input files
-func runXMLSubtestHelper(t *testing.T, xmlFile string, ctyType cty.Type, expected cty.Value) string {
+func runXMLSubtestHelper(t *testing.T, xmlFile string, ctyType cty.Type, expected cty.Value) {
+
 	t.Helper()
 
 	source := xmlSource{
@@ -48,40 +49,53 @@ func runXMLSubtestHelper(t *testing.T, xmlFile string, ctyType cty.Type, expecte
 
 	if err != nil {
 		t.Error(errors.Wrap(err, "failed to Resolve() XML importer"))
-		return ""
 	}
 	if val.IsNull() {
 		t.Error(errors.New("source.Resolve() returned Null type value"))
-		return ""
 	}
 	if val.Equals(expected).False() {
 		t.Error(errors.New(fmt.Sprintf("XML Importer returned unexpected value,\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s", expected.GoString(), val.GoString())))
-		return ""
 	}
 
 	t.Logf("XML Importer returned value: %s", val.GoString())
-	return ""
 }
+
+// The XML format is different from JSON in a way that it
+// does not have syntax for lists. So the XML parser does not
+// know whether an element is by itself, or it's in a list of length one.
+// This information is available only in cty.Type data structure we build from HCL
 func TestImporterXML(t *testing.T) {
 
-	ctyType := testDataXML.ExpectedType()
+	ctyType := testDataXML.CtyType()
 
-	// Baseline XML file with no surprises
-	t.Run("baseline", func(t *testing.T) {
+	// Easiest. Baseline. No "short" lists.
+	t.Run("junit0", func(t *testing.T) {
 
-		xmlFileName := "testdata/importer/xml/junit.xml"
-		expected := testDataXML.ExpectedValue()
-
-		runXMLSubtestHelper(t, xmlFileName, ctyType, expected)
+		runXMLSubtestHelper(t,
+			"testdata/importer/xml/junit0.xml",
+			ctyType,
+			testDataXML.ExpectedValue0(),
+		)
 	})
 
-	// This XML file has a list of length one, as it has only one instance of "testsuite" element
-	// FIXME GitHub issue #28
-	t.Run("oneElementList", func(t *testing.T) {
+	// Harder. A single "testsuite" element but multiple "testcase" elements therein.
+	t.Run("junit1", func(t *testing.T) {
 
-		xmlFileName := "testdata/importer/xml/junit-one-element.xml"
-		expected := testDataXML.ExpectedValueOneElement()
-
-		runXMLSubtestHelper(t, xmlFileName, ctyType, expected)
+		runXMLSubtestHelper(t,
+			"testdata/importer/xml/junit1.xml",
+			ctyType,
+			testDataXML.ExpectedValue1(),
+		)
 	})
+
+	// Hardest. A single "testsuite" element with a single "testcase" elements within.
+	t.Run("junit2", func(t *testing.T) {
+
+		runXMLSubtestHelper(t,
+			"testdata/importer/xml/junit2.xml",
+			ctyType,
+			testDataXML.ExpectedValue2(),
+		)
+	})
+
 }
