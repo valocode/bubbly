@@ -37,7 +37,7 @@ func (i *Importer) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	if err := i.decode(ctx.DecodeBody); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf("Failed to decode resource %s: %s", i.String(), err.Error()),
+			Error:  fmt.Errorf("Failed to decode resource %s: %w", i.String(), err),
 		}
 	}
 
@@ -61,7 +61,7 @@ func (i *Importer) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	if err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf("Failed to resolve importer source: %s", err.Error()),
+			Error:  fmt.Errorf("Failed to resolve importer source: %w", err),
 			Value:  cty.NilVal,
 		}
 	}
@@ -82,7 +82,7 @@ func (i *Importer) SpecValue() core.ResourceSpec {
 func (i *Importer) decode(decode core.DecodeBodyFn) error {
 	// decode the resource spec into the importer's Spec
 	if err := decode(i, i.SpecHCL.Body, &i.Spec); err != nil {
-		return fmt.Errorf(`Failed to decode "%s" body spec: %s`, i.String(), err.Error())
+		return fmt.Errorf(`Failed to decode "%s" body spec: %w`, i.String(), err)
 	}
 
 	// based on the type of the importer, initiate the importer's Source
@@ -97,7 +97,7 @@ func (i *Importer) decode(decode core.DecodeBodyFn) error {
 
 	// decode the source HCL into the importer's Source
 	if err := decode(i, i.Spec.SourceHCL.Body, i.Spec.Source); err != nil {
-		return fmt.Errorf(`Failed to decode importer source: %s`, err.Error())
+		return fmt.Errorf(`Failed to decode importer source: %w`, err)
 	}
 
 	return nil
