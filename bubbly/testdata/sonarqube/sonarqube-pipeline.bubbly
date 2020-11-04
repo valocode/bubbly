@@ -37,13 +37,13 @@ resource "translator" "sonarqube" {
 
         data "repository_version" {
             field "Commit" {
-                value = "39489ef"
+                value = self.input.repository.commit
             }
             field "Tag" {
-                value = "v0.0.1"
+                value = self.input.repository.tag
             }
             field "Branch" {
-                value = "master"
+                value = self.input.repository.branch
             }
         }
 
@@ -95,15 +95,20 @@ resource "pipeline" "sonarqube" {
         // so that task outputs can be referenced
         task "import" {
             resource = "importer/sonarqube"
-            input "repository" {
-                value = "0.0.1"
-            }
             input "file" {
                 value = self.input.file
             }
         }
         task "translator" {
             resource = "translator/sonarqube"
+            // mock the repository data that will come from the git importer
+            input "repository" {
+                value = {
+                    commit = "aegasd321"
+                    tag = ""
+                    branch = "master"
+                }
+            }
             input "data" {
                 // here we reference the output of the task "importer"
                 value = self.task.import.value
