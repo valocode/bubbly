@@ -6,18 +6,18 @@ import (
 )
 
 var describeValidResourceCases = []struct {
-	desc     string
-	rName    string
-	rType    string
-	rVersion string
-	expected string
+	desc             string
+	rName            string
+	rType            string
+	rVersion         string
+	expectedContains string
 }{
 	{
-		desc:     "basic valid resource describe",
-		rType:    "importer",
-		rVersion: "v1",
-		rName:    "example_importer",
-		expected: "",
+		desc:             "basic valid resource describe",
+		rType:            "importer",
+		rVersion:         "v1",
+		rName:            "example_importer",
+		expectedContains: "failed to describe resource",
 	},
 }
 

@@ -85,13 +85,15 @@ import (
 // 	}
 // }
 
+//TODO: convert to integration test that validates retrieving information on a
+// valid resource.
 func TestDescribeValidResourceType(t *testing.T) {
 	for _, c := range describeValidResourceCases {
 		t.Run(c.desc, func(t *testing.T) {
 			cmd, _ := NewCmdDescribe()
 			b := bytes.NewBufferString("")
 			// cmd.SetOut(b)
-			cmd.SetOut(b)
+			cmd.SetErr(b)
 			cmd.SetArgs([]string{c.rType, c.rName})
 			// Silence usage output as that makes testing error outputs more painful
 			cmd.SilenceUsage = true
@@ -102,7 +104,7 @@ func TestDescribeValidResourceType(t *testing.T) {
 
 			got := string(out)
 
-			assert.Equal(t, got, c.expected)
+			assert.Contains(t, got, c.expectedContains)
 		})
 	}
 }

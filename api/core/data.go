@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/zclconf/go-cty/cty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
@@ -37,7 +38,7 @@ func (f *DataField) MarshalJSON() ([]byte, error) {
 func (f *DataField) UnmarshalJSON(data []byte) error {
 	var jf JSONDataField
 	if err := json.Unmarshal(data, &jf); err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal Field: %w", err)
 	}
 	*f = jf.Field()
 	return nil

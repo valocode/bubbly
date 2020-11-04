@@ -21,25 +21,25 @@ func (c *Client) Publish(data core.DataBlocks) error {
 		"data": data,
 	}
 
-	log.Debug().Msgf("Making POST to Bubbly server from client.Publish to publish data %+v to %s\n", publishData, c.HostURL)
+	log.Debug().Interface("data", publishData).Str("host", c.HostURL).Msg("Making POST to Bubbly server from client.Publish to publish data.")
 
 	json.Marshal(publishData)
 	jsonReq, err := json.Marshal(publishData)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal data for publishing: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/alpha1/upload", c.HostURL), bytes.NewBuffer(jsonReq))
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create POST request for data publishing: %w", err)
 	}
 
 	_, err = c.doRequest(req)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to make POST request for data publishing: %w", err)
 	}
 
 	return nil

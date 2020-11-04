@@ -78,11 +78,12 @@ func NewCmdApply() (*cobra.Command, *ApplyOptions) {
 		Long:    applyLong + "\n\n" + cmdutil.SuggestBubblyResources(),
 		Example: applyExample,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.Debug().Msgf("Args provided to apply: args: %+v, length: %d", args, len(args))
+			log.Debug().Strs("arguments", args).
+				Msg("apply arguments")
 			config, err := config.SetupConfigs()
 
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to set up configs: %w", err)
 			}
 
 			o.Config = config
@@ -113,9 +114,7 @@ func NewCmdApply() (*cobra.Command, *ApplyOptions) {
 		PreRun: func(cmd *cobra.Command, _ []string) {
 			viper.BindPFlags(rootCmd.PersistentFlags())
 			viper.BindPFlags(cmd.PersistentFlags())
-			for _, v := range viper.AllKeys() {
-				log.Debug().Msgf("Key: %s, Value: %v\n", v, viper.Get(v))
-			}
+			log.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly configuration")
 		},
 	}
 
@@ -150,7 +149,7 @@ func (o *ApplyOptions) Resolve(cmd *cobra.Command) error {
 func (o *ApplyOptions) Run() error {
 	if err := bubbly.Apply(o.Filename, *o.Config.ServerConfig); err != nil {
 		o.Result = false
-		return err
+		return fmt.Errorf("failed to apply configuration: %w", err)
 	}
 	o.Result = true
 	return nil

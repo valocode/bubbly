@@ -25,7 +25,7 @@ func upload(c *gin.Context) {
 		return
 	}
 
-	log.Debug().Msgf("Loading data `%+v` into memdb...", upload)
+	log.Debug().Interface("data", upload).Msg("loading data into intermediary database")
 
 	importErr := db.Import(upload.Data)
 	if importErr != nil {

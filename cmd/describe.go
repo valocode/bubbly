@@ -16,7 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/spf13/viper"
@@ -113,11 +112,12 @@ func NewCmdDescribe() (*cobra.Command, *DescribeOptions) {
 		Long:    describeLong + "\n\n" + cmdutil.SuggestBubblyResources(),
 		Example: describeExample,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.Debug().Msgf("Args provided to describe: args: %+v, length: %d", args, len(args))
+			log.Debug().Strs("arguments", args).
+				Msg("describe arguments")
 			config, err := config.SetupConfigs()
 
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to set up configuration: %w", err)
 			}
 
 			o.Config = config
@@ -136,9 +136,7 @@ func NewCmdDescribe() (*cobra.Command, *DescribeOptions) {
 			if resolveError != nil {
 				return resolveError
 			}
-			if len(o.Errs) != 0 {
-				return errors.New("Non zero number of errors with DescribeOptions")
-			}
+
 			runError := o.Run()
 
 			if runError != nil {
@@ -151,9 +149,7 @@ func NewCmdDescribe() (*cobra.Command, *DescribeOptions) {
 		PreRun: func(cmd *cobra.Command, _ []string) {
 			viper.BindPFlags(rootCmd.PersistentFlags())
 			viper.BindPFlags(cmd.PersistentFlags())
-			for _, v := range viper.AllKeys() {
-				log.Debug().Msgf("Key: %s, Value: %v\n", v, viper.Get(v))
-			}
+			log.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly configuration")
 		},
 	}
 
@@ -204,14 +200,14 @@ func (o *DescribeOptions) Resolve(cmd *cobra.Command) error {
 func (o *DescribeOptions) Run() error {
 	c, err := cmdutil.ClientSetup(*o.Config.ServerConfig)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to set up client: %w", err)
 	}
 
 	if !o.Group {
 		resourceDescription, err := c.DescribeResource(o.Resource.Type, o.Resource.Name, o.Version)
 
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to describe resource: %w", err)
 		}
 
 		o.Result[o.Resource.Name] = resourceDescription
@@ -222,7 +218,7 @@ func (o *DescribeOptions) Run() error {
 	resourceDescriptions, err := c.DescribeResourceGroup(o.ResourceGroup, o.Version)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to describe resource group: %w", err)
 	}
 
 	o.Result = resourceDescriptions

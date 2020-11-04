@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/verifa/bubbly/config"
 
@@ -104,9 +105,7 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		for _, v := range viper.AllKeys() {
-			fmt.Println(v, viper.Get(v))
-		}
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		log.Debug().Str("config_file", viper.ConfigFileUsed()).Msg("loading configuration from config file")
+		log.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly configuration")
 	}
 }

@@ -2,7 +2,7 @@ package client
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -57,14 +57,11 @@ func NewClient(sc config.ServerConfig) (*Client, error) {
 	}
 
 	if sc.Host != "" && sc.Port != "" {
-		c.HostURL = sc.Protocol + "://" + sc.Host + ":" + sc.Port
-		u, err := url.Parse(c.HostURL)
-
-		if err != nil {
-			log.Info().Msg("Invalid bubbly host URL. Using default `http://localhost:8080`")
-			c.HostURL = HostURL
+		us := sc.Protocol + "://" + sc.Host + ":" + sc.Port
+		if u, err := url.Parse(us); err == nil {
+			c.HostURL = u.String()
+			log.Info().Str("url", u.String()).Msg("custom bubbly host set")
 		}
-		log.Debug().Msgf("Client established for host %s on port %s", u.Hostname(), u.Port())
 	}
 
 	if !sc.Auth {
@@ -102,23 +99,17 @@ func NewClient(sc config.ServerConfig) (*Client, error) {
 	// return &c, nil
 }
 
-func (c *Client) doRequest(req *http.Request) ([]byte, error) {
+func (c *Client) doRequest(req *http.Request) (io.ReadCloser, error) {
 	req.Header.Set("Authorization", c.Token)
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status: %d, body: %s", res.StatusCode, body)
+		return nil, fmt.Errorf("status: %d", res.StatusCode)
 	}
 
-	return body, err
+	return res.Body, nil
 }

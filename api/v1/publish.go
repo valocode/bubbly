@@ -34,7 +34,7 @@ func (p *Publish) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	if err := ctx.DecodeBody(p, p.SpecHCL.Body, &p.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %s`, p.String(), err.Error()),
+			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %w`, p.String(), err),
 			Value:  cty.NilVal,
 		}
 	}
@@ -59,7 +59,7 @@ func (p *Publish) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	if err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`Failed to publish data to bubbly server: %s`, err.Error()),
+			Error:  fmt.Errorf(`Failed to publish data to bubbly server: %w`, err),
 			Value:  cty.NilVal,
 		}
 	}
@@ -84,7 +84,7 @@ func (p *Publish) publish(sc config.ServerConfig) error {
 	c, err := client.NewClient(sc)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to establish new client for publishing: %w", err)
 	}
 
 	var data core.DataBlocks
@@ -92,13 +92,13 @@ func (p *Publish) publish(sc config.ServerConfig) error {
 	err = json.Unmarshal([]byte(p.Spec.Data), &data)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal spec data for publishing: %w", err)
 	}
 
 	err = c.Publish(data)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to publish spec data: %w", err)
 	}
 
 	return nil
