@@ -32,8 +32,19 @@ func DbPath() string {
 	return dbpath
 }
 
-// PostResource Takes a POST request to upload a new resource to the in memory database
-// ATM this will only accept one resource per request
+type resourceMap map[string]map[string]map[string]interface{}
+
+// PostResource godoc
+// @Summary Takes a POST request to upload a new resource to the in memory database
+// @Description ATM this will only accept one resource per request
+// @ID Post-resource
+// @Tags resource
+// @Param resource body resourceMap true "Resource Body"
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /api/resource [post]
 func PostResource(c *gin.Context) {
 	var resourceMap map[string]map[string]map[string]map[string]interface{}
 	if err := c.ShouldBindJSON(&resourceMap); err != nil {
@@ -116,7 +127,18 @@ func uploadResource(resource *core.ResourceJSON) error {
 	return nil
 }
 
-// GetResource Fetches a resource via GET
+// GetResource godoc
+// @Summary GetResource Fetches a resource via GET
+// @Description Will fetch a resource based on the given ID
+// @ID Get-resource
+// @Tags resource
+// @Param id path string true "Resource ID"
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @x-examples 12345
+// @Router /api/resource/{id} [get]
 func GetResource(c *gin.Context) {
 	resource := core.ResourceJSON{
 		Name:      c.Param("name"),

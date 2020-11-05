@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/swaggo/gin-swagger/swaggerFiles"
 )
 
 // InitializeRoutes Builds the endpoints and grouping for a gin router
@@ -34,6 +36,9 @@ func InitializeRoutes(router *gin.Engine) {
 	{
 		alpha1.POST("/upload", upload)
 	}
+
+	// Serve Swagger files
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
 func status(c *gin.Context) {

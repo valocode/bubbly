@@ -30,3 +30,5 @@ docs/.DS_STORE
 *.db
 server/*.db
 
+node_modules
+

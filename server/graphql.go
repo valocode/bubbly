@@ -12,7 +12,16 @@ type queryReq struct {
 	Query string `json:"query"`
 }
 
-// Query performs graphql related tasks
+// Query godoc
+// @Summary Query performs graphql related tasks
+// @ID graphql
+// @Tags graphql
+// @Param query body string true "Query String"
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /api/graphql [post]
 func Query(c *gin.Context) {
 	var query queryReq
 	if bindErr := c.ShouldBindJSON(&query); bindErr != nil {
