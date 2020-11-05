@@ -1,16 +1,16 @@
 package v1
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/pkg/errors"
 	testDataJSON "github.com/verifa/bubbly/api/v1/testdata/importer/json"
 	testDataXML "github.com/verifa/bubbly/api/v1/testdata/importer/xml"
 	"github.com/zclconf/go-cty/cty"
 )
 
 func TestImporterJSON(t *testing.T) {
+
+	importerName := "json"
 
 	ctyType := testDataJSON.ExpectedType()
 	expVal := testDataJSON.ExpectedValue()
@@ -21,24 +21,27 @@ func TestImporterJSON(t *testing.T) {
 	}
 
 	val, err := source.Resolve()
+
 	if err != nil {
-		t.Errorf("Failed to Resolve() JSON importer: %s", err.Error())
+		t.Errorf("failed to Resolve() %s importer: %w", importerName, err)
 	}
 	if val.IsNull() {
-		t.Errorf("Received Null type value")
+		t.Errorf("call to Resolve() of %s importer returned cty.NilVal", importerName)
 	}
 	if val.Equals(expVal).False() {
-		t.Errorf("JSON Importer returned unexpected value.\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s",
-			expVal.GoString(), val.GoString())
+		t.Errorf("%s importer returned unexpected value.\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s",
+			importerName, expVal.GoString(), val.GoString())
 	}
 
-	t.Logf("JSON Importer returned value: %s", val.GoString())
+	t.Logf("%s importer returned value: %s", importerName, val.GoString())
 }
 
 // runXMLSubtestHelper is a helper which runs tests for a variety of XML input files
 func runXMLSubtestHelper(t *testing.T, xmlFile string, ctyType cty.Type, expected cty.Value) {
 
 	t.Helper()
+
+	importerName := "xml"
 
 	source := xmlSource{
 		File:   xmlFile,
@@ -48,16 +51,17 @@ func runXMLSubtestHelper(t *testing.T, xmlFile string, ctyType cty.Type, expecte
 	val, err := source.Resolve()
 
 	if err != nil {
-		t.Error(errors.Wrap(err, "failed to Resolve() XML importer"))
+		t.Errorf("failed to Resolve() %s importer: %w", importerName, err)
 	}
 	if val.IsNull() {
-		t.Error(errors.New("source.Resolve() returned Null type value"))
+		t.Errorf("call to Resolve() of %s importer returned cty.NilVal", importerName)
 	}
 	if val.Equals(expected).False() {
-		t.Error(errors.New(fmt.Sprintf("XML Importer returned unexpected value,\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s", expected.GoString(), val.GoString())))
+		t.Errorf("%s importer returned unexpected value,\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s",
+			importerName, expected.GoString(), val.GoString())
 	}
 
-	t.Logf("XML Importer returned value: %s", val.GoString())
+	t.Logf("%s importer returned value: %s", importerName, val.GoString())
 }
 
 // The XML format is different from JSON in a way that it
@@ -97,5 +101,4 @@ func TestImporterXML(t *testing.T) {
 			testDataXML.ExpectedValue2(),
 		)
 	})
-
 }
