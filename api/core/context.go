@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/verifa/bubbly/config"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -18,14 +19,19 @@ import (
 // provides a "connector" for a resource to use functionality from the parser,
 // that is exposed in the form of method pointers defined in thi type.
 type ResourceContext struct {
-	GetResource GetResourceFn
-	DecodeBody  DecodeBodyFn
-	InsertValue InsertValueFn
-	NewContext  NewContextFn
-	BodyToJSON  BodyToJSONFn
+	GetResource     GetResourceFn
+	DecodeBody      DecodeBodyFn
+	InsertValue     InsertValueFn
+	NewContext      NewContextFn
+	BodyToJSON      BodyToJSONFn
+	GetServerConfig GetServerConfigFn
 
 	Debug DebugCtx
 }
+
+// GetServerConfigFn represents the function that will retrieve the bubbly
+// server configuration, needed for interactions with the bubbly server.
+type GetServerConfigFn func() (*config.ServerConfig, error)
 
 // GetResourceFn represents the function that will decode any HCL Bodies.
 type GetResourceFn func(kind ResourceKind, name string) (Resource, error)

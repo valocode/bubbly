@@ -262,7 +262,7 @@ version.Info{
 
 ### Usage
 
-`bubbly explain TYPE[.<fieldName>] [flags]`
+`bubbly explain TYPE[.<field-name>...] [flags]`
 
 Examples:
 
