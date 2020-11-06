@@ -163,7 +163,7 @@ func (s *jsonSource) Resolve() (cty.Value, error) {
 
 	val, err := gocty.ToCtyValue(data, s.Format)
 	if err != nil {
-		return cty.NilVal, nil
+		return cty.NilVal, err
 	}
 
 	return val, nil
