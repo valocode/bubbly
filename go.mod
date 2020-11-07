@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/Jeffail/gabs v1.4.0
+	github.com/Jeffail/gabs/v2 v2.6.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/appleboy/gofight v2.0.0+incompatible
 	github.com/appleboy/gofight/v2 v2.1.2
@@ -12,6 +13,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gin-contrib/logger v0.0.2
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-git/go-git/v5 v5.2.0
 	github.com/google/uuid v1.1.1
 	github.com/graphql-go/graphql v0.7.9
 	github.com/hashicorp/go-memdb v1.3.0
@@ -20,10 +22,11 @@ require (
 	github.com/imdario/mergo v0.3.9
 	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/gommon v0.3.0 // indirect
+	github.com/libgit2/git2go/v28 v28.6.1
 	github.com/likexian/gokit v0.23.3
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nedscode/memdb v0.0.0-20190730235322-b1504ff22569 // indirect
-	github.com/pkg/errors v0.9.1
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rs/zerolog v1.20.0
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/spf13/cobra v1.1.1

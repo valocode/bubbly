@@ -8,7 +8,11 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/clbanning/mxj"
+	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
@@ -123,6 +127,7 @@ type importerType string
 const (
 	jsonImporterType importerType = "json"
 	xmlImporterType               = "xml"
+	gitImporterType               = "git"
 )
 
 // Source is an interface for the different data sources that an Importer can have
@@ -130,6 +135,161 @@ type source interface {
 	// returns an interface{} containing the parsed XML, JSON data, that should
 	// be converted into the Output cty.Value
 	Resolve() (cty.Value, error)
+}
+
+// Compiler check to see that the source interface is implemented
+var _ source = (*gitSource)(nil)
+
+// gitSource represents the importer type for a local git repository data
+type gitSource struct {
+	Directory string `hcl:"directory,attr"`
+}
+
+// Resolve returns a cty.Value representation of the data from a local Git repo
+func (s *gitSource) Resolve() (cty.Value, error) {
+
+	//zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	//log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true})
+
+	// The format of v1 Git importer output
+	format := cty.Object(map[string]cty.Type{
+		"is_bare":       cty.Bool,
+		"commit_id":     cty.String,
+		"tag":           cty.String,
+		"active_branch": cty.String,
+		"branches": cty.Object(map[string]cty.Type{
+			"local":  cty.List(cty.String),
+			"remote": cty.List(cty.String),
+		}),
+		"remotes": cty.List(cty.Object(map[string]cty.Type{
+			"name": cty.String,
+			"url":  cty.String,
+		})),
+	})
+
+	// Find and open the repo
+	repo, err := git.PlainOpen(s.Directory)
+
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`cannot open repository %s, error %w`, s.Directory, err)
+	}
+
+	// Is the repo bare or not
+	cfg, err := repo.Config()
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`failed to check repo status (bare or not) for repo %s, error %w`, s.Directory, err)
+	}
+	isBare := cfg.Core.IsBare
+
+	// Find HEAD and establish whether it's pointing to a proper branch
+	headRef, err := repo.Head()
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`failed to read the repo (%s) HEAD, error %w`, s.Directory, err)
+	}
+
+	var headBranch string
+
+	if headRef.Name().IsBranch() {
+		headBranch = headRef.Name().Short()
+	} else {
+		headBranch = `Detached HEAD`
+	}
+
+	// Local branches: iterate to extract short names
+	var localBranchNames []string
+	branches, err := repo.Branches()
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`failed to get a list of local branches for repo %s, error %w`, s.Directory, err)
+	}
+
+	err = branches.ForEach(func(ref *plumbing.Reference) error {
+		log.Debug().Msgf(`Local branch: %v`, ref.Name().Short())
+		localBranchNames = append(localBranchNames, ref.Name().Short())
+		return nil
+	})
+
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`failed to iterate over a list of local branches for repo %s, error %w`, s.Directory, err)
+	}
+
+	// Remotes
+	remotesList, err := repo.Remotes()
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`failed to get a list of remotes for repo %s, error %w`, s.Directory, err)
+	}
+
+	var remotes = make([]map[string]string, len(remotesList))
+
+	for i, remote := range remotesList {
+		remotes[i] = map[string]string{
+			"name": remote.Config().Name,
+			"url":  remote.Config().URLs[0], // always non-empty; first elem is for `git fetch`
+		}
+	}
+
+	// Remote branches
+	var remoteBranchNames []string
+	refs, _ := repo.References()
+	err = refs.ForEach(func(ref *plumbing.Reference) error {
+
+		if ref.Type() == plumbing.HashReference && ref.Name().IsRemote() {
+			remoteBranchNames = append(remoteBranchNames, ref.Name().Short())
+		} else {
+			log.Debug().Str("ref.String()", ref.String()).Msg(`Reference not a remote:`)
+		}
+		return nil
+	})
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`failed to compile a list of known remote branches for repo %s, error %w`, s.Directory, err)
+	}
+
+	/*
+		// The config file and the data structure representing it would only have those branches which have
+		// upstream tracking set up.
+		cfg, _ := repo.Config()
+		for _, branch := range cfg.Branches {
+			log.Debug().Str("branch.Name", branch.Name).Str("branch.Remote", branch.Remote).Msg("Branch read from config")
+		}
+	*/
+
+	// Tags
+	var tag string
+
+	tagrefs, err := repo.Tags()
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`failed to read tags from repo %s, error %w`, s.Directory, err)
+	}
+	err = tagrefs.ForEach(func(t *plumbing.Reference) error {
+		log.Debug().Str("short name", t.Name().Short()).Str("hash", t.Hash().String()).Msg(`Found tag:`)
+		if t.Hash() == headRef.Hash() {
+			tag = t.Name().Short()
+		}
+		return nil
+	})
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`failed to iterate over tags from repo %s, error %w`, s.Directory, err)
+	}
+
+	// Construct Go data structure for conversion
+	// to cty.Value using well-defined cty.Type
+	data := map[string]interface{}{
+		"is_bare":       isBare,
+		"commit_id":     headRef.Hash().String(),
+		"tag":           tag,
+		"active_branch": headBranch,
+		"branches": map[string][]string{
+			"local":  localBranchNames,
+			"remote": remoteBranchNames,
+		},
+		"remotes": remotes,
+	}
+
+	val, err := gocty.ToCtyValue(data, format)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`failed to tranform the data for output, repo %s, error %w`, s.Directory, err)
+	}
+
+	return val, nil
 }
 
 // Compiler check to see that v1.JSONSource implements the Source interface

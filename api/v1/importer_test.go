@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"path/filepath"
 	"testing"
 
 	testDataJSON "github.com/verifa/bubbly/api/v1/testdata/importer/json"
@@ -101,4 +102,44 @@ func TestImporterXML(t *testing.T) {
 			testDataXML.ExpectedValue2(),
 		)
 	})
+
+}
+
+func TestImporterGit(t *testing.T) {
+
+	importerName := "git"
+
+	source := gitSource{
+		Directory: filepath.FromSlash(`testdata/importer/git/repo1.git`),
+	}
+
+	expected := cty.ObjectVal(map[string]cty.Value{
+		"active_branch": cty.StringVal("master"),
+		"branches": cty.ObjectVal(map[string]cty.Value{
+			"local":  cty.ListVal([]cty.Value{cty.StringVal("dev"), cty.StringVal("master")}),
+			"remote": cty.NullVal(cty.List(cty.String)),
+		}),
+		"commit_id": cty.StringVal("81411ea85f68f64f727f140400d7107786d93ba4"),
+		"is_bare":   cty.True,
+		"remotes": cty.ListValEmpty(cty.Object(map[string]cty.Type{
+			"name": cty.String,
+			"url":  cty.String,
+		})),
+		"tag": cty.StringVal("kawabunga"),
+	})
+
+	val, err := source.Resolve()
+	if err != nil {
+		t.Errorf(`Failed to Resolve() Git importer: %s`, err.Error())
+	}
+	if val.IsNull() {
+		t.Errorf(`Received Null type value`)
+	}
+
+	if val.Equals(expected).False() {
+		t.Errorf("%s importer returned unexpected value,\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s",
+			importerName, expected.GoString(), val.GoString())
+	}
+
+	t.Logf(`Git Importer returned value: %#v`, val)
 }
