@@ -82,6 +82,10 @@ func (c *Client) DescribeResourceGroup(rType, rVersion string) (map[string]Descr
 
 	rc, err := c.doRequest(req)
 
+	if err != nil {
+		return nil, fmt.Errorf("failed to make GET request to describe resource group: %w", err)
+	}
+
 	defer rc.Close()
 	body, err := ioutil.ReadAll(rc)
 
