@@ -20,8 +20,6 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/verifa/bubbly/bubbly"
@@ -88,7 +86,7 @@ func NewCmdApply() (*cobra.Command, *ApplyOptions) {
 
 			o.Config = config
 
-			spew.Dump("Merged configuration:", o.Config)
+			log.Debug().Interface("configuration_merged", o.Config).Msg("merged bubbly configuration")
 			o.Args = args
 
 			validationError := o.Validate(cmd)
@@ -157,7 +155,7 @@ func (o *ApplyOptions) Run() error {
 
 // Print formats and prints the ApplyOptions.Result from o.Run()
 func (o *ApplyOptions) Print(cmd *cobra.Command) {
-	fmt.Fprintf(cmd.OutOrStdout(), "Apply result: %t", o.Result)
+	fmt.Fprintf(cmd.OutOrStdout(), "Apply result: %t\n", o.Result)
 }
 
 func init() {

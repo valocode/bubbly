@@ -20,8 +20,6 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	client "github.com/verifa/bubbly/client"
@@ -122,7 +120,8 @@ func NewCmdDescribe() (*cobra.Command, *DescribeOptions) {
 
 			o.Config = config
 
-			spew.Dump("Merged configuration:", o.Config)
+			log.Debug().Interface("configuration_merged", o.Config).Msg("merged bubbly configuration")
+
 			o.Args = args
 
 			validationError := o.Validate(cmd)

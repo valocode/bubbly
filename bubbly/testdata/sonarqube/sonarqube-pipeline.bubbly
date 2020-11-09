@@ -1,4 +1,6 @@
 
+//  defines a data source and a format for the data, and returns a cty.Value
+// representation of the external data.
 resource "importer" "sonarqube" {
     api_version = "v1"
     spec {
@@ -28,13 +30,16 @@ resource "importer" "sonarqube" {
     }
 }
 
+// defines a translation or conversion of data from an Importer and outputs
+// a mapping of the imported data to the defined data schema.
 resource "translator" "sonarqube" {
     api_version = "v1"
     spec {
         input "data" {}
         input "repository" {}
-        // this is some crazy dynamic HCL stuff to create the "data" blocks
 
+        // this data will be associated with the "repository_version" table
+        // within the interim database
         data "repository_version" {
             field "Commit" {
                 value = self.input.repository.commit
@@ -47,9 +52,11 @@ resource "translator" "sonarqube" {
             }
         }
 
+        // iterate over the list of issues
         dynamic "data" {
             for_each = self.input.data.issues
             iterator = issue
+            // map the data to the linter_issue table in the interim database
             labels = ["linter_issue"]
             content {
                 // if the "id" field is blank, it should be auto-generated
@@ -64,17 +71,12 @@ resource "translator" "sonarqube" {
                 field "Type" {
                     value = issue.value.type
                 }
-
-                // TODO: need to figure out how this will work
-                // field "repository_version_id" {
-                //     value = self.data.repository_version.id
-                // }
             }
         }
     }
 }
 
-// This is the upload step, just renamed to publish...
+// defines the publishing of translator output data to a bubbly server
 resource "publish" "sonarqube" {
     api_version = "v1"
     spec {
@@ -85,20 +87,23 @@ resource "publish" "sonarqube" {
 }
 
 // How do we tie all the above resources together...? In a pipeline!
-// A pipeline is just another reusable resource, and only a pipelineRun
-// actually triggers a pipeline to run
+// A pipeline is just another reusable resource
+// NOTE: only a pipeline_run actually triggers a pipeline to run
 resource "pipeline" "sonarqube" {
     api_version = "v1"
     spec {
         input "file" {}
-        // Each task in a pipeline has an output, similar to resources,
-        // so that task outputs can be referenced
+        // Each task represents the execution of an action defined by
+        // a bubbly resource
+        // action: import the data from the data source
         task "import" {
             resource = "importer/sonarqube"
             input "file" {
                 value = self.input.file
             }
         }
+
+        // action: translate the imported data
         task "translator" {
             resource = "translator/sonarqube"
             // mock the repository data that will come from the git importer
@@ -110,10 +115,14 @@ resource "pipeline" "sonarqube" {
                 }
             }
             input "data" {
-                // here we reference the output of the task "importer"
+                // Each task in a pipeline has an output, similar to resources,
+                // so that task outputs can be referenced
+                // here, we reference the output of the task "importer"
                 value = self.task.import.value
             }
         }
+
+        // action: publish the translated data to the bubbly server
         task "publish" {
             resource = "publish/sonarqube"
             input "data" {
@@ -127,9 +136,9 @@ resource "pipeline" "sonarqube" {
 resource "pipeline_run" "sonarqube" {
     api_version = "v1"
     spec {
-        // specify the name of the pipeline
+        // specify the name of the pipeline resource to execute
         pipeline = "sonarqube"
-        // specify the input required
+        // specify the pipeline input(s) required
         input "file" {
             value = "./testdata/sonarqube/sonarqube-example.json"
         }

@@ -19,9 +19,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
+
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/verifa/bubbly/config"
+	normalise "github.com/verifa/bubbly/util/normalise"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -30,57 +34,58 @@ import (
 var (
 	globalServerConfig config.ServerConfig
 	globalConfigFile   string
-	// globalTest         string
+	rootShort          = normalise.LongDesc(`
+		bubbly provides a single binary for controlling both the bubbly server and bubbly client.
+		
+		Find more information: https://verifa.io/products/bubbly`)
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "bubbly",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
+	Short: rootShort,
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		// fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
 func init() {
+	initLogger()
 	cobra.OnInitialize(initConfig)
 
 	f := rootCmd.PersistentFlags()
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
 	f.StringVar(&globalConfigFile, "config", "", "config file (default is $HOME/.bubbly.yaml)")
-	// viper.BindPFlag("globalConfigFile", rootCmd.Flags().Lookup("config"))
 
-	// f.StringVar(&globalTest, "test", "", "A test flag")
 	f.StringVar(&globalServerConfig.Host, "host", "", "bubbly server host")
 	f.StringVar(&globalServerConfig.Port, "port", "", "bubbly server port")
 	f.BoolVar(&globalServerConfig.Auth, "auth", false, "bubbly server auth")
 	f.StringVar(&globalServerConfig.Token, "token", "", "bubbly server token")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	viper.BindPFlags(f)
+}
+
+func initLogger() {
+	// Initialize Logger
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if gin.IsDebugging() {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
+	log.Logger = log.Output(
+		zerolog.ConsoleWriter{
+			Out:     os.Stderr,
+			NoColor: false,
+		},
+	)
 }
 
 // initConfig reads in config file and ENV variables if set.

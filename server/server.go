@@ -2,13 +2,11 @@ package server
 
 import (
 	"fmt"
-	"os"
 
 	"net/http"
 
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/interim"
@@ -22,22 +20,6 @@ var db *interim.DB
 // SetupRouter returns a pointer to a gin engine after setting up middleware
 // and initializing routes
 func SetupRouter() *gin.Engine {
-	// Enable Production Mode
-	// gin.SetMode(gin.ReleaseMode)
-
-	// Initialize Logger
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if gin.IsDebugging() {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
-
-	log.Logger = log.Output(
-		zerolog.ConsoleWriter{
-			Out:     os.Stderr,
-			NoColor: false,
-		},
-	)
-
 	// SETUP DB
 	dbErr := initDb()
 	if dbErr != nil {

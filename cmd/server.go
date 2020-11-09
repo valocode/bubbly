@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -87,7 +86,8 @@ func NewCmdServer() (*cobra.Command, *ServerOptions) {
 
 			o.Config = config
 
-			spew.Dump("Merged configuration:", o.Config)
+			log.Debug().Interface("configuration_merged", o.Config).Msg("merged bubbly configuration")
+
 			o.Args = args
 
 			validationError := o.Validate(cmd)
@@ -164,7 +164,7 @@ func (o *ServerOptions) Run() error {
 
 // Print formats and prints the ServerOptions.Result from o.Run()
 func (o *ServerOptions) Print(cmd *cobra.Command) {
-	fmt.Fprintf(cmd.OutOrStdout(), "Server result: %t", o.Result)
+	fmt.Fprintf(cmd.OutOrStdout(), "Server result: %t\n", o.Result)
 }
 
 func init() {
