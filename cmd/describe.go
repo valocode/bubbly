@@ -38,7 +38,9 @@ var (
 
 		Print a detailed description of the selected resources, including related resources such
 		as events or controllers. You may select all resources of a given
-		type by providing only the type, or additionally provide a name prefix to describe a single resource by name. For example:
+		type by providing only the type, or additionally provide a name prefix to describe a single resource by name. 
+		
+		For example:
 
 		    $ bubbly describe TYPE NAME_PREFIX`)
 
