@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/verifa/bubbly/api/core"
@@ -25,14 +26,21 @@ func NewResources() *Resources {
 func NewResourcesFromBlocks(blocks core.ResourceBlocks) *Resources {
 	res := NewResources()
 	for _, block := range blocks {
-		res.NewResource(block)
+		_, err := res.NewResource(block)
+
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+
 	}
 	return res
 }
 
 // NewResource creates a new resource from the given ResourceBlock, and adds
-// it to Resources and also returns a pointer to it for convenience.
-func (r *Resources) NewResource(resBlock *core.ResourceBlock) core.Resource {
+// it to Resources
+// If successful, returns a pointer to the new resource
+// If unsuccessful, returns an error
+func (r *Resources) NewResource(resBlock *core.ResourceBlock) (core.Resource, error) {
 	var resource core.Resource
 	switch resBlock.Kind() {
 	// TODO: use resBlock.APIVersion to get version of resource...
@@ -47,16 +55,16 @@ func (r *Resources) NewResource(resBlock *core.ResourceBlock) core.Resource {
 	case core.PipelineRunResourceKind:
 		resource = v1.NewPipelineRun(resBlock)
 	default:
-		log.Fatalf("Resource not supported: %s", resBlock.Kind())
+		return nil, fmt.Errorf("resource not supported: %s", resBlock.Kind())
 	}
 	// add the resource to the map
 	if _, exists := (*r)[resource.Kind()][resource.Name()]; exists {
-		log.Fatalf("Resource %s already exists!", resource.String())
+		return nil, fmt.Errorf("resource %s already exists", resource.String())
 	}
 	// add the new resource to resources
 	(*r)[resource.Kind()][resource.Name()] = resource
 
-	return resource
+	return resource, nil
 }
 
 // Get returns the desired resource based on the ResourceKind and the name
