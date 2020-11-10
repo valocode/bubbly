@@ -22,9 +22,9 @@ type Local struct {
 	Value       cty.Value `hcl:"value,attr"`
 }
 
-// Reference returns a local's traversal to refernce this local in HCL, together
-// with its associated cty.Value. This is used so that locals can be added
-// to an EvalContext
+// Reference returns a local's traversal to reference this local in HCL,
+// together with its associated cty.Value. This is used so that locals can be
+// added to an EvalContext
 func (l *Local) Reference() (hcl.Traversal, cty.Value) {
 	return hcl.Traversal{
 		hcl.TraverseRoot{Name: "local"},
