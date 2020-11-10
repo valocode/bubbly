@@ -19,7 +19,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var tearDown = true
+
 func TestPostResource(t *testing.T) {
+	// Setup Test Environment
 	router := SetupRouter()
 
 	jsonFile, readErr := os.Open("testdata/resource.json")
@@ -37,34 +40,43 @@ func TestPostResource(t *testing.T) {
 
 	body, _ := json.Marshal(resourceMap)
 	r := httptest.NewRecorder()
+
+	// Test
 	req, _ := http.NewRequest("POST", "/api/resource", bytes.NewBuffer(body))
 	router.ServeHTTP(r, req)
 
 	assert.Equal(t, 200, r.Code)
 	assert.Equal(t, "{\"status\":\"uploaded\"}", r.Body.String())
 
-	tearDownDb()
+	// Cleanup
+	if tearDown {
+		tearDownDb()
+	}
 }
 
 func TestGetResource(t *testing.T) {
 	r := gofight.New()
 
 	// Adds a resource to the db so that it can be fetched
+	// Set tearDown to false so that there will be data to GET from the DB
+	tearDown = false
 	TestPostResource(t)
-	r.GET("/api/resource/translator.junit").
+	tearDown = true
+	r.GET("/api/resource/default/translator/junit").
 		Run(SetupRouter(), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			data := []byte(r.Body.String())
 			assert.Equal(t, http.StatusOK, r.Code)
-
 			// Creating a resource based off of the response
 			file, diags := hclparse.NewParser().ParseJSON(data, "test.json")
 			if diags.HasErrors() {
 				log.Error().Msg(diags.Error())
+				t.Errorf(diags.Error())
 			}
 			resWrap := &core.ResourceBlockHCLWrapper{}
 			diags = gohcl.DecodeBody(file.Body, nil, resWrap)
 			if diags.HasErrors() {
 				log.Error().Msg(diags.Error())
+				t.Errorf(diags.Error())
 			}
 			assert.NotNil(t, resWrap)
 		})

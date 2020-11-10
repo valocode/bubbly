@@ -3,7 +3,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -14,6 +13,8 @@ import (
 	"github.com/tidwall/buntdb"
 	"github.com/verifa/bubbly/api/core"
 )
+
+const defaultNamespace = "default"
 
 // returns an index for ensuring unique names
 func dbIndexName() string {
@@ -34,7 +35,7 @@ func DbPath() string {
 // PostResource Takes a POST request to upload a new resource to the in memory database
 // ATM this will only accept one resource per request
 func PostResource(c *gin.Context) {
-	var resourceMap map[string]map[string]map[string]interface{}
+	var resourceMap map[string]map[string]map[string]map[string]interface{}
 	if err := c.ShouldBindJSON(&resourceMap); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -67,13 +68,28 @@ func PostResource(c *gin.Context) {
 		return
 	}
 
-	resource := core.ResourceJSON{
-		Kind:     resourceKind,
-		Name:     resourceName,
-		Resource: string(request),
+	// If the namespace is not specified, it will default as defaultNamespace
+	rawMetadata, _ := json.Marshal(resourceMap["resource"][resourceKind][resourceName]["metadata"])
+	var metadata core.Metadata
+	err := json.Unmarshal(rawMetadata, &metadata)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "metadata not present"})
+		return
+	}
+	namespace := metadata.Namespace
+	if namespace == "" {
+		namespace = defaultNamespace
 	}
 
-	if err := uploadResouce(&resource); err != nil {
+	resource := core.ResourceJSON{
+		Kind:      resourceKind,
+		Name:      resourceName,
+		Namespace: namespace,
+		Resource:  string(request),
+	}
+
+	if err := uploadResource(&resource); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -84,15 +100,16 @@ func PostResource(c *gin.Context) {
 }
 
 // Uploads the resource to the in-mem db
-func uploadResouce(resource *core.ResourceJSON) error {
+func uploadResource(resource *core.ResourceJSON) error {
 	db, dbErr := buntdb.Open(DbPath())
 	if dbErr != nil {
-		fmt.Println(dbErr)
+		log.Error().Msg(dbErr.Error())
+		return dbErr
 	}
 
 	db.CreateIndex(dbIndexName(), "*", buntdb.IndexJSON("name"))
 	db.Update(func(tx *buntdb.Tx) error {
-		tx.Set(resource.Kind+"."+resource.Name, resource.Resource, nil)
+		tx.Set(resource.GetID(), resource.Resource, nil)
 		return nil
 	})
 
@@ -101,6 +118,12 @@ func uploadResouce(resource *core.ResourceJSON) error {
 
 // GetResource Fetches a resource via GET
 func GetResource(c *gin.Context) {
+	resource := core.ResourceJSON{
+		Name:      c.Param("name"),
+		Namespace: c.Param("namespace"),
+		Kind:      c.Param("kind"),
+	}
+
 	db, dbErr := buntdb.Open(DbPath())
 	if dbErr != nil {
 		log.Error().Msg(dbErr.Error())
@@ -109,16 +132,15 @@ func GetResource(c *gin.Context) {
 	}
 
 	db.CreateIndex(dbIndexName(), "*", buntdb.IndexJSON("name"))
-	var resource string
+	var resourceString string
 	db.View(func(tx *buntdb.Tx) error {
-
-		val, err := tx.Get(c.Param("id"))
+		val, err := tx.Get(resource.GetID())
 		if err != nil {
 			return err
 		}
-		resource = val
+		resourceString = val
 		return nil
 	})
 
-	c.Data(http.StatusOK, "application/json", []byte(resource))
+	c.Data(http.StatusOK, "application/json", []byte(resourceString))
 }

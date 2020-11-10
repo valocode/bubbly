@@ -107,8 +107,9 @@ func ResourceKindPriority() []ResourceKind {
 
 // ResourceID is a type representation the ID of a resource
 type ResourceID struct {
-	Kind ResourceKind
-	Name string
+	Kind      ResourceKind
+	Name      string
+	Namespace string
 }
 
 // NewResourceIDFromString takes a string representation of an ID, e.g. from
@@ -124,7 +125,7 @@ func NewResourceIDFromString(resStr string) *ResourceID {
 
 // String returns a string representation of a ResourceID
 func (r *ResourceID) String() string {
-	return strings.Join([]string{string(r.Kind), r.Name}, "/")
+	return strings.Join([]string{r.Namespace, string(r.Kind), r.Name}, "/")
 }
 
 // APIVersion represents the api_version of different resources
@@ -137,6 +138,8 @@ func (a *APIVersion) String() string {
 // Metadata represents the metadata{} block in a resource... This could
 // probably also be versioned?
 type Metadata struct {
+	Labels    map[string]string `json:"labels,omitempty" hcl:"labels,attr"`
+	Namespace string            `json:"namespace,omitempty" hcl:"namespace,attr"`
 }
 
 // ResourceBlockSpec represents the spec{} block within a resource
