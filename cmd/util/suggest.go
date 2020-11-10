@@ -14,11 +14,6 @@ func SuggestBubblyResources() string {
 	return normalise.LongDesc(fmt.Sprintf("Use 'bubbly api-resources' for a complete list of supported resources."))
 }
 
-// GenericHelp returns a suggestion to use --help over a command
-func GenericHelp() string {
-	return normalise.LongDesc(fmt.Sprintf("bubbly <command> --help for information about a given command."))
-}
-
 // UsageErrorf can be used as a generic 'you've made a mistake, look at the help documentation'.
 func UsageErrorf(cmd *cobra.Command, format string, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args...)
