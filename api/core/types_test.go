@@ -14,7 +14,6 @@ func TestOutput(t *testing.T) {
 	tcs := []struct {
 		desc     string
 		input    ResourceOutput
-		want     cty.Value
 		expected cty.Value
 	}{
 		{
@@ -62,10 +61,10 @@ func TestOutput(t *testing.T) {
 // tests Local.Reference
 func TestReference(t *testing.T) {
 	tcs := []struct {
-		desc     string
-		input    Local
-		wantTrav hcl.Traversal
-		wantCty  cty.Value
+		desc         string
+		input        Local
+		expectedTrav hcl.Traversal
+		expectedCty  cty.Value
 	}{
 		{
 			desc: "basic local block",
@@ -73,11 +72,11 @@ func TestReference(t *testing.T) {
 				Name:  "api_version",
 				Value: cty.StringVal("v1"),
 			},
-			wantTrav: hcl.Traversal{
+			expectedTrav: hcl.Traversal{
 				hcl.TraverseRoot{Name: "local"},
 				hcl.TraverseAttr{Name: "api_version"},
 			},
-			wantCty: cty.StringVal("v1"),
+			expectedCty: cty.StringVal("v1"),
 		},
 	}
 
@@ -88,8 +87,8 @@ func TestReference(t *testing.T) {
 			assert.NotNil(t, actualTrav)
 			assert.NotNil(t, actualCty)
 
-			assert.Equal(t, tc.wantTrav, actualTrav)
-			assert.Equal(t, tc.wantCty, actualCty)
+			assert.Equal(t, tc.expectedTrav, actualTrav)
+			assert.Equal(t, tc.expectedCty, actualCty)
 		})
 	}
 }
