@@ -11,18 +11,18 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// TestJunitJSON tests that the JSON representation of HCL resources is correct
-// and that converted Resources match what is expected.
-func TestJSONConversion(t *testing.T) {
+// TestImporterJSONConversion tests that the JSON representation of HCL
+// importer resource is correct and that converted Resources match what is
+// expected.
+func TestImporterJSONConversion(t *testing.T) {
 	tcs := []struct {
 		desc     string
 		input    string
 		resource core.ResourceBlock
-		want     string
 		expected map[string]interface{}
 	}{
 		{
-			desc:  "basic importer JSON",
+			desc:  "basic JSON conversion for junit importer",
 			input: "testdata/importers/junit-importer.bubbly",
 			expected: map[string]interface{}{
 				"resourceJSON": string(`{"resource":{"importer":{"junit-importer":{"api_version":"v1","spec":{"input":{"file":{}},"source":{"file":"${self.input.file}","format":"object({testsuites=object({duration=number,testsuite=list(object({failures=number,name=string,package=string,testcase=list(object({classname=string,name=string,time=number})),tests=number,time=number}))})})"},"type":"xml"}}}}}`),
@@ -30,6 +30,20 @@ func TestJSONConversion(t *testing.T) {
 					ResourceBlock: &core.ResourceBlock{
 						ResourceKind:       "importer",
 						ResourceName:       "junit-importer",
+						ResourceAPIVersion: "v1",
+					},
+				},
+			},
+		},
+		{
+			desc:  "basic JSON conversion for sonarqube importer",
+			input: "testdata/importers/sonarqube-importer.bubbly",
+			expected: map[string]interface{}{
+				"resourceJSON": string(`{"resource":{"importer":{"sonarqube-importer":{"api_version":"v1","spec":{"input":{"file":{}},"source":{"file":"${self.input.file}","format":"object({issues=list(object({engineId=string,primaryLocation=object({filePath=string,message=string,textRange=object({endColumn=number,endLine=number,startColumn=number,startLine=number})}),ruleId=string,severity=string,type=string}))})"},"type":"json"}}}}}`),
+				"resource": &v1.Importer{
+					ResourceBlock: &core.ResourceBlock{
+						ResourceKind:       "importer",
+						ResourceName:       "sonarqube-importer",
 						ResourceAPIVersion: "v1",
 					},
 				},
@@ -104,93 +118,104 @@ func TestJSONConversion(t *testing.T) {
 // 3. be decoded from JSON into Resource instances
 // 4. be applied to the bubbly server
 func TestApplyFromJSONParser(t *testing.T) {
-	t.Run("test parser.JSON for all parser/testdata files", func(t *testing.T) {
-		t.Parallel()
 
-		// First, verify that the testdata can be parsed "normally"
-		p, err := NewParserFromFilename("testdata/example-full-pipeline")
-		assert.NoError(t, err, fmt.Errorf("Failed to create parser: %w", err))
+	tcs := []struct {
+		desc      string
+		testdata  string
+		resources map[string]string
+		inputs    map[string]cty.Value
+	}{
+		{
+			desc:     "basic apply from json over junit pipeline",
+			testdata: "../bubbly/testdata/junit",
+			resources: map[string]string{
+				"importer":   "junit-simple",
+				"translator": "junit-simple",
+			},
+			inputs: map[string]cty.Value{
+				"importer": cty.ObjectVal(map[string]cty.Value{
+					"input": cty.ObjectVal(
+						map[string]cty.Value{
+							"data": cty.ListVal([]cty.Value{cty.StringVal("WALALALALA")}),
+							"file": cty.StringVal("../bubbly/testdata/junit/junit.xml"),
+						},
+					),
+				}),
+				"translator": cty.ObjectVal(map[string]cty.Value{
+					"input": cty.ObjectVal(
+						map[string]cty.Value{
+							"data": cty.ListVal([]cty.Value{cty.StringVal("WALALALALA")}),
+						},
+					),
+				}),
+				"publish": cty.ObjectVal(map[string]cty.Value{
+					"input": cty.ObjectVal(
+						map[string]cty.Value{
+							"data": cty.ListVal([]cty.Value{cty.StringVal("WALALALALA")}),
+						},
+					),
+				}),
+			},
+		},
+	}
 
-		err = p.Parse()
+	for _, tc := range tcs {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
 
-		assert.NoError(t, err, fmt.Errorf("Failed to decode parser: %w", err))
+			// First, verify that the testdata can be parsed "normally"
+			p, err := NewParserFromFilename(tc.testdata)
+			assert.NoError(t, err, fmt.Errorf("Failed to create parser: %w", err))
 
-		// Next, test that each resource can be converted from HCL -> JSON -> Resource
-		p2 := loadJSONResources(t, p, "testdata/example-full-pipeline")
+			err = p.Parse()
 
-		// Finally, test that each resource can be applied given valid inputs
-		inputs := cty.ObjectVal(map[string]cty.Value{
-			"input": cty.ObjectVal(
-				map[string]cty.Value{
-					"data": cty.ListVal([]cty.Value{cty.StringVal("WALALALALA")}),
-					"file": cty.StringVal("./testdata/example-full-pipeline/junit.xml"),
-				},
-			),
+			assert.NoError(t, err, fmt.Errorf("Failed to decode parser: %w", err))
+
+			// Next, test that each resource can be converted from HCL -> JSON -> Resource
+			p2 := loadJSONResources(t, p, tc.testdata)
+
+			// Finally, test that each resource can be applied given valid inputs
+			inputs := tc.inputs["importer"]
+
+			// importer apply
+
+			res, err := p2.GetResource(core.ImporterResourceKind, tc.resources["importer"])
+
+			assert.NoError(t, err, fmt.Errorf("Couldn't get %s resource %s: %w", core.ImporterResourceKind, tc.resources["importer"], err))
+
+			out := res.Apply(p2.Context(inputs))
+
+			t.Logf("Resource %s ResourceOutput: %+v", res.String(), out.Output())
+
+			assert.NoError(t, out.Error)
+
+			// translator apply
+
+			inputs = tc.inputs["translator"]
+
+			res, err = p2.GetResource(core.TranslatorResourceKind, tc.resources["translator"])
+			assert.NoError(t, err, fmt.Errorf("Couldn't get %s resource %s: %w", core.TranslatorResourceKind, tc.resources["translator"], err))
+			out = res.Apply(p2.Context(inputs))
+
+			t.Logf("Resource %s ResourceOutput: %+v", res.String(), out.Output())
+
+			assert.NoError(t, out.Error)
+
+			// TODO: Figure out publish step onwards.
+
+			// publish apply
+
+			// inputs = tc.inputs["publish"]
+
+			// res, err = p2.GetResource(core.PublishResourceKind, "junit-simple")
+			// assert.NoError(t, err, fmt.Errorf("Couldn't get resource %s: %w", "publish/junit-simple", err))
+			// out = res.Apply(p2.Context(inputs))
+
+			// t.Logf("Resource %s ResourceOutput: %+v", res.String(), out.Output())
+
+			// assert.NoError(t, out.Error)
 		})
-
-		// importer apply
-
-		res, err := p2.GetResource(core.ImporterResourceKind, "junit-simple")
-
-		assert.NoError(t, err, fmt.Errorf("Couldn't get resource %s: %w", "importer/junit-simple", err))
-
-		out := res.Apply(p2.Context(inputs))
-
-		t.Logf("Resource %s ResourceOutput: %+v", res.String(), out.Output())
-
-		assert.NoError(t, out.Error)
-
-		// translator apply
-
-		res, err = p2.GetResource(core.TranslatorResourceKind, "junit-simple")
-		assert.NoError(t, err, fmt.Errorf("Couldn't get resource %s: %w", "translator/junit-simple", err))
-		out = res.Apply(p2.Context(inputs))
-
-		t.Logf("Resource %s ResourceOutput: %+v", res.String(), out.Output())
-
-		assert.NoError(t, out.Error)
-
-		// TODO: Figure out publish step onwards.
-
-		// publish apply
-
-		// res, err = p2.GetResource(core.PublishResourceKind, "junit-simple")
-		// assert.NoError(t, err, fmt.Errorf("Couldn't get resource %s: %w", "publisher/junit-simple", err))
-		// inputs = cty.ObjectVal(map[string]cty.Value{
-		// 	"input": cty.ObjectVal(
-		// 		map[string]cty.Value{
-		// 			"data": cty.StringVal(""),
-		// 		},
-		// 	),
-		// })
-		// out = res.Apply(p2.Context(inputs))
-
-		// t.Logf("Resource %s ResourceOutput: %+v", res.String(), out.Output())
-
-		// assert.NoError(t, out.Error)
-
-		// for _, resMap := range p.Resources {
-		// 	for _, res := range resMap {
-		// 		out := res.Apply(p.Context(inputs))
-
-		// 		t.Logf("Resource %s ResourceOutput: %+v", res.String(), out.Output())
-
-		// 		assert.NoError(t, out.Error)
-		// 	}
-		// }
-
-		// res, err := p.GetResource(core.TranslatorResourceKind, "junit")
-		// if err != nil {
-		// 	t.Errorf("Couldnt get resource: %s", "junit")
-		// 	t.FailNow()
-		// }
-
-		// if out := res.Apply(p.Context(inputs)); out.Error != nil {
-		// 	t.Errorf("Failed to decode translator at the end: %s", out.Error.Error())
-		// }
-
-	})
-
+	}
 }
 
 // loadJSONResources is a convenience function for loading bubbly resources
