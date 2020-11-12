@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	testDataJSON "github.com/verifa/bubbly/api/v1/testdata/importer/json"
 	testDataXML "github.com/verifa/bubbly/api/v1/testdata/importer/xml"
 	"github.com/zclconf/go-cty/cty"
@@ -11,38 +12,25 @@ import (
 
 func TestImporterJSON(t *testing.T) {
 
-	importerName := "json"
-
 	ctyType := testDataJSON.ExpectedType()
-	expVal := testDataJSON.ExpectedValue()
+	expected := testDataJSON.ExpectedValue()
 
 	source := jsonSource{
-		File:   "testdata/importer/json/sonarqube-example.json",
+		File:   filepath.FromSlash(`testdata/importer/json/sonarqube-example.json`),
 		Format: ctyType,
 	}
 
 	val, err := source.Resolve()
 
-	if err != nil {
-		t.Errorf("failed to Resolve() %s importer: %w", importerName, err)
-	}
-	if val.IsNull() {
-		t.Errorf("call to Resolve() of %s importer returned cty.NilVal", importerName)
-	}
-	if val.Equals(expVal).False() {
-		t.Errorf("%s importer returned unexpected value.\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s",
-			importerName, expVal.GoString(), val.GoString())
-	}
-
-	t.Logf("%s importer returned value: %s", importerName, val.GoString())
+	assert.Nil(t, err, "failed to Resolve() the importer")
+	assert.False(t, val.IsNull(), "the importer returned null type value")
+	assert.False(t, val.Equals(expected).False(), "the importer returned unexpected value")
 }
 
 // runXMLSubtestHelper is a helper which runs tests for a variety of XML input files
 func runXMLSubtestHelper(t *testing.T, xmlFile string, ctyType cty.Type, expected cty.Value) {
 
 	t.Helper()
-
-	importerName := "xml"
 
 	source := xmlSource{
 		File:   xmlFile,
@@ -51,18 +39,9 @@ func runXMLSubtestHelper(t *testing.T, xmlFile string, ctyType cty.Type, expecte
 
 	val, err := source.Resolve()
 
-	if err != nil {
-		t.Errorf("failed to Resolve() %s importer: %w", importerName, err)
-	}
-	if val.IsNull() {
-		t.Errorf("call to Resolve() of %s importer returned cty.NilVal", importerName)
-	}
-	if val.Equals(expected).False() {
-		t.Errorf("%s importer returned unexpected value,\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s",
-			importerName, expected.GoString(), val.GoString())
-	}
-
-	t.Logf("%s importer returned value: %s", importerName, val.GoString())
+	assert.Nil(t, err, "failed to Resolve() the importer")
+	assert.False(t, val.IsNull(), "the importer returned null type value")
+	assert.False(t, val.Equals(expected).False(), "the importer returned unexpected value")
 }
 
 // The XML format is different from JSON in a way that it
@@ -77,7 +56,7 @@ func TestImporterXML(t *testing.T) {
 	t.Run("junit0", func(t *testing.T) {
 
 		runXMLSubtestHelper(t,
-			"testdata/importer/xml/junit0.xml",
+			filepath.FromSlash(`testdata/importer/xml/junit0.xml`),
 			ctyType,
 			testDataXML.ExpectedValue0(),
 		)
@@ -87,7 +66,7 @@ func TestImporterXML(t *testing.T) {
 	t.Run("junit1", func(t *testing.T) {
 
 		runXMLSubtestHelper(t,
-			"testdata/importer/xml/junit1.xml",
+			filepath.FromSlash(`testdata/importer/xml/junit1.xml`),
 			ctyType,
 			testDataXML.ExpectedValue1(),
 		)
@@ -97,7 +76,7 @@ func TestImporterXML(t *testing.T) {
 	t.Run("junit2", func(t *testing.T) {
 
 		runXMLSubtestHelper(t,
-			"testdata/importer/xml/junit2.xml",
+			filepath.FromSlash(`testdata/importer/xml/junit2.xml`),
 			ctyType,
 			testDataXML.ExpectedValue2(),
 		)
@@ -106,8 +85,6 @@ func TestImporterXML(t *testing.T) {
 }
 
 func TestImporterGit(t *testing.T) {
-
-	importerName := "git"
 
 	source := gitSource{
 		Directory: filepath.FromSlash(`testdata/importer/git/repo1.git`),
@@ -129,17 +106,8 @@ func TestImporterGit(t *testing.T) {
 	})
 
 	val, err := source.Resolve()
-	if err != nil {
-		t.Errorf(`Failed to Resolve() Git importer: %s`, err.Error())
-	}
-	if val.IsNull() {
-		t.Errorf(`Received Null type value`)
-	}
 
-	if val.Equals(expected).False() {
-		t.Errorf("%s importer returned unexpected value,\n\nExpected:\n\n\t%s\n\nActual:\n\n\t%s",
-			importerName, expected.GoString(), val.GoString())
-	}
-
-	t.Logf(`Git Importer returned value: %#v`, val)
+	assert.Nil(t, err, "failed to Resolve() the importer")
+	assert.False(t, val.IsNull(), "the importer returned null type value")
+	assert.False(t, val.Equals(expected).False(), "the importer returned unexpected value")
 }

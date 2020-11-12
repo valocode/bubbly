@@ -8,6 +8,7 @@ import (
 	"github.com/verifa/bubbly/config"
 )
 
+// ClientSetup is a convenience function for setting up a new bubbly client.
 func ClientSetup(sc config.ServerConfig) (*client.Client, error) {
 	if sc.Host != "" && sc.Port != "" {
 		c, err := client.NewClient(sc)

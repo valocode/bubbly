@@ -11,6 +11,10 @@ build/
 # Test binary, built with `go test -c`
 *.test
 
+# test artifacts
+coverage.txt
+test_report.json
+
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
