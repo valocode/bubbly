@@ -14,7 +14,7 @@ func InitializeRoutes(router *gin.Engine) {
 	api := router.Group("/api")
 	{
 		api.POST("/resource", PostResource)
-		api.GET("/resource/:id", GetResource)
+		api.GET("/resource/:namespace/:kind/:name", GetResource)
 
 		api.POST("/graphql", Query)
 	}
