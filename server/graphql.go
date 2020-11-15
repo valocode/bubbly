@@ -29,7 +29,7 @@ func Query(c *gin.Context) {
 		return
 	}
 
-	results, queryErr := db.Query(query.Query)
+	results, queryErr := serverStore.Store.Query(query.Query)
 	if queryErr != nil {
 		log.Error().Msg(queryErr.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": queryErr.Error()})

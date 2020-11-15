@@ -2,28 +2,30 @@ package server
 
 import (
 	"fmt"
+	"os"
 
 	"net/http"
 
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/interim"
-	"github.com/zclconf/go-cty/cty"
+	"github.com/verifa/bubbly/store"
 	"golang.org/x/sync/errgroup"
 )
 
 var router *gin.Engine
-var db *interim.DB
+
+var serverStore struct {
+	*store.Store
+}
 
 // SetupRouter returns a pointer to a gin engine after setting up middleware
 // and initializing routes
 func SetupRouter() *gin.Engine {
 	// SETUP DB
-	dbErr := initDb()
-	if dbErr != nil {
-		log.Error().Msg("Error setting up DB: " + dbErr.Error())
+	storeErr := initStore()
+	if storeErr != nil {
+		log.Error().Msg("Error setting up DB: " + storeErr.Error())
 	}
 	// Initialize Router
 	// router := gin.Default()  // Sets the Gin defaults
@@ -38,99 +40,24 @@ func SetupRouter() *gin.Engine {
 	return router
 }
 
-func initDb() error {
+func initStore() error {
 	var err error
-	db, err = interim.NewDB(getSchema())
+	serverStore.Store, err = store.New(store.Config{
+		Provider:         store.ProviderType(os.Getenv("PROVIDER")),
+		PostgresAddr:     os.Getenv("POSTGRES_ADDR"),
+		PostgresUser:     os.Getenv("POSTGRES_USER"),
+		PostgresPassword: os.Getenv("POSTGRES_PASSWORD"),
+		PostgresDatabase: os.Getenv("POSTGRES_DATABASE"),
+	})
 	if err != nil {
-		return fmt.Errorf("failed to create memDB: %w", err)
+		return fmt.Errorf("failed to create store: %w", err)
 	}
 	return nil
 }
 
-// GetDb returns a pointer to the DB
-func GetDb() *interim.DB {
-	return db
-}
-
-func getSchema() []core.Table {
-	tables := []core.Table{
-		{
-			Name: "product",
-			Fields: []core.TableField{
-				{
-					Name:   "Name",
-					Type:   cty.String,
-					Unique: true,
-				},
-			},
-		},
-		{
-			Name: "project",
-			Fields: []core.TableField{
-				{
-					Name:   "Name",
-					Type:   cty.String,
-					Unique: true,
-				},
-			},
-		},
-		{
-			Name: "repository",
-			Fields: []core.TableField{
-				{
-					Name:   "Id",
-					Type:   cty.String,
-					Unique: true,
-				},
-				{
-					Name:   "Url",
-					Type:   cty.String,
-					Unique: false,
-				},
-			},
-		},
-		{
-			Name: "repository_version",
-			Fields: []core.TableField{
-				{
-					Name:   "Commit",
-					Type:   cty.String,
-					Unique: true,
-				},
-				{
-					Name:   "Tag",
-					Type:   cty.String,
-					Unique: false,
-				},
-				{
-					Name:   "Branch",
-					Type:   cty.String,
-					Unique: false,
-				},
-			},
-		},
-		{
-			Name: "linter_issue",
-			Fields: []core.TableField{
-				{
-					Name:   "Name",
-					Type:   cty.String,
-					Unique: true,
-				},
-				{
-					Name:   "Severity",
-					Type:   cty.String,
-					Unique: true,
-				},
-				{
-					Name:   "Type",
-					Type:   cty.String,
-					Unique: true,
-				},
-			},
-		},
-	}
-	return tables
+// GetStore returns a pointer to the DB
+func GetStore() *store.Store {
+	return serverStore.Store
 }
 
 func ListenAndServe(s *http.Server) error {

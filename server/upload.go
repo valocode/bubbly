@@ -35,14 +35,12 @@ func upload(c *gin.Context) {
 
 	log.Debug().Interface("data", upload).Msg("loading data into intermediary database")
 
-	importErr := db.Import(upload.Data)
+	importErr := serverStore.Store.Save(upload.Data)
 	if importErr != nil {
 		log.Error().Msg(importErr.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": importErr.Error()})
 		return
 	}
-
-	// TODO when Uploader is ready, send data here
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "uploaded",

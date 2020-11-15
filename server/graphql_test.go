@@ -10,7 +10,7 @@ import (
 	testData "github.com/verifa/bubbly/server/testdata/upload"
 )
 
-func TestQuery(t *testing.T) {
+func IntegrationTestQuery(t *testing.T) {
 	r := gofight.New()
 	router := SetupRouter()
 
@@ -33,7 +33,7 @@ func TestQuery(t *testing.T) {
 		})
 }
 
-func TestQueryFail(t *testing.T) {
+func IntegrationTestQueryFail(t *testing.T) {
 	r := gofight.New()
 
 	r.POST("/api/graphql").

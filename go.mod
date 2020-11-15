@@ -16,9 +16,11 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/go-openapi/spec v0.19.12 // indirect
-	github.com/google/uuid v1.1.1
+	github.com/go-pg/pg v8.0.7+incompatible
+	github.com/go-pg/pg/v10 v10.6.2 // indirect
+	github.com/golang/mock v1.3.1
 	github.com/graphql-go/graphql v0.7.9
-	github.com/hashicorp/go-memdb v1.3.0
+	github.com/graphql-go/handler v0.2.3
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/hcl/v2 v2.6.0
 	github.com/hashicorp/terraform v0.13.4
@@ -49,7 +51,6 @@ require (
 	github.com/xujiajun/nutsdb v0.5.0 // indirect
 	github.com/zclconf/go-cty v1.6.1
 	github.com/zclconf/go-cty-yaml v1.0.2
-	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/net v0.0.0-20201031054903-ff519b6c9102 // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/text v0.3.4 // indirect

@@ -1,16 +1,15 @@
-package interim
+package store
 
 import (
 	"github.com/graphql-go/graphql"
-	"github.com/hashicorp/go-memdb"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
 )
 
-// newGraphQL creates a new GraphQL schema
+// newGraphQLSchema creates a new GraphQL schema
 // wrapping the given memDB with a schmea that
 // corresponds to the given set of tables.
-func newGraphQL(tables []core.Table, memDB *memdb.MemDB) (graphql.Schema, error) {
+func newGraphQLSchema(tables []core.Table, p provider) (graphql.Schema, error) {
 	// These are the top-level query fields. Each of these fields
 	// will correspond to each of the tables in the entire hierarchy.
 	queryFields := make(graphql.Fields)
@@ -20,7 +19,7 @@ func newGraphQL(tables []core.Table, memDB *memdb.MemDB) (graphql.Schema, error)
 	// and all its subtables, if they exist.
 	for _, t := range tables {
 		// These are top-level tables so we can ignore their graphQL types.
-		addTableToGraphQL(t, memDB, queryFields)
+		addTableToGraphQL(t, p, queryFields)
 	}
 
 	// This config is used to create a new query type
@@ -41,7 +40,7 @@ func newGraphQL(tables []core.Table, memDB *memdb.MemDB) (graphql.Schema, error)
 
 // addTableToGraphQL adds as table to queryFields and returns the GraphQL type
 // corresponding to the table so it can be included in parent tables (if they exist).
-func addTableToGraphQL(t core.Table, memDB *memdb.MemDB, queryFields graphql.Fields) graphql.Type {
+func addTableToGraphQL(t core.Table, p provider, queryFields graphql.Fields) (graphql.Type, graphql.FieldConfigArgument) {
 	var (
 		// These are the fields for this specific table
 		// which will correspond to fields on the GraphQL
@@ -55,9 +54,13 @@ func addTableToGraphQL(t core.Table, memDB *memdb.MemDB, queryFields graphql.Fie
 
 	// Set fields and args for the current table/type.
 	for _, f := range t.Fields {
-		t := graphQLFieldType(f)
-		fields[f.Name] = &graphql.Field{Type: t}
-		args[f.Name] = &graphql.ArgumentConfig{Type: t}
+		ft := graphQLFieldType(f)
+		fields[f.Name] = &graphql.Field{Type: ft}
+		args[f.Name] = &graphql.ArgumentConfig{Type: ft}
+	}
+
+	args[filterName] = &graphql.ArgumentConfig{
+		Type: graphQLFilterType(t.Name, args),
 	}
 
 	// Each sub table represents a distinct GraphQL type.
@@ -66,14 +69,13 @@ func addTableToGraphQL(t core.Table, memDB *memdb.MemDB, queryFields graphql.Fie
 	// we can continue.
 	for _, sub := range t.Tables {
 		// Recursively add the subtable first so we can get its type.
-		subType := addTableToGraphQL(sub, memDB, queryFields)
+		subType, subArgs := addTableToGraphQL(sub, p, queryFields)
 
 		// Each sub type is a list on the current type.
 		fields[sub.Name] = &graphql.Field{
-			Type: graphql.NewList(subType),
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				return resolveList(memDB, t, p)
-			},
+			Type:    graphql.NewList(subType),
+			Args:    subArgs,
+			Resolve: p.ResolveList,
 		}
 	}
 
@@ -90,46 +92,12 @@ func addTableToGraphQL(t core.Table, memDB *memdb.MemDB, queryFields graphql.Fie
 	// Register a type for our table corresponding to the
 	// name of the table itself (note: this name is not namespaced).
 	queryFields[t.Name] = &graphql.Field{
-		Type: tType,
-		Args: args,
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			return resolveScalar(memDB, t, p)
-		},
+		Type:    tType,
+		Args:    args,
+		Resolve: p.ResolveScalar,
 	}
 
-	return tType
-}
-
-func resolveScalar(memDB *memdb.MemDB, t core.Table, p graphql.ResolveParams) (interface{}, error) {
-	txn := memDB.Txn(false)
-	defer txn.Abort()
-
-	var (
-		n   interface{}
-		err error
-	)
-	for k, v := range p.Args {
-		n, err = txn.First(t.Name, k, v)
-		break
-	}
-
-	return n, err
-}
-
-func resolveList(memDB *memdb.MemDB, t core.Table, p graphql.ResolveParams) (interface{}, error) {
-	txn := memDB.Txn(false)
-	defer txn.Abort()
-
-	var (
-		n   interface{}
-		err error
-	)
-	for k, v := range p.Args {
-		n, err = txn.First(t.Name, k, v)
-		break
-	}
-
-	return n, err
+	return tType, args
 }
 
 func graphQLFieldType(f core.TableField) *graphql.Scalar {
@@ -143,4 +111,72 @@ func graphQLFieldType(f core.TableField) *graphql.Scalar {
 	}
 
 	return nil
+}
+
+const (
+	filterName = "filter"
+)
+
+const (
+	filterGreaterThan          = "_gt"
+	filterLessThan             = "_lt"
+	filterGreaterThanOrEqualTo = "_gte"
+	filterLessThanOrEqualTo    = "_lte"
+	filterIn                   = "_in"
+	filterNotIn                = "_not_in"
+)
+
+var scalarFilters = []string{
+	filterGreaterThan,
+	filterLessThan,
+	filterGreaterThanOrEqualTo,
+	filterLessThanOrEqualTo,
+}
+
+var listFilters = []string{
+	filterIn,
+	filterNotIn,
+}
+
+func graphQLFilterType(typeName string, args graphql.FieldConfigArgument) *graphql.InputObject {
+	var (
+		// Micro-opt: we know the size of the field map is the total number
+		// of filter ops times the number of args we are given.
+		numFields = (len(scalarFilters) + len(listFilters)) * len(args)
+		fields    = make(graphql.InputObjectConfigFieldMap, numFields)
+	)
+	for n, a := range args {
+		for _, f := range scalarFilters {
+			fields[n+f] = &graphql.InputObjectFieldConfig{
+				Type: a.Type,
+			}
+		}
+		for _, f := range listFilters {
+			fields[n+f] = &graphql.InputObjectFieldConfig{
+				Type: graphql.NewList(a.Type),
+			}
+		}
+	}
+
+	return graphql.NewInputObject(
+		graphql.InputObjectConfig{
+			Name:   typeName + "_filter",
+			Fields: fields,
+		},
+	)
+}
+
+func isValidParent(parent interface{}) bool {
+	if parent == nil {
+		return false
+	}
+
+	if _, ok := parent.(map[string]interface{}); ok {
+		// graphql-go passes nil maps as empty values
+		// and we don't work with maps so a map is not
+		// a valid parent.
+		return false
+	}
+
+	return true
 }

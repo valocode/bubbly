@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+
+  integration:
+    build:
+      context: .
+      dockerfile: docker/integration/Dockerfile
+    ports:
+      - "8111:8111"
+    environment:
+      PROVIDER: "${BUBBLY_PROVIDER}"
+      POSTGRES_ADDR: "postgres:5432"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DATABASE: "integration"
+      ELASTICSEARCH_URL: "http://elasticsearch:9200"
+
+  storefront:
+    build:
+      context: .
+      dockerfile: docker/storefront/Dockerfile
+    ports:
+      - "8111:8111"
+    environment:
+      PROVIDER: "${BUBBLY_PROVIDER}"
+      POSTGRES_ADDR: "postgres:5432"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DATABASE: "integration"
+
+  postgres:
+    image: postgres:13.0
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "integration"
+    command:
+      - "postgres"
+      - "-c"
+      - "log_statement=all"
+
+  elasticsearch:
+    image: elasticsearch:7.9.3
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      discovery.type: "single-node"

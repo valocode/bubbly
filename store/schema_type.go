@@ -1,12 +1,18 @@
-package interim
+package store
 
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
+)
+
+const (
+	idFieldName         = "ID"
+	schemaTypeFieldName = "SchemaType"
 )
 
 var (
@@ -27,27 +33,22 @@ func newSchemaTypes(tables []core.Table) map[string]schemaType {
 }
 
 func addSchemaType(t core.Table, types map[string]schemaType) {
-	// Initalize the list with the "id" and "fk" index fields
-	// that are required for memdb.
-	fields := []reflect.StructField{
-		{
-			Name: idFieldName,
-			Type: reflectString,
-		},
-		{
-			Name: fkFieldName,
-			Type: reflectString,
-		},
-	}
-
 	// Gather all fields from the table and map them to their
 	// respective types from the reflect package.
+	fields := make([]reflect.StructField, 0, len(t.Fields))
 	for _, f := range t.Fields {
 		fields = append(fields, reflect.StructField{
-			Name: f.Name,
+			// Make sure that the attribute is exported on the struct.
+			Name: strings.Title(f.Name),
 			Type: reflectFieldType(f),
 		})
 	}
+
+	// Store the name of the type on the type itself.
+	fields = append(fields, reflect.StructField{
+		Name: schemaTypeFieldName,
+		Type: reflectString,
+	})
 
 	// Set the type to the name of the table. Note that
 	// this architecture assumes no two tables at any
@@ -83,40 +84,72 @@ type schemaType struct {
 	rt reflect.Type
 }
 
+// Empty creates a zero'd instanced of the schemaType.
+func (t schemaType) Empty() interface{} {
+	return reflect.New(t.rt).Interface()
+}
+
+// EmptySlice creates a slice of zero'd instanced of the schemaType.
+func (t schemaType) EmptySlice() interface{} {
+	return reflect.New(reflect.SliceOf(reflect.PtrTo(t.rt))).Interface()
+}
+
 // New creates a new instance of schemaType with the fields
 // set based on the values in d.
-func (t schemaType) New(d core.Data, id, fk string) (interface{}, error) {
-	val := reflect.New(t.rt).Elem()
+func (t schemaType) New(d core.Data, parentName string, parentID int64) (interface{}, error) {
+	var (
+		val  = reflect.New(t.rt)
+		elem = val.Elem()
+	)
 
 	// We now have a value of our dynamic struct.
 	// We can set the fields based on our data now.
 	for _, f := range d.Fields {
-		fval := val.FieldByName(f.Name)
+		// TODO(andrewhare): Revist this to be more flexible, again
+		// we have to title-case the attr to match what we did when
+		// we created the type itself.
+		var (
+			name = strings.Title(f.Name)
+			fval = elem.FieldByName(name)
+		)
 		switch f.Value.Type() {
 		case cty.Bool:
 			var n bool
 			if err := gocty.FromCtyValue(f.Value, &n); err != nil {
-				return nil, fmt.Errorf("falied to extract bool value for %s[%s]: %w", d.TableName, f.Name, err)
+				return nil, fmt.Errorf("falied to extract bool value for %s.%s: %w", d.TableName, name, err)
 			}
 			fval.SetBool(n)
 		case cty.Number:
 			// TODO: Support different numeric types.
 			var n int64
 			if err := gocty.FromCtyValue(f.Value, &n); err != nil {
-				return nil, fmt.Errorf("falied to extract numeric value for %s[%s]: %w", d.TableName, f.Name, err)
+				return nil, fmt.Errorf("falied to extract numeric value for %s.%s: %w", d.TableName, name, err)
 			}
 			fval.SetInt(n)
 		case cty.String:
 			var n string
 			if err := gocty.FromCtyValue(f.Value, &n); err != nil {
-				return nil, fmt.Errorf("falied to extract string value for %s[%s]: %w", d.TableName, f.Name, err)
+				return nil, fmt.Errorf("falied to extract string value for %s.%s: %w", d.TableName, name, err)
 			}
 			fval.SetString(n)
 		}
 	}
 
-	val.FieldByName(idFieldName).SetString(id)
-	val.FieldByName(fkFieldName).SetString(fk)
+	elem.FieldByName(schemaTypeFieldName).SetString(d.TableName)
+
+	if parentName != "" {
+		elem.FieldByName(strings.Title(parentName + "_id")).SetInt(parentID)
+	}
 
 	return val.Interface(), nil
+}
+
+// schemaTypeID returns the ID for the given value.
+func schemaTypeID(n interface{}) int64 {
+	return reflect.ValueOf(n).Elem().FieldByName(idFieldName).Int()
+}
+
+// schemaTypeName returns the name of the schema type for the given value.
+func schemaTypeName(n interface{}) string {
+	return reflect.ValueOf(n).Elem().FieldByName(schemaTypeFieldName).String()
 }

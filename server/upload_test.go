@@ -10,7 +10,7 @@ import (
 )
 
 // This creates a passing test for the upload route
-func TestUploadPassing(t *testing.T) {
+func IntegrationTestUploadPassing(t *testing.T) {
 	r := gofight.New()
 
 	r.POST("/alpha1/upload").
