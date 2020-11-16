@@ -12,6 +12,7 @@ import (
 
 // Tests api.NewResources
 func TestNewResources(t *testing.T) {
+	t.Parallel()
 	tcs := []struct {
 		desc     string
 		expected *Resources
@@ -30,7 +31,6 @@ func TestNewResources(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 			resources := NewResources()
 
 			assert.NotNil(t, resources)
@@ -42,6 +42,7 @@ func TestNewResources(t *testing.T) {
 
 // Tests api.NewResourcesFromBlocks
 func TestNewResourcesFromBlocks(t *testing.T) {
+	t.Parallel()
 	tcs := []struct {
 		desc              string
 		input             core.ResourceBlocks
@@ -80,17 +81,6 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 				"publish":      map[string]core.Resource{},
 				"translator":   map[string]core.Resource{},
 			},
-		},
-		{
-			desc: "basic duplicate resource",
-			input: core.ResourceBlocks{
-				&core.ResourceBlock{
-					ResourceKind:       "importer",
-					ResourceName:       "sonarqube",
-					ResourceAPIVersion: "v1",
-				},
-			},
-			expectedSuccess: false,
 		},
 		{
 			desc: "basic all resource types",
@@ -181,13 +171,14 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 
 			resources := NewResourcesFromBlocks(tc.input)
 
-			t.Logf("resources: %+v", resources)
-
 			assert.NotNil(t, resources)
+
+			if resources != nil {
+				t.Logf("resources: %+v", resources)
+			}
 
 			assert.NotNil(t, resources.Get(tc.expectedResource.Kind(), tc.expectedResource.Name()))
 
@@ -198,6 +189,7 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 
 // Tests Resources.Get
 func TestGetResource(t *testing.T) {
+	t.Parallel()
 	tcs := []struct {
 		desc      string
 		resources *Resources
@@ -253,7 +245,6 @@ func TestGetResource(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 			r := tc.resources.Get(tc.input.Kind(), tc.input.Name())
 
 			if tc.expectedSuccess {
@@ -267,6 +258,7 @@ func TestGetResource(t *testing.T) {
 
 // Tests failures cases of Resources.NewResource
 func TestNewResourceFails(t *testing.T) {
+	t.Parallel()
 	tcs := []struct {
 		desc          string
 		input         core.ResourceBlocks
@@ -286,7 +278,7 @@ func TestNewResourceFails(t *testing.T) {
 					ResourceAPIVersion: "v1",
 				},
 			},
-			expectedError: "resource v1.importer.sonarqube already exists",
+			expectedError: "resource v1.default.importer.sonarqube already exists",
 		},
 		{
 			desc: "basic unsupported resource creation",
@@ -303,7 +295,6 @@ func TestNewResourceFails(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 			resources := NewResources()
 
 			assert.NotNil(t, resources)

@@ -42,6 +42,8 @@ func newResourceBlock(t *testing.T, filename string) ResourceBlock {
 // tests the conversion of HCL to a ResourceBlock independent of the
 // bubbly/parse package
 func TestReadHCLToResourceBlock(t *testing.T) {
+	t.Parallel()
+
 	tcs := []struct {
 		desc     string
 		input    string
@@ -60,7 +62,6 @@ func TestReadHCLToResourceBlock(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 
 			rb := newResourceBlock(t, tc.input)
 
@@ -73,6 +74,7 @@ func TestReadHCLToResourceBlock(t *testing.T) {
 
 // tests the conversion of ResourceBlock to string (ResourceBlock.String())
 func TestResourceBlockString(t *testing.T) {
+	t.Parallel()
 	tcs := []struct {
 		desc     string
 		input    ResourceBlock
@@ -84,14 +86,42 @@ func TestResourceBlockString(t *testing.T) {
 				ResourceKind:       "importer",
 				ResourceName:       "sonarqube",
 				ResourceAPIVersion: "v1",
+				Metadata: &Metadata{
+					Labels: map[string]string{
+						"environment": "prod",
+					},
+					Namespace: "qa",
+				},
 			},
-			expected: "v1.importer.sonarqube",
+			expected: "v1.qa.importer.sonarqube",
+		},
+		{
+			desc: "basic importer without namespace",
+			input: ResourceBlock{
+				ResourceKind:       "importer",
+				ResourceName:       "sonarqube",
+				ResourceAPIVersion: "v1",
+				Metadata: &Metadata{
+					Labels: map[string]string{
+						"environment": "prod",
+					},
+				},
+			},
+			expected: "v1.default.importer.sonarqube",
+		},
+		{
+			desc: "basic importer without metadata",
+			input: ResourceBlock{
+				ResourceKind:       "importer",
+				ResourceName:       "sonarqube",
+				ResourceAPIVersion: "v1",
+			},
+			expected: "v1.default.importer.sonarqube",
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 
 			sID := tc.input.String()
 
@@ -100,15 +130,75 @@ func TestResourceBlockString(t *testing.T) {
 	}
 }
 
+// tests the conversion of ResourceBlock to string (ResourceBlock.String())
+func TestResourceBlockLabels(t *testing.T) {
+	t.Parallel()
+	tcs := []struct {
+		desc     string
+		input    ResourceBlock
+		expected map[string]string
+	}{
+		{
+			desc: "basic importer",
+			input: ResourceBlock{
+				ResourceKind:       "importer",
+				ResourceName:       "sonarqube",
+				ResourceAPIVersion: "v1",
+				Metadata: &Metadata{
+					Labels: map[string]string{
+						"environment": "prod",
+					},
+					Namespace: "qa",
+				},
+			},
+			expected: map[string]string{
+				"environment": "prod",
+			},
+		},
+		{
+			desc: "basic importer without labels",
+			input: ResourceBlock{
+				ResourceKind:       "importer",
+				ResourceName:       "sonarqube",
+				ResourceAPIVersion: "v1",
+				Metadata: &Metadata{
+					Namespace: "qa",
+				},
+			},
+			expected: nil,
+		},
+		{
+			desc: "basic importer without metadata",
+			input: ResourceBlock{
+				ResourceKind:       "importer",
+				ResourceName:       "sonarqube",
+				ResourceAPIVersion: "v1",
+			},
+			expected: nil,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.desc, func(t *testing.T) {
+
+			l := tc.input.Labels()
+
+			assert.Equal(t, tc.expected, l)
+		})
+	}
+}
+
 // tests core.NewResourceIDFromString()
 func TestNewResourceIDFromString(t *testing.T) {
+	t.Parallel()
+
 	tcs := []struct {
 		desc     string
 		input    string
 		expected ResourceID
 	}{
 		{
-			desc:  "basic importer",
+			desc:  "basic importer without namespace specified",
 			input: "importer/sonarqube",
 			expected: ResourceID{
 				Kind: "importer",
@@ -116,29 +206,34 @@ func TestNewResourceIDFromString(t *testing.T) {
 			},
 		},
 		{
-			desc:  "basic importer",
-			input: "pipeline/sonarqube",
+			desc:  "basic pipeline with namespace specified",
+			input: "qa/pipeline/sonarqube",
 			expected: ResourceID{
-				Kind: "pipeline",
-				Name: "sonarqube",
+				Kind:      "pipeline",
+				Name:      "sonarqube",
+				Namespace: "qa",
 			},
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 
 			rID := NewResourceIDFromString(tc.input)
 
+			t.Logf("Resource ID: %s", rID)
+
 			assert.Equal(t, tc.expected.Kind, rID.Kind)
 			assert.Equal(t, tc.expected.Name, rID.Name)
+			assert.Equal(t, tc.expected.Namespace, rID.Namespace)
 		})
 	}
 }
 
 // tests ResourceID.String()
 func TestString(t *testing.T) {
+	t.Parallel()
+
 	tcs := []struct {
 		desc     string
 		input    ResourceID
@@ -147,24 +242,25 @@ func TestString(t *testing.T) {
 		{
 			desc: "basic importer",
 			input: ResourceID{
-				Kind: "importer",
-				Name: "sonarqube",
+				Kind:      "importer",
+				Name:      "sonarqube",
+				Namespace: "qa",
 			},
-			expected: "importer/sonarqube",
+			expected: "qa/importer/sonarqube",
 		},
 		{
 			desc: "basic importer",
 			input: ResourceID{
-				Kind: "pipeline",
-				Name: "sonarqube",
+				Kind:      "pipeline",
+				Name:      "sonarqube",
+				Namespace: "qa",
 			},
-			expected: "pipeline/sonarqube",
+			expected: "qa/pipeline/sonarqube",
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 
 			sID := tc.input.String()
 

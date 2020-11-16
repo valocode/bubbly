@@ -48,7 +48,6 @@ func TestNewConfig(t *testing.T) {
 					Protocol: "http",
 					Port:     "8070",
 					Auth:     false,
-					Host:     "localhost",
 					Token:    "",
 				},
 			},
@@ -71,12 +70,15 @@ func TestNewConfig(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
+			// Since viper config is currently globalised, we must reset
+			// during testing to make sure previous test bindings do not
+			// carry over.
+			viper.Reset()
 
-			flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
+			flagSet := pflag.NewFlagSet(tc.desc, pflag.ContinueOnError)
 
 			for k, v := range tc.flags {
-				flagSet.String(k, v, "test")
+				flagSet.String(k, v, tc.desc)
 			}
 
 			viper.BindPFlags(flagSet)
@@ -90,6 +92,8 @@ func TestNewConfig(t *testing.T) {
 // tests setting up of Config from a mix of viper bindings and defaults
 // using config.SetupConfigs
 func TestSetupConfigs(t *testing.T) {
+	t.Parallel()
+
 	tcs := []struct {
 		desc     string
 		flags    map[string]string
@@ -154,12 +158,15 @@ func TestSetupConfigs(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
+			// Since viper config is currently globalised, we must reset
+			// during testing to make sure previous test bindings do not
+			// carry over.
+			viper.Reset()
 
-			flagSet := pflag.NewFlagSet("test", pflag.ContinueOnError)
+			flagSet := pflag.NewFlagSet(tc.desc, pflag.ContinueOnError)
 
 			for k, v := range tc.flags {
-				flagSet.String(k, v, "test")
+				flagSet.String(k, v, tc.desc)
 			}
 
 			viper.BindPFlags(flagSet)

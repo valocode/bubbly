@@ -15,6 +15,7 @@ import (
 // importer resource is correct and that converted Resources match what is
 // expected.
 func TestImporterJSONConversion(t *testing.T) {
+	t.Parallel()
 	tcs := []struct {
 		desc     string
 		input    string
@@ -53,7 +54,6 @@ func TestImporterJSONConversion(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 			p, err := NewParserFromFilename(tc.input)
 			assert.NoError(t, err, fmt.Errorf("Failed to create parser: %w", err))
 
@@ -119,6 +119,7 @@ func TestImporterJSONConversion(t *testing.T) {
 // 4. be applied to the bubbly server
 func TestApplyFromJSONParser(t *testing.T) {
 
+	t.Parallel()
 	tcs := []struct {
 		desc      string
 		testdata  string
@@ -161,7 +162,6 @@ func TestApplyFromJSONParser(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
 
 			// First, verify that the testdata can be parsed "normally"
 			p, err := NewParserFromFilename(tc.testdata)

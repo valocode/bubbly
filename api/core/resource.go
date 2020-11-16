@@ -37,6 +37,24 @@ func (r *ResourceBlock) Name() string {
 	return r.ResourceName
 }
 
+// Namespace returns the namespace of the resource
+func (r *ResourceBlock) Namespace() string {
+	if md := r.Metadata; md != nil {
+		if md.Namespace != "" {
+			return md.Namespace
+		}
+	}
+	return "default"
+}
+
+// Labels returns the labels of the resource
+func (r *ResourceBlock) Labels() map[string]string {
+	if md := r.Metadata; md != nil {
+		return md.Labels
+	}
+	return nil
+}
+
 // APIVersion returns the APIVersion of the resource
 func (r *ResourceBlock) APIVersion() APIVersion {
 	return r.ResourceAPIVersion
@@ -45,8 +63,8 @@ func (r *ResourceBlock) APIVersion() APIVersion {
 // String returns a human-friendly string ID for the resource
 func (r *ResourceBlock) String() string {
 	return fmt.Sprintf(
-		"%s.%s.%s",
-		r.APIVersion(), r.ResourceKind, r.ResourceName,
+		"%s.%s.%s.%s",
+		r.APIVersion(), r.Namespace(), r.ResourceKind, r.ResourceName,
 	)
 }
 
@@ -116,11 +134,23 @@ type ResourceID struct {
 // an HCL file, and returns a ResourceID to be used to identify the resource
 // programmatically.
 func NewResourceIDFromString(resStr string) *ResourceID {
-	subStr := strings.SplitN(resStr, "/", 2)
-	return &ResourceID{
-		Kind: ResourceKind(subStr[0]),
-		Name: subStr[1],
+	rID := &ResourceID{}
+	subStr := strings.Split(resStr, "/")
+	switch l := len(subStr); l {
+	case 2:
+		// We currently do not know the namespace of the resource if
+		// not explicitely provided by the user. Fortunately, it is not needed
+		// to successfully Get the resource during a task.Apply().
+		rID.Kind = ResourceKind(subStr[0])
+		rID.Name = subStr[1]
+	case 3:
+		rID.Namespace = subStr[0]
+		rID.Kind = ResourceKind(subStr[1])
+		rID.Name = subStr[2]
+	default:
+		panic(fmt.Sprintf("Unsupported resource string representation %s", resStr))
 	}
+	return rID
 }
 
 // String returns a string representation of a ResourceID

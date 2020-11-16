@@ -2,6 +2,12 @@
 //  defines a data source and a format for the data, and returns a cty.Value
 // representation of the external data.
 resource "importer" "sonarqube" {
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
     api_version = "v1"
     spec {
         input "file" {}
@@ -33,6 +39,12 @@ resource "importer" "sonarqube" {
 // defines a translation or conversion of data from an Importer and outputs
 // a mapping of the imported data to the defined data schema.
 resource "translator" "sonarqube" {
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
     api_version = "v1"
     spec {
         input "data" {}
@@ -78,6 +90,12 @@ resource "translator" "sonarqube" {
 
 // defines the publishing of translator output data to a bubbly server
 resource "publish" "sonarqube" {
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
     api_version = "v1"
     spec {
         input "data" {}
@@ -105,7 +123,7 @@ resource "pipeline" "sonarqube" {
 
         // action: translate the imported data
         task "translator" {
-            resource = "translator/sonarqube"
+            resource = "qa/translator/sonarqube"
             // mock the repository data that will come from the git importer
             input "repository" {
                 value = {
@@ -124,7 +142,7 @@ resource "pipeline" "sonarqube" {
 
         // action: publish the translated data to the bubbly server
         task "publish" {
-            resource = "publish/sonarqube"
+            resource = "qa/publish/sonarqube"
             input "data" {
                 value = self.task.translator.value
             }
