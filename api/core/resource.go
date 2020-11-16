@@ -103,12 +103,12 @@ func (r *ResourceBlock) JSON(ctx *ResourceContext) ([]byte, error) {
 type ResourceKind string
 
 const (
-	// ImporterResourceKind represents the resource kind importer
-	ImporterResourceKind ResourceKind = "importer"
-	// TranslatorResourceKind represents the resource kind translator
-	TranslatorResourceKind = "translator"
-	// PublishResourceKind represents the resource kind publish
-	PublishResourceKind = "publish"
+	// ExtractResourceKind represents the resource kind extract
+	ExtractResourceKind ResourceKind = "extract"
+	// TransformResourceKind represents the resource kind transform
+	TransformResourceKind = "transform"
+	// LoadResourceKind represents the resource kind load
+	LoadResourceKind = "load"
 	// PipelineResourceKind represents the resource kind pipeline
 	PipelineResourceKind = "pipeline"
 	// PipelineRunResourceKind represents the resource kind pipeline_run
@@ -118,7 +118,7 @@ const (
 // ResourceKindPriority returns a list of the resource kinds by their priority
 func ResourceKindPriority() []ResourceKind {
 	return []ResourceKind{
-		ImporterResourceKind, TranslatorResourceKind, PublishResourceKind,
+		ExtractResourceKind, TransformResourceKind, LoadResourceKind,
 		PipelineResourceKind, PipelineRunResourceKind,
 	}
 }

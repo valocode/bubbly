@@ -1,5 +1,5 @@
 
-resource "importer" "sonarqube-importer" {
+resource "extract" "sonarqube-extract" {
     api_version = "v1"
     spec {
         input "file" {}

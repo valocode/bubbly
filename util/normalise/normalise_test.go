@@ -53,9 +53,9 @@ func TestExamples(t *testing.T) {
 		{
 			desc: "basic",
 			input: `
-# Describe an importer with name 'default'
-bubbly describe importer default`,
-			expected: "  # Describe an importer with name 'default'\n  bubbly describe importer default",
+# Describe an extract with name 'default'
+bubbly describe extract default`,
+			expected: "  # Describe an extract with name 'default'\n  bubbly describe extract default",
 		},
 		{
 			desc:     "empty string",
@@ -65,9 +65,9 @@ bubbly describe importer default`,
 		{
 			desc: "basic with explicit trim",
 			input: `
-								# Describe an importer with name 'default'
-bubbly describe importer default`,
-			expected: "  # Describe an importer with name 'default'\n  bubbly describe importer default",
+								# Describe an extract with name 'default'
+bubbly describe extract default`,
+			expected: "  # Describe an extract with name 'default'\n  bubbly describe extract default",
 		},
 	}
 

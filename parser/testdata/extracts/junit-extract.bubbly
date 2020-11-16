@@ -3,10 +3,10 @@
 // The output can be something like:
 // output:
 //   - status: sucess
-//   - value: <the value from the importer>
-resource "importer" "junit-importer" {
+//   - value: <the value from the extract>
+resource "extract" "junit-extract" {
     api_version = "v1"
-    // this is an input to the importer to make it reusable
+    // this is an input to the extract to make it reusable
     spec {
         input "file" {}
         type = "xml"

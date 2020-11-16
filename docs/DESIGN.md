@@ -12,9 +12,9 @@ Below are some useful definitions that help us communicate more clearly and succ
 
 **Data Source:** is a source of data, such as a JSON file or REST API (e.g. a Jira server could be seen as a Data Source).
 
-**Importer:** is a `ResourceKind` that defines a Data Source and a format for the data, and returns a `cty.Value` representation of the external data.
+**Extract:** is a `ResourceKind` that defines a Data Source and a format for the data, and returns a `cty.Value` representation of the external data.
 
-**Translator:** is a `ResourceKind` that defines a translation or conversion of data from an `Importer` and ouputs a mapping of the imported data to the defined Data Schema.
+**Transform:** is a `ResourceKind` that defines a transformation or conversion of data from an `Extract` and ouputs a mapping of the extracted data to the defined Data Schema.
 
 **Query:** is a `ResourceKind` that defines question to the bubbly server which returns some data.
 
@@ -32,10 +32,10 @@ Certain resources allow for a list of `input` values to be provded, so that the 
 // The output can be something like:
 // output:
 //   - status: sucess
-//   - value: <the value from the importer>
-resource "importer" "junit" {
+//   - value: <the value from the extract>
+resource "extract" "junit" {
     api_version = "v1"
-    // this is an input to the importer to make it reusable
+    // this is an input to the extract to make it reusable
     spec {
         input "file" {}
         type = "xml"
@@ -64,7 +64,7 @@ resource "importer" "junit" {
 }
 
 
-resource "translator" "junit" {
+resource "transform" "junit" {
     api_version = "v1"
     spec {
         input "data" {}
@@ -82,8 +82,8 @@ resource "translator" "junit" {
     }
 }
 
-// This is the upload step, just renamed to publish...
-resource "publish" "junit" {
+// This is the upload step, just renamed to load...
+resource "load" "junit" {
     api_version = "v1"
     spec {
         input "data" {}
@@ -101,23 +101,23 @@ resource "pipeline" "junit" {
         input "file" {}
         // Each task in a pipeline has an output, similar to resources,
         // so that task outputs can be referenced
-        task "import" {
-            resource = resource.importer.junit
+        task "extract" {
+            resource = resource.extract.junit
             input "xml_file" {
                 value = self.spec.input.file
             }
         }
-        task "translator" {
-            resource = resource.translator.junit
+        task "transform" {
+            resource = resource.transform.junit
             input "results" {
-                // here we reference the output of the task "importer"
-                value = self.spec.task.import.value
+                // here we reference the output of the task "extract"
+                value = self.spec.task.extract.value
             }
         }
-        task "publish" {
-            resource = resource.publish.junit
+        task "load" {
+            resource = resource.load.junit
             input "data" {
-                value = self.spec.task.translator.value
+                value = self.spec.task.transform.value
             }
         }
     }
@@ -131,7 +131,7 @@ resource "pipelineRun" "junit" {
         pipeline = resource.pipeline.junit
         // specify the input required
         input "file" {
-            value = "testdata/importer/junit.xml"
+            value = "testdata/extract/junit.xml"
         }
     }
 }

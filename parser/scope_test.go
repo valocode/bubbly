@@ -15,7 +15,7 @@ local "api_version" {
 	value = "v1"
 }
 
-resource "importer" "junit" {
+resource "extract" "junit" {
     api_version = local.api_version
     spec {
         input "file" {}

@@ -36,12 +36,12 @@ func TestJSONData(t *testing.T) {
 		t.FailNow()
 	}
 
-	t.Logf("Translator JSON() returned: %s", string(jBytes))
+	t.Logf("Transform JSON() returned: %s", string(jBytes))
 
 	testBlocks := DataBlocks{}
 	err = json.Unmarshal(jBytes, &testBlocks)
 	if err != nil {
 		t.Errorf("Failed to Unmarshal JSON dataBlocks: %s", err.Error())
 	}
-	assert.Equalf(t, dBlocks, testBlocks, "JSON returned from translator equals unmarshalled dataBlocks")
+	assert.Equalf(t, dBlocks, testBlocks, "JSON returned from transform equals unmarshalled dataBlocks")
 }

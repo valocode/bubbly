@@ -1,6 +1,6 @@
 package core
 
-// Resource is the interface for any resources, such as Importer, Translator,
+// Resource is the interface for any resources, such as Extract, Transform,
 // etc.
 type Resource interface {
 	Apply(*ResourceContext) ResourceOutput
@@ -19,18 +19,18 @@ type Resource interface {
 // ResourceSpec is the spec{} block inside a ResourceBlock
 type ResourceSpec interface{}
 
-// Importer interface is for any resources of type Importer
-type Importer interface {
+// Extract interface is for any resources of type Extract
+type Extract interface {
 	Resource
 }
 
-// Translator interface is for any resources of type Translator
-type Translator interface {
+// Transform interface is for any resources of type Transform
+type Transform interface {
 	Resource
 }
 
-// Publish interface is for any resources of type Publish
-type Publish interface {
+// Load interface is for any resources of type Load
+type Load interface {
 	Resource
 }
 

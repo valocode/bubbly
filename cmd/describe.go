@@ -31,7 +31,7 @@ import (
 var (
 	// a mock return for getting list of available resources
 	// TODO: Think about if/how this pre-validation should take place. Perhaps this is instead a server-side task?
-	availableResourceTypes                 = []string{"publish", "pipeline", "importer", "translator"}
+	availableResourceTypes                 = []string{"load", "pipeline", "extract", "transform"}
 	_                      cmdutil.Options = (*DescribeOptions)(nil)
 	describeLong                           = normalise.LongDesc(`
 		Show details of a specific resource or group of resources
@@ -45,23 +45,23 @@ var (
 		    $ bubbly describe TYPE NAME_PREFIX`)
 
 	describeExample = normalise.Examples(`
-		# Describe an importer with name 'default'
-		bubbly describe importer default
+		# Describe an extract with name 'default'
+		bubbly describe extract default
 
-		# Describe an importer with name 'default'
-		bubbly describe importer/default
+		# Describe an extract with name 'default'
+		bubbly describe extract/default
 
-		# Describe the latest version of an publish with name 'sonarqube'
-		bubbly describe publish sonarqube
+		# Describe the latest version of an load with name 'sonarqube'
+		bubbly describe load sonarqube
 
-		# Describe the latest version of an publish with name 'sonarqube'
-		bubbly describe publish/sonarqube
+		# Describe the latest version of an load with name 'sonarqube'
+		bubbly describe load/sonarqube
 
-		# Describe the version '239iq0wi' of an publish with name 'sonarqube' 
-		bubbly describe publish sonarqube --version 239iq0wi
+		# Describe the version '239iq0wi' of an load with name 'sonarqube' 
+		bubbly describe load sonarqube --version 239iq0wi
 
-		# Describe all publish resources
-		bubbly describe publish
+		# Describe all load resources
+		bubbly describe load
 
 		# Describe a pipeline with name 'simple_pipeline'
 		bubbly describe pipeline simple_pipeline`)

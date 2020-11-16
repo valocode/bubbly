@@ -1,7 +1,7 @@
 
 //  defines a data source and a format for the data, and returns a cty.Value
 // representation of the external data.
-resource "importer" "sonarqube" {
+resource "extract" "sonarqube" {
     metadata {
         namespace = "qa"
         labels = {
@@ -36,15 +36,9 @@ resource "importer" "sonarqube" {
     }
 }
 
-// defines a translation or conversion of data from an Importer and outputs
-// a mapping of the imported data to the defined data schema.
-resource "translator" "sonarqube" {
-    metadata {
-        namespace = "qa"
-        labels = {
-            "environment": "prod"
-        }
-    }
+// defines a transformation or conversion of data from an Extract and outputs
+// a mapping of the extracted data to the defined data schema.
+resource "transform" "sonarqube" {
     api_version = "v1"
     spec {
         input "data" {}
@@ -88,8 +82,8 @@ resource "translator" "sonarqube" {
     }
 }
 
-// defines the publishing of translator output data to a bubbly server
-resource "publish" "sonarqube" {
+// defines the loading of transform output data to a bubbly server
+resource "load" "sonarqube" {
     metadata {
         namespace = "qa"
         labels = {
@@ -113,18 +107,18 @@ resource "pipeline" "sonarqube" {
         input "file" {}
         // Each task represents the execution of an action defined by
         // a bubbly resource
-        // action: import the data from the data source
-        task "import" {
-            resource = "importer/sonarqube"
+        // action: extract the data from the data source
+        task "extract" {
+            resource = "extract/sonarqube"
             input "file" {
                 value = self.input.file
             }
         }
 
-        // action: translate the imported data
-        task "translator" {
-            resource = "qa/translator/sonarqube"
-            // mock the repository data that will come from the git importer
+        // action: transform the extracted data
+        task "transform" {
+            resource = "qa/transform/sonarqube"
+            // mock the repository data that will come from the git extract
             input "repository" {
                 value = {
                     commit = "aegasd321"
@@ -135,16 +129,16 @@ resource "pipeline" "sonarqube" {
             input "data" {
                 // Each task in a pipeline has an output, similar to resources,
                 // so that task outputs can be referenced
-                // here, we reference the output of the task "importer"
-                value = self.task.import.value
+                // here, we reference the output of the task "extract"
+                value = self.task.extract.value
             }
         }
 
-        // action: publish the translated data to the bubbly server
-        task "publish" {
-            resource = "qa/publish/sonarqube"
+        // action: load the transformed data to the bubbly server
+        task "load" {
+            resource = "load/sonarqube"
             input "data" {
-                value = self.task.translator.value
+                value = self.task.transform.value
             }
         }
     }

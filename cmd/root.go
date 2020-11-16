@@ -73,6 +73,11 @@ func init() {
 	viper.BindPFlags(f)
 }
 
+type BubblyContext struct {
+	Logger zerolog.Logger
+	Config config.Config
+}
+
 func initLogger() {
 	// Initialize Logger
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)

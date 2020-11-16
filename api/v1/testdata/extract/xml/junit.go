@@ -3,7 +3,7 @@ package v1
 import "github.com/zclconf/go-cty/cty"
 
 // CtyType returns the data structure describing the type which
-// the data imported by XML Importer in this test case will conform to.
+// the data extracted by XML Extract in this test case will conform to.
 func CtyType() cty.Type {
 
 	ctyType := cty.Object(map[string]cty.Type{

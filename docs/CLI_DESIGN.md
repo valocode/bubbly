@@ -69,9 +69,9 @@ Note: Commands of differing families can still make use of other families' featu
 
 We may wish to avoid implementing imperative commands that are functionally equivalent to declarative ones.
 
-| Family     | Purpose                                           | Description                                                                                                                                             | Commands                   |
-| ---------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| Imperative | Imperative Resource Management for Data ingestion | Commands to manage Bubbly Resources via CLI. `bubbly create importer junit`, `bubbly delete importer junit`. Similar to `kubectl create deployment app` | `edit`, `create`, `delete` |
+| Family     | Purpose                                           | Description                                                                                                                                           | Commands                   |
+| ---------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| Imperative | Imperative Resource Management for Data ingestion | Commands to manage Bubbly Resources via CLI. `bubbly create extract junit`, `bubbly delete extract junit`. Similar to `kubectl create deployment app` | `edit`, `create`, `delete` |
 
 ## Family Type Descriptions
 
@@ -97,17 +97,17 @@ Collectively, these CLI commands enable the following features:
   - server:
     - `bubbly server status [-o simple]`
   - Resources:
-    - `bubbly get importer junit [-o simple]`
+    - `bubbly get extract junit [-o simple]`
     - `bubbly get pipelineRun junit -o events`
 - Printing complete state and information about Bubbly client, Bubbly server and Bubbly Resources
   - server: `bubbly server status -o detailed`
   - Resources:
-    - `bubbly describe importer junit`
-    - `bubbly get importer junit -o detailed`
+    - `bubbly describe extract junit`
+    - `bubbly get extract junit -o detailed`
 - Understanding of the Bubbly API versions, their respective Resources and the definitions of these Resources:
   - `bubbly api-versions`
   - `bubbly api-resources`
-  - `bubbly explain importer.spec.type`
+  - `bubbly explain extract.spec.type`
 - Printing Resource logs:
   - `bubbly logs pipelineRun junit`
 - Visualising Resource changes:
@@ -177,8 +177,8 @@ Delete Bubbly Resource(s) by resource type and name selector: `bubbly delete (TY
 
 Examples:
 
-- `bubbly delete importers --all`
-- `bubbly delete importer junit`
+- `bubbly delete extracts --all`
+- `bubbly delete extract junit`
 
 ### Flags
 
@@ -194,7 +194,7 @@ Examples:
 
 | Usage Term | Options                                                                  | Description                                                            |
 | ---------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| TYPE       | `importer`, `translator`, `publisher`                                    | Bubbly Resource Type                                                   |
+| TYPE       | `extract`, `transform`, `load`                                           | Bubbly Resource Type                                                   |
 | GENERIC    | `all` (describes all Resources), `system` (describes core Bubbly system) | An object to be described that does not match a specific Resource type |
 
 ### Flags
@@ -244,7 +244,7 @@ version.Info{
 
 | Usage Term | Options                                                                  | Description                                                            |
 | ---------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| TYPE       | `importer`, `translator`, `publisher`                                    | Bubbly Resource Type                                                   |
+| TYPE       | `extract`, `transform`, `load`                                           | Bubbly Resource Type                                                   |
 | GENERIC    | `all` (describes all Resources), `system` (describes core Bubbly system) | An object to be described that does not match a specific Resource type |
 
 ### Flags
@@ -266,8 +266,8 @@ version.Info{
 
 Examples:
 
-- `bubbly explain importer`
-- `bubbly explain importer.spec.type`
+- `bubbly explain extract`
+- `bubbly explain extract.spec.type`
 
 ### Flags
 

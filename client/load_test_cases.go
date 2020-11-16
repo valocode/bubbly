@@ -4,7 +4,7 @@ import (
 	"github.com/verifa/bubbly/config"
 )
 
-var publishDataCases = []struct {
+var loadDataCases = []struct {
 	desc         string
 	sc           config.ServerConfig
 	inputFile    string
@@ -14,14 +14,14 @@ var publishDataCases = []struct {
 	response     map[string]interface{}
 }{
 	{
-		desc: "basic importer resource describe",
+		desc: "basic extract resource describe",
 		sc: config.ServerConfig{
 			Protocol: "http",
 			Host:     "localhost",
 			Auth:     false,
 			Port:     "8080",
 		},
-		inputFile:    "./testdata/publish/publish_output.json",
+		inputFile:    "./testdata/load/load_output.json",
 		route:        "/alpha1/upload",
 		expected:     true,
 		responseCode: 200,

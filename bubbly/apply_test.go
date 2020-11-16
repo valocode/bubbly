@@ -12,7 +12,7 @@ import (
 // TestApply simply validates that a given directory containing bubbly
 // configuration including a pipeline_run will result in a POST of data to
 // the bubbly server.
-// See client/publish_test.go for actual evaluation of the publishing using
+// See client/load_test.go for actual evaluation of the loading using
 // the gofight package.
 func TestApply(t *testing.T) {
 	host := "localhost"

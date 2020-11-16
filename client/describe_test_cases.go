@@ -18,17 +18,17 @@ var describeResourceCases = []struct {
 	expected     DescribeResourceReturn
 }{
 	{
-		desc: "basic importer resource describe",
+		desc: "basic extract resource describe",
 		sc: config.ServerConfig{
 			Protocol: "http",
 			Host:     "localhost",
 			Auth:     false,
 			Port:     "8080",
 		},
-		rType:        "importer",
+		rType:        "extract",
 		rVersion:     "v1",
-		rName:        "example_importer",
-		route:        "/describe/importer/v1/example_importer",
+		rName:        "example_extract",
+		route:        "/describe/extract/v1/example_extract",
 		token:        "token",
 		responseCode: 200,
 		response: map[string]interface{}{
@@ -38,7 +38,7 @@ var describeResourceCases = []struct {
 				{
 					Status:  events.CreatingResource,
 					Age:     "24h",
-					Message: "Creating resource 'importer/v1/example_importer'",
+					Message: "Creating resource 'extract/v1/example_extract'",
 				},
 			},
 		},
@@ -49,7 +49,7 @@ var describeResourceCases = []struct {
 				{
 					Status:  events.CreatingResource,
 					Age:     "24h",
-					Message: "Creating resource 'importer/v1/example_importer'",
+					Message: "Creating resource 'extract/v1/example_extract'",
 				},
 			},
 		},
@@ -68,82 +68,82 @@ var describeResourceGroupCases = []struct {
 	expected     map[string]DescribeResourceReturn
 }{
 	{
-		desc: "basic importer resource group describe",
+		desc: "basic extract resource group describe",
 		sc: config.ServerConfig{
 			Protocol: "http",
 			Host:     "localhost",
 			Auth:     false,
 			Port:     "8080",
 		},
-		rType:        "importer",
+		rType:        "extract",
 		rVersion:     "v1",
-		route:        "/describe/importer/v1",
+		route:        "/describe/extract/v1",
 		token:        "token",
 		responseCode: 200,
 		response: map[string]interface{}{
-			"example_importer": map[string]interface{}{
+			"example_extract": map[string]interface{}{
 				"exists": true,
 				"status": "creating",
 				"events": []events.Event{
 					{
 						Status:  events.CreatingResource,
 						Age:     "24h",
-						Message: "Creating resource 'importer/v1/example_importer'",
+						Message: "Creating resource 'extract/v1/example_extract'",
 					},
 					{
 						Status:  events.KilledResource,
 						Age:     "6h",
-						Message: "Killed resource 'importer/v1/example_importer'",
+						Message: "Killed resource 'extract/v1/example_extract'",
 					},
 				},
 			},
-			"example_importer_2": map[string]interface{}{
+			"example_extract_2": map[string]interface{}{
 				"exists": true,
 				"status": "creating",
 				"events": []events.Event{
 					{
 						Status:  events.CreatingResource,
 						Age:     "24h",
-						Message: "Creating resource 'importer/v1/example_importer_2'",
+						Message: "Creating resource 'extract/v1/example_extract_2'",
 					},
 					{
 						Status:  events.KilledResource,
 						Age:     "2h",
-						Message: "Killed resource 'importer/v1/example_importer_2'",
+						Message: "Killed resource 'extract/v1/example_extract_2'",
 					},
 				},
 			},
 		},
 		expected: map[string]DescribeResourceReturn{
-			"example_importer": {
+			"example_extract": {
 				Exists: true,
 				Status: "creating",
 				Events: []events.Event{
 					{
 						Status:  events.CreatingResource,
 						Age:     "24h",
-						Message: "Creating resource 'importer/v1/example_importer'",
+						Message: "Creating resource 'extract/v1/example_extract'",
 					},
 					{
 						Status:  events.KilledResource,
 						Age:     "6h",
-						Message: "Killed resource 'importer/v1/example_importer'",
+						Message: "Killed resource 'extract/v1/example_extract'",
 					},
 				},
 			},
-			"example_importer_2": {
+			"example_extract_2": {
 				Exists: true,
 				Status: "creating",
 				Events: []events.Event{
 					{
 						Status:  events.CreatingResource,
 						Age:     "24h",
-						Message: "Creating resource 'importer/v1/example_importer_2'",
+						Message: "Creating resource 'extract/v1/example_extract_2'",
 					},
 					{
 						Status:  events.KilledResource,
 						Age:     "2h",
-						Message: "Killed resource 'importer/v1/example_importer_2'",
+						Message: "Killed resource 'extract/v1/example_extract_2'",
 					},
 				},
 			},

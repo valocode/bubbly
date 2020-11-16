@@ -41,7 +41,7 @@ type DecodeBodyFn func(resource Resource, body hcl.Body, val interface{}) error
 
 // NewContextFn represents the function that will provide a new context
 // for resources that applies nested resources (e.g. like a pipeline applying
-// a task that applies an importer)
+// a task that applies an extract)
 type NewContextFn func(inputs cty.Value) *ResourceContext
 
 // InsertValueFn takes a cty.Value and a path (represented as a slice of string)

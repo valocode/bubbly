@@ -1,5 +1,5 @@
 
-resource "importer" "sonarqube" {
+resource "extract" "sonarqube" {
     api_version = "v1"
     spec {
         input "file" {}
@@ -28,7 +28,7 @@ resource "importer" "sonarqube" {
     }
 }
 
-resource "translator" "sonarqube" {
+resource "transform" "sonarqube" {
     api_version = "v1"
     spec {
         input "data" {}
@@ -65,8 +65,8 @@ resource "translator" "sonarqube" {
     }
 }
 
-// This is the upload step, just renamed to publish...
-resource "publish" "sonarqube" {
+// This is the upload step, just renamed to load...
+resource "load" "sonarqube" {
     api_version = "v1"
     spec {
         input "data" {}
@@ -84,23 +84,23 @@ resource "pipeline" "sonarqube" {
         input "file" {}
         // Each task in a pipeline has an output, similar to resources,
         // so that task outputs can be referenced
-        task "import" {
-            resource = "importer/sonarqube"
+        task "extract" {
+            resource = "extract/sonarqube"
             input "file" {
                 value = self.input.file
             }
         }
-        task "translator" {
-            resource = "translator/sonarqube"
+        task "transform" {
+            resource = "transform/sonarqube"
             input "data" {
-                // here we reference the output of the task "importer"
-                value = self.task.import.value
+                // here we reference the output of the task "extract"
+                value = self.task.extract.value
             }
         }
-        task "publish" {
-            resource = "publish/sonarqube"
+        task "load" {
+            resource = "load/sonarqube"
             input "data" {
-                value = self.task.translator.value
+                value = self.task.transform.value
             }
         }
     }

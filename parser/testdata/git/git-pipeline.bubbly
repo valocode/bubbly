@@ -1,6 +1,6 @@
 
-// TODO: once the git importer exists
-resource "importer" "git" {
+// TODO: once the git extract exists
+resource "extract" "git" {
     api_version = "v1"
     spec {
         input "dir" {}
@@ -9,7 +9,7 @@ resource "importer" "git" {
 }
 
 
-resource "translator" "git" {
+resource "transform" "git" {
     api_version = "v1"
     spec {
         input "git" {}
@@ -38,8 +38,8 @@ resource "translator" "git" {
     }
 }
 
-// This is the upload step, just renamed to publish...
-resource "publish" "git" {
+// This is the upload step, just renamed to load...
+resource "load" "git" {
     api_version = "v1"
     spec {
         input "data" {}
@@ -51,22 +51,22 @@ resource "pipeline" "git" {
     api_version = "v1"
     spec {
         input "dir" {}
-        task "import" {
-            resource = "importer/git"
+        task "extract" {
+            resource = "extract/git"
             input "dir" {
                 value = self.input.dir
             }
         }
-        task "translator" {
-            resource = "translator/git"
+        task "transform" {
+            resource = "transform/git"
             input "git" {
-                value = self.task.import.value
+                value = self.task.extract.value
             }
         }
-        task "publish" {
-            resource = "publish/git"
+        task "load" {
+            resource = "load/git"
             input "data" {
-                value = self.task.translator.value
+                value = self.task.transform.value
             }
         }
     }

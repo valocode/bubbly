@@ -3,10 +3,10 @@
 // The output can be something like:
 // output:
 //   - status: sucess
-//   - value: <the value from the importer>
-resource "importer" "junit" {
+//   - value: <the value from the extract>
+resource "extract" "junit" {
     api_version = "v1"
-    // this is an input to the importer to make it reusable
+    // this is an input to the extract to make it reusable
     spec {
         input "file" {}
         type = "xml"
@@ -34,7 +34,7 @@ resource "importer" "junit" {
 }
 
 
-resource "translator" "junit" {
+resource "transform" "junit" {
     api_version = "v1"
     spec {
         input "data" {}
@@ -53,8 +53,8 @@ resource "translator" "junit" {
     }
 }
 
-// This is the upload step, just renamed to publish...
-resource "publish" "junit" {
+// This is the upload step, just renamed to load...
+resource "load" "junit" {
     api_version = "v1"
     spec {
         input "data" {}
@@ -72,23 +72,23 @@ resource "pipeline" "junit" {
         input "file" {}
         // Each task in a pipeline has an output, similar to resources,
         // so that task outputs can be referenced
-        task "import" {
-            resource = "importer.junit"
+        task "extract" {
+            resource = "extract.junit"
             input "xml_file" {
                 value = self.input.file
             }
         }
-        task "translator" {
-            resource = "translator.junit"
+        task "transform" {
+            resource = "transform.junit"
             input "results" {
-                // here we reference the output of the task "importer"
-                value = self.task.import.value
+                // here we reference the output of the task "extract"
+                value = self.task.extract.value
             }
         }
-        task "publish" {
-            resource = "publish.junit"
+        task "load" {
+            resource = "load.junit"
             input "data" {
-                value = self.task.translator.value
+                value = self.task.transform.value
             }
         }
     }

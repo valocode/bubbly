@@ -15,11 +15,11 @@ const (
 	KilledResource   = "Killed"
 )
 
-// bubbly describe importer example_importer
+// bubbly describe extract example_extract
 // 'bubbly get all -o events' is useful to have Kind
 type Event struct {
 	Status  string
-	Kind    string // Importer, System, ...
+	Kind    string // Extract, System, ...
 	Age     string // TODO: formalise using time pkg
 	Message string
 }

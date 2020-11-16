@@ -3,7 +3,7 @@ package v1
 import "github.com/zclconf/go-cty/cty"
 
 // ExpectedType returns the data structure describing the type which
-// the data imported by JSON Importer in this test case will conform to
+// the data extracted by JSON Extract in this test case will conform to
 func ExpectedType() cty.Type {
 
 	ctyType := cty.Object(map[string]cty.Type{

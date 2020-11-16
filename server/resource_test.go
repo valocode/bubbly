@@ -62,7 +62,7 @@ func TestGetResource(t *testing.T) {
 	tearDown = false
 	TestPostResource(t)
 	tearDown = true
-	r.GET("/api/resource/default/translator/junit").
+	r.GET("/api/resource/default/transform/junit").
 		Run(SetupRouter(), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			data := []byte(r.Body.String())
 			assert.Equal(t, http.StatusOK, r.Code)

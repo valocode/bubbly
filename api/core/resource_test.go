@@ -50,10 +50,10 @@ func TestReadHCLToResourceBlock(t *testing.T) {
 		expected ResourceBlock
 	}{
 		{
-			desc:  "basic importer",
-			input: "testdata/importer.hcl",
+			desc:  "basic extract",
+			input: "testdata/extract.hcl",
 			expected: ResourceBlock{
-				ResourceKind:       "importer",
+				ResourceKind:       "extract",
 				ResourceName:       "sonarqube",
 				ResourceAPIVersion: "v1",
 			},
@@ -81,9 +81,9 @@ func TestResourceBlockString(t *testing.T) {
 		expected string
 	}{
 		{
-			desc: "basic importer",
+			desc: "basic extract",
 			input: ResourceBlock{
-				ResourceKind:       "importer",
+				ResourceKind:       "extract",
 				ResourceName:       "sonarqube",
 				ResourceAPIVersion: "v1",
 				Metadata: &Metadata{
@@ -93,12 +93,12 @@ func TestResourceBlockString(t *testing.T) {
 					Namespace: "qa",
 				},
 			},
-			expected: "v1.qa.importer.sonarqube",
+			expected: "v1.qa.extract.sonarqube",
 		},
 		{
-			desc: "basic importer without namespace",
+			desc: "basic extract without namespace",
 			input: ResourceBlock{
-				ResourceKind:       "importer",
+				ResourceKind:       "extract",
 				ResourceName:       "sonarqube",
 				ResourceAPIVersion: "v1",
 				Metadata: &Metadata{
@@ -107,16 +107,16 @@ func TestResourceBlockString(t *testing.T) {
 					},
 				},
 			},
-			expected: "v1.default.importer.sonarqube",
+			expected: "v1.default.extract.sonarqube",
 		},
 		{
-			desc: "basic importer without metadata",
+			desc: "basic extract without metadata",
 			input: ResourceBlock{
-				ResourceKind:       "importer",
+				ResourceKind:       "extract",
 				ResourceName:       "sonarqube",
 				ResourceAPIVersion: "v1",
 			},
-			expected: "v1.default.importer.sonarqube",
+			expected: "v1.default.extract.sonarqube",
 		},
 	}
 
@@ -139,9 +139,9 @@ func TestResourceBlockLabels(t *testing.T) {
 		expected map[string]string
 	}{
 		{
-			desc: "basic importer",
+			desc: "basic extract",
 			input: ResourceBlock{
-				ResourceKind:       "importer",
+				ResourceKind:       "extract",
 				ResourceName:       "sonarqube",
 				ResourceAPIVersion: "v1",
 				Metadata: &Metadata{
@@ -156,9 +156,9 @@ func TestResourceBlockLabels(t *testing.T) {
 			},
 		},
 		{
-			desc: "basic importer without labels",
+			desc: "basic extract without labels",
 			input: ResourceBlock{
-				ResourceKind:       "importer",
+				ResourceKind:       "extract",
 				ResourceName:       "sonarqube",
 				ResourceAPIVersion: "v1",
 				Metadata: &Metadata{
@@ -168,9 +168,9 @@ func TestResourceBlockLabels(t *testing.T) {
 			expected: nil,
 		},
 		{
-			desc: "basic importer without metadata",
+			desc: "basic extract without metadata",
 			input: ResourceBlock{
-				ResourceKind:       "importer",
+				ResourceKind:       "extract",
 				ResourceName:       "sonarqube",
 				ResourceAPIVersion: "v1",
 			},
@@ -198,10 +198,10 @@ func TestNewResourceIDFromString(t *testing.T) {
 		expected ResourceID
 	}{
 		{
-			desc:  "basic importer without namespace specified",
-			input: "importer/sonarqube",
+			desc:  "basic extract without namespace specified",
+			input: "extract/sonarqube",
 			expected: ResourceID{
-				Kind: "importer",
+				Kind: "extract",
 				Name: "sonarqube",
 			},
 		},
@@ -240,16 +240,16 @@ func TestString(t *testing.T) {
 		expected string
 	}{
 		{
-			desc: "basic importer",
+			desc: "basic extract",
 			input: ResourceID{
-				Kind:      "importer",
+				Kind:      "extract",
 				Name:      "sonarqube",
 				Namespace: "qa",
 			},
-			expected: "qa/importer/sonarqube",
+			expected: "qa/extract/sonarqube",
 		},
 		{
-			desc: "basic importer",
+			desc: "basic pipeline",
 			input: ResourceID{
 				Kind:      "pipeline",
 				Name:      "sonarqube",

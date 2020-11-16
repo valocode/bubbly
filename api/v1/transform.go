@@ -8,25 +8,25 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-var _ core.Translator = (*Translator)(nil)
+var _ core.Transform = (*Transform)(nil)
 
-type Translator struct {
+type Transform struct {
 	*core.ResourceBlock
-	Spec translatorSpec
+	Spec transformSpec
 }
 
-func NewTranslator(resBlock *core.ResourceBlock) *Translator {
-	return &Translator{
+func NewTransform(resBlock *core.ResourceBlock) *Transform {
+	return &Transform{
 		ResourceBlock: resBlock,
 	}
 }
 
 // Apply returns ...
-func (t *Translator) Apply(ctx *core.ResourceContext) core.ResourceOutput {
+func (t *Transform) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	if err := ctx.DecodeBody(t, t.SpecHCL.Body, &t.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`Failed to decode translator body spec: %s`, err.Error()),
+			Error:  fmt.Errorf(`Failed to decode transform body spec: %s`, err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
@@ -46,18 +46,18 @@ func (t *Translator) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	}
 }
 
-func (t *Translator) toJSON() ([]byte, error) {
+func (t *Transform) toJSON() ([]byte, error) {
 	if t.Spec.Data == nil {
-		return nil, fmt.Errorf("Translator %s has not output data", t.String())
+		return nil, fmt.Errorf("Transform %s has not output data", t.String())
 	}
 	return json.Marshal(t.Spec.Data)
 }
 
-func (t *Translator) SpecValue() core.ResourceSpec {
+func (t *Transform) SpecValue() core.ResourceSpec {
 	return &t.Spec
 }
 
-type translatorSpec struct {
+type transformSpec struct {
 	Inputs InputDeclarations `hcl:"input,block"`
 	Data   core.DataBlocks   `hcl:"data,block"`
 }

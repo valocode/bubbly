@@ -20,11 +20,11 @@ func TestNewResources(t *testing.T) {
 		{
 			desc: "base set up of NewResources",
 			expected: &Resources{
-				"importer":     map[string]core.Resource{},
+				"extract":      map[string]core.Resource{},
 				"pipeline":     map[string]core.Resource{},
 				"pipeline_run": map[string]core.Resource{},
-				"publish":      map[string]core.Resource{},
-				"translator":   map[string]core.Resource{},
+				"load":         map[string]core.Resource{},
+				"transform":    map[string]core.Resource{},
 			},
 		},
 	}
@@ -51,26 +51,26 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 		expectedSuccess   bool
 	}{
 		{
-			desc: "basic importer",
+			desc: "basic extract",
 			input: core.ResourceBlocks{
 				&core.ResourceBlock{
-					ResourceKind:       "importer",
+					ResourceKind:       "extract",
 					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
 			},
-			expectedResource: &v1.Importer{
+			expectedResource: &v1.Extract{
 				ResourceBlock: &core.ResourceBlock{
-					ResourceKind:       "importer",
+					ResourceKind:       "extract",
 					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
 			},
 			expectedResources: &Resources{
-				"importer": map[string]core.Resource{
-					"sonarqube": &v1.Importer{
+				"extract": map[string]core.Resource{
+					"sonarqube": &v1.Extract{
 						ResourceBlock: &core.ResourceBlock{
-							ResourceKind:       "importer",
+							ResourceKind:       "extract",
 							ResourceName:       "sonarqube",
 							ResourceAPIVersion: "v1",
 						},
@@ -78,25 +78,25 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 				},
 				"pipeline":     map[string]core.Resource{},
 				"pipeline_run": map[string]core.Resource{},
-				"publish":      map[string]core.Resource{},
-				"translator":   map[string]core.Resource{},
+				"load":         map[string]core.Resource{},
+				"transform":    map[string]core.Resource{},
 			},
 		},
 		{
 			desc: "basic all resource types",
 			input: core.ResourceBlocks{
 				&core.ResourceBlock{
-					ResourceKind:       "importer",
+					ResourceKind:       "extract",
 					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
 				&core.ResourceBlock{
-					ResourceKind:       "translator",
+					ResourceKind:       "transform",
 					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
 				&core.ResourceBlock{
-					ResourceKind:       "publish",
+					ResourceKind:       "load",
 					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
@@ -111,7 +111,7 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 					ResourceAPIVersion: "v1",
 				},
 			},
-			expectedResource: &v1.Importer{
+			expectedResource: &v1.Extract{
 				ResourceBlock: &core.ResourceBlock{
 					ResourceKind:       "pipeline",
 					ResourceName:       "sonarqube",
@@ -119,19 +119,19 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 				},
 			},
 			expectedResources: &Resources{
-				"importer": map[string]core.Resource{
-					"sonarqube": &v1.Importer{
+				"extract": map[string]core.Resource{
+					"sonarqube": &v1.Extract{
 						ResourceBlock: &core.ResourceBlock{
-							ResourceKind:       "importer",
+							ResourceKind:       "extract",
 							ResourceName:       "sonarqube",
 							ResourceAPIVersion: "v1",
 						},
 					},
 				},
-				"translator": map[string]core.Resource{
-					"sonarqube": &v1.Translator{
+				"transform": map[string]core.Resource{
+					"sonarqube": &v1.Transform{
 						ResourceBlock: &core.ResourceBlock{
-							ResourceKind:       "translator",
+							ResourceKind:       "transform",
 							ResourceName:       "sonarqube",
 							ResourceAPIVersion: "v1",
 						},
@@ -156,10 +156,10 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 						},
 					},
 				},
-				"publish": map[string]core.Resource{
-					"sonarqube": &v1.Publish{
+				"load": map[string]core.Resource{
+					"sonarqube": &v1.Load{
 						ResourceBlock: &core.ResourceBlock{
-							ResourceKind:       "publish",
+							ResourceKind:       "load",
 							ResourceName:       "sonarqube",
 							ResourceAPIVersion: "v1",
 						},
@@ -200,19 +200,19 @@ func TestGetResource(t *testing.T) {
 		{
 			desc: "basic Get",
 			resources: &Resources{
-				"importer": map[string]core.Resource{
-					"sonarqube": &v1.Importer{
+				"extract": map[string]core.Resource{
+					"sonarqube": &v1.Extract{
 						ResourceBlock: &core.ResourceBlock{
-							ResourceKind:       "importer",
+							ResourceKind:       "extract",
 							ResourceName:       "sonarqube",
 							ResourceAPIVersion: "v1",
 						},
 					},
 				},
 			},
-			input: &v1.Importer{
+			input: &v1.Extract{
 				ResourceBlock: &core.ResourceBlock{
-					ResourceKind:       "importer",
+					ResourceKind:       "extract",
 					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
@@ -222,19 +222,19 @@ func TestGetResource(t *testing.T) {
 		{
 			desc: "basic unsuccessful Get",
 			resources: &Resources{
-				"importer": map[string]core.Resource{
-					"sonarqube": &v1.Importer{
+				"extract": map[string]core.Resource{
+					"sonarqube": &v1.Extract{
 						ResourceBlock: &core.ResourceBlock{
-							ResourceKind:       "importer",
+							ResourceKind:       "extract",
 							ResourceName:       "sonarqube",
 							ResourceAPIVersion: "v1",
 						},
 					},
 				},
 			},
-			input: &v1.Importer{
+			input: &v1.Extract{
 				ResourceBlock: &core.ResourceBlock{
-					ResourceKind:       "publisher",
+					ResourceKind:       "load",
 					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
@@ -268,17 +268,17 @@ func TestNewResourceFails(t *testing.T) {
 			desc: "basic duplicate resource creation",
 			input: core.ResourceBlocks{
 				&core.ResourceBlock{
-					ResourceKind:       "importer",
+					ResourceKind:       "extract",
 					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
 				&core.ResourceBlock{
-					ResourceKind:       "importer",
+					ResourceKind:       "extract",
 					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
 			},
-			expectedError: "resource v1.default.importer.sonarqube already exists",
+			expectedError: "resource v1.default.extract.sonarqube already exists",
 		},
 		{
 			desc: "basic unsupported resource creation",

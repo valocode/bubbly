@@ -31,7 +31,7 @@ func (db *DB) Query(query string) (interface{}, error) {
 	return res.Data, nil
 }
 
-// Import imports translator data into the DB.
+// Import imports transform data into the DB.
 func (db *DB) Import(data core.DataBlocks) error {
 	txn := db.memDB.Txn(true)
 

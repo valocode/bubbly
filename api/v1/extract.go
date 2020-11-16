@@ -19,25 +19,25 @@ import (
 	"github.com/zclconf/go-cty/cty/gocty"
 )
 
-// Compiler check to see that v1.Importer implements the Importer interface
-var _ core.Importer = (*Importer)(nil)
+// Compiler check to see that v1.Extract implements the Extract interface
+var _ core.Extract = (*Extract)(nil)
 
-// Importer represents an importer type
-type Importer struct {
+// Extract represents an extract type
+type Extract struct {
 	*core.ResourceBlock
 
-	Spec importerSpec `json:"spec"`
+	Spec extractSpec `json:"spec"`
 }
 
-// NewImporter returns a new Importer
-func NewImporter(resBlock *core.ResourceBlock) *Importer {
-	return &Importer{
+// NewExtract returns a new Extract
+func NewExtract(resBlock *core.ResourceBlock) *Extract {
+	return &Extract{
 		ResourceBlock: resBlock,
 	}
 }
 
 // Apply returns the output from applying a resource
-func (i *Importer) Apply(ctx *core.ResourceContext) core.ResourceOutput {
+func (i *Extract) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	if err := i.decode(ctx.DecodeBody); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
@@ -48,7 +48,7 @@ func (i *Importer) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	if i == nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  errors.New("Cannot get output of a null importer"),
+			Error:  errors.New("Cannot get output of a null extract"),
 			Value:  cty.NilVal,
 		}
 	}
@@ -56,7 +56,7 @@ func (i *Importer) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	if i.Spec.Source == nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  errors.New("Cannot get output of an importer with null source"),
+			Error:  errors.New("Cannot get output of an extract with null source"),
 			Value:  cty.NilVal,
 		}
 	}
@@ -65,7 +65,7 @@ func (i *Importer) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	if err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf("Failed to resolve importer source: %w", err),
+			Error:  fmt.Errorf("Failed to resolve extract source: %w", err),
 			Value:  cty.NilVal,
 		}
 	}
@@ -78,42 +78,42 @@ func (i *Importer) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 }
 
 // SpecValue method returns resource specification structure
-func (i *Importer) SpecValue() core.ResourceSpec {
+func (i *Extract) SpecValue() core.ResourceSpec {
 	return &i.Spec
 }
 
-// decode is responsible for decoding any necessary hcl.Body inside Importer
-func (i *Importer) decode(decode core.DecodeBodyFn) error {
-	// decode the resource spec into the importer's Spec
+// decode is responsible for decoding any necessary hcl.Body inside Extract
+func (i *Extract) decode(decode core.DecodeBodyFn) error {
+	// decode the resource spec into the extract's Spec
 	if err := decode(i, i.SpecHCL.Body, &i.Spec); err != nil {
 		return fmt.Errorf(`Failed to decode "%s" body spec: %w`, i.String(), err)
 	}
 
-	// based on the type of the importer, initiate the importer's Source
+	// based on the type of the extract, initiate the extract's Source
 	switch i.Spec.Type {
-	case jsonImporterType:
+	case jsonExtractType:
 		i.Spec.Source = &jsonSource{}
-	case xmlImporterType:
+	case xmlExtractType:
 		i.Spec.Source = &xmlSource{}
 	default:
-		panic(fmt.Sprintf("Unsupported importer resource type %s", i.Spec.Type))
+		panic(fmt.Sprintf("Unsupported extract resource type %s", i.Spec.Type))
 	}
 
-	// decode the source HCL into the importer's Source
+	// decode the source HCL into the extract's Source
 	if err := decode(i, i.Spec.SourceHCL.Body, i.Spec.Source); err != nil {
-		return fmt.Errorf(`Failed to decode importer source: %w`, err)
+		return fmt.Errorf(`Failed to decode extract source: %w`, err)
 	}
 
 	return nil
 }
 
-var _ core.ResourceSpec = (*importerSpec)(nil)
+var _ core.ResourceSpec = (*extractSpec)(nil)
 
-// importerSpec defines the spec for an importer
-type importerSpec struct {
+// extractSpec defines the spec for an extract
+type extractSpec struct {
 	Inputs InputDeclarations `hcl:"input,block"`
 	// the type is either json, xml, rest, etc.
-	Type      importerType `hcl:"type,attr"`
+	Type      extractType `hcl:"type,attr"`
 	SourceHCL *struct {
 		Body hcl.Body `hcl:",remain"`
 	} `hcl:"source,block"`
@@ -121,16 +121,16 @@ type importerSpec struct {
 	Source source
 }
 
-// importerType defines the type of an importer
-type importerType string
+// extractType defines the type of an extract
+type extractType string
 
 const (
-	jsonImporterType importerType = "json"
-	xmlImporterType               = "xml"
-	gitImporterType               = "git"
+	jsonExtractType extractType = "json"
+	xmlExtractType               = "xml"
+	gitExtractType               = "git"
 )
 
-// Source is an interface for the different data sources that an Importer can have
+// Source is an interface for the different data sources that an Extract can have
 type source interface {
 	// returns an interface{} containing the parsed XML, JSON data, that should
 	// be converted into the Output cty.Value
@@ -140,7 +140,7 @@ type source interface {
 // Compiler check to see that the source interface is implemented
 var _ source = (*gitSource)(nil)
 
-// gitSource represents the importer type for a local git repository data
+// gitSource represents the extract type for a local git repository data
 type gitSource struct {
 	Directory string `hcl:"directory,attr"`
 }
@@ -151,7 +151,7 @@ func (s *gitSource) Resolve() (cty.Value, error) {
 	//zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	//log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true})
 
-	// The format of v1 Git importer output
+	// The format of v1 Git extract output
 	format := cty.Object(map[string]cty.Type{
 		"is_bare":       cty.Bool,
 		"commit_id":     cty.String,
@@ -295,7 +295,7 @@ func (s *gitSource) Resolve() (cty.Value, error) {
 // Compiler check to see that v1.JSONSource implements the Source interface
 var _ source = (*jsonSource)(nil)
 
-// jsonSource represents the importer type for using a JSON file as the input
+// jsonSource represents the extract type for using a JSON file as the input
 type jsonSource struct {
 	File string `hcl:"file,attr"`
 	// the format of the raw input data defined as a cty.Type
@@ -332,7 +332,7 @@ func (s *jsonSource) Resolve() (cty.Value, error) {
 // Compiler check to see that v1.XMLSource implements the Source interface
 var _ source = (*xmlSource)(nil)
 
-// xmlSource represents the importer type for using an XML file as the input
+// xmlSource represents the extract type for using an XML file as the input
 type xmlSource struct {
 	File string `hcl:"file,attr"`
 	// the format of the raw input data defined as a cty.Type
