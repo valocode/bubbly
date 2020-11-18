@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
@@ -70,17 +71,17 @@ func newParser(body hcl.Body, hclparser *hclparse.Parser) *Parser {
 }
 
 // Parse performs the actual parsing for the parser
-func (p *Parser) Parse() error {
+func (p *Parser) Parse(bCtx *env.BubblyContext) error {
 	if p.Body == nil {
 		return errors.New("Trying to run the parser on an empty body")
 	}
 
-	if err := p.Scope.decodeBody(p.Body, &p.Value); err != nil {
+	if err := p.Scope.decodeBody(bCtx, p.Body, &p.Value); err != nil {
 		return fmt.Errorf(`Failed to decode main body: %s`, err.Error())
 	}
 
 	// populate the parser's EvalContext with variables
-	p.populateEvalContext()
+	p.populateEvalContext(bCtx)
 
 	// populate the parser's resources
 	p.populateResources()
@@ -127,10 +128,10 @@ func (p *Parser) GetResource(kind core.ResourceKind, name string) (core.Resource
 	return nil, fmt.Errorf(`Could not obtain resource "%s" of kind %s`, name, string(kind))
 }
 
-func (p *Parser) populateEvalContext() {
+func (p *Parser) populateEvalContext(bCtx *env.BubblyContext) {
 	for _, local := range p.Value.Locals {
 		traversal, value := local.Reference()
-		p.Scope.insert(value, traversal)
+		p.Scope.insert(bCtx, value, traversal)
 	}
 }
 

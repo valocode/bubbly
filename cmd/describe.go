@@ -20,11 +20,10 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	client "github.com/verifa/bubbly/client"
 	cmdutil "github.com/verifa/bubbly/cmd/util"
-	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 	normalise "github.com/verifa/bubbly/util/normalise"
 )
 
@@ -74,10 +73,8 @@ type DescribeResource struct {
 
 // DescribeOptions -
 type DescribeOptions struct {
-	o      cmdutil.Options //embedding
-	Config *config.Config
-
-	// sc ServerConfig
+	o             cmdutil.Options //embedding
+	BubblyContext *env.BubblyContext
 
 	Command string
 	Args    []string
@@ -96,13 +93,13 @@ type DescribeOptions struct {
 }
 
 // NewCmdDescribe creates a new cobra.Command representing "bubbly describe"
-func NewCmdDescribe() (*cobra.Command, *DescribeOptions) {
+func NewCmdDescribe(bCtx *env.BubblyContext) (*cobra.Command, *DescribeOptions) {
 	o := &DescribeOptions{
-		Command:  "describe",
-		Config:   config.NewDefaultConfig(),
-		Resource: DescribeResource{},
-		Version:  "v1",
-		Result:   make(map[string]client.DescribeResourceReturn, 1),
+		Command:       "describe",
+		BubblyContext: bCtx,
+		Resource:      DescribeResource{},
+		Version:       "v1",
+		Result:        make(map[string]client.DescribeResourceReturn, 1),
 	}
 
 	// cmd represents the describe command
@@ -112,17 +109,8 @@ func NewCmdDescribe() (*cobra.Command, *DescribeOptions) {
 		Long:    describeLong + "\n\n" + cmdutil.SuggestBubblyResources(),
 		Example: describeExample,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.Debug().Strs("arguments", args).
+			bCtx.Logger.Debug().Strs("arguments", args).
 				Msg("describe arguments")
-			config, err := config.SetupConfigs()
-
-			if err != nil {
-				return fmt.Errorf("failed to set up configuration: %w", err)
-			}
-
-			o.Config = config
-
-			log.Debug().Interface("configuration_merged", o.Config).Msg("merged bubbly configuration")
 
 			o.Args = args
 
@@ -148,9 +136,9 @@ func NewCmdDescribe() (*cobra.Command, *DescribeOptions) {
 			return nil
 		},
 		PreRun: func(cmd *cobra.Command, _ []string) {
-			viper.BindPFlags(rootCmd.PersistentFlags())
+			// viper.BindPFlags(rootCmd.PersistentFlags())
 			viper.BindPFlags(cmd.PersistentFlags())
-			log.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly configuration")
+			bCtx.Logger.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly configuration")
 		},
 	}
 
@@ -159,7 +147,7 @@ func NewCmdDescribe() (*cobra.Command, *DescribeOptions) {
 	f.StringVarP(&o.Version, "version", "v", o.Version, "Version of resource to filter on. (e.g. -v 239iq0wi")
 	// cmd.Flags().StringVarP(&o.Config.ServerConfig.Port, "port", "p", o.Config.ServerConfig.Port, "bubbly server port")
 	// if err := viper.BindPFlag("port", cmd.Flags().Lookup("port")); err != nil {
-	// 	log.Error().Msg(err.Error())
+	// 	bCtx.Logger.Error().Msg(err.Error())
 	// }
 
 	viper.BindPFlags(f)
@@ -199,13 +187,13 @@ func (o *DescribeOptions) Resolve(cmd *cobra.Command) error {
 
 // Run runs the describe command over the validated DescribeOptions configuration
 func (o *DescribeOptions) Run() error {
-	c, err := cmdutil.ClientSetup(*o.Config.ServerConfig)
+	c, err := cmdutil.ClientSetup(o.BubblyContext)
 	if err != nil {
 		return fmt.Errorf("failed to set up client: %w", err)
 	}
 
 	if !o.Group {
-		resourceDescription, err := c.DescribeResource(o.Resource.Type, o.Resource.Name, o.Version)
+		resourceDescription, err := c.DescribeResource(o.BubblyContext, o.Resource.Type, o.Resource.Name, o.Version)
 
 		if err != nil {
 			return fmt.Errorf("failed to describe resource: %w", err)
@@ -216,7 +204,7 @@ func (o *DescribeOptions) Run() error {
 		return nil
 	}
 
-	resourceDescriptions, err := c.DescribeResourceGroup(o.ResourceGroup, o.Version)
+	resourceDescriptions, err := c.DescribeResourceGroup(o.BubblyContext, o.ResourceGroup, o.Version)
 
 	if err != nil {
 		return fmt.Errorf("failed to describe resource group: %w", err)
@@ -255,9 +243,4 @@ func validResourceType(rTy string) bool {
 		}
 	}
 	return false
-}
-
-func init() {
-	describeCmd, _ := NewCmdDescribe()
-	rootCmd.AddCommand(describeCmd)
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/hcl/v2/ext/typeexpr"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -33,7 +34,7 @@ import (
 
 // JSONToResource takes a JSON representation of HCL as input and returns a
 // core.Resource.
-func (p *Parser) JSONToResource(json []byte) (*core.ResourceBlock, error) {
+func (p *Parser) JSONToResource(bCtx *env.BubblyContext, json []byte) (*core.ResourceBlock, error) {
 	// parse the json and pass in a unique filename for the parser, because
 	// otherwise it returns the same json file again...
 	file, diags := p.HCLParser.ParseJSON(json, fmt.Sprintf("json-%d", len(p.HCLParser.Files())))
@@ -42,7 +43,7 @@ func (p *Parser) JSONToResource(json []byte) (*core.ResourceBlock, error) {
 	}
 
 	resWrap := &core.ResourceBlockHCLWrapper{}
-	if diags := p.Scope.decodeBody(file.Body, resWrap); diags.HasErrors() {
+	if diags := p.Scope.decodeBody(bCtx, file.Body, resWrap); diags.HasErrors() {
 		return nil, fmt.Errorf("Failed to decode JSON: %s", diags.Error())
 	}
 

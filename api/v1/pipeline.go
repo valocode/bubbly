@@ -3,8 +3,8 @@ package v1
 import (
 	"fmt"
 
-	"github.com/rs/zerolog/log"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -28,9 +28,9 @@ func (p *Pipeline) SpecValue() core.ResourceSpec {
 }
 
 // Apply returns ...
-func (p *Pipeline) Apply(ctx *core.ResourceContext) core.ResourceOutput {
+func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 
-	if err := ctx.DecodeBody(p, p.SpecHCL.Body, &p.Spec); err != nil {
+	if err := ctx.DecodeBody(bCtx, p, p.SpecHCL.Body, &p.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %s`, p.String(), err.Error()),
@@ -39,10 +39,10 @@ func (p *Pipeline) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 	}
 
 	for idx, taskSpec := range p.Spec.TaskBlocks {
-		log.Debug().Msgf("Applying task: %s", taskSpec.Name)
+		bCtx.Logger.Debug().Msgf("Applying task: %s", taskSpec.Name)
 		t := NewTask(taskSpec)
 
-		err := t.Apply(ctx)
+		err := t.Apply(bCtx, ctx)
 		if err != nil {
 			return core.ResourceOutput{
 				Status: core.ResourceOutputFailure,

@@ -6,7 +6,6 @@ Most resource testing is done within the parser package. This is due to the fact
 
 import (
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -17,15 +16,12 @@ import (
 // newResourceBlock is a helper function for testing the creation of
 // ResourceBlocks from hcl files
 func newResourceBlock(t *testing.T, filename string) ResourceBlock {
-	input, err := os.Open(filename)
+	byteRes, err := ioutil.ReadFile(filename)
 	if err != nil {
-		t.Error()
+		t.Error(err)
 	}
-	defer input.Close()
-
-	src, err := ioutil.ReadAll(input)
 	parser := hclparse.NewParser()
-	file, diags := parser.ParseHCL([]byte(src), "test-file")
+	file, diags := parser.ParseHCL(byteRes, "test-file")
 	if diags.HasErrors() {
 		t.Error(diags.Error())
 	}

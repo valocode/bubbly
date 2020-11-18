@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
@@ -17,7 +18,7 @@ import (
 
 // DecodeExpandBody is a wrapper around decodeBody which also expands dynamic
 // blocks
-func (s *Scope) DecodeExpandBody(resource core.Resource, body hcl.Body, val interface{}) error {
+func (s *Scope) DecodeExpandBody(bCtx *env.BubblyContext, resource core.Resource, body hcl.Body, val interface{}) error {
 	// fmt.Printf("DECODING RESOURCE!! %s\n", reflect.TypeOf(val).String())
 	// spew.Dump(s.EvalContext.Variables["self"])
 
@@ -27,14 +28,14 @@ func (s *Scope) DecodeExpandBody(resource core.Resource, body hcl.Body, val inte
 	// first resolve only references that are needed to expand any dynamic
 	// blocks
 	traversals := walkExpandVariables(decodeCtx.Body, decodeCtx.Type())
-	if err := s.resolveVariables(decodeCtx, traversals); err != nil {
+	if err := s.resolveVariables(bCtx, decodeCtx, traversals); err != nil {
 		return fmt.Errorf(`Failed to decode body using type "%s": %s`, decodeCtx.Type().String(), err.Error())
 	}
 
 	// we have to expand before we resolve variables, otherwise the variables
 	// will not exist
 	body = dynblock.Expand(body, s.EvalContext)
-	if diags := s.decodeBody(body, val); diags.HasErrors() {
+	if diags := s.decodeBody(bCtx, body, val); diags.HasErrors() {
 		return fmt.Errorf(`Failed to decode body: %s`, diags.Error())
 	}
 
@@ -57,7 +58,7 @@ func (s *Scope) DecodeExpandBody(resource core.Resource, body hcl.Body, val inte
 // are returned then the given value may have been partially-populated but
 // may still be accessed by a careful caller for static analysis and editor
 // integration use-cases.
-func (s *Scope) decodeBody(body hcl.Body, val interface{}) hcl.Diagnostics {
+func (s *Scope) decodeBody(bCtx *env.BubblyContext, body hcl.Body, val interface{}) hcl.Diagnostics {
 	rv := reflect.ValueOf(val)
 	if rv.Kind() != reflect.Ptr {
 		panic(fmt.Sprintf("target value must be a pointer, not %s", rv.Type().String()))
@@ -71,12 +72,12 @@ func (s *Scope) decodeBody(body hcl.Body, val interface{}) hcl.Diagnostics {
 	// create a decode context which will be passed around
 	decodeCtx := newDecodeContext(body, val)
 
-	return s.decodeBodyToStruct(decodeCtx, body, rv.Elem())
+	return s.decodeBodyToStruct(bCtx, decodeCtx, body, rv.Elem())
 }
 
 // decodeBodyToStruct decodes the given hcl.Body into the given val, which must
 // be a struct
-func (s *Scope) decodeBodyToStruct(ctx *decodeContext, body hcl.Body, val reflect.Value) hcl.Diagnostics {
+func (s *Scope) decodeBodyToStruct(bCtx *env.BubblyContext, ctx *decodeContext, body hcl.Body, val reflect.Value) hcl.Diagnostics {
 	schema, partial := gohcl.ImpliedBodySchema(val.Interface())
 
 	var content *hcl.BodyContent
@@ -107,7 +108,7 @@ func (s *Scope) decodeBodyToStruct(ctx *decodeContext, body hcl.Body, val reflec
 			}
 			fieldV.Set(reflect.ValueOf(attrs))
 		default:
-			diags = append(diags, s.decodeBodyToStruct(ctx, leftovers, fieldV)...)
+			diags = append(diags, s.decodeBodyToStruct(bCtx, ctx, leftovers, fieldV)...)
 		}
 	}
 
@@ -137,7 +138,7 @@ func (s *Scope) decodeBodyToStruct(ctx *decodeContext, body hcl.Body, val reflec
 			fieldV.Set(reflect.ValueOf(attr.Expr))
 		default:
 			diags = append(diags, s.decodeExpression(
-				ctx, attr.Expr, fieldV.Addr().Interface(),
+				bCtx, ctx, attr.Expr, fieldV.Addr().Interface(),
 			)...)
 		}
 	}
@@ -210,10 +211,10 @@ func (s *Scope) decodeBodyToStruct(ctx *decodeContext, body hcl.Body, val reflec
 					if v.IsNil() {
 						v = reflect.New(ty)
 					}
-					diags = append(diags, s.decodeBlockToValue(ctx, block, v.Elem())...)
+					diags = append(diags, s.decodeBlockToValue(bCtx, ctx, block, v.Elem())...)
 					sli.Index(i).Set(v)
 				} else {
-					diags = append(diags, s.decodeBlockToValue(ctx, block, sli.Index(i))...)
+					diags = append(diags, s.decodeBlockToValue(bCtx, ctx, block, sli.Index(i))...)
 				}
 			}
 
@@ -230,10 +231,10 @@ func (s *Scope) decodeBodyToStruct(ctx *decodeContext, body hcl.Body, val reflec
 				if v.IsNil() {
 					v = reflect.New(ty)
 				}
-				diags = append(diags, s.decodeBlockToValue(ctx, block, v.Elem())...)
+				diags = append(diags, s.decodeBlockToValue(bCtx, ctx, block, v.Elem())...)
 				val.Field(fieldIdx).Set(v)
 			} else {
-				diags = append(diags, s.decodeBlockToValue(ctx, block, val.Field(fieldIdx))...)
+				diags = append(diags, s.decodeBlockToValue(bCtx, ctx, block, val.Field(fieldIdx))...)
 			}
 
 		}
@@ -243,7 +244,7 @@ func (s *Scope) decodeBodyToStruct(ctx *decodeContext, body hcl.Body, val reflec
 	return diags
 }
 
-func (s *Scope) decodeBlockToValue(ctx *decodeContext, block *hcl.Block, v reflect.Value) hcl.Diagnostics {
+func (s *Scope) decodeBlockToValue(bCtx *env.BubblyContext, ctx *decodeContext, block *hcl.Block, v reflect.Value) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 
 	ty := v.Type()
@@ -260,7 +261,7 @@ func (s *Scope) decodeBlockToValue(ctx *decodeContext, block *hcl.Block, v refle
 		}
 		v.Elem().Set(reflect.ValueOf(attrs))
 	default:
-		diags = append(diags, s.decodeBodyToStruct(ctx, block.Body, v)...)
+		diags = append(diags, s.decodeBodyToStruct(bCtx, ctx, block.Body, v)...)
 
 		if len(block.Labels) > 0 {
 			blockTags := getFieldTags(ty)
@@ -281,7 +282,7 @@ func (s *Scope) decodeBlockToValue(ctx *decodeContext, block *hcl.Block, v refle
 //
 // Additionally, before trying to evaluate the expression it checks for any
 // variable references (traversals) and attempts to resolve those.
-func (s *Scope) decodeExpression(ctx *decodeContext, expr hcl.Expression, val interface{}) hcl.Diagnostics {
+func (s *Scope) decodeExpression(bCtx *env.BubblyContext, ctx *decodeContext, expr hcl.Expression, val interface{}) hcl.Diagnostics {
 	if _, ok := val.(*cty.Type); ok {
 		ctyType, diags := typeexpr.TypeConstraint(expr)
 		if diags.HasErrors() {
@@ -313,7 +314,7 @@ func (s *Scope) decodeExpression(ctx *decodeContext, expr hcl.Expression, val in
 
 	// TODO get traversals and resolve!
 	traversals := expr.Variables()
-	if err := s.resolveVariables(ctx, traversals); err != nil {
+	if err := s.resolveVariables(bCtx, ctx, traversals); err != nil {
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Unable to resolve traversals/variables",

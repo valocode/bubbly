@@ -2,7 +2,7 @@ package parser
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	"github.com/rs/zerolog/log"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -43,18 +43,18 @@ func (s *SymbolTable) SetInputs(inputs cty.Value) {
 // SetOutputs sets the output from a module (moduleName).
 // A traversal needs to be created and module outputs are referenced with a
 // root traverser "module" followed by the moduleName and then the value
-func (s *SymbolTable) SetOutputs(moduleName string, outputs cty.Value) {
+func (s *SymbolTable) SetOutputs(bCtx *env.BubblyContext, moduleName string, outputs cty.Value) {
 	traversal := hcl.Traversal{
 		hcl.TraverseRoot{Name: "module"},
 		hcl.TraverseAttr{Name: moduleName},
 	}
-	s.insert(outputs, traversal)
+	s.insert(bCtx, outputs, traversal)
 }
 
 // insert takes a cty.Value and a hcl.Traversal and adds the given value at the
 // given hcl.Traversal path
-func (s *SymbolTable) insert(val cty.Value, traversal hcl.Traversal) {
-	// log.Debug().Msgf("Inserting into symbol table: %#v --> %s", val, traversalString(traversal))
+func (s *SymbolTable) insert(bCtx *env.BubblyContext, val cty.Value, traversal hcl.Traversal) {
+	// bCtx.Logger.Debug().Msgf("Inserting into symbol table: %#v --> %s", val, traversalString(traversal))
 	if len(traversal) < 1 {
 		panic("Cannot insert in symbol table with an empty traversal")
 	}
@@ -62,13 +62,13 @@ func (s *SymbolTable) insert(val cty.Value, traversal hcl.Traversal) {
 	// get the root value in the Variables map
 	rootVal := s.EvalContext.Variables[rootName]
 
-	s.EvalContext.Variables[rootName] = s.insertCtyValue(rootVal, val, traversal[1:])
+	s.EvalContext.Variables[rootName] = s.insertCtyValue(bCtx, rootVal, val, traversal[1:])
 }
 
 // inserCtyValue does the heavy lifting with the insert of a value.
 // cty.Values are immutable, and as such, we have to create them in a functional
 // way
-func (s *SymbolTable) insertCtyValue(pathVal cty.Value, val cty.Value, traversal hcl.Traversal) cty.Value {
+func (s *SymbolTable) insertCtyValue(bCtx *env.BubblyContext, pathVal cty.Value, val cty.Value, traversal hcl.Traversal) cty.Value {
 	// if path length is 0 we have traversed all the way down
 	if len(traversal) == 0 {
 		return val
@@ -91,19 +91,19 @@ func (s *SymbolTable) insertCtyValue(pathVal cty.Value, val cty.Value, traversal
 			mapVal = make(map[string]cty.Value)
 		}
 		// assign the new cty value
-		mapVal[stepAttrName] = s.insertCtyValue(nextVal, val, traversal[1:])
+		mapVal[stepAttrName] = s.insertCtyValue(bCtx, nextVal, val, traversal[1:])
 		return cty.ObjectVal(mapVal)
 	default:
-		log.Fatal().Msgf(`Unable to get next step in path with pathVal "%s" and remaining traversal "%s"`, pathVal.GoString(), traversalString(traversal))
+		bCtx.Logger.Fatal().Msgf(`Unable to get next step in path with pathVal "%s" and remaining traversal "%s"`, pathVal.GoString(), traversalString(traversal))
 		return cty.NilVal
 	}
 }
 
 // loopup returns the value at the given traversal in the SymbolTable.
 // If the value does not exist, it returns the NilValue and false
-func (s *SymbolTable) lookup(traversal hcl.Traversal) (cty.Value, bool) {
+func (s *SymbolTable) lookup(bCtx *env.BubblyContext, traversal hcl.Traversal) (cty.Value, bool) {
 	if len(traversal) < 1 {
-		log.Warn().Msg("SymbolTable.lookup() received an empty traversal")
+		bCtx.Logger.Warn().Msg("SymbolTable.lookup() received an empty traversal")
 		return cty.NilVal, false
 	}
 	// get the base value

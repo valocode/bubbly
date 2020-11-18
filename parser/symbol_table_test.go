@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/likexian/gokit/assert"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -13,17 +14,19 @@ var simpleCtyObject = cty.ObjectVal(map[string]cty.Value{
 })
 
 func TestInsertBasic(t *testing.T) {
+	bCtx := env.NewBubblyContext()
 	traversal := hcl.Traversal{}
 	traversal = append(traversal, hcl.TraverseRoot{
 		Name: "root",
 	})
 	sym := NewSymbolTable()
-	sym.insert(simpleCtyObject, traversal)
+	sym.insert(bCtx, simpleCtyObject, traversal)
 
 	assert.Equal(t, sym.EvalContext.Variables["root"], simpleCtyObject)
 }
 
 func TestInsertNested(t *testing.T) {
+	bCtx := env.NewBubblyContext()
 	traversal := hcl.Traversal{}
 	traversal = append(traversal, hcl.TraverseRoot{
 		Name: "root",
@@ -38,19 +41,19 @@ func TestInsertNested(t *testing.T) {
 		Name: "first",
 	})
 	firstVal := cty.NumberIntVal(42)
-	sym.insert(firstVal, first)
+	sym.insert(bCtx, firstVal, first)
 
 	second := append(traversal, hcl.TraverseAttr{
 		Name: "second",
 	})
 	secondVal := cty.StringVal("yoohoo!")
-	sym.insert(secondVal, second)
+	sym.insert(bCtx, secondVal, second)
 
-	val, exists := sym.lookup(first)
+	val, exists := sym.lookup(bCtx, first)
 	assert.Equal(t, exists, true)
 	assert.Equal(t, val, firstVal)
 
-	val, exists = sym.lookup(second)
+	val, exists = sym.lookup(bCtx, second)
 	assert.Equal(t, exists, true)
 	assert.Equal(t, val, secondVal)
 }

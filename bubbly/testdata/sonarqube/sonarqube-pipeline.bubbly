@@ -169,7 +169,7 @@ resource "pipeline_run" "sonarqube" {
         pipeline = "sonarqube"
         // specify the pipeline input(s) required
         input "file" {
-            value = "./testdata/sonarqube/sonarqube-example.json"
+            value = "../bubbly/testdata/sonarqube/sonarqube-example.json"
         }
         input "repo" {
             value = "../api/v1/testdata/extract/git/repo1.git"

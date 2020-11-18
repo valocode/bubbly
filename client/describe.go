@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/rs/zerolog/log"
+	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/events"
 )
 
@@ -18,7 +18,7 @@ type DescribeResourceReturn struct {
 	Events []events.Event `json:"events"`
 }
 
-func (c *Client) DescribeResource(rType, rName, rVersion string) (DescribeResourceReturn, error) {
+func (c *Client) DescribeResource(bCtx *env.BubblyContext, rType, rName, rVersion string) (DescribeResourceReturn, error) {
 	route := "describe"
 	u, err := url.Parse(c.HostURL)
 
@@ -29,7 +29,7 @@ func (c *Client) DescribeResource(rType, rName, rVersion string) (DescribeResour
 	u.Path = path.Join(u.Path, route, rType, rVersion, rName)
 	requestRoute := u.String()
 
-	log.Debug().Str("route", requestRoute).Msg("attempting to describe resource via GET request")
+	bCtx.Logger.Debug().Str("route", requestRoute).Msg("attempting to describe resource via GET request")
 	// describe resource
 	req, err := http.NewRequest(http.MethodGet, requestRoute, nil)
 
@@ -60,7 +60,7 @@ func (c *Client) DescribeResource(rType, rName, rVersion string) (DescribeResour
 	return drrs, nil
 }
 
-func (c *Client) DescribeResourceGroup(rType, rVersion string) (map[string]DescribeResourceReturn, error) {
+func (c *Client) DescribeResourceGroup(bCtx *env.BubblyContext, rType, rVersion string) (map[string]DescribeResourceReturn, error) {
 	route := "describe"
 	u, err := url.Parse(c.HostURL)
 
@@ -71,7 +71,7 @@ func (c *Client) DescribeResourceGroup(rType, rVersion string) (map[string]Descr
 	u.Path = path.Join(u.Path, route, rType, rVersion)
 	requestRoute := u.String()
 
-	log.Debug().Str("route", requestRoute).Msg("attempting to describe resource group via GET request")
+	bCtx.Logger.Debug().Str("route", requestRoute).Msg("attempting to describe resource group via GET request")
 
 	// describe resource
 	req, err := http.NewRequest(http.MethodGet, requestRoute, nil)

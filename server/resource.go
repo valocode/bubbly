@@ -7,11 +7,10 @@ import (
 	"os"
 	"path"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/buntdb"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 )
 
 const defaultNamespace = "default"
@@ -45,7 +44,7 @@ type resourceMap map[string]map[string]map[string]interface{}
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Router /api/resource [post]
-func PostResource(c *gin.Context) {
+func PostResource(bCtx *env.BubblyContext, c *gin.Context) {
 	var resourceMap map[string]map[string]map[string]map[string]interface{}
 	if err := c.ShouldBindJSON(&resourceMap); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -100,7 +99,7 @@ func PostResource(c *gin.Context) {
 		Resource:  string(request),
 	}
 
-	if err := uploadResource(&resource); err != nil {
+	if err := uploadResource(bCtx, &resource); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -111,10 +110,10 @@ func PostResource(c *gin.Context) {
 }
 
 // Uploads the resource to the in-mem db
-func uploadResource(resource *core.ResourceJSON) error {
+func uploadResource(bCtx *env.BubblyContext, resource *core.ResourceJSON) error {
 	db, dbErr := buntdb.Open(DbPath())
 	if dbErr != nil {
-		log.Error().Msg(dbErr.Error())
+		bCtx.Logger.Error().Msg(dbErr.Error())
 		return dbErr
 	}
 
@@ -139,7 +138,7 @@ func uploadResource(resource *core.ResourceJSON) error {
 // @Failure 400 {object} map[string]string
 // @x-examples 12345
 // @Router /api/resource/{id} [get]
-func GetResource(c *gin.Context) {
+func GetResource(bCtx *env.BubblyContext, c *gin.Context) {
 	resource := core.ResourceJSON{
 		Name:      c.Param("name"),
 		Namespace: c.Param("namespace"),
@@ -148,7 +147,7 @@ func GetResource(c *gin.Context) {
 
 	db, dbErr := buntdb.Open(DbPath())
 	if dbErr != nil {
-		log.Error().Msg(dbErr.Error())
+		bCtx.Logger.Error().Msg(dbErr.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": dbErr.Error()})
 		return
 	}

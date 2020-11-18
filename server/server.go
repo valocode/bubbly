@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-contrib/logger"
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog/log"
+	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/store"
 	"golang.org/x/sync/errgroup"
 )
@@ -21,11 +21,11 @@ var serverStore struct {
 
 // SetupRouter returns a pointer to a gin engine after setting up middleware
 // and initializing routes
-func SetupRouter() *gin.Engine {
+func SetupRouter(bCtx *env.BubblyContext) *gin.Engine {
 	// SETUP DB
 	storeErr := initStore()
 	if storeErr != nil {
-		log.Error().Msg("Error setting up DB: " + storeErr.Error())
+		bCtx.Logger.Error().Msg("Error setting up DB: " + storeErr.Error())
 	}
 	// Initialize Router
 	// router := gin.Default()  // Sets the Gin defaults
@@ -35,7 +35,7 @@ func SetupRouter() *gin.Engine {
 	router.Use(VersionMiddleware())
 
 	// Initialize HTTP Routes
-	InitializeRoutes(router)
+	InitializeRoutes(bCtx, router)
 
 	return router
 }

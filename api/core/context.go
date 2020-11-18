@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -37,7 +38,7 @@ type GetServerConfigFn func() (*config.ServerConfig, error)
 type GetResourceFn func(kind ResourceKind, name string) (Resource, error)
 
 // DecodeBodyFn represents the function that will decode any HCL Bodies.
-type DecodeBodyFn func(resource Resource, body hcl.Body, val interface{}) error
+type DecodeBodyFn func(bCtx *env.BubblyContext, resource Resource, body hcl.Body, val interface{}) error
 
 // NewContextFn represents the function that will provide a new context
 // for resources that applies nested resources (e.g. like a pipeline applying
@@ -46,7 +47,7 @@ type NewContextFn func(inputs cty.Value) *ResourceContext
 
 // InsertValueFn takes a cty.Value and a path (represented as a slice of string)
 // and adds the value at that path to the EvalContext
-type InsertValueFn func(value cty.Value, path []string)
+type InsertValueFn func(bCtx *env.BubblyContext, value cty.Value, path []string)
 
 // BodyToJSONFn takes an hclsyntax.Body and returns a JSON representation of
 // that body, which could be converted back into an hcl.Body.

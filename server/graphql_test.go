@@ -7,12 +7,14 @@ import (
 
 	"github.com/appleboy/gofight"
 	"github.com/stretchr/testify/assert"
+	"github.com/verifa/bubbly/env"
 	testData "github.com/verifa/bubbly/server/testdata/upload"
 )
 
 func IntegrationTestQuery(t *testing.T) {
+	bCtx := env.NewBubblyContext()
 	r := gofight.New()
-	router := SetupRouter()
+	router := SetupRouter(bCtx)
 
 	// First, insert data into MemDb using the Upload functionality
 	r.POST("/alpha1/upload").
@@ -34,13 +36,14 @@ func IntegrationTestQuery(t *testing.T) {
 }
 
 func IntegrationTestQueryFail(t *testing.T) {
+	bCtx := env.NewBubblyContext()
 	r := gofight.New()
 
 	r.POST("/api/graphql").
 		SetJSON(gofight.D{
 			"query": `{tablez(Name:"Boise Zoo"){Name}}`,
 		}).
-		Run(SetupRouter(), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		Run(SetupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusBadRequest, r.Code)
 		})
 }

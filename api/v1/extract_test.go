@@ -7,9 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/zclconf/go-cty/cty"
+	"github.com/verifa/bubbly/env"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/stretchr/testify/require"
 
 	"gopkg.in/h2non/gock.v1"
@@ -21,6 +23,7 @@ import (
 )
 
 func TestExtractJSON(t *testing.T) {
+	bCtx := env.NewBubblyContext()
 
 	// Helper function that runs the test defined by its arguments
 	run := func(t *testing.T, jsonFile string, ctyType cty.Type, expected cty.Value) {
@@ -32,7 +35,7 @@ func TestExtractJSON(t *testing.T) {
 			Format: ctyType,
 		}
 
-		val, err := source.Resolve()
+		val, err := source.Resolve(bCtx)
 
 		assert.Nil(t, err, "failed to Resolve() the extract")
 		require.False(t, val.IsNull(), "the extract returned null type value")
@@ -55,7 +58,7 @@ func TestExtractJSON(t *testing.T) {
 func TestExtractXML(t *testing.T) {
 
 	// Helper function that runs the test defined by its arguments
-	run := func(t *testing.T, xmlFile string, ctyType cty.Type, expected cty.Value) {
+	run := func(bCtx *env.BubblyContext, t *testing.T, xmlFile string, ctyType cty.Type, expected cty.Value) {
 
 		t.Helper()
 
@@ -64,7 +67,7 @@ func TestExtractXML(t *testing.T) {
 			Format: ctyType,
 		}
 
-		val, err := source.Resolve()
+		val, err := source.Resolve(bCtx)
 
 		assert.Nil(t, err, "failed to Resolve() the extract")
 		require.False(t, val.IsNull(), "the extract returned null type value")
@@ -73,7 +76,9 @@ func TestExtractXML(t *testing.T) {
 
 	// Easiest. Baseline. No "short" lists.
 	t.Run("junit0", func(t *testing.T) {
-		run(t,
+		bCtx := env.NewBubblyContext()
+		run(bCtx,
+			t,
 			filepath.FromSlash(`testdata/extract/xml/junit0.xml`),
 			fixtureXML.ExpectedType(),
 			fixtureXML.ExpectedValue0(),
@@ -82,7 +87,9 @@ func TestExtractXML(t *testing.T) {
 
 	// Harder. A single "testsuite" element but multiple "testcase" elements therein.
 	t.Run("junit1", func(t *testing.T) {
-		run(t,
+		bCtx := env.NewBubblyContext()
+		run(bCtx,
+			t,
 			filepath.FromSlash(`testdata/extract/xml/junit1.xml`),
 			fixtureXML.ExpectedType(),
 			fixtureXML.ExpectedValue1(),
@@ -91,7 +98,9 @@ func TestExtractXML(t *testing.T) {
 
 	// Hardest. A single "testsuite" element with a single "testcase" elements within.
 	t.Run("junit2", func(t *testing.T) {
-		run(t,
+		bCtx := env.NewBubblyContext()
+		run(bCtx,
+			t,
 			filepath.FromSlash(`testdata/extract/xml/junit2.xml`),
 			fixtureXML.ExpectedType(),
 			fixtureXML.ExpectedValue2(),
@@ -100,6 +109,7 @@ func TestExtractXML(t *testing.T) {
 }
 
 func TestExtractGit(t *testing.T) {
+	bCtx := env.NewBubblyContext()
 
 	source := gitSource{
 		Directory: filepath.FromSlash(`testdata/extract/git/repo1.git`),
@@ -120,7 +130,7 @@ func TestExtractGit(t *testing.T) {
 		"tag": cty.StringVal("kawabunga"),
 	})
 
-	val, err := source.Resolve()
+	val, err := source.Resolve(bCtx)
 
 	assert.Nil(t, err, "failed to Resolve() the extract")
 	require.False(t, val.IsNull(), "the extract returned null type value")
@@ -131,6 +141,8 @@ func TestExtractGit(t *testing.T) {
 func TestExtractRestBaseline(t *testing.T) {
 
 	defer gock.Off()
+
+	bCtx := env.NewBubblyContext()
 
 	// This is the baseline test for REST API extract. It only makes
 	// a basic HTTP GET request without authentication or encoding
@@ -170,7 +182,7 @@ func TestExtractRestBaseline(t *testing.T) {
 		File(filepath.FromSlash("testdata/extract/rest/prometheus/prometheus0.json"))
 
 	// Make a REST API request
-	val, err := s.Resolve()
+	val, err := s.Resolve(bCtx)
 
 	assert.True(t, gockResponse.Done(), "mock server reports no request was handled")
 	assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
@@ -204,6 +216,7 @@ func TestExtractRestBasicAuth(t *testing.T) {
 
 	// Subtest
 	t.Run("username only", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
 
 		s := source
 		s.BasicAuth.Username = "mouse"
@@ -217,7 +230,7 @@ func TestExtractRestBasicAuth(t *testing.T) {
 			Reply(http.StatusUnauthorized)
 
 		// Make API request
-		val, err := s.Resolve()
+		val, err := s.Resolve(bCtx)
 
 		// Do checks suitable for the testing scenario
 		assert.True(t, gockResponse.Done(), "server did not understand the request")
@@ -228,6 +241,7 @@ func TestExtractRestBasicAuth(t *testing.T) {
 
 	// Subtest
 	t.Run("username and password", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
 
 		s := source
 		s.BasicAuth.Username = "mouse"
@@ -239,7 +253,7 @@ func TestExtractRestBasicAuth(t *testing.T) {
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
-		val, err := s.Resolve()
+		val, err := s.Resolve(bCtx)
 
 		assert.True(t, gockResponse.Done(), "server did not understand the request")
 		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
@@ -250,6 +264,7 @@ func TestExtractRestBasicAuth(t *testing.T) {
 
 	// Subtest
 	t.Run("username and password file", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
 
 		s := source
 		s.BasicAuth.Username = "mouse"
@@ -265,7 +280,7 @@ func TestExtractRestBasicAuth(t *testing.T) {
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
-		val, err := s.Resolve()
+		val, err := s.Resolve(bCtx)
 
 		assert.True(t, gockResponse.Done(), "server did not understand the request")
 		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
@@ -276,6 +291,7 @@ func TestExtractRestBasicAuth(t *testing.T) {
 	// Subtest
 	t.Run("username and password and password file", func(t *testing.T) {
 
+		bCtx := env.NewBubblyContext()
 		s := source
 		s.BasicAuth.Username = "mouse"
 		s.BasicAuth.Password = "correct horse battery staple"
@@ -285,7 +301,7 @@ func TestExtractRestBasicAuth(t *testing.T) {
 			Get(`/` + s.Route).
 			Reply(http.StatusOK)
 
-		val, err := s.Resolve()
+		val, err := s.Resolve(bCtx)
 
 		assert.NotNil(t, err, "expected error: failed to Resolve() the extract")
 		assert.False(t, gockResponse.Done(), "the request should not have been sent, but it was")
@@ -310,6 +326,7 @@ func TestExtractRestBearerToken(t *testing.T) {
 
 	// Subtest
 	t.Run("bearer token only", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
 
 		s := source
 		s.BearerToken = "3048d70dc7c4e4ccf47916e809ef2019eaef41d68e46ff100560807bbe1572f9"
@@ -320,7 +337,7 @@ func TestExtractRestBearerToken(t *testing.T) {
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
-		val, err := s.Resolve()
+		val, err := s.Resolve(bCtx)
 
 		assert.True(t, gockResponse.Done(), "server did not understand the request")
 		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
@@ -332,6 +349,7 @@ func TestExtractRestBearerToken(t *testing.T) {
 	// Subtest
 	t.Run("bearer token file only", func(t *testing.T) {
 
+		bCtx := env.NewBubblyContext()
 		s := source
 		s.BearerTokenFile = filepath.FromSlash("testdata/extract/rest/bearer_token_secret")
 
@@ -345,7 +363,7 @@ func TestExtractRestBearerToken(t *testing.T) {
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
-		val, err := s.Resolve()
+		val, err := s.Resolve(bCtx)
 
 		assert.True(t, gockResponse.Done(), "server did not understand the request")
 		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
@@ -356,6 +374,7 @@ func TestExtractRestBearerToken(t *testing.T) {
 
 	// Subtest
 	t.Run("bearer token and bearer token file both", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
 
 		s := source
 		s.BearerToken = "3048d70dc7c4e4ccf47916e809ef2019eaef41d68e46ff100560807bbe1572f9"
@@ -367,7 +386,7 @@ func TestExtractRestBearerToken(t *testing.T) {
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
-		val, err := s.Resolve()
+		val, err := s.Resolve(bCtx)
 
 		assert.True(t, gockResponse.Done(), "server did not understand the request")
 		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
@@ -399,6 +418,7 @@ func TestExtractRestHeaders(t *testing.T) {
 
 	// Subtest
 	t.Run("github content type", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
 
 		s := source
 
@@ -411,7 +431,7 @@ func TestExtractRestHeaders(t *testing.T) {
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
-		val, err := s.Resolve()
+		val, err := s.Resolve(bCtx)
 
 		assert.True(t, gockResponse.Done(), "server did not understand the request")
 		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
@@ -447,6 +467,7 @@ func TestExtractRestParams(t *testing.T) {
 
 	// Subtest
 	t.Run("no url query string", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
 
 		s := source
 
@@ -458,7 +479,7 @@ func TestExtractRestParams(t *testing.T) {
 			Reply(http.StatusOK).
 			File(filepath.FromSlash(`testdata/extract/rest/github/github0.json`))
 
-		val, err := s.Resolve()
+		val, err := s.Resolve(bCtx)
 
 		assert.True(t, gockResponse.Done(), "server did not understand the request")
 		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
@@ -470,6 +491,7 @@ func TestExtractRestParams(t *testing.T) {
 
 	// Subtest
 	t.Run("set per_page=2 in URL query string", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
 
 		s := source
 
@@ -487,7 +509,7 @@ func TestExtractRestParams(t *testing.T) {
 			Reply(http.StatusOK).
 			File(filepath.FromSlash(`testdata/extract/rest/github/github1.json`))
 
-		val, err := s.Resolve()
+		val, err := s.Resolve(bCtx)
 
 		require.True(t, gockResponse.Done(), "request did not match what server expected")
 		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")

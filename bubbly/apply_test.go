@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 	"gopkg.in/h2non/gock.v1"
 )
 
@@ -21,27 +21,19 @@ func TestApply(t *testing.T) {
 
 	host := "localhost"
 	port := "8080"
-	auth := false
-	token := ""
 	hostURL := host + ":" + port
-
-	sc := config.ServerConfig{
-		Port:  port,
-		Host:  "http://" + host,
-		Auth:  auth,
-		Token: token,
-	}
 
 	// Subtest
 	t.Run("sonarqube", func(t *testing.T) {
-
 		// Create a new server route for mocking a Bubbly server response
 		gock.New(hostURL).
 			Post("/alpha1/upload").
 			Reply(http.StatusOK).
 			JSON(map[string]interface{}{"status": "uploaded"})
 
-		err := Apply("./testdata/sonarqube", sc)
+		bCtx := env.NewBubblyContext()
+
+		err := Apply(bCtx, "./testdata/sonarqube")
 
 		assert.NoError(t, err, "Failed to apply resource")
 	})

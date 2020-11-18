@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/verifa/bubbly/env"
 )
 
 // TODO: gock requires explicit client intercept. Rewrite tests.
@@ -90,7 +91,8 @@ import (
 func TestDescribeValidResourceType(t *testing.T) {
 	for _, c := range describeValidResourceCases {
 		t.Run(c.desc, func(t *testing.T) {
-			cmd, _ := NewCmdDescribe()
+			bCtx := env.NewBubblyContext()
+			cmd, _ := NewCmdDescribe(bCtx)
 			b := bytes.NewBufferString("")
 			// cmd.SetOut(b)
 			cmd.SetErr(b)
@@ -112,7 +114,8 @@ func TestDescribeValidResourceType(t *testing.T) {
 func TestDescribeInvalidResourceType(t *testing.T) {
 	for _, c := range describeInvalidResourceCases {
 		t.Run(c.desc, func(t *testing.T) {
-			cmd, _ := NewCmdDescribe()
+			bCtx := env.NewBubblyContext()
+			cmd, _ := NewCmdDescribe(bCtx)
 			b := bytes.NewBufferString("")
 			// cmd.SetOut(b)
 			cmd.SetErr(b)
@@ -132,7 +135,8 @@ func TestDescribeInvalidResourceType(t *testing.T) {
 }
 
 func TestDescribeHelpMessage(t *testing.T) {
-	cmd, _ := NewCmdDescribe()
+	bCtx := env.NewBubblyContext()
+	cmd, _ := NewCmdDescribe(bCtx)
 	b := bytes.NewBufferString("")
 	cmd.SetOut(b)
 	cmd.SetArgs([]string{"-h"})
@@ -153,7 +157,8 @@ func TestDescribeHelpMessage(t *testing.T) {
 }
 
 func TestDescribeCmdSetup(t *testing.T) {
-	cmd, _ := NewCmdDescribe()
+	bCtx := env.NewBubblyContext()
+	cmd, _ := NewCmdDescribe(bCtx)
 	assert.NotNil(t, cmd)
 }
 
@@ -161,16 +166,21 @@ func TestDescribeWithVersionArg(t *testing.T) {
 
 	for _, c := range describeWithVersionArgCases {
 		t.Run(c.desc, func(t *testing.T) {
+			bCtx := env.NewBubblyContext()
 			// Create a new describe command
-			cmd, _ := NewCmdDescribe()
-			b := bytes.NewBufferString("")
-			cmd.SetOut(b)
+			cmd, o := NewCmdDescribe(bCtx)
+			cmd.SetOut(bytes.NewBufferString(""))
 			cmd.SetArgs([]string{c.rType, c.rName, "--version", c.version})
 			cmd.SilenceUsage = true
 			cmd.Execute()
 
 			// Verify that the version flag is bound by viper correctly.
 			assert.Equal(t, c.expected, viper.Get("version"))
+
+			// Alternatively, if we remove Viper we can assert that the
+			// variable associated to the "version" flag was assigned
+			// correctly by Cobra:
+			assert.Equal(t, c.expected, o.Version)
 		})
 	}
 }
@@ -179,20 +189,21 @@ func TestDescribeWithVersionArg(t *testing.T) {
 func TestDescribeWithServerConfigsSetup(t *testing.T) {
 	for _, c := range describeWithServerConfigsSetupCases {
 		t.Run(c.desc, func(t *testing.T) {
+			bCtx := env.NewBubblyContext()
+			rootCmd := NewCmdRoot(bCtx)
 			// Create a new describe command
-			cmd, o := NewCmdDescribe()
-			b := bytes.NewBufferString("")
+			cmd, o := NewCmdDescribe(bCtx)
 			// set the flag inputs to `bubbly`
 			for name, value := range c.flags {
 				_ = rootCmd.PersistentFlags().Set(name, value)
 			}
 
-			cmd.SetOut(b)
+			cmd.SetOut(bytes.NewBufferString(""))
 			cmd.SetArgs([]string{c.rType, c.rName})
 			cmd.SilenceUsage = true
 			cmd.Execute()
 
-			assert.Equal(t, c.expected.ServerConfig, o.Config.ServerConfig)
+			assert.Equal(t, c.expected.ServerConfig, o.BubblyContext.Config.ServerConfig)
 		})
 	}
 }

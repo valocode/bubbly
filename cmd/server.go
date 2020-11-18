@@ -20,11 +20,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdutil "github.com/verifa/bubbly/cmd/util"
-	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/server"
 	normalise "github.com/verifa/bubbly/util/normalise"
 )
@@ -32,12 +31,10 @@ import (
 var (
 	_          cmdutil.Options = (*ApplyOptions)(nil)
 	serverLong                 = normalise.LongDesc(`
-		Apply a Bubbly configuration (collection of 1 or more Bubbly Resources) to a Bubbly server
+		Start a bubbly server
 
-		    $ bubbly apply (-f (FILENAME | DIRECTORY)) [flags]
-
-		will first check for an exact match on FILENAME. If no such filename
-		exists, it will instead search for a directory.`)
+			$ bubbly server [flags]
+		`)
 
 	serverExample = normalise.Examples(`
 		# Start the bubbly server using defaults (http://localhost:8080)
@@ -51,22 +48,21 @@ var (
 
 // ServerOptions -
 type ServerOptions struct {
-	o      cmdutil.Options //embedding
-	Config *config.Config
-
-	Command string
-	Args    []string
+	o             cmdutil.Options //embedding
+	BubblyContext *env.BubblyContext
+	Command       string
+	Args          []string
 
 	// Result from o.Run() - success / failure for the server
 	Result bool
 }
 
 // NewCmdServer creates a new cobra.Command representing "bubbly server"
-func NewCmdServer() (*cobra.Command, *ServerOptions) {
+func NewCmdServer(bCtx *env.BubblyContext) (*cobra.Command, *ServerOptions) {
 	o := &ServerOptions{
-		Command: "server",
-		Config:  config.NewDefaultConfig(),
-		Result:  false,
+		Command:       "server",
+		BubblyContext: bCtx,
+		Result:        false,
 	}
 
 	// cmd represents the apply command
@@ -76,17 +72,10 @@ func NewCmdServer() (*cobra.Command, *ServerOptions) {
 		Long:    serverLong + "\n\n" + cmdutil.SuggestBubblyResources(),
 		Example: serverExample,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.Debug().Strs("arguments", args).
+			bCtx.Logger.Debug().Strs("arguments", args).
 				Msg("server arguments")
-			config, err := config.SetupConfigs()
-
-			if err != nil {
-				return fmt.Errorf("failed to set up configuration: %w", err)
-			}
-
-			o.Config = config
-
-			log.Debug().Interface("configuration_merged", o.Config).Msg("merged bubbly configuration")
+			bCtx.Logger.Debug().Interface("bubbly_context", o.BubblyContext).
+				Msg("bubbly context")
 
 			o.Args = args
 
@@ -111,9 +100,13 @@ func NewCmdServer() (*cobra.Command, *ServerOptions) {
 			return nil
 		},
 		PreRun: func(cmd *cobra.Command, _ []string) {
-			viper.BindPFlags(rootCmd.PersistentFlags())
-			viper.BindPFlags(cmd.PersistentFlags())
-			log.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly configuration")
+			// viper.BindPFlags(rootCmd.PersistentFlags())
+			// viper.BindPFlags(cmd.PersistentFlags())
+			bCtx.Logger.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly viper configuration")
+			// err := bCtx.Update()
+			// if err != nil {
+			// 	bCtx.Logger.Error().Msg("failed to update bubbly context")
+			// }
 		},
 	}
 
@@ -126,7 +119,7 @@ func (o *ServerOptions) Validate(cmd *cobra.Command) error {
 		return cmdutil.UsageErrorf(cmd, "Unexpected args: %v", o.Args)
 	}
 	// This should never be reached if we have set the ServerOptions.Config correctly with defaults.
-	if (o.Config.ServerConfig.Host == "") || (o.Config.ServerConfig.Port == "") {
+	if (o.BubblyContext.Config.ServerConfig.Host == "") || (o.BubblyContext.Config.ServerConfig.Port == "") {
 		return fmt.Errorf("Internal Error: Server configs missing.")
 	}
 	return nil
@@ -141,11 +134,11 @@ func (o *ServerOptions) Resolve(cmd *cobra.Command) error {
 func (o *ServerOptions) Run() error {
 	server.SetVersion(bubblyVersion)
 	// initialize the router's endpoints
-	router = server.SetupRouter()
+	router = server.SetupRouter(o.BubblyContext)
 
-	hostURL := o.Config.ServerConfig.Host + ":" + o.Config.ServerConfig.Port
+	hostURL := o.BubblyContext.Config.ServerConfig.Host + ":" + o.BubblyContext.Config.ServerConfig.Port
 
-	log.Debug().Msgf("Started server on: %s", hostURL)
+	o.BubblyContext.Logger.Debug().Msgf("Started server on: %s", hostURL)
 
 	s := &http.Server{
 		Addr:    hostURL,
@@ -165,9 +158,4 @@ func (o *ServerOptions) Run() error {
 // Print formats and prints the ServerOptions.Result from o.Run()
 func (o *ServerOptions) Print(cmd *cobra.Command) {
 	fmt.Fprintf(cmd.OutOrStdout(), "Server result: %t\n", o.Result)
-}
-
-func init() {
-	serverCmd, _ := NewCmdServer()
-	rootCmd.AddCommand(serverCmd)
 }

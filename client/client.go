@@ -7,9 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/rs/zerolog/log"
-
-	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 )
 
 // HostURL - Default bubbly server URL
@@ -49,18 +47,24 @@ func NewUnauthClient(host *string) (*Client, error) {
 }
 
 // NewClient -
-func NewClient(sc config.ServerConfig) (*Client, error) {
+func NewClient(bCtx *env.BubblyContext) (*Client, error) {
+	sc, err := bCtx.GetServerConfig()
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to get server configuration from the bubbly context: %w", err)
+	}
+
 	c := Client{
 		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 		// Default bubbly server URL
 		HostURL: HostURL,
 	}
 
-	if sc.Host != "" && sc.Port != "" {
+	if sc.Protocol != "" && sc.Host != "" && sc.Port != "" {
 		us := sc.Protocol + "://" + sc.Host + ":" + sc.Port
 		if u, err := url.Parse(us); err == nil {
 			c.HostURL = u.String()
-			log.Info().Str("url", u.String()).Msg("custom bubbly host set")
+			bCtx.Logger.Info().Str("url", u.String()).Msg("custom bubbly host set")
 		}
 	}
 

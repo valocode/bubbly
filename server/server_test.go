@@ -6,10 +6,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/verifa/bubbly/env"
 )
 
 func TestHealth(t *testing.T) {
-	router := SetupRouter()
+	bCtx := env.NewBubblyContext()
+	router := SetupRouter(bCtx)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/healthz", nil)

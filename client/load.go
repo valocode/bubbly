@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/rs/zerolog/log"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 )
 
 // Load takes the output from a load resource and POSTs it to the Bubbly
 // server.
 // Returns an error if loading was unsuccessful
-func (c *Client) Load(data core.DataBlocks) error {
+func (c *Client) Load(bCtx *env.BubblyContext, data core.DataBlocks) error {
 
 	// We must wrap the data with "data" key such that it can be unmarshalled
 	// correctly by server.upload into an uploadStruct
@@ -21,7 +21,7 @@ func (c *Client) Load(data core.DataBlocks) error {
 		"data": data,
 	}
 
-	log.Debug().Interface("data", loadData).Str("host", c.HostURL).Msg("Making POST to Bubbly server from client.Load to load data.")
+	bCtx.Logger.Debug().Interface("data", loadData).Str("host", c.HostURL).Msg("Making POST to Bubbly server from client.Load to load data.")
 
 	json.Marshal(loadData)
 	jsonReq, err := json.Marshal(loadData)

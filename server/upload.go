@@ -3,10 +3,9 @@ package server
 import (
 	"net/http"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/gin-gonic/gin"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 )
 
 type uploadStruct struct {
@@ -21,10 +20,10 @@ type uploadStruct struct {
 // @Accept json
 // @Produce json
 // @Router /alpha1/upload [post]
-func upload(c *gin.Context) {
+func upload(bCtx *env.BubblyContext, c *gin.Context) {
 	var upload uploadStruct
 	if err := c.ShouldBindJSON(&upload); err != nil {
-		log.Error().Msg(err.Error())
+		bCtx.Logger.Error().Msg(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -33,11 +32,11 @@ func upload(c *gin.Context) {
 		return
 	}
 
-	log.Debug().Interface("data", upload).Msg("loading data into intermediary database")
+	bCtx.Logger.Debug().Interface("data", upload).Msg("loading data into intermediary database")
 
 	importErr := serverStore.Store.Save(upload.Data)
 	if importErr != nil {
-		log.Error().Msg(importErr.Error())
+		bCtx.Logger.Error().Msg(importErr.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": importErr.Error()})
 		return
 	}

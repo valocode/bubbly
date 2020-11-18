@@ -18,13 +18,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/viper"
-
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/verifa/bubbly/bubbly"
 	cmdutil "github.com/verifa/bubbly/cmd/util"
-	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 	normalise "github.com/verifa/bubbly/util/normalise"
 )
 
@@ -48,9 +45,9 @@ var (
 
 // ApplyOptions -
 type ApplyOptions struct {
-	o        cmdutil.Options //embedding
-	Config   *config.Config
-	Filename string
+	o             cmdutil.Options //embedding
+	BubblyContext *env.BubblyContext
+	Filename      string
 
 	// sc ServerConfig
 
@@ -62,11 +59,11 @@ type ApplyOptions struct {
 }
 
 // NewCmdApply creates a new cobra.Command representing "bubbly apply"
-func NewCmdApply() (*cobra.Command, *ApplyOptions) {
+func NewCmdApply(bCtx *env.BubblyContext) (*cobra.Command, *ApplyOptions) {
 	o := &ApplyOptions{
-		Command: "apply",
-		Config:  config.NewDefaultConfig(),
-		Result:  false,
+		Command:       "apply",
+		BubblyContext: bCtx,
+		Result:        false,
 	}
 
 	// cmd represents the apply command
@@ -76,17 +73,17 @@ func NewCmdApply() (*cobra.Command, *ApplyOptions) {
 		Long:    applyLong + "\n\n" + cmdutil.SuggestBubblyResources(),
 		Example: applyExample,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.Debug().Strs("arguments", args).
+			bCtx.Logger.Debug().Strs("arguments", args).
 				Msg("apply arguments")
-			config, err := config.SetupConfigs()
+			// config, err := config.SetupConfigs()
 
-			if err != nil {
-				return fmt.Errorf("failed to set up configs: %w", err)
-			}
+			// if err != nil {
+			// 	return fmt.Errorf("failed to set up configs: %w", err)
+			// }
 
-			o.Config = config
+			// o.Config = config
 
-			log.Debug().Interface("configuration_merged", o.Config).Msg("merged bubbly configuration")
+			// bCtx.Logger.Debug().Interface("configuration_merged", o.Config).Msg("merged bubbly configuration")
 			o.Args = args
 
 			validationError := o.Validate(cmd)
@@ -110,9 +107,9 @@ func NewCmdApply() (*cobra.Command, *ApplyOptions) {
 			return nil
 		},
 		PreRun: func(cmd *cobra.Command, _ []string) {
-			viper.BindPFlags(rootCmd.PersistentFlags())
-			viper.BindPFlags(cmd.PersistentFlags())
-			log.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly configuration")
+			// viper.BindPFlags(rootCmd.PersistentFlags())
+			// viper.BindPFlags(cmd.PersistentFlags())
+			// bCtx.Logger.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly configuration")
 		},
 	}
 
@@ -120,7 +117,7 @@ func NewCmdApply() (*cobra.Command, *ApplyOptions) {
 
 	f.StringVarP(&o.Filename, "filename", "f", o.Filename, "filename or directory that contains the configuration to apply")
 	cmd.MarkFlagRequired("filename")
-	viper.BindPFlags(f)
+	// viper.BindPFlags(f)
 
 	return cmd, o
 }
@@ -145,7 +142,7 @@ func (o *ApplyOptions) Resolve(cmd *cobra.Command) error {
 
 // Run runs the apply command over the validated ApplyOptions configuration
 func (o *ApplyOptions) Run() error {
-	if err := bubbly.Apply(o.Filename, *o.Config.ServerConfig); err != nil {
+	if err := bubbly.Apply(o.BubblyContext, o.Filename); err != nil {
 		o.Result = false
 		return fmt.Errorf("failed to apply configuration: %w", err)
 	}
@@ -156,9 +153,4 @@ func (o *ApplyOptions) Run() error {
 // Print formats and prints the ApplyOptions.Result from o.Run()
 func (o *ApplyOptions) Print(cmd *cobra.Command) {
 	fmt.Fprintf(cmd.OutOrStdout(), "Apply result: %t\n", o.Result)
-}
-
-func init() {
-	applyCmd, _ := NewCmdApply()
-	rootCmd.AddCommand(applyCmd)
 }

@@ -19,12 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog"
-
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 	normalise "github.com/verifa/bubbly/util/normalise"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -32,69 +28,78 @@ import (
 )
 
 var (
-	globalServerConfig config.ServerConfig
-	globalConfigFile   string
-	rootShort          = normalise.LongDesc(`
+	globalConfigFile string
+	// debug            bool
+	rootShort = normalise.LongDesc(`
 		bubbly provides a single binary for controlling both the bubbly server and bubbly client.
 		
 		Find more information: https://verifa.io/products/bubbly`)
+	// rootCmd *cobra.Command
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "bubbly",
-	Short: rootShort,
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-}
-
-// Execute is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
+// NewCmdRoot creates a new cobra.Command representing "bubbly"
+func NewCmdRoot(bCtx *env.BubblyContext) *cobra.Command {
+	// cmd represents the apply command
+	cmd := &cobra.Command{
+		Use:   "bubbly",
+		Short: rootShort,
+		Run: func(cmd *cobra.Command, args []string) {
+		},
+		PreRun: func(cmd *cobra.Command, _ []string) {
+			viper.BindPFlags(cmd.PersistentFlags())
+		},
 	}
+
+	initFlags(bCtx, cmd)
+
+	cobra.OnInitialize(func() {
+		initConfig(bCtx)
+	})
+	initCommands(bCtx, cmd)
+
+	return cmd
 }
 
-func init() {
-	initLogger()
-	cobra.OnInitialize(initConfig)
+func initCommands(bCtx *env.BubblyContext, cmd *cobra.Command) {
+	applyCmd, _ := NewCmdApply(bCtx)
+	cmd.AddCommand(applyCmd)
 
-	f := rootCmd.PersistentFlags()
+	describeCmd, _ := NewCmdDescribe(bCtx)
+	cmd.AddCommand(describeCmd)
+
+	serverCmd, _ := NewCmdServer(bCtx)
+	cmd.AddCommand(serverCmd)
+}
+
+func initFlags(bCtx *env.BubblyContext, cmd *cobra.Command) {
+
+	f := cmd.PersistentFlags()
 
 	f.StringVar(&globalConfigFile, "config", "", "config file (default is $HOME/.bubbly.yaml)")
 
-	f.StringVar(&globalServerConfig.Host, "host", "", "bubbly server host")
-	f.StringVar(&globalServerConfig.Port, "port", "", "bubbly server port")
-	f.BoolVar(&globalServerConfig.Auth, "auth", false, "bubbly server auth")
-	f.StringVar(&globalServerConfig.Token, "token", "", "bubbly server token")
+	f.StringVar(&bCtx.Config.ServerConfig.Host, "host", "", "bubbly server host")
+	f.StringVar(&bCtx.Config.ServerConfig.Port, "port", "", "bubbly server port")
+	f.BoolVar(&bCtx.Config.ServerConfig.Auth, "auth", false, "bubbly server auth")
+	f.StringVar(&bCtx.Config.ServerConfig.Token, "token", "", "bubbly server token")
+	// Option 1: just bind normally, then parse the flags in main.go
+	// to determine the value
+	f.Bool("debug", false, "set log level to debug")
 
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// Option 2: bind to a specific part of the bubbly context's config.Config
+	// downside: the Config then contains log settings, which is
+	// counter-intuitive given the context already has a Logger field.
+	// advantage: cleaner in main.go, as no need for separate flag parsing.
+	// f.BoolVar(&bCtx.Config.LoggerConfig.Debug, "debug", false, "set log level to debug")
+
+	cmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	cmd.InitDefaultHelpFlag()
 
 	viper.BindPFlags(f)
 }
 
-type BubblyContext struct {
-	Logger zerolog.Logger
-	Config config.Config
-}
-
-func initLogger() {
-	// Initialize Logger
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if gin.IsDebugging() {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
-
-	log.Logger = log.Output(
-		zerolog.ConsoleWriter{
-			Out:     os.Stderr,
-			NoColor: false,
-		},
-	)
-}
-
 // initConfig reads in config file and ENV variables if set.
-func initConfig() {
+func initConfig(bCtx *env.BubblyContext) {
 	if globalConfigFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(globalConfigFile)
@@ -115,7 +120,7 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		log.Debug().Str("config_file", viper.ConfigFileUsed()).Msg("loading configuration from config file")
-		log.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly configuration")
+		bCtx.Logger.Debug().Str("config_file", viper.ConfigFileUsed()).Msg("loading configuration from config file")
+		bCtx.Logger.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly configuration")
 	}
 }

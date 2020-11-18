@@ -3,6 +3,8 @@ package util
 import (
 	"testing"
 
+	"github.com/verifa/bubbly/env"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/verifa/bubbly/config"
 )
@@ -11,21 +13,29 @@ import (
 func TestClientSetup(t *testing.T) {
 	tcs := []struct {
 		desc            string
-		input           *config.ServerConfig
+		input           *env.BubblyContext
 		expectedSuccess bool
 		expectedErr     string
 	}{
 		{
 			desc: "basic valid config.ServerConfig",
-			input: &config.ServerConfig{
-				Host: "localhost",
-				Port: "8080",
+			input: &env.BubblyContext{
+				Config: &config.Config{
+					ServerConfig: &config.ServerConfig{
+						Host: "localhost",
+						Port: "8080",
+					},
+				},
 			},
 			expectedSuccess: true,
 		},
 		{
-			desc:            "empty config.ServerConfig",
-			input:           &config.ServerConfig{},
+			desc: "empty config.ServerConfig",
+			input: &env.BubblyContext{
+				Config: &config.Config{
+					ServerConfig: &config.ServerConfig{},
+				},
+			},
 			expectedErr:     "Unable to create Bubbly client: missing required arguments.",
 			expectedSuccess: false,
 		},
@@ -33,7 +43,10 @@ func TestClientSetup(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			_, err := ClientSetup(*tc.input)
+			bCtx := env.NewBubblyContext()
+
+			bCtx.Config.ServerConfig = tc.input.Config.ServerConfig
+			_, err := ClientSetup(bCtx)
 
 			if !tc.expectedSuccess {
 				assert.Error(t, err)

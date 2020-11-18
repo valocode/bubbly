@@ -5,9 +5,8 @@ import (
 	"fmt"
 
 	"github.com/verifa/bubbly/client"
-	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 
-	"github.com/rs/zerolog/log"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -30,8 +29,8 @@ func (p *Load) SpecValue() core.ResourceSpec {
 }
 
 // Apply returns ...
-func (p *Load) Apply(ctx *core.ResourceContext) core.ResourceOutput {
-	if err := ctx.DecodeBody(p, p.SpecHCL.Body, &p.Spec); err != nil {
+func (p *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+	if err := ctx.DecodeBody(bCtx, p, p.SpecHCL.Body, &p.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %w`, p.String(), err),
@@ -39,12 +38,12 @@ func (p *Load) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 		}
 	}
 
-	log.Debug().Msgf("Attempting to load this JSON: %s", p.Spec.Data)
+	bCtx.Logger.Debug().Msgf("Attempting to load this JSON: %s", p.Spec.Data)
 
 	// Pull the server configuration from the resource's ResourceContext.
 	// At current, this call simply creates a new config.ServerConfig
 	// struct instance from a combination of defaults and viper bindings.
-	sc, err := ctx.GetServerConfig()
+	_, err := bCtx.GetServerConfig()
 
 	if err != nil {
 		return core.ResourceOutput{
@@ -54,7 +53,7 @@ func (p *Load) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 		}
 	}
 
-	err = p.load(*sc)
+	err = p.load(bCtx)
 
 	if err != nil {
 		return core.ResourceOutput{
@@ -64,7 +63,7 @@ func (p *Load) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 		}
 	}
 
-	log.Debug().Msg("JSON successfully loaded to bubbly server")
+	bCtx.Logger.Debug().Msg("JSON successfully loaded to bubbly server")
 
 	return core.ResourceOutput{
 		Status: core.ResourceOutputSuccess,
@@ -78,10 +77,10 @@ func (p *Load) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 // to the bubbly server
 // load outputs an error if any part of this process fails, nil if
 // the data is successfully POSTed to the bubbly server.
-func (p *Load) load(sc config.ServerConfig) error {
-	log.Debug().Interface("cfg", sc).Msg("loading with config")
+func (p *Load) load(bCtx *env.BubblyContext) error {
+	bCtx.Logger.Debug().Interface("server", bCtx.Config.ServerConfig).Msg("loading to server with configuration")
 
-	c, err := client.NewClient(sc)
+	c, err := client.NewClient(bCtx)
 
 	if err != nil {
 		return fmt.Errorf("failed to establish new client for loading: %w", err)
@@ -95,7 +94,7 @@ func (p *Load) load(sc config.ServerConfig) error {
 		return fmt.Errorf("failed to unmarshal spec data for loading: %w", err)
 	}
 
-	err = c.Load(data)
+	err = c.Load(bCtx, data)
 
 	if err != nil {
 		return fmt.Errorf("failed to load spec data: %w", err)

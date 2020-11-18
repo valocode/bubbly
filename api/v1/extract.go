@@ -13,13 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/clbanning/mxj"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -42,8 +41,8 @@ func NewExtract(resBlock *core.ResourceBlock) *Extract {
 }
 
 // Apply returns the output from applying a resource
-func (i *Extract) Apply(ctx *core.ResourceContext) core.ResourceOutput {
-	if err := i.decode(ctx.DecodeBody); err != nil {
+func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+	if err := i.decode(bCtx, ctx.DecodeBody); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf("Failed to decode resource %s: %w", i.String(), err),
@@ -66,7 +65,7 @@ func (i *Extract) Apply(ctx *core.ResourceContext) core.ResourceOutput {
 		}
 	}
 
-	val, err := i.Spec.Source.Resolve()
+	val, err := i.Spec.Source.Resolve(bCtx)
 	if err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
@@ -88,9 +87,9 @@ func (i *Extract) SpecValue() core.ResourceSpec {
 }
 
 // decode is responsible for decoding any necessary hcl.Body inside Extract
-func (i *Extract) decode(decode core.DecodeBodyFn) error {
+func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) error {
 	// decode the resource spec into the extract's Spec
-	if err := decode(i, i.SpecHCL.Body, &i.Spec); err != nil {
+	if err := decode(bCtx, i, i.SpecHCL.Body, &i.Spec); err != nil {
 		return fmt.Errorf(`Failed to decode "%s" body spec: %w`, i.String(), err)
 	}
 
@@ -109,7 +108,7 @@ func (i *Extract) decode(decode core.DecodeBodyFn) error {
 	}
 
 	// decode the source HCL into the extract's Source
-	if err := decode(i, i.Spec.SourceHCL.Body, i.Spec.Source); err != nil {
+	if err := decode(bCtx, i, i.Spec.SourceHCL.Body, i.Spec.Source); err != nil {
 		return fmt.Errorf(`Failed to decode extract source: %w`, err)
 	}
 
@@ -144,7 +143,7 @@ const (
 type source interface {
 	// returns an interface{} containing the parsed XML, JSON data, that should
 	// be converted into the Output cty.Value
-	Resolve() (cty.Value, error)
+	Resolve(*env.BubblyContext) (cty.Value, error)
 }
 
 // Compiler check to see that the source interface is implemented
@@ -211,7 +210,7 @@ type restSource struct {
 }
 
 // Resolve returns a cty.Value representation of the data in response to a REST API query
-func (s *restSource) Resolve() (cty.Value, error) {
+func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 
 	// HTTP Method:
 	//   * "GET" or "POST", case-insensitive
@@ -381,10 +380,7 @@ type gitSource struct {
 }
 
 // Resolve returns a cty.Value representation of the data from a local Git repo
-func (s *gitSource) Resolve() (cty.Value, error) {
-
-	//zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	//log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true})
+func (s *gitSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 
 	// The format of v1 Git extract output
 	format := cty.Object(map[string]cty.Type{
@@ -438,7 +434,7 @@ func (s *gitSource) Resolve() (cty.Value, error) {
 	}
 
 	err = branches.ForEach(func(ref *plumbing.Reference) error {
-		log.Debug().Msgf(`Local branch: %v`, ref.Name().Short())
+		bCtx.Logger.Debug().Msgf(`Local branch: %v`, ref.Name().Short())
 		localBranchNames = append(localBranchNames, ref.Name().Short())
 		return nil
 	})
@@ -470,7 +466,7 @@ func (s *gitSource) Resolve() (cty.Value, error) {
 		if ref.Type() == plumbing.HashReference && ref.Name().IsRemote() {
 			remoteBranchNames = append(remoteBranchNames, ref.Name().Short())
 		} else {
-			log.Debug().Str("ref.String()", ref.String()).Msg(`Reference not a remote:`)
+			bCtx.Logger.Debug().Str("ref.String()", ref.String()).Msg(`Reference not a remote:`)
 		}
 		return nil
 	})
@@ -483,7 +479,7 @@ func (s *gitSource) Resolve() (cty.Value, error) {
 		// upstream tracking set up.
 		cfg, _ := repo.Config()
 		for _, branch := range cfg.Branches {
-			log.Debug().Str("branch.Name", branch.Name).Str("branch.Remote", branch.Remote).Msg("Branch read from config")
+			bCtx.Logger.Debug().Str("branch.Name", branch.Name).Str("branch.Remote", branch.Remote).Msg("Branch read from config")
 		}
 	*/
 
@@ -495,7 +491,7 @@ func (s *gitSource) Resolve() (cty.Value, error) {
 		return cty.NilVal, fmt.Errorf(`failed to read tags from repo %s, error %w`, s.Directory, err)
 	}
 	err = tagrefs.ForEach(func(t *plumbing.Reference) error {
-		log.Debug().Str("short name", t.Name().Short()).Str("hash", t.Hash().String()).Msg(`Found tag:`)
+		bCtx.Logger.Debug().Str("short name", t.Name().Short()).Str("hash", t.Hash().String()).Msg(`Found tag:`)
 		if t.Hash() == headRef.Hash() {
 			tag = t.Name().Short()
 		}
@@ -538,7 +534,7 @@ type jsonSource struct {
 }
 
 // Resolve returns a cty.Value representation of the parsed JSON file
-func (s *jsonSource) Resolve() (cty.Value, error) {
+func (s *jsonSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 
 	var barr []byte
 	var err error
@@ -575,7 +571,7 @@ type xmlSource struct {
 }
 
 // Resolve returns a cty.Value representation of the XML file
-func (s *xmlSource) Resolve() (cty.Value, error) {
+func (s *xmlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 
 	var barr []byte
 	var err error

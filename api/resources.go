@@ -2,10 +2,10 @@ package api
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/verifa/bubbly/api/core"
 	v1 "github.com/verifa/bubbly/api/v1"
+	"github.com/verifa/bubbly/env"
 )
 
 // Resources is a map of a map, with the first map for the kind, and the second
@@ -23,13 +23,13 @@ func NewResources() *Resources {
 
 // NewResourcesFromBlocks takes a list of ResourceBlock and creates a Resources
 // container for them, by converting each of them into a Resource.
-func NewResourcesFromBlocks(blocks core.ResourceBlocks) *Resources {
+func NewResourcesFromBlocks(bCtx *env.BubblyContext, blocks core.ResourceBlocks) *Resources {
 	res := NewResources()
 	for _, block := range blocks {
 		_, err := res.NewResource(block)
 
 		if err != nil {
-			log.Fatalf(err.Error())
+			bCtx.Logger.Fatal().Str("block", block.String()).Str("error", err.Error()).Msg("failed to create new resource from block")
 		}
 
 	}

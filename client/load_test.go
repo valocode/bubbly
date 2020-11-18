@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/server"
 	"gopkg.in/h2non/gock.v1"
 
@@ -18,6 +19,7 @@ import (
 
 // TestLoad validates that a valid core.DataBlocks, with corresponding valid memdb schema, is imported correctly into the memdb database
 func TestLoad(t *testing.T) {
+	bCtx := env.NewBubblyContext()
 
 	var loadData core.DataBlocks
 
@@ -40,7 +42,7 @@ func TestLoad(t *testing.T) {
 	r := gofight.New()
 	r.POST("/alpha1/upload").
 		SetJSON(gofight.D{"data": loadData}).
-		Run(server.SetupRouter(), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		Run(server.SetupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			t.Logf("Server response: %+v", r)
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, "{\"status\":\"uploaded\"}", r.Body.String())
@@ -51,6 +53,7 @@ func TestLoad(t *testing.T) {
 func TestClientLoad(t *testing.T) {
 	for _, c := range loadDataCases {
 		t.Run(c.desc, func(t *testing.T) {
+			bCtx := env.NewBubblyContext()
 			hostURL := c.sc.Host + ":" + c.sc.Port
 			// Create a new server route for mocking a Bubbly server response
 			gock.New(hostURL).
@@ -76,13 +79,13 @@ func TestClientLoad(t *testing.T) {
 
 			t.Log("Unmarshalled to a core.DataBlocks successfully.")
 
-			c, err := NewClient(c.sc)
+			c, err := NewClient(bCtx)
 
 			if err != nil {
 				t.Errorf(err.Error())
 			}
 
-			err = c.Load(loadData)
+			err = c.Load(bCtx, loadData)
 
 			if err != nil {
 				t.Errorf(err.Error())

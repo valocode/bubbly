@@ -3,6 +3,8 @@ package api
 import (
 	"testing"
 
+	"github.com/verifa/bubbly/env"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/verifa/bubbly/api/core"
 	v1 "github.com/verifa/bubbly/api/v1"
@@ -172,7 +174,8 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
 
-			resources := NewResourcesFromBlocks(tc.input)
+			bCtx := env.NewBubblyContext()
+			resources := NewResourcesFromBlocks(bCtx, tc.input)
 
 			assert.NotNil(t, resources)
 

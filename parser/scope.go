@@ -2,12 +2,12 @@ package parser
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -47,30 +47,30 @@ func (s *Scope) NestedScope(inputs cty.Value) *Scope {
 // and inserts the given value at the location given by the path (in the form
 // of a traversal), e.g. cty.StringVal("hello"), ["self", "hello"]
 // will make the StringVal "hello" available at the traversal "self.hello"
-func (s *Scope) InsertValue(val cty.Value, path []string) {
+func (s *Scope) InsertValue(bCtx *env.BubblyContext, val cty.Value, path []string) {
 	traversal := hcl.Traversal{
 		hcl.TraverseRoot{Name: path[0]},
 	}
 	for _, step := range path[1:] {
 		traversal = append(traversal, hcl.TraverseAttr{Name: step})
 	}
-	s.insert(val, traversal)
+	s.insert(bCtx, val, traversal)
 }
 
 // resolveVariables takes a list of traversals and rsolves them
-func (s *Scope) resolveVariables(decodeCtx *decodeContext, traversals []hcl.Traversal) error {
+func (s *Scope) resolveVariables(bCtx *env.BubblyContext, decodeCtx *decodeContext, traversals []hcl.Traversal) error {
 
 	for _, traversal := range traversals {
 		// let's see if the traversal already exists... in case of inputs they
 		// can exist before we do any resolving
-		_, exists := s.lookup(traversal)
+		_, exists := s.lookup(bCtx, traversal)
 		if exists {
 			// continue to the next traversal
 			continue
 		}
 		// create a new resolveContext for resolving this traversal
-		resolveCtx := newResolveContext(decodeCtx, traversal)
-		if err := s.resolveVariable(resolveCtx); err != nil {
+		resolveCtx := newResolveContext(bCtx, decodeCtx, traversal)
+		if err := s.resolveVariable(bCtx, resolveCtx); err != nil {
 			return err
 		}
 	}
@@ -81,7 +81,7 @@ func (s *Scope) resolveVariables(decodeCtx *decodeContext, traversals []hcl.Trav
 // the SymbolTable.
 // If the traversal has transitive traversals (traverersals that need to be
 // resolved before it can be resolved) will be recursively resolved.
-func (s *Scope) resolveVariable(ctx *resolveContext) error {
+func (s *Scope) resolveVariable(bCtx *env.BubblyContext, ctx *resolveContext) error {
 
 	// recursively traverse as many blocks as possible
 	attrs, err := s.traverseBodyToBlock(ctx, nil)
@@ -91,7 +91,7 @@ func (s *Scope) resolveVariable(ctx *resolveContext) error {
 
 	attr, exists := (*attrs)[ctx.Attribute]
 	if exists {
-		return s.resolveExpr(ctx, attr.Expr)
+		return s.resolveExpr(bCtx, ctx, attr.Expr)
 	}
 	// if the attribute was not found, and there were no more blocks to traverse
 	// into, then we are not able to resolve the variable
@@ -152,11 +152,11 @@ func (s *Scope) traverseBodyToBlock(ctx *resolveContext, parent *hcl.Block) (*hc
 }
 
 // resolveExpr ...
-func (s *Scope) resolveExpr(ctx *resolveContext, expr hcl.Expression) error {
+func (s *Scope) resolveExpr(bCtx *env.BubblyContext, ctx *resolveContext, expr hcl.Expression) error {
 	varTraversals := expr.Variables()
 	unresolvedTraversals := []hcl.Traversal{}
 	for _, tr := range varTraversals {
-		_, exists := s.lookup(tr)
+		_, exists := s.lookup(bCtx, tr)
 		if !exists {
 			unresolvedTraversals = append(unresolvedTraversals, tr)
 		}
@@ -164,7 +164,7 @@ func (s *Scope) resolveExpr(ctx *resolveContext, expr hcl.Expression) error {
 	// Let's resolve any transitive unresolved traversals.
 	// Doing this recursively means any recurise transitive dependencies
 	// will also be solved
-	if err := s.resolveVariables(ctx.decodeContext, unresolvedTraversals); err != nil {
+	if err := s.resolveVariables(bCtx, ctx.decodeContext, unresolvedTraversals); err != nil {
 		return fmt.Errorf(
 			`Failed to resolve transitive traversals "%s": %s`,
 			traversalsString(unresolvedTraversals),
@@ -178,7 +178,7 @@ func (s *Scope) resolveExpr(ctx *resolveContext, expr hcl.Expression) error {
 		return fmt.Errorf(`Failed to get value of hcl experssion: %s`, diags.Error())
 	}
 
-	s.insert(val, ctx.AliasTraversal)
+	s.insert(bCtx, val, ctx.AliasTraversal)
 	return nil
 }
 
@@ -269,12 +269,12 @@ type resolveContext struct {
 }
 
 // newResolveContext produces a new resolveContext
-func newResolveContext(decodeCtx *decodeContext, traversal hcl.Traversal) *resolveContext {
-	return newResolveContextWithAlias(decodeCtx, traversal, traversal)
+func newResolveContext(bCtx *env.BubblyContext, decodeCtx *decodeContext, traversal hcl.Traversal) *resolveContext {
+	return newResolveContextWithAlias(bCtx, decodeCtx, traversal, traversal)
 }
 
 // newResolveContextWithAlias produces a new resolveContext
-func newResolveContextWithAlias(decodeCtx *decodeContext, traversal hcl.Traversal, alias hcl.Traversal) *resolveContext {
+func newResolveContextWithAlias(bCtx *env.BubblyContext, decodeCtx *decodeContext, traversal hcl.Traversal, alias hcl.Traversal) *resolveContext {
 	var attrName string
 	switch traversal.RootName() {
 	case "local":
@@ -290,7 +290,7 @@ func newResolveContextWithAlias(decodeCtx *decodeContext, traversal hcl.Traversa
 	case "self":
 		attrName = traverserName(traversal[len(traversal)-1])
 	default:
-		log.Fatalf(`Unknown root traversal "%s" for reference "%s"`, traversal.RootName(), traversalString(traversal))
+		bCtx.Logger.Fatal().Str("traversal", traversal.RootName()).Str("reference", traversalString(traversal)).Msg("Unknown root traversal")
 	}
 
 	return &resolveContext{

@@ -1,9 +1,11 @@
 package core
 
+import "github.com/verifa/bubbly/env"
+
 // Resource is the interface for any resources, such as Extract, Transform,
 // etc.
 type Resource interface {
-	Apply(*ResourceContext) ResourceOutput
+	Apply(*env.BubblyContext, *ResourceContext) ResourceOutput
 
 	Name() string
 	// Kind returns the ResourceKind
@@ -46,5 +48,5 @@ type PipelineRun interface {
 
 // Task interface represents a task inside a pipeline
 type Task interface {
-	Apply(*ResourceContext) error
+	Apply(*env.BubblyContext, *ResourceContext) error
 }

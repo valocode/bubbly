@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -44,8 +45,9 @@ resource "extract" "junit" {
 }
 `
 	t.Run("Basic HCL example with optionals", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
 		b := core.HCLMainType{}
-		processHCL(t, basicHCLString, &b)
+		processHCL(bCtx, t, basicHCLString, &b)
 		// assert.Equal(t, b.BasicBlocks[0].FirstLabel, "first_label")
 		// assert.Equal(t, b.BasicBlocks[0].SecondLabel, "second_label")
 		// assert.Equal(t, b.BasicBlocks[0].Number, 42)
@@ -173,14 +175,14 @@ resource "extract" "junit" {
 
 // func init() {
 // 	// setup our favourite logger
-// 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+// 	bCtx.Logger.Logger = bCtx.Logger.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 // }
 
-func processHCL(t *testing.T, src string, val interface{}) {
-	processHCLWithInputs(t, src, val, cty.NilVal)
+func processHCL(bCtx *env.BubblyContext, t *testing.T, src string, val interface{}) {
+	processHCLWithInputs(bCtx, t, src, val, cty.NilVal)
 }
 
-func processHCLWithInputs(t *testing.T, src string, val interface{}, inputs cty.Value) {
+func processHCLWithInputs(bCtx *env.BubblyContext, t *testing.T, src string, val interface{}, inputs cty.Value) {
 	parser := hclparse.NewParser()
 	file, diags := parser.ParseHCL([]byte(src), "test-file")
 	if diags.HasErrors() {
@@ -190,7 +192,7 @@ func processHCLWithInputs(t *testing.T, src string, val interface{}, inputs cty.
 	if !inputs.IsNull() {
 		s.SetInputs(inputs)
 	}
-	if err := s.decodeBody(file.Body, val); err != nil {
+	if err := s.decodeBody(bCtx, file.Body, val); err != nil {
 		t.Errorf("Failed to process HCL: %s", err.Error())
 		t.FailNow()
 

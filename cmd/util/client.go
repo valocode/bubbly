@@ -3,17 +3,22 @@ package util
 import (
 	"fmt"
 
-	"github.com/rs/zerolog/log"
 	"github.com/verifa/bubbly/client"
-	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 )
 
 // ClientSetup is a convenience function for setting up a new bubbly client.
-func ClientSetup(sc config.ServerConfig) (*client.Client, error) {
+func ClientSetup(bCtx *env.BubblyContext) (*client.Client, error) {
+	sc, err := bCtx.GetServerConfig()
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to get server configuration from the bubbly context: %w", err)
+	}
+
 	if sc.Host != "" && sc.Port != "" {
-		c, err := client.NewClient(sc)
+		c, err := client.NewClient(bCtx)
 		if err != nil {
-			log.Error().Msg("Unable to create Bubbly client")
+			bCtx.Logger.Error().Msg("Unable to create Bubbly client")
 			return nil, err
 		}
 

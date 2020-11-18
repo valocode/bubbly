@@ -6,10 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
+	"github.com/verifa/bubbly/env"
 )
 
 // InitializeRoutes Builds the endpoints and grouping for a gin router
-func InitializeRoutes(router *gin.Engine) {
+func InitializeRoutes(bCtx *env.BubblyContext, router *gin.Engine) {
 	// Keep Alive Test
 	router.GET("/healthz", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
@@ -17,10 +18,17 @@ func InitializeRoutes(router *gin.Engine) {
 
 	api := router.Group("/api")
 	{
-		api.POST("/resource", PostResource)
-		api.GET("/resource/:namespace/:kind/:name", GetResource)
+		api.POST("/resource", func(c *gin.Context) {
+			PostResource(bCtx, c)
+		})
 
-		api.POST("/graphql", Query)
+		api.GET("/resource/:namespace/:kind/:name", func(c *gin.Context) {
+			GetResource(bCtx, c)
+		})
+
+		api.POST("/graphql", func(c *gin.Context) {
+			Query(bCtx, c)
+		})
 	}
 
 	// API level versioning
@@ -34,7 +42,10 @@ func InitializeRoutes(router *gin.Engine) {
 	// Resource Level Versioning
 	alpha1 := router.Group("/alpha1")
 	{
-		alpha1.POST("/upload", upload)
+		alpha1.POST("/upload", func(c *gin.Context) {
+
+			upload(bCtx, c)
+		})
 	}
 
 	// Serve Swagger files

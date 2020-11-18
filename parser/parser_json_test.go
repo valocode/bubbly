@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/verifa/bubbly/env"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/verifa/bubbly/api/core"
@@ -54,10 +56,11 @@ func TestExtractJSONConversion(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
+			bCtx := env.NewBubblyContext()
 			p, err := NewParserFromFilename(tc.input)
 			assert.NoError(t, err, fmt.Errorf("Failed to create parser: %w", err))
 
-			err = p.Parse()
+			err = p.Parse(bCtx)
 
 			assert.NoError(t, err, fmt.Errorf("Failed to decode parser: %w", err))
 
@@ -75,7 +78,7 @@ func TestExtractJSONConversion(t *testing.T) {
 
 					assert.Equal(t, tc.expected["resourceJSON"], string(bJSON))
 
-					_, err = p2.JSONToResource(bJSON)
+					_, err = p2.JSONToResource(bCtx, bJSON)
 
 					assert.NoError(t, err, fmt.Errorf("Failed to convert to json to resource %s: %w", resource.String(), err))
 
@@ -162,12 +165,13 @@ func TestApplyFromJSONParser(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
+			bCtx := env.NewBubblyContext()
 
 			// First, verify that the testdata can be parsed "normally"
 			p, err := NewParserFromFilename(tc.testdata)
 			assert.NoError(t, err, fmt.Errorf("Failed to create parser: %w", err))
 
-			err = p.Parse()
+			err = p.Parse(bCtx)
 
 			assert.NoError(t, err, fmt.Errorf("Failed to decode parser: %w", err))
 
@@ -183,7 +187,7 @@ func TestApplyFromJSONParser(t *testing.T) {
 
 			assert.NoError(t, err, fmt.Errorf("Couldn't get %s resource %s: %w", core.ExtractResourceKind, tc.resources["extract"], err))
 
-			out := res.Apply(p2.Context(inputs))
+			out := res.Apply(bCtx, p2.Context(inputs))
 
 			t.Logf("Resource %s ResourceOutput: %+v", res.String(), out.Output())
 
@@ -195,7 +199,8 @@ func TestApplyFromJSONParser(t *testing.T) {
 
 			res, err = p2.GetResource(core.TransformResourceKind, tc.resources["transform"])
 			assert.NoError(t, err, fmt.Errorf("Couldn't get %s resource %s: %w", core.TransformResourceKind, tc.resources["transform"], err))
-			out = res.Apply(p2.Context(inputs))
+
+			out = res.Apply(bCtx, p2.Context(inputs))
 
 			t.Logf("Resource %s ResourceOutput: %+v", res.String(), out.Output())
 
@@ -227,12 +232,13 @@ func loadJSONResources(t *testing.T, p *Parser, path string) *Parser {
 	p2 := newParser(nil, nil)
 	for _, resMap := range p.Resources {
 		for _, resource := range resMap {
+			bCtx := env.NewBubblyContext()
 			t.Logf("Converting resource %s to JSON", resource.String())
 			bJSON, err := resource.JSON(p.Context(cty.NilVal))
 
 			assert.NoError(t, err, fmt.Errorf("Failed to convert to json for resource %s: %w", resource.String(), err))
 
-			_, err = p2.JSONToResource(bJSON)
+			_, err = p2.JSONToResource(bCtx, bJSON)
 
 			assert.NoError(t, err, fmt.Errorf("Failed to convert json to resource %s: %w", resource.String(), err))
 		}
