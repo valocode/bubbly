@@ -1,0 +1,158 @@
+
+//  defines a data source and a format for the data, and returns a cty.Value
+// representation of the external data.
+resource "extract" "sonarqube" {
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
+    api_version = "v1"
+    spec {
+        input "file" {}
+        type = "json"
+        source {
+            file = self.input.file
+            format = object({
+                issues: list(object({
+                    engineId: string,
+                    ruleId: string,
+                    severity: string,
+                    type: string,
+                    primaryLocation: object({
+                        message: string,
+                        filePath: string,
+                        textRange: object({
+                            startLine: number,
+                            endLine: number,
+                            startColumn: number,
+                            endColumn: number
+                        })
+                    })
+                }))
+            })
+        }
+    }
+}
+
+// defines a transformation or conversion of data from an Extract and outputs
+// a mapping of the extracted data to the defined data schema.
+resource "transform" "sonarqube" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        input "repository" {}
+
+        // this data will be associated with the "repository_version" table
+        // within the interim database
+        data "repository_version" {
+            field "Commit" {
+                value = self.input.repository.commit
+            }
+            field "Tag" {
+                value = self.input.repository.tag
+            }
+            field "Branch" {
+                value = self.input.repository.branch
+            }
+        }
+
+        // iterate over the list of issues
+        dynamic "data" {
+            for_each = self.input.data.issues
+            iterator = issue
+            // map the data to the linter_issue table in the interim database
+            labels = ["linter_issue"]
+            content {
+                // if the "id" field is blank, it should be auto-generated
+                // field "id" {}
+
+                field "Severity" {
+                    value = issue.value.severity
+                }
+                field "Name" {
+                    value = issue.value.primaryLocation.message
+                }
+                field "Type" {
+                    value = issue.value.type
+                }
+            }
+        }
+    }
+}
+
+// defines the loading of transform output data to a bubbly server
+resource "load" "sonarqube" {
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
+    api_version = "v1"
+    spec {
+        input "data" {}
+        // what do we need here?!
+        data = self.input.data
+    }
+}
+
+// How do we tie all the above resources together...? In a pipeline!
+// A pipeline is just another reusable resource
+// NOTE: only a pipeline_run actually triggers a pipeline to run
+resource "pipeline" "sonarqube" {
+    api_version = "v1"
+    spec {
+        input "file" {}
+        // Each task represents the execution of an action defined by
+        // a bubbly resource
+        // action: extract the data from the data source
+        task "extract" {
+            resource = "extract/sonarqube"
+            input "file" {
+                value = self.input.file
+            }
+        }
+
+        // action: transform the extracted data
+        task "transform" {
+            resource = "qa/transform/sonarqube"
+            // mock the repository data that will come from the git extract
+            input "repository" {
+                value = {
+                    commit = "aegasd321"
+                    tag = "v0.0.1"
+                    branch = "master"
+                }
+            }
+            input "data" {
+                // Each task in a pipeline has an output, similar to resources,
+                // so that task outputs can be referenced
+                // here, we reference the output of the task "extract"
+                value = self.task.extract.value
+            }
+        }
+
+        // action: load the transformed data to the bubbly server
+        task "load" {
+            resource = "load/sonarqube"
+            input "data" {
+                value = self.task.transform.value
+            }
+        }
+    }
+}
+
+// A pipeline_run resources executes a pipeline resource.
+resource "pipeline_run" "sonarqube" {
+    api_version = "v1"
+    spec {
+        // specify the name of the pipeline resource to execute
+        pipeline = "sonarqube"
+        // specify the pipeline input(s) required
+        input "file" {
+            value = "./testdata/sonarqube/sonarqube-example.json"
+        }
+    }
+}

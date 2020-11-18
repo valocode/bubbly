@@ -47,7 +47,7 @@ The high-level architecture for Bubbly consist of the following parts:
 
 2. The **Bubbly Client** is executed in an automated manner (e.g. CI pipeline) or manually by a user to perform operations agains the Bubbly Server
 
-3. The **Bubbly Dashboard** will be how the data is represented. The idea is to create a Grafana plugin, for the rich and real-time dashboards. Bubbly will also provide a minimal UI to explore the data, but will not be so feature rich (at least in the beginning).
+3. The **Bubbly Web UI** will be how the data is represented. The idea is to create a Grafana plugin, for the rich and real-time dashboards. Bubbly will also provide a minimal UI to explore the data, but will not be so feature rich (at least in the beginning).
 
 These main components can be illustrated using the following simple diagram:
 
@@ -56,12 +56,15 @@ These main components can be illustrated using the following simple diagram:
 The other relevant parts in this diagram are:
 
 1. The **Client Configs** tell the Bubbly client everything it needs to know about what to do. This includes: the location of the *Bubbly server*, where the *input data* is, what to upload to the *Bubbly server*, etc. All the client configs are defined in HCL files.
-2. The **Input Data** is the data which should be uploaded to the Bubbly server and can come from any source, such as a JSON or XML file, or by querying a REST API or by executing a command line tool. Before it is uploaded it needs to be converted into the expected format, which is defined by the *schema*, and the *importers* are used to convert the data.
+2. The **Data Source** is the data which should be uploaded to the Bubbly server and can come from any source, such as a JSON or XML file, or by querying a REST API or by executing a command line tool. Before it is uploaded it needs to be converted into the expected format, which is defined by the *schema*, and the *extracts* are used to convert the data.
 3. The **Schema** defines the format to store the data in Bubbly. It is not strictly SQL but follows a similar approach of defining tables with relations. The schema is defined using HCL and uploaded to the Bubbly server or provided as a config during startup.
-4. The **Importers** define the expected *input data* and how to convert that into an internal data structure that can be later processed in-memory.
-5. The **Translators** define how to use the imported data from the *importers* and how to translate that into a data structure defined by the defined *schema*.
+4. The **Resources** are the drivers for the data pipeline and consist of the extracts, transforms, loads, pipeline and so on.
 
-All of the configurations, schemas, importers and such are defined as HCL, which provides the necessary high level abstraction to make configuring Bubbly easy, but still provides the necessary flexibility to process lots of different types of data.
+All of the configurations, schemas, extracts and such are defined as HCL, which provides the necessary high level abstraction to make configuring Bubbly easy, but still provides the necessary flexibility to process lots of different types of data.
+
+The main resources involved in defining a data pipeline can be illustrated by the following pipeline:
+
+![Bubbly High Level Pipeline](./images/high-level-pipeline.drawio.svg)
 
 The above architecture can be further elaborated using the following sequence diagram:
 
@@ -129,9 +132,9 @@ table "test_run" {
 This schema should be stored in the Bubbly server so that it can be fetched by the Bubbly client.
 It can either be uploaded after the Bubbly server starts, or can be provided as a configuration during startup.
 
-### 4.2 Importers
+### 4.2 Extracts
 
-The purpose of Importers is to import and convert input data, such as report files produced by different tools.
+The purpose of Extracts is to extract and convert input data, such as report files produced by different tools.
 
 If we continue on the example of test automation, a common result format for automated tests is that produced by the different [xUnit](https://en.wikipedia.org/wiki/XUnit) tools, such as [JUnit](https://junit.org/junit5/), which is an XML file syntax looking something like the following:
 
@@ -147,10 +150,10 @@ If we continue on the example of test automation, a common result format for aut
 </testsuites>
 ```
 
-We could produce an importer using the following HCL specification.
+We could produce an extract using the following HCL specification.
 
 ```hcl
-importer "xunit_report" {
+extract "xunit_report" {
     type = "xml"
     format = object({
         testsuites: object({
@@ -172,11 +175,11 @@ importer "xunit_report" {
 }
 ```
 
-### 4.3 Translators
+### 4.3 Transforms
 
-A translator takes the output from an `importer` and translates that data according to the defined `schema`.
+A transform takes the output from an `extract` and transforms that data according to the defined `schema`.
 
-TODO: make translators like functions (modules in TF) with inputs, so that all you do to use a translator is provide the inputs/parameters when providing the client configs.
+TODO: make transforms like functions (modules in TF) with inputs, so that all you do to use a transform is provide the inputs/parameters when providing the client configs.
 
 ```hcl
 
@@ -185,12 +188,12 @@ inputs {
     repo_version_id {}
 }
 
-translator "xunit_report" {
-    importer = "xunit_report"
+transform "xunit_report" {
+    extract = "xunit_report"
 
     // this should not be read in detail, as it is not defined properly and needs some
     // of bubbly's magic sauce to make it work, but this should give you an idea
-    translate {
+    transform {
         // the data label needs to match a table name, e.g. this data will be
         // associated with the "test_run" table
         data "test_run" {
@@ -200,11 +203,11 @@ translator "xunit_report" {
             data "test_set" {
                 // do something like setproduct to make the data ready to process in HCL
                 // https://www.terraform.io/docs/configuration/functions/setproduct.html
-                // idea is to do as much heavy liftin on the import and make the
-                // consumption of the import as easy as possible, and keep things DRY
+                // idea is to do as much heavy liftin on the extract and make the
+                // consumption of the extract as easy as possible, and keep things DRY
 
                 // flatten the testsuites list of lists, and iterate over it
-                for_each = setproduct(importer.xunit_report.testsuites.testsuite)
+                for_each = setproduct(extract.xunit_report.testsuites.testsuite)
                 name = each.name
 
                 data "test_case" {
@@ -221,14 +224,14 @@ translator "xunit_report" {
 The client configs tell the Bubbly client what data to upload to the Bubbly server.
 
 First we would need to provide some of the contextual data, such as the project name, the repository name, the version of the code and generic things which having nothing to do with parsing data, but will feed into the schema and data model.
-As the translators are defined as re-usable modules, we only need to provide the necessary inputs (or parameters) to the translator in the client configs.
+As the transforms are defined as re-usable modules, we only need to provide the necessary inputs (or parameters) to the transform in the client configs.
 
 In the following short example we:
 
 1. First set the bubbly server to talk with (should be possible to use env vars or similar)
 2. Set the name of the `repo` to `test-repo`. The idea is that if this `repo` already exists on the bubbly server then it would associate the data we are about to produce with that existing `repo`, and not create a new `repo` -- so the bubbly client will need to query the bubbly server before uploading.
 3. Next we create a `repo_verion`, which may exist if we have already uploaded data against the same `repo_version`.
-4. Next we specify the module (or translator) that we want to use, and then provide the inputs in the `modules` block.
+4. Next we specify the module (or transform) that we want to use, and then provide the inputs in the `modules` block.
 
 ```hcl
 
@@ -253,8 +256,8 @@ data "repo_version" "test_version" {
 }
 
 modules "xunit_report" {
-    translator {
-        source = server.bubbly_server.translators
+    transform {
+        source = server.bubbly_server.transforms
         // or maybe just the local source?
         // source = "../../relative/path/to/xunit_report
     }
@@ -267,7 +270,7 @@ modules "xunit_report" {
 
 ### 4.5 Queries
 
-Once a suitable data model has been created and data has been populated using the client configs and importers, it is time to make use of this data.
+Once a suitable data model has been created and data has been populated using the client configs and extracts, it is time to make use of this data.
 
 Queries are defined as HCL and can be sent to the Bubbly server and the Bubbly server will process the query and return the relevant data.
 
@@ -304,6 +307,6 @@ This answers the follow up question, that if we are not ready for a release: *"W
 #### 4.5.2 Bubbly Built-in UI
 
 The built-in Bubbly UI will not be for the same purpose as the Grafana integration.
-Instead, it is made for the development of Bubbly HCL files and for investigating the data, schemas, importers, translators, etc.
+Instead, it is made for the development of Bubbly HCL files and for investigating the data, schemas, extracts, transforms, etc.
 
 As such, the built-in UI will be very minimalistic and very lightweight, and can be disabled if wanted.

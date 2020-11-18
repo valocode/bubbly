@@ -1,0 +1,22 @@
+[
+    {
+        "table": "test_table",
+        "fields": [
+            {
+                "name": "test_field",
+                "Value": "This field exists in table_rule1"
+            }
+        ],
+        "data": null
+    },
+    {
+        "table": "test_table",
+        "fields": [
+            {
+                "name": "test_field",
+                "Value": "This field exists in table_rule2"
+            }
+        ],
+        "data": null
+    }
+]

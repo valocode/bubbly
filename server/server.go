@@ -1,0 +1,145 @@
+package server
+
+import (
+	"fmt"
+
+	"net/http"
+
+	"github.com/gin-contrib/logger"
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
+	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/interim"
+	"github.com/zclconf/go-cty/cty"
+	"golang.org/x/sync/errgroup"
+)
+
+var router *gin.Engine
+var db *interim.DB
+
+// SetupRouter returns a pointer to a gin engine after setting up middleware
+// and initializing routes
+func SetupRouter() *gin.Engine {
+	// SETUP DB
+	dbErr := initDb()
+	if dbErr != nil {
+		log.Error().Msg("Error setting up DB: " + dbErr.Error())
+	}
+	// Initialize Router
+	// router := gin.Default()  // Sets the Gin defaults
+	router := gin.New() // Use a blank Gin server with no middleware loaded
+	router.Use(logger.SetLogger())
+	router.Use(gin.Recovery())
+	router.Use(VersionMiddleware())
+
+	// Initialize HTTP Routes
+	InitializeRoutes(router)
+
+	return router
+}
+
+func initDb() error {
+	var err error
+	db, err = interim.NewDB(getSchema())
+	if err != nil {
+		return fmt.Errorf("failed to create memDB: %w", err)
+	}
+	return nil
+}
+
+// GetDb returns a pointer to the DB
+func GetDb() *interim.DB {
+	return db
+}
+
+func getSchema() []core.Table {
+	tables := []core.Table{
+		{
+			Name: "product",
+			Fields: []core.TableField{
+				{
+					Name:   "Name",
+					Type:   cty.String,
+					Unique: true,
+				},
+			},
+		},
+		{
+			Name: "project",
+			Fields: []core.TableField{
+				{
+					Name:   "Name",
+					Type:   cty.String,
+					Unique: true,
+				},
+			},
+		},
+		{
+			Name: "repository",
+			Fields: []core.TableField{
+				{
+					Name:   "Id",
+					Type:   cty.String,
+					Unique: true,
+				},
+				{
+					Name:   "Url",
+					Type:   cty.String,
+					Unique: false,
+				},
+			},
+		},
+		{
+			Name: "repository_version",
+			Fields: []core.TableField{
+				{
+					Name:   "Commit",
+					Type:   cty.String,
+					Unique: true,
+				},
+				{
+					Name:   "Tag",
+					Type:   cty.String,
+					Unique: false,
+				},
+				{
+					Name:   "Branch",
+					Type:   cty.String,
+					Unique: false,
+				},
+			},
+		},
+		{
+			Name: "linter_issue",
+			Fields: []core.TableField{
+				{
+					Name:   "Name",
+					Type:   cty.String,
+					Unique: true,
+				},
+				{
+					Name:   "Severity",
+					Type:   cty.String,
+					Unique: true,
+				},
+				{
+					Name:   "Type",
+					Type:   cty.String,
+					Unique: true,
+				},
+			},
+		},
+	}
+	return tables
+}
+
+func ListenAndServe(s *http.Server) error {
+	var g errgroup.Group
+	g.Go(func() error {
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return err
+		}
+		return nil
+	})
+	return g.Wait()
+}

@@ -1,0 +1,38 @@
+
+{
+    "resource": {
+            "transform": {
+                "junit": {
+                    "api_version":"v1",
+                    "metadata": {    
+                            "namespace": "default",
+                            "labels": {
+                                "label1": "value1"
+                            }
+                    },
+                    "spec": {
+                        "dynamic": {
+                            "data": {
+                                "content": {
+                                    "field": {
+                                        "test_field": {
+                                            "value":"This field exists in table_${it.value}"
+                                        }
+                                    }
+                                },
+                                "for_each":"${self.input.data}",
+                                "iterator":"it",
+                                "labels": [
+                                    "test_table",
+                                    "table_${it.value}"
+                                ]
+                            }
+                        },
+                        "input": {
+                            "data":{}
+                        }
+                    }
+                }
+            }
+        }
+}

@@ -44,16 +44,16 @@ Here's a list of the packages for Bubbly:
 2. **cmd** - defines the CLI commands using cobra and viper
 3. **data** - responsible for fetching input data from multiple sources (input), and also for converting data before sending to client based on a query (output)
 4. **db** - responsible for handling the backend database input and output, based on the schema defined in bubbly
-5. **importer** - implements the importer that converts input data to a `cty.Value` representation that can be used by the `translator`
-6. **translator** - implements the translator that translates the `cty.Value` representation of the input data into the schema
+5. **extract** - implements the extract that converts input data to a `cty.Value` representation that can be used by the `transform`
+6. **transform** - implements the transform that transforms the `cty.Value` representation of the input data into the schema
 7. **logging** - responsible for setting up logging
 8. **schema** - responsible for creating the schema to be used as bubbly's data model, based on provided HCL schema
 9. **server** - main package for implementing bubbly's server functionality
 10. **upload** - main package for implementing bubbly's client upload functionality
 11. **query** - main package for implementing bubbly's client query functionality
 
-### 2.3 HCL - Schema, Importers and Translator Workflow
+### 2.3 HCL - Schema, Extracts and Transform Workflow
 
-To help communicate the workflow of inputs, outputs and how the schema, importers and translators "connect" we put together a visual aid with some descriptions.
+To help communicate the workflow of inputs, outputs and how the schema, extracts and transforms "connect" we put together a visual aid with some descriptions.
 
-![HCL Schema Translator Workflow](./images/hcl-schema-translation-workflow.drawio.svg)
+![HCL Schema Transform Workflow](./images/hcl-schema-translation-workflow.drawio.svg)

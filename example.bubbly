@@ -1,0 +1,96 @@
+
+// Everything is a resource, and all resources have an output.
+// The output can be something like:
+// output:
+//   - status: sucess
+//   - value: <the value from the extract>
+resource "extract" "junit" {
+    api_version = "v1"
+    // this is an input to the extract to make it reusable
+    spec {
+        input "file" {}
+        type = "xml"
+        source {
+            // reference the "self" here to get the input
+            file = self.spec.input.file
+        }
+        format = object({
+            testsuites: object({
+                duration: number,
+                testsuite: list(object({
+                    failures: number,
+                    name: string,
+                    package: string,
+                    tests: number,
+                    time: number,
+                    testcase: list(object({
+                        classname: string
+                        name: string
+                        time: number
+                    }))
+                }))
+            })
+        })
+    }
+}
+
+
+resource "transform" "junit" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        // this is some crazy dynamic HCL stuff to create the "data" blocks
+        dynamic "data" {
+            for_each = self.spec.input.data
+            iterator = it
+            labels = ["test_table", "table_${it.value}"]
+            content {
+                field "test_field" {
+                    value = "This field exists in table_${it.value}"
+                }
+            }
+        }
+    }
+}
+
+// This is the upload step, just renamed to load...
+resource "load" "junit" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        // what do we need here?!
+        data = self.spec.input.data
+    }
+}
+
+// How do we tie all the above resources together...? In a pipeline!
+resource "pipeline" "junit" {
+    api_version = "v1"
+    spec {
+        // Each task in a pipeline has an output, similar to resources,
+        // so that task outputs can be referenced
+        task "extract" {
+            resource = resource.extract.junit
+            input "xml_file" {
+                value = "testdata/extract/junit.xml"
+            }
+        }
+        task "transform" {
+            resource = resource.transform.junit
+            input "results" {
+                // here we reference the output of the task "extract"
+                value = self.spec.task.extract.value
+            }
+        }
+        task "load" {
+            resource = resource.load.junit
+            input "data" {
+                value = self.spec.task.transform.value
+            }
+        }
+    }
+}
+
+resource "pipelineRun" "junit" {
+    api_version = "v1"
+}

@@ -1,0 +1,104 @@
+
+// Everything is a resource, and all resources have an output.
+// The output can be something like:
+// output:
+//   - status: sucess
+//   - value: <the value from the extract>
+resource "extract" "junit-simple" {
+    api_version = "v1"
+    // this is an input to the extract to make it reusable
+    spec {
+        input "file" {}
+        type = "xml"
+        source {
+            file = self.input.file
+            format = object({
+                testsuites: object({
+                    duration: number,
+                    testsuite: list(object({
+                        failures: number,
+                        name: string,
+                        package: string,
+                        tests: number,
+                        time: number,
+                        testcase: list(object({
+                            classname: string
+                            name: string
+                            time: number
+                        }))
+                    }))
+                })
+            })
+        }
+    }
+}
+
+resource "transform" "junit-simple" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        // this is some crazy dynamic HCL stuff to create the "data" blocks
+        // TODO
+        dynamic "data" {
+            for_each = self.input.data
+            iterator = it
+            labels = ["test_table"]
+            content {
+                field "test_field" {
+                    value = "This field exists in table_${it.value}"
+                }
+            }
+        }
+    }
+}
+
+// This is the upload step, just renamed to load...
+resource "load" "junit-simple" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        // what do we need here?!
+        data = self.input.data
+    }
+}
+
+// // This is the upload step, just renamed to load...
+// resource "load" "junit-simple" {
+//     api_version = "v1"
+//     spec {
+//         input "data" {}
+//         // what do we need here?!
+//         data = self.input.data
+//     }
+// }
+
+// // How do we tie all the above resources together...? In a pipeline!
+// // A pipeline is just another reusable resource, and only a pipelineRun
+// // actually triggers a pipeline to run
+// resource "pipeline" "junit-simple" {
+//     api_version = "v1"
+//     spec {
+//         input "file" {}
+//         // Each task in a pipeline has an output, similar to resources,
+//         // so that task outputs can be referenced
+//         task "extract" {
+//             resource = "extract.junit"
+//             input "xml_file" {
+//                 value = self.input.file
+//             }
+//         }
+//         task "transform" {
+//             resource = "transform.junit"
+//             input "results" {
+//                 // here we reference the output of the task "extract"
+//                 value = self.task.extract.value
+//             }
+//         }
+//         task "load" {
+//             resource = "load.junit"
+//             input "data" {
+//                 value = self.task.transform.value
+//             }
+//         }
+//     }
+// }
