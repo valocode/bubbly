@@ -356,10 +356,9 @@ func (s *restSource) Resolve() (cty.Value, error) {
 		return cty.NilVal, fmt.Errorf(`HTTP response status code: %d`, httpResponse.StatusCode)
 	}
 
-	// Read in the content of response body
-	httpResponseBody := httpResponse.Body
-	defer httpResponseBody.Close()
+	defer httpResponse.Body.Close()
 
+	// Parse the content of response body
 	var data interface{}
 	if err := json.NewDecoder(httpResponse.Body).Decode(&data); err != nil {
 		return cty.NilVal, fmt.Errorf(`failed to decode JSON: %w`, err)
