@@ -1,6 +1,7 @@
 package bubbly
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ func TestApply(t *testing.T) {
 	// Create a new server route for mocking a Bubbly server response
 	gock.New(hostURL).
 		Post("/alpha1/upload").
-		Reply(200).
+		Reply(http.StatusOK).
 		JSON(map[string]interface{}{"status": "uploaded"})
 
 	sc := config.ServerConfig{

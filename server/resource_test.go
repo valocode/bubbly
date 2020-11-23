@@ -42,10 +42,10 @@ func TestPostResource(t *testing.T) {
 	r := httptest.NewRecorder()
 
 	// Test
-	req, _ := http.NewRequest("POST", "/api/resource", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/api/resource", bytes.NewBuffer(body))
 	router.ServeHTTP(r, req)
 
-	assert.Equal(t, 200, r.Code)
+	assert.Equal(t, http.StatusOK, r.Code)
 	assert.Equal(t, "{\"status\":\"uploaded\"}", r.Body.String())
 
 	// Cleanup

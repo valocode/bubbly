@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"net/http"
+
 	"github.com/verifa/bubbly/config"
 	"github.com/verifa/bubbly/events"
 )
@@ -61,7 +63,7 @@ var describeResourceReturnCases = []struct {
 		rName:        "example_extract",
 		route:        "/describe/extract/v1/example_extract",
 		token:        "token",
-		responseCode: 200,
+		responseCode: http.StatusOK,
 		response: map[string]interface{}{
 			"exists": true,
 			"status": "creating",
@@ -106,7 +108,7 @@ var describeResourceGroupReturnCases = []struct {
 		rVersion:     "v1",
 		route:        "/describe/extract/v1",
 		token:        "token",
-		responseCode: 200,
+		responseCode: http.StatusOK,
 		response: map[string]interface{}{
 			"example_extract": map[string]interface{}{
 				"exists": true,

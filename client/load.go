@@ -30,7 +30,7 @@ func (c *Client) Load(data core.DataBlocks) error {
 		return fmt.Errorf("failed to marshal data for loading: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/alpha1/upload", c.HostURL), bytes.NewBuffer(jsonReq))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/alpha1/upload", c.HostURL), bytes.NewBuffer(jsonReq))
 
 	if err != nil {
 		return fmt.Errorf("failed to create POST request for data loading: %w", err)

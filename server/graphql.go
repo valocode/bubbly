@@ -27,7 +27,7 @@ func Query(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status": results,
 	})
 }

@@ -80,7 +80,7 @@ func NewClient(sc config.ServerConfig) (*Client, error) {
 	// }
 
 	// // authenticate
-	// req, err := http.NewRequest("POST", fmt.Sprintf("%s/authenticate", c.HostURL), strings.NewReader(string(rb)))
+	// req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/authenticate", c.HostURL), strings.NewReader(string(rb)))
 	// if err != nil {
 	// 	return nil, err
 	// }

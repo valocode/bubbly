@@ -31,7 +31,7 @@ func (c *Client) DescribeResource(rType, rName, rVersion string) (DescribeResour
 
 	log.Debug().Str("route", requestRoute).Msg("attempting to describe resource via GET request")
 	// describe resource
-	req, err := http.NewRequest("GET", requestRoute, nil)
+	req, err := http.NewRequest(http.MethodGet, requestRoute, nil)
 
 	if err != nil {
 		return DescribeResourceReturn{}, fmt.Errorf("failed to form GET request: %w", err)
@@ -74,7 +74,7 @@ func (c *Client) DescribeResourceGroup(rType, rVersion string) (map[string]Descr
 	log.Debug().Str("route", requestRoute).Msg("attempting to describe resource group via GET request")
 
 	// describe resource
-	req, err := http.NewRequest("GET", requestRoute, nil)
+	req, err := http.NewRequest(http.MethodGet, requestRoute, nil)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to make GET request to describe resource group: %w", err)

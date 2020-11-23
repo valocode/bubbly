@@ -1,5 +1,7 @@
 package cmd
 
+import "net/http"
+
 var applyWithServerConfigsSetupCases = []struct {
 	desc         string
 	flags        map[string]string
@@ -18,7 +20,7 @@ var applyWithServerConfigsSetupCases = []struct {
 		},
 		expected:     true,
 		route:        "/alpha1/upload",
-		responseCode: 200,
+		responseCode: http.StatusOK,
 		response: map[string]string{
 			"status": "uploaded",
 		},

@@ -1,6 +1,8 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -8,7 +10,7 @@ import (
 func InitializeRoutes(router *gin.Engine) {
 	// Keep Alive Test
 	router.GET("/healthz", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 
 	api := router.Group("/api")
@@ -35,7 +37,7 @@ func InitializeRoutes(router *gin.Engine) {
 }
 
 func status(c *gin.Context) {
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status": "alive",
 	})
 }

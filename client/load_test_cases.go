@@ -1,6 +1,8 @@
 package client
 
 import (
+	"net/http"
+
 	"github.com/verifa/bubbly/config"
 )
 
@@ -24,7 +26,7 @@ var loadDataCases = []struct {
 		inputFile:    "./testdata/load/load_output.json",
 		route:        "/alpha1/upload",
 		expected:     true,
-		responseCode: 200,
+		responseCode: http.StatusOK,
 		response: map[string]interface{}{
 			"status": "uploaded",
 		},
