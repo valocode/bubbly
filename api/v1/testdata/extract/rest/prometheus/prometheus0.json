@@ -1,0 +1,16 @@
+{
+  "status": "success",
+  "data": {
+    "startTime": "2019-11-02T17:23:59.301361365+01:00",
+    "CWD": "/",
+    "reloadConfigSuccess": true,
+    "lastConfigTime": "2019-11-02T17:23:59+01:00",
+    "timeSeriesCount": 873,
+    "corruptionCount": 0,
+    "goroutineCount": 48,
+    "GOMAXPROCS": 4,
+    "GOGC": "",
+    "GODEBUG": "",
+    "storageRetention": "15d"
+  }
+}

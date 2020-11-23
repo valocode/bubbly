@@ -2,11 +2,10 @@ package v1
 
 import "github.com/zclconf/go-cty/cty"
 
-// CtyType returns the data structure describing the type which
-// the data extracted by XML Extract in this test case will conform to.
-func CtyType() cty.Type {
-
-	ctyType := cty.Object(map[string]cty.Type{
+// ExpectedType returns the data structure describing the type which
+// the data imported by XML Importer in this test case will conform to.
+func ExpectedType() cty.Type {
+	return cty.Object(map[string]cty.Type{
 		"testsuites": cty.Object(map[string]cty.Type{
 			"duration": cty.Number,
 			"testsuite": cty.List(cty.Object(map[string]cty.Type{
@@ -23,19 +22,16 @@ func CtyType() cty.Type {
 			})),
 		}),
 	})
-
-	return ctyType
 }
 
 // func ExpectedValueX() cty.Value:
 //   returns the data structure as it should be after
 //   the value returned from the XML parser is converted to cty.Value,
-//   using the type information returned by the ctyType() function.
+//   using the type information returned by the ExpectedType() function.
 
 // ExpectedValue0 for junit0.xml
 func ExpectedValue0() cty.Value {
-
-	expected := cty.ObjectVal(map[string]cty.Value{
+	return cty.ObjectVal(map[string]cty.Value{
 
 		"testsuites": cty.ObjectVal(map[string]cty.Value{
 
@@ -96,14 +92,11 @@ func ExpectedValue0() cty.Value {
 			}),
 		}),
 	})
-
-	return expected
 }
 
 // ExpectedValue1 for junit1.xml
 func ExpectedValue1() cty.Value {
-
-	expected := cty.ObjectVal(map[string]cty.Value{
+	return cty.ObjectVal(map[string]cty.Value{
 
 		"testsuites": cty.ObjectVal(map[string]cty.Value{
 
@@ -141,14 +134,11 @@ func ExpectedValue1() cty.Value {
 			}),
 		}),
 	})
-
-	return expected
 }
 
 // ExpectedValue2 for junit2.xml
 func ExpectedValue2() cty.Value {
-
-	expected := cty.ObjectVal(map[string]cty.Value{
+	return cty.ObjectVal(map[string]cty.Value{
 
 		"testsuites": cty.ObjectVal(map[string]cty.Value{
 
@@ -174,6 +164,4 @@ func ExpectedValue2() cty.Value {
 			}),
 		}),
 	})
-
-	return expected
 }

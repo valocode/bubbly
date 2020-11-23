@@ -5,8 +5,7 @@ import "github.com/zclconf/go-cty/cty"
 // ExpectedType returns the data structure describing the type which
 // the data extracted by JSON Extract in this test case will conform to
 func ExpectedType() cty.Type {
-
-	ctyType := cty.Object(map[string]cty.Type{
+	return cty.Object(map[string]cty.Type{
 		"issues": cty.List(cty.Object(map[string]cty.Type{
 			"engineId": cty.String,
 			"ruleId":   cty.String,
@@ -24,16 +23,13 @@ func ExpectedType() cty.Type {
 			}),
 		})),
 	})
-
-	return ctyType
 }
 
 // ExpectedValue returns the data structure as it should be after
 // the value returned from the JSON unmarhalling library is converted
 // to cty.Value using the type information provided by the ExpectedType()
 func ExpectedValue() cty.Value {
-
-	expected := cty.ObjectVal(map[string]cty.Value{
+	return cty.ObjectVal(map[string]cty.Value{
 		"issues": cty.ListVal([]cty.Value{
 			cty.ObjectVal(map[string]cty.Value{
 				"engineId": cty.StringVal("test"),
@@ -73,6 +69,4 @@ func ExpectedValue() cty.Value {
 			}),
 		}),
 	})
-
-	return expected
 }
