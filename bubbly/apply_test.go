@@ -16,17 +16,14 @@ import (
 // See client/load_test.go for actual evaluation of the loading using
 // the gofight package.
 func TestApply(t *testing.T) {
+
+	defer gock.Off()
+
 	host := "localhost"
 	port := "8080"
 	auth := false
 	token := ""
 	hostURL := host + ":" + port
-
-	// Create a new server route for mocking a Bubbly server response
-	gock.New(hostURL).
-		Post("/alpha1/upload").
-		Reply(http.StatusOK).
-		JSON(map[string]interface{}{"status": "uploaded"})
 
 	sc := config.ServerConfig{
 		Port:  port,
@@ -35,8 +32,18 @@ func TestApply(t *testing.T) {
 		Token: token,
 	}
 
-	err := Apply("./testdata/sonarqube", sc)
+	// Subtest
+	t.Run("sonarqube", func(t *testing.T) {
 
-	assert.NoError(t, err, "Failed to apply resource")
+		// Create a new server route for mocking a Bubbly server response
+		gock.New(hostURL).
+			Post("/alpha1/upload").
+			Reply(http.StatusOK).
+			JSON(map[string]interface{}{"status": "uploaded"})
+
+		err := Apply("./testdata/sonarqube", sc)
+
+		assert.NoError(t, err, "Failed to apply resource")
+	})
 
 }
