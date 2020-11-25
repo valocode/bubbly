@@ -36,6 +36,20 @@ resource "extract" "sonarqube" {
     }
 }
 
+resource "extract" "git" {
+    api_version = "v1"
+
+    spec {
+        input "repo" {}
+        type = "git"
+
+        // The format of Git Extract is pre-defined
+        source {
+            directory = self.input.repo
+        }
+    }
+}
+
 // defines a transformation or conversion of data from an Extract and outputs
 // a mapping of the extracted data to the defined data schema.
 resource "transform" "sonarqube" {
@@ -48,13 +62,13 @@ resource "transform" "sonarqube" {
         // within the interim database
         data "repository_version" {
             field "Commit" {
-                value = self.input.repository.commit
+                value = self.input.repository.commit_id
             }
             field "Tag" {
                 value = self.input.repository.tag
             }
             field "Branch" {
-                value = self.input.repository.branch
+                value = self.input.repository.active_branch
             }
         }
 
@@ -105,13 +119,20 @@ resource "pipeline" "sonarqube" {
     api_version = "v1"
     spec {
         input "file" {}
+        input "repo" {}
         // Each task represents the execution of an action defined by
         // a bubbly resource
         // action: extract the data from the data source
-        task "extract" {
+        task "extract-sonarqube" {
             resource = "extract/sonarqube"
             input "file" {
                 value = self.input.file
+            }
+        }
+        task "extract-git" {
+            resource = "extract/git"
+            input "repo" {
+                value = self.input.repo
             }
         }
 
@@ -120,17 +141,13 @@ resource "pipeline" "sonarqube" {
             resource = "qa/transform/sonarqube"
             // mock the repository data that will come from the git extract
             input "repository" {
-                value = {
-                    commit = "aegasd321"
-                    tag = "v0.0.1"
-                    branch = "master"
-                }
+                value = self.task.extract-git.value
             }
             input "data" {
                 // Each task in a pipeline has an output, similar to resources,
                 // so that task outputs can be referenced
                 // here, we reference the output of the task "extract"
-                value = self.task.extract.value
+                value = self.task.extract-sonarqube.value
             }
         }
 
@@ -153,6 +170,9 @@ resource "pipeline_run" "sonarqube" {
         // specify the pipeline input(s) required
         input "file" {
             value = "./testdata/sonarqube/sonarqube-example.json"
+        }
+        input "repo" {
+            value = "../api/v1/testdata/extract/git/repo1.git"
         }
     }
 }
