@@ -390,7 +390,7 @@ func TestExtractRestHeaders(t *testing.T) {
 		Route:    "users/olliefr",
 
 		Headers: map[string]string{},
-		
+
 		Format: cty.EmptyObject,
 	}
 
@@ -402,12 +402,7 @@ func TestExtractRestHeaders(t *testing.T) {
 
 		s := source
 
-		// FIXME issue with gock 1.0.15 fixed in gock master branch
-		//       matching headers with regex unsafe characters does not work
-		//       update once a new tagged version of gock comes out
-
-		//s.Headers["Accept"] = "application/vnd.github.v3+json"
-		s.Headers["Accept"] = "application json"
+		s.Headers["Accept"] = "application/vnd.github.v3+json"
 		s.Headers["User-Agent"] = "Bubbly REST API Extract"
 
 		gockResponse := gock.New(s.Protocol + `://` + s.Host).

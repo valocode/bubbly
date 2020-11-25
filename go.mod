@@ -10,7 +10,7 @@ require (
 	github.com/appleboy/gofight/v2 v2.1.2
 	github.com/buger/jsonparser v1.0.0 // indirect
 	github.com/clbanning/mxj v1.8.4
-	github.com/davecgh/go-spew v1.1.1
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gin-contrib/logger v0.0.2
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-git/go-git/v5 v5.2.0
@@ -43,5 +43,5 @@ require (
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	gopkg.in/gin-gonic/gin.v1 v1.3.0 // indirect
-	gopkg.in/h2non/gock.v1 v1.0.15
+	gopkg.in/h2non/gock.v1 v1.0.16
 )
