@@ -123,13 +123,13 @@ resource "pipeline" "sonarqube" {
         // Each task represents the execution of an action defined by
         // a bubbly resource
         // action: extract the data from the data source
-        task "extract-sonarqube" {
+        task "extract_sonarqube" {
             resource = "extract/sonarqube"
             input "file" {
                 value = self.input.file
             }
         }
-        task "extract-git" {
+        task "extract_git" {
             resource = "extract/git"
             input "repo" {
                 value = self.input.repo
@@ -141,13 +141,13 @@ resource "pipeline" "sonarqube" {
             resource = "qa/transform/sonarqube"
             // mock the repository data that will come from the git extract
             input "repository" {
-                value = self.task.extract-git.value
+                value = self.task.extract_git.value
             }
             input "data" {
                 // Each task in a pipeline has an output, similar to resources,
                 // so that task outputs can be referenced
                 // here, we reference the output of the task "extract"
-                value = self.task.extract-sonarqube.value
+                value = self.task.extract_sonarqube.value
             }
         }
 
