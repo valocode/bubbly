@@ -1,9 +1,9 @@
 ## workflow for running integration tests
 
-# on:
-#   push:
-#     branches:
-#       - master
+on:
+  push:
+    branches:
+      - '!**'
 #   pull_request:
 #     branches:
 #       - master
