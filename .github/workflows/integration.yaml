@@ -1,12 +1,12 @@
 ## workflow for running integration tests
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+# on:
+#   push:
+#     branches:
+#       - master
+#   pull_request:
+#     branches:
+#       - master
 
 name: go
 jobs:
@@ -42,4 +42,4 @@ jobs:
     # Set up https://peter.bourgon.org/go-in-production/#testing-and-validation
     # via https://golang.org/pkg/go/build/#hdr-Build_Constraints
     - name: Test
-      run: go test -tags=unit,integration ./... 
+      run: go test -tags=integration ./... 
