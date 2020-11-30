@@ -1,6 +1,9 @@
 ## workflow for 
 
 on:
+  push:
+    branches:
+      - '**'
   pull_request:
     branches:
       - '**'
@@ -10,7 +13,7 @@ name: go
 jobs:
   simple:
     strategy:
-      # matrix lets us expand our range of OSs / go versions trivially
+      # matrix lets us expand our range of OSs / go
       matrix:
         go-version: [1.15.5]
         os: [ubuntu-latest]
