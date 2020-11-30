@@ -1,0 +1,45 @@
+## workflow for running integration tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+name: go
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    # add services that the integration tests depend on
+    # services:
+    #   db:
+    #     env:
+    #       POSTGRES_USER: postgres
+    #       POSTGRES_PASSWORD: postgres
+    #       POSTGRES_DB: postgres
+    #     image: postgres:latest
+    #     ports: ['5432:5432']
+    steps:
+    - name: Install Go
+      # Skip install if testing action locally using act
+      if: ${{ !env.ACT }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: cache go mod
+      # Skip caching if testing action locally using act
+      if: ${{ !env.ACT }}
+      uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    # Set up https://peter.bourgon.org/go-in-production/#testing-and-validation
+    # via https://golang.org/pkg/go/build/#hdr-Build_Constraints
+    - name: Test
+      run: go test -tags=unit,integration ./... 

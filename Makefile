@@ -25,3 +25,12 @@ display-coverage: test-coverage
 
 test-report:
 	go test -coverprofile=coverage.txt -covermode=atomic -json ./... > test_report.json
+
+
+## local ci
+
+# Project is CI-enabled with Github Actions. You can run CI locally
+# using act (https://github.com/nektos/act). 
+# There are some caveats, but the following target should work:
+act: 
+	act -P ubuntu-latest=golang:latest --env-file act.env -j simple

@@ -1,0 +1,39 @@
+## workflow for 
+
+on:
+  pull_request:
+    branches:
+      - '**'
+      - '!master'
+
+name: go
+jobs:
+  simple:
+    strategy:
+      # matrix lets us expand our range of OSs / go versions trivially
+      matrix:
+        go-version: [1.15.5]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Install Go
+      # Skip install if testing action locally using act
+      if: ${{ !env.ACT }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: cache go mod
+      # Skip caching if testing action locally using act
+      if: ${{ !env.ACT }}
+      uses: actions/cache@v2
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - name: Test
+      run: go test -failfast ./...
+    - name: Build
+      run: go build -o build/bubbly .
