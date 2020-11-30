@@ -8,7 +8,7 @@ on:
     branches:
       - '**'
 
-name: go
+name: simple
 jobs:
   simple:
     strategy:
