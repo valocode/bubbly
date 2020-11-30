@@ -1,9 +1,0 @@
-steps:
-- name: golang
-  args: ['go', 'test', './...']
-- name: 'gcr.io/k8s-skaffold/pack'
-  entrypoint: 'pack'
-  args: ['build', '$REPO_NAME', '--builder=gcr.io/buildpacks/builder']
-# - name: 'gcr.io/cloud-builders/docker'
-#   args: ['run', '$REPO_NAME', '-h']
-
