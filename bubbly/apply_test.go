@@ -1,12 +1,14 @@
 package bubbly
 
 import (
+	"io/ioutil"
 	"net/http"
 	"testing"
 
 	"github.com/rs/zerolog"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/verifa/bubbly/env"
 	"gopkg.in/h2non/gock.v1"
@@ -33,6 +35,35 @@ func TestApply(t *testing.T) {
 		bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
 		err := Apply(bCtx, "./testdata/sonarqube")
+
+		assert.NoError(t, err, "Failed to apply resource")
+	})
+
+	// Subtest
+	t.Run("rest2", func(t *testing.T) {
+
+		// FIXME should this be shared between subtests?
+		gock.New(hostURL).
+			Post("/alpha1/upload").
+			Reply(http.StatusOK).
+			JSON(map[string]interface{}{"status": "uploaded"})
+
+		username := "the_mouse"
+
+		password, perr := ioutil.ReadFile("./testdata/rest2/the_mouse_password")
+		require.Nil(t, perr, "test fixture: password containing file")
+
+		gock.New("https://api.cloud84.dev/users").
+			Get("/").
+			BasicAuth(username, string(password)).
+			MatchParam("per_page", "12").
+			Reply(http.StatusOK).
+			JSON(map[string]interface{}{"answer": 42})
+
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+		err := Apply(bCtx, "./testdata/rest2")
 
 		assert.NoError(t, err, "Failed to apply resource")
 	})

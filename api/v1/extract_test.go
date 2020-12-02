@@ -3,6 +3,8 @@ package v1
 import (
 	"fmt"
 	"io/ioutil"
+
+	//"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -141,7 +143,6 @@ func TestExtractGit(t *testing.T) {
 func TestExtractRestBaseline(t *testing.T) {
 
 	defer gock.Off()
-
 	bCtx := env.NewBubblyContext()
 
 	// This is the baseline test for REST API extract. It only makes
@@ -162,24 +163,26 @@ func TestExtractRestBaseline(t *testing.T) {
 	expected := restPrometheus0.ExpectedValue()
 
 	// Describe a REST API source
-	source := restSource{
-		Protocol: "http",
-		Host:     "localhost",
-		Port:     9090,
-		Route:    "api/v1/status/runtimeinfo",
-		Method:   http.MethodGet,
-		Timeout:  2,
-		Flavour:  "json",
+	scheme := "http"
+	host := "localhost"
+	port := uint16(9090)
+	route := "api/v1/status/runtimeinfo"
 
+	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
+
+	source := restSource{
+		URL:    url,
 		Format: restPrometheus0.ExpectedType(),
 	}
+	setRestSourceDefaults(bCtx, &source)
 
 	// Mock the HTTP server and the REST API endpoint
 	s := source
-	gockResponse := gock.New(s.Protocol + `://` + s.Host + `:` + fmt.Sprint(s.Port)).
-		Get(`/` + s.Route).
+
+	gockResponse := gock.New(s.URL).
+		Get("/").
 		Reply(http.StatusOK).
-		File(filepath.FromSlash("testdata/extract/rest/prometheus/prometheus0.json"))
+		File(filepath.FromSlash("./testdata/extract/rest/prometheus/prometheus0.json"))
 
 	// Make a REST API request
 	val, err := s.Resolve(bCtx)
@@ -196,17 +199,21 @@ func TestExtractRestBaseline(t *testing.T) {
 func TestExtractRestBasicAuth(t *testing.T) {
 
 	defer gock.Off()
+	bCtx := env.NewBubblyContext()
 
 	// Describe a REST API Extract Resource with HTTP Basic Authorization
+	scheme := "https"
+	host := "api.cloud84.dev"
+	port := uint16(9090)
+	route := "gruffalo/hello"
+
+	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
+
 	source := restSource{
-		Protocol: "https",
-		Host:     "api.cloud84.dev",
-		Route:    "gruffalo/hello",
-
-		BasicAuth: basicAuth{},
-
+		URL:    url,
 		Format: cty.EmptyObject,
 	}
+	setRestSourceDefaults(bCtx, &source)
 
 	// JSON returned upon successful authorization
 	responseBody := "{}"
@@ -216,17 +223,15 @@ func TestExtractRestBasicAuth(t *testing.T) {
 
 	// Subtest
 	t.Run("username only", func(t *testing.T) {
-		bCtx := env.NewBubblyContext()
 
 		s := source
-		s.BasicAuth.Username = "mouse"
+		s.BasicAuth = newBasicAuth("mouse", "", "")
 
 		// The answer we expect: error
 
 		// The API request that we expect and the response that we send in that case
-		gockResponse := gock.New(s.Protocol+`://`+s.Host).
-			Get(`/`+s.Route).
-			BasicAuth(s.BasicAuth.Username, s.BasicAuth.Password).
+		gockResponse := gock.New(s.URL).
+			Get("/").
 			Reply(http.StatusUnauthorized)
 
 		// Make API request
@@ -241,15 +246,13 @@ func TestExtractRestBasicAuth(t *testing.T) {
 
 	// Subtest
 	t.Run("username and password", func(t *testing.T) {
-		bCtx := env.NewBubblyContext()
 
 		s := source
-		s.BasicAuth.Username = "mouse"
-		s.BasicAuth.Password = "correct horse battery staple"
+		s.BasicAuth = newBasicAuth("mouse", "correct horse battery staple", "")
 
-		gockResponse := gock.New(s.Protocol+`://`+s.Host).
-			Get(`/`+s.Route).
-			BasicAuth(s.BasicAuth.Username, s.BasicAuth.Password).
+		gockResponse := gock.New(s.URL).
+			Get("/").
+			BasicAuth(s.BasicAuth.Username, *s.BasicAuth.Password).
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
@@ -264,18 +267,20 @@ func TestExtractRestBasicAuth(t *testing.T) {
 
 	// Subtest
 	t.Run("username and password file", func(t *testing.T) {
-		bCtx := env.NewBubblyContext()
 
 		s := source
-		s.BasicAuth.Username = "mouse"
-		s.BasicAuth.PasswordFile = filepath.FromSlash("testdata/extract/rest/secret")
+		s.BasicAuth = newBasicAuth(
+			"mouse",
+			"",
+			filepath.FromSlash("./testdata/extract/rest/secret"),
+		)
 
 		// Read password value from a test fixture file
-		password, err := ioutil.ReadFile(s.BasicAuth.PasswordFile)
+		password, err := ioutil.ReadFile(*s.BasicAuth.PasswordFile)
 		require.Nil(t, err, "test fixture: password containing file")
 
-		gockResponse := gock.New(s.Protocol+`://`+s.Host).
-			Get(`/`+s.Route).
+		gockResponse := gock.New(s.URL).
+			Get("/").
 			BasicAuth(s.BasicAuth.Username, string(password)).
 			Reply(http.StatusOK).
 			BodyString(responseBody)
@@ -286,54 +291,66 @@ func TestExtractRestBasicAuth(t *testing.T) {
 		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
 		assert.Nil(t, err, "failed to Resolve() the extract")
 		require.False(t, val.IsNull(), "the extract returned null type value")
+		assert.Equal(t, cty.BoolVal(true), val.Equals(expected), "the extract returned unexpected value")
 	})
 
 	// Subtest
 	t.Run("username and password and password file", func(t *testing.T) {
 
-		bCtx := env.NewBubblyContext()
 		s := source
-		s.BasicAuth.Username = "mouse"
-		s.BasicAuth.Password = "correct horse battery staple"
-		s.BasicAuth.PasswordFile = filepath.FromSlash("testdata/extract/rest/secret")
+		s.BasicAuth = newBasicAuth(
+			"mouse",
+			"correct horse battery staple",
+			filepath.FromSlash("./testdata/extract/rest/secret"),
+		)
 
-		gockResponse := gock.New(s.Protocol + `://` + s.Host).
-			Get(`/` + s.Route).
-			Reply(http.StatusOK)
+		gockResponse := gock.New(s.URL).
+			Get("/").
+			BasicAuth(s.BasicAuth.Username, *s.BasicAuth.Password).
+			Reply(http.StatusOK).
+			BodyString(responseBody)
 
 		val, err := s.Resolve(bCtx)
 
-		assert.NotNil(t, err, "expected error: failed to Resolve() the extract")
-		assert.False(t, gockResponse.Done(), "the request should not have been sent, but it was")
-		require.True(t, val.IsNull(), "the extract should have returned null type value")
+		assert.True(t, gockResponse.Done(), "server did not understand the request")
+		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
+		assert.Nil(t, err, "failed to Resolve() the extract")
+		require.False(t, val.IsNull(), "the extract returned null type value")
+		assert.Equal(t, cty.BoolVal(true), val.Equals(expected), "the extract returned unexpected value")
 	})
 }
 
 func TestExtractRestBearerToken(t *testing.T) {
 
 	defer gock.Off()
+	bCtx := env.NewBubblyContext()
+
+	scheme := "https"
+	host := "api.cloud84.dev"
+	port := uint16(9090)
+	route := "private"
+
+	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
 
 	source := restSource{
-		Protocol: "https",
-		Host:     "api.cloud84.dev",
-		Route:    "private",
-
+		URL:    url,
 		Format: cty.EmptyObject,
 	}
+	setRestSourceDefaults(bCtx, &source)
 
 	responseBody := "{}"
 	expected := cty.EmptyObjectVal
 
 	// Subtest
 	t.Run("bearer token only", func(t *testing.T) {
-		bCtx := env.NewBubblyContext()
 
+		bearerToken := "3048d70dc7c4e4ccf47916e809ef2019eaef41d68e46ff100560807bbe1572f9"
 		s := source
-		s.BearerToken = "3048d70dc7c4e4ccf47916e809ef2019eaef41d68e46ff100560807bbe1572f9"
+		s.BearerToken = &bearerToken
 
-		gockResponse := gock.New(s.Protocol+`://`+s.Host).
-			Get(`/`+s.Route).
-			MatchHeader("Authorization", "Bearer "+s.BearerToken).
+		gockResponse := gock.New(s.URL).
+			Get("/").
+			MatchHeader("Authorization", "Bearer "+bearerToken).
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
@@ -349,16 +366,17 @@ func TestExtractRestBearerToken(t *testing.T) {
 	// Subtest
 	t.Run("bearer token file only", func(t *testing.T) {
 
-		bCtx := env.NewBubblyContext()
+		bearerTokenFile := filepath.FromSlash("./testdata/extract/rest/bearer_token_secret")
+
 		s := source
-		s.BearerTokenFile = filepath.FromSlash("testdata/extract/rest/bearer_token_secret")
+		s.BearerTokenFile = &bearerTokenFile
 
 		// Read bearer token value from a test fixture file
-		bearerToken, err := ioutil.ReadFile(s.BearerTokenFile)
+		bearerToken, err := ioutil.ReadFile(*s.BearerTokenFile)
 		require.Nil(t, err, "test fixture: bearer token file")
 
-		gockResponse := gock.New(s.Protocol+`://`+s.Host).
-			Get(`/`+s.Route).
+		gockResponse := gock.New(s.URL).
+			Get("/").
 			MatchHeader("Authorization", "Bearer "+string(bearerToken)).
 			Reply(http.StatusOK).
 			BodyString(responseBody)
@@ -374,15 +392,17 @@ func TestExtractRestBearerToken(t *testing.T) {
 
 	// Subtest
 	t.Run("bearer token and bearer token file both", func(t *testing.T) {
-		bCtx := env.NewBubblyContext()
+
+		bearerToken := "3048d70dc7c4e4ccf47916e809ef2019eaef41d68e46ff100560807bbe1572f9"
+		bearerTokenFile := filepath.FromSlash("./testdata/extract/rest/bearer_token_secret")
 
 		s := source
-		s.BearerToken = "3048d70dc7c4e4ccf47916e809ef2019eaef41d68e46ff100560807bbe1572f9"
-		s.BearerTokenFile = filepath.FromSlash("testdata/extract/rest/bearer_token_secret")
+		s.BearerToken = &bearerToken
+		s.BearerTokenFile = &bearerTokenFile
 
-		gockResponse := gock.New(s.Protocol+`://`+s.Host).
-			Get(`/`+s.Route).
-			MatchHeader("Authorization", "Bearer "+s.BearerToken).
+		gockResponse := gock.New(s.URL).
+			Get("/").
+			MatchHeader("Authorization", "Bearer "+*s.BearerToken).
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
@@ -399,35 +419,38 @@ func TestExtractRestBearerToken(t *testing.T) {
 func TestExtractRestHeaders(t *testing.T) {
 
 	defer gock.Off()
+	bCtx := env.NewBubblyContext()
 
 	// Some APIs request that certain HTTP headers
 	// "must" or "highly recommended" to be set.
+	scheme := "http"
+	host := "api.github.com"
+	port := uint16(9090)
+	route := "users/olliefr"
+
+	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
 
 	source := restSource{
-		Protocol: "https",
-		Host:     "api.github.com",
-		Route:    "users/olliefr",
-
-		Headers: map[string]string{},
-
+		URL:    url,
 		Format: cty.EmptyObject,
 	}
+	setRestSourceDefaults(bCtx, &source)
 
 	responseBody := "{}"
 	expected := cty.EmptyObjectVal
 
 	// Subtest
 	t.Run("github content type", func(t *testing.T) {
-		bCtx := env.NewBubblyContext()
-
 		s := source
 
-		s.Headers["Accept"] = "application/vnd.github.v3+json"
-		s.Headers["User-Agent"] = "Bubbly REST API Extract"
+		s.Headers = &map[string]string{
+			"Accept":     "application/vnd.github.v3+json",
+			"User-Agent": "Bubbly REST API Extract",
+		}
 
-		gockResponse := gock.New(s.Protocol + `://` + s.Host).
-			Get(`/` + s.Route).
-			MatchHeaders(s.Headers).
+		gockResponse := gock.New(s.URL).
+			Get("/").
+			MatchHeaders(*s.Headers).
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
@@ -444,6 +467,7 @@ func TestExtractRestHeaders(t *testing.T) {
 func TestExtractRestParams(t *testing.T) {
 
 	defer gock.Off()
+	bCtx := env.NewBubblyContext()
 
 	// This is a more advanced REST API request which encodes certain
 	// parameters in its query URL. The "full" query returns three entities,
@@ -457,27 +481,31 @@ func TestExtractRestParams(t *testing.T) {
 	// The API endpoint is:
 	//   GET http://localhost:9090/api/v1/rules
 
-	source := restSource{
-		Protocol: "https",
-		Host:     "api.github.com",
-		Route:    "repos/octocat/hello-world/branches",
+	scheme := "https"
+	host := "api.github.com"
+	port := uint16(9090)
+	route := "repos/octocat/hello-world/branches"
 
+	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
+
+	source := restSource{
+		URL:    url,
 		Format: restGitHub0.ExpectedType(),
 	}
+	setRestSourceDefaults(bCtx, &source)
 
 	// Subtest
 	t.Run("no url query string", func(t *testing.T) {
-		bCtx := env.NewBubblyContext()
 
 		s := source
 
 		// No parameters for request means all entries are returned
 		expected := restGitHub0.ExpectedValue()
 
-		gockResponse := gock.New(s.Protocol + `://` + s.Host).
-			Get(`/` + s.Route).
+		gockResponse := gock.New(s.URL).
+			Get("/").
 			Reply(http.StatusOK).
-			File(filepath.FromSlash(`testdata/extract/rest/github/github0.json`))
+			File(filepath.FromSlash("./testdata/extract/rest/github/github0.json"))
 
 		val, err := s.Resolve(bCtx)
 
@@ -491,23 +519,22 @@ func TestExtractRestParams(t *testing.T) {
 
 	// Subtest
 	t.Run("set per_page=2 in URL query string", func(t *testing.T) {
-		bCtx := env.NewBubblyContext()
 
 		s := source
 
 		// Add a key-value pair to the URL query string
-		s.Params = map[string]string{
+		s.Params = &map[string]string{
 			"per_page": "2",
 		}
 
 		// The page_limit parameter limits the response to the first two entries
 		expected := cty.ListVal(restGitHub0.ExpectedValue().AsValueSlice()[:2])
 
-		gockResponse := gock.New(s.Protocol+`://`+s.Host).
-			Get(`/`+s.Route).
+		gockResponse := gock.New(s.URL).
+			Get("/").
 			MatchParam("per_page", "2").
 			Reply(http.StatusOK).
-			File(filepath.FromSlash(`testdata/extract/rest/github/github1.json`))
+			File(filepath.FromSlash("./testdata/extract/rest/github/github1.json"))
 
 		val, err := s.Resolve(bCtx)
 

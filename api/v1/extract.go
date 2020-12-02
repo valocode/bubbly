@@ -7,11 +7,15 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/imdario/mergo"
+	"github.com/rs/zerolog"
 
 	"github.com/clbanning/mxj"
 	git "github.com/go-git/go-git/v5"
@@ -86,6 +90,58 @@ func (i *Extract) SpecValue() core.ResourceSpec {
 	return &i.Spec
 }
 
+// newRestSource returns a restSource struct, with optional fields initialised
+// to "correct" values. They are "correct" in a sense that the code in this module
+// does not need to do unnecesary checks on empty fields which simplifies the logic.
+// It was a deliberate design decision that the "correct" or "default" values for
+// optional fields are set AFTER the HCL parser has created and populated
+// the restSource structure.
+func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) {
+
+	method := http.MethodGet
+	flavour := "json"
+	timeout := uint(1)
+
+	defaults := &restSource{
+		Method:  &method,
+		Params:  &map[string]string{},
+		Headers: &map[string]string{},
+		Flavour: &flavour,
+		Timeout: &timeout,
+	}
+
+	if err := mergo.Merge(dst, defaults); err != nil {
+		bCtx.Logger.Panic().Err(err).Msg("extract/rest failed to initialise the data structure")
+	}
+
+	// Mergo does not set empty and nil values, and for purposes of
+	// simplifying control flow logic it helps to set the following...
+
+	// Params is optional in HCL, but it helps to have an empty map instead of nil.
+	if dst.Params == nil {
+		dst.Params = &map[string]string{}
+	}
+	// Headers is optional in HCL
+	if dst.Headers == nil {
+		dst.Headers = &map[string]string{}
+	}
+
+	// If HTTP Basic Authentication is requested in HCL, the username is compulsory field,
+	// while the password and password_file are both optional since one or the other may be
+	// provided by the user. If the username is given, initialise the other two fields, unless
+	// already set.
+	if dst.BasicAuth != nil {
+		if dst.BasicAuth.Password == nil {
+			empty := ""
+			dst.BasicAuth.Password = &empty
+		}
+		if dst.BasicAuth.PasswordFile == nil {
+			empty := ""
+			dst.BasicAuth.PasswordFile = &empty
+		}
+	}
+}
+
 // decode is responsible for decoding any necessary hcl.Body inside Extract
 func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) error {
 	// decode the resource spec into the extract's Spec
@@ -93,7 +149,7 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) erro
 		return fmt.Errorf(`Failed to decode "%s" body spec: %w`, i.String(), err)
 	}
 
-	// based on the type of the extract, initiate the extract's Source
+	// Initiate the Extract's Source structure
 	switch i.Spec.Type {
 	case jsonExtractType:
 		i.Spec.Source = &jsonSource{}
@@ -102,7 +158,7 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) erro
 	case gitExtractType:
 		i.Spec.Source = &gitSource{}
 	case restExtractType:
-		i.Spec.Source = &restSource{} // FIXME this is where mergo init happens
+		i.Spec.Source = &restSource{}
 	default:
 		panic(fmt.Sprintf("Unsupported extract resource type %s", i.Spec.Type))
 	}
@@ -110,6 +166,20 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) erro
 	// decode the source HCL into the extract's Source
 	if err := decode(bCtx, i.Spec.SourceHCL.Body, i.Spec.Source); err != nil {
 		return fmt.Errorf(`Failed to decode extract source: %w`, err)
+	}
+
+	// Merge with default values for each resource type
+	switch dst := i.Spec.Source.(type) {
+	case *jsonSource:
+		break
+	case *xmlSource:
+		break
+	case *gitSource:
+		break
+	case *restSource:
+		setRestSourceDefaults(bCtx, dst)
+	default:
+		bCtx.Logger.Panic().Msgf("extract/rest unsupported resource type: %s", i.Spec.Type)
 	}
 
 	return nil
@@ -150,63 +220,62 @@ type source interface {
 var _ source = (*restSource)(nil)
 
 type basicAuth struct {
-	Username     string `hcl:"username,attr"`
-	Password     string `hcl:"password,attr"`
-	PasswordFile string `hcl:"password_file,attr"`
+	Username     string  `hcl:"username"`
+	Password     *string `hcl:"password"`
+	PasswordFile *string `hcl:"password_file"`
+}
+
+// newBasicAuth returns a basicAuth struct, with optional fields initialised
+// to "correct" values. They are "correct" in a sense that the code in this module
+// does not need to do unnecessary checks on empty fields which simplifies the logic.
+func newBasicAuth(username, password, passwordFile string) *basicAuth {
+	return &basicAuth{username, &password, &passwordFile}
 }
 
 // restSource represents the extract type for a REST API query
 type restSource struct {
 
-	// Protocol is "http" or "https"
-	Protocol string `hcl:"protocol,attr"`
-
-	// Host is ?
-	Host string `hcl:"host,attr"`
-
-	// Port is TCP port number
-	Port uint16 `hcl:"port,attr"`
-
-	// Route is ?
-	Route string `hcl:"path,attr"`
+	// URL (technically a URI reference, as per RFC 3986) represents the unparsed URL string.
+	// Note that URL Query Parameters (?key=val) must be provided separately as Params.
+	URL string `hcl:"url"`
 
 	// Method is "GET" or "POST" for protocols "http" and "https"
-	Method string `hcl:"method,attr"`
+	Method *string `hcl:"method"`
 
 	// Params are URL query params which get prepended at the end of the url
 	// in the format ?key1=val1&key2=val2
-	Params map[string]string `hcl:"params,attr"`
+	Params *map[string]string `hcl:"params"`
 
 	// HTTP Headers to set, anything apart from Basic Authorization
 	// and Bearer Token for which there are custom fields.
-	Headers map[string]string `hcl:"headers,attr"`
+	Headers *map[string]string `hcl:"headers"`
 
 	// BasicAuth sets the `Authorization` header on every
 	// scrape request with the configured username and password.
 	// The `password` field, if set, overrides the `password_file` field.
 	// More information: https://swagger.io/docs/specification/authentication/basic-authentication/
-	BasicAuth basicAuth `hcl:"basic_auth,attr"`
+	BasicAuth *basicAuth `hcl:"basic_auth,block"`
 
 	// BearerToken sets the `Authorization` header on every
 	// scrape request with the configured bearer token.
 	// More information: https://swagger.io/docs/specification/authentication/bearer-authentication/
 	// If set, this option overrides `bearer_token_file`.
-	BearerToken string `hcl:"bearer_token,attr"`
+	BearerToken *string `hcl:"bearer_token"`
 
 	// BearerTokenFile sets the `Authorization` header on every
 	// scrape request with the bearer token read from the configured file.
 	// This option can be overridden by `bearer_token`.
-	BearerTokenFile string `hcl:"bearer_token_file"`
+	BearerTokenFile *string `hcl:"bearer_token_file"`
 
 	// Flavour is "json". This is the expected format of the response.
-	Flavour string `hcl:"flavour,attr"`
+	Flavour *string `hcl:"flavour"`
 
 	// Timeout in seconds is how long the extractor can wait before giving up
 	// trying to extract the data from this resource.
-	Timeout uint `hcl:"timeout,attr"`
+	Timeout *uint `hcl:"timeout"`
 
 	// Format is ?
-	Format cty.Type `hcl:"format,attr"`
+	Format cty.Type `hcl:"format"`
 }
 
 // Resolve returns a cty.Value representation of the data in response to a REST API query
@@ -217,33 +286,15 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	//   * the default value "" is interpreted as GET
 	//   * any other value is invalid and raises error
 	//
-	method := strings.ToUpper(s.Method)
+	method := strings.ToUpper(*s.Method)
+
 	switch method {
 	case http.MethodGet:
 		break
 	case http.MethodPost:
-		return cty.NilVal, fmt.Errorf(`not implemented: method: %s`, method)
-	case "":
-		method = http.MethodGet
+		return cty.NilVal, fmt.Errorf("http method not implemented: %s", method)
 	default:
-		return cty.NilVal, fmt.Errorf(`unsupported method: %s`, method)
-	}
-
-	// Transport Protocol (aka scheme):
-	//   * "http" or "https" only, case-insensitive
-	//   * the default value "" is interpreted as "http"
-	//   * any other value is invalid and raises error
-	//
-	scheme := strings.ToLower(s.Protocol)
-	switch scheme {
-	case "http":
-		break
-	case "https":
-		break
-	case "":
-		scheme = "http"
-	default:
-		return cty.NilVal, fmt.Errorf(`unsupported protocol: %s`, s.Protocol)
+		return cty.NilVal, fmt.Errorf("unsupported method: %s", method)
 	}
 
 	// HTTP request timeout:
@@ -251,95 +302,104 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	//   * the default value 0 is interpreted as 1 second
 	//
 	var timeout time.Duration
+
 	switch {
-	case s.Timeout == 0:
-		timeout = time.Second
+	case *s.Timeout == 0:
+		return cty.NilVal, fmt.Errorf("invalid timeout value: %d", *s.Timeout)
 	default:
-		timeout = time.Duration(s.Timeout) * time.Second
+		timeout = time.Duration(*s.Timeout) * time.Second
 	}
 
-	// Basic Authentication activates only if the username is provided
-	//    * only on of `password` or `password_file` must be provided; the other must be empty string
-	//    * no additional encoding is done on the values of `username` and `password`
+	// The 'Basic' HTTP Authentication Scheme as defined in RFC 7617.
 	//
+	// Activated by non-nil `basicAuth` field. When active,
+	// * the `basicAuth.username` must be a non-empty string
+	// * either `basicAuth.password` or `basicAuth.passwordFile` must be a non-empty string,
+	//   with the former overriding the latter.
+
 	var username, password string
 
-	if s.BasicAuth.Username != "" {
+	if s.BasicAuth != nil {
+
+		if s.BasicAuth.Username == "" {
+			return cty.NilVal, fmt.Errorf("http basic authentication requires a username")
+		}
 
 		username = s.BasicAuth.Username
 
 		switch {
-		case s.BasicAuth.Password != "" && s.BasicAuth.PasswordFile != "":
-			return cty.NilVal, fmt.Errorf("for basic auth, only one of password or password_file must be provided with the username")
+		case *s.BasicAuth.Password != "":
+			password = *s.BasicAuth.Password
 
-		case s.BasicAuth.Password != "":
-			password = s.BasicAuth.Password
-
-		case s.BasicAuth.PasswordFile != "":
-			byteArr, err := ioutil.ReadFile(filepath.FromSlash(s.BasicAuth.PasswordFile))
+		case *s.BasicAuth.PasswordFile != "":
+			byteArr, err := ioutil.ReadFile(filepath.FromSlash(*s.BasicAuth.PasswordFile))
 			if err != nil {
-				return cty.NilVal, fmt.Errorf("failed to read the password file: %w", err)
+				return cty.NilVal, fmt.Errorf("failed to read the password for http basic authentication from a file: %w", err)
 			}
 			password = string(byteArr)
 		}
 	}
 
-	// Construct a URL string
-	us := scheme + "://" + s.Host
-
-	if s.Port != 0 {
-		us += fmt.Sprint(":", s.Port)
-	}
-
-	if strings.HasPrefix(s.Route, "/") {
-		us += s.Route
-	} else {
-		us += fmt.Sprint("/", s.Route)
-	}
-
 	// URL query string
 	params := url.Values{}
-	for k, v := range s.Params {
+	for k, v := range *s.Params {
 		params.Add(k, v)
 	}
-	if len(params) > 0 {
-		us += fmt.Sprint("?", params.Encode())
-	}
-	// The URL has been built.
 
-	// We don't **need** a value of type url.URL but it's a useful check
+	// Construct a URL string
+	us := s.URL
+	if len(params) > 0 {
+		us = fmt.Sprint(s.URL, "?", params.Encode())
+	}
+
+	// Validate the URL string using the `url` standard library module
 	u, err := url.Parse(us)
 	if err != nil {
-		return cty.NilVal, fmt.Errorf(`failed to parse endpoint url %s: %w`, us, err)
+		return cty.NilVal, fmt.Errorf("failed to parse endpoint url %s: %w", us, err)
 	}
 
 	// Create an object representing a HTTP request
 	var body io.Reader
 	httpRequest, err := http.NewRequest(method, u.String(), body)
 	if err != nil {
-		return cty.NilVal, fmt.Errorf(`failed to craft HTTP request object: %w`, err)
+		return cty.NilVal, fmt.Errorf("failed to craft HTTP request object: %w", err)
 	}
 
 	// Authentication, if requested
-	if username != "" {
-		httpRequest.SetBasicAuth(s.BasicAuth.Username, password)
+	if s.BasicAuth != nil {
+		httpRequest.SetBasicAuth(username, password)
 	}
 
 	// Add a bearer token, if requests. Adds a Header.
+	var bearerToken string
 	switch {
-	case s.BearerToken != "":
-		httpRequest.Header.Set("Authorization", "Bearer "+s.BearerToken)
-	case s.BearerTokenFile != "":
-		bearerToken, err := ioutil.ReadFile(filepath.FromSlash(s.BearerTokenFile))
+	case s.BearerToken != nil:
+		bearerToken = *s.BearerToken
+	case s.BearerTokenFile != nil:
+		bt, err := ioutil.ReadFile(filepath.FromSlash(*s.BearerTokenFile))
 		if err != nil {
 			return cty.NilVal, fmt.Errorf("failed to read bearer token file: %w", err)
 		}
-		httpRequest.Header.Set("Authorization", "Bearer "+string(bearerToken))
+		bearerToken = string(bt)
+	}
+	if bearerToken != "" {
+		httpRequest.Header.Set("Authorization", "Bearer "+bearerToken)
 	}
 
 	// Any other headers, if reqested
-	for k, v := range s.Headers {
+	for k, v := range *s.Headers {
 		httpRequest.Header.Add(k, v)
+	}
+
+	// Log the request
+	if bCtx.Logger.GetLevel() == zerolog.DebugLevel {
+
+		dump, err := httputil.DumpRequestOut(httpRequest, true)
+		if err != nil {
+			bCtx.Logger.Debug().Err(err).Msg("extract/rest failed to dump HTTP request")
+		} else {
+			bCtx.Logger.Debug().Bytes("httpRequest", dump).Msg("extract/rest")
+		}
 	}
 
 	// Initiate the HTTP client
@@ -348,11 +408,11 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	// Make REST API request
 	httpResponse, err := c.Do(httpRequest)
 	if err != nil {
-		return cty.NilVal, fmt.Errorf(`failed to make HTTP request: %w`, err)
+		return cty.NilVal, fmt.Errorf("failed to make HTTP request: %w", err)
 	}
 
 	if httpResponse.StatusCode != http.StatusOK {
-		return cty.NilVal, fmt.Errorf(`HTTP response status code: %d`, httpResponse.StatusCode)
+		return cty.NilVal, fmt.Errorf("HTTP response status code: %d", httpResponse.StatusCode)
 	}
 
 	defer httpResponse.Body.Close()
@@ -360,12 +420,12 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	// Parse the content of response body
 	var data interface{}
 	if err := json.NewDecoder(httpResponse.Body).Decode(&data); err != nil {
-		return cty.NilVal, fmt.Errorf(`failed to decode JSON: %w`, err)
+		return cty.NilVal, fmt.Errorf("failed to decode JSON: %w", err)
 	}
 
 	val, err := gocty.ToCtyValue(data, s.Format)
 	if err != nil {
-		return cty.NilVal, fmt.Errorf(`failed to convert to desired data format: %w`, err)
+		return cty.NilVal, fmt.Errorf("failed to convert to desired data format: %w", err)
 	}
 
 	return val, nil
