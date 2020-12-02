@@ -4,34 +4,14 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"os"
-	"path"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tidwall/buntdb"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/resource"
 )
 
 const defaultNamespace = "default"
-
-// returns an index for ensuring unique names
-func dbIndexName() string {
-	return "unique_name"
-}
-
-// DbPath returns the path to the DB
-func DbPath() string {
-	url := "test.db"
-	e, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	dbpath := path.Join(path.Dir(e), url)
-	return dbpath
-}
-
-type resourceMap map[string]map[string]map[string]interface{}
 
 // PostResource godoc
 // @Summary Takes a POST request to upload a new resource to the in memory database
@@ -99,7 +79,8 @@ func PostResource(bCtx *env.BubblyContext, c *gin.Context) {
 		Resource:  string(request),
 	}
 
-	if err := uploadResource(bCtx, &resource); err != nil {
+	err = uploadResource(bCtx, &resource)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -110,18 +91,20 @@ func PostResource(bCtx *env.BubblyContext, c *gin.Context) {
 }
 
 // Uploads the resource to the in-mem db
-func uploadResource(bCtx *env.BubblyContext, resource *core.ResourceJSON) error {
-	db, dbErr := buntdb.Open(DbPath())
-	if dbErr != nil {
-		bCtx.Logger.Error().Msg(dbErr.Error())
-		return dbErr
+func uploadResource(bCtx *env.BubblyContext, r *core.ResourceJSON) error {
+	db, err := resource.New(resource.Config{
+		// This is hardcoded as "buntdb" for the time so that way bubbly can still be run without extra containers
+		// and command line options
+		Provider: "buntdb",
+	})
+	if err != nil {
+		return err
 	}
 
-	db.CreateIndex(dbIndexName(), "*", buntdb.IndexJSON("name"))
-	db.Update(func(tx *buntdb.Tx) error {
-		tx.Set(resource.GetID(), resource.Resource, nil)
-		return nil
-	})
+	err = db.P.Save(r.GetID(), r.Resource)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -139,29 +122,28 @@ func uploadResource(bCtx *env.BubblyContext, resource *core.ResourceJSON) error 
 // @x-examples 12345
 // @Router /api/resource/{id} [get]
 func GetResource(bCtx *env.BubblyContext, c *gin.Context) {
-	resource := core.ResourceJSON{
+	r := core.ResourceJSON{
 		Name:      c.Param("name"),
 		Namespace: c.Param("namespace"),
 		Kind:      c.Param("kind"),
 	}
-
-	db, dbErr := buntdb.Open(DbPath())
-	if dbErr != nil {
-		bCtx.Logger.Error().Msg(dbErr.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": dbErr.Error()})
+	db, err := resource.New(resource.Config{
+		// This is hardcoded as "buntdb" for the time so that way bubbly can still be run without extra containers
+		// and command line options
+		Provider: "buntdb",
+	})
+	if err != nil {
+		bCtx.Logger.Error().Msg(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	db.CreateIndex(dbIndexName(), "*", buntdb.IndexJSON("name"))
-	var resourceString string
-	db.View(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(resource.GetID())
-		if err != nil {
-			return err
-		}
-		resourceString = val
-		return nil
-	})
+	resourceString, err := db.P.Query(r.GetID())
+	if err != nil {
+		bCtx.Logger.Error().Msg(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.Data(http.StatusOK, "application/json", []byte(resourceString))
 }

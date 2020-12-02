@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/resource"
 
 	"github.com/appleboy/gofight"
 	"github.com/stretchr/testify/assert"
@@ -49,7 +50,7 @@ func TestPostResource(t *testing.T) {
 
 	// Cleanup
 	if tearDown {
-		tearDownDb(bCtx)
+		tearDownDb()
 	}
 }
 
@@ -80,13 +81,10 @@ func TestGetResource(t *testing.T) {
 			}
 			assert.NotNil(t, resWrap)
 		})
-	tearDownDb(bCtx)
+	tearDownDb()
 }
 
 // Wipes the test DB
-func tearDownDb(bCtx *env.BubblyContext) {
-	err := os.Remove(DbPath())
-	if err != nil {
-		bCtx.Logger.Error().Msg(err.Error())
-	}
+func tearDownDb() {
+	_ = os.Remove(resource.MustBuntDBPath())
 }

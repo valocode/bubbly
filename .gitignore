@@ -29,6 +29,7 @@ docs/.DS_STORE
 # Ignore the KeyStore DB
 *.db
 server/*.db
+dataaccess/*.db
 
 node_modules
 
