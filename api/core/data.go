@@ -3,10 +3,18 @@ package core
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/zclconf/go-cty/cty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
+
+var DataRefType = cty.Capsule("DataRef", reflect.TypeOf((*DataRef)(nil)))
+
+type DataRef struct {
+	TableName string
+	Field     string
+}
 
 // DataBlocks is a slice of type Data
 type DataBlocks []Data
@@ -14,10 +22,10 @@ type DataBlocks []Data
 // Data will reference a Table name, and assign the Field values into the
 // corresponding Field values in the Table
 type Data struct {
-	TableName string `hcl:",label" json:"table"`
+	TableName string `hcl:",label" json:"data"`
 	// RowName   string     `hcl:",label" json:"row"`
 	Fields DataFields `hcl:"field,block" json:"fields"`
-	Data   DataBlocks `hcl:"data,block" json:"data"`
+	Data   DataBlocks `hcl:"data,block" json:"nested_data"`
 }
 
 // DataFields is a slice of DataField
@@ -50,7 +58,7 @@ type DataFieldAlias DataField
 // JSONDataField is a JSON-friendly version of Field
 type JSONDataField struct {
 	DataFieldAlias
-	Value ctyjson.SimpleJSONValue
+	Value ctyjson.SimpleJSONValue `json:"value"`
 }
 
 // Field returns a Field equivalent of JSONField

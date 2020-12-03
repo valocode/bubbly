@@ -1,13 +1,13 @@
 version: "3.8"
 
 services:
-
   integration:
     build:
       context: .
       dockerfile: docker/integration/Dockerfile
     ports:
       - "8111:8111"
+      - "8112:8112"
     environment:
       PROVIDER: "${BUBBLY_PROVIDER}"
       POSTGRES_ADDR: "postgres:5432"
@@ -22,8 +22,10 @@ services:
       dockerfile: docker/storefront/Dockerfile
     ports:
       - "8111:8111"
+      - "8112:8112"
     environment:
       PROVIDER: "${BUBBLY_PROVIDER}"
+      BUBBLY_ADDR: ":8112"
       POSTGRES_ADDR: "postgres:5432"
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"

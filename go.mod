@@ -25,6 +25,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.6.0
 	github.com/hashicorp/terraform v0.13.4
 	github.com/imdario/mergo v0.3.9
+	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/libgit2/git2go/v28 v28.6.1 // indirect

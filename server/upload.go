@@ -33,6 +33,8 @@ func upload(bCtx *env.BubblyContext, c *gin.Context) {
 	}
 
 	bCtx.Logger.Debug().Interface("data", upload).Msg("loading data into intermediary database")
+	bCtx.Logger.Debug().Interface("store", serverStore).Msg("current store")
+	bCtx.Logger.Debug().Interface("store.Schema()", serverStore.Schema()).Msg("current schema")
 
 	importErr := serverStore.Store.Save(upload.Data)
 	if importErr != nil {

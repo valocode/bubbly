@@ -542,14 +542,14 @@ func (s *jsonSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	// FIXME GitHub issue #39
 	barr, err = ioutil.ReadFile(s.File)
 	if err != nil {
-		return cty.NilVal, err
+		return cty.NilVal, fmt.Errorf("failed to read file %s: %w", s.File, err)
 	}
 
 	// Attempt to unmarshall the data into an empty interface data type
 	var data interface{}
 	err = json.Unmarshal(barr, &data)
 	if err != nil {
-		return cty.NilVal, err
+		return cty.NilVal, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 
 	val, err := gocty.ToCtyValue(data, s.Format)

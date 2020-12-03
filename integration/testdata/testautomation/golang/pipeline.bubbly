@@ -1,0 +1,88 @@
+
+resource "extract" "gotest" {
+    api_version = "v1"
+    // this is an input to the extract to make it reusable
+    spec {
+        input "file" {}
+        type = "json"
+        source {
+            file = self.input.file
+            format = list(
+                object({
+                    Time = string,
+                    Action = string,
+                    Package = string,
+                    Test = string,
+                    Elapsed = number,
+                })
+            )
+        }
+    }
+}
+
+resource "transform" "gotest" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        dynamic "data" {
+            for_each = [for i in self.input.data: i if i.Test != null && i.Package != null && i.Elapsed != null]
+            iterator = it
+            labels = ["test_case"]
+            content {
+                field "name" {
+                    value = "${it.value.Package}/${it.value.Test}"
+                }
+                field "status" {
+                    value = it.value.Action
+                }
+            }
+        }
+    }
+}
+
+resource "load" "gotest" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        data = self.input.data
+    }
+}
+
+resource "pipeline" "gotest" {
+    api_version = "v1"
+    spec {
+        input "file" {}
+        // Each task in a pipeline has an output, similar to resources,
+        // so that task outputs can be referenced
+        task "extract" {
+            resource = "extract/gotest"
+            input "file" {
+                value = self.input.file
+            }
+        }
+        task "transform" {
+            resource = "transform/gotest"
+            input "data" {
+                value = self.task.extract.value
+            }
+        }
+        task "load" {
+            resource = "load/gotest"
+            input "data" {
+                value = self.task.transform.value
+            }
+        }
+    }
+}
+
+resource "pipeline_run" "gotest" {
+    api_version = "v1"
+    spec {
+        // specify the name of the pipeline resource to execute
+        pipeline = "gotest"
+        // specify the pipeline input(s) required
+        input "file" {
+            value = "./testdata/testautomation/golang/test-report.json"
+        }
+    }
+}

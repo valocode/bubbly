@@ -1,4 +1,6 @@
 BIN=./build/bubbly
+# set the default bubbly provider
+export BUBBLY_PROVIDER?=postgres
 
 all: build run-help
 
@@ -37,7 +39,7 @@ integration: integration-cleanup
 	docker-compose up --build --abort-on-container-exit --remove-orphans integration $${BUBBLY_PROVIDER}
 
 .PHONY: storefront
-storefront:
+storefront: integration-cleanup
 	docker-compose up --build --abort-on-container-exit --remove-orphans storefront $${BUBBLY_PROVIDER}
 
 ## local ci
