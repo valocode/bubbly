@@ -54,6 +54,8 @@ func (r *Resources) NewResource(resBlock *core.ResourceBlock) (core.Resource, er
 		resource = v1.NewPipeline(resBlock)
 	case core.PipelineRunResourceKind:
 		resource = v1.NewPipelineRun(resBlock)
+	case core.TaskRunResourceKind:
+		resource = v1.NewTaskRun(resBlock)
 	default:
 		return nil, fmt.Errorf("resource not supported: %s", resBlock.Kind())
 	}

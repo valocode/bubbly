@@ -48,5 +48,10 @@ type PipelineRun interface {
 
 // Task interface represents a task inside a pipeline
 type Task interface {
-	Apply(*env.BubblyContext, *ResourceContext) error
+	Resource
+}
+
+// TaskRun interface is for any resources of type TaskRun
+type TaskRun interface {
+	Resource
 }

@@ -42,15 +42,17 @@ func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		bCtx.Logger.Debug().Msgf("Applying task: %s", taskSpec.Name)
 		t := NewTask(taskSpec)
 
-		err := t.Apply(bCtx, ctx)
-		if err != nil {
+		output := t.Apply(bCtx, ctx)
+
+		if output.Error != nil {
 			return core.ResourceOutput{
 				Status: core.ResourceOutputFailure,
-				Error:  fmt.Errorf(`Failed to apply task "%s" with index %d in pipeline "%s": %s"`, taskSpec.Name, idx, p.String(), err.Error()),
+				Error:  fmt.Errorf(`Failed to apply task "%s" with index %d in pipeline "%s": %w"`, taskSpec.Name, idx, p.String(), output.Error),
 				Value:  cty.NilVal,
 			}
 		}
-		p.Tasks[t.Name] = t
+
+		p.Tasks[t.Name()] = t
 
 	}
 

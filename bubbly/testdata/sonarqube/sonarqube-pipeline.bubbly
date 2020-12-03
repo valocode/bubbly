@@ -176,3 +176,13 @@ resource "pipeline_run" "sonarqube" {
         }
     }
 }
+
+resource "task_run" "extract_sonarqube" {
+  api_version = "v1"
+  spec {
+    resource = "extract/sonarqube"
+    input "file" {
+      value = "../bubbly/testdata/sonarqube/sonarqube-example.json"
+    }
+  }
+}

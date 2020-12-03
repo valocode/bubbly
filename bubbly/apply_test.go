@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/rs/zerolog"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/verifa/bubbly/env"
@@ -32,10 +34,22 @@ func TestApply(t *testing.T) {
 			JSON(map[string]interface{}{"status": "uploaded"})
 
 		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
 		err := Apply(bCtx, "./testdata/sonarqube")
 
 		assert.NoError(t, err, "Failed to apply resource")
 	})
+}
 
+func TestApplyTaskRun(t *testing.T) {
+	// Subtest
+	t.Run("task_run_sonarqube_extract", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+		err := Apply(bCtx, "./testdata/resources/v1/taskrun/extract_sonarqube.bubbly")
+
+		assert.NoError(t, err, "Failed to apply resource")
+	})
 }
