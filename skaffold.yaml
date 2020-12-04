@@ -1,0 +1,37 @@
+---
+apiVersion: skaffold/v2beta10
+kind: Config
+build:
+  artifacts:
+    - image: verifa/bubbly
+deploy:
+  kubeContext: kind-bubbly
+  kubectl:
+    manifests:
+      # apply the nginx-ingress controller
+      - https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/kind/deploy.yaml
+      # apply postgres
+      - ./kubernetes/postgres-configmap.yaml
+      - ./kubernetes/postgres.yaml
+      # apply bubbly
+      - ./kubernetes/bubbly.yaml
+      - ./kubernetes/bubbly-ingress.yaml
+
+profiles:
+  # profile for integration testing that overrides the build and deploy steps
+  - name: integration
+    build:
+      artifacts:
+        - image: verifa/bubbly-tester
+          # for integration tests, keep the source code in the docker container
+          docker:
+            target: tester
+    deploy:
+      kubeContext: kind-bubbly
+      kubectl:
+        manifests:
+          # apply postgres
+          - ./kubernetes/postgres-configmap.yaml
+          - ./kubernetes/postgres.yaml
+          # apply bubbly
+          - ./kubernetes/bubbly-integration.yaml

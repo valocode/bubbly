@@ -20,7 +20,7 @@ func New(cfg Config) (*Store, error) {
 	case Postgres:
 		p, err = newPostgres(cfg)
 	default:
-		return nil, fmt.Errorf("invalid provider: %s", cfg.Provider)
+		return nil, fmt.Errorf(`invalid provider: "%s"`, cfg.Provider)
 	}
 
 	if err != nil {

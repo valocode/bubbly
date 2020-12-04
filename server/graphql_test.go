@@ -14,7 +14,7 @@ import (
 func IntegrationTestQuery(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	r := gofight.New()
-	router := SetupRouter(bCtx)
+	router := setupRouter(bCtx)
 
 	// First, insert data into MemDb using the Upload functionality
 	r.POST("/alpha1/upload").
@@ -43,7 +43,7 @@ func IntegrationTestQueryFail(t *testing.T) {
 		SetJSON(gofight.D{
 			"query": `{tablez(Name:"Boise Zoo"){Name}}`,
 		}).
-		Run(SetupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		Run(setupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusBadRequest, r.Code)
 		})
 }

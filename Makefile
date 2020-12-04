@@ -1,4 +1,6 @@
 BIN=./build/bubbly
+KIND_CLUSTER_NAME=bubbly
+
 # set the default bubbly provider
 export BUBBLY_PROVIDER?=postgres
 
@@ -28,19 +30,30 @@ display-coverage: test-coverage
 test-report:
 	go test -coverprofile=coverage.txt -covermode=atomic -json ./... > test_report.json
 
+## runing a dev instance
+.PHONY: dev
+dev:
+	skaffold dev
+
 ## integration testing
 
-.PHONY: integration-cleanup
-integration-cleanup:
-	docker-compose down
+# .PHONY: storefront
+# storefront: integration-cleanup
+# 	docker-compose up --build --abort-on-container-exit --remove-orphans storefront $${BUBBLY_PROVIDER}
+
+.PHONY: kind-cleanup
+kind-cleanup:
+	kind delete clusters ${KIND_CLUSTER_NAME}
+
+.PHONY: kind-bootstrap
+kind-bootstrap: integration-cleanup
+	# create the kind cluster
+	kind create cluster --name ${KIND_CLUSTER_NAME} --config kind-config.yaml
 
 .PHONY: integration
-integration: integration-cleanup
-	docker-compose up --build --abort-on-container-exit --remove-orphans integration $${BUBBLY_PROVIDER}
-
-.PHONY: storefront
-storefront: integration-cleanup
-	docker-compose up --build --abort-on-container-exit --remove-orphans storefront $${BUBBLY_PROVIDER}
+integration:
+	# --force so that the k8s Job gets re-applied
+	skaffold run -p integration --force --status-check
 
 ## local ci
 

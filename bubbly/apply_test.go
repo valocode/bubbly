@@ -21,19 +21,15 @@ func TestApply(t *testing.T) {
 
 	defer gock.Off()
 
-	host := "localhost"
-	port := "8080"
-	hostURL := host + ":" + port
-
 	// Subtest
 	t.Run("sonarqube", func(t *testing.T) {
 		// Create a new server route for mocking a Bubbly server response
-		gock.New(hostURL).
+		bCtx := env.NewBubblyContext()
+		gock.New(bCtx.ServerConfig.HostURL()).
 			Post("/alpha1/upload").
 			Reply(http.StatusOK).
 			JSON(map[string]interface{}{"status": "uploaded"})
 
-		bCtx := env.NewBubblyContext()
 		bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
 		err := Apply(bCtx, "./testdata/sonarqube")

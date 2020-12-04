@@ -4,31 +4,29 @@ package integration
 
 import (
 	"log"
-	"net/http"
 	"os"
 	"testing"
 
+	"github.com/rs/zerolog"
+	"github.com/verifa/bubbly/env"
 	testData "github.com/verifa/bubbly/integration/testdata"
 	"github.com/verifa/bubbly/server"
 )
 
-var hostURL string
-
 func TestMain(m *testing.M) {
 
-	hostURL = "localhost:8112"
-	// initialize the router's endpoints
-	router := server.SetupRouter()
+	bCtx := env.NewBubblyContext()
+	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
-	serv := &http.Server{
-		Addr:    hostURL,
-		Handler: router,
+	bCtx.Logger.Debug().Msgf("Initializing the store")
+	if err := server.InitStore(); err != nil {
+		bCtx.Logger.Fatal().Err(err).Msgf("failed to create store")
 	}
 
-	log.Printf("Starting server on: %s", hostURL)
+	bCtx.Logger.Debug().Msgf("Starting server on: %s", bCtx.ServerConfig.HostURL())
 
 	go func() {
-		err := server.ListenAndServe(serv)
+		err := server.ListenAndServe(bCtx)
 		if err != nil {
 			log.Fatal(err)
 		}

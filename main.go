@@ -24,7 +24,7 @@ import (
 
 // @termsOfService http://bubbly.io/terms/
 
-// @host localhost:8080
+// @host localhost:8111
 func main() {
 	setSwaggerInfo()
 	// TODO: remove once migrated fully to bCtx.Logger
@@ -61,14 +61,14 @@ func main() {
 	// provided by CLI.
 	defaultConfig := config.NewDefaultConfig()
 
-	if err := mergo.Merge(bCtx.Config, defaultConfig); err != nil {
+	if err := mergo.Merge(bCtx.ServerConfig, defaultConfig); err != nil {
 		bCtx.Logger.Error().Err(err).Msg("error when merging configs")
 		os.Exit(1)
 	}
 
 	// finally, print the final configuration to be used by bubbly
 	bCtx.Logger.Info().
-		Interface("final_config", bCtx.Config).
+		Interface("final_config", bCtx.ServerConfig).
 		Str("final_log_level", bCtx.Logger.GetLevel().String()).
 		Msg("final bubbly context")
 
@@ -80,7 +80,7 @@ func setSwaggerInfo() {
 	docs.SwaggerInfo.Description = "API schema and information for the bubbly server"
 	docs.SwaggerInfo.Version = "1.0"
 	// TODO(server): Have host be defined by environment variables
-	docs.SwaggerInfo.Host = "localhost:8080"
+	docs.SwaggerInfo.Host = "localhost:8111"
 	docs.SwaggerInfo.BasePath = "/"
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
 }

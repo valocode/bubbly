@@ -32,13 +32,13 @@ type ResourceContext struct {
 
 // GetServerConfigFn represents the function that will retrieve the bubbly
 // server configuration, needed for interactions with the bubbly server.
-type GetServerConfigFn func() (*config.ServerConfig, error)
+type GetServerConfigFn func() *config.ServerConfig
 
 // GetResourceFn represents the function that will decode any HCL Bodies.
 type GetResourceFn func(kind ResourceKind, name string) (Resource, error)
 
 // DecodeBodyFn represents the function that will decode any HCL Bodies.
-type DecodeBodyFn func(bCtx *env.BubblyContext, resource Resource, body hcl.Body, val interface{}) error
+type DecodeBodyFn func(bCtx *env.BubblyContext, body hcl.Body, val interface{}) error
 
 // NewContextFn represents the function that will provide a new context
 // for resources that applies nested resources (e.g. like a pipeline applying

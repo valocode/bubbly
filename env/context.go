@@ -15,7 +15,7 @@ type BubblyContext struct {
 	Logger *zerolog.Logger
 	// Config stores global bubbly configuration,
 	// such as bubbly server configuration
-	Config *config.Config
+	ServerConfig *config.ServerConfig
 	// TODO: Could also contain a client.Client... consider.
 }
 
@@ -33,15 +33,15 @@ func NewDefaultLogger() *zerolog.Logger {
 // NewBubblyContext sets up a default Bubbly Context
 func NewBubblyContext() *BubblyContext {
 	return &BubblyContext{
-		Config: config.NewDefaultConfig(),
-		Logger: NewDefaultLogger(),
+		ServerConfig: config.NewDefaultConfig(),
+		Logger:       NewDefaultLogger(),
 	}
 }
 
 // GetServerConfig is a convenience method to extract the bubbly server
 // configuration from a BubblyContext.
 func (bCtx *BubblyContext) GetServerConfig() (*config.ServerConfig, error) {
-	if sc := bCtx.Config.ServerConfig; sc != nil {
+	if sc := bCtx.ServerConfig; sc != nil {
 		return sc, nil
 	}
 	// Should never be reached as ServerConfig should always at least be

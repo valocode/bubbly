@@ -1,0 +1,14 @@
+# ignore folders
+.git
+build
+docs
+kubernetes
+
+# ignore config files that are not required
+.gitignore
+act.env
+Dockerfile
+kind-conig.yaml
+Makefile
+README.md
+skaffold.yaml

@@ -28,7 +28,7 @@ func (p *PipelineRun) SpecValue() core.ResourceSpec {
 // Apply returns ...
 func (p *PipelineRun) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	// decode the resource spec into the pipeline runs's Spec
-	if err := ctx.DecodeBody(bCtx, p, p.SpecHCL.Body, &p.Spec); err != nil {
+	if err := ctx.DecodeBody(bCtx, p.SpecHCL.Body, &p.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %s`, p.String(), err.Error()),

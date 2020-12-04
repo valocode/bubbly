@@ -28,7 +28,7 @@ func (t *TaskRun) SpecValue() core.ResourceSpec {
 // Apply returns the output from applying the TaskRun's underlying resource
 func (t *TaskRun) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	// decode the hcl body into the taskrun's Spec
-	if err := ctx.DecodeBody(bCtx, t, t.SpecHCL.Body, &t.Spec); err != nil {
+	if err := ctx.DecodeBody(bCtx, t.SpecHCL.Body, &t.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %s`, t.String(), err.Error()),

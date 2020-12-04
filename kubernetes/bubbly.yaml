@@ -1,0 +1,94 @@
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: bubbly
+spec:
+  backend:
+    serviceName: bubbly
+    servicePort: bubbly
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bubbly
+  labels:
+    app: bubbly
+spec:
+  type: NodePort
+  ports:
+    - name: bubbly
+      port: 8111
+  selector:
+    app: bubbly
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bubbly
+  labels:
+    app: bubbly
+spec:
+  serviceName: bubbly
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bubbly
+  template:
+    metadata:
+      labels:
+        app: bubbly
+    spec:
+      initContainers:
+        - name: init-db
+          image: postgres:13.0
+          command:
+            [
+              "sh",
+              "-c",
+              "until pg_isready -h postgres -p 5432;  do echo waiting for database; sleep 2; done;",
+            ]
+      containers:
+        - name: bubbly
+          image: verifa/bubbly
+          args:
+            - "server"
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "8111"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8111
+          # command:
+          #   - /entrypoint.sh
+          # volumeMounts:
+          #   - name: bubbly-config
+          #     mountPath: /entrypoint.sh
+          #     readOnly: true
+          #     subPath: entrypoint.sh
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          env:
+            - name: PROVIDER
+              value: "postgres"
+            - name: POSTGRES_ADDR
+              value: "postgres:5432"
+            - name: POSTGRES_DATABASE
+              value: "postgres"
+          ports:
+            - containerPort: 8111
+              name: bubbly
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+    # volumes:
+    #   - name: bubbly-config
+    #     configMap:
+    #       defaultMode: 0700
+    #       name: bubbly-config

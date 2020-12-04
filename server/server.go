@@ -21,12 +21,7 @@ var serverStore struct {
 
 // SetupRouter returns a pointer to a gin engine after setting up middleware
 // and initializing routes
-func SetupRouter(bCtx *env.BubblyContext) *gin.Engine {
-	// SETUP DB
-	storeErr := initStore()
-	if storeErr != nil {
-		bCtx.Logger.Error().Msg("Error setting up DB: " + storeErr.Error())
-	}
+func setupRouter(bCtx *env.BubblyContext) *gin.Engine {
 	// Initialize Router
 	// router := gin.Default()  // Sets the Gin defaults
 	router := gin.New() // Use a blank Gin server with no middleware loaded
@@ -40,7 +35,7 @@ func SetupRouter(bCtx *env.BubblyContext) *gin.Engine {
 	return router
 }
 
-func initStore() error {
+func InitStore() error {
 	var err error
 	serverStore.Store, err = store.New(store.Config{
 		Provider:         store.ProviderType(os.Getenv("PROVIDER")),
@@ -60,10 +55,21 @@ func GetStore() *store.Store {
 	return serverStore.Store
 }
 
-func ListenAndServe(s *http.Server) error {
+func ListenAndServe(bCtx *env.BubblyContext) error {
+
+	// initialize the router's endpoints
+	router := setupRouter(bCtx)
+
+	// create the http server
+	serv := &http.Server{
+		// TODO: maybe we should use the bCtx Host here, unless it's localhost?
+		Addr:    fmt.Sprintf(":%s", bCtx.ServerConfig.Port),
+		Handler: router,
+	}
+
 	var g errgroup.Group
 	g.Go(func() error {
-		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := serv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			return err
 		}
 		return nil

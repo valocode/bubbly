@@ -24,7 +24,7 @@ func NewTransform(resBlock *core.ResourceBlock) *Transform {
 
 // Apply returns ...
 func (t *Transform) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	if err := ctx.DecodeBody(bCtx, t, t.SpecHCL.Body, &t.Spec); err != nil {
+	if err := ctx.DecodeBody(bCtx, t.SpecHCL.Body, &t.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`Failed to decode transform body spec: %s`, err.Error()),

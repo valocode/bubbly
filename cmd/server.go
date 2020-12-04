@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -100,13 +99,7 @@ func NewCmdServer(bCtx *env.BubblyContext) (*cobra.Command, *ServerOptions) {
 			return nil
 		},
 		PreRun: func(cmd *cobra.Command, _ []string) {
-			// viper.BindPFlags(rootCmd.PersistentFlags())
-			// viper.BindPFlags(cmd.PersistentFlags())
 			bCtx.Logger.Debug().Interface("configuration", viper.AllSettings()).Msg("bubbly viper configuration")
-			// err := bCtx.Update()
-			// if err != nil {
-			// 	bCtx.Logger.Error().Msg("failed to update bubbly context")
-			// }
 		},
 	}
 
@@ -119,7 +112,7 @@ func (o *ServerOptions) Validate(cmd *cobra.Command) error {
 		return cmdutil.UsageErrorf(cmd, "Unexpected args: %v", o.Args)
 	}
 	// This should never be reached if we have set the ServerOptions.Config correctly with defaults.
-	if (o.BubblyContext.Config.ServerConfig.Host == "") || (o.BubblyContext.Config.ServerConfig.Port == "") {
+	if (o.BubblyContext.ServerConfig.Host == "") || (o.BubblyContext.ServerConfig.Port == "") {
 		return fmt.Errorf("Internal Error: Server configs missing.")
 	}
 	return nil
@@ -134,17 +127,8 @@ func (o *ServerOptions) Resolve(cmd *cobra.Command) error {
 func (o *ServerOptions) Run() error {
 	server.SetVersion(bubblyVersion)
 	// initialize the router's endpoints
-	router = server.SetupRouter(o.BubblyContext)
 
-	hostURL := o.BubblyContext.Config.ServerConfig.Host + ":" + o.BubblyContext.Config.ServerConfig.Port
-
-	o.BubblyContext.Logger.Debug().Msgf("Started server on: %s", hostURL)
-
-	s := &http.Server{
-		Addr:    hostURL,
-		Handler: router,
-	}
-	err := server.ListenAndServe(s)
+	err := server.ListenAndServe(o.BubblyContext)
 
 	if err != nil {
 		o.Result = false

@@ -80,11 +80,9 @@ func TestBubblyContext(t *testing.T) {
 				"--port", "4040",
 			},
 			expected: &env.BubblyContext{
-				Config: &config.Config{
-					ServerConfig: &config.ServerConfig{
-						Port:     "4040",
-						Protocol: "http",
-					},
+				ServerConfig: &config.ServerConfig{
+					Port:     "4040",
+					Protocol: "http",
 				},
 				Logger: env.NewDefaultLogger(),
 			},
@@ -93,10 +91,8 @@ func TestBubblyContext(t *testing.T) {
 			desc:     "basic: log level info",
 			inputCtx: env.NewBubblyContext(),
 			expected: &env.BubblyContext{
-				Config: &config.Config{
-					ServerConfig: &config.ServerConfig{
-						Protocol: "http",
-					},
+				ServerConfig: &config.ServerConfig{
+					Protocol: "http",
 				},
 				Logger: env.NewDefaultLogger(),
 			},
@@ -136,10 +132,8 @@ func TestBubblyContextLogLevel(t *testing.T) {
 			desc:     "basic: log level info",
 			inputCtx: env.NewBubblyContext(),
 			expected: &env.BubblyContext{
-				Config: &config.Config{
-					ServerConfig: &config.ServerConfig{
-						Protocol: "http",
-					},
+				ServerConfig: &config.ServerConfig{
+					Protocol: "http",
 				},
 				Logger: env.NewDefaultLogger(),
 			},
@@ -152,10 +146,8 @@ func TestBubblyContextLogLevel(t *testing.T) {
 				"--debug",
 			},
 			expected: &env.BubblyContext{
-				Config: &config.Config{
-					ServerConfig: &config.ServerConfig{
-						Protocol: "http",
-					},
+				ServerConfig: &config.ServerConfig{
+					Protocol: "http",
 				},
 				Logger: env.NewDebugLogger(),
 			},

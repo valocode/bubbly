@@ -30,7 +30,7 @@ func (p *Load) SpecValue() core.ResourceSpec {
 
 // Apply returns ...
 func (p *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	if err := ctx.DecodeBody(bCtx, p, p.SpecHCL.Body, &p.Spec); err != nil {
+	if err := ctx.DecodeBody(bCtx, p.SpecHCL.Body, &p.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %w`, p.String(), err),
@@ -78,7 +78,7 @@ func (p *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 // load outputs an error if any part of this process fails, nil if
 // the data is successfully POSTed to the bubbly server.
 func (p *Load) load(bCtx *env.BubblyContext) error {
-	bCtx.Logger.Debug().Interface("server", bCtx.Config.ServerConfig).Msg("loading to server with configuration")
+	bCtx.Logger.Debug().Interface("server", bCtx.ServerConfig).Msg("loading to server with configuration")
 
 	c, err := client.NewClient(bCtx)
 

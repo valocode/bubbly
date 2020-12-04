@@ -23,7 +23,7 @@ var tearDown = true
 func TestPostResource(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	// Setup Test Environment
-	router := SetupRouter(bCtx)
+	router := setupRouter(bCtx)
 
 	byteValue, err := ioutil.ReadFile("testdata/resource.json")
 	if err != nil {
@@ -63,7 +63,7 @@ func TestGetResource(t *testing.T) {
 	TestPostResource(t)
 	tearDown = true
 	r.GET("/api/resource/default/transform/junit").
-		Run(SetupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		Run(setupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			data := []byte(r.Body.String())
 			assert.Equal(t, http.StatusOK, r.Code)
 			// Creating a resource based off of the response

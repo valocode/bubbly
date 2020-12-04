@@ -170,7 +170,7 @@ var describeWithServerConfigsSetupCases = []struct {
 	rName    string
 	rType    string
 	rVersion string
-	expected config.Config
+	expected *config.ServerConfig
 	port     string
 	flags    map[string]string
 }{
@@ -186,13 +186,11 @@ var describeWithServerConfigsSetupCases = []struct {
 			"auth":  "false",
 			"token": "",
 		},
-		expected: config.Config{
-			ServerConfig: &config.ServerConfig{
-				Protocol: "http",
-				Port:     "5050",
-				Host:     "localhost",
-				Auth:     false,
-			},
+		expected: &config.ServerConfig{
+			Protocol: "http",
+			Port:     "5050",
+			Host:     "localhost",
+			Auth:     false,
 		},
 	},
 	{
@@ -206,14 +204,12 @@ var describeWithServerConfigsSetupCases = []struct {
 			"auth":  "true",
 			"token": "example_token",
 		},
-		expected: config.Config{
-			ServerConfig: &config.ServerConfig{
-				Protocol: "http",
-				Port:     "5050",
-				Host:     "localhost",
-				Auth:     true,
-				Token:    "example_token",
-			},
+		expected: &config.ServerConfig{
+			Protocol: "http",
+			Port:     "5050",
+			Host:     "localhost",
+			Auth:     true,
+			Token:    "example_token",
 		},
 	},
 }

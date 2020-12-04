@@ -17,7 +17,7 @@ func IntegrationTestUploadPassing(t *testing.T) {
 
 	r.POST("/alpha1/upload").
 		SetJSON(gofight.D{"data": testData.DataStruct()}).
-		Run(SetupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		Run(setupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, "{\"status\":\"uploaded\"}", r.Body.String())
 		})
@@ -29,7 +29,7 @@ func TestUploadFailing(t *testing.T) {
 	r := gofight.New()
 	r.POST("/alpha1/upload").
 		SetJSON(testData.DataStructFailing()).
-		Run(SetupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		Run(setupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusBadRequest, r.Code)
 		})
 }

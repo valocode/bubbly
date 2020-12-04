@@ -1,45 +1,46 @@
 ## workflow for running integration tests
 
 on:
-  push:
+  # run on a pull request to any branch
+  pull_request:
     branches:
-      - '!**'
-#   pull_request:
-#     branches:
-#       - master
+      - "**"
 
 name: integration
 jobs:
   integration:
     runs-on: ubuntu-latest
-    # add services that the integration tests depend on
-    # services:
-    #   db:
-    #     env:
-    #       POSTGRES_USER: postgres
-    #       POSTGRES_PASSWORD: postgres
-    #       POSTGRES_DB: postgres
-    #     image: postgres:latest
-    #     ports: ['5432:5432']
     steps:
-    - name: Install Go
-      # Skip install if testing action locally using act
-      if: ${{ !env.ACT }}
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: cache go mod
-      # Skip caching if testing action locally using act
-      if: ${{ !env.ACT }}
-      uses: actions/cache@v2
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    # Set up https://peter.bourgon.org/go-in-production/#testing-and-validation
-    # via https://golang.org/pkg/go/build/#hdr-Build_Constraints
-    - name: Test
-      run: go test -tags=integration ./... 
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: cache go mod
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Create k8s Kind Cluster
+        # Skip job if testing action locally using act
+        if: ${{ !env.ACT }}
+        uses: helm/kind-action@v1.1.0
+        with:
+          cluster_name: "bubbly"
+          config: "kind-config.yaml"
+      - name: Install skaffold
+        uses: daisaru11/setup-cd-tools@v1
+        env:
+          # allow unsecure commands like ::add-path:: because this action uses it...
+          # https://github.blog/changelog/2020-10-01-github-actions-deprecating-set-env-and-add-path-commands/
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+        with:
+          skaffold: "1.17.1"
+      - name: Build and deploy to cluster
+        run: skaffold run -p integration --force --status-check
+      - name: Integration test logs
+        run: |
+          # wait for the pod to be scheduled, which means downloading the image
+          # from the local registry we created
+          kubectl wait --for=condition=Ready --timeout=120s pod --selector job-name=bubbly-integration
+          # print the logs and follow until complete
+          kubectl logs --follow --tail=-1 --selector job-name=bubbly-integration

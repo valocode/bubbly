@@ -1,0 +1,34 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bubbly-integration
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: init-db
+          image: postgres:13.0
+          command:
+            [
+              "sh",
+              "-c",
+              "until pg_isready -h postgres -p 5432;  do echo waiting for database; sleep 2; done;",
+            ]
+      containers:
+        - name: bubbly-integration
+          image: verifa/bubbly-tester
+          command:
+            ["go", "test", "-race", "-v", "--tags=integration", "./integration"]
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          env:
+            - name: PROVIDER
+              value: "postgres"
+            - name: POSTGRES_ADDR
+              value: "postgres:5432"
+            - name: POSTGRES_DATABASE
+              value: "postgres"
+      restartPolicy: Never
+  backoffLimit: 4

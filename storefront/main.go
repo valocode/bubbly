@@ -3,30 +3,21 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/graphql-go/handler"
+	"github.com/rs/zerolog"
 
+	"github.com/verifa/bubbly/env"
 	testData "github.com/verifa/bubbly/integration/testdata"
 	"github.com/verifa/bubbly/server"
 )
 
 func main() {
-	// initialize the router's endpoints
-	router := server.SetupRouter()
-
-	hostURL := os.Getenv("BUBBLY_ADDR")
-
-	log.Printf("Started server on: %s", hostURL)
-
-	serv := &http.Server{
-		Addr:    hostURL,
-		Handler: router,
-	}
+	bCtx := env.NewBubblyContext()
+	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
 	go func() {
-		err := server.ListenAndServe(serv)
-
+		err := server.ListenAndServe(bCtx)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/server"
 	"gopkg.in/h2non/gock.v1"
 )
 
@@ -25,8 +24,7 @@ func TestCmdApplyWithServerConfigsSetup(t *testing.T) {
 	for _, c := range applyWithServerConfigsSetupCases {
 		t.Run(c.desc, func(t *testing.T) {
 			bCtx := env.NewBubblyContext()
-			bCtx.Config.ServerConfig = c.serverConfig
-			router = server.SetupRouter(bCtx)
+			bCtx.ServerConfig = c.serverConfig
 
 			// Create a new server route for mocking a Bubbly server response
 			gock.New(c.address).

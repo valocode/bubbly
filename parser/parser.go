@@ -101,21 +101,12 @@ func (p *Parser) Context(inputs cty.Value) *core.ResourceContext {
 		NewContext:      p.Context,
 		InsertValue:     nestedScope.InsertValue,
 		BodyToJSON:      p.BodyToJSON,
-		GetServerConfig: p.GetServerConfig,
+		GetServerConfig: config.NewDefaultConfig,
+		// GetServerConfig: p.GetServerConfig,
 		Debug: func() *hcl.EvalContext {
 			return nestedScope.EvalContext
 		},
 	}
-}
-
-// GetServerConfig returns the server configuration defined by viper bindings
-func (p *Parser) GetServerConfig() (*config.ServerConfig, error) {
-	c, err := config.SetupConfigs()
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to create config.ServerConfig: %w", err)
-	}
-	return c.ServerConfig, nil
 }
 
 // GetResource takes a given resource kind and name and returns the resource

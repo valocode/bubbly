@@ -77,10 +77,10 @@ func initFlags(bCtx *env.BubblyContext, cmd *cobra.Command) {
 
 	f.StringVar(&globalConfigFile, "config", "", "config file (default is $HOME/.bubbly.yaml)")
 
-	f.StringVar(&bCtx.Config.ServerConfig.Host, "host", "", "bubbly server host")
-	f.StringVar(&bCtx.Config.ServerConfig.Port, "port", "", "bubbly server port")
-	f.BoolVar(&bCtx.Config.ServerConfig.Auth, "auth", false, "bubbly server auth")
-	f.StringVar(&bCtx.Config.ServerConfig.Token, "token", "", "bubbly server token")
+	f.StringVar(&bCtx.ServerConfig.Host, "host", "", "bubbly server host")
+	f.StringVar(&bCtx.ServerConfig.Port, "port", "", "bubbly server port")
+	f.BoolVar(&bCtx.ServerConfig.Auth, "auth", false, "bubbly server auth")
+	f.StringVar(&bCtx.ServerConfig.Token, "token", "", "bubbly server token")
 	// Option 1: just bind normally, then parse the flags in main.go
 	// to determine the value
 	f.Bool("debug", false, "set log level to debug")

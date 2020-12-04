@@ -4,7 +4,9 @@ import (
 	"errors"
 
 	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/rs/zerolog"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/parser"
 )
 
@@ -14,8 +16,11 @@ func parseHCLFile(file string, val interface{}) error {
 		return errors.New(diags.Error())
 	}
 
+	bCtx := env.NewBubblyContext()
+	bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
 	s := parser.NewScope()
-	return s.DecodeExpandBody(nil, hclFile.Body, val)
+	return s.DecodeExpandBody(bCtx, hclFile.Body, val)
 }
 
 func TestAutomationSchema(baseDir string) ([]core.Table, error) {

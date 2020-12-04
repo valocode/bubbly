@@ -10,9 +10,6 @@ import (
 	"github.com/verifa/bubbly/env"
 )
 
-// HostURL - Default bubbly server URL
-const HostURL string = "http://localhost:8080"
-
 // Client -
 type Client struct {
 	HostURL    string
@@ -31,21 +28,6 @@ type AuthResponse struct {
 	Token string `json:"token"`
 }
 
-// NewUnauthClient -
-func NewUnauthClient(host *string) (*Client, error) {
-	c := Client{
-		HTTPClient: &http.Client{Timeout: 10 * time.Second},
-		// Default bubbly server URL
-		HostURL: HostURL,
-	}
-
-	if host != nil {
-		c.HostURL = *host
-	}
-
-	return &c, nil
-}
-
 // NewClient -
 func NewClient(bCtx *env.BubblyContext) (*Client, error) {
 	sc, err := bCtx.GetServerConfig()
@@ -57,7 +39,7 @@ func NewClient(bCtx *env.BubblyContext) (*Client, error) {
 	c := Client{
 		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 		// Default bubbly server URL
-		HostURL: HostURL,
+		HostURL: sc.HostURL(),
 	}
 
 	if sc.Protocol != "" && sc.Host != "" && sc.Port != "" {
@@ -75,32 +57,6 @@ func NewClient(bCtx *env.BubblyContext) (*Client, error) {
 	// TODO: support authenticated clients
 	return &c, nil
 
-	// // form request body
-	// rb, err := json.Marshal(AuthStruct{
-	// 	Token: sc.Token,
-	// })
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// // authenticate
-	// req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/authenticate", c.HostURL), strings.NewReader(string(rb)))
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// body, err := c.doRequest(req)
-
-	// // parse response body
-	// ar := AuthResponse{}
-	// err = json.Unmarshal(body, &ar)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// c.Token = ar.Token
-
-	// return &c, nil
 }
 
 func (c *Client) doRequest(req *http.Request) (io.ReadCloser, error) {

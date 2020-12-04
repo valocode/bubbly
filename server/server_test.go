@@ -11,7 +11,7 @@ import (
 
 func TestHealth(t *testing.T) {
 	bCtx := env.NewBubblyContext()
-	router := SetupRouter(bCtx)
+	router := setupRouter(bCtx)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/healthz", nil)

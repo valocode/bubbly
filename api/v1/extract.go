@@ -89,7 +89,7 @@ func (i *Extract) SpecValue() core.ResourceSpec {
 // decode is responsible for decoding any necessary hcl.Body inside Extract
 func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) error {
 	// decode the resource spec into the extract's Spec
-	if err := decode(bCtx, i, i.SpecHCL.Body, &i.Spec); err != nil {
+	if err := decode(bCtx, i.SpecHCL.Body, &i.Spec); err != nil {
 		return fmt.Errorf(`Failed to decode "%s" body spec: %w`, i.String(), err)
 	}
 
@@ -108,7 +108,7 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) erro
 	}
 
 	// decode the source HCL into the extract's Source
-	if err := decode(bCtx, i, i.Spec.SourceHCL.Body, i.Spec.Source); err != nil {
+	if err := decode(bCtx, i.Spec.SourceHCL.Body, i.Spec.Source); err != nil {
 		return fmt.Errorf(`Failed to decode extract source: %w`, err)
 	}
 

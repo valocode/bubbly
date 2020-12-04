@@ -20,21 +20,14 @@ func TestClientSetup(t *testing.T) {
 		{
 			desc: "basic valid config.ServerConfig",
 			input: &env.BubblyContext{
-				Config: &config.Config{
-					ServerConfig: &config.ServerConfig{
-						Host: "localhost",
-						Port: "8080",
-					},
-				},
+				ServerConfig: config.NewDefaultConfig(),
 			},
 			expectedSuccess: true,
 		},
 		{
 			desc: "empty config.ServerConfig",
 			input: &env.BubblyContext{
-				Config: &config.Config{
-					ServerConfig: &config.ServerConfig{},
-				},
+				ServerConfig: &config.ServerConfig{},
 			},
 			expectedErr:     "Unable to create Bubbly client: missing required arguments.",
 			expectedSuccess: false,
@@ -45,7 +38,7 @@ func TestClientSetup(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			bCtx := env.NewBubblyContext()
 
-			bCtx.Config.ServerConfig = tc.input.Config.ServerConfig
+			bCtx.ServerConfig = tc.input.ServerConfig
 			_, err := ClientSetup(bCtx)
 
 			if !tc.expectedSuccess {

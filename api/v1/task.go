@@ -31,7 +31,7 @@ func NewTask(taskBlock *taskBlockSpec) *Task {
 // Apply returns the output from applying the task's underlying resource
 func (t *Task) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	bCtx.Logger.Debug().Msgf("body: %v\ttask: %v\n", t.taskBlockSpec.Body, t)
-	if err := ctx.DecodeBody(bCtx, nil, t.taskBlockSpec.Body, t); err != nil {
+	if err := ctx.DecodeBody(bCtx, t.taskBlockSpec.Body, t); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`Failed to decode Task "%s": %w`, t.Name(), err),

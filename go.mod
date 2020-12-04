@@ -58,4 +58,5 @@ require (
 	golang.org/x/tools v0.0.0-20201105220310-78b158585360 // indirect
 	gopkg.in/gin-gonic/gin.v1 v1.3.0 // indirect
 	gopkg.in/h2non/gock.v1 v1.0.16
+	sigs.k8s.io/kind v0.9.0 // indirect
 )

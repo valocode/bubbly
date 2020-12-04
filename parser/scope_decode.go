@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 
@@ -18,9 +17,7 @@ import (
 
 // DecodeExpandBody is a wrapper around decodeBody which also expands dynamic
 // blocks
-func (s *Scope) DecodeExpandBody(bCtx *env.BubblyContext, resource core.Resource, body hcl.Body, val interface{}) error {
-	// fmt.Printf("DECODING RESOURCE!! %s\n", reflect.TypeOf(val).String())
-	// spew.Dump(s.EvalContext.Variables["self"])
+func (s *Scope) DecodeExpandBody(bCtx *env.BubblyContext, body hcl.Body, val interface{}) error {
 
 	// create a decode context which will be passed around
 	decodeCtx := newDecodeContext(body, val)

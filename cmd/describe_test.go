@@ -203,7 +203,7 @@ func TestDescribeWithServerConfigsSetup(t *testing.T) {
 			cmd.SilenceUsage = true
 			cmd.Execute()
 
-			assert.Equal(t, c.expected.ServerConfig, o.BubblyContext.Config.ServerConfig)
+			assert.Equal(t, c.expected, o.BubblyContext.ServerConfig)
 		})
 	}
 }

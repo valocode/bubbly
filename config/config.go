@@ -1,39 +1,16 @@
 package config
 
-import (
-	"errors"
+import "fmt"
 
-	"github.com/imdario/mergo"
-	"github.com/spf13/viper"
-)
-
-// NewServerConfig creates a ServerConfig struct from viper bindings
-func (c *Config) newServerConfig() *ServerConfig {
-	return &ServerConfig{
-		Protocol: viper.GetString("protocol"),
-		Port:     viper.GetString("port"),
-		Host:     viper.GetString("host"),
-		Auth:     viper.GetBool("auth"),
-		Token:    viper.GetString("token"),
-	}
+// ServerConfig is a struct storing the server information.
+type ServerConfig struct {
+	Protocol string
+	Port     string
+	Host     string `validate:"required"`
+	Auth     bool
+	Token    string
 }
 
-// NewConfig creates a Config struct from viper bindings
-func NewConfig() *Config {
-	c := &Config{}
-	c.ServerConfig = c.newServerConfig()
-	return c
-}
-
-// SetupConfigs creates a merged Config struct from defaults and viper bindings.
-func SetupConfigs() (*Config, error) {
-	defaultConfig := NewDefaultConfig()
-
-	actualConfig := NewConfig()
-
-	// merge default configuration on top of actual configuration
-	if err := mergo.Merge(actualConfig, defaultConfig); err != nil {
-		return nil, errors.New(err.Error())
-	}
-	return actualConfig, nil
+func (s ServerConfig) HostURL() string {
+	return fmt.Sprintf("%s:%s", s.Host, s.Port)
 }

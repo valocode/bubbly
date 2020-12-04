@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"fmt"
-
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
 	ctyyaml "github.com/zclconf/go-cty-yaml"
 	"github.com/zclconf/go-cty/cty"
@@ -21,10 +19,6 @@ var impureFunctions = []string{
 // stdfunctions returns functions for the SymbolTable's EvalContext
 func stdfunctions() map[string]function.Function {
 	return map[string]function.Function{
-		// custom bubbly functions
-		"dump": DumpFunc,
-
-		// external functions
 		"abs":          stdlib.AbsoluteFunc,
 		"abspath":      funcs.AbsPathFunc,
 		"basename":     funcs.BasenameFunc,
@@ -131,21 +125,3 @@ func stdfunctions() map[string]function.Function {
 		"zipmap":          stdlib.ZipmapFunc,
 	}
 }
-
-var DumpFunc = function.New(&function.Spec{
-	Params: []function.Parameter{
-		{
-			Name: "value",
-			Type: cty.DynamicPseudoType,
-		},
-	},
-	Type: func(args []cty.Value) (ret cty.Type, err error) {
-		return cty.String, nil
-	},
-	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
-		// fmt.Printf("Dump: %v\n", args[0])
-		fmt.Printf("Dump: %s\n", args[0].GoString())
-		return cty.StringVal("yo"), nil
-		// return args[0].Length(), nil
-	},
-})

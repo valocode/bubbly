@@ -9,17 +9,15 @@ import (
 func TestNewDefaultConfig(t *testing.T) {
 	tcs := []struct {
 		desc     string
-		expected *Config
+		expected *ServerConfig
 	}{
 		{
 			desc: "basic creation of Config from defaults",
-			expected: &Config{
-				ServerConfig: &ServerConfig{
-					Protocol: "http",
-					Port:     "8080",
-					Auth:     false,
-					Host:     "localhost",
-				},
+			expected: &ServerConfig{
+				Protocol: "http",
+				Port:     "8111",
+				Auth:     false,
+				Host:     "localhost",
 			},
 		},
 	}
