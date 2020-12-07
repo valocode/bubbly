@@ -115,6 +115,8 @@ const (
 	PipelineRunResourceKind = "pipeline_run"
 	// TaskRunResourceKind represents the resource kind task_run
 	TaskRunResourceKind = "task_run"
+	// QueryResourceKind represents the resource kind query
+	QueryResourceKind = "query"
 )
 
 // ResourceKindPriority returns a list of the resource kinds by their priority
@@ -122,6 +124,7 @@ func ResourceKindPriority() []ResourceKind {
 	return []ResourceKind{
 		ExtractResourceKind, TransformResourceKind, LoadResourceKind,
 		PipelineResourceKind, PipelineRunResourceKind, TaskRunResourceKind,
+		QueryResourceKind,
 	}
 }
 

@@ -1,0 +1,24 @@
+//  defines a data source and a format for the data, and returns a cty.Value
+// representation of the external data.
+resource "query" "sonarqube" {
+  api_version = "v1"
+  spec {
+    query = <<EOT
+      {
+        test_run {
+          name
+          test_set {
+            name
+            test_case {
+              ID
+              name
+              status
+              test_set_id
+            }
+          }
+          repo_version_id
+        }
+      }
+    EOT
+  }
+}

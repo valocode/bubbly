@@ -24,7 +24,7 @@ func TestDescribeResource(t *testing.T) {
 				Reply(c.responseCode).
 				JSON(c.response)
 
-			cl, err := NewClient(bCtx)
+			cl, err := New(bCtx)
 
 			if err != nil {
 				t.Errorf(`Fail: %s: failed to create new test client: %s`, c.desc, err.Error())
@@ -48,7 +48,7 @@ func TestDescribeResourceGroup(t *testing.T) {
 				Reply(c.responseCode).
 				JSON(c.response)
 
-			cl, err := NewClient(bCtx)
+			cl, err := New(bCtx)
 
 			if err != nil {
 				t.Errorf(`Fail: %s: failed to create new test client: %s`, c.desc, err.Error())

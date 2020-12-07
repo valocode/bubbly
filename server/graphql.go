@@ -36,6 +36,6 @@ func Query(bCtx *env.BubblyContext, c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": results,
+		"data": results,
 	})
 }

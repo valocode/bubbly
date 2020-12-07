@@ -55,3 +55,8 @@ type Task interface {
 type TaskRun interface {
 	Resource
 }
+
+// Query interface is for any resources of type Query
+type Query interface {
+	Resource
+}

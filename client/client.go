@@ -28,8 +28,7 @@ type AuthResponse struct {
 	Token string `json:"token"`
 }
 
-// NewClient -
-func NewClient(bCtx *env.BubblyContext) (*Client, error) {
+func New(bCtx *env.BubblyContext) (*Client, error) {
 	sc, err := bCtx.GetServerConfig()
 
 	if err != nil {
@@ -56,10 +55,9 @@ func NewClient(bCtx *env.BubblyContext) (*Client, error) {
 
 	// TODO: support authenticated clients
 	return &c, nil
-
 }
 
-func (c *Client) doRequest(req *http.Request) (io.ReadCloser, error) {
+func (c *Client) do(req *http.Request) (io.ReadCloser, error) {
 	req.Header.Set("Authorization", c.Token)
 
 	res, err := c.HTTPClient.Do(req)

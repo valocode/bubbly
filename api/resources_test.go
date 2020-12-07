@@ -23,9 +23,10 @@ func TestNewResources(t *testing.T) {
 			desc: "base set up of NewResources",
 			expected: &Resources{
 				"extract":      map[string]core.Resource{},
+				"load":         map[string]core.Resource{},
 				"pipeline":     map[string]core.Resource{},
 				"pipeline_run": map[string]core.Resource{},
-				"load":         map[string]core.Resource{},
+				"query":        map[string]core.Resource{},
 				"task_run":     map[string]core.Resource{},
 				"transform":    map[string]core.Resource{},
 			},
@@ -79,9 +80,10 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 						},
 					},
 				},
+				"load":         map[string]core.Resource{},
 				"pipeline":     map[string]core.Resource{},
 				"pipeline_run": map[string]core.Resource{},
-				"load":         map[string]core.Resource{},
+				"query":        map[string]core.Resource{},
 				"task_run":     map[string]core.Resource{},
 				"transform":    map[string]core.Resource{},
 			},
@@ -91,11 +93,6 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 			input: core.ResourceBlocks{
 				&core.ResourceBlock{
 					ResourceKind:       "extract",
-					ResourceName:       "sonarqube",
-					ResourceAPIVersion: "v1",
-				},
-				&core.ResourceBlock{
-					ResourceKind:       "transform",
 					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
@@ -115,8 +112,18 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 					ResourceAPIVersion: "v1",
 				},
 				&core.ResourceBlock{
+					ResourceKind:       "query",
+					ResourceName:       "sonarqube",
+					ResourceAPIVersion: "v1",
+				},
+				&core.ResourceBlock{
 					ResourceKind:       "task_run",
 					ResourceName:       "extract_sonarqube",
+					ResourceAPIVersion: "v1",
+				},
+				&core.ResourceBlock{
+					ResourceKind:       "transform",
+					ResourceName:       "sonarqube",
 					ResourceAPIVersion: "v1",
 				},
 			},
@@ -137,10 +144,10 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 						},
 					},
 				},
-				"transform": map[string]core.Resource{
-					"sonarqube": &v1.Transform{
+				"load": map[string]core.Resource{
+					"sonarqube": &v1.Load{
 						ResourceBlock: &core.ResourceBlock{
-							ResourceKind:       "transform",
+							ResourceKind:       "load",
 							ResourceName:       "sonarqube",
 							ResourceAPIVersion: "v1",
 						},
@@ -165,10 +172,10 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 						},
 					},
 				},
-				"load": map[string]core.Resource{
-					"sonarqube": &v1.Load{
+				"query": map[string]core.Resource{
+					"sonarqube": &v1.Query{
 						ResourceBlock: &core.ResourceBlock{
-							ResourceKind:       "load",
+							ResourceKind:       "query",
 							ResourceName:       "sonarqube",
 							ResourceAPIVersion: "v1",
 						},
@@ -179,6 +186,15 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 						ResourceBlock: &core.ResourceBlock{
 							ResourceKind:       "task_run",
 							ResourceName:       "extract_sonarqube",
+							ResourceAPIVersion: "v1",
+						},
+					},
+				},
+				"transform": map[string]core.Resource{
+					"sonarqube": &v1.Transform{
+						ResourceBlock: &core.ResourceBlock{
+							ResourceKind:       "transform",
+							ResourceName:       "sonarqube",
 							ResourceAPIVersion: "v1",
 						},
 					},

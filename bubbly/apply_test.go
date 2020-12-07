@@ -49,3 +49,20 @@ func TestApplyTaskRun(t *testing.T) {
 		assert.NoError(t, err, "Failed to apply resource")
 	})
 }
+
+func TestApplyQuery(t *testing.T) {
+	// Subtest
+	t.Run("apply basic query", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+		gock.New(bCtx.ServerConfig.HostURL()).
+			Post("/api/graphql").
+			Reply(http.StatusOK).
+			JSON(`{"data":{"test_run":{"name":"run 1","repo_version_id":0,"test_set":[{"name":"set 1","test_case":[{"ID":1,"name":"case 1.1","status":"PASS","test_set_id":1},{"ID":2,"name":"case 1.2","status":"PASS","test_set_id":1},{"ID":3,"name":"case 1.3","status":"FAIL","test_set_id":1}]},{"name":"set 2","test_case":[{"ID":4,"name":"case 2.1","status":"FAIL","test_set_id":2},{"ID":5,"name":"case 2.2","status":"FAIL","test_set_id":2}]}]}}}`)
+
+		err := ApplyQueries(bCtx, "./testdata/resources/v1/query/query.bubbly")
+
+		assert.NoError(t, err, "Failed to apply resource")
+	})
+}

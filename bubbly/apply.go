@@ -34,18 +34,18 @@ func Apply(bCtx *env.BubblyContext, filename string) error {
 func ApplyPipelineRuns(bCtx *env.BubblyContext, filename string) error {
 	p, err := parser.NewParserFromFilename(filename)
 	if err != nil {
-		return fmt.Errorf("Failed to create parser: %s", err.Error())
+		return fmt.Errorf("Failed to create parser: %w", err)
 	}
 
 	if err := p.Parse(bCtx); err != nil {
-		return fmt.Errorf("Failed to decode parser: %s", err.Error())
+		return fmt.Errorf("Failed to decode parser: %s", err)
 	}
 
 	// TODO: resources should be uploaded to the server
 
 	pipelineRunResources := p.Resources[core.PipelineRunResourceKind]
 	for _, resource := range pipelineRunResources {
-		bCtx.Logger.Debug().Msgf("Processing pipeline_run %s", resource.String())
+		bCtx.Logger.Debug().Str("id", resource.String()).Msg("processing resource")
 		pipelineRun := resource.(core.PipelineRun)
 		out := pipelineRun.Apply(bCtx, p.Context(cty.NilVal))
 		if out.Error != nil {
@@ -61,22 +61,49 @@ func ApplyPipelineRuns(bCtx *env.BubblyContext, filename string) error {
 func ApplyTaskRuns(bCtx *env.BubblyContext, filename string) error {
 	p, err := parser.NewParserFromFilename(filename)
 	if err != nil {
-		return fmt.Errorf("Failed to create parser: %s", err.Error())
+		return fmt.Errorf("Failed to create parser: %w", err)
 	}
 
 	if err := p.Parse(bCtx); err != nil {
-		return fmt.Errorf("Failed to decode parser: %s", err.Error())
+		return fmt.Errorf("Failed to decode parser: %w", err)
 	}
 
 	// TODO: resources should be uploaded to the server
 
 	taskRunResources := p.Resources[core.TaskRunResourceKind]
 	for _, resource := range taskRunResources {
-		bCtx.Logger.Debug().Msgf("Processing taskRun %s", resource.String())
+		bCtx.Logger.Debug().Str("id", resource.String()).Msg("processing resource")
 		taskRun := resource.(core.TaskRun)
 		out := taskRun.Apply(bCtx, p.Context(cty.NilVal))
 		if out.Error != nil {
-			return fmt.Errorf(`Failed to apply TaskRun "%s": %w`, taskRun.String(), out.Error)
+			return fmt.Errorf(`Failed to apply task_run "%s": %w`, taskRun.String(), out.Error)
+		}
+	}
+
+	return nil
+}
+
+// ApplyQueries uses a parser to get the defined resources in the given location
+// and applies any query in those resources
+func ApplyQueries(bCtx *env.BubblyContext, filename string) error {
+	p, err := parser.NewParserFromFilename(filename)
+	if err != nil {
+		return fmt.Errorf("Failed to create parser: %w", err)
+	}
+
+	if err := p.Parse(bCtx); err != nil {
+		return fmt.Errorf("Failed to decode parser: %w", err)
+	}
+
+	// TODO: resources should be uploaded to the server
+
+	queryResources := p.Resources[core.QueryResourceKind]
+	for _, resource := range queryResources {
+		bCtx.Logger.Debug().Str("id", resource.String()).Msg("processing resource")
+		query := resource.(core.Query)
+		out := query.Apply(bCtx, p.Context(cty.NilVal))
+		if out.Error != nil {
+			return fmt.Errorf(`Failed to apply query "%s": %w`, query.String(), out.Error)
 		}
 	}
 

@@ -37,7 +37,7 @@ func (c *Client) DescribeResource(bCtx *env.BubblyContext, rType, rName, rVersio
 		return DescribeResourceReturn{}, fmt.Errorf("failed to form GET request: %w", err)
 	}
 
-	rc, err := c.doRequest(req)
+	rc, err := c.do(req)
 
 	if err != nil {
 		return DescribeResourceReturn{}, fmt.Errorf("failed to make GET request to describe resource: %w", err)
@@ -80,7 +80,7 @@ func (c *Client) DescribeResourceGroup(bCtx *env.BubblyContext, rType, rVersion 
 		return nil, fmt.Errorf("failed to make GET request to describe resource group: %w", err)
 	}
 
-	rc, err := c.doRequest(req)
+	rc, err := c.do(req)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to make GET request to describe resource group: %w", err)

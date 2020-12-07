@@ -16,7 +16,7 @@ func ClientSetup(bCtx *env.BubblyContext) (*client.Client, error) {
 	}
 
 	if sc.Host != "" && sc.Port != "" {
-		c, err := client.NewClient(bCtx)
+		c, err := client.New(bCtx)
 		if err != nil {
 			bCtx.Logger.Error().Msg("Unable to create Bubbly client")
 			return nil, err

@@ -36,7 +36,7 @@ func (c *Client) Load(bCtx *env.BubblyContext, data core.DataBlocks) error {
 		return fmt.Errorf("failed to create POST request for data loading: %w", err)
 	}
 
-	_, err = c.doRequest(req)
+	_, err = c.do(req)
 
 	if err != nil {
 		return fmt.Errorf("failed to make POST request for data loading: %w", err)
