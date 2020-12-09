@@ -24,13 +24,15 @@ type queryReq struct {
 func Query(bCtx *env.BubblyContext, c *gin.Context) {
 	var query queryReq
 	if bindErr := c.ShouldBindJSON(&query); bindErr != nil {
+		bCtx.Logger.Debug().Err(bindErr).Msg("failed to bind request to queryReq")
 		c.JSON(http.StatusBadRequest, gin.H{"error": bindErr.Error()})
 		return
 	}
 
+	bCtx.Logger.Debug().Str("query", query.Query).Msg("querying the bubbly store")
 	results, queryErr := serverStore.Store.Query(query.Query)
 	if queryErr != nil {
-		bCtx.Logger.Error().Msg(queryErr.Error())
+		bCtx.Logger.Debug().Err(queryErr).Msg("failed while querying the bubbly store")
 		c.JSON(http.StatusBadRequest, gin.H{"error": queryErr.Error()})
 		return
 	}

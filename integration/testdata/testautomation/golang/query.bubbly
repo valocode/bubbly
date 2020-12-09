@@ -1,0 +1,13 @@
+resource "query" "go" {
+  api_version = "v1"
+  spec {
+    query = <<EOT
+      {
+        test_case(status: "pass") {
+          name
+          status
+        }
+      }
+    EOT
+  }
+}

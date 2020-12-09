@@ -40,7 +40,7 @@ func (c *Client) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
 	rc, err := c.do(req)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to make %s request for data loading: %w", http.MethodPost, err)
+		return nil, fmt.Errorf("failed to make %s request for query: %w", http.MethodPost, err)
 	}
 
 	defer rc.Close()
