@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	//"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"testing"

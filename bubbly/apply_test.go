@@ -42,8 +42,10 @@ func TestApply(t *testing.T) {
 	// Subtest
 	t.Run("rest2", func(t *testing.T) {
 
-		// FIXME should this be shared between subtests?
-		gock.New(hostURL).
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+		gock.New(bCtx.ServerConfig.HostURL()).
 			Post("/alpha1/upload").
 			Reply(http.StatusOK).
 			JSON(map[string]interface{}{"status": "uploaded"})
@@ -59,9 +61,6 @@ func TestApply(t *testing.T) {
 			MatchParam("per_page", "12").
 			Reply(http.StatusOK).
 			JSON(map[string]interface{}{"answer": 42})
-
-		bCtx := env.NewBubblyContext()
-		bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
 		err := Apply(bCtx, "./testdata/rest2")
 

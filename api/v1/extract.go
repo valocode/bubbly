@@ -46,6 +46,7 @@ func NewExtract(resBlock *core.ResourceBlock) *Extract {
 
 // Apply returns the output from applying a resource
 func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+
 	if err := i.decode(bCtx, ctx.DecodeBody); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
@@ -90,13 +91,13 @@ func (i *Extract) SpecValue() core.ResourceSpec {
 	return &i.Spec
 }
 
-// newRestSource returns a restSource struct, with optional fields initialised
+// setRestSourceDefaults returns a restSource struct, with optional fields initialised
 // to "correct" values. They are "correct" in a sense that the code in this module
-// does not need to do unnecesary checks on empty fields which simplifies the logic.
+// does not need to do unnecessary checks on empty fields which simplifies the logic.
 // It was a deliberate design decision that the "correct" or "default" values for
 // optional fields are set AFTER the HCL parser has created and populated
 // the restSource structure.
-func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) {
+func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) error {
 
 	method := http.MethodGet
 	flavour := "json"
@@ -111,7 +112,9 @@ func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) {
 	}
 
 	if err := mergo.Merge(dst, defaults); err != nil {
-		bCtx.Logger.Panic().Err(err).Msg("extract/rest failed to initialise the data structure")
+		m := "extract/rest failed to initialise the data structure"
+		bCtx.Logger.Error().Err(err).Msg(m)
+		return fmt.Errorf("%s: %w", m, err)
 	}
 
 	// Mergo does not set empty and nil values, and for purposes of
@@ -140,10 +143,13 @@ func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) {
 			dst.BasicAuth.PasswordFile = &empty
 		}
 	}
+
+	return nil
 }
 
 // decode is responsible for decoding any necessary hcl.Body inside Extract
 func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) error {
+
 	// decode the resource spec into the extract's Spec
 	if err := decode(bCtx, i.SpecHCL.Body, &i.Spec); err != nil {
 		return fmt.Errorf(`Failed to decode "%s" body spec: %w`, i.String(), err)
@@ -160,12 +166,14 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) erro
 	case restExtractType:
 		i.Spec.Source = &restSource{}
 	default:
-		panic(fmt.Sprintf("Unsupported extract resource type %s", i.Spec.Type))
+		m := "Unsupported extract resource type: %s"
+		bCtx.Logger.Error().Msgf(m, i.Spec.Type)
+		return fmt.Errorf(m, i.Spec.Type)
 	}
 
 	// decode the source HCL into the extract's Source
 	if err := decode(bCtx, i.Spec.SourceHCL.Body, i.Spec.Source); err != nil {
-		return fmt.Errorf(`Failed to decode extract source: %w`, err)
+		return fmt.Errorf("Failed to decode extract source: %w", err)
 	}
 
 	// Merge with default values for each resource type
@@ -177,9 +185,10 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) erro
 	case *gitSource:
 		break
 	case *restSource:
-		setRestSourceDefaults(bCtx, dst)
-	default:
-		bCtx.Logger.Panic().Msgf("extract/rest unsupported resource type: %s", i.Spec.Type)
+		err := setRestSourceDefaults(bCtx, dst)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -291,8 +300,6 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	switch method {
 	case http.MethodGet:
 		break
-	case http.MethodPost:
-		return cty.NilVal, fmt.Errorf("http method not implemented: %s", method)
 	default:
 		return cty.NilVal, fmt.Errorf("unsupported method: %s", method)
 	}
@@ -383,7 +390,7 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 		bearerToken = string(bt)
 	}
 	if bearerToken != "" {
-		httpRequest.Header.Set("Authorization", "Bearer "+bearerToken)
+		httpRequest.Header.Set("Authorization", fmt.Sprint("Bearer ", bearerToken))
 	}
 
 	// Any other headers, if reqested
