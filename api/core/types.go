@@ -35,6 +35,12 @@ func (l *Local) Reference() (hcl.Traversal, cty.Value) {
 // Tasks stores a map of Task by name
 type Tasks map[string]Task
 
+// Queries stores a map of Query by name
+type Queries map[string]Query
+
+// Conditions stores a map of Condition by name
+type Conditions map[string]Condition
+
 // ResourceOutput represents the output from applying a resource
 type ResourceOutput struct {
 	ID     string

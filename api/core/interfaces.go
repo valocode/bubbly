@@ -60,3 +60,18 @@ type TaskRun interface {
 type Query interface {
 	Resource
 }
+
+// Criteria interface is for any resources of type Criteria
+type Criteria interface {
+	Resource
+}
+
+// Condition interface represents a condition inside a Criteria
+type Condition interface {
+	Resource
+}
+
+// Operation interface represents the operation inside a Criteria
+type Operation interface {
+	Resource
+}

@@ -21,6 +21,7 @@ func stdfunctions() map[string]function.Function {
 	return map[string]function.Function{
 		"abs":          stdlib.AbsoluteFunc,
 		"abspath":      funcs.AbsPathFunc,
+		"and":          stdlib.AndFunc,
 		"basename":     funcs.BasenameFunc,
 		"base64decode": funcs.Base64DecodeFunc,
 		"base64encode": funcs.Base64EncodeFunc,
@@ -77,6 +78,7 @@ func stdfunctions() map[string]function.Function {
 		"md5":             funcs.Md5Func,
 		"merge":           stdlib.MergeFunc,
 		"min":             stdlib.MinFunc,
+		"or":              stdlib.OrFunc,
 		"parseint":        stdlib.ParseIntFunc,
 		"pathexpand":      funcs.PathExpandFunc,
 		"pow":             stdlib.PowFunc,

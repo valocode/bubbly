@@ -102,10 +102,44 @@ func ApplyQueries(bCtx *env.BubblyContext, filename string) error {
 		bCtx.Logger.Debug().Str("id", resource.String()).Msg("processing resource")
 		query := resource.(core.Query)
 		out := query.Apply(bCtx, p.Context(cty.NilVal))
+
 		if out.Error != nil {
 			return fmt.Errorf(`Failed to apply query "%s": %w`, query.String(), out.Error)
 		}
 	}
 
 	return nil
+}
+
+// ApplyCriterion uses a parser to get the defined resources in the given
+// location and applies any criteria in those resources
+// Queries that are referenced by the Criterion must also be present in the
+// file / directory
+func ApplyCriterion(bCtx *env.BubblyContext, filename string) (map[string]cty.Value, error) {
+	p, err := parser.NewParserFromFilename(filename)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create parser: %w", err)
+	}
+
+	if err := p.Parse(bCtx); err != nil {
+		return nil, fmt.Errorf("Failed to decode parser: %w", err)
+	}
+
+	// TODO: resources should be uploaded to the server
+
+	criteriaResources := p.Resources[core.CriteriaResourceKind]
+
+	var out core.ResourceOutput
+	criterionResults := map[string]cty.Value{}
+	for _, resource := range criteriaResources {
+		bCtx.Logger.Debug().Str("id", resource.String()).Msg("processing resource")
+		criteria := resource.(core.Criteria)
+		out = criteria.Apply(bCtx, p.Context(cty.NilVal))
+		if out.Error != nil {
+			return nil, fmt.Errorf(`Failed to apply criteria "%s": %w`, criteria.String(), out.Error)
+		}
+		criterionResults[criteria.Name()] = out.Value
+	}
+
+	return criterionResults, nil
 }

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/hashicorp/hcl/v2"
+	"github.com/rs/zerolog"
 	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -105,6 +106,12 @@ func (s *SymbolTable) lookup(bCtx *env.BubblyContext, traversal hcl.Traversal) (
 	if len(traversal) < 1 {
 		bCtx.Logger.Warn().Msg("SymbolTable.lookup() received an empty traversal")
 		return cty.NilVal, false
+	}
+
+	if bCtx.Logger.GetLevel() == zerolog.DebugLevel {
+		for name, val := range s.EvalContext.Variables {
+			bCtx.Logger.Trace().Str("value", val.GoString()).Str("name", name).Msg("logging map of variables in EvalContext")
+		}
 	}
 	// get the base value
 	rootVal, exists := s.EvalContext.Variables[traverserName(traversal[0])]

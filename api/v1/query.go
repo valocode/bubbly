@@ -66,6 +66,8 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 
 	cVal := cty.StringVal(strNormalized)
 
+	// ctx.InsertValue(bCtx, cVal, []string{"self", "query", q.Name()})
+
 	return core.ResourceOutput{
 		Status: core.ResourceOutputSuccess,
 		Error:  nil,
@@ -79,4 +81,13 @@ func (q *Query) SpecValue() core.ResourceSpec {
 
 type querySpec struct {
 	Query string `hcl:"query,attr"`
+}
+
+// QueryDeclarations is a wrapper for a slice of QueryDeclaration
+type QueryDeclarations []*QueryDeclaration
+
+// QueryDeclaration is the type representing any "query "<name>" {}" declaration
+// within a criteria's HCL spec block
+type QueryDeclaration struct {
+	Name string `hcl:",label"`
 }

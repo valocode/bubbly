@@ -3,12 +3,16 @@ package bubbly
 import (
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/rs/zerolog"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/verifa/bubbly/env"
 	"gopkg.in/h2non/gock.v1"
@@ -133,4 +137,46 @@ func TestApplyQuery(t *testing.T) {
 
 		assert.NoError(t, err, "Failed to apply resource")
 	})
+}
+
+func TestApplyCriteria(t *testing.T) {
+	bCtx := env.NewBubblyContext()
+	bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+	tcs := []struct {
+		desc     string
+		input    string
+		expected map[string]cty.Value
+	}{
+		{
+			desc:  "all conditions true",
+			input: `{"data":{"quote_run":{"name":"run 1","quote_set":[{"quote":"Men in rage strike those that wish them best.","book":"Othello","speaker":"Iago"},{"quote":"Look like the innocent flower, but be the serpent under ‘t.","book":"Macbeth","speaker":"Lady Macbeth"},{"quote":"Brevity is the soul of wit.","book":"Hamlet","speaker":"Polonius"}]}}}`,
+			expected: map[string]cty.Value{
+				"shakespeare": cty.True,
+			},
+		},
+		{
+			desc:  "all conditions false",
+			input: `{"data":{"quote_run":{"name":"run 1","quote_set":[{"quote":"You speak an infinite deal of nothing.","book":"The Merchant of Venice","speaker":"Bassanio"},{"quote":"Sometimes it's about playing a poor hand well.","book":"The Goldfinch","speaker":"unknown"},{"quote":"The portrait of a blinking idiot","book":"The Merchant of Venice","speaker":"Aragon"}]}}}`,
+			expected: map[string]cty.Value{
+				"shakespeare": cty.False,
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.desc, func(t *testing.T) {
+
+			gock.New(bCtx.ServerConfig.HostURL()).
+				Post("/api/graphql").
+				Reply(http.StatusOK).
+				JSON(tc.input)
+
+			criterionResults, err := ApplyCriterion(bCtx, filepath.FromSlash("testdata/resources/v1/criteria/criteria.bubbly"))
+
+			require.NoError(t, err, "Failed to apply criterion")
+
+			require.Equal(t, tc.expected, criterionResults, "one or more criteria returned an unexpected output value")
+		})
+	}
 }

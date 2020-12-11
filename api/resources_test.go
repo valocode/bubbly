@@ -22,6 +22,7 @@ func TestNewResources(t *testing.T) {
 		{
 			desc: "base set up of NewResources",
 			expected: &Resources{
+				"criteria":     map[string]core.Resource{},
 				"extract":      map[string]core.Resource{},
 				"load":         map[string]core.Resource{},
 				"pipeline":     map[string]core.Resource{},
@@ -71,6 +72,7 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 				},
 			},
 			expectedResources: &Resources{
+				"criteria": map[string]core.Resource{},
 				"extract": map[string]core.Resource{
 					"sonarqube": &v1.Extract{
 						ResourceBlock: &core.ResourceBlock{
@@ -91,6 +93,11 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 		{
 			desc: "basic all resource types",
 			input: core.ResourceBlocks{
+				&core.ResourceBlock{
+					ResourceKind:       "criteria",
+					ResourceName:       "sonarqube",
+					ResourceAPIVersion: "v1",
+				},
 				&core.ResourceBlock{
 					ResourceKind:       "extract",
 					ResourceName:       "sonarqube",
@@ -135,6 +142,17 @@ func TestNewResourcesFromBlocks(t *testing.T) {
 				},
 			},
 			expectedResources: &Resources{
+				"criteria": map[string]core.Resource{
+					"sonarqube": &v1.Criteria{
+						Queries:    core.Queries{},
+						Conditions: core.Conditions{},
+						ResourceBlock: &core.ResourceBlock{
+							ResourceKind:       "criteria",
+							ResourceName:       "sonarqube",
+							ResourceAPIVersion: "v1",
+						},
+					},
+				},
 				"extract": map[string]core.Resource{
 					"sonarqube": &v1.Extract{
 						ResourceBlock: &core.ResourceBlock{

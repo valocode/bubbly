@@ -58,6 +58,8 @@ func (r *Resources) NewResource(resBlock *core.ResourceBlock) (core.Resource, er
 		resource = v1.NewTaskRun(resBlock)
 	case core.QueryResourceKind:
 		resource = v1.NewQuery(resBlock)
+	case core.CriteriaResourceKind:
+		resource = v1.NewCriteria(resBlock)
 	default:
 		return nil, fmt.Errorf("resource not supported: %s", resBlock.Kind())
 	}
