@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/imdario/mergo"
-	"github.com/rs/zerolog"
 
 	"github.com/clbanning/mxj"
 	git "github.com/go-git/go-git/v5"
@@ -112,9 +111,7 @@ func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) error {
 	}
 
 	if err := mergo.Merge(dst, defaults); err != nil {
-		m := "extract/rest failed to initialise the data structure"
-		bCtx.Logger.Error().Err(err).Msg(m)
-		return fmt.Errorf("%s: %w", m, err)
+		return fmt.Errorf("failed to initialise the data structure: %w", err)
 	}
 
 	// Mergo does not set empty and nil values, and for purposes of
@@ -135,12 +132,10 @@ func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) error {
 	// already set.
 	if dst.BasicAuth != nil {
 		if dst.BasicAuth.Password == nil {
-			empty := ""
-			dst.BasicAuth.Password = &empty
+			dst.BasicAuth.Password = new(string)
 		}
 		if dst.BasicAuth.PasswordFile == nil {
-			empty := ""
-			dst.BasicAuth.PasswordFile = &empty
+			dst.BasicAuth.PasswordFile = new(string)
 		}
 	}
 
@@ -166,9 +161,7 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) erro
 	case restExtractType:
 		i.Spec.Source = &restSource{}
 	default:
-		m := "Unsupported extract resource type: %s"
-		bCtx.Logger.Error().Msgf(m, i.Spec.Type)
-		return fmt.Errorf(m, i.Spec.Type)
+		return fmt.Errorf("Unsupported extract resource type: %s", i.Spec.Type)
 	}
 
 	// decode the source HCL into the extract's Source
@@ -185,9 +178,8 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) erro
 	case *gitSource:
 		break
 	case *restSource:
-		err := setRestSourceDefaults(bCtx, dst)
-		if err != nil {
-			return err
+		if err := setRestSourceDefaults(bCtx, dst); err != nil {
+			return fmt.Errorf("Failed to decode extract: %w", err)
 		}
 	}
 
@@ -399,13 +391,13 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	}
 
 	// Log the request
-	if bCtx.Logger.GetLevel() == zerolog.DebugLevel {
+	if e := bCtx.Logger.Debug(); e.Enabled() {
 
 		dump, err := httputil.DumpRequestOut(httpRequest, true)
 		if err != nil {
-			bCtx.Logger.Debug().Err(err).Msg("extract/rest failed to dump HTTP request")
+			e.Err(err).Msg("extract/rest failed to dump HTTP request")
 		} else {
-			bCtx.Logger.Debug().Bytes("httpRequest", dump).Msg("extract/rest")
+			e.Bytes("httpRequest", dump).Msg("extract/rest")
 		}
 	}
 

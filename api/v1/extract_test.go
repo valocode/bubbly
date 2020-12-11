@@ -349,7 +349,7 @@ func TestExtractRestBearerToken(t *testing.T) {
 
 		gockResponse := gock.New(s.URL).
 			Get("/").
-			MatchHeader("Authorization", "Bearer "+bearerToken).
+			MatchHeader("Authorization", fmt.Sprint("Bearer ", bearerToken)).
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
@@ -376,7 +376,7 @@ func TestExtractRestBearerToken(t *testing.T) {
 
 		gockResponse := gock.New(s.URL).
 			Get("/").
-			MatchHeader("Authorization", "Bearer "+string(bearerToken)).
+			MatchHeader("Authorization", fmt.Sprint("Bearer ", string(bearerToken))).
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
@@ -401,7 +401,7 @@ func TestExtractRestBearerToken(t *testing.T) {
 
 		gockResponse := gock.New(s.URL).
 			Get("/").
-			MatchHeader("Authorization", "Bearer "+*s.BearerToken).
+			MatchHeader("Authorization", fmt.Sprint("Bearer ", *s.BearerToken)).
 			Reply(http.StatusOK).
 			BodyString(responseBody)
 
