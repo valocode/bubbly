@@ -14,19 +14,19 @@
       "isOsiApproved": true
     },
     {
-      "reference": "./MIT.html",
+      "reference": "./MPL-1.1.html",
       "isDeprecatedLicenseId": false,
       "isFsfLibre": true,
-      "detailsUrl": "http://spdx.org/licenses/MIT.json",
-      "referenceNumber": "271",
-      "name": "MIT License",
-      "licenseId": "MIT",
+      "detailsUrl": "http://spdx.org/licenses/MPL-1.1.json",
+      "referenceNumber": "432",
+      "name": "Mozilla Public License 1.1",
+      "licenseId": "MPL-1.1",
       "seeAlso": [
-        "https://opensource.org/licenses/MIT"
+        "http://www.mozilla.org/MPL/MPL-1.1.html",
+        "https://opensource.org/licenses/MPL-1.1"
       ],
       "isOsiApproved": true
     },
-
     {
       "reference": "./zlib-acknowledgement.html",
       "isDeprecatedLicenseId": false,

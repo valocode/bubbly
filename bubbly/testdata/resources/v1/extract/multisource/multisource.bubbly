@@ -43,7 +43,7 @@ resource "extract" "spdx_licenses" {
             iterator = it
 
             content {
-                # Can use "${jsonencode(it)} to see the value"
+                # Can use "${jsonencode(it)}" to see the value
                 url = it.value.detailsUrl
 
                 # Notes: 
@@ -72,6 +72,40 @@ resource "extract" "spdx_licenses" {
     }
 }
 
+resource "transform" "license_data" {
+    api_version = "v1"
+
+    spec {
+        input "spdx_licenses" {}
+
+        dynamic "data" {
+            for_each = self.input.spdx_licenses
+            iterator = it
+            labels = ["spdx_license_table"]
+            content {
+                field "license_id" {
+                    value =it.value.licenseId
+                }
+                field "license_name" {
+                    value = it.value.name
+                }
+                field "crossref_count" {
+                    value = length(it.value.crossRef)
+                }
+            }
+        }
+    }
+}
+
+resource "load" "upload_license_data" {
+    api_version = "v1"
+
+    spec {
+        input "data" {}
+        data = self.input.data
+    }
+}
+
 resource "pipeline" "multisource" {
     api_version = "v1"
 
@@ -90,6 +124,20 @@ resource "pipeline" "multisource" {
             resource = "extract/spdx_licenses"
             input "spdx_list" {
                 value = self.task.extract_spdx_list.value
+            }
+        }
+
+        task "transform_license_data" {
+            resource = "transform/license_data"
+            input "spdx_licenses" {
+                value = self.task.extract_spdx_licenses.value
+            }
+        }
+
+        task "load" {
+            resource = "load/upload_license_data"
+            input "data" {
+                value = self.task.transform_license_data.value
             }
         }
     }

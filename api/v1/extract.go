@@ -69,18 +69,14 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		}
 	}
 
-	// FIXME this cannot happend because source is not an optional field?
-	/*
-		if len(i.Spec.Source) == 0 {
-			return core.ResourceOutput{
-				Status: core.ResourceOutputFailure,
-				Error:  errors.New("Cannot get output of an extract with no source"),
-				Value:  cty.NilVal,
-			}
+	if len(i.Spec.Source) == 0 {
+		return core.ResourceOutput{
+			Status: core.ResourceOutputFailure,
+			Error:  errors.New("Cannot get output of an extract with no source"),
+			Value:  cty.NilVal,
 		}
-	*/
+	}
 
-	// TODO resolve in a loop, return error if there is even one error
 	vals := make([]cty.Value, len(i.Spec.Source))
 	for idx, src := range i.Spec.Source {
 		val, err := src.Resolve(bCtx)
@@ -93,16 +89,6 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		}
 		vals[idx] = val
 	}
-	/*
-		val, err := i.Spec.Source.Resolve(bCtx)
-		if err != nil {
-			return core.ResourceOutput{
-				Status: core.ResourceOutputFailure,
-				Error:  fmt.Errorf("Failed to resolve extract source: %w", err),
-				Value:  cty.NilVal,
-			}
-		}
-	*/
 
 	var val cty.Value
 	switch len(i.Spec.Source) {
@@ -190,9 +176,8 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decodeFn core.DecodeBodyFn) er
 		return fmt.Errorf(`Failed to decode "%s" body spec: %w`, i.String(), err)
 	}
 
-	//bCtx.Logger.Debug().Msgf("len(SourceHCL): %d", len(i.Spec.SourceHCL))
-
 	i.Spec.Source = make(SourceBlocks, len(i.Spec.SourceHCL))
+
 	for idx := range i.Spec.SourceHCL {
 
 		// Initiate the Extract's Source structure
@@ -209,9 +194,6 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decodeFn core.DecodeBodyFn) er
 			return fmt.Errorf("Unsupported extract resource type: %s", i.Spec.Type)
 		}
 
-		bCtx.Logger.Debug().Msgf("SourceHCL.Body: %+v", i.Spec.SourceHCL[idx].Body)
-
-		// FIXME must be a way to tell decoder that source is a slice
 		// decode the source HCL into the extract's Source
 		if err := decodeFn(bCtx, i.Spec.SourceHCL[idx].Body, i.Spec.Source[idx]); err != nil {
 			return fmt.Errorf("Failed to decode extract source: %w", err)
@@ -219,12 +201,6 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decodeFn core.DecodeBodyFn) er
 
 		// Merge with default values for each resource type
 		switch dst := i.Spec.Source[idx].(type) {
-		case *jsonSource:
-			break
-		case *xmlSource:
-			break
-		case *gitSource:
-			break
 		case *restSource:
 			if err := setRestSourceDefaults(bCtx, dst); err != nil {
 				return fmt.Errorf("Failed to decode extract: %w", err)

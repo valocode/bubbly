@@ -72,28 +72,33 @@ func TestApply(t *testing.T) {
 		bCtx := env.NewBubblyContext()
 		bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
-		// spdx_list (of three items)
-		gock.New("https://raw.githubusercontent.com/spdx/license-list-data/master/json/licenses.json").
-			Get("/").
-			Reply(http.StatusOK).File("./testdata/resources/v1/extract/multisource/licenses.json")
+		// Mock the top-level list (of three items),
+		// and details for each of the three items.
+		var items = []struct {
+			url  string
+			file string
+		}{
+			{
+				"https://raw.githubusercontent.com/spdx/license-list-data/master/json/licenses.json",
+				"./testdata/resources/v1/extract/multisource/licenses.json",
+			},
+			{
+				"http://spdx.org/licenses/0BSD.json",
+				"./testdata/resources/v1/extract/multisource/0BSD.json",
+			},
+			{
+				"http://spdx.org/licenses/MPL-1.1.json",
+				"./testdata/resources/v1/extract/multisource/MPL-1.1.json",
+			},
+			{
+				"http://spdx.org/licenses/zlib-acknowledgement.json",
+				"./testdata/resources/v1/extract/multisource/zlib-acknowledgement.json",
+			},
+		}
 
-		// item 0 of the list
-		gock.New("http://spdx.org/licenses/0BSD.json").
-			Get("/").
-			Reply(http.StatusOK).
-			File("./testdata/resources/v1/extract/multisource/0BSD.json")
-
-		// item 1 of the list
-		gock.New("http://spdx.org/licenses/MIT.json").
-			Get("/").
-			Reply(http.StatusOK).
-			File("./testdata/resources/v1/extract/multisource/MIT.json")
-
-		// item 2 of the list
-		gock.New("http://spdx.org/licenses/zlib-acknowledgement.json").
-			Get("/").
-			Reply(http.StatusOK).
-			File("./testdata/resources/v1/extract/multisource/zlib-acknowledgement.json")
+		for _, i := range items {
+			gock.New(i.url).Get("/").Reply(http.StatusOK).File(i.file)
+		}
 
 		err := Apply(bCtx, "./testdata/resources/v1/extract/multisource/multisource.bubbly")
 
