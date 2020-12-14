@@ -1,0 +1,44 @@
+{
+  "licenseListVersion": "3.11",
+  "licenses": [
+    {
+      "reference": "./0BSD.html",
+      "isDeprecatedLicenseId": false,
+      "detailsUrl": "http://spdx.org/licenses/0BSD.json",
+      "referenceNumber": "244",
+      "name": "BSD Zero Clause License",
+      "licenseId": "0BSD",
+      "seeAlso": [
+        "http://landley.net/toybox/license.html"
+      ],
+      "isOsiApproved": true
+    },
+    {
+      "reference": "./MIT.html",
+      "isDeprecatedLicenseId": false,
+      "isFsfLibre": true,
+      "detailsUrl": "http://spdx.org/licenses/MIT.json",
+      "referenceNumber": "271",
+      "name": "MIT License",
+      "licenseId": "MIT",
+      "seeAlso": [
+        "https://opensource.org/licenses/MIT"
+      ],
+      "isOsiApproved": true
+    },
+
+    {
+      "reference": "./zlib-acknowledgement.html",
+      "isDeprecatedLicenseId": false,
+      "detailsUrl": "http://spdx.org/licenses/zlib-acknowledgement.json",
+      "referenceNumber": "260",
+      "name": "zlib/libpng License with Acknowledgement",
+      "licenseId": "zlib-acknowledgement",
+      "seeAlso": [
+        "https://fedoraproject.org/wiki/Licensing/ZlibWithAcknowledgement"
+      ],
+      "isOsiApproved": false
+    }
+  ],
+  "releaseDate": "2020-11-25"
+}

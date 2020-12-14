@@ -1,0 +1,103 @@
+resource "extract" "spdx_list" {
+    api_version = "v1"
+
+    spec {
+        input url {}
+        type = "rest"
+
+        source {
+            url = self.input.url
+
+            headers = {
+                "Accept": "application/vnd.github.v3+json"
+            }
+
+            format = object({
+                licenseListVersion: string,
+                licenses: list(object({
+                    reference: string,
+                    isDeprecatedLicenseId: bool,
+                    detailsUrl: string,
+                    referenceNumber: string,
+                    name: string,
+                    licenseId: string,
+                    seeAlso: list(string),
+                    isOsiApproved: bool
+                })),
+                releaseDate: string
+            })
+        }
+    }
+}
+
+resource "extract" "spdx_licenses" {
+    api_version = "v1"
+    
+    spec {
+        input spdx_list {}
+        type = "rest"
+
+        dynamic "source" {
+        
+            for_each = self.input.spdx_list.licenses
+            iterator = it
+
+            content {
+                # Can use "${jsonencode(it)} to see the value"
+                url = it.value.detailsUrl
+
+                # Notes: 
+                #   * match field is actually boolean in a string: "true"/"false".
+                #   * isFsfLibre field is absent in some records.
+                format = object({
+                    isDeprecatedLicenseId: bool,
+                    isFsfLibre: bool,
+                    licenseText: string,
+                    name: string,
+                    licenseId: string,
+                    crossRef: list(object({
+                        isLive: bool,
+                        isValid: bool,
+                        isWayBackLink: bool,
+                        match: string,
+                        url: string,
+                        order: number,
+                        timestamp: string
+                    })),
+                    seeAlso: list(string),
+                    isOsiApproved: bool
+                })
+            }
+        }
+    }
+}
+
+resource "pipeline" "multisource" {
+    api_version = "v1"
+
+    spec {
+        
+        # The mock up saved in testdata has been shortened to three entries.
+        task "extract_spdx_list" {
+            resource = "extract/spdx_list"
+            input "url" {
+                value = "https://raw.githubusercontent.com/spdx/license-list-data/master/json/licenses.json"
+            }
+        }
+
+        # The mock data representing three entries is saved in testdata.
+        task "extract_spdx_licenses" {
+            resource = "extract/spdx_licenses"
+            input "spdx_list" {
+                value = self.task.extract_spdx_list.value
+            }
+        }
+    }
+}
+
+resource "pipeline_run" "multisource" {
+    api_version = "v1"
+    spec {
+        pipeline = "multisource"
+    }
+}

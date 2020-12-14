@@ -27,12 +27,12 @@ func TestApply(t *testing.T) {
 	t.Run("sonarqube", func(t *testing.T) {
 		// Create a new server route for mocking a Bubbly server response
 		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
 		gock.New(bCtx.ServerConfig.HostURL()).
 			Post("/alpha1/upload").
 			Reply(http.StatusOK).
 			JSON(map[string]interface{}{"status": "uploaded"})
-
-		bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
 		err := Apply(bCtx, "./testdata/sonarqube")
 
@@ -63,6 +63,39 @@ func TestApply(t *testing.T) {
 			JSON(map[string]interface{}{"answer": 42})
 
 		err := Apply(bCtx, "./testdata/rest2")
+
+		assert.NoError(t, err, "Failed to apply resource")
+	})
+
+	// Subtest
+	t.Run("dynamic_source", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+		// spdx_list (of three items)
+		gock.New("https://raw.githubusercontent.com/spdx/license-list-data/master/json/licenses.json").
+			Get("/").
+			Reply(http.StatusOK).File("./testdata/resources/v1/extract/multisource/licenses.json")
+
+		// item 0 of the list
+		gock.New("http://spdx.org/licenses/0BSD.json").
+			Get("/").
+			Reply(http.StatusOK).
+			File("./testdata/resources/v1/extract/multisource/0BSD.json")
+
+		// item 1 of the list
+		gock.New("http://spdx.org/licenses/MIT.json").
+			Get("/").
+			Reply(http.StatusOK).
+			File("./testdata/resources/v1/extract/multisource/MIT.json")
+
+		// item 2 of the list
+		gock.New("http://spdx.org/licenses/zlib-acknowledgement.json").
+			Get("/").
+			Reply(http.StatusOK).
+			File("./testdata/resources/v1/extract/multisource/zlib-acknowledgement.json")
+
+		err := Apply(bCtx, "./testdata/resources/v1/extract/multisource/multisource.bubbly")
 
 		assert.NoError(t, err, "Failed to apply resource")
 	})

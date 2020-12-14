@@ -69,13 +69,53 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		}
 	}
 
-	val, err := i.Spec.Source.Resolve(bCtx)
-	if err != nil {
+	// FIXME this cannot happend because source is not an optional field?
+	/*
+		if len(i.Spec.Source) == 0 {
+			return core.ResourceOutput{
+				Status: core.ResourceOutputFailure,
+				Error:  errors.New("Cannot get output of an extract with no source"),
+				Value:  cty.NilVal,
+			}
+		}
+	*/
+
+	// TODO resolve in a loop, return error if there is even one error
+	vals := make([]cty.Value, len(i.Spec.Source))
+	for idx, src := range i.Spec.Source {
+		val, err := src.Resolve(bCtx)
+		if err != nil {
+			return core.ResourceOutput{
+				Status: core.ResourceOutputFailure,
+				Error:  fmt.Errorf("Failed to resolve extract source: %w", err),
+				Value:  cty.NilVal,
+			}
+		}
+		vals[idx] = val
+	}
+	/*
+		val, err := i.Spec.Source.Resolve(bCtx)
+		if err != nil {
+			return core.ResourceOutput{
+				Status: core.ResourceOutputFailure,
+				Error:  fmt.Errorf("Failed to resolve extract source: %w", err),
+				Value:  cty.NilVal,
+			}
+		}
+	*/
+
+	var val cty.Value
+	switch len(i.Spec.Source) {
+	case 0:
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf("Failed to resolve extract source: %w", err),
+			Error:  fmt.Errorf("Failed to resolve extract source: no sources defined"),
 			Value:  cty.NilVal,
 		}
+	case 1:
+		val = vals[0]
+	default:
+		val = cty.ListVal(vals)
 	}
 
 	return core.ResourceOutput{
@@ -143,61 +183,74 @@ func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) error {
 }
 
 // decode is responsible for decoding any necessary hcl.Body inside Extract
-func (i *Extract) decode(bCtx *env.BubblyContext, decode core.DecodeBodyFn) error {
+func (i *Extract) decode(bCtx *env.BubblyContext, decodeFn core.DecodeBodyFn) error {
 
 	// decode the resource spec into the extract's Spec
-	if err := decode(bCtx, i.SpecHCL.Body, &i.Spec); err != nil {
+	if err := decodeFn(bCtx, i.SpecHCL.Body, &i.Spec); err != nil {
 		return fmt.Errorf(`Failed to decode "%s" body spec: %w`, i.String(), err)
 	}
 
-	// Initiate the Extract's Source structure
-	switch i.Spec.Type {
-	case jsonExtractType:
-		i.Spec.Source = &jsonSource{}
-	case xmlExtractType:
-		i.Spec.Source = &xmlSource{}
-	case gitExtractType:
-		i.Spec.Source = &gitSource{}
-	case restExtractType:
-		i.Spec.Source = &restSource{}
-	default:
-		return fmt.Errorf("Unsupported extract resource type: %s", i.Spec.Type)
-	}
+	//bCtx.Logger.Debug().Msgf("len(SourceHCL): %d", len(i.Spec.SourceHCL))
 
-	// decode the source HCL into the extract's Source
-	if err := decode(bCtx, i.Spec.SourceHCL.Body, i.Spec.Source); err != nil {
-		return fmt.Errorf("Failed to decode extract source: %w", err)
-	}
+	i.Spec.Source = make(SourceBlocks, len(i.Spec.SourceHCL))
+	for idx := range i.Spec.SourceHCL {
 
-	// Merge with default values for each resource type
-	switch dst := i.Spec.Source.(type) {
-	case *jsonSource:
-		break
-	case *xmlSource:
-		break
-	case *gitSource:
-		break
-	case *restSource:
-		if err := setRestSourceDefaults(bCtx, dst); err != nil {
-			return fmt.Errorf("Failed to decode extract: %w", err)
+		// Initiate the Extract's Source structure
+		switch i.Spec.Type {
+		case jsonExtractType:
+			i.Spec.Source[idx] = new(jsonSource)
+		case xmlExtractType:
+			i.Spec.Source[idx] = new(xmlSource)
+		case gitExtractType:
+			i.Spec.Source[idx] = new(gitSource)
+		case restExtractType:
+			i.Spec.Source[idx] = new(restSource)
+		default:
+			return fmt.Errorf("Unsupported extract resource type: %s", i.Spec.Type)
 		}
-	}
 
+		bCtx.Logger.Debug().Msgf("SourceHCL.Body: %+v", i.Spec.SourceHCL[idx].Body)
+
+		// FIXME must be a way to tell decoder that source is a slice
+		// decode the source HCL into the extract's Source
+		if err := decodeFn(bCtx, i.Spec.SourceHCL[idx].Body, i.Spec.Source[idx]); err != nil {
+			return fmt.Errorf("Failed to decode extract source: %w", err)
+		}
+
+		// Merge with default values for each resource type
+		switch dst := i.Spec.Source[idx].(type) {
+		case *jsonSource:
+			break
+		case *xmlSource:
+			break
+		case *gitSource:
+			break
+		case *restSource:
+			if err := setRestSourceDefaults(bCtx, dst); err != nil {
+				return fmt.Errorf("Failed to decode extract: %w", err)
+			}
+		}
+
+	}
 	return nil
 }
 
 var _ core.ResourceSpec = (*extractSpec)(nil)
+
+// FIXME source should be public because Data in Transform is public?!
+
+type SourceBlocks []source
 
 // extractSpec defines the spec for an extract
 type extractSpec struct {
 	Inputs InputDeclarations `hcl:"input,block"`
 	// the type is either json, xml, rest, etc.
 	Type      extractType `hcl:"type,attr"`
-	SourceHCL *struct {
+	SourceHCL []struct {
 		Body hcl.Body `hcl:",remain"`
 	} `hcl:"source,block"`
 	// Source stores the actual value for SourceHCL
-	Source source
+	Source SourceBlocks
 }
 
 // extractType defines the type of an extract
