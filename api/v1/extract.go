@@ -49,14 +49,14 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 	if err := i.decode(bCtx, ctx.DecodeBody); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf("Failed to decode resource %s: %w", i.String(), err),
+			Error:  fmt.Errorf("failed to decode resource %s: %w", i.String(), err),
 		}
 	}
 
 	if i == nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  errors.New("Cannot get output of a null extract"),
+			Error:  errors.New("cannot get output of a null extract"),
 			Value:  cty.NilVal,
 		}
 	}
@@ -64,7 +64,7 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 	if i.Spec.Source == nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  errors.New("Cannot get output of an extract with null source"),
+			Error:  errors.New("cannot get output of an extract with null source"),
 			Value:  cty.NilVal,
 		}
 	}
@@ -72,7 +72,7 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 	if len(i.Spec.Source) == 0 {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  errors.New("Cannot get output of an extract with no source"),
+			Error:  errors.New("cannot get output of an extract with no source"),
 			Value:  cty.NilVal,
 		}
 	}
@@ -83,7 +83,7 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		if err != nil {
 			return core.ResourceOutput{
 				Status: core.ResourceOutputFailure,
-				Error:  fmt.Errorf("Failed to resolve extract source: %w", err),
+				Error:  fmt.Errorf("failed to resolve extract source: %w", err),
 				Value:  cty.NilVal,
 			}
 		}
@@ -95,7 +95,7 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 	case 0:
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf("Failed to resolve extract source: no sources defined"),
+			Error:  fmt.Errorf("failed to resolve extract source: no sources defined"),
 			Value:  cty.NilVal,
 		}
 	case 1:
@@ -173,7 +173,7 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decodeFn core.DecodeBodyFn) er
 
 	// decode the resource spec into the extract's Spec
 	if err := decodeFn(bCtx, i.SpecHCL.Body, &i.Spec); err != nil {
-		return fmt.Errorf(`Failed to decode "%s" body spec: %w`, i.String(), err)
+		return fmt.Errorf(`failed to decode "%s" body spec: %w`, i.String(), err)
 	}
 
 	i.Spec.Source = make(SourceBlocks, len(i.Spec.SourceHCL))
@@ -191,19 +191,19 @@ func (i *Extract) decode(bCtx *env.BubblyContext, decodeFn core.DecodeBodyFn) er
 		case restExtractType:
 			i.Spec.Source[idx] = new(restSource)
 		default:
-			return fmt.Errorf("Unsupported extract resource type: %s", i.Spec.Type)
+			return fmt.Errorf("unsupported extract resource type: %s", i.Spec.Type)
 		}
 
 		// decode the source HCL into the extract's Source
 		if err := decodeFn(bCtx, i.Spec.SourceHCL[idx].Body, i.Spec.Source[idx]); err != nil {
-			return fmt.Errorf("Failed to decode extract source: %w", err)
+			return fmt.Errorf("failed to decode extract source: %w", err)
 		}
 
 		// Merge with default values for each resource type
 		switch dst := i.Spec.Source[idx].(type) {
 		case *restSource:
 			if err := setRestSourceDefaults(bCtx, dst); err != nil {
-				return fmt.Errorf("Failed to decode extract: %w", err)
+				return fmt.Errorf("failed to decode extract: %w", err)
 			}
 		}
 
@@ -350,7 +350,7 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	if s.BasicAuth != nil {
 
 		if s.BasicAuth.Username == "" {
-			return cty.NilVal, fmt.Errorf("http basic authentication requires a username")
+			return cty.NilVal, fmt.Errorf("HTTP basic authentication requires a username")
 		}
 
 		username = s.BasicAuth.Username
