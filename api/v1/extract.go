@@ -77,8 +77,8 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		}
 	}
 
-	vals := make([]cty.Value, len(i.Spec.Source))
-	for idx, src := range i.Spec.Source {
+	vals := make([]cty.Value, 0, len(i.Spec.Source))
+	for _, src := range i.Spec.Source {
 		val, err := src.Resolve(bCtx)
 		if err != nil {
 			return core.ResourceOutput{
@@ -87,7 +87,7 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 				Value:  cty.NilVal,
 			}
 		}
-		vals[idx] = val
+		vals = append(vals, val)
 	}
 
 	var val cty.Value
