@@ -1,33 +1,32 @@
 package server
 
 import (
+	"github.com/labstack/echo/v4"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/swaggo/gin-swagger/swaggerFiles"
+	"github.com/swaggo/echo-swagger"
 	"github.com/verifa/bubbly/env"
 )
 
 // InitializeRoutes Builds the endpoints and grouping for a gin router
-func InitializeRoutes(bCtx *env.BubblyContext, router *gin.Engine) {
+func InitializeRoutes(bCtx *env.BubblyContext, router *echo.Echo) {
 	// Keep Alive Test
-	router.GET("/healthz", func(c *gin.Context) {
-		c.String(http.StatusOK, "pong")
+	router.GET("/healthz", func(c echo.Context) error {
+		return c.String(http.StatusOK, "pong")
 	})
 
 	api := router.Group("/api")
 	{
-		api.POST("/resource", func(c *gin.Context) {
-			PostResource(bCtx, c)
+		api.POST("/resource", func(c echo.Context) error {
+			return PostResource(bCtx, c)
 		})
 
-		api.GET("/resource/:namespace/:kind/:name", func(c *gin.Context) {
-			GetResource(bCtx, c)
+		api.GET("/resource/:namespace/:kind/:name", func(c echo.Context) error {
+			return GetResource(bCtx, c)
 		})
 
-		api.POST("/graphql", func(c *gin.Context) {
-			Query(bCtx, c)
+		api.POST("/graphql", func(c echo.Context) error {
+			return Query(bCtx, c)
 		})
 	}
 
@@ -42,18 +41,15 @@ func InitializeRoutes(bCtx *env.BubblyContext, router *gin.Engine) {
 	// Resource Level Versioning
 	alpha1 := router.Group("/alpha1")
 	{
-		alpha1.POST("/upload", func(c *gin.Context) {
-
-			upload(bCtx, c)
+		alpha1.POST("/upload", func(c echo.Context) error {
+			return upload(bCtx, c)
 		})
 	}
 
 	// Serve Swagger files
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/swagger/*", echoSwagger.WrapHandler)
 }
 
-func status(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status": "alive",
-	})
+func status(c echo.Context) error {
+	return c.JSON(http.StatusOK, &Status{"alive"})
 }

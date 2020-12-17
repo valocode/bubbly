@@ -1,9 +1,8 @@
 package server
 
 import (
+	"github.com/labstack/echo/v4"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
 )
 
 var version string
@@ -18,18 +17,18 @@ func GetVersion() string {
 	return version
 }
 
-func versionHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"source":  "https://github.com/verifa/bubbly",
-		"version": GetVersion(),
+func versionHandler(c echo.Context) error {
+	return c.JSON(http.StatusOK, &VersionHeaders{
+		Source:  "https://github.com/verifa/bubbly",
+		Version: GetVersion(),
 	})
 }
 
 // VersionMiddleware : add version on header.
-func VersionMiddleware() gin.HandlerFunc {
+func VersionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	// Set out header value for each response
-	return func(c *gin.Context) {
-		c.Header("X-BUBBLY-VERSION", version)
-		c.Next()
+	return func(c echo.Context) error {
+		c.Response().Header().Set("X-BUBBLY-VERSION", version)
+		return next(c)
 	}
 }

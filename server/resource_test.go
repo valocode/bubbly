@@ -1,12 +1,13 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
+	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -38,15 +39,16 @@ func TestPostResource(t *testing.T) {
 		bCtx.Logger.Error().Msg(err.Error())
 	}
 
-	body, _ := json.Marshal(resourceMap)
+	// body, _ := json.Marshal(resourceMap)
 	r := httptest.NewRecorder()
 
 	// Test
-	req, _ := http.NewRequest(http.MethodPost, "/api/resource", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/api/resource", strings.NewReader(string(byteValue)))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	router.ServeHTTP(r, req)
 
 	assert.Equal(t, http.StatusOK, r.Code)
-	assert.Equal(t, "{\"status\":\"uploaded\"}", r.Body.String())
+	assert.Equal(t, "{\"status\":\"uploaded\"}\n", r.Body.String())
 
 	// Cleanup
 	if tearDown {
@@ -69,15 +71,17 @@ func TestGetResource(t *testing.T) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			// Creating a resource based off of the response
 			file, diags := hclparse.NewParser().ParseJSON(data, "test.json")
-			if diags.HasErrors() {
+			if diags != nil && diags.HasErrors() {
 				bCtx.Logger.Error().Msg(diags.Error())
 				t.Errorf(diags.Error())
 			}
 			resWrap := &core.ResourceBlockHCLWrapper{}
-			diags = gohcl.DecodeBody(file.Body, nil, resWrap)
-			if diags.HasErrors() {
-				bCtx.Logger.Error().Msg(diags.Error())
-				t.Errorf(diags.Error())
+			if file != nil {
+				diags = gohcl.DecodeBody(file.Body, nil, resWrap)
+				if diags.HasErrors() {
+					bCtx.Logger.Error().Msg(diags.Error())
+					t.Errorf(diags.Error())
+				}
 			}
 			assert.NotNil(t, resWrap)
 		})

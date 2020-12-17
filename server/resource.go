@@ -3,9 +3,9 @@ package server
 
 import (
 	"encoding/json"
+	"github.com/labstack/echo/v4"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/resource"
@@ -24,11 +24,10 @@ const defaultNamespace = "default"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Router /api/resource [post]
-func PostResource(bCtx *env.BubblyContext, c *gin.Context) {
+func PostResource(bCtx *env.BubblyContext, c echo.Context) error {
 	var resourceMap map[string]map[string]map[string]map[string]interface{}
-	if err := c.ShouldBindJSON(&resourceMap); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if err := c.Bind(&resourceMap); err != nil {
+		return c.JSON(http.StatusBadRequest, &Error{err.Error()})
 	}
 
 	// The json body that will be stored as core.ResourceJSON.Resource
@@ -44,8 +43,7 @@ func PostResource(bCtx *env.BubblyContext, c *gin.Context) {
 		}
 	}
 	if resourceKind == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Resource not defined"})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{"Resource not defined"})
 	}
 
 	// get the resource name
@@ -54,8 +52,7 @@ func PostResource(bCtx *env.BubblyContext, c *gin.Context) {
 		resourceName = k
 	}
 	if resourceName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Resource Name not defined"})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{"Resource Name not defined"})
 	}
 
 	// If the namespace is not specified, it will default as defaultNamespace
@@ -64,8 +61,7 @@ func PostResource(bCtx *env.BubblyContext, c *gin.Context) {
 	err := json.Unmarshal(rawMetadata, &metadata)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "metadata not present"})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{"metadata not present"})
 	}
 	namespace := metadata.Namespace
 	if namespace == "" {
@@ -81,13 +77,10 @@ func PostResource(bCtx *env.BubblyContext, c *gin.Context) {
 
 	err = uploadResource(bCtx, &resource)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{err.Error()})
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "uploaded",
-	})
+	return c.JSON(http.StatusOK, &Status{"uploaded"})
 }
 
 // Uploads the resource to the in-mem db
@@ -121,7 +114,7 @@ func uploadResource(bCtx *env.BubblyContext, r *core.ResourceJSON) error {
 // @Failure 400 {object} map[string]string
 // @x-examples 12345
 // @Router /api/resource/{id} [get]
-func GetResource(bCtx *env.BubblyContext, c *gin.Context) {
+func GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 	r := core.ResourceJSON{
 		Name:      c.Param("name"),
 		Namespace: c.Param("namespace"),
@@ -134,16 +127,14 @@ func GetResource(bCtx *env.BubblyContext, c *gin.Context) {
 	})
 	if err != nil {
 		bCtx.Logger.Error().Msg(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{err.Error()})
 	}
 
 	resourceString, err := db.P.Query(r.GetID())
 	if err != nil {
 		bCtx.Logger.Error().Msg(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{err.Error()})
 	}
 
-	c.Data(http.StatusOK, "application/json", []byte(resourceString))
+	return c.String(http.StatusOK, resourceString)
 }

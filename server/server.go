@@ -2,18 +2,17 @@ package server
 
 import (
 	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/ziflex/lecho/v2"
 	"os"
 
 	"net/http"
 
-	"github.com/gin-contrib/logger"
-	"github.com/gin-gonic/gin"
 	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/store"
 	"golang.org/x/sync/errgroup"
 )
-
-var router *gin.Engine
 
 var serverStore struct {
 	*store.Store
@@ -21,13 +20,13 @@ var serverStore struct {
 
 // SetupRouter returns a pointer to a gin engine after setting up middleware
 // and initializing routes
-func setupRouter(bCtx *env.BubblyContext) *gin.Engine {
+func setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 	// Initialize Router
 	// router := gin.Default()  // Sets the Gin defaults
-	router := gin.New() // Use a blank Gin server with no middleware loaded
-	router.Use(logger.SetLogger())
-	router.Use(gin.Recovery())
-	router.Use(VersionMiddleware())
+	router := echo.New() // Use a blank Gin server with no middleware loaded
+	router.Logger = lecho.From(*bCtx.Logger)
+	router.Use(middleware.Recover())
+	router.Use(VersionMiddleware)
 
 	// Initialize HTTP Routes
 	InitializeRoutes(bCtx, router)

@@ -1,9 +1,9 @@
 package server
 
 import (
+	"github.com/labstack/echo/v4"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
 )
@@ -20,16 +20,14 @@ type uploadStruct struct {
 // @Accept json
 // @Produce json
 // @Router /alpha1/upload [post]
-func upload(bCtx *env.BubblyContext, c *gin.Context) {
+func upload(bCtx *env.BubblyContext, c echo.Context) error {
 	var upload uploadStruct
-	if err := c.ShouldBindJSON(&upload); err != nil {
+	if err := c.Bind(&upload); err != nil {
 		bCtx.Logger.Error().Msg(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{err.Error()})
 	}
 	if upload.Data == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "malformed request"})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{"malformed request"})
 	}
 
 	bCtx.Logger.Debug().
@@ -41,11 +39,8 @@ func upload(bCtx *env.BubblyContext, c *gin.Context) {
 	importErr := serverStore.Store.Save(upload.Data)
 	if importErr != nil {
 		bCtx.Logger.Error().Msg(importErr.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": importErr.Error()})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{importErr.Error()})
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status": "uploaded",
-	})
+	return c.JSON(http.StatusOK, &Status{"uploaded"})
 }

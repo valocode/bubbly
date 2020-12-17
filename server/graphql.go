@@ -1,9 +1,9 @@
 package server
 
 import (
+	"github.com/labstack/echo/v4"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/verifa/bubbly/env"
 )
 
@@ -21,23 +21,19 @@ type queryReq struct {
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Router /api/graphql [post]
-func Query(bCtx *env.BubblyContext, c *gin.Context) {
+func Query(bCtx *env.BubblyContext, c echo.Context) error {
 	var query queryReq
-	if bindErr := c.ShouldBindJSON(&query); bindErr != nil {
+	if bindErr := c.Bind(&query); bindErr != nil {
 		bCtx.Logger.Debug().Err(bindErr).Msg("failed to bind request to queryReq")
-		c.JSON(http.StatusBadRequest, gin.H{"error": bindErr.Error()})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{bindErr.Error()})
 	}
 
 	bCtx.Logger.Debug().Str("query", query.Query).Msg("querying the bubbly store")
 	results, queryErr := serverStore.Store.Query(query.Query)
 	if queryErr != nil {
 		bCtx.Logger.Debug().Err(queryErr).Msg("failed while querying the bubbly store")
-		c.JSON(http.StatusBadRequest, gin.H{"error": queryErr.Error()})
-		return
+		return c.JSON(http.StatusBadRequest, &Error{queryErr.Error()})
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data": results,
-	})
+	return c.JSON(http.StatusOK, &Data{results})
 }
