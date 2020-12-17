@@ -153,3 +153,16 @@ func schemaTypeID(n interface{}) int64 {
 func schemaTypeName(n interface{}) string {
 	return reflect.ValueOf(n).Elem().FieldByName(schemaTypeFieldName).String()
 }
+
+func schemaTypeVal(n interface{}, field string) (cty.Value, error) {
+	f := reflect.ValueOf(n).Elem().FieldByName(field).Interface()
+	ty, err := gocty.ImpliedType(f)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to get implied cty type: %w", err)
+	}
+	val, err := gocty.ToCtyValue(f, ty)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to create cty value: %w", err)
+	}
+	return val, nil
+}

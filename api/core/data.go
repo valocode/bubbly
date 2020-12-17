@@ -11,10 +11,16 @@ import (
 
 var DataRefType = cty.Capsule("DataRef", reflect.TypeOf((*DataRef)(nil)))
 
+// DataRef is a data block that does not contain a
+// static value but references a value from another
+// data block.
 type DataRef struct {
 	TableName string
 	Field     string
 }
+
+// DataRefs is a slice of DataRef.
+type DataRefs []DataRef
 
 // DataBlocks is a slice of type Data
 type DataBlocks []Data
@@ -24,8 +30,9 @@ type DataBlocks []Data
 type Data struct {
 	TableName string `hcl:",label" json:"data"`
 	// RowName   string     `hcl:",label" json:"row"`
-	Fields DataFields `hcl:"field,block" json:"fields"`
-	Data   DataBlocks `hcl:"data,block" json:"nested_data"`
+	Fields   DataFields `hcl:"field,block" json:"fields"`
+	Data     DataBlocks `hcl:"data,block" json:"nested_data"`
+	DataRefs DataRefs
 }
 
 // DataFields is a slice of DataField

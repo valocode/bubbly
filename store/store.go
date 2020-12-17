@@ -29,12 +29,14 @@ func New(cfg Config) (*Store, error) {
 
 	return &Store{
 		p: p,
+		r: &resolver{p: p},
 	}, nil
 }
 
 // Store provides access to persisted readiness data.
 type Store struct {
 	p provider
+	r *resolver
 
 	mu     sync.RWMutex
 	schema graphql.Schema
@@ -85,6 +87,12 @@ func (s *Store) Create(tables []core.Table) error {
 
 // Save saves data into the store.
 func (s *Store) Save(data core.DataBlocks) error {
+	var err error
+	data, err = s.r.Resolve(data)
+	if err != nil {
+		return fmt.Errorf("failed to resolve data refs: %w", err)
+	}
+
 	tables, err := s.p.Save(data)
 	if err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)

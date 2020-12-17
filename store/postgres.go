@@ -10,6 +10,7 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/graphql-go/graphql"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func newPostgres(cfg Config) (provider, error) {
@@ -164,6 +165,24 @@ func (p *postgres) ResolveList(params graphql.ResolveParams) (interface{}, error
 	}
 
 	return n, nil
+}
+
+func (p *postgres) LastValue(tableName, field string) (cty.Value, error) {
+	n, err := p.ResolveScalar(graphql.ResolveParams{
+		Info: graphql.ResolveInfo{
+			FieldName: tableName,
+		},
+	})
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to resolve ref as scalar: %w", err)
+	}
+
+	val, err := schemaTypeVal(n, field)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to coerce value for %s: %w", field, err)
+	}
+
+	return val, nil
 }
 
 func applyArgsPostgres(q *orm.Query, args map[string]interface{}) *orm.Query {
