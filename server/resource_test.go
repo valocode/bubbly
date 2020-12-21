@@ -39,7 +39,6 @@ func TestPostResource(t *testing.T) {
 		bCtx.Logger.Error().Msg(err.Error())
 	}
 
-	// body, _ := json.Marshal(resourceMap)
 	r := httptest.NewRecorder()
 
 	// Test
