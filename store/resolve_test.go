@@ -14,11 +14,11 @@ type testProvider struct {
 	data map[string]map[string]cty.Value
 }
 
-func (p *testProvider) Create(_ []core.Table) error {
+func (p *testProvider) Create(_ core.Tables) error {
 	panic("not implemented")
 }
 
-func (p *testProvider) Save(data core.DataBlocks) ([]core.Table, error) {
+func (p *testProvider) Save(data core.DataBlocks) (core.Tables, error) {
 	panic("not implemented")
 }
 

@@ -3,14 +3,15 @@
 package integration
 
 import (
-	"log"
+	"encoding/json"
 	"os"
 	"testing"
 
 	"github.com/rs/zerolog"
+	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
+
 	testData "github.com/verifa/bubbly/integration/testdata"
-	"github.com/verifa/bubbly/server"
 )
 
 func TestMain(m *testing.M) {
@@ -18,35 +19,28 @@ func TestMain(m *testing.M) {
 	bCtx := env.NewBubblyContext()
 	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
-	bCtx.Logger.Debug().Msgf("Initializing the store")
-	if err := server.InitStore(); err != nil {
-		bCtx.Logger.Fatal().Err(err).Msgf("failed to create store")
-	}
+	bCtx.Logger.Debug().Msgf("WE SHOULD SETUP THE SCHEMA HERE!")
 
-	bCtx.Logger.Debug().Msgf("Starting server on: %s", bCtx.ServerConfig.HostURL())
-
-	go func() {
-		err := server.ListenAndServe(bCtx)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	tables, err := testData.TestAutomationSchema(".")
+	client, err := client.New(bCtx)
 	if err != nil {
-		log.Fatal(err)
+		bCtx.Logger.Fatal().Err(err).Msg("failed to create client")
 	}
 
-	// this should not be needed in the future... but currently we need to
-	// create the schema by accessing the store directly from the bubbly server
-	s := server.GetStore()
-
-	err = s.Create(tables)
+	tables, err := testData.TestSchema(".")
 	if err != nil {
-		log.Fatal(err)
+		bCtx.Logger.Fatal().Err(err).Msg("failed to parse schema")
 	}
 
-	// Stores that don't have type information can't save anything.
-	// assert.Contains(t, server.GetStore().Save(nil).Error(), "no type information")
+	tableBytes, err := json.Marshal(tables)
+	if err != nil {
+		bCtx.Logger.Fatal().Err(err).Msg("failed to json marshal schema")
+	}
+
+	bCtx.Logger.Debug().Msg("Uploading schema...")
+	if err := client.PostSchema(bCtx, tableBytes); err != nil {
+		bCtx.Logger.Fatal().Err(err).Msg("failed to post schema to bubbly server")
+	}
+
+	// Run the tests in this module
 	os.Exit(m.Run())
 }

@@ -1,8 +1,9 @@
 package server
 
 import (
-	"github.com/labstack/echo/v4"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 
 	"github.com/swaggo/echo-swagger"
 	"github.com/verifa/bubbly/env"
@@ -27,6 +28,10 @@ func InitializeRoutes(bCtx *env.BubblyContext, router *echo.Echo) {
 
 		api.POST("/graphql", func(c echo.Context) error {
 			return Query(bCtx, c)
+		})
+
+		api.POST("/schema", func(c echo.Context) error {
+			return Schema(bCtx, c)
 		})
 	}
 

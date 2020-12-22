@@ -9,7 +9,7 @@ import (
 // newGraphQLSchema creates a new GraphQL schema
 // wrapping the given memDB with a schmea that
 // corresponds to the given set of tables.
-func newGraphQLSchema(tables []core.Table, p provider) (graphql.Schema, error) {
+func newGraphQLSchema(tables core.Tables, p provider) (graphql.Schema, error) {
 	// These are the top-level query fields. Each of these fields
 	// will correspond to each of the tables in the entire hierarchy.
 	queryFields := make(graphql.Fields)

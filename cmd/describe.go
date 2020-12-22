@@ -187,7 +187,7 @@ func (o *DescribeOptions) Resolve(cmd *cobra.Command) error {
 
 // Run runs the describe command over the validated DescribeOptions configuration
 func (o *DescribeOptions) Run() error {
-	c, err := cmdutil.ClientSetup(o.BubblyContext)
+	c, err := client.New(o.BubblyContext)
 	if err != nil {
 		return fmt.Errorf("failed to set up client: %w", err)
 	}
@@ -199,7 +199,7 @@ func (o *DescribeOptions) Run() error {
 			return fmt.Errorf("failed to describe resource: %w", err)
 		}
 
-		o.Result[o.Resource.Name] = resourceDescription
+		o.Result[o.Resource.Name] = *resourceDescription
 
 		return nil
 	}

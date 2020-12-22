@@ -1,59 +1,68 @@
 package core
 
 import (
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/verifa/bubbly/config"
-	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
-// ResourceContext provides a context for Resources to apply themselves
-// independently. This is relatively complicated and probably a cleaner
-// architecture exists, but for now it is serving our purpose well.
-//
-// The process of decoding and Applying a resource is very dependent on context,
-// not just decoding HCL but also resolving resources from *.bubbly files and
-// the bubbly server.
-// As such, the parser.Parser needs to be quite involved but there should not
-// be a coupling on the Parser from the core package, and hence this type
-// provides a "connector" for a resource to use functionality from the parser,
-// that is exposed in the form of method pointers defined in thi type.
-type ResourceContext struct {
-	GetResource     GetResourceFn
-	DecodeBody      DecodeBodyFn
-	InsertValue     InsertValueFn
-	NewContext      NewContextFn
-	BodyToJSON      BodyToJSONFn
-	GetServerConfig GetServerConfigFn
-
-	Debug DebugCtx
+func NewResourceContext(namespace string, inputs cty.Value, newRes NewResourceFn) *ResourceContext {
+	return &ResourceContext{
+		Inputs:      inputs,
+		State:       NewResourceState(),
+		Namespace:   namespace,
+		NewResource: newRes,
+	}
 }
 
-// GetServerConfigFn represents the function that will retrieve the bubbly
-// server configuration, needed for interactions with the bubbly server.
-type GetServerConfigFn func() *config.ServerConfig
+// ResourceContext provides a context for Resources to apply themselves
+// independently.
+type ResourceContext struct {
+	// Inputs contains any cty.Values that should be input to a resource
+	Inputs      cty.Value
+	State       ResourceState
+	Namespace   string
+	NewResource NewResourceFn
+}
 
-// GetResourceFn represents the function that will decode any HCL Bodies.
-type GetResourceFn func(kind ResourceKind, name string) (Resource, error)
+func NewResourceState() ResourceState {
+	return ResourceState{}
+}
 
-// DecodeBodyFn represents the function that will decode any HCL Bodies.
-type DecodeBodyFn func(bCtx *env.BubblyContext, body hcl.Body, val interface{}) error
+type ResourceState map[string]cty.Value
 
-// NewContextFn represents the function that will provide a new context
-// for resources that applies nested resources (e.g. like a pipeline applying
-// a task that applies an extract)
-type NewContextFn func(inputs cty.Value) *ResourceContext
+// TODO: should make this a bit more "feature rich"
+func (r *ResourceState) Insert(key string, value cty.Value) {
+	(*r)[key] = cty.ObjectVal(
+		map[string]cty.Value{
+			"value": value,
+		},
+	)
+}
 
-// InsertValueFn takes a cty.Value and a path (represented as a slice of string)
-// and adds the value at that path to the EvalContext
-type InsertValueFn func(bCtx *env.BubblyContext, value cty.Value, path []string)
+func (r ResourceState) Value(path []string, inputs ...cty.Value) cty.Value {
+	// make a copy of ResourceState
+	retVal := make(map[string]cty.Value)
+	for key, value := range r {
+		retVal[key] = value
+	}
 
-// BodyToJSONFn takes an hclsyntax.Body and returns a JSON representation of
-// that body, which could be converted back into an hcl.Body.
-// It also takes care of resolving any local values, so that the resource
-// can be decoded later with only the necessary inputs provided.
-type BodyToJSONFn func(body *hclsyntax.Body) (interface{}, error)
+	// iterate over path, backwards
+	for i := len(path) - 1; i >= 0; i-- {
+		// pack retVal within each string in path
+		retVal[path[i]] = cty.ObjectVal(retVal)
+	}
 
-// DebugCtx is a debug method for providing the EvalContext
-type DebugCtx func() *hcl.EvalContext
+	// for each provided input, add it to retVal
+	for _, input := range inputs {
+		for key := range input.Type().AttributeTypes() {
+			retVal[key] = input.GetAttr(key)
+		}
+	}
+	return cty.ObjectVal(retVal)
+}
+
+// func (r ResourceContext)
+
+// NewResourceFn represents the function to create a new resource from a
+// ResourceBlock. This functionality is handled by the api package, and needs
+// to be passed from a higher-level dependency... This is the way
+type NewResourceFn func(*ResourceBlock) (Resource, error)

@@ -6,21 +6,23 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // New creates a new Store for the given config.
-func New(cfg Config) (*Store, error) {
+func New(bCtx *env.BubblyContext) (*Store, error) {
 	var (
 		p   provider
 		err error
 	)
 
-	switch cfg.Provider {
-	case Postgres:
-		p, err = newPostgres(cfg)
+	switch bCtx.StoreConfig.Provider {
+	case config.PostgresStore:
+		p, err = newPostgres(bCtx)
 	default:
-		return nil, fmt.Errorf(`invalid provider: "%s"`, cfg.Provider)
+		return nil, fmt.Errorf(`invalid provider: "%s"`, bCtx.StoreConfig.Provider)
 	}
 
 	if err != nil {
@@ -67,7 +69,7 @@ func (s *Store) Query(query string) (interface{}, error) {
 }
 
 // Create creates a schema corresponding to a set of tables.
-func (s *Store) Create(tables []core.Table) error {
+func (s *Store) Create(tables core.Tables) error {
 	tables = addImplicitIDs(nil, tables)
 	if err := s.p.Create(tables); err != nil {
 		return fmt.Errorf("failed to create in provider: %w", err)
@@ -110,10 +112,10 @@ func (s *Store) Save(data core.DataBlocks) error {
 	return nil
 }
 
-func addImplicitIDs(parent *core.Table, tables []core.Table) []core.Table {
+func addImplicitIDs(parent *core.Table, tables core.Tables) core.Tables {
 	// We are adding at least one field (id) and possibly
 	// another (parent=_id) so pad this out.
-	altTables := make([]core.Table, 0, len(tables)+2)
+	altTables := make(core.Tables, 0, len(tables)+2)
 	for _, t := range tables {
 		t.Fields = append(t.Fields, core.TableField{
 			Name: idFieldName,
@@ -145,5 +147,5 @@ func addImplicitIDs(parent *core.Table, tables []core.Table) []core.Table {
 
 type typeInfo struct {
 	ID     int64
-	Tables []core.Table
+	Tables core.Tables
 }

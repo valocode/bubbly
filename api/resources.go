@@ -8,39 +8,45 @@ import (
 	"github.com/verifa/bubbly/env"
 )
 
-// Resources is a map of a map, with the first map for the kind, and the second
-// map for the name
-type Resources map[core.ResourceKind]map[string]core.Resource
-
-// NewResources returns a new instance of the Resources type
-func NewResources() *Resources {
-	resources := Resources{}
-	for _, kind := range core.ResourceKindPriority() {
-		resources[kind] = make(map[string]core.Resource)
+func NewParserType() *ResourcesParserType {
+	return &ResourcesParserType{
+		Resources: []core.Resource{},
 	}
-	return &resources
 }
 
-// NewResourcesFromBlocks takes a list of ResourceBlock and creates a Resources
-// container for them, by converting each of them into a Resource.
-func NewResourcesFromBlocks(bCtx *env.BubblyContext, blocks core.ResourceBlocks) *Resources {
-	res := NewResources()
-	for _, block := range blocks {
-		_, err := res.NewResource(block)
+// ResourcesParserType is used with the parser to get blocks of resources and
+// convert those to actual resources.
+type ResourcesParserType struct {
+	Blocks    core.ResourceBlocks `hcl:"resource,block"`
+	Resources []core.Resource
+}
 
+func (r *ResourcesParserType) CreateResources(bCtx *env.BubblyContext) error {
+	for _, resBlock := range r.Blocks {
+		resource, err := NewResource(resBlock)
 		if err != nil {
-			bCtx.Logger.Fatal().Str("block", block.String()).Str("error", err.Error()).Msg("failed to create new resource from block")
+			return fmt.Errorf(`failed to create resource from resource block "%s": %w`, resBlock.String(), err)
 		}
-
+		r.Resources = append(r.Resources, resource)
 	}
-	return res
+	return nil
 }
 
-// NewResource creates a new resource from the given ResourceBlock, and adds
-// it to Resources
+func (r ResourcesParserType) ByKind(kind core.ResourceKind) []core.Resource {
+	resByKind := []core.Resource{}
+	for _, res := range r.Resources {
+		if res.Kind() == kind {
+			resByKind = append(resByKind, res)
+		}
+	}
+	return resByKind
+}
+
+// NewResource creates a new resource from the given ResourceBlock
 // If successful, returns a pointer to the new resource
 // If unsuccessful, returns an error
-func (r *Resources) NewResource(resBlock *core.ResourceBlock) (core.Resource, error) {
+func NewResource(resBlock *core.ResourceBlock) (core.Resource, error) {
+	// TODO: mergo to set the default namespace
 	var resource core.Resource
 	switch resBlock.Kind() {
 	// TODO: use resBlock.APIVersion to get version of resource...
@@ -61,25 +67,8 @@ func (r *Resources) NewResource(resBlock *core.ResourceBlock) (core.Resource, er
 	case core.CriteriaResourceKind:
 		resource = v1.NewCriteria(resBlock)
 	default:
-		return nil, fmt.Errorf("resource not supported: %s", resBlock.Kind())
+		return nil, fmt.Errorf(`resource not supported: "%s"`, resBlock.Kind())
 	}
-	// add the resource to the map
-	if _, exists := (*r)[resource.Kind()][resource.Name()]; exists {
-		return nil, fmt.Errorf("resource %s already exists", resource.String())
-	}
-	// add the new resource to resources
-
-	(*r)[resource.Kind()][resource.Name()] = resource
 
 	return resource, nil
-}
-
-// Get returns the desired resource based on the ResourceKind and the name
-// of the resource.
-// It returns nil if the resource does not exist.
-func (r *Resources) Get(kind core.ResourceKind, name string) core.Resource {
-	if resource, exists := (*r)[kind][name]; exists {
-		return resource
-	}
-	return nil
 }

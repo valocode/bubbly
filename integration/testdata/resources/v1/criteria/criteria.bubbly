@@ -1,0 +1,51 @@
+resource "query" "shakespeare_quote" {
+  api_version = "v1"
+  spec {
+    query = <<EOT
+      {
+        quote {
+          contents
+        }
+      }
+    EOT
+  }
+}
+
+// A criteria defines a list of queries, conditions and logical operators
+// between these conditions (defined in an operation). 
+// Evaluation of these operations yields a boolean return value representing
+// success or failure of the criteria.
+resource "criteria" "shakespeare" {
+  api_version = "v1"
+  spec {
+    query "shakespeare_quote" {}
+    condition "a" {
+      // Hamlet was written by Shakespeare, so it should be mentioned
+      // within the query response
+      value = length(regexall("Hamlet", self.query.shakespeare_quote.value)) > 0
+    }
+    condition "b" {
+      // Othello was written by Shakespeare, so it should be mentioned
+      // within the query response
+      value = length(regexall("Othello", self.query.shakespeare_quote.value)) > 0
+    }
+    condition "c" {
+      // Goldfinch was not written by Shakespeare, so there should be no mention
+      // of it within the query response
+      value = length(regexall("Goldfinch", self.query.shakespeare_quote.value)) == 0
+    }
+
+    // operation block of a criteria defines the operations over the conditions
+    // and final criteria return value (cty.BoolVal)
+    operation "release" {
+      value = and(or(self.condition.a.value, self.condition.b.value), self.condition.c.value)
+    }
+  }
+}
+
+resource "task_run" "shakespeare_criteria" {
+  api_version = "v1"
+  spec {
+    resource = "criteria/shakespeare"
+  }
+}

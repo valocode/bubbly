@@ -5,17 +5,19 @@ import "github.com/verifa/bubbly/env"
 // Resource is the interface for any resources, such as Extract, Transform,
 // etc.
 type Resource interface {
-	Apply(*env.BubblyContext, *ResourceContext) ResourceOutput
+	SubResource
 
 	Name() string
 	// Kind returns the ResourceKind
 	Kind() ResourceKind
 	APIVersion() APIVersion
+	Namespace() string
 	// Return a string representation of the resource, mainly for diagnostics
 	String() string
+}
 
-	// TODO
-	JSON(*ResourceContext) ([]byte, error)
+type SubResource interface {
+	Apply(*env.BubblyContext, *ResourceContext) ResourceOutput
 }
 
 // ResourceSpec is the spec{} block inside a ResourceBlock
@@ -48,7 +50,7 @@ type PipelineRun interface {
 
 // Task interface represents a task inside a pipeline
 type Task interface {
-	Resource
+	SubResource
 }
 
 // TaskRun interface is for any resources of type TaskRun
@@ -63,15 +65,15 @@ type Query interface {
 
 // Criteria interface is for any resources of type Criteria
 type Criteria interface {
-	Resource
+	SubResource
 }
 
 // Condition interface represents a condition inside a Criteria
 type Condition interface {
-	Resource
+	SubResource
 }
 
 // Operation interface represents the operation inside a Criteria
 type Operation interface {
-	Resource
+	SubResource
 }

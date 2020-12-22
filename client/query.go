@@ -24,27 +24,24 @@ func (c *Client) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
 	}
 
 	jsonReq, err := json.Marshal(queryData)
-
-	bCtx.Logger.Debug().RawJSON("request", jsonReq).Str("host", c.HostURL).Msg("sending query request to the bubbly server")
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal query data for loading: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/graphql", c.HostURL), bytes.NewBuffer(jsonReq))
+	bCtx.Logger.Debug().RawJSON("request", jsonReq).Str("host", c.HostURL).Msg("sending query request to the bubbly server")
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to create %s request for query: %w", http.MethodPost, err)
-	}
-
-	rc, err := c.do(req)
-
+	resp, err := handleResponse(
+		http.Post(fmt.Sprintf("%s/api/graphql", c.HostURL), "application/json", bytes.NewBuffer(jsonReq)),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make %s request for query: %w", http.MethodPost, err)
 	}
 
-	defer rc.Close()
-	body, err := ioutil.ReadAll(rc)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response of body: %w", err)
+	}
 
 	return body, nil
 }

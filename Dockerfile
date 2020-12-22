@@ -11,13 +11,27 @@ COPY . .
 
 # `skaffold debug` sets SKAFFOLD_GO_GCFLAGS to disable compiler optimizations
 ARG SKAFFOLD_GO_GCFLAGS
+
+# compile the go binary
 RUN go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /bubbly
 
-FROM golang:1.15.2-buster AS tester
-COPY --from=builder /src /src
+# compile the go integration tests
+RUN go test ./integration -tags=integration,incluster -c -o ./integration/runtests
 
-WORKDIR /src
+# target integration
+FROM debian:buster-slim AS integration
+COPY --from=builder /src/integration /test
 
+WORKDIR /test
+
+# some packages like certs are needed for our tests
+RUN apt update -qq \
+    && apt install -y -qq ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT [ "./runtests" ]
+
+# target for running in cluster
 FROM debian:buster-slim
 COPY --from=builder /bubbly /bubbly
 

@@ -24,7 +24,7 @@ var (
 // newSchemaType creates a map of names->reflect.Type
 // based on the given Tables. This function processes
 // all subtables recursively
-func newSchemaTypes(tables []core.Table) map[string]schemaType {
+func newSchemaTypes(tables core.Tables) map[string]schemaType {
 	types := make(map[string]schemaType)
 	for _, t := range tables {
 		addSchemaType(t, types)

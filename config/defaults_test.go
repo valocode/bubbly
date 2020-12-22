@@ -24,7 +24,7 @@ func TestNewDefaultConfig(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
-			c := NewDefaultConfig()
+			c := DefaultServerConfig()
 
 			assert.Equal(t, tc.expected, c)
 		})

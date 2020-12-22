@@ -32,7 +32,7 @@ type Data struct {
 	// RowName   string     `hcl:",label" json:"row"`
 	Fields   DataFields `hcl:"field,block" json:"fields"`
 	Data     DataBlocks `hcl:"data,block" json:"nested_data"`
-	DataRefs DataRefs
+	DataRefs DataRefs   `json:"-"`
 }
 
 // DataFields is a slice of DataField
@@ -53,9 +53,9 @@ func (f *DataField) MarshalJSON() ([]byte, error) {
 func (f *DataField) UnmarshalJSON(data []byte) error {
 	var jf JSONDataField
 	if err := json.Unmarshal(data, &jf); err != nil {
-		return fmt.Errorf("failed to unmarshal Field: %w", err)
+		return fmt.Errorf("failed to unmarshal DataField: %w", err)
 	}
-	*f = jf.Field()
+	*f = jf.DataField()
 	return nil
 }
 
@@ -68,8 +68,8 @@ type JSONDataField struct {
 	Value ctyjson.SimpleJSONValue `json:"value"`
 }
 
-// Field returns a Field equivalent of JSONField
-func (f *JSONDataField) Field() DataField {
+// DataField returns a DataField equivalent of JSONDataField
+func (f *JSONDataField) DataField() DataField {
 	field := DataField(f.DataFieldAlias)
 	field.Value = f.Value.Value
 	return field

@@ -5,6 +5,8 @@ import (
 	"path"
 
 	"github.com/tidwall/buntdb"
+	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 )
 
 // TODO change these to cfg
@@ -23,7 +25,7 @@ func MustBuntDBPath() string {
 	return dbpath
 }
 
-func newBuntdb(cfg Config) (provider, error) {
+func newBuntdb(cfg config.ResourceConfig) (provider, error) {
 	db, err := buntdb.Open(dbPath)
 	if err != nil {
 		return nil, err
@@ -38,7 +40,7 @@ type buntDBProvider struct {
 	db *buntdb.DB
 }
 
-func (p *buntDBProvider) Query(key string) (string, error) {
+func (p *buntDBProvider) Query(bCtx *env.BubblyContext, key string) (string, error) {
 	var value string
 	err := p.db.View(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(key)
@@ -54,7 +56,7 @@ func (p *buntDBProvider) Query(key string) (string, error) {
 	return value, nil
 }
 
-func (p *buntDBProvider) Save(key string, value string) error {
+func (p *buntDBProvider) Save(bCtx *env.BubblyContext, key string, value string) error {
 	err := p.db.Update(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(key, value, nil)
 		if err != nil {

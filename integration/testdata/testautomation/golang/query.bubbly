@@ -11,3 +11,10 @@ resource "query" "go" {
     EOT
   }
 }
+
+resource "task_run" "go_query" {
+  api_version = "v1"
+  spec {
+    resource = "query/go"
+  }
+}

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -31,7 +30,6 @@ func IntegrationTestQuery(t *testing.T) {
 		}).
 		Run(router, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusOK, r.Code)
-			fmt.Println("")
 		})
 }
 

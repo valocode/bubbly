@@ -2,31 +2,41 @@ package server
 
 import (
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/ziflex/lecho/v2"
-	"os"
-
 	"net/http"
 
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/store"
+	"github.com/ziflex/lecho/v2"
 	"golang.org/x/sync/errgroup"
 )
 
-var serverStore struct {
-	*store.Store
-}
+var serverStore *store.Store
 
 // SetupRouter returns a pointer to a gin engine after setting up middleware
 // and initializing routes
 func setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 	// Initialize Router
-	// router := gin.Default()  // Sets the Gin defaults
-	router := echo.New() // Use a blank Gin server with no middleware loaded
+	router := echo.New()
 	router.Logger = lecho.From(*bCtx.Logger)
-	router.Use(middleware.Recover())
-	router.Use(VersionMiddleware)
+	router.Use(
+		middleware.Recover(),
+		middleware.RequestID(), // Generate a request IDs
+		VersionMiddleware,
+	)
+	// setup the error handler
+	router.HTTPErrorHandler = func(err error, c echo.Context) {
+		// Should send this to some telemetry/logging service...
+		bCtx.Logger.Error().
+			Str("Path", c.Path()).
+			Strs("QueryParams", c.ParamValues()).
+			Err(err).
+			Msg("Received an error")
+
+		// Call the default handler to return the HTTP response
+		router.DefaultHTTPErrorHandler(err, c)
+	}
 
 	// Initialize HTTP Routes
 	InitializeRoutes(bCtx, router)
@@ -34,15 +44,9 @@ func setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 	return router
 }
 
-func InitStore() error {
+func InitStore(bCtx *env.BubblyContext) error {
 	var err error
-	serverStore.Store, err = store.New(store.Config{
-		Provider:         store.ProviderType(os.Getenv("PROVIDER")),
-		PostgresAddr:     os.Getenv("POSTGRES_ADDR"),
-		PostgresUser:     os.Getenv("POSTGRES_USER"),
-		PostgresPassword: os.Getenv("POSTGRES_PASSWORD"),
-		PostgresDatabase: os.Getenv("POSTGRES_DATABASE"),
-	})
+	serverStore, err = store.New(bCtx)
 	if err != nil {
 		return fmt.Errorf("failed to create store: %w", err)
 	}
@@ -51,7 +55,7 @@ func InitStore() error {
 
 // GetStore returns a pointer to the DB
 func GetStore() *store.Store {
-	return serverStore.Store
+	return serverStore
 }
 
 func ListenAndServe(bCtx *env.BubblyContext) error {

@@ -86,7 +86,7 @@ func (s *Scope) resolveVariable(bCtx *env.BubblyContext, ctx *resolveContext) er
 	// recursively traverse as many blocks as possible
 	attrs, err := s.traverseBodyToBlock(ctx, nil)
 	if err != nil {
-		return fmt.Errorf(`Failed to resolve variable "%s": %s`, traversalString(ctx.OrigTraversal), err.Error())
+		return fmt.Errorf(`failed to resolve variable "%s": %s`, traversalString(ctx.OrigTraversal), err.Error())
 	}
 
 	attr, exists := (*attrs)[ctx.Attribute]
@@ -106,7 +106,6 @@ func (s *Scope) resolveVariable(bCtx *env.BubblyContext, ctx *resolveContext) er
 // body content are nil
 func (s *Scope) traverseBodyToBlock(ctx *resolveContext, parent *hcl.Block) (*hcl.Attributes, error) {
 	nestedType := nestedElem(ctx.StepType)
-	// fmt.Printf("traverseBodyToBlock: %s\t%s == %d\n", nestedType.String(), traversalString(ctx.StepTraversal), len(ctx.StepTraversal))
 	zeroVal := reflect.Zero(nestedType)
 	schema, _ := gohcl.ImpliedBodySchema(zeroVal.Interface())
 	content, _, diags := ctx.StepBody.PartialContent(schema)
@@ -126,12 +125,9 @@ func (s *Scope) traverseBodyToBlock(ctx *resolveContext, parent *hcl.Block) (*hc
 	blockName := traverserName(ctx.StepTraversal[0])
 	tags := getFieldTags(nestedType)
 	for _, block := range content.Blocks.OfType(blockName) {
-		// fmt.Printf("Checking Block: %s\n", block.Type)
 		// if a block then the variables should be resolved using the
 		// block labels
-		// fmt.Printf("stepTraversal: %s == %d\n", traversalString(ctx.StepTraversal[1:]), len(ctx.StepTraversal[1:]))
 		if remTraversal := traverseLabels(ctx.StepTraversal[1:], block.Labels); remTraversal != nil {
-			// fmt.Printf("remTraversal: %s == %d\n", traversalString(remTraversal), len(remTraversal))
 			fieldIdx, exists := tags.Blocks[blockName]
 			if !exists {
 				panic(fmt.Sprintf(`Could not find HCL block type "%s" in type "%s"`, blockName, nestedType.String()))
@@ -175,7 +171,7 @@ func (s *Scope) resolveExpr(bCtx *env.BubblyContext, ctx *resolveContext, expr h
 	// if all transitive traversals were resolvable
 	val, diags := expr.Value(s.EvalContext)
 	if diags.HasErrors() {
-		return fmt.Errorf(`Failed to get value of hcl experssion: %s`, diags.Error())
+		return fmt.Errorf(`failed to get value of hcl experssion: %s`, diags.Error())
 	}
 
 	s.insert(bCtx, val, ctx.AliasTraversal)
@@ -200,7 +196,7 @@ func traverseLabels(traversal hcl.Traversal, labels []string) hcl.Traversal {
 	return traversal[len(labels):]
 }
 
-// traversalsString is a helper to pring a string representation of traversals
+// traversalsString is a helper to return a string representation of traversals
 func traversalsString(traversals []hcl.Traversal) string {
 	strTraversals := []string{}
 	for _, traversal := range traversals {
@@ -209,7 +205,7 @@ func traversalsString(traversals []hcl.Traversal) string {
 	return strings.Join(strTraversals, ", ")
 }
 
-// traversalString is a helper to pring a string representation of a traversal
+// traversalString is a helper to return a string representation of a traversal
 func traversalString(traversal hcl.Traversal) string {
 	if len(traversal) == 0 {
 		return ""

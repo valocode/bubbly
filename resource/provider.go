@@ -1,16 +1,8 @@
 package resource
 
+import "github.com/verifa/bubbly/env"
+
 type provider interface {
-	Query(string) (string, error)
-	Save(string, string) error
+	Query(*env.BubblyContext, string) (string, error)
+	Save(*env.BubblyContext, string, string) error
 }
-
-// ProviderType is a data access layer provider
-type ProviderType string
-
-const (
-	// Etcd is an Etcd provider
-	Etcd ProviderType = "etcd"
-	// Buntdb is a Buntdb provider
-	Buntdb ProviderType = "buntdb"
-)

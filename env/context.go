@@ -16,7 +16,21 @@ type BubblyContext struct {
 	// Config stores global bubbly configuration,
 	// such as bubbly server configuration
 	ServerConfig *config.ServerConfig
+	// Store provider configuration
+	StoreConfig *config.StoreConfig
+	// stores configurations for accessing resources
+	ResourceConfig *config.ResourceConfig
 	// TODO: Could also contain a client.Client... consider.
+}
+
+// NewBubblyContext sets up a default Bubbly Context
+func NewBubblyContext() *BubblyContext {
+	return &BubblyContext{
+		Logger:         NewDefaultLogger(),
+		ServerConfig:   config.DefaultServerConfig(),
+		StoreConfig:    config.DefaultStoreConfig(),
+		ResourceConfig: config.DefaultResourceConfig(),
+	}
 }
 
 // NewDefaultLogger sets up a default logger
@@ -30,24 +44,10 @@ func NewDefaultLogger() *zerolog.Logger {
 	return &logger
 }
 
-// NewBubblyContext sets up a default Bubbly Context
-func NewBubblyContext() *BubblyContext {
-	return &BubblyContext{
-		ServerConfig: config.NewDefaultConfig(),
-		Logger:       NewDefaultLogger(),
-	}
-}
-
 // GetServerConfig is a convenience method to extract the bubbly server
 // configuration from a BubblyContext.
-func (bCtx *BubblyContext) GetServerConfig() (*config.ServerConfig, error) {
-	if sc := bCtx.ServerConfig; sc != nil {
-		return sc, nil
-	}
-	// Should never be reached as ServerConfig should always at least be
-	// be instanced with default values (due to mergo.Merge)
-	bCtx.Logger.Error().Msg("bubbly server not configured. This error indicates an internal bubbly error")
-	return nil, fmt.Errorf("bubbly server not configured")
+func (bCtx *BubblyContext) GetServerConfig() *config.ServerConfig {
+	return bCtx.ServerConfig
 }
 
 // UpdateLogLevel is a convenience method for updating the log level of

@@ -113,7 +113,7 @@ func TestExtractGit(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 
 	source := gitSource{
-		Directory: filepath.FromSlash(`testdata/extract/git/repo1.git`),
+		Directory: filepath.FromSlash(`../../integration/testdata/git/repo1.git`),
 	}
 
 	expected := cty.ObjectVal(map[string]cty.Value{

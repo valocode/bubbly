@@ -59,7 +59,7 @@ func main() {
 	// attributes (and therefore reset when calling NewCmdRoot),
 	// we need to merge the default configuration with any flags
 	// provided by CLI.
-	defaultConfig := config.NewDefaultConfig()
+	defaultConfig := config.DefaultServerConfig()
 
 	if err := mergo.Merge(bCtx.ServerConfig, defaultConfig); err != nil {
 		bCtx.Logger.Error().Err(err).Msg("error when merging configs")

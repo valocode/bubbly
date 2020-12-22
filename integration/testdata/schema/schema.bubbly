@@ -1,0 +1,117 @@
+
+table "repo" {
+    field "name" {
+        type = string
+        unique = true
+    }
+
+    table "repo_version" {
+        field "commit" {
+            type = string
+            unique = true
+        }
+        field "tag" {
+            type = string
+            unique = true
+        }
+        field "branch" {
+            type = string
+            unique = false
+        }
+    }
+}
+
+table "code_issue" {
+    field "name" {
+        type = string
+        unique = false
+    }
+    field "severity" {
+        type = string
+        unique = false
+    }
+    field "type" {
+        type = string
+        unique = false
+    }
+}
+
+table "test_run" {
+    field "repo_version_id" {
+        type = number
+        unique = false
+    }
+
+    field "name" {
+        type = string
+        unique = true
+    }
+    field "description" {
+        type = string
+        unique = false
+    }
+
+    field "elapsed" {
+        type = number
+        unique = false
+    }
+
+    table "test_set" {
+        field "name" {
+            type = string
+            unique = false
+        }
+        field "description" {
+            type = string
+            unique = false
+        }
+
+        table "test_case" {
+
+            field "name" {
+                type = string
+                unique = false
+            }
+            field "status" {
+                type = string
+                unique = false
+            }
+
+            table "step" {
+                field "name" {
+                    type = string
+                    unique = false
+                }
+                field "step_id" {
+                    type = number
+                    unique = false
+                }
+            }
+            table "failure" {
+                field "type" {
+                    type = string
+                    unique = false
+                }
+                field "message" {
+                    type = string
+                    unique = false
+                }
+            }
+        }
+    }
+}
+
+table "spdx_license" {
+    field "id" {
+        type = string
+        unique = true
+    }
+    field "name" {
+        type = string
+        unique = false
+    }
+    field "crossref_count" {
+        type = number
+        unique = false
+    }
+}

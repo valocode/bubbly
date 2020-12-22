@@ -42,7 +42,7 @@ var applyWithServerConfigsSetupCases = []struct {
 			Auth:     false,
 			Token:    "",
 		},
-		expected:     false,
+		expected:     true,
 		address:      "http://localhost:8070",
 		route:        "/alpha1/upload",
 		responseCode: http.StatusOK,

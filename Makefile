@@ -1,9 +1,6 @@
 BIN=./build/bubbly
 KIND_CLUSTER_NAME=bubbly
 
-# set the default bubbly provider
-export BUBBLY_PROVIDER?=postgres
-
 all: build run-help
 
 .PHONY: build
@@ -37,10 +34,6 @@ dev:
 
 ## integration testing
 
-# .PHONY: storefront
-# storefront: integration-cleanup
-# 	docker-compose up --build --abort-on-container-exit --remove-orphans storefront $${BUBBLY_PROVIDER}
-
 .PHONY: kind-cleanup
 kind-cleanup:
 	kind delete clusters ${KIND_CLUSTER_NAME}
@@ -50,12 +43,17 @@ kind-bootstrap: integration-cleanup
 	# create the kind cluster
 	kind create cluster --name ${KIND_CLUSTER_NAME} --config kind-config.yaml
 
+.PHONY: development
+development:
+	# --trigger manual means you need to press ENTER to trigger a re-build/deploy
+	skaffold dev --trigger manual
+
 .PHONY: integration
 integration:
 	# --force so that the k8s Job gets re-applied
-	skaffold run -p integration --force --status-check
-
-## local ci
+	skaffold run -p integration --force
+	# print the logs and follow until complete
+	kubectl logs --follow --tail=-1 --selector job-name=bubbly-integration
 
 # Project is CI-enabled with Github Actions. You can run CI locally
 # using act (https://github.com/nektos/act). 

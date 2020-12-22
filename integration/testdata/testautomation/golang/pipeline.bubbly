@@ -24,6 +24,35 @@ resource "transform" "gotest" {
     api_version = "v1"
     spec {
         input "data" {}
+
+        data "repo_version" {
+            field "commit" {
+                value = "madeupcommit54321"
+            }
+        }
+
+        data "test_run" {
+            // TODO: once DataRef is supported
+            // field "repo_version_id" {
+            //     value = data.repo_version.id
+            // }
+            field "name" {
+                value = "testrun123"
+            }
+            field "description" {
+                value = "Golang unit tests in CI"
+            }
+        }
+
+        data "test_set" {
+            // field "test_run_id" {
+            //     value = data.test_run.id
+            // }
+            field "name" {
+                value = "golang_unit_tests"
+            }
+        }
+
         dynamic "data" {
             for_each = [for i in self.input.data: i if i.Test != null && i.Package != null && i.Elapsed != null]
             iterator = it
@@ -79,7 +108,7 @@ resource "pipeline_run" "gotest" {
     api_version = "v1"
     spec {
         // specify the name of the pipeline resource to execute
-        pipeline = "gotest"
+        pipeline = "pipeline/gotest"
         // specify the pipeline input(s) required
         input "file" {
             value = "./testdata/testautomation/golang/test-report.json"

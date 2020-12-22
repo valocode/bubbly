@@ -18,43 +18,39 @@ type DescribeResourceReturn struct {
 	Events []events.Event `json:"events"`
 }
 
-func (c *Client) DescribeResource(bCtx *env.BubblyContext, rType, rName, rVersion string) (DescribeResourceReturn, error) {
+func (c *Client) DescribeResource(bCtx *env.BubblyContext, rType, rName, rVersion string) (*DescribeResourceReturn, error) {
 	route := "describe"
 	u, err := url.Parse(c.HostURL)
 
 	if err != nil {
-		return DescribeResourceReturn{}, fmt.Errorf("failed to parse bubbly server URL: %w", err)
+		return nil, fmt.Errorf("failed to parse bubbly server URL: %w", err)
 	}
 
 	u.Path = path.Join(u.Path, route, rType, rVersion, rName)
 	requestRoute := u.String()
 
 	bCtx.Logger.Debug().Str("route", requestRoute).Msg("attempting to describe resource via GET request")
-	// describe resource
-	req, err := http.NewRequest(http.MethodGet, requestRoute, nil)
+
+	resp, err := handleResponse(
+		http.Get(requestRoute),
+	)
 
 	if err != nil {
-		return DescribeResourceReturn{}, fmt.Errorf("failed to form GET request: %w", err)
+		return nil, fmt.Errorf("failed to make GET request to describe resource: %w", err)
 	}
 
-	rc, err := c.do(req)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		return DescribeResourceReturn{}, fmt.Errorf("failed to make GET request to describe resource: %w", err)
-	}
-
-	defer rc.Close()
-	body, err := ioutil.ReadAll(rc)
-
-	if err != nil {
-		return DescribeResourceReturn{}, fmt.Errorf("failed to read GET response: %w", err)
+		return nil, fmt.Errorf("failed to read GET response: %w", err)
 	}
 
 	// parse response body
-	drrs := DescribeResourceReturn{}
-	err = json.Unmarshal(body, &drrs)
+	drrs := &DescribeResourceReturn{}
+	err = json.Unmarshal(body, drrs)
 	if err != nil {
-		return DescribeResourceReturn{}, fmt.Errorf("failed to unmarshal describe GET response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal describe GET response: %w", err)
 	}
 
 	return drrs, nil
@@ -74,20 +70,16 @@ func (c *Client) DescribeResourceGroup(bCtx *env.BubblyContext, rType, rVersion 
 	bCtx.Logger.Debug().Str("route", requestRoute).Msg("attempting to describe resource group via GET request")
 
 	// describe resource
-	req, err := http.NewRequest(http.MethodGet, requestRoute, nil)
+	resp, err := handleResponse(
+		http.Get(requestRoute),
+	)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to make GET request to describe resource group: %w", err)
 	}
 
-	rc, err := c.do(req)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to make GET request to describe resource group: %w", err)
-	}
-
-	defer rc.Close()
-	body, err := ioutil.ReadAll(rc)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to read GET response: %w", err)

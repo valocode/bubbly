@@ -1,4 +1,5 @@
 // +build integration
+// +build incluster
 
 package integration
 
@@ -11,8 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/verifa/bubbly/bubbly"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/server"
+	"github.com/verifa/bubbly/store"
 )
+
+// TODO: this needs a proper test suite as well...
 
 func TestStore(t *testing.T) {
 
@@ -20,10 +23,11 @@ func TestStore(t *testing.T) {
 	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
 	err := bubbly.Apply(bCtx, "./testdata/testautomation/golang/pipeline.bubbly")
-
 	assert.NoError(t, err)
 
-	s := server.GetStore()
+	// TODO: this needs to have direct access to a postgres db
+	s, err := store.New(bCtx)
+	assert.NoErrorf(t, err, "failed to create store")
 
 	n, err := s.Query(`{
 			test_case(status: "pass") {

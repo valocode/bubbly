@@ -3,8 +3,10 @@ package v1
 import (
 	"fmt"
 
+	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -29,10 +31,11 @@ func NewCriteria(resBlock *core.ResourceBlock) *Criteria {
 // Apply returns a core.ResourceOutput, whose Value is a cty.BoolVal indicating
 // success of failure of the criteria's operation
 func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	if err := ctx.DecodeBody(bCtx, c.SpecHCL.Body, &c.Spec); err != nil {
+	p := parser.WithInputs(bCtx, ctx.Inputs)
+	if err := p.Scope.DecodeExpandBody(bCtx, c.SpecHCL.Body, &c.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf("Failed to decode criteria body spec: %w", err),
+			Error:  fmt.Errorf("failed to decode criteria body spec: %w", err),
 			Value:  cty.NilVal,
 		}
 	}
@@ -47,39 +50,26 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 	for idx, querySpec := range c.Spec.Queries {
 		bCtx.Logger.Debug().Msgf("Applying query: %s", querySpec.Name)
 
-		// get the resource ID of the underlying query referenced
-		// by the QueryDeclaration
-		queryResID := core.NewResourceIDFromString(fmt.Sprint(string(core.QueryResourceKind), "/", querySpec.Name))
-
+		// TODO: what about namespaces for the resource??
 		// use this resourceID to get the underlying Resource
-		queryRes, err := ctx.GetResource(queryResID.Kind, queryResID.Name)
-
-		if err != nil {
-			return core.ResourceOutput{
-				Status: core.ResourceOutputFailure,
-				Error:  fmt.Errorf(`Could not find query resource "%s" referenced by Criteria "%s": %w`, queryResID.String(), c.Name(), err),
-				Value:  cty.NilVal,
-			}
-		}
-
-		// applying a query resource updates the ctx, such that the
-		// EvalContext includes a "self.query.<name>.value" []Traversal.
-		// We then use this when decoding the condition blocks
-		output := queryRes.Apply(bCtx, ctx)
+		resID := fmt.Sprintf("%s/%s", string(core.QueryResourceKind), querySpec.Name)
+		// TODO: pass in ctx...
+		resource, output := common.RunResource(bCtx, ctx, resID, cty.NilVal)
 
 		if output.Error != nil {
 			return core.ResourceOutput{
 				Status: core.ResourceOutputFailure,
-				Error:  fmt.Errorf(`Failed to apply query "%s" with index %d in criteria "%s": %w"`, querySpec.Name, idx, c.String(), output.Error),
+				Error:  fmt.Errorf(`failed to apply query "%s" with index %d in criteria "%s": %w"`, querySpec.Name, idx, c.String(), output.Error),
 				Value:  cty.NilVal,
 			}
 		}
 
 		// insert the output into the EvalContext
-		ctx.InsertValue(bCtx, output.Output(), []string{"self", string(core.QueryResourceKind), queryRes.Name()})
+		// TODO
+		// p.Scope.InsertValue(bCtx, output.Output(), []string{"self", string(core.QueryResourceKind), resource.Name()})
 
-		bCtx.Logger.Debug().Str("query", queryRes.String()).Str("output_status", string(output.Status)).Str("output_value", output.Value.GoString()).Msg("query successfully processed")
-		c.Queries[queryRes.Name()] = queryRes
+		bCtx.Logger.Debug().Str("query", resource.String()).Str("output_status", string(output.Status)).Str("output_value", output.Value.GoString()).Msg("query successfully processed")
+		c.Queries[resource.Name()] = resource
 
 	}
 
@@ -93,27 +83,30 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 		condition := NewCondition(conditionSpec)
 
-		output := condition.Apply(bCtx, ctx)
+		output := condition.Apply(
+			bCtx,
+			core.NewResourceContext(c.Namespace(), cty.NilVal, ctx.NewResource),
+		)
 
 		if output.Error != nil {
 			return core.ResourceOutput{
 				Status: core.ResourceOutputFailure,
-				Error:  fmt.Errorf(`Failed to apply condition "%s" with index %d in criteria "%s": %w"`, conditionSpec.Name, idx, c.String(), output.Error),
+				Error:  fmt.Errorf(`failed to apply condition "%s" with index %d in criteria "%s": %w"`, conditionSpec.Name, idx, c.String(), output.Error),
 				Value:  cty.NilVal,
 			}
 		}
 
 		// insert the output into the EvalContext. This allows us to use
 		// the result when decoding the operation
-		ctx.InsertValue(bCtx, output.Output(), []string{"self", "condition", condition.Name()})
+		p.Scope.InsertValue(bCtx, output.Output(), []string{"self", "condition", condition.Name})
 
 		bCtx.Logger.Debug().
-			Str("condition", condition.String()).
+			Str("condition", condition.Name).
 			Str("output_status", string(output.Status)).
 			Str("output_value", output.Value.GoString()).
 			Msg("condition successfully processed")
 
-		c.Conditions[condition.Name()] = condition
+		c.Conditions[condition.Name] = condition
 
 	}
 
@@ -122,12 +115,15 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 	operationSpec := c.Spec.Operation
 	operation := NewOperation(operationSpec)
 
-	output := operation.Apply(bCtx, ctx)
+	output := operation.Apply(
+		bCtx,
+		core.NewResourceContext(c.Namespace(), cty.NilVal, ctx.NewResource),
+	)
 
 	if output.Error != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`Failed to apply operation "%s" in criteria "%s": %w"`, operationSpec.Name, c.String(), output.Error),
+			Error:  fmt.Errorf(`failed to apply operation "%s" in criteria "%s": %w"`, operationSpec.Name, c.String(), output.Error),
 			Value:  cty.NilVal,
 		}
 	}

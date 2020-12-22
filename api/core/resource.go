@@ -1,13 +1,19 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
+	"io/ioutil"
+	"reflect"
 
-	"github.com/Jeffail/gabs"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+
+	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/parser"
 )
+
+const DefaultNamespace = "default"
 
 // ResourceBlocks is a wrapper for a slice of type ResourceBlock
 type ResourceBlocks []*ResourceBlock
@@ -28,17 +34,17 @@ type ResourceBlock struct {
 }
 
 // Kind returns the resource kind
-func (r *ResourceBlock) Kind() ResourceKind {
+func (r ResourceBlock) Kind() ResourceKind {
 	return ResourceKind(r.ResourceKind)
 }
 
 // Name returns the name of the resource
-func (r *ResourceBlock) Name() string {
+func (r ResourceBlock) Name() string {
 	return r.ResourceName
 }
 
 // Namespace returns the namespace of the resource
-func (r *ResourceBlock) Namespace() string {
+func (r ResourceBlock) Namespace() string {
 	if md := r.Metadata; md != nil {
 		if md.Namespace != "" {
 			return md.Namespace
@@ -48,7 +54,7 @@ func (r *ResourceBlock) Namespace() string {
 }
 
 // Labels returns the labels of the resource
-func (r *ResourceBlock) Labels() map[string]string {
+func (r ResourceBlock) Labels() map[string]string {
 	if md := r.Metadata; md != nil {
 		return md.Labels
 	}
@@ -56,47 +62,80 @@ func (r *ResourceBlock) Labels() map[string]string {
 }
 
 // APIVersion returns the APIVersion of the resource
-func (r *ResourceBlock) APIVersion() APIVersion {
+func (r ResourceBlock) APIVersion() APIVersion {
 	return r.ResourceAPIVersion
 }
 
 // String returns a human-friendly string ID for the resource
-func (r *ResourceBlock) String() string {
+func (r ResourceBlock) String() string {
 	return fmt.Sprintf(
-		"%s.%s.%s.%s",
-		r.APIVersion(), r.Namespace(), r.ResourceKind, r.ResourceName,
+		"%s/%s/%s",
+		r.Namespace(), r.ResourceKind, r.ResourceName,
 	)
 }
 
-// MarshalJSON makes sure no-body marshals this type the default way
-func (r *ResourceBlock) MarshalJSON() ([]byte, error) {
-	panic("MarshalJSON not supported. Use the JSON() method.")
-}
-
-// UnmarshalJSON makes sure no-body unmarshals this type the default way
-func (r *ResourceBlock) UnmarshalJSON([]byte) error {
-	panic("UnmarshalJSON not supported. Use the JSON() method.")
-}
-
-// JSON returns a JSON representation of this resource block using the given
-// ResourceContext.
-func (r *ResourceBlock) JSON(ctx *ResourceContext) ([]byte, error) {
-	// get the resource spec{} block as JSON
-	sBody := r.SpecHCL.Body.(*hclsyntax.Body)
-	bodyJSON, err := ctx.BodyToJSON(sBody)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to marshal resource %s to json: %s", r.String(), err.Error())
+// MarshalJSON is customized to marshal a ResourceBlock, and thereby a resource
+func (r ResourceBlock) MarshalJSON() ([]byte, error) {
+	// get the source range of the hcl spec{} block, so that we can extract it
+	// as raw text
+	var srcRange hcl.Range
+	switch body := r.SpecHCL.Body.(type) {
+	case *hclsyntax.Body:
+		srcRange = body.SrcRange
+	default:
+		return nil, fmt.Errorf("cannot get src range for unknown hcl.Body type %s", reflect.TypeOf(body).String())
 	}
+	// read the bubbly file containing the HCL
+	fileBytes, err := ioutil.ReadFile(srcRange.Filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read resource file: %w", err)
+	}
+	if !srcRange.CanSliceBytes(fileBytes) {
+		return nil, fmt.Errorf("cannot slice bytes for resource %s in filename %s", r.String(), srcRange.Filename)
+	}
+	specBytes := srcRange.SliceBytes(fileBytes)
+	// specBytes contains the block paranthesis "{" and "}". Remove them
+	specBytes = specBytes[1 : len(specBytes)-1]
+	b, err := json.Marshal(NewResourceBlockJSON(r, string(specBytes)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal ResourceBLockJSON: %w", err)
+	}
+	return b, nil
+}
 
-	// create the resource{} block as JSON
-	resObj := gabs.New()
-	resObj.Set(r.APIVersion(), "api_version")
-	resObj.Set(bodyJSON, "spec")
+// UnmarshalJSON is customized to unmarshal a resource
+func (r *ResourceBlock) UnmarshalJSON(data []byte) error {
+	var resJSON ResourceBlockJSON
+	if err := json.Unmarshal(data, &resJSON); err != nil {
+		return fmt.Errorf("failed to unmarshal ResourceBlockJSON: %w", err)
+	}
+	var err error
+	*r, err = resJSON.ResourceBlock()
+	return err
+}
 
-	// create the top level JSON object that contains the resource
-	jsonObj := gabs.New()
-	jsonObj.Set(resObj.Data(), "resource", string(r.Kind()), r.Name())
-	return jsonObj.Bytes(), nil
+func NewResourceBlockJSON(resBlock ResourceBlock, specRaw string) *ResourceBlockJSON {
+	return &ResourceBlockJSON{
+		ResourceBlockAlias: ResourceBlockAlias(resBlock),
+		SpecRaw:            specRaw,
+	}
+}
+
+type ResourceBlockAlias ResourceBlock
+type ResourceBlockJSON struct {
+	ResourceBlockAlias
+	SpecRaw string `json:"spec"`
+}
+
+func (r *ResourceBlockJSON) ResourceBlock() (ResourceBlock, error) {
+	resBlock := ResourceBlock(r.ResourceBlockAlias)
+	err := parser.ParseResource(env.NewBubblyContext(), []byte(r.SpecRaw), &resBlock.SpecHCL)
+	return resBlock, err
+}
+
+func (r *ResourceBlockJSON) Validate() error {
+	// TODO: check the fields which are needed
+	return nil
 }
 
 // ResourceKind represents the different kinds of resources
@@ -124,45 +163,24 @@ const (
 // ResourceKindPriority returns a list of the resource kinds by their priority
 func ResourceKindPriority() []ResourceKind {
 	return []ResourceKind{
-		ExtractResourceKind, TransformResourceKind, LoadResourceKind,
-		PipelineResourceKind, PipelineRunResourceKind, TaskRunResourceKind,
-		QueryResourceKind, CriteriaResourceKind,
+		ExtractResourceKind,
+		TransformResourceKind,
+		LoadResourceKind,
+		QueryResourceKind,
+		// Pipeline and Criteria both reference other resources
+		PipelineResourceKind,
+		CriteriaResourceKind,
+		// last in the priority come the "Run" kinds
+		PipelineRunResourceKind,
+		TaskRunResourceKind,
 	}
 }
 
-// ResourceID is a type representation the ID of a resource
-type ResourceID struct {
-	Kind      ResourceKind
-	Name      string
-	Namespace string
-}
-
-// NewResourceIDFromString takes a string representation of an ID, e.g. from
-// an HCL file, and returns a ResourceID to be used to identify the resource
-// programmatically.
-func NewResourceIDFromString(resStr string) *ResourceID {
-	rID := &ResourceID{}
-	subStr := strings.Split(resStr, "/")
-	switch l := len(subStr); l {
-	case 2:
-		// We currently do not know the namespace of the resource if
-		// not explicitely provided by the user. Fortunately, it is not needed
-		// to successfully Get the resource during a task.Apply().
-		rID.Kind = ResourceKind(subStr[0])
-		rID.Name = subStr[1]
-	case 3:
-		rID.Namespace = subStr[0]
-		rID.Kind = ResourceKind(subStr[1])
-		rID.Name = subStr[2]
-	default:
-		panic(fmt.Sprintf("Unsupported resource string representation %s", resStr))
+func ResourceRunKinds() []ResourceKind {
+	return []ResourceKind{
+		TaskRunResourceKind,
+		PipelineRunResourceKind,
 	}
-	return rID
-}
-
-// String returns a string representation of a ResourceID
-func (r *ResourceID) String() string {
-	return strings.Join([]string{r.Namespace, string(r.Kind), r.Name}, "/")
 }
 
 // APIVersion represents the api_version of different resources

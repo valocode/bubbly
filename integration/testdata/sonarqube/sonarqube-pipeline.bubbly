@@ -1,0 +1,225 @@
+
+//  defines a data source and a format for the data, and returns a cty.Value
+// representation of the external data.
+resource "extract" "sonarqube" {
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
+    api_version = "v1"
+    spec {
+        input "file" {}
+        type = "json"
+        source {
+            file = self.input.file
+            format = object({
+                issues: list(object({
+                    engineId: string,
+                    ruleId: string,
+                    severity: string,
+                    type: string,
+                    primaryLocation: object({
+                        message: string,
+                        filePath: string,
+                        textRange: object({
+                            startLine: number,
+                            endLine: number,
+                            startColumn: number,
+                            endColumn: number
+                        })
+                    })
+                }))
+            })
+        }
+    }
+}
+
+resource "extract" "git" {
+    api_version = "v1"
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
+    spec {
+        input "repo" {}
+        type = "git"
+
+        // The format of Git Extract is pre-defined
+        source {
+            directory = self.input.repo
+        }
+    }
+}
+
+// defines a transformation or conversion of data from an Extract and outputs
+// a mapping of the extracted data to the defined data schema.
+resource "transform" "sonarqube" {
+    api_version = "v1"
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
+    spec {
+        input "data" {}
+        input "repository" {}
+
+        data "repo" {
+            field "name" {
+                value = "sonarqube_test"
+            }
+        }
+
+        // this data will be associated with the "repository_version" table
+        // within the interim database
+        data "repo_version" {
+            // TODO: once DataRef has been implemented into the parser...
+            // field "repo_id" {
+            //     value = data.repo.id
+            // }
+            field "commit" {
+                value = self.input.repository.commit_id
+            }
+            field "tag" {
+                value = self.input.repository.tag
+            }
+            field "branch" {
+                value = self.input.repository.active_branch
+            }
+        }
+
+        // iterate over the list of issues
+        dynamic "data" {
+            for_each = self.input.data.issues
+            iterator = issue
+            // map the data to the code_issue table in the interim database
+            labels = ["code_issue"]
+            content {
+                // if the "id" field is blank, it should be auto-generated
+                // field "id" {}
+
+                field "name" {
+                    value = issue.value.primaryLocation.message
+                }
+                field "severity" {
+                    value = issue.value.severity
+                }
+                field "type" {
+                    value = issue.value.type
+                }
+            }
+        }
+    }
+}
+
+// defines the loading of transform output data to a bubbly server
+resource "load" "sonarqube" {
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
+    api_version = "v1"
+    spec {
+        input "data" {}
+        // what do we need here?!
+        data = self.input.data
+    }
+}
+
+// How do we tie all the above resources together...? In a pipeline!
+// A pipeline is just another reusable resource
+// NOTE: only a pipeline_run actually triggers a pipeline to run
+resource "pipeline" "sonarqube" {
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
+    api_version = "v1"
+    spec {
+        input "file" {}
+        input "repo" {}
+        // Each task represents the execution of an action defined by
+        // a bubbly resource
+        // action: extract the data from the data source
+        task "extract_sonarqube" {
+            resource = "extract/sonarqube"
+            input "file" {
+                value = self.input.file
+            }
+        }
+        task "extract_git" {
+            resource = "extract/git"
+            input "repo" {
+                value = self.input.repo
+            }
+        }
+
+        // action: transform the extracted data
+        task "transform" {
+            resource = "transform/sonarqube"
+            // mock the repository data that will come from the git extract
+            input "repository" {
+                value = self.task.extract_git.value
+            }
+            input "data" {
+                // Each task in a pipeline has an output, similar to resources,
+                // so that task outputs can be referenced
+                // here, we reference the output of the task "extract"
+                value = self.task.extract_sonarqube.value
+            }
+        }
+
+        // action: load the transformed data to the bubbly server
+        task "load" {
+            resource = "load/sonarqube"
+            input "data" {
+                value = self.task.transform.value
+            }
+        }
+    }
+}
+
+// A pipeline_run resources executes a pipeline resource.
+resource "pipeline_run" "sonarqube" {
+    api_version = "v1"
+    metadata {
+        namespace = "qa"
+        labels = {
+            "environment": "prod"
+        }
+    }
+    spec {
+        // specify the name of the pipeline resource to execute
+        pipeline = "pipeline/sonarqube"
+        // specify the pipeline input(s) required
+        input "file" {
+            value = "./testdata/sonarqube/sonarqube-example.json"
+        }
+        input "repo" {
+            value = "./testdata/git/repo1.git"
+        }
+    }
+}
+
+resource "task_run" "extract_sonarqube" {
+    api_version = "v1"
+    metadata {
+        namespace = "qa"
+        labels = {}
+    }
+    spec {
+        resource = "extract/sonarqube"
+        input "file" {
+            value = "./testdata/sonarqube/sonarqube-example.json"
+        }
+    }
+}

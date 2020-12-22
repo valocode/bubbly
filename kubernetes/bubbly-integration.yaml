@@ -5,6 +5,9 @@ metadata:
   name: bubbly-integration
 spec:
   template:
+    metadata:
+      labels:
+        type: bubbly-integration
     spec:
       initContainers:
         - name: init-db
@@ -15,20 +18,21 @@ spec:
               "-c",
               "until pg_isready -h postgres -p 5432;  do echo waiting for database; sleep 2; done;",
             ]
+        - name: init-bubbly
+          image: busybox:1.33
+          command:
+            [
+              "sh",
+              "-c",
+              "until nc -zv bubbly 8111; do echo waiting for bubbly; sleep 1; done",
+            ]
       containers:
         - name: bubbly-integration
-          image: verifa/bubbly-tester
-          command:
-            ["go", "test", "-race", "-v", "--tags=integration", "./integration"]
+          image: verifa/bubbly-integration
           envFrom:
             - configMapRef:
                 name: postgres-config
-          env:
-            - name: PROVIDER
-              value: "postgres"
-            - name: POSTGRES_ADDR
-              value: "postgres:5432"
-            - name: POSTGRES_DATABASE
-              value: "postgres"
+            - configMapRef:
+                name: bubbly-config
       restartPolicy: Never
-  backoffLimit: 4
+  backoffLimit: 0

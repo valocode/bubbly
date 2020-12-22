@@ -5,6 +5,7 @@ import (
 
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -30,10 +31,11 @@ func (p *Pipeline) SpecValue() core.ResourceSpec {
 // Apply returns ...
 func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 
-	if err := ctx.DecodeBody(bCtx, p.SpecHCL.Body, &p.Spec); err != nil {
+	parser := parser.WithInputs(bCtx, ctx.Inputs)
+	if err := parser.Scope.DecodeExpandBody(bCtx, p.SpecHCL.Body, &p.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %s`, p.String(), err.Error()),
+			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, p.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
@@ -42,18 +44,25 @@ func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		bCtx.Logger.Debug().Msgf("Applying task: %s", taskSpec.Name)
 		t := NewTask(taskSpec)
 
-		output := t.Apply(bCtx, ctx)
+		// create the run ResourceContext for the SubResource to apply
+		runCtx := core.NewResourceContext(
+			p.Namespace(), ctx.State.Value([]string{"task"}, ctx.Inputs), ctx.NewResource,
+		)
+
+		output := t.Apply(bCtx, runCtx)
 
 		if output.Error != nil {
 			return core.ResourceOutput{
 				Status: core.ResourceOutputFailure,
-				Error:  fmt.Errorf(`Failed to apply task "%s" with index %d in pipeline "%s": %w"`, taskSpec.Name, idx, p.String(), output.Error),
+				Error:  fmt.Errorf(`failed to apply task "%s" with index %d in pipeline "%s": %w"`, taskSpec.Name, idx, p.String(), output.Error),
 				Value:  cty.NilVal,
 			}
 		}
 
-		p.Tasks[t.Name()] = t
+		// add the output of the task to the parser
+		ctx.State.Insert(t.Name(), output.Value)
 
+		p.Tasks[t.Name()] = t
 	}
 
 	return core.ResourceOutput{

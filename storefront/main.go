@@ -23,7 +23,7 @@ func main() {
 		}
 	}()
 
-	tables, err := testData.TestAutomationSchema("../integration")
+	tables, err := testData.TestSchema("../integration")
 	if err != nil {
 		log.Fatal(err)
 	}

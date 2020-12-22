@@ -26,14 +26,14 @@ func (s *Scope) DecodeExpandBody(bCtx *env.BubblyContext, body hcl.Body, val int
 	// blocks
 	traversals := walkExpandVariables(decodeCtx.Body, decodeCtx.Type())
 	if err := s.resolveVariables(bCtx, decodeCtx, traversals); err != nil {
-		return fmt.Errorf(`Failed to decode body using type "%s": %s`, decodeCtx.Type().String(), err.Error())
+		return fmt.Errorf(`failed to decode body using type "%s": %w`, decodeCtx.Type().String(), err)
 	}
 
 	// we have to expand before we resolve variables, otherwise the variables
 	// will not exist
 	body = dynblock.Expand(body, s.EvalContext)
 	if diags := s.decodeBody(bCtx, body, val); diags.HasErrors() {
-		return fmt.Errorf(`Failed to decode body: %s`, diags.Error())
+		return fmt.Errorf(`failed to decode body using type "%s": %s`, decodeCtx.Type().String(), diags.Error())
 	}
 
 	return nil

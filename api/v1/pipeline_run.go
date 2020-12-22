@@ -3,8 +3,10 @@ package v1
 import (
 	"fmt"
 
+	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -27,31 +29,18 @@ func (p *PipelineRun) SpecValue() core.ResourceSpec {
 
 // Apply returns ...
 func (p *PipelineRun) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+	parser := parser.WithInputs(bCtx, ctx.Inputs)
 	// decode the resource spec into the pipeline runs's Spec
-	if err := ctx.DecodeBody(bCtx, p.SpecHCL.Body, &p.Spec); err != nil {
+	if err := parser.Scope.DecodeExpandBody(bCtx, p.SpecHCL.Body, &p.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`Failed to decode "%s" body spec: %s`, p.String(), err.Error()),
+			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, p.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
 
-	pipeline, err := ctx.GetResource(core.PipelineResourceKind, p.Spec.PipelineID)
-	if err != nil {
-		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`Pipeline "%s" does not exist: %s`, p.Spec.PipelineID, err.Error()),
-			Value:  cty.NilVal,
-		}
-	}
-
-	out := pipeline.Apply(bCtx, ctx.NewContext(p.Spec.Inputs.Value()))
-
-	return core.ResourceOutput{
-		Status: out.Status,
-		Error:  out.Error,
-		Value:  cty.NilVal,
-	}
+	_, output := common.RunResource(bCtx, ctx, p.Spec.PipelineID, p.Spec.Inputs.Value())
+	return output
 }
 
 type pipelineRunSpec struct {

@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -44,16 +45,17 @@ func NewExtract(resBlock *core.ResourceBlock) *Extract {
 }
 
 // Apply returns the output from applying a resource
-func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+	p := parser.WithInputs(bCtx, ctx.Inputs)
 
-	if err := i.decode(bCtx, ctx.DecodeBody); err != nil {
+	if err := e.decode(bCtx, p); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf("failed to decode resource %s: %w", i.String(), err),
+			Error:  fmt.Errorf("failed to decode resource %s: %w", e.String(), err),
 		}
 	}
 
-	if i == nil {
+	if e == nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  errors.New("cannot get output of a null extract"),
@@ -61,7 +63,7 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		}
 	}
 
-	if i.Spec.Source == nil {
+	if e.Spec.Source == nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  errors.New("cannot get output of an extract with null source"),
@@ -69,7 +71,7 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		}
 	}
 
-	if len(i.Spec.Source) == 0 {
+	if len(e.Spec.Source) == 0 {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  errors.New("cannot get output of an extract with no source"),
@@ -77,8 +79,8 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		}
 	}
 
-	vals := make([]cty.Value, 0, len(i.Spec.Source))
-	for _, src := range i.Spec.Source {
+	vals := make([]cty.Value, 0, len(e.Spec.Source))
+	for _, src := range e.Spec.Source {
 		val, err := src.Resolve(bCtx)
 		if err != nil {
 			return core.ResourceOutput{
@@ -91,7 +93,7 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 	}
 
 	var val cty.Value
-	switch len(i.Spec.Source) {
+	switch len(e.Spec.Source) {
 	case 0:
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
@@ -112,8 +114,8 @@ func (i *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 }
 
 // SpecValue method returns resource specification structure
-func (i *Extract) SpecValue() core.ResourceSpec {
-	return &i.Spec
+func (e *Extract) SpecValue() core.ResourceSpec {
+	return &e.Spec
 }
 
 // setRestSourceDefaults returns a restSource struct, with optional fields initialised
@@ -169,38 +171,38 @@ func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) error {
 }
 
 // decode is responsible for decoding any necessary hcl.Body inside Extract
-func (i *Extract) decode(bCtx *env.BubblyContext, decodeFn core.DecodeBodyFn) error {
+func (e *Extract) decode(bCtx *env.BubblyContext, parser *parser.Parser) error {
 
 	// decode the resource spec into the extract's Spec
-	if err := decodeFn(bCtx, i.SpecHCL.Body, &i.Spec); err != nil {
-		return fmt.Errorf(`failed to decode "%s" body spec: %w`, i.String(), err)
+	if err := parser.Scope.DecodeExpandBody(bCtx, e.SpecHCL.Body, &e.Spec); err != nil {
+		return fmt.Errorf(`failed to decode "%s" body spec: %w`, e.String(), err)
 	}
 
-	i.Spec.Source = make(SourceBlocks, len(i.Spec.SourceHCL))
+	e.Spec.Source = make(SourceBlocks, len(e.Spec.SourceHCL))
 
-	for idx := range i.Spec.SourceHCL {
+	for idx := range e.Spec.SourceHCL {
 
 		// Initiate the Extract's Source structure
-		switch i.Spec.Type {
+		switch e.Spec.Type {
 		case jsonExtractType:
-			i.Spec.Source[idx] = new(jsonSource)
+			e.Spec.Source[idx] = new(jsonSource)
 		case xmlExtractType:
-			i.Spec.Source[idx] = new(xmlSource)
+			e.Spec.Source[idx] = new(xmlSource)
 		case gitExtractType:
-			i.Spec.Source[idx] = new(gitSource)
+			e.Spec.Source[idx] = new(gitSource)
 		case restExtractType:
-			i.Spec.Source[idx] = new(restSource)
+			e.Spec.Source[idx] = new(restSource)
 		default:
-			return fmt.Errorf("unsupported extract resource type: %s", i.Spec.Type)
+			return fmt.Errorf("unsupported extract resource type: %s", e.Spec.Type)
 		}
 
 		// decode the source HCL into the extract's Source
-		if err := decodeFn(bCtx, i.Spec.SourceHCL[idx].Body, i.Spec.Source[idx]); err != nil {
+		if err := parser.Scope.DecodeExpandBody(bCtx, e.Spec.SourceHCL[idx].Body, e.Spec.Source[idx]); err != nil {
 			return fmt.Errorf("failed to decode extract source: %w", err)
 		}
 
 		// Merge with default values for each resource type
-		switch dst := i.Spec.Source[idx].(type) {
+		switch dst := e.Spec.Source[idx].(type) {
 		case *restSource:
 			if err := setRestSourceDefaults(bCtx, dst); err != nil {
 				return fmt.Errorf("failed to decode extract: %w", err)

@@ -1,8 +1,9 @@
 package server
 
 import (
-	"github.com/labstack/echo/v4"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 
 	"github.com/verifa/bubbly/env"
 )
@@ -23,16 +24,13 @@ type queryReq struct {
 // @Router /api/graphql [post]
 func Query(bCtx *env.BubblyContext, c echo.Context) error {
 	var query queryReq
-	if bindErr := c.Bind(&query); bindErr != nil {
-		bCtx.Logger.Debug().Err(bindErr).Msg("failed to bind request to queryReq")
-		return c.JSON(http.StatusBadRequest, &Error{bindErr.Error()})
+	if err := c.Bind(&query); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	bCtx.Logger.Debug().Str("query", query.Query).Msg("querying the bubbly store")
-	results, queryErr := serverStore.Store.Query(query.Query)
-	if queryErr != nil {
-		bCtx.Logger.Debug().Err(queryErr).Msg("failed while querying the bubbly store")
-		return c.JSON(http.StatusBadRequest, &Error{queryErr.Error()})
+	results, err := serverStore.Query(query.Query)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, &Data{results})

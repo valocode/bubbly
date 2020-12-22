@@ -15,31 +15,19 @@ import (
 // Returns an error if loading was unsuccessful
 func (c *Client) Load(bCtx *env.BubblyContext, data core.DataBlocks) error {
 
-	// We must wrap the data with "data" key such that it can be unmarshalled
-	// correctly by server.upload into an uploadStruct
-	loadData := map[string]interface{}{
-		"data": data,
-	}
-
-	bCtx.Logger.Debug().Interface("data", loadData).Str("host", c.HostURL).Msg("Making POST to Bubbly server from client.Load to load data.")
-
-	json.Marshal(loadData)
-	jsonReq, err := json.Marshal(loadData)
+	jsonReq, err := json.Marshal(data)
 
 	if err != nil {
 		return fmt.Errorf("failed to marshal data for loading: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/alpha1/upload", c.HostURL), bytes.NewBuffer(jsonReq))
+	// req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/alpha1/upload", c.HostURL), bytes.NewBuffer(jsonReq))
+	_, err = handleResponse(
+		http.Post(fmt.Sprintf("%s/alpha1/upload", c.HostURL), "application/json", bytes.NewBuffer(jsonReq)),
+	)
 
 	if err != nil {
-		return fmt.Errorf("failed to create POST request for data loading: %w", err)
-	}
-
-	_, err = c.do(req)
-
-	if err != nil {
-		return fmt.Errorf("failed to make POST request for data loading: %w", err)
+		return fmt.Errorf(`failed to post resource: %w`, err)
 	}
 
 	return nil

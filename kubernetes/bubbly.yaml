@@ -55,31 +55,15 @@ spec:
           image: verifa/bubbly
           args:
             - "server"
-            - "--host"
-            - "0.0.0.0"
-            - "--port"
-            - "8111"
           livenessProbe:
             httpGet:
               path: /healthz
               port: 8111
-          # command:
-          #   - /entrypoint.sh
-          # volumeMounts:
-          #   - name: bubbly-config
-          #     mountPath: /entrypoint.sh
-          #     readOnly: true
-          #     subPath: entrypoint.sh
           envFrom:
             - configMapRef:
                 name: postgres-config
-          env:
-            - name: PROVIDER
-              value: "postgres"
-            - name: POSTGRES_ADDR
-              value: "postgres:5432"
-            - name: POSTGRES_DATABASE
-              value: "postgres"
+            - configMapRef:
+                name: bubbly-config
           ports:
             - containerPort: 8111
               name: bubbly
@@ -87,8 +71,3 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "1000m"
-    # volumes:
-    #   - name: bubbly-config
-    #     configMap:
-    #       defaultMode: 0700
-    #       name: bubbly-config

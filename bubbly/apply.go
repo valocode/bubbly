@@ -1,9 +1,12 @@
 package bubbly
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/verifa/bubbly/api"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
@@ -17,129 +20,62 @@ of any resource should be valid.
 
 // Apply calls resource-specific apply functions
 func Apply(bCtx *env.BubblyContext, filename string) error {
-	err := ApplyPipelineRuns(bCtx, filename)
-
+	client, err := client.New(bCtx)
 	if err != nil {
-		return fmt.Errorf("failed to apply pipeline runs in file/directory `%s`: %w", filename, err)
+		return fmt.Errorf("failed to create bubbly client: %w", err)
 	}
-	err = ApplyTaskRuns(bCtx, filename)
-	if err != nil {
-		return fmt.Errorf("failed to apply task runs in file/directory `%s`: %w", filename, err)
-	}
-	return err
-}
 
-// ApplyPipelineRuns uses a parser to get the defined resources in the given
-// location and applies any pipeline_run in those resources
-func ApplyPipelineRuns(bCtx *env.BubblyContext, filename string) error {
 	p, err := parser.NewParserFromFilename(filename)
 	if err != nil {
-		return fmt.Errorf("Failed to create parser: %w", err)
+		return fmt.Errorf("failed to create parser using filename %s: %w", filename, err)
 	}
 
-	if err := p.Parse(bCtx); err != nil {
-		return fmt.Errorf("Failed to decode parser: %s", err)
+	resParser := api.NewParserType()
+	err = p.Parse(bCtx, resParser)
+	if err != nil {
+		return fmt.Errorf("failed to run parser: %w", err)
+	}
+	err = resParser.CreateResources(bCtx)
+	if err != nil {
+		return fmt.Errorf("failed to parse resources: %w", err)
 	}
 
-	// TODO: resources should be uploaded to the server
-
-	pipelineRunResources := p.Resources[core.PipelineRunResourceKind]
-	for _, resource := range pipelineRunResources {
-		bCtx.Logger.Debug().Str("id", resource.String()).Msg("processing resource")
-		pipelineRun := resource.(core.PipelineRun)
-		out := pipelineRun.Apply(bCtx, p.Context(cty.NilVal))
-		if out.Error != nil {
-			return fmt.Errorf(`Failed to apply pipeline_run "%s": %w`, pipelineRun.String(), out.Error)
+	for _, res := range resParser.Resources {
+		bCtx.Logger.Debug().Msgf(`Applying resource "%s"`, res.String())
+		resByte, err := json.Marshal(res)
+		if err != nil {
+			return fmt.Errorf("failed to convert resource %s to json: %w", res.String(), err)
 		}
+		err = client.PostResource(bCtx, resByte)
+		if err != nil {
+			return fmt.Errorf("failed to post resource: %w", err)
+		}
+	}
+
+	if err := runResources(bCtx, resParser); err != nil {
+		return fmt.Errorf(`failed to run resources in file/directory "%s": %w`, filename, err)
 	}
 
 	return nil
 }
 
-// ApplyTaskRuns uses a parser to get the defined resources in the given location
-// and applies any task in those resources
-func ApplyTaskRuns(bCtx *env.BubblyContext, filename string) error {
-	p, err := parser.NewParserFromFilename(filename)
-	if err != nil {
-		return fmt.Errorf("Failed to create parser: %w", err)
-	}
-
-	if err := p.Parse(bCtx); err != nil {
-		return fmt.Errorf("Failed to decode parser: %w", err)
-	}
-
-	// TODO: resources should be uploaded to the server
-
-	taskRunResources := p.Resources[core.TaskRunResourceKind]
-	for _, resource := range taskRunResources {
-		bCtx.Logger.Debug().Str("id", resource.String()).Msg("processing resource")
-		taskRun := resource.(core.TaskRun)
-		out := taskRun.Apply(bCtx, p.Context(cty.NilVal))
-		if out.Error != nil {
-			return fmt.Errorf(`Failed to apply task_run "%s": %w`, taskRun.String(), out.Error)
+func runResources(bCtx *env.BubblyContext, resParser *api.ResourcesParserType) error {
+	for _, kind := range core.ResourceRunKinds() {
+		bCtx.Logger.Debug().Msgf("Running resource kinds %s", kind)
+		resources := resParser.ByKind(kind)
+		for _, resource := range resources {
+			bCtx.Logger.Debug().Msgf("Running resource %s ...", resource.String())
+			out := resource.Apply(
+				bCtx,
+				core.NewResourceContext(resource.Namespace(), cty.NilVal, api.NewResource),
+			)
+			if out.Error != nil {
+				return fmt.Errorf(
+					`Failed to apply resource "%s" of kind "%s": %w`,
+					resource.String(), kind, out.Error,
+				)
+			}
 		}
 	}
-
 	return nil
-}
-
-// ApplyQueries uses a parser to get the defined resources in the given location
-// and applies any query in those resources
-func ApplyQueries(bCtx *env.BubblyContext, filename string) error {
-	p, err := parser.NewParserFromFilename(filename)
-	if err != nil {
-		return fmt.Errorf("Failed to create parser: %w", err)
-	}
-
-	if err := p.Parse(bCtx); err != nil {
-		return fmt.Errorf("Failed to decode parser: %w", err)
-	}
-
-	// TODO: resources should be uploaded to the server
-
-	queryResources := p.Resources[core.QueryResourceKind]
-	for _, resource := range queryResources {
-		bCtx.Logger.Debug().Str("id", resource.String()).Msg("processing resource")
-		query := resource.(core.Query)
-		out := query.Apply(bCtx, p.Context(cty.NilVal))
-
-		if out.Error != nil {
-			return fmt.Errorf(`Failed to apply query "%s": %w`, query.String(), out.Error)
-		}
-	}
-
-	return nil
-}
-
-// ApplyCriterion uses a parser to get the defined resources in the given
-// location and applies any criteria in those resources
-// Queries that are referenced by the Criterion must also be present in the
-// file / directory
-func ApplyCriterion(bCtx *env.BubblyContext, filename string) (map[string]cty.Value, error) {
-	p, err := parser.NewParserFromFilename(filename)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create parser: %w", err)
-	}
-
-	if err := p.Parse(bCtx); err != nil {
-		return nil, fmt.Errorf("Failed to decode parser: %w", err)
-	}
-
-	// TODO: resources should be uploaded to the server
-
-	criteriaResources := p.Resources[core.CriteriaResourceKind]
-
-	var out core.ResourceOutput
-	criterionResults := map[string]cty.Value{}
-	for _, resource := range criteriaResources {
-		bCtx.Logger.Debug().Str("id", resource.String()).Msg("processing resource")
-		criteria := resource.(core.Criteria)
-		out = criteria.Apply(bCtx, p.Context(cty.NilVal))
-		if out.Error != nil {
-			return nil, fmt.Errorf(`Failed to apply criteria "%s": %w`, criteria.String(), out.Error)
-		}
-		criterionResults[criteria.Name()] = out.Value
-	}
-
-	return criterionResults, nil
 }

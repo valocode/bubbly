@@ -7,7 +7,6 @@ import (
 
 	"github.com/verifa/bubbly/bubbly"
 	"github.com/verifa/bubbly/client"
-	"github.com/verifa/bubbly/server"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
@@ -23,11 +22,7 @@ func TestClientQuery(t *testing.T) {
 
 	// inject initial bubbly test data
 	err := bubbly.Apply(bCtx, "./testdata/testautomation/golang/pipeline.bubbly")
-
 	require.NoError(t, err, "failed to apply golang pipeline")
-
-	// get the store instanced by TestMain
-	s := server.GetStore()
 
 	query := `{
 		test_case(status: "pass") {
@@ -35,26 +30,16 @@ func TestClientQuery(t *testing.T) {
 			status
 		}
 	}`
-	// query the store using a graphql query. This is useful as a means
-	// of verifying that the query itself is valid over the given testdata
-	_, err = s.Query(query)
 
-	require.NoError(t, err)
-
-	// instance a new bubbly client
-	c, err := client.New(bCtx)
-
+	client, err := client.New(bCtx)
 	require.NoError(t, err, "failed to establish a bubbly client")
 
-	// using the same graphql query, we now validate that the bubbly
-	// client processes the query and queries the store correctly (knowing
-	// that the query itself is proven valid)
-	actual, err := c.Query(bCtx, query)
+	resp, err := client.Query(bCtx, query)
 	require.NoError(t, err, "bubbly client failed to query the bubbly server")
 
-	bCtx.Logger.Debug().RawJSON("response", actual).Msg("received query response from bubbly server")
+	bCtx.Logger.Debug().RawJSON("response", resp).Msg("received query response from bubbly server")
 
-	require.NotNil(t, string(actual))
+	require.NotNil(t, string(resp))
 }
 
 // TestHCLQuery tests that, given an injection of golang test data,
@@ -65,11 +50,10 @@ func TestHCLQuery(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
+	// inject initial bubbly test data
 	err := bubbly.Apply(bCtx, "./testdata/testautomation/golang/pipeline.bubbly")
-
 	require.NoError(t, err, "failed to apply golang pipeline")
 
-	err = bubbly.ApplyQueries(bCtx, "./testdata/testautomation/golang/query.bubbly")
-
+	err = bubbly.Apply(bCtx, "./testdata/testautomation/golang/query.bubbly")
 	require.NoError(t, err, "failed to apply query resource")
 }

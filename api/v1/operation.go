@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -31,10 +32,11 @@ func NewOperation(operationBlock *operationBlockSpec) *Operation {
 // an Operation struct. Namely, the o.Value, which represents the final
 // criteria's return value
 func (o *Operation) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	if err := ctx.DecodeBody(bCtx, o.operationBlockSpec.Body, o); err != nil {
+	p := parser.WithInputs(bCtx, ctx.Inputs)
+	if err := p.Scope.DecodeExpandBody(bCtx, o.operationBlockSpec.Body, o); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`Failed to decode Operation "%s": %w`, o.Name(), err),
+			Error:  fmt.Errorf(`failed to decode Operation "%s": %w`, o.Name(), err),
 			Value:  cty.NilVal,
 		}
 	}
@@ -68,11 +70,4 @@ func (o *Operation) Kind() core.ResourceKind {
 // Name returns the name of the operation
 func (o *Operation) Name() string {
 	return o.operationBlockSpec.Name
-}
-
-// JSON returns a JSON representation of this operation block using the given
-// ResourceContext.
-// TODO
-func (o *Operation) JSON(ctx *core.ResourceContext) ([]byte, error) {
-	return nil, nil
 }

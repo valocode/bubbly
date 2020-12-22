@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
 )
 
-func newEtcd(cfg Config) (provider, error) {
+func newEtcd(cfg config.ResourceConfig) (provider, error) {
 	// Since we are making plain HTTP requests atm, there isn't much going on here
 	// If the etcd client stabilizes, more will go here
 	return &etcdProvider{}, nil
@@ -17,7 +20,7 @@ func newEtcd(cfg Config) (provider, error) {
 type etcdProvider struct {
 }
 
-func (etcd *etcdProvider) Save(key string, value string) error {
+func (etcd *etcdProvider) Save(bCtx *env.BubblyContext, key string, value string) error {
 	// This will need to be replaced with the docker service name
 	url := "http://127.0.0.1:2379/v3/kv/put"
 	postBody, err := json.Marshal(map[string]string{
@@ -38,7 +41,7 @@ func (etcd *etcdProvider) Save(key string, value string) error {
 	return nil
 }
 
-func (etcd *etcdProvider) Query(key string) (string, error) {
+func (etcd *etcdProvider) Query(bCtx *env.BubblyContext, key string) (string, error) {
 	// This will need to be replaced with the docker service name
 	url := "http://127.0.0.1:2379/v3/kv/range"
 	postBody, _ := json.Marshal(map[string]string{

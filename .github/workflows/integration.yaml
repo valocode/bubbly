@@ -36,11 +36,13 @@ jobs:
         with:
           skaffold: "1.17.1"
       - name: Build and deploy to cluster
-        run: skaffold run -p integration --force --status-check
+        run: skaffold run -p integration
       - name: Integration test logs
         run: |
-          # wait for the pod to be scheduled, which means downloading the image
-          # from the local registry we created
-          kubectl wait --for=condition=Ready --timeout=120s pod --selector job-name=bubbly-integration
           # print the logs and follow until complete
           kubectl logs --follow --tail=-1 --selector job-name=bubbly-integration
+          # check if the job succeedded
+          JOB_SUCCESS=$(kubectl get job bubbly-integration -o jsonpath='{.status.succeeded}')
+          # check the result and exit if failed
+          if [ "$JOB_SUCCESS" != "1" ]; then exit 1; fi
+          echo "Integration tests finished successfully!"

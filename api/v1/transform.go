@@ -6,6 +6,7 @@ import (
 
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -24,10 +25,11 @@ func NewTransform(resBlock *core.ResourceBlock) *Transform {
 
 // Apply returns ...
 func (t *Transform) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	if err := ctx.DecodeBody(bCtx, t.SpecHCL.Body, &t.Spec); err != nil {
+	p := parser.WithInputs(bCtx, ctx.Inputs)
+	if err := p.Scope.DecodeExpandBody(bCtx, t.SpecHCL.Body, &t.Spec); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`Failed to decode transform body spec: %s`, err.Error()),
+			Error:  fmt.Errorf(`failed to decode transform body spec: %s`, err.Error()),
 			Value:  cty.NilVal,
 		}
 	}

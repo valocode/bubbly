@@ -29,13 +29,9 @@ type AuthResponse struct {
 }
 
 func New(bCtx *env.BubblyContext) (*Client, error) {
-	sc, err := bCtx.GetServerConfig()
+	sc := bCtx.GetServerConfig()
 
-	if err != nil {
-		return nil, fmt.Errorf("unable to get server configuration from the bubbly context: %w", err)
-	}
-
-	c := Client{
+	c := &Client{
 		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 		// Default bubbly server URL
 		HostURL: sc.HostURL(),
@@ -43,18 +39,20 @@ func New(bCtx *env.BubblyContext) (*Client, error) {
 
 	if sc.Protocol != "" && sc.Host != "" && sc.Port != "" {
 		us := sc.Protocol + "://" + sc.Host + ":" + sc.Port
-		if u, err := url.Parse(us); err == nil {
-			c.HostURL = u.String()
-			bCtx.Logger.Info().Str("url", u.String()).Msg("custom bubbly host set")
+		u, err := url.Parse(us)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create client host: %w", err)
 		}
+		bCtx.Logger.Debug().Str("url", u.String()).Msg("custom bubbly host set")
+		c.HostURL = u.String()
 	}
 
 	if !sc.Auth {
-		return &c, nil
+		return c, nil
 	}
 
 	// TODO: support authenticated clients
-	return &c, nil
+	return c, nil
 }
 
 func (c *Client) do(req *http.Request) (io.ReadCloser, error) {

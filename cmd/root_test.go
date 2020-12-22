@@ -66,7 +66,7 @@ func TestRootWithInvalidArg(t *testing.T) {
 
 // TestBubblyContext verifies that rootCmds correctly map global server
 // configuration flags like to the env.BubblyContext
-func TestBubblyContext(t *testing.T) {
+func TestBubblyContextServerConfig(t *testing.T) {
 	tcs := []struct {
 		desc     string
 		inputCtx *env.BubblyContext
@@ -111,7 +111,7 @@ func TestBubblyContext(t *testing.T) {
 
 			// Verify that the argument(s) bind to the BubblyContext
 			// correctly
-			assert.Equal(t, tc.expected, bCtx)
+			assert.Equal(t, tc.expected.ServerConfig, bCtx.ServerConfig)
 		})
 	}
 }
@@ -169,7 +169,7 @@ func TestBubblyContextLogLevel(t *testing.T) {
 
 			// Verify that the argument(s) bind to the BubblyContext
 			// correctly
-			assert.Equal(t, tc.expected, bCtx)
+			assert.Equal(t, tc.expected.Logger, bCtx.Logger)
 		})
 	}
 }

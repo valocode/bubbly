@@ -10,15 +10,16 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/graphql-go/graphql"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
-func newPostgres(cfg Config) (provider, error) {
+func newPostgres(bCtx *env.BubblyContext) (provider, error) {
 	db := pg.Connect(&pg.Options{
-		Addr:     cfg.PostgresAddr,
-		User:     cfg.PostgresUser,
-		Password: cfg.PostgresPassword,
-		Database: cfg.PostgresDatabase,
+		Addr:     bCtx.StoreConfig.PostgresAddr,
+		User:     bCtx.StoreConfig.PostgresUser,
+		Password: bCtx.StoreConfig.PostgresPassword,
+		Database: bCtx.StoreConfig.PostgresDatabase,
 	})
 
 	// Attempt to create a table to hold our typeInfo. This table
@@ -47,7 +48,7 @@ type postgres struct {
 	types map[string]schemaType
 }
 
-func (p *postgres) Create(tables []core.Table) error {
+func (p *postgres) Create(tables core.Tables) error {
 	var types map[string]schemaType
 	err := p.db.RunInTransaction(func(tx *pg.Tx) error {
 		info := &typeInfo{
@@ -81,7 +82,7 @@ func (p *postgres) Create(tables []core.Table) error {
 	return nil
 }
 
-func (p *postgres) Save(data core.DataBlocks) ([]core.Table, error) {
+func (p *postgres) Save(data core.DataBlocks) (core.Tables, error) {
 	if p.types == nil {
 		return nil, errors.New("postgres has no type information")
 	}
@@ -232,7 +233,7 @@ func applyArgsPostgres(q *orm.Query, args map[string]interface{}) *orm.Query {
 	return q
 }
 
-func currentCoreTablesPostgres(db *pg.DB) ([]core.Table, error) {
+func currentCoreTablesPostgres(db *pg.DB) (core.Tables, error) {
 	// Try to load the most recent typeInfo.
 	// TODO(andrewhare): We need a plan for how to handle
 	// migrations from one typeInfo to another.

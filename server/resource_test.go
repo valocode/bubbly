@@ -1,17 +1,15 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
-	"github.com/labstack/echo/v4"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 
-	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/resource"
@@ -32,22 +30,14 @@ func TestPostResource(t *testing.T) {
 		t.Error(err)
 	}
 
-	var resourceMap map[string]map[string]map[string]interface{}
-
-	err = json.Unmarshal(byteValue, &resourceMap)
-	if err != nil {
-		t.Error(err)
-	}
-
 	r := httptest.NewRecorder()
 
 	// Test
-	req, _ := http.NewRequest(http.MethodPost, "/api/resource", strings.NewReader(string(byteValue)))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	req, _ := http.NewRequest(http.MethodPost, "/api/resource", bytes.NewBuffer(byteValue))
+	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(r, req)
 
 	assert.Equal(t, http.StatusOK, r.Code)
-	assert.Equal(t, "{\"status\":\"uploaded\"}\n", r.Body.String())
 
 	// Cleanup
 	if tearDown {
@@ -64,23 +54,18 @@ func TestGetResource(t *testing.T) {
 	tearDown = false
 	TestPostResource(t)
 	tearDown = true
-	r.GET("/api/resource/default/transform/junit").
+	resourceID := "qa/extract/sonarqube"
+	r.GET(fmt.Sprintf("/api/resource/%s", resourceID)).
 		Run(setupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			data := []byte(r.Body.String())
 			assert.Equal(t, http.StatusOK, r.Code)
+			var resJSON core.ResourceBlockJSON
 			// Creating a resource based off of the response
-			file, diags := hclparse.NewParser().ParseJSON(data, "test.json")
-			if diags != nil && diags.HasErrors() {
-				t.Errorf(diags.Error())
-			}
-			resWrap := &core.ResourceBlockHCLWrapper{}
-			if file != nil {
-				diags = gohcl.DecodeBody(file.Body, nil, resWrap)
-				if diags.HasErrors() {
-					t.Errorf(diags.Error())
-				}
-			}
-			assert.NotNil(t, resWrap)
+			err := json.Unmarshal(data, &resJSON)
+			assert.NoError(t, err, "unmarshal json resource")
+			resBlock, err := resJSON.ResourceBlock()
+			assert.NoError(t, err, "convert to ResourceBlock")
+			assert.Equal(t, resBlock.String(), resourceID)
 		})
 	tearDownDb()
 }

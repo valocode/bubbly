@@ -1,36 +1,8 @@
 package core
 
 import (
-	"github.com/hashicorp/hcl/v2"
 	"github.com/zclconf/go-cty/cty"
 )
-
-// HCLMainType represents the top-level structure of HCL.
-// This basically describes the entire schema of parseable HCL.
-type HCLMainType struct {
-	ResourceBlocks ResourceBlocks `hcl:"resource,block"`
-	Locals         Locals         `hcl:"local,block"`
-}
-
-// Locals is a wrapper for a slice of Local
-type Locals []*Local
-
-// Local is the type representing any "local {...}" blocks in HCL
-type Local struct {
-	Name        string    `hcl:",label"`
-	Description string    `hcl:"description,optional"`
-	Value       cty.Value `hcl:"value,attr"`
-}
-
-// Reference returns a local's traversal to reference this local in HCL,
-// together with its associated cty.Value. This is used so that locals can be
-// added to an EvalContext
-func (l *Local) Reference() (hcl.Traversal, cty.Value) {
-	return hcl.Traversal{
-		hcl.TraverseRoot{Name: "local"},
-		hcl.TraverseAttr{Name: l.Name},
-	}, l.Value
-}
 
 // Tasks stores a map of Task by name
 type Tasks map[string]Task
