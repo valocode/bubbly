@@ -36,7 +36,7 @@ func TestPostResource(t *testing.T) {
 
 	err = json.Unmarshal(byteValue, &resourceMap)
 	if err != nil {
-		bCtx.Logger.Error().Msg(err.Error())
+		t.Error(err)
 	}
 
 	r := httptest.NewRecorder()
@@ -71,14 +71,12 @@ func TestGetResource(t *testing.T) {
 			// Creating a resource based off of the response
 			file, diags := hclparse.NewParser().ParseJSON(data, "test.json")
 			if diags != nil && diags.HasErrors() {
-				bCtx.Logger.Error().Msg(diags.Error())
 				t.Errorf(diags.Error())
 			}
 			resWrap := &core.ResourceBlockHCLWrapper{}
 			if file != nil {
 				diags = gohcl.DecodeBody(file.Body, nil, resWrap)
 				if diags.HasErrors() {
-					bCtx.Logger.Error().Msg(diags.Error())
 					t.Errorf(diags.Error())
 				}
 			}
