@@ -20,24 +20,19 @@ of any resource should be valid.
 
 // Apply calls resource-specific apply functions
 func Apply(bCtx *env.BubblyContext, filename string) error {
+
+	resParser := api.NewParserType()
+	// err = p.Parse(bCtx, resParser)
+	if err := parser.ParseFilename(bCtx, filename, resParser); err != nil {
+		return fmt.Errorf("failed to run parser: %w", err)
+	}
+	if err := resParser.CreateResources(bCtx); err != nil {
+		return fmt.Errorf("failed to parse resources: %w", err)
+	}
+
 	client, err := client.New(bCtx)
 	if err != nil {
 		return fmt.Errorf("failed to create bubbly client: %w", err)
-	}
-
-	p, err := parser.NewParserFromFilename(filename)
-	if err != nil {
-		return fmt.Errorf("failed to create parser using filename %s: %w", filename, err)
-	}
-
-	resParser := api.NewParserType()
-	err = p.Parse(bCtx, resParser)
-	if err != nil {
-		return fmt.Errorf("failed to run parser: %w", err)
-	}
-	err = resParser.CreateResources(bCtx)
-	if err != nil {
-		return fmt.Errorf("failed to parse resources: %w", err)
 	}
 
 	for _, res := range resParser.Resources {
@@ -71,8 +66,8 @@ func runResources(bCtx *env.BubblyContext, resParser *api.ResourcesParserType) e
 			)
 			if out.Error != nil {
 				return fmt.Errorf(
-					`Failed to apply resource "%s" of kind "%s": %w`,
-					resource.String(), kind, out.Error,
+					`Failed to apply resource "%s": %w`,
+					resource.String(), out.Error,
 				)
 			}
 		}

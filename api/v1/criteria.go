@@ -6,7 +6,6 @@ import (
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -31,11 +30,10 @@ func NewCriteria(resBlock *core.ResourceBlock) *Criteria {
 // Apply returns a core.ResourceOutput, whose Value is a cty.BoolVal indicating
 // success of failure of the criteria's operation
 func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	p := parser.WithInputs(bCtx, ctx.Inputs)
-	if err := p.Scope.DecodeExpandBody(bCtx, c.SpecHCL.Body, &c.Spec); err != nil {
+	if err := common.DecodeBody(bCtx, c.SpecHCL.Body, &c.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf("failed to decode criteria body spec: %w", err),
+			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, c.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
@@ -53,7 +51,6 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		// TODO: what about namespaces for the resource??
 		// use this resourceID to get the underlying Resource
 		resID := fmt.Sprintf("%s/%s", string(core.QueryResourceKind), querySpec.Name)
-		// TODO: pass in ctx...
 		resource, output := common.RunResource(bCtx, ctx, resID, cty.NilVal)
 
 		if output.Error != nil {
@@ -98,7 +95,9 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 		// insert the output into the EvalContext. This allows us to use
 		// the result when decoding the operation
-		p.Scope.InsertValue(bCtx, output.Output(), []string{"self", "condition", condition.Name})
+		// p.Scope.InsertValue(bCtx, output.Output(), []string{"self", "condition", condition.Name})
+		// add the output of the task to the parser
+		ctx.State.Insert(condition.Name, output.Output())
 
 		bCtx.Logger.Debug().
 			Str("condition", condition.Name).
@@ -129,7 +128,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 	}
 
 	bCtx.Logger.Debug().
-		Str("operation", operation.String()).
+		Str("operation", operation.Name()).
 		Str("output_status", string(output.Status)).
 		Str("output_value", output.Value.GoString()).
 		Msg("operation successfully processed")

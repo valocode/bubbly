@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -32,11 +32,10 @@ func NewOperation(operationBlock *operationBlockSpec) *Operation {
 // an Operation struct. Namely, the o.Value, which represents the final
 // criteria's return value
 func (o *Operation) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	p := parser.WithInputs(bCtx, ctx.Inputs)
-	if err := p.Scope.DecodeExpandBody(bCtx, o.operationBlockSpec.Body, o); err != nil {
+	if err := common.DecodeBody(bCtx, o.operationBlockSpec.Body, o, ctx); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`failed to decode Operation "%s": %w`, o.Name(), err),
+			Error:  fmt.Errorf(`failed to decode operation "%s" body spec: %s`, o.Name(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
@@ -47,24 +46,6 @@ func (o *Operation) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) co
 		Value:  o.Value,
 	}
 
-}
-
-// String returns a human-friendly string ID for the operation resource
-func (o *Operation) String() string {
-	return fmt.Sprintf(
-		"%s.%s.%s",
-		o.APIVersion(), o.Kind(), o.Name(),
-	)
-}
-
-// APIVersion returns the resource's API version
-func (o *Operation) APIVersion() core.APIVersion {
-	return core.APIVersion("v1")
-}
-
-// Kind returns the resource kind
-func (o *Operation) Kind() core.ResourceKind {
-	return core.ResourceKind("operation")
 }
 
 // Name returns the name of the operation

@@ -6,8 +6,8 @@ import (
 
 	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
 
+	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -31,20 +31,15 @@ func (l *Load) SpecValue() core.ResourceSpec {
 
 // Apply returns ...
 func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	p := parser.WithInputs(bCtx, ctx.Inputs)
-	if err := p.Scope.DecodeExpandBody(bCtx, l.SpecHCL.Body, &l.Spec); err != nil {
+	if err := common.DecodeBodyWithInputs(bCtx, l.SpecHCL.Body, &l.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`failed to decode "%s" body spec: %w`, l.String(), err),
+			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, l.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
 
-	// bCtx.Logger.Debug().Msgf("Attempting to load this JSON: %s", l.Spec.Data)
-
-	err := l.load(bCtx)
-
-	if err != nil {
+	if err := l.load(bCtx); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`failed to load data to bubbly server: %w`, err),
@@ -93,6 +88,6 @@ func (l *Load) load(bCtx *env.BubblyContext) error {
 }
 
 type loadSpec struct {
-	Inputs InputDeclarations `hcl:"input,block"`
-	Data   string            `hcl:"data,attr"`
+	Inputs core.InputDeclarations `hcl:"input,block"`
+	Data   string                 `hcl:"data,attr"`
 }

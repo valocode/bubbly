@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -25,11 +25,10 @@ func NewTransform(resBlock *core.ResourceBlock) *Transform {
 
 // Apply returns ...
 func (t *Transform) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	p := parser.WithInputs(bCtx, ctx.Inputs)
-	if err := p.Scope.DecodeExpandBody(bCtx, t.SpecHCL.Body, &t.Spec); err != nil {
+	if err := common.DecodeBodyWithInputs(bCtx, t.SpecHCL.Body, &t.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`failed to decode transform body spec: %s`, err.Error()),
+			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, t.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
@@ -51,7 +50,7 @@ func (t *Transform) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) co
 
 func (t *Transform) toJSON() ([]byte, error) {
 	if t.Spec.Data == nil {
-		return nil, fmt.Errorf("Transform %s has not output data", t.String())
+		return nil, fmt.Errorf("transform %s has not output data", t.String())
 	}
 	return json.Marshal(t.Spec.Data)
 }
@@ -61,6 +60,6 @@ func (t *Transform) SpecValue() core.ResourceSpec {
 }
 
 type transformSpec struct {
-	Inputs InputDeclarations `hcl:"input,block"`
-	Data   core.DataBlocks   `hcl:"data,block"`
+	Inputs core.InputDeclarations `hcl:"input,block"`
+	Data   core.DataBlocks        `hcl:"data,block"`
 }

@@ -46,4 +46,6 @@ const (
 	ResourceOutputSuccess ResourceOutputStatus = "Success"
 	// ResourceOutputFailure represents failure
 	ResourceOutputFailure ResourceOutputStatus = "Failure"
+	// ResourceOutputMissingInputs represents missing inputs
+	ResourceOutputMissingInputs ResourceOutputStatus = "MissingInputs"
 )

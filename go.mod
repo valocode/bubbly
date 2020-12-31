@@ -44,3 +44,5 @@ require (
 	gopkg.in/h2non/gock.v1 v1.0.16
 	mellium.im/sasl v0.2.1 // indirect
 )
+
+replace github.com/hashicorp/hcl/v2 => github.com/verifa/hcl/v2 v2.8.1-patch

@@ -20,9 +20,9 @@ import (
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -46,9 +46,8 @@ func NewExtract(resBlock *core.ResourceBlock) *Extract {
 
 // Apply returns the output from applying a resource
 func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	p := parser.WithInputs(bCtx, ctx.Inputs)
 
-	if err := e.decode(bCtx, p); err != nil {
+	if err := e.decode(bCtx, ctx); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf("failed to decode resource %s: %w", e.String(), err),
@@ -171,11 +170,9 @@ func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) error {
 }
 
 // decode is responsible for decoding any necessary hcl.Body inside Extract
-func (e *Extract) decode(bCtx *env.BubblyContext, parser *parser.Parser) error {
-
-	// decode the resource spec into the extract's Spec
-	if err := parser.Scope.DecodeExpandBody(bCtx, e.SpecHCL.Body, &e.Spec); err != nil {
-		return fmt.Errorf(`failed to decode "%s" body spec: %w`, e.String(), err)
+func (e *Extract) decode(bCtx *env.BubblyContext, ctx *core.ResourceContext) error {
+	if err := common.DecodeBodyWithInputs(bCtx, e.SpecHCL.Body, &e.Spec, ctx); err != nil {
+		return err
 	}
 
 	e.Spec.Source = make(SourceBlocks, len(e.Spec.SourceHCL))
@@ -197,7 +194,7 @@ func (e *Extract) decode(bCtx *env.BubblyContext, parser *parser.Parser) error {
 		}
 
 		// decode the source HCL into the extract's Source
-		if err := parser.Scope.DecodeExpandBody(bCtx, e.Spec.SourceHCL[idx].Body, e.Spec.Source[idx]); err != nil {
+		if err := common.DecodeBody(bCtx, e.Spec.SourceHCL[idx].Body, e.Spec.Source[idx], ctx); err != nil {
 			return fmt.Errorf("failed to decode extract source: %w", err)
 		}
 
@@ -207,6 +204,9 @@ func (e *Extract) decode(bCtx *env.BubblyContext, parser *parser.Parser) error {
 			if err := setRestSourceDefaults(bCtx, dst); err != nil {
 				return fmt.Errorf("failed to decode extract: %w", err)
 			}
+		default:
+			// TODO:ofrolovs - I assume default means nothing, maybe this
+			// comment helps :)
 		}
 
 	}
@@ -221,7 +221,7 @@ type SourceBlocks []source
 
 // extractSpec defines the spec for an extract
 type extractSpec struct {
-	Inputs InputDeclarations `hcl:"input,block"`
+	Inputs core.InputDeclarations `hcl:"input,block"`
 	// the type is either json, xml, rest, etc.
 	Type      extractType `hcl:"type,attr"`
 	SourceHCL []struct {

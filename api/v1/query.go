@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/verifa/bubbly/client"
-	"github.com/verifa/bubbly/parser"
 
+	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
@@ -27,11 +27,10 @@ func NewQuery(resBlock *core.ResourceBlock) *Query {
 // Apply returns a core.ResourceOutput, whose Value is a cty.Value
 // representation of the bubbly server's response to the q.Spec.Query string
 func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	p := parser.WithInputs(bCtx, ctx.Inputs)
-	if err := p.Scope.DecodeExpandBody(bCtx, q.SpecHCL.Body, &q.Spec); err != nil {
+	if err := common.DecodeBody(bCtx, q.SpecHCL.Body, &q.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf("failed to decode query body spec: %w", err),
+			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, q.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
@@ -53,8 +52,7 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`failed while running query "%s": %w`, q.Spec.Query, err),
-
-			Value: cty.NilVal,
+			Value:  cty.NilVal,
 		}
 	}
 
@@ -67,8 +65,6 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 	strNormalized := cty.NormalizeString(string(byteRes))
 
 	cVal := cty.StringVal(strNormalized)
-
-	// ctx.InsertValue(bCtx, cVal, []string{"self", "query", q.Name()})
 
 	return core.ResourceOutput{
 		Status: core.ResourceOutputSuccess,

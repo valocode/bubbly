@@ -6,7 +6,6 @@ import (
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -29,9 +28,7 @@ func (t *TaskRun) SpecValue() core.ResourceSpec {
 
 // Apply returns the output from applying the TaskRun's underlying resource
 func (t *TaskRun) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	p := parser.WithInputs(bCtx, ctx.Inputs)
-	// decode the hcl body into the taskrun's Spec
-	if err := p.Scope.DecodeExpandBody(bCtx, t.SpecHCL.Body, &t.Spec); err != nil {
+	if err := common.DecodeBody(bCtx, t.SpecHCL.Body, &t.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, t.String(), err.Error()),
@@ -44,6 +41,6 @@ func (t *TaskRun) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 }
 
 type TaskRunSpec struct {
-	ResourceID string           `hcl:"resource,attr"`
-	Inputs     InputDefinitions `hcl:"input,block"`
+	ResourceID string                `hcl:"resource,attr"`
+	Inputs     core.InputDefinitions `hcl:"input,block"`
 }

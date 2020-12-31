@@ -3,9 +3,9 @@ package v1
 import (
 	"fmt"
 
+	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -31,8 +31,7 @@ func (p *Pipeline) SpecValue() core.ResourceSpec {
 // Apply returns ...
 func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 
-	parser := parser.WithInputs(bCtx, ctx.Inputs)
-	if err := parser.Scope.DecodeExpandBody(bCtx, p.SpecHCL.Body, &p.Spec); err != nil {
+	if err := common.DecodeBodyWithInputs(bCtx, p.SpecHCL.Body, &p.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, p.String(), err.Error()),
@@ -73,6 +72,6 @@ func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 }
 
 type pipelineSpec struct {
-	Inputs     InputDeclarations `hcl:"input,block"`
-	TaskBlocks []*taskBlockSpec  `hcl:"task,block"`
+	Inputs     core.InputDeclarations `hcl:"input,block"`
+	TaskBlocks []*taskBlockSpec       `hcl:"task,block"`
 }

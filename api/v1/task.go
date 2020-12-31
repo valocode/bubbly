@@ -7,7 +7,6 @@ import (
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -20,8 +19,8 @@ type taskBlockSpec struct {
 
 type Task struct {
 	*taskBlockSpec
-	ResourceID string           `hcl:"resource,attr"`
-	Inputs     InputDefinitions `hcl:"input,block"`
+	ResourceID string                `hcl:"resource,attr"`
+	Inputs     core.InputDefinitions `hcl:"input,block"`
 }
 
 func NewTask(taskBlock *taskBlockSpec) *Task {
@@ -32,11 +31,10 @@ func NewTask(taskBlock *taskBlockSpec) *Task {
 
 // Apply returns the output from applying the task's underlying resource
 func (t *Task) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	p := parser.WithInputs(bCtx, ctx.Inputs)
-	if err := p.Scope.DecodeExpandBody(bCtx, t.taskBlockSpec.Body, t); err != nil {
+	if err := common.DecodeBody(bCtx, t.taskBlockSpec.Body, t, ctx); err != nil {
 		return core.ResourceOutput{
 			Status: core.ResourceOutputFailure,
-			Error:  fmt.Errorf(`failed to decode Task "%s": %w`, t.Name(), err),
+			Error:  fmt.Errorf(`failed to decode task "%s" body spec: %s`, t.Name(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}

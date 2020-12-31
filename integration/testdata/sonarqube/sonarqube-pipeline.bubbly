@@ -147,13 +147,16 @@ resource "pipeline" "sonarqube" {
     spec {
         input "file" {}
         input "repo" {}
+        input "whatever" {
+            default = "./testdata/sonarqube/sonarqube-example.json"
+        }
         // Each task represents the execution of an action defined by
         // a bubbly resource
         // action: extract the data from the data source
         task "extract_sonarqube" {
             resource = "extract/sonarqube"
             input "file" {
-                value = self.input.file
+                value = self.input.whatever
             }
         }
         task "extract_git" {

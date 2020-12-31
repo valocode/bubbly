@@ -8,6 +8,7 @@ import (
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/parser"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func parseHCLFile(file string, val interface{}) error {
@@ -19,8 +20,7 @@ func parseHCLFile(file string, val interface{}) error {
 	bCtx := env.NewBubblyContext()
 	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
-	s := parser.NewScope()
-	return s.DecodeExpandBody(bCtx, hclFile.Body, val)
+	return parser.DecodeExpandBody(bCtx, hclFile.Body, val, cty.NilVal)
 }
 
 func TestSchema(baseDir string) (core.Tables, error) {
