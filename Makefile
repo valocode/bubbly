@@ -37,7 +37,7 @@ test-report:
 ## runing a dev instance
 .PHONY: dev
 dev:
-	skaffold dev
+	skaffold dev --trigger manual
 
 ## integration testing
 
@@ -49,11 +49,6 @@ kind-cleanup:
 kind-bootstrap:
 	# create the kind cluster
 	kind create cluster --name ${KIND_CLUSTER_NAME} --config kind-config.yaml
-
-.PHONY: development
-development:
-	# --trigger manual means you need to press ENTER to trigger a re-build/deploy
-	skaffold dev --trigger manual
 
 .PHONY: integration
 integration:

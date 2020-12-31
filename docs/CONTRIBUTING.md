@@ -38,9 +38,3 @@ Now what about `friends = xmen.bad_guys`? In this case, `friends` should receive
 We are trying to access an attribute `bad_guys` which means `xmen` is expected to be an `Object`.
 
 Anyway, this was just to get you thinking and understand what happens under the hood, so ignore this and go read the real documentation, such as the [`cty` types](https://github.com/zclconf/go-cty/blob/master/docs/types.md).
-
-### Radix Trees - memdb
-
-The internal data structure used by Bubbly is implemented using radix trees, using the module `go-memdb`.
-
-To understand Radix trees, this presentation is very useful: [radix-trees](./files/Radix-Txn-MemDB.pdf)
