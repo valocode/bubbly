@@ -19,8 +19,6 @@ func TestMain(m *testing.M) {
 	bCtx := env.NewBubblyContext()
 	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
-	bCtx.Logger.Debug().Msgf("WE SHOULD SETUP THE SCHEMA HERE!")
-
 	client, err := client.New(bCtx)
 	if err != nil {
 		bCtx.Logger.Fatal().Err(err).Msg("failed to create client")
@@ -36,7 +34,6 @@ func TestMain(m *testing.M) {
 		bCtx.Logger.Fatal().Err(err).Msg("failed to json marshal schema")
 	}
 
-	bCtx.Logger.Debug().Msg("Uploading schema...")
 	if err := client.PostSchema(bCtx, tableBytes); err != nil {
 		bCtx.Logger.Fatal().Err(err).Msg("failed to post schema to bubbly server")
 	}

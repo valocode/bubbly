@@ -14,8 +14,8 @@ import (
 
 var serverStore *store.Store
 
-// SetupRouter returns a pointer to a gin engine after setting up middleware
-// and initializing routes
+// SetupRouter returns a pointer to an instance of our echo server with all the
+// routes initialized
 func setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 	// Initialize Router
 	router := echo.New()
@@ -27,7 +27,9 @@ func setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 	)
 	// setup the error handler
 	router.HTTPErrorHandler = func(err error, c echo.Context) {
-		// Should send this to some telemetry/logging service...
+		// TODO: send this to some telemetry/logging service...
+
+		// Log the output for the user
 		bCtx.Logger.Error().
 			Str("Path", c.Path()).
 			Strs("QueryParams", c.ParamValues()).
