@@ -4,6 +4,15 @@ kind: Ingress
 metadata:
   name: bubbly
 spec:
+  rules:
+    - host: "bubbly.7f000001.nip.io"
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              serviceName: bubbly
+              servicePort: bubbly
   backend:
     serviceName: bubbly
     servicePort: bubbly

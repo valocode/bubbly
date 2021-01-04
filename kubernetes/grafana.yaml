@@ -1,0 +1,59 @@
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: grafana
+spec:
+  rules:
+    - host: "grafana.7f000001.nip.io"
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              serviceName: grafana
+              servicePort: grafana
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  type: NodePort
+  ports:
+    - name: grafana
+      port: 3000
+  selector:
+    app: grafana
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: grafana
+  labels:
+    app: grafana
+spec:
+  serviceName: grafana
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:7.3.6
+          ports:
+            - containerPort: 3000
+              name: grafana
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"

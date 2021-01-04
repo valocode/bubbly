@@ -16,6 +16,8 @@ deploy:
       # apply bubbly
       - ./kubernetes/bubbly-configmap.yaml
       - ./kubernetes/bubbly.yaml
+      # apply grafana
+      - ./kubernetes/grafana.yaml
 
 profiles:
   # - name: development
