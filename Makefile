@@ -36,7 +36,7 @@ dev:
 
 .PHONY: kind-cleanup
 kind-cleanup:
-	kind delete cluster ${KIND_CLUSTER_NAME}
+	kind delete cluster --name ${KIND_CLUSTER_NAME}
 
 .PHONY: kind-bootstrap
 kind-bootstrap:
