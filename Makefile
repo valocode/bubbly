@@ -36,10 +36,10 @@ dev:
 
 .PHONY: kind-cleanup
 kind-cleanup:
-	kind delete clusters ${KIND_CLUSTER_NAME}
+	kind delete cluster ${KIND_CLUSTER_NAME}
 
 .PHONY: kind-bootstrap
-kind-bootstrap: integration-cleanup
+kind-bootstrap:
 	# create the kind cluster
 	kind create cluster --name ${KIND_CLUSTER_NAME} --config kind-config.yaml
 
