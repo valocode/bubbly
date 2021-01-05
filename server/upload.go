@@ -30,11 +30,12 @@ func upload(bCtx *env.BubblyContext, c echo.Context) error {
 		}
 	}
 
-	bCtx.Logger.Debug().
-		Interface("data", data).
-		Interface("store", serverStore).
-		Interface("store.Schema()", serverStore.Schema()).
-		Msg("loading data into data store")
+	// TODO: too much noise with printing the data
+	// bCtx.Logger.Debug().
+	// Interface("data", data).
+	// Interface("store", serverStore).
+	// Interface("store.Schema()", serverStore.Schema()).
+	// Msg("loading data into store")
 
 	if err := serverStore.Save(data); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

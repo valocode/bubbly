@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/graphql-go/graphql"
@@ -113,6 +114,14 @@ func (s *Store) Save(data core.DataBlocks) error {
 	return nil
 }
 
+func (s *Store) GetResource(id string) (io.Reader, error) {
+	return s.p.GetResource(id)
+}
+
+func (s *Store) PutResource(id string, val string) error {
+	return s.p.PutResource(id, val)
+}
+
 func addImplicitIDs(parent *core.Table, tables core.Tables) core.Tables {
 	// We are adding at least one field (id) and possibly
 	// another (parent=_id) so pad this out.
@@ -149,4 +158,10 @@ func addImplicitIDs(parent *core.Table, tables core.Tables) core.Tables {
 type typeInfo struct {
 	ID     int64
 	Tables core.Tables
+}
+
+type resource struct {
+	ID         int64
+	ResourceID string `pg:",unique"`
+	Resource   string
 }

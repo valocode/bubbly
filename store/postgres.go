@@ -1,13 +1,15 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
-	"github.com/go-pg/pg"
-	"github.com/go-pg/pg/orm"
+	"github.com/go-pg/pg/v10"
+	"github.com/go-pg/pg/v10/orm"
 	"github.com/graphql-go/graphql"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
@@ -32,6 +34,15 @@ func newPostgres(bCtx *env.BubblyContext) (provider, error) {
 		return nil, fmt.Errorf("failed to create type info table in postgres: %w", err)
 	}
 
+	// Create table to store resources. Similar to typeInfo, this table likely
+	// exists unless this is a new data store.
+	err = db.Model((*resource)(nil)).CreateTable(&orm.CreateTableOptions{
+		IfNotExists: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource table in postgres: %w", err)
+	}
+
 	types, err := currentSchemaTypesPostgres(db)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current schema types: %w", err)
@@ -40,17 +51,19 @@ func newPostgres(bCtx *env.BubblyContext) (provider, error) {
 	return &postgres{
 		db:    db,
 		types: types,
+		ctx:   context.Background(),
 	}, nil
 }
 
 type postgres struct {
 	db    *pg.DB
 	types map[string]schemaType
+	ctx   context.Context
 }
 
 func (p *postgres) Create(tables core.Tables) error {
 	var types map[string]schemaType
-	err := p.db.RunInTransaction(func(tx *pg.Tx) error {
+	err := p.db.RunInTransaction(p.ctx, func(tx *pg.Tx) error {
 		info := &typeInfo{
 			Tables: tables,
 		}
@@ -88,7 +101,7 @@ func (p *postgres) Save(data core.DataBlocks, refs core.DataBlocks) (core.Tables
 	}
 
 	tableRefs := make(tableRefs)
-	err := p.db.RunInTransaction(func(tx *pg.Tx) error {
+	err := p.db.RunInTransaction(p.ctx, func(tx *pg.Tx) error {
 		if err := p.save(tx, data, tableRefs); err != nil {
 			return err
 		}
@@ -195,6 +208,27 @@ func (p *postgres) LastValue(tableName, field string) (cty.Value, error) {
 	}
 
 	return val, nil
+}
+
+func (p *postgres) GetResource(id string) (io.Reader, error) {
+	var res resource
+	if err := p.db.Model(&res).Where("resource_id = ?", id).Select(); err != nil {
+		return nil, fmt.Errorf("could not find resource with id %s: %w", id, err)
+	}
+
+	return strings.NewReader(res.Resource), nil
+}
+
+func (p *postgres) PutResource(id string, val string) error {
+	res := &resource{
+		ResourceID: id,
+		Resource:   val,
+	}
+
+	if _, err := p.db.Model(res).OnConflict("(resource_id) DO UPDATE").Insert(res); err != nil {
+		return fmt.Errorf("failed to insert resource %s: %w", id, err)
+	}
+	return nil
 }
 
 func applyArgsPostgres(q *orm.Query, args map[string]interface{}) *orm.Query {

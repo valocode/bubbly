@@ -55,8 +55,5 @@ func TestJSONData(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to Unmarshal JSON dataBlocks: %s", err.Error())
 	}
-	t.Logf("Type: %s", testBlocks[0].Fields[1].Value.Type().GoString())
-	t.Logf("dBlocks: %#v", dBlocks)
-	t.Logf("testBlocks: %#v", testBlocks)
 	assert.Equalf(t, dBlocks, testBlocks, "JSON returned from transform equals unmarshalled dataBlocks")
 }

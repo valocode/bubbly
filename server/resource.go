@@ -10,7 +10,6 @@ import (
 
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/resource"
 )
 
 // PostResource godoc
@@ -55,18 +54,7 @@ func uploadResource(bCtx *env.BubblyContext, id string, resJSON core.ResourceBlo
 		return fmt.Errorf("failed to marshal resource: %w", err)
 	}
 
-	db, err := resource.New(bCtx)
-	if err != nil {
-		return err
-	}
-
-	// TODO: should the API Server really be accessing the resource db directly?
-	err = db.Provider.Save(bCtx, id, string(resBytes))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return serverStore.PutResource(id, string(resBytes))
 }
 
 // GetResource godoc
@@ -87,19 +75,14 @@ func GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 		Metadata:     &core.Metadata{Namespace: c.Param("namespace")},
 		ResourceKind: c.Param("kind"),
 	}
-	resJSON := core.ResourceBlockJSON{}
-	// TODO: this should not get created here but at initialisation or pub/sub
-	// with NATS will replace all of this...??
-	db, err := resource.New(bCtx)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
 
-	resourceString, err := db.Provider.Query(bCtx, resBlock.String())
+	val, err := serverStore.GetResource(resBlock.String())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	if err := json.Unmarshal([]byte(resourceString), &resJSON); err != nil {
+
+	resJSON := core.ResourceBlockJSON{}
+	if err := json.NewDecoder(val).Decode(&resJSON); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return c.JSON(http.StatusOK, resJSON)

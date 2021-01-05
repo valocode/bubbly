@@ -12,7 +12,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-git/go-git/v5 v5.2.0
-	github.com/go-pg/pg v8.0.7+incompatible
+	github.com/go-pg/pg/v10 v10.7.3
 	github.com/graphql-go/graphql v0.7.9
 	github.com/graphql-go/handler v0.2.3
 	github.com/hashicorp/hcl/v2 v2.8.1
