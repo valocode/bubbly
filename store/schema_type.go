@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -13,6 +14,7 @@ import (
 const (
 	idFieldName         = "ID"
 	schemaTypeFieldName = "SchemaType"
+	titledIDFieldName   = "Id" // if "id" is titled it becomes "Id"
 )
 
 var (
@@ -96,7 +98,7 @@ func (t schemaType) EmptySlice() interface{} {
 
 // New creates a new instance of schemaType with the fields
 // set based on the values in d.
-func (t schemaType) New(d core.Data, parentName string, parentID int64) (interface{}, error) {
+func (t schemaType) New(d core.Data, tableRefs tableRefs) (interface{}, error) {
 	var (
 		val  = reflect.New(t.rt)
 		elem = val.Elem()
@@ -132,13 +134,36 @@ func (t schemaType) New(d core.Data, parentName string, parentID int64) (interfa
 				return nil, fmt.Errorf("falied to extract string value for %s.%s: %w", d.TableName, name, err)
 			}
 			fval.SetString(n)
+		case parser.DataRefType:
+			ref := f.Value.EncapsulatedValue().(*parser.DataRef)
+			val, ok := tableRefs[ref.TableName]
+			if !ok {
+				return nil, fmt.Errorf("could not find referenced data table: %s", ref.TableName)
+			}
+			// get the name of the field according to the schema type struct
+			fieldName := strings.Title(ref.Field)
+			// if the "id" field is referenced, the titled form is "Id" not "ID"
+			if fieldName == titledIDFieldName {
+				fieldName = idFieldName
+			}
+			rval := reflect.ValueOf(val.Value).Elem().FieldByName(fieldName)
+			if !rval.IsValid() {
+				return nil, fmt.Errorf(`field "%s" for type "%s" does not exist`, fieldName, reflect.TypeOf(val.Value).String())
+			}
+			fval.Set(rval)
+		default:
+			return nil, fmt.Errorf("unsupported cty type: %s", f.Value.Type().FriendlyName())
 		}
 	}
 
 	elem.FieldByName(schemaTypeFieldName).SetString(d.TableName)
 
-	if parentName != "" {
-		elem.FieldByName(strings.Title(parentName + "_id")).SetInt(parentID)
+	if d.ParentTable != "" {
+		parent, ok := tableRefs[d.ParentTable]
+		if !ok {
+			return nil, fmt.Errorf("could not find parent table %s", d.ParentTable)
+		}
+		elem.FieldByName(strings.Title(d.ParentTable + "_id")).SetInt(parent.ID)
 	}
 
 	return val.Interface(), nil

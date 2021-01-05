@@ -64,6 +64,7 @@ spec:
           image: verifa/bubbly
           args:
             - "server"
+            - "--debug"
           livenessProbe:
             httpGet:
               path: /healthz

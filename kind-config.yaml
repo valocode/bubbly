@@ -17,3 +17,7 @@ nodes:
       - containerPort: 443
         hostPort: 443
         protocol: TCP
+      # expose Postgres as NodePort
+      - containerPort: 30000
+        hostPort: 30000
+        protocol: TCP

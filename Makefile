@@ -1,6 +1,13 @@
 BIN=./build/bubbly
 KIND_CLUSTER_NAME=bubbly
 
+# env vars for running tests
+export BUBBLY_HOST=localhost
+export BUBBLY_PORT=80
+export BUBBLY_STORE_PROVIDER=postgres
+export POSTGRES_ADDR=localhost:30000
+export POSTGRES_DATABASE=bubbly
+
 all: build run-help
 
 .PHONY: build
@@ -50,10 +57,7 @@ development:
 
 .PHONY: integration
 integration:
-	# --force so that the k8s Job gets re-applied
-	skaffold run -p integration --force
-	# print the logs and follow until complete
-	kubectl logs --follow --tail=-1 --selector job-name=bubbly-integration
+	go test ./integration -tags=integration
 
 # Project is CI-enabled with Github Actions. You can run CI locally
 # using act (https://github.com/nektos/act). 

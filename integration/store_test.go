@@ -1,5 +1,4 @@
 // +build integration
-// +build incluster
 
 package integration
 
@@ -25,7 +24,6 @@ func TestStore(t *testing.T) {
 	err := bubbly.Apply(bCtx, "./testdata/testautomation/golang/pipeline.bubbly")
 	assert.NoError(t, err)
 
-	// TODO: this needs to have direct access to a postgres db
 	s, err := store.New(bCtx)
 	assert.NoErrorf(t, err, "failed to create store")
 
@@ -38,7 +36,7 @@ func TestStore(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	b, err := json.MarshalIndent(n, "", "\t")
+	b, err := json.MarshalIndent(n, "", "  ")
 	assert.NoError(t, err)
 
 	fmt.Println(string(b))

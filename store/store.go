@@ -31,14 +31,12 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 
 	return &Store{
 		p: p,
-		r: &resolver{p: p},
 	}, nil
 }
 
 // Store provides access to persisted readiness data.
 type Store struct {
 	p provider
-	r *resolver
 
 	mu     sync.RWMutex
 	schema graphql.Schema
@@ -89,13 +87,16 @@ func (s *Store) Create(tables core.Tables) error {
 
 // Save saves data into the store.
 func (s *Store) Save(data core.DataBlocks) error {
-	var err error
-	data, err = s.r.Resolve(data)
-	if err != nil {
-		return fmt.Errorf("failed to resolve data refs: %w", err)
+
+	// Prepare the data for saving by splitting up the DataRefs from the "normal"
+	// data blocks
+	altData := make(core.DataBlocks, 0)
+	dataRefs := make(core.DataBlocks, 0)
+	if err := prepareDataRefs(data, &altData, &dataRefs); err != nil {
+		return err
 	}
 
-	tables, err := s.p.Save(data)
+	tables, err := s.p.Save(altData, dataRefs)
 	if err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}

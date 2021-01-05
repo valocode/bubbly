@@ -82,13 +82,17 @@ func (p *postgres) Create(tables core.Tables) error {
 	return nil
 }
 
-func (p *postgres) Save(data core.DataBlocks) (core.Tables, error) {
+func (p *postgres) Save(data core.DataBlocks, refs core.DataBlocks) (core.Tables, error) {
 	if p.types == nil {
 		return nil, errors.New("postgres has no type information")
 	}
 
+	tableRefs := make(tableRefs)
 	err := p.db.RunInTransaction(func(tx *pg.Tx) error {
-		return p.save(tx, data, "", 0)
+		if err := p.save(tx, data, tableRefs); err != nil {
+			return err
+		}
+		return p.save(tx, refs, tableRefs)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to save data in postgres: %w", err)
@@ -97,7 +101,7 @@ func (p *postgres) Save(data core.DataBlocks) (core.Tables, error) {
 	return currentCoreTablesPostgres(p.db)
 }
 
-func (p *postgres) save(tx *pg.Tx, data core.DataBlocks, parentName string, parentID int64) error {
+func (p *postgres) save(tx *pg.Tx, data core.DataBlocks, tableRefs tableRefs) error {
 	for _, d := range data {
 		// Retrieve the schema type for the data
 		// we are trying to insert.
@@ -108,7 +112,7 @@ func (p *postgres) save(tx *pg.Tx, data core.DataBlocks, parentName string, pare
 
 		// Create a new instance of a predefined struct
 		// that corresponds to both the data and the schema.
-		n, err := st.New(d, parentName, parentID)
+		n, err := st.New(d, tableRefs)
 		if err != nil {
 			return fmt.Errorf("falied to create instance of %s: %w", d.TableName, err)
 		}
@@ -118,8 +122,15 @@ func (p *postgres) save(tx *pg.Tx, data core.DataBlocks, parentName string, pare
 			return fmt.Errorf("falied to insert %s: %w", d.TableName, err)
 		}
 
+		// Insert the model into tableRefs
+		tableRefs[d.TableName] = tableRef{
+			ID:    schemaTypeID(n),
+			Name:  d.TableName,
+			Value: n,
+		}
+
 		// Recursively insert all sub-data.
-		if err := p.save(tx, d.Data, d.TableName, schemaTypeID(n)); err != nil {
+		if err := p.save(tx, d.Data, tableRefs); err != nil {
 			return err
 		}
 	}

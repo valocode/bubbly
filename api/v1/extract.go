@@ -177,7 +177,7 @@ func (e *Extract) decode(bCtx *env.BubblyContext, ctx *core.ResourceContext) err
 
 	e.Spec.Source = make(SourceBlocks, len(e.Spec.SourceHCL))
 
-	for idx := range e.Spec.SourceHCL {
+	for idx, source := range e.Spec.SourceHCL {
 
 		// Initiate the Extract's Source structure
 		switch e.Spec.Type {
@@ -194,7 +194,7 @@ func (e *Extract) decode(bCtx *env.BubblyContext, ctx *core.ResourceContext) err
 		}
 
 		// decode the source HCL into the extract's Source
-		if err := common.DecodeBody(bCtx, e.Spec.SourceHCL[idx].Body, e.Spec.Source[idx], ctx); err != nil {
+		if err := common.DecodeBody(bCtx, source.Body, e.Spec.Source[idx], ctx); err != nil {
 			return fmt.Errorf("failed to decode extract source: %w", err)
 		}
 

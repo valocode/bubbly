@@ -75,13 +75,11 @@ resource "transform" "sonarqube" {
             }
         }
 
-        // this data will be associated with the "repository_version" table
-        // within the interim database
         data "repo_version" {
-            // TODO: once DataRef has been implemented into the parser...
-            // field "repo_id" {
-            //     value = data.repo.id
-            // }
+            // get the repo_id by referencing the aboce data block
+            field "repo_id" {
+                value = self.data.repo.id
+            }
             field "commit" {
                 value = self.input.repository.commit_id
             }
@@ -102,6 +100,9 @@ resource "transform" "sonarqube" {
             content {
                 // if the "id" field is blank, it should be auto-generated
                 // field "id" {}
+                field "repo_version_id" {
+                    value = self.data.repo_version.id
+                }
 
                 field "name" {
                     value = issue.value.primaryLocation.message

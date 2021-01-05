@@ -22,6 +22,10 @@ table "repo" {
 }
 
 table "code_issue" {
+    field "repo_version_id" {
+        type = number
+        unique = false
+    }
     field "name" {
         type = string
         unique = false

@@ -9,7 +9,7 @@ import (
 // Provider providea an interface for persisting readiness data.
 type provider interface {
 	Create(core.Tables) error
-	Save(core.DataBlocks) (core.Tables, error)
+	Save(core.DataBlocks, core.DataBlocks) (core.Tables, error)
 	ResolveScalar(graphql.ResolveParams) (interface{}, error)
 	ResolveList(graphql.ResolveParams) (interface{}, error)
 	LastValue(tableName, field string) (cty.Value, error)
