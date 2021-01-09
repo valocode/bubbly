@@ -37,7 +37,7 @@ type DataField struct {
 func (f *DataField) MarshalJSON() ([]byte, error) {
 	d, err := NewJSONField(f)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to convert field into json: %w", err)
 	}
 	return json.Marshal(d)
 }

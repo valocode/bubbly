@@ -93,7 +93,7 @@ func (s *Store) Save(data core.DataBlocks) error {
 	altData := make(core.DataBlocks, 0)
 	dataRefs := make(core.DataBlocks, 0)
 	if err := prepareDataRefs(data, &altData, &dataRefs); err != nil {
-		return err
+		return fmt.Errorf("failed to process data references: %w", err)
 	}
 
 	tables, err := s.p.Save(altData, dataRefs)

@@ -131,7 +131,7 @@ func (p *postgres) save(tx *pg.Tx, data core.DataBlocks, tableRefs tableRefs) er
 
 		// Recursively insert all sub-data.
 		if err := p.save(tx, d.Data, tableRefs); err != nil {
-			return err
+			return fmt.Errorf("failed to save data: %w", err)
 		}
 	}
 

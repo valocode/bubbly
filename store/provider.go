@@ -6,7 +6,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// Provider providea an interface for persisting readiness data.
+// Provider provides an interface for persisting readiness data.
 type provider interface {
 	Create(core.Tables) error
 	Save(core.DataBlocks, core.DataBlocks) (core.Tables, error)

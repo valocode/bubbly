@@ -25,9 +25,9 @@ func DecodeExpandBody(bCtx *env.BubblyContext, body hcl.Body, val interface{}, i
 	node := dynblock.WalkVariables(body)
 
 	// get the list of variables/traversals that exist
-	traversals := walkVariables(node, reflect.TypeOf(val))
+	traversals := walkVariables(bCtx, node, reflect.TypeOf(val))
 
-	inputs, err := processVariables(inputs, traversals)
+	inputs, err := processVariables(bCtx, inputs, traversals)
 	if err != nil {
 		return fmt.Errorf("failed to process variables: %w", err)
 	}
@@ -41,7 +41,7 @@ func DecodeExpandBody(bCtx *env.BubblyContext, body hcl.Body, val interface{}, i
 	return nil
 }
 
-func processVariables(inputs cty.Value, traversals []hcl.Traversal) (cty.Value, error) {
+func processVariables(bCtx *env.BubblyContext, inputs cty.Value, traversals []hcl.Traversal) (cty.Value, error) {
 	dataRefs := cty.EmptyObjectVal
 	for _, tr := range traversals {
 		switch tr.RootName() {
@@ -49,20 +49,20 @@ func processVariables(inputs cty.Value, traversals []hcl.Traversal) (cty.Value, 
 			if len(tr) == 1 {
 				// TODO: do we want to be strict here and just error if we have
 				// unknown traversals?
-				return cty.NilVal, fmt.Errorf("unknown variable %s", traversalString(tr))
+				return cty.NilVal, fmt.Errorf("unknown variable %s", traversalString(bCtx, tr))
 			}
-			switch traverserName(tr[1]) {
+			switch traverserName(bCtx, tr[1]) {
 			case "data":
-				dataRef, err := newDataRef(tr)
+				dataRef, err := newDataRef(bCtx, tr)
 				if err != nil {
-					return cty.NilVal, fmt.Errorf("could not create DataRef from variable %s", traversalString(tr))
+					return cty.NilVal, fmt.Errorf("could not create DataRef from variable %s", traversalString(bCtx, tr))
 				}
 				fmt.Println(dataRef.GoString())
-				dataRefs = appendDataRef(dataRefs, dataRef, traverserName(tr[2]), traverserName(tr[3]))
+				dataRefs = appendDataRef(dataRefs, dataRef, traverserName(bCtx, tr[2]), traverserName(bCtx, tr[3]))
 			}
 
 		default:
-			return cty.NilVal, fmt.Errorf(`unknown variable reference "%s". Only references to self are supported`, traversalString(tr))
+			return cty.NilVal, fmt.Errorf(`unknown variable reference "%s". Only references to self are supported`, traversalString(bCtx, tr))
 		}
 	}
 
@@ -89,13 +89,13 @@ func newEvalContext(inputs cty.Value) *hcl.EvalContext {
 	}
 }
 
-func newDataRef(traversal hcl.Traversal) (cty.Value, error) {
+func newDataRef(bCtx *env.BubblyContext, traversal hcl.Traversal) (cty.Value, error) {
 	if len(traversal) != 4 {
 		return cty.NilVal, fmt.Errorf("data reference must consist of four parts, e.g. self.data.table_name.field")
 	}
 	return cty.CapsuleVal(DataRefType, &DataRef{
-		TableName: traverserName(traversal[2]),
-		Field:     traverserName(traversal[3]),
+		TableName: traverserName(bCtx, traversal[2]),
+		Field:     traverserName(bCtx, traversal[3]),
 	}), nil
 }
 
@@ -143,34 +143,36 @@ type DataRef struct {
 }
 
 // traversalsString is a helper to return a string representation of traversals
-func traversalsString(traversals []hcl.Traversal) string {
+func traversalsString(bCtx *env.BubblyContext, traversals []hcl.Traversal) string {
 	strTraversals := []string{}
 	for _, traversal := range traversals {
-		strTraversals = append(strTraversals, traversalString(traversal))
+		strTraversals = append(strTraversals, traversalString(bCtx, traversal))
 	}
 	return strings.Join(strTraversals, ", ")
 }
 
 // traversalString is a helper to return a string representation of a traversal
-func traversalString(traversal hcl.Traversal) string {
+func traversalString(bCtx *env.BubblyContext, traversal hcl.Traversal) string {
 	if len(traversal) == 0 {
 		return ""
 	}
-	retStr := traverserName(traversal[0])
+	retStr := traverserName(bCtx, traversal[0])
 	for _, tr := range traversal[1:] {
-		retStr = fmt.Sprintf("%s.%s", retStr, traverserName(tr))
+		retStr = fmt.Sprintf("%s.%s", retStr, traverserName(bCtx, tr))
 	}
 	return retStr
 }
 
 // traverserName gets the Name or the given traverser
-func traverserName(tr hcl.Traverser) string {
+func traverserName(bCtx *env.BubblyContext, tr hcl.Traverser) string {
 	switch tt := tr.(type) {
 	case hcl.TraverseRoot:
 		return tt.Name
 	case hcl.TraverseAttr:
 		return tt.Name
 	default:
-		panic("Unknown type of traverser")
+		bCtx.Logger.Panic().Msgf("Unknown type of traverser: %s", reflect.TypeOf(tt).String())
 	}
+	// redundant but stops go linter from complaining
+	return ""
 }

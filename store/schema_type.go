@@ -161,7 +161,7 @@ func (t schemaType) New(d core.Data, tableRefs tableRefs) (interface{}, error) {
 	if d.ParentTable != "" {
 		parent, ok := tableRefs[d.ParentTable]
 		if !ok {
-			return nil, fmt.Errorf("could not find parent table %s", d.ParentTable)
+			return nil, fmt.Errorf("could not find parent table: %s", d.ParentTable)
 		}
 		elem.FieldByName(strings.Title(d.ParentTable + "_id")).SetInt(parent.ID)
 	}

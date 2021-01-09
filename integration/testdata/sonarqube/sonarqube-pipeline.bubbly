@@ -76,7 +76,7 @@ resource "transform" "sonarqube" {
         }
 
         data "repo_version" {
-            // get the repo_id by referencing the aboce data block
+            // get the repo_id by referencing the above data block
             field "repo_id" {
                 value = self.data.repo.id
             }
