@@ -17,5 +17,5 @@ type provider interface {
 	LastValue(tableName, field string) (cty.Value, error)
 
 	GetResource(id string) (io.Reader, error)
-	PutResource(id string, val string) error
+	PutResource(id, val string) error
 }
