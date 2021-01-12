@@ -43,9 +43,9 @@ An additional benefit to aggregating data into a queryable API is that dashboard
 
 The high-level architecture for Bubbly consist of the following parts:
 
-1. The **Bubbly Server** is a long-running backend process that is available to upload new data or return data based on a provided query
+1. The **Bubbly Server** is a long-running backend process that is available to upload new data or return data based on a provided query.
 
-2. The **Bubbly Client** is executed in an automated manner (e.g. CI pipeline) or manually by a user to perform operations agains the Bubbly Server
+2. The **Bubbly Client** is executed in an automated manner (e.g. CI pipeline) or manually by a user to perform operations against the Bubbly Server.
 
 3. The **Bubbly Web UI** will be how the data is represented. The idea is to create a Grafana plugin, for the rich and real-time dashboards. Bubbly will also provide a minimal UI to explore the data, but will not be so feature rich (at least in the beginning).
 
@@ -55,8 +55,8 @@ These main components can be illustrated using the following simple diagram:
 
 The other relevant parts in this diagram are:
 
-1. The **Client Configs** tell the Bubbly client everything it needs to know about what to do. This includes: the location of the *Bubbly server*, where the *input data* is, what to upload to the *Bubbly server*, etc. All the client configs are defined in HCL files.
-2. The **Data Source** is the data which should be uploaded to the Bubbly server and can come from any source, such as a JSON or XML file, or by querying a REST API or by executing a command line tool. Before it is uploaded it needs to be converted into the expected format, which is defined by the *schema*, and the *extracts* are used to convert the data.
+1. The **Client Configs** tell the Bubbly client everything it needs to know about to operate. This includes: the location of the *Bubbly server*, where the *input data* is, what to upload to the *Bubbly server*, etc. All the client configs are defined in HCL files.
+2. The **Data Source** is the data which should be uploaded to the Bubbly server and can come from any source, such as a JSON or XML file, by querying a REST API or by executing a command line tool. Before it is uploaded it needs to be converted into the expected format, which is defined by the *schema*, and the *extracts* are used to convert the data.
 3. The **Schema** defines the format to store the data in Bubbly. It is not strictly SQL but follows a similar approach of defining tables with relations. The schema is defined using HCL and uploaded to the Bubbly server or provided as a config during startup.
 4. The **Resources** are the drivers for the data pipeline and consist of the extracts, transforms, loads, pipeline and so on.
 
@@ -72,7 +72,7 @@ The above architecture can be further elaborated using the following sequence di
 
 ## 4. Design
 
-This section describes some design aspects of bubbly.
+This section describes some design aspects of Bubbly.
 
 ## 4.1 Data Model and Schema
 
@@ -129,7 +129,7 @@ table "test_run" {
 }
 ```
 
-This schema should be stored in the Bubbly server so that it can be fetched by the Bubbly client.
+This schema should be stored in the Bubbly server so that it can be fetched by the Bubbly Client.
 It can either be uploaded after the Bubbly server starts, or can be provided as a configuration during startup.
 
 ### 4.2 Extracts
@@ -223,14 +223,14 @@ transform "xunit_report" {
 
 The client configs tell the Bubbly client what data to upload to the Bubbly server.
 
-First we would need to provide some of the contextual data, such as the project name, the repository name, the version of the code and generic things which having nothing to do with parsing data, but will feed into the schema and data model.
-As the transforms are defined as re-usable modules, we only need to provide the necessary inputs (or parameters) to the transform in the client configs.
+First we would need to provide some of the contextual data, such as the project name, the repository name, the version of the code and generic things which themselves have nothing to do with parsing data, but will feed into the schema and data model.
+As the transforms are defined as reusable modules, we only need to provide the necessary inputs (or parameters) to the transform in the client configs.
 
 In the following short example we:
 
-1. First set the bubbly server to talk with (should be possible to use env vars or similar)
-2. Set the name of the `repo` to `test-repo`. The idea is that if this `repo` already exists on the bubbly server then it would associate the data we are about to produce with that existing `repo`, and not create a new `repo` -- so the bubbly client will need to query the bubbly server before uploading.
-3. Next we create a `repo_verion`, which may exist if we have already uploaded data against the same `repo_version`.
+1. First set the Bubbly server to connect to (should be possible to use env vars or similar).
+2. Set the name of the `repo` to `test-repo`. The idea is that if this `repo` already exists on the Bubbly server then it would associate the data we are about to produce with that existing `repo`, and not create a new `repo` -- so the Bubbly client will need to query the Bubbly server before uploading.
+3. Next we create a `repo_version`, which may exist if we have already uploaded data against the same `repo_version`.
 4. Next we specify the module (or transform) that we want to use, and then provide the inputs in the `modules` block.
 
 ```hcl
