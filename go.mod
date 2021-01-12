@@ -25,6 +25,9 @@ require (
 	github.com/likexian/gokit v0.20.15
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/nats-io/gnatsd v1.4.1 // indirect
+	github.com/nats-io/nats-server v1.4.1
+	github.com/nats-io/nats.go v1.10.0
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5

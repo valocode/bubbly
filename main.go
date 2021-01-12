@@ -42,7 +42,9 @@ func main() {
 	// makes up the BubblyContext
 	// TODO: I believe this renders Viper reduntant. Remove.
 	if err := rootCmd.ParseFlags(os.Args); err != nil {
-		os.Exit(1)
+		// rootCmd ignores flags that it cannot parse (FParseErrWhitelist)
+		// so theoretically we should never hit this.
+		bCtx.Logger.Panic().Err(err).Msg("unable to parse provided flags")
 	}
 
 	fs := rootCmd.Flags()
@@ -50,9 +52,23 @@ func main() {
 	// 4. update the log level of the bubblyContext.Logger
 	// if --debug flag is specified
 	if debug, _ := fs.GetBool("debug"); debug {
-		bCtx.UpdateLogLevel(zerolog.DebugLevel)
-		bCtx.Logger.Debug().Str("log_level", bCtx.Logger.GetLevel().String()).
-			Msg("updated log level")
+		if err := bCtx.UpdateLogLevel(zerolog.DebugLevel); err != nil {
+			bCtx.Logger.Info().
+				Err(err).
+				Str(
+					"log_level",
+					bCtx.Logger.GetLevel().String(),
+				).
+				Msg(
+					"unable to update log level. " +
+						"Continuing with default log level")
+		} else {
+			bCtx.Logger.Debug().Str(
+				"log_level",
+				bCtx.Logger.GetLevel().String(),
+			).
+				Msg("updated log level")
+		}
 	}
 
 	// Because several of rootCmd's flags are mapped to BubblyContext.Config
@@ -72,7 +88,10 @@ func main() {
 		Str("final_log_level", bCtx.Logger.GetLevel().String()).
 		Msg("final bubbly context")
 
-	rootCmd.Execute()
+	if err := rootCmd.Execute(); err != nil {
+		bCtx.Logger.Fatal().Err(err).Msg(
+			"error occurred while executing the command")
+	}
 }
 
 func setSwaggerInfo() {

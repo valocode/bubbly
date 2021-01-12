@@ -48,6 +48,11 @@ func NewCmdRoot(bCtx *env.BubblyContext) *cobra.Command {
 		PreRun: func(cmd *cobra.Command, _ []string) {
 			viper.BindPFlags(cmd.PersistentFlags())
 		},
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			// Allow unknown flags for parsing to proceed in cases
+			// where flags for child commands are provided.
+			UnknownFlags: true,
+		},
 	}
 
 	initFlags(bCtx, cmd)
@@ -66,6 +71,9 @@ func initCommands(bCtx *env.BubblyContext, cmd *cobra.Command) {
 
 	serverCmd, _ := NewCmdServer(bCtx)
 	cmd.AddCommand(serverCmd)
+
+	agentCmd, _ := NewCmdAgent(bCtx)
+	cmd.AddCommand(agentCmd)
 }
 
 func initFlags(bCtx *env.BubblyContext, cmd *cobra.Command) {

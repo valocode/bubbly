@@ -29,8 +29,8 @@ const (
 	PostgresStore StoreProviderType = "postgres"
 )
 
-// Config is a top-level struct for holding
-// all provider-specific config.
+// StoreConfig stores the configuration of a bubbly store, used
+// to interact with a backend database
 type StoreConfig struct {
 	Provider StoreProviderType
 
@@ -56,3 +56,40 @@ const (
 	// Buntdb is a Buntdb provider
 	BuntdbResourceProvider ResourceProviderType = "buntdb"
 )
+
+// ###########################################
+// Agent
+// ###########################################
+
+type AgentDeploymentType string
+
+const (
+	SingleDeployment AgentDeploymentType = "single"
+	// TODO: Implement
+	// DistributedDeployment AgentDeploymentType = "distributed"
+)
+
+// AgentConfig stores the configuration of a bubbly agent
+type AgentConfig struct {
+	StoreConfig       *StoreConfig
+	NATSServerConfig  *NATSServerConfig
+	EnabledComponents *AgentComponentsToggle
+	DeploymentType    AgentDeploymentType
+}
+
+type AgentComponentsToggle struct {
+	UI        bool
+	APIServer bool
+	DataStore bool
+	Worker    bool
+}
+
+// ##########################
+// NATS
+// ##########################
+
+type NATSServerConfig struct {
+	HTTPPort int
+	Port     int
+	Addr     string
+}

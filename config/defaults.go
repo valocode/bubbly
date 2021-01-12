@@ -12,7 +12,8 @@ func defaultEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// DefaultServerConfig creates a Config struct from default configurations
+// DefaultServerConfig creates a ServerConfig struct from defaults
+// or, preferentially, from provided environment variables.
 func DefaultServerConfig() *ServerConfig {
 	auth, _ := strconv.ParseBool(defaultEnv("BUBBLY_ENABLE_AUTH", "false"))
 	return &ServerConfig{
@@ -23,6 +24,8 @@ func DefaultServerConfig() *ServerConfig {
 	}
 }
 
+// DefaultStoreConfig creates a StoreConfig struct from defaults
+// or, preferentially, from provided environment variables.
 func DefaultStoreConfig() *StoreConfig {
 	return &StoreConfig{
 		Provider:         StoreProviderType(defaultEnv("BUBBLY_STORE_PROVIDER", string(PostgresStore))),
@@ -33,8 +36,55 @@ func DefaultStoreConfig() *StoreConfig {
 	}
 }
 
+// DefaultResourceConfig creates a ResourceConfig struct from defaults
+// or, preferentially, from provided environment variables.
 func DefaultResourceConfig() *ResourceConfig {
 	return &ResourceConfig{
 		Provider: ResourceProviderType(defaultEnv("BUBBLY_RESOURCE_PROVIDER", string(BuntdbResourceProvider))),
+	}
+}
+
+// ###########################################
+// Agent
+// ###########################################
+
+// DefaultAgentConfig creates an AgentConfig struct from defaults
+// or, preferentially, from provided environment variables.
+func DefaultAgentConfig() *AgentConfig {
+	return &AgentConfig{
+		StoreConfig:       DefaultStoreConfig(),
+		NATSServerConfig:  DefaultNATSServerConfig(),
+		EnabledComponents: DefaultAgentComponentsEnabled(),
+	}
+}
+
+// DefaultNATSServerConfig creates a NATSServerConfig struct from defaults
+// or, preferentially, from provided environment variables.
+func DefaultNATSServerConfig() *NATSServerConfig {
+	httpPort, _ := strconv.Atoi(
+		defaultEnv(
+			"NATS_SERVER_HTTP_PORT",
+			"8222"),
+	)
+	port, _ := strconv.Atoi(
+		defaultEnv(
+			"NATS_SERVER_PORT",
+			"4223"),
+	)
+	return &NATSServerConfig{
+		HTTPPort: httpPort,
+		Port:     port,
+		Addr:     defaultEnv("NATS_SERVER_ADDR", "localhost:4223"),
+	}
+}
+
+// DefaultAgentComponentsEnabled creates an AgentComponentsToggle struct
+// instance with all components disabled
+func DefaultAgentComponentsEnabled() *AgentComponentsToggle {
+	return &AgentComponentsToggle{
+		UI:        false,
+		APIServer: false,
+		DataStore: false,
+		Worker:    false,
 	}
 }

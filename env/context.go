@@ -18,6 +18,7 @@ type BubblyContext struct {
 	ServerConfig *config.ServerConfig
 	// Store provider configuration
 	StoreConfig *config.StoreConfig
+	AgentConfig *config.AgentConfig
 	// stores configurations for accessing resources
 	ResourceConfig *config.ResourceConfig
 	// TODO: Could also contain a client.Client... consider.
@@ -29,6 +30,7 @@ func NewBubblyContext() *BubblyContext {
 		Logger:         NewDefaultLogger(),
 		ServerConfig:   config.DefaultServerConfig(),
 		StoreConfig:    config.DefaultStoreConfig(),
+		AgentConfig:    config.DefaultAgentConfig(),
 		ResourceConfig: config.DefaultResourceConfig(),
 	}
 }
