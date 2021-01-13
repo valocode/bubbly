@@ -15,9 +15,13 @@ func IntegrationTestUploadPassing(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	r := gofight.New()
 
+	s := New(bCtx)
+
+	router := s.setupRouter(bCtx)
+
 	r.POST("/alpha1/upload").
 		SetJSON(gofight.D{"data": testData.DataStruct()}).
-		Run(setupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		Run(router, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusOK, r.Code)
 			assert.Equal(t, "{\"status\":\"uploaded\"}", r.Body.String())
 		})
@@ -27,9 +31,14 @@ func IntegrationTestUploadPassing(t *testing.T) {
 func TestUploadFailing(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	r := gofight.New()
+
+	s := New(bCtx)
+
+	router := s.setupRouter(bCtx)
+
 	r.POST("/alpha1/upload").
 		SetJSON(testData.DataStructFailing()).
-		Run(setupRouter(bCtx), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		Run(router, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusBadRequest, r.Code)
 		})
 }

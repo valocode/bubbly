@@ -30,7 +30,7 @@ func Apply(bCtx *env.BubblyContext, filename string) error {
 		return fmt.Errorf("failed to parse resources: %w", err)
 	}
 
-	client, err := client.New(bCtx)
+	client, err := client.NewHTTP(bCtx)
 	if err != nil {
 		return fmt.Errorf("failed to create bubbly client: %w", err)
 	}

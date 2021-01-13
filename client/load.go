@@ -13,7 +13,7 @@ import (
 // Load takes the output from a load resource and POSTs it to the Bubbly
 // server.
 // Returns an error if loading was unsuccessful
-func (c *Client) Load(bCtx *env.BubblyContext, data core.DataBlocks) error {
+func (c *HTTP) Load(bCtx *env.BubblyContext, data core.DataBlocks) error {
 
 	jsonReq, err := json.Marshal(data)
 
@@ -22,7 +22,7 @@ func (c *Client) Load(bCtx *env.BubblyContext, data core.DataBlocks) error {
 	}
 
 	// req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/alpha1/upload", c.HostURL), bytes.NewBuffer(jsonReq))
-	_, err = handleResponse(
+	_, err = c.handleResponse(
 		http.Post(fmt.Sprintf("%s/alpha1/upload", c.HostURL), "application/json", bytes.NewBuffer(jsonReq)),
 	)
 

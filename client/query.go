@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/verifa/bubbly/agent/component"
 	"github.com/verifa/bubbly/env"
 )
 
@@ -15,7 +16,7 @@ import (
 // Returns a []byte representing the interface{} returned from the graphql-go
 // request if successful
 // Returns an error if querying was unsuccessful
-func (c *Client) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
+func (c *HTTP) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
 
 	// We must wrap the data with a "query" key such that it can be
 	// unmarshalled correctly by server.Query into a queryReq
@@ -30,7 +31,7 @@ func (c *Client) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
 
 	bCtx.Logger.Debug().RawJSON("request", jsonReq).Str("host", c.HostURL).Msg("sending query request to the bubbly server")
 
-	resp, err := handleResponse(
+	resp, err := c.handleResponse(
 		http.Post(fmt.Sprintf("%s/api/graphql", c.HostURL), "application/json", bytes.NewBuffer(jsonReq)),
 	)
 	if err != nil {
@@ -38,10 +39,23 @@ func (c *Client) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response of body: %w", err)
+
+	return ioutil.ReadAll(resp.Body)
+}
+
+func (n *NATS) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
+
+	pub := &component.Publication{
+		Subject: "store.Query",
+		Data:    []byte(query),
+		Encoder: "default",
 	}
 
-	return body, nil
+	reply := n.Request(bCtx, pub)
+
+	if reply.Error != nil {
+		return nil, fmt.Errorf("NATS client failed to query: %w", reply.Error)
+	}
+
+	return reply.Data, nil
 }

@@ -1,5 +1,8 @@
 version: "3.8"
 
+volumes:
+  postgres-data:
+
 services:
   # One of the Store options for Bubbly
   postgres:
@@ -17,9 +20,11 @@ services:
       - "postgres"
       - "-c"
       - "log_statement=all"
-
-  # Grafana with GraphQL plugin configured to use Bubbly
-  # as a default data source
+    volumes:
+      - type: volume
+        source: postgres-data
+        target: /var/lib/postgresql/data
+  # Grafana with GraphQL plugin
   grafana:
     image: grafana/grafana:7.3.7
     container_name: grafana
@@ -61,8 +66,11 @@ services:
     ports:
       - "8111:8111"
     command:
-      - "server"
+      - "agent"
       - "--debug"
+      - "--api-server"
+      - "--nats-server"
+      - "--data-store"
 
   # A GraphQL interface into Bubbly Store
   storefront:

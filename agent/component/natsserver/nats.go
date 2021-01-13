@@ -1,87 +1,102 @@
 package natsserver
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	natsd "github.com/nats-io/nats-server/server"
-	"github.com/nats-io/nats.go"
 
 	"github.com/verifa/bubbly/agent/component"
 	"github.com/verifa/bubbly/config"
 	"github.com/verifa/bubbly/env"
 )
 
+const (
+	defaultNATSServerWait       = 10
+	defaultLogStatisticsTimeout = 60
+)
+
 var _ component.NATSServer = (*NATSServer)(nil)
 
 type NATSServer struct {
 	*component.ComponentCore
-
-	Config     *config.NATSServerConfig
-	Server     *natsd.Server
-	ServerConn *nats.Conn
+	Config *config.NATSServerConfig
+	Server *natsd.Server
 }
 
-// New creates a new NATS server
-func (n *NATSServer) New(bCtx *env.BubblyContext) error {
+// New instances a new NATSServer.
+// Aside from standard ComponentCore and Config set up,
+// it populates a *natsd.Server instance and attaches it to the NATSServer
+// for use at runtime.
+func New(bCtx *env.BubblyContext) *NATSServer {
 	bCtx.Logger.Debug().Msg("creating a NATS server")
 	// This configure the NATS Server using natsd package
 	nopts := &natsd.Options{}
 
-	nopts.HTTPPort = n.Config.HTTPPort
-	nopts.Port = n.Config.Port
+	nopts.HTTPPort = bCtx.AgentConfig.NATSServerConfig.HTTPPort
+	nopts.Port = bCtx.AgentConfig.NATSServerConfig.Port
+
+	if e := bCtx.Logger.Debug(); e.Enabled() {
+		nopts.Debug = true
+	}
+
+	// TODO: Add support for nopts.Trace
+	// nopts.Trace = true
 
 	// Create the NATS Server
 	ns := natsd.New(nopts)
 
-	n.Server = ns
+	// enable the logger for the nats.Server. Currently, I cannot see a
+	// good way of using the zerolog.Logger.
+	ns.ConfigureLogger()
 
-	return nil
-}
-
-// Connect connects to a NATS server and attaches the nats.Conn
-// for use in 1:N goroutines established by the other agent components
-func (n *NATSServer) Connect(bCtx *env.BubblyContext) error {
-	nc, err := nats.Connect(n.Config.Addr,
-		nats.Name("Bubbly NATS Server"),
-		nats.ErrorHandler(func(nc *nats.Conn, s *nats.Subscription, err error) {
-			if s != nil {
-				bCtx.Logger.Error().
-					Err(err).
-					Str("subject", s.Subject).
-					Str("queue", s.Queue).
-					Msg("Async error")
-			} else {
-				bCtx.Logger.Error().
-					Err(err).
-					Msg("Async error outside subscription")
-			}
-		}))
-	if err != nil {
-		return fmt.Errorf(
-			`failed to establish a connection to the NATS
-			server at address "%s": %w`,
-			n.Config.Addr,
-			err,
-		)
+	return &NATSServer{
+		ComponentCore: &component.ComponentCore{
+			Type: component.NATSServerComponent,
+		},
+		Config: bCtx.AgentConfig.NATSServerConfig,
+		Server: ns,
 	}
-
-	n.ServerConn = nc
-
-	return nil
 }
 
-// Run runs a NATS server
-func (n *NATSServer) Run(bCtx *env.BubblyContext) error {
+// Run runs a NATS server in single-server agent deployment
+func (n *NATSServer) Run(bCtx *env.BubblyContext, ctx context.Context) error {
 	bCtx.Logger.Debug().Str(
 		"component",
 		string(n.Type),
 	).Msg("running component")
 
-	if err := n.BulkSubscribe(bCtx); err != nil {
+	nSubs, err := n.BulkSubscribe(bCtx)
+
+	if err != nil {
 		return fmt.Errorf("error during bulk subscription: %w", err)
 	}
 
-	n.Server.Start()
+	n.Subscriptions = nSubs
+	bCtx.Logger.Debug().Str("component", string(n.Type)).Interface("subscriptions", n.Subscriptions).Msg("component is listening for subscriptions")
 
-	return nil
+	go n.Server.Start()
+
+	go n.logStats(bCtx)
+
+	// Wait for the NATS Server to be able to accept connections before
+	// connecting and setting up the other bubbly agent components
+	if !n.Server.ReadyForConnections(defaultNATSServerWait * time.Second) {
+		return fmt.Errorf("NATS server took too long to allow client connection")
+	}
+
+	return n.Listen(ctx)
+}
+
+func (n *NATSServer) logStats(bCtx *env.BubblyContext) {
+	for {
+		bCtx.Logger.Debug().
+			Int("num_routes", n.Server.NumRoutes()).
+			Int("num_clients", n.Server.NumClients()).
+			Uint32("num_subscriptions", n.Server.NumSubscriptions()).
+			Msg("NATS server statistics")
+
+		time.Sleep(defaultLogStatisticsTimeout * time.Second)
+	}
 }

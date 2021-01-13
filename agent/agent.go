@@ -1,8 +1,11 @@
 package agent
 
 import (
+	"context"
 	"fmt"
 	"time"
+
+	"github.com/verifa/bubbly/interval"
 
 	"golang.org/x/sync/errgroup"
 
@@ -14,6 +17,7 @@ import (
 	"github.com/verifa/bubbly/agent/component/worker"
 	"github.com/verifa/bubbly/config"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/server"
 )
 
 const (
@@ -69,9 +73,7 @@ func (a *Agent) Init(bCtx *env.BubblyContext) {
 		ComponentCore: &component.ComponentCore{
 			Type: component.NATSServerComponent,
 		},
-		Config:     a.Config.NATSServerConfig,
-		Server:     nil,
-		ServerConn: nil,
+		Config: a.Config.NATSServerConfig,
 	}
 }
 
@@ -98,115 +100,127 @@ func (a *Agent) Run(bCtx *env.BubblyContext) error {
 // this deployment strategy even if a single component goes
 // down the other components will still be valuable to the rest of the bubbly fleet.
 func (a *Agent) runAsSingle(bCtx *env.BubblyContext) error {
-	g := new(errgroup.Group)
+	g, agentContext := errgroup.WithContext(context.TODO())
 
 	// If single, the we must also run the NATS server as a part of the
 	// bubbly agent. Therefore we instance a new NATS server
-	n := a.Components.NATSServer
-
-	if err := n.New(bCtx); err != nil {
-		return fmt.Errorf("unable to initialise NATS Server: %w", err)
-	}
+	ns := natsserver.New(bCtx)
 
 	g.Go(func() error {
-		return n.Run(bCtx)
+		return ns.Run(bCtx, agentContext)
 	})
 
 	// Wait for the NATS Server to be able to accept connections before
 	// connecting and setting up the other bubbly agent components
-	if !n.Server.ReadyForConnections(defaultNATSServerWait * time.Second) {
+	if !ns.Server.ReadyForConnections(
+		defaultNATSServerWait * time.Second) {
 		return fmt.Errorf("NATS server took too long to allow client connection")
 	}
 
-	// Update the NATSServer associated with this agent with the newly
-	// established *nats.Server and ServerConn
-	a.Components.NATSServer = n
+	// Update the NATSServer Component of this agent
+	a.Components.NATSServer = ns
 
-	// Connect to the NATS Server. We load the connection into
-	// agent.NATSServerConn, thereby allowing us to pass an establish
-	// NATS server connection to other components.
-	// TODO: Consider whether it would be more appropriate for
-	//  components to individually connect.
-	if err := a.Components.NATSServer.Connect(bCtx); err != nil {
-		return fmt.Errorf("failed to connect to the NATS Server: %w", err)
+	// Now set up any activated bubbly component within the errgroup
+
+	// if enabled, initialise and run the UI
+	if a.Config.EnabledComponents.UI {
+		g.Go(func() error {
+			ui := &ui.UI{
+				ComponentCore: &component.ComponentCore{
+					Type: component.UIComponent,
+					NATSServer: &component.NATS{
+						Config: bCtx.AgentConfig.NATSServerConfig,
+					},
+					DesiredSubscriptions: nil,
+				},
+			}
+
+			if err := ui.Connect(bCtx); err != nil {
+				return fmt.Errorf("failed to connect to the NATS Server: %w", err)
+			}
+			a.Components.UI = ui
+			defer ui.NATSServer.Conn.Close()
+			return ui.Run(bCtx, agentContext)
+		})
 	}
-
-	// Now, just set up any activated bubbly component within the errgroup
 
 	// if enabled, initialise and run the data store
 	if a.Config.EnabledComponents.DataStore {
-		dStore := &datastore.DataStore{
-			ComponentCore: &component.ComponentCore{
-				Type:           component.DataStoreComponent,
-				NATSServerConn: n.ServerConn,
-				Subscriptions:  nil,
-				Publications:   nil,
-			},
-		}
-
-		if err := dStore.New(bCtx); err != nil {
-			return fmt.Errorf("failed to create data store: %w", err)
-		}
-		a.Components.DataStore = dStore
 		g.Go(func() error {
-			return dStore.Run(bCtx)
+			dStore, err := datastore.New(bCtx)
+
+			if err != nil {
+				return fmt.Errorf("failed to create data store: %w", err)
+			}
+
+			// Components are responsible for maintaining individual connections
+			// to the NATS Server.
+			// Connect provides us with an unencoded connection which we later
+			// use to establish encoded connections when publishing/subscribing
+			if err := dStore.Connect(bCtx); err != nil {
+				return fmt.Errorf("failed to connect to the NATS Server: %w", err)
+			}
+
+			a.Components.DataStore = dStore
+			// close the NATS Server connection established above only when
+			// the go routine terminates,
+			// since the lifetime of the connection should match the lifetime
+			// of the component
+			defer dStore.NATSServer.Conn.Close()
+			return dStore.Run(bCtx, agentContext)
 		})
 	}
 
 	// if enabled, initialise and run the API Server
 	if a.Config.EnabledComponents.APIServer {
-		server := &apiserver.APIServer{
-			ComponentCore: &component.ComponentCore{
-				Type:           component.APIServerComponent,
-				NATSServerConn: n.ServerConn,
-				Subscriptions:  nil,
-				Publications:   nil,
-			},
-		}
 		g.Go(func() error {
-			return server.Run(bCtx)
+			// establish the APIServer Component, which consists of a server.
+			// Server instance responsible for handling HTTP requests and
+			// publishing/requesting data via NATS to other Components.
+			s := apiserver.APIServer{
+				ComponentCore: &component.ComponentCore{
+					Type: component.APIServerComponent,
+					NATSServer: &component.NATS{
+						Config: bCtx.AgentConfig.NATSServerConfig,
+					},
+					DesiredSubscriptions: nil,
+				},
+				Server: server.New(bCtx),
+			}
+
+			// Components are responsible for maintaining individual connections
+			// to the NATS Server. Connect connects to the NATSServer defined by
+			// the bubbly context and saves the connection into the Component for
+			// later use
+			if err := s.Connect(bCtx); err != nil {
+				return fmt.Errorf("failed to connect to the NATS Server: %w", err)
+			}
+			defer s.NATSServer.Conn.Close()
+			return s.Run(bCtx, agentContext)
 		})
 	}
 
 	// if enabled, initialise and run the worker
 	if a.Config.EnabledComponents.Worker {
-		worker := &worker.Worker{
-			ComponentCore: &component.ComponentCore{
-				Type:           component.WorkerComponent,
-				NATSServerConn: n.ServerConn,
-				Subscriptions: component.Subscriptions{
-					// We know that workers are responsible for running
-					// pipeline_run interval resources. Therefore,
-					// we subscribe to its corresponding subject
-					component.Subscription{
-						Subject: component.WorkerPipelineRunIntervalSubject,
-						Queue:   component.QueueWorker,
+		g.Go(func() error {
+			worker := &worker.Worker{
+				ComponentCore: &component.ComponentCore{
+					Type: component.WorkerComponent,
+					NATSServer: &component.NATS{
+						Config: bCtx.AgentConfig.NATSServerConfig,
 					},
+					DesiredSubscriptions: nil,
 				},
-				Publications: nil,
-			},
-		}
+				ResourceWorker: &interval.ResourceWorker{},
+			}
+			if err := worker.Connect(bCtx); err != nil {
+				return fmt.Errorf("failed to connect to the NATS Server: %w", err)
+			}
 
-		a.Components.Worker = worker
-		g.Go(func() error {
-			return worker.Run(bCtx)
-		})
-	}
+			a.Components.Worker = worker
 
-	// if enabled, initialise and run the UI
-	if a.Config.EnabledComponents.UI {
-		ui := &ui.UI{
-			ComponentCore: &component.ComponentCore{
-				Type:           component.UIComponent,
-				NATSServerConn: n.ServerConn,
-				Subscriptions:  nil,
-				Publications:   nil,
-			},
-		}
-
-		a.Components.UI = ui
-		g.Go(func() error {
-			return ui.Run(bCtx)
+			defer worker.NATSServer.Conn.Close()
+			return worker.Run(bCtx, agentContext)
 		})
 	}
 
@@ -216,4 +230,5 @@ func (a *Agent) runAsSingle(bCtx *env.BubblyContext) error {
 		return fmt.Errorf("error running one of the agent's components: %w", err)
 	}
 	return nil
+
 }

@@ -6,17 +6,39 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/store"
 	"github.com/ziflex/lecho/v2"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/verifa/bubbly/config"
+	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/store"
 )
 
 var serverStore *store.Store
 
+type Server struct {
+	Config *config.ServerConfig
+	Server *http.Server
+}
+
+func New(bCtx *env.BubblyContext) *Server {
+	// create the http server
+	a := &Server{
+		Config: bCtx.ServerConfig,
+		Server: &http.Server{
+			// TODO: maybe we should use the bCtx Host here, unless it's localhost?
+			Addr: fmt.Sprintf(":%s", bCtx.ServerConfig.Port),
+		},
+	}
+
+	a.Server.Handler = a.setupRouter(bCtx)
+
+	return a
+}
+
 // SetupRouter returns a pointer to an instance of our echo server with all the
 // routes initialized
-func setupRouter(bCtx *env.BubblyContext) *echo.Echo {
+func (a *Server) setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 	// Initialize Router
 	router := echo.New()
 	router.Logger = lecho.From(*bCtx.Logger)
@@ -45,7 +67,7 @@ func setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 	}
 
 	// Initialize HTTP Routes
-	InitializeRoutes(bCtx, router)
+	a.initializeRoutes(bCtx, router)
 
 	return router
 }
@@ -64,24 +86,15 @@ func GetStore() *store.Store {
 	return serverStore
 }
 
-func ListenAndServe(bCtx *env.BubblyContext) error {
-
-	// initialize the router's endpoints
-	router := setupRouter(bCtx)
-
-	// create the http server
-	serv := &http.Server{
-		// TODO: maybe we should use the bCtx Host here, unless it's localhost?
-		Addr:    fmt.Sprintf(":%s", bCtx.ServerConfig.Port),
-		Handler: router,
-	}
-
+func (a *Server) ListenAndServe(bCtx *env.BubblyContext) error {
 	var g errgroup.Group
 	g.Go(func() error {
-		if err := serv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := a.Server.ListenAndServe(); err != nil && err != http.
+			ErrServerClosed {
 			return err
 		}
 		return nil
 	})
+
 	return g.Wait()
 }

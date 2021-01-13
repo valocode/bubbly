@@ -35,7 +35,7 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 		}
 	}
 
-	c, err := client.New(bCtx)
+	c, err := client.NewHTTP(bCtx)
 
 	if err != nil {
 		return core.ResourceOutput{

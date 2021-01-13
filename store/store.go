@@ -7,10 +7,11 @@ import (
 	"sync"
 
 	"github.com/graphql-go/graphql"
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/config"
 	"github.com/verifa/bubbly/env"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // New creates a new Store for the given config.
@@ -29,6 +30,7 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 	default:
 		return nil, fmt.Errorf(`invalid provider: "%s"`, bCtx.StoreConfig.Provider)
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create provider: %w", err)
 	}
@@ -205,6 +207,35 @@ func (s *Store) currentBubblySchema() (*bubblySchema, error) {
 	}
 	return &schema, nil
 }
+
+// TODO delete?
+// func (s *Store) GetResource(id string) (io.Reader, error) {
+// 	return s.p.GetResource(id)
+// }
+//
+// // TODO delete?
+// func (s *Store) PutResource(id string, val string, resBlock core.ResourceBlock) error {
+// 	return s.p.PutResource(id, val, resBlock)
+// }
+//
+// // TODO delete?
+// func (s *Store) GetResourcesByKind(resourceKind core.ResourceKind) (io.Reader, error) {
+// 	// TODO This currently mocks the store behavior until graphql is implemented
+// 	resString := "{\"kind\":\"pipeline_run\",\"name\":\"sonarqube\",\"api_version\":\"v1\",\"metadata\":{\"labels\":{\"environment\":\"prod\"},\"namespace\":\"qa\"},\"spec\":\"\\n        // specify the name of the pipeline resource to execute\\n        interval = \\\"22s\\\"\\n        pipeline = \\\"pipeline/sonarqube\\\"\\n        // specify the pipeline input(s) required\\n        input \\\"file\\\" {\\n            value = \\\"./testdata/sonarqube/sonarqube-example.json\\\"\\n        }\\n        input \\\"repo\\\" {\\n            value = \\\"./testdata/git/repo1.git\\\"\\n        }\\n    \"}"
+// 	resJSON := core.ResourceBlockJSON{}
+// 	err := json.Unmarshal([]byte(resString), &resJSON)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	resourceJson, err := json.Marshal(resJSON)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	bytes.NewReader(resourceJson)
+//
+// 	return bytes.NewReader(resourceJson), nil
+// }
 
 func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Table) {
 	for _, t := range tables {

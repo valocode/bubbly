@@ -5,12 +5,13 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/swaggo/echo-swagger"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"github.com/verifa/bubbly/env"
 )
 
-// InitializeRoutes Builds the endpoints and grouping for a gin router
-func InitializeRoutes(bCtx *env.BubblyContext, router *echo.Echo) {
+// initializeRoutes Builds the endpoints and grouping for a gin router
+func (a *Server) initializeRoutes(bCtx *env.BubblyContext,
+	router *echo.Echo) {
 	// Keep Alive Test
 	router.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "pong")
@@ -19,19 +20,19 @@ func InitializeRoutes(bCtx *env.BubblyContext, router *echo.Echo) {
 	api := router.Group("/api")
 	{
 		api.POST("/resource", func(c echo.Context) error {
-			return PostResource(bCtx, c)
+			return a.PostResource(bCtx, c)
 		})
 
 		api.GET("/resource/:namespace/:kind/:name", func(c echo.Context) error {
-			return GetResource(bCtx, c)
+			return a.GetResource(bCtx, c)
 		})
 
 		api.POST("/graphql", func(c echo.Context) error {
-			return Query(bCtx, c)
+			return a.Query(bCtx, c)
 		})
 
 		api.POST("/schema", func(c echo.Context) error {
-			return PostSchema(bCtx, c)
+			return a.PostSchema(bCtx, c)
 		})
 	}
 
@@ -47,7 +48,7 @@ func InitializeRoutes(bCtx *env.BubblyContext, router *echo.Echo) {
 	alpha1 := router.Group("/alpha1")
 	{
 		alpha1.POST("/upload", func(c echo.Context) error {
-			return upload(bCtx, c)
+			return a.upload(bCtx, c)
 		})
 	}
 

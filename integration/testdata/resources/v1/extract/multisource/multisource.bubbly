@@ -142,6 +142,7 @@ resource "pipeline" "multisource" {
 resource "pipeline_run" "multisource" {
     api_version = "v1"
     spec {
+        interval = "22s"
         pipeline = "pipeline/multisource"
     }
 }

@@ -1,10 +1,12 @@
 package server
 
 import (
+	// "encoding/json"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
 )
 
@@ -22,16 +24,20 @@ type queryReq struct {
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Router /api/graphql [post]
-func Query(bCtx *env.BubblyContext, c echo.Context) error {
+func (a *Server) Query(bCtx *env.BubblyContext, c echo.Context) error {
 	var query queryReq
 	if err := c.Bind(&query); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	results, err := serverStore.Query(query.Query)
+	nc := client.NewNATS(bCtx)
+
+	nc.Connect(bCtx)
+
+	results, err := nc.Query(bCtx, query.Query)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, &Data{results})
+	return c.JSONBlob(200, results)
 }

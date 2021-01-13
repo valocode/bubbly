@@ -131,6 +131,12 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 			"distributed",
 	)
 	f.BoolVar(
+		&o.BubblyContext.AgentConfig.EnabledComponents.NATSServer,
+		"nats-server",
+		true,
+		"whether to run the NATS Server on this agent",
+	)
+	f.BoolVar(
 		&o.BubblyContext.AgentConfig.EnabledComponents.UI, "ui", false,
 		"whether to run the UI on this agent",
 	)
@@ -231,10 +237,11 @@ func (o *AgentOptions) Resolve(cmd *cobra.Command) error {
 	// If no specific component has been set,
 	// the agent should run all components
 	o.BubblyContext.AgentConfig.EnabledComponents = &config.AgentComponentsToggle{
-		UI:        true,
-		APIServer: true,
-		DataStore: true,
-		Worker:    true,
+		UI:         true,
+		APIServer:  true,
+		DataStore:  true,
+		Worker:     true,
+		NATSServer: true,
 	}
 
 	return nil

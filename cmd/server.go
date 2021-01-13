@@ -128,13 +128,13 @@ func (o *ServerOptions) Run() error {
 	server.SetVersion(bubblyVersion)
 	// initialize the router's endpoints
 
-	err := server.ListenAndServe(o.BubblyContext)
-
-	if err != nil {
-		o.Result = false
-		return fmt.Errorf("error while serving: %w", err)
-	}
-	o.Result = true
+	// err := server.ListenAndServe(o.BubblyContext)
+	//
+	// if err != nil {
+	// 	o.Result = false
+	// 	return fmt.Errorf("error while serving: %w", err)
+	// }
+	// o.Result = true
 
 	return nil
 }

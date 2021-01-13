@@ -36,7 +36,7 @@ func GetResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string) 
 	if err != nil {
 		return nil, fmt.Errorf("could not normalize the resource ID: %w", err)
 	}
-	client, err := client.New(bCtx)
+	client, err := client.NewHTTP(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the bubbly client: %w", err)
 	}

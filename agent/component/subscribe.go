@@ -1,15 +1,34 @@
 package component
 
-type Subscriptions []Subscription
+import (
+	"github.com/nats-io/nats.go"
 
-// A Subscription is a Go-native representation of a queue-group NATS
-// Subscription.
-// Bubbly components use Subscriptions to subscribe to NATS channels and
-// therefore for cross-component communication
-type Subscription struct {
+	"github.com/verifa/bubbly/env"
+)
+
+type DesiredSubscriptions []DesiredSubscription
+
+// DesiredSubscription represents a simple encapsulation of all that is
+// required to subscribe to a NATS channel for cross-component communication.
+// Every DesiredSubscription should produce a *nats.Subscription at
+// subscription-time.
+type DesiredSubscription struct {
 	Subject Subject
 	Queue   Queue
+	Encoder string
+	// We pass a handler function in with any subscription.
+	// TODO: consider the alternative of a single / generic handler with a
+	//  switch for handling the different subject types.
+	//  With the changes to the store (graphql interface) this might
+	//  remove duplication that currently exists in a few handlers
+	Handler SubscriptionHandlerFn
 }
+
+// SubscriptionHandlerFn represents a function that handles a particular
+// Subscription subject. It is by bubbly components when receiving request
+// /publish messages in order to process (and optionally reply)
+// to these messages
+type SubscriptionHandlerFn func(*env.BubblyContext, *nats.Msg) error
 
 type Subjects []Subject
 
@@ -22,7 +41,12 @@ type Subject string
 // Any Subjects that components use to communicate with one another should be
 // defined centrally here
 const (
-	WorkerPipelineRunIntervalSubject Subject = "pipeline_run_interval"
+	StoreGetResource        Subject = "store.GetResource"
+	StoreGetResourcesByKind Subject = "store.GetResourcesByKind"
+	StorePostResource       Subject = "store.PostResource"
+	StorePostSchema         Subject = "store.PostSchema"
+	StoreQuery              Subject = "store.Query"
+	StoreUpload             Subject = "store.Upload"
 )
 
 type Queues []Queue
@@ -35,5 +59,6 @@ type Queue string
 // Any Queue that components use as a part of their Subjects should be
 // defined centrally here
 const (
-	QueueWorker Queue = "worker"
+	WorkerQueue Queue = "worker"
+	StoreQueue  Queue = "store"
 )

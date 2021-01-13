@@ -54,6 +54,7 @@ func DefaultAgentConfig() *AgentConfig {
 		StoreConfig:       DefaultStoreConfig(),
 		NATSServerConfig:  DefaultNATSServerConfig(),
 		EnabledComponents: DefaultAgentComponentsEnabled(),
+		DeploymentType:    SingleDeployment,
 	}
 }
 
@@ -81,9 +82,10 @@ func DefaultNATSServerConfig() *NATSServerConfig {
 // instance with all components disabled
 func DefaultAgentComponentsEnabled() *AgentComponentsToggle {
 	return &AgentComponentsToggle{
-		UI:        false,
-		APIServer: false,
-		DataStore: false,
-		Worker:    false,
+		UI:         false,
+		APIServer:  false,
+		DataStore:  false,
+		Worker:     false,
+		NATSServer: true,
 	}
 }

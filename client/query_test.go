@@ -54,7 +54,7 @@ func TestQuery(t *testing.T) {
 				Reply(tc.responseCode).
 				JSON(tc.response)
 
-			c, err := New(bCtx)
+			c, err := NewHTTP(bCtx)
 
 			if err != nil {
 				t.Errorf(err.Error())

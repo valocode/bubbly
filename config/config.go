@@ -68,10 +68,11 @@ type AgentConfig struct {
 }
 
 type AgentComponentsToggle struct {
-	UI        bool
-	APIServer bool
-	DataStore bool
-	Worker    bool
+	UI         bool
+	APIServer  bool
+	DataStore  bool
+	Worker     bool
+	NATSServer bool
 }
 
 // ##########################

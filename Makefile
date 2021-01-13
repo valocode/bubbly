@@ -41,7 +41,7 @@ test-report:
 # This is what the env variables in the beginning of this Makefile are for.
 # The count flag prevents Go from caching test results as they are dependent on the DB content.
 test-integration:
-	go test ./integration -tags=integration -count=1
+	go test -v ./integration -tags=integration -count=1
 
 .PHONY: dev
 dev:
@@ -53,7 +53,7 @@ psql:
 
 # Cleanup the docker things: network, volumes, services
 cleanup:
-	docker-compose down
+	docker-compose down -v
 
 # Project is CI-enabled with Github Actions. You can run CI locally
 # using act (https://github.com/nektos/act). 

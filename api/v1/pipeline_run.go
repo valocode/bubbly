@@ -43,4 +43,5 @@ func (p *PipelineRun) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) 
 type pipelineRunSpec struct {
 	Inputs     core.InputDefinitions `hcl:"input,block"`
 	PipelineID string                `hcl:"pipeline,attr"`
+	Interval   string                `hcl:"interval,attr"`
 }

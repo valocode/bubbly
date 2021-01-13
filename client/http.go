@@ -9,7 +9,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func handleResponse(resp *http.Response, err error) (*http.Response, error) {
+func (h *HTTP) handleResponse(resp *http.Response, err error) (*http.Response,
+	error) {
 	if err != nil {
 		return resp, err
 	}

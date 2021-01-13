@@ -188,6 +188,7 @@ resource "pipeline_run" "sonarqube" {
     }
     spec {
         // specify the name of the pipeline resource to execute
+        interval = "22s"
         pipeline = "pipeline/sonarqube"
         // specify the pipeline input(s) required
         input "file" {

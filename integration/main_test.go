@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/rs/zerolog"
+
 	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
 
@@ -20,7 +21,7 @@ func TestMain(m *testing.M) {
 	bCtx := env.NewBubblyContext()
 	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
-	client, err := client.New(bCtx)
+	c, err := client.NewHTTP(bCtx)
 	if err != nil {
 		bCtx.Logger.Fatal().Err(err).Msg("failed to create client")
 	}
@@ -35,7 +36,7 @@ func TestMain(m *testing.M) {
 		bCtx.Logger.Fatal().Err(err).Msg("failed to json marshal schema")
 	}
 
-	if err := client.PostSchema(bCtx, tableBytes); err != nil {
+	if err := c.PostSchema(bCtx, tableBytes); err != nil {
 		bCtx.Logger.Fatal().Err(err).Msg("failed to post schema to bubbly server")
 	}
 

@@ -1,11 +1,13 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
 )
 
@@ -17,27 +19,23 @@ import (
 // @Accept json
 // @Produce json
 // @Router /alpha1/upload [post]
-func upload(bCtx *env.BubblyContext, c echo.Context) error {
+func (a *Server) upload(bCtx *env.BubblyContext, c echo.Context) error {
 	var data core.DataBlocks
 	if err := c.Bind(&data); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if serverStore == nil {
-		return &echo.HTTPError{
-			Code:    http.StatusBadRequest,
-			Message: "server store is not initialized",
-		}
+	nc := client.NewNATS(bCtx)
+
+	nc.Connect(bCtx)
+
+	sBytes, err := json.Marshal(data)
+
+	if err != nil {
+		return err
 	}
 
-	// TODO: too much noise with printing the data
-	// bCtx.Logger.Debug().
-	// Interface("data", data).
-	// Interface("store", serverStore).
-	// Interface("store.Schema()", serverStore.Schema()).
-	// Msg("loading data into store")
-
-	if err := serverStore.Save(data); err != nil {
+	if err := nc.Upload(bCtx, sBytes); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

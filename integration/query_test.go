@@ -57,31 +57,18 @@ func TestClientQuery(t *testing.T) {
 		}
 	}`
 
-	client, err := client.New(bCtx)
+	client, err := client.NewHTTP(bCtx)
 	require.NoError(t, err, "failed to establish a bubbly client")
 
 	resp, err := client.Query(bCtx, query)
 	require.NoError(t, err, "bubbly client failed to query the bubbly server")
 
-	bCtx.Logger.Debug().RawJSON("response", resp).Msg("received query response from bubbly server")
+	// too verbose to include full, so just log a snippet
+	bCtx.Logger.Debug().Str("response",
+		string(resp)[0:100]).Msg("received query response from bubbly server." +
+		" Logging a snippet.")
 
 	require.NotNil(t, string(resp))
 
 	eventQuery(t, bCtx)
-}
-
-// TestHCLQuery tests that, given an injection of golang test data,
-// bubbly is able to apply a Query resource to retrieve a subset of the
-// data
-func TestHCLQuery(t *testing.T) {
-
-	bCtx := env.NewBubblyContext()
-	bCtx.UpdateLogLevel(zerolog.DebugLevel)
-
-	// inject initial bubbly test data
-	err := bubbly.Apply(bCtx, "./testdata/testautomation/golang/pipeline.bubbly")
-	require.NoError(t, err, "failed to apply golang pipeline")
-
-	err = bubbly.Apply(bCtx, "./testdata/testautomation/golang/query.bubbly")
-	require.NoError(t, err, "failed to apply query resource")
 }

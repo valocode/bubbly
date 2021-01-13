@@ -7,11 +7,10 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/zclconf/go-cty/cty"
 
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/events"
 )
 
 // PostResource godoc
@@ -25,7 +24,8 @@ import (
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Router /api/resource [post]
-func PostResource(bCtx *env.BubblyContext, c echo.Context) error {
+func (a *Server) PostResource(bCtx *env.BubblyContext,
+	c echo.Context) error {
 	// read the resource into a ResourceBlockJSON which keeps the spec{} block
 	// as bytes
 	resJSON := core.ResourceBlockJSON{}
@@ -37,34 +37,53 @@ func PostResource(bCtx *env.BubblyContext, c echo.Context) error {
 	// need the ResourceBlock right now but this is just to validate that the
 	// received resource is correctly formatted and to get the resource ID
 	// If it fails, return an error code to show it
-	_, err := resJSON.ResourceBlock()
+	resBlock, err := resJSON.ResourceBlock()
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal JSON resource: %w", err)
 	}
 
-	d, err := resJSON.Data()
+	// if the resource is a pipeline_run, we need to send a NATS publication
+	// notifying any interval.ResourceWorkers that the resource they are
+	// managed needs to be updated.
+	if resBlock.ResourceKind == string(core.PipelineRunResourceKind) {
+		// TODO send to channel
+		// err = interval.UpdateResourceWorker(&resBlock)
+	}
+
+	data, err := resJSON.Data()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	resource_event := core.Data{
-		TableName: core.EventTableName,
-		Fields: map[string]cty.Value{
-			"status": cty.StringVal(events.ResourceCreated.String()),
-			"time":   cty.StringVal(events.TimeNow()),
-		},
-		// this join means the _id pulled of the _resource row entry will be
-		// mapped to the
-		// _resource_id column of this row entry in _event
-		Joins: []string{core.ResourceTableName},
+	// res_db := core.DataBlocks{d, core.Data{
+	// 	TableName: core.EventTableName,
+	// 	Fields: map[string]cty.Value{
+	// 		"status": cty.StringVal(events.ResourceCreated.String()),
+	// 		"time":   cty.StringVal(events.TimeNow()),
+	// 	},
+	// 	// this join means the _id pulled of the _resource row entry will be
+	// 	// mapped to the
+	// 	// _resource_id column of this row entry in _event
+	// 	Joins: []string{core.ResourceTableName},
+	// }}
+	// TODO: send event data to the store
+
+	dBytes, err := json.Marshal(data)
+
+	if err != nil {
+		return fmt.Errorf("failed to marshal: %w", err)
 	}
+	nc := client.NewNATS(bCtx)
 
-	res_db := core.DataBlocks{d, resource_event}
+	nc.Connect(bCtx)
 
-	if err := serverStore.Save(res_db); err != nil {
+	if err := nc.PostResource(bCtx, dBytes); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	// if err := serverStore.Save(core.DataBlocks{d}); err != nil {
+	// 	return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	// }
 	return c.JSON(http.StatusOK, &Status{"uploaded"})
 }
 
@@ -80,7 +99,7 @@ func PostResource(bCtx *env.BubblyContext, c echo.Context) error {
 // @Failure 400 {object} map[string]string
 // @x-examples 12345
 // @Router /api/resource/{id} [get]
-func GetResource(bCtx *env.BubblyContext, c echo.Context) error {
+func (a *Server) GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 	resBlock := core.ResourceBlock{
 		ResourceName: c.Param("name"),
 		Metadata:     &core.Metadata{Namespace: c.Param("namespace")},
@@ -99,9 +118,22 @@ func GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 		}
 	`, core.ResourceTableName, resBlock.String())
 
-	result, err := serverStore.Query(resQuery)
+	nc := client.NewNATS(bCtx)
+
+	nc.Connect(bCtx)
+
+	resultBytes, err := nc.GetResource(bCtx, resQuery)
+
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return fmt.Errorf("error getting resource: %w", err)
+	}
+
+	var result interface{}
+
+	err = json.Unmarshal(resultBytes, &result)
+
+	if err != nil {
+		return fmt.Errorf("error unmarshalling resource: %w", err)
 	}
 
 	var (
