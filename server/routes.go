@@ -31,7 +31,7 @@ func InitializeRoutes(bCtx *env.BubblyContext, router *echo.Echo) {
 		})
 
 		api.POST("/schema", func(c echo.Context) error {
-			return Schema(bCtx, c)
+			return PostSchema(bCtx, c)
 		})
 	}
 

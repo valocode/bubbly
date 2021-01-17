@@ -39,6 +39,26 @@ func TestJSONData(t *testing.T) {
 					}),
 				},
 			},
+			Joins: DataJoins{
+				DataJoin{
+					Table: "TestJoin",
+					Value: cty.ObjectVal(
+						map[string]cty.Value{
+							"attribute": cty.ObjectVal(
+								map[string]cty.Value{
+									"nested": cty.StringVal("some value"),
+								},
+							),
+						},
+					),
+				},
+				DataJoin{
+					Table: "DataRef",
+					Value: cty.CapsuleVal(parser.DataRefType, &parser.DataRef{
+						TableName: "my_table", Field: "my_field",
+					}),
+				},
+			},
 		},
 	}
 
@@ -53,5 +73,5 @@ func TestJSONData(t *testing.T) {
 	testBlocks := DataBlocks{}
 	err = json.Unmarshal(jBytes, &testBlocks)
 	assert.NoErrorf(t, err, "failed to unmarshal json data blocks")
-	assert.Equalf(t, dBlocks, testBlocks, "JSON returned from transform equals unmarshalled dataBlocks")
+	assert.Equalf(t, dBlocks, testBlocks, "JSON returned from transform does not equal unmarshalled dataBlocks")
 }

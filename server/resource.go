@@ -35,26 +35,21 @@ func PostResource(bCtx *env.BubblyContext, c echo.Context) error {
 	// need the ResourceBlock right now but this is just to validate that the
 	// received resource is correctly formatted and to get the resource ID
 	// If it fails, return an error code to show it
-	resBlock, err := resJSON.ResourceBlock()
+	_, err := resJSON.ResourceBlock()
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal JSON resource: %w", err)
 	}
 
-	if err := uploadResource(bCtx, resBlock.String(), resJSON); err != nil {
-		return err
+	d, err := resJSON.Data()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := serverStore.Save(core.DataBlocks{d}); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, &Status{"uploaded"})
-}
-
-// Uploads the resource to the suitable provider
-func uploadResource(bCtx *env.BubblyContext, id string, resJSON core.ResourceBlockJSON) error {
-	resBytes, err := json.Marshal(resJSON)
-	if err != nil {
-		return fmt.Errorf("failed to marshal resource: %w", err)
-	}
-
-	return serverStore.PutResource(id, string(resBytes))
 }
 
 // GetResource godoc
@@ -76,14 +71,35 @@ func GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 		ResourceKind: c.Param("kind"),
 	}
 
-	val, err := serverStore.GetResource(resBlock.String())
+	resQuery := fmt.Sprintf(`
+		{
+			%s(id: "%s") {
+				name
+				kind
+				api_version
+				metadata
+				spec
+			}
+		}
+	`, core.ResourceTableName, resBlock.String())
+
+	result, err := serverStore.Query(resQuery)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	resJSON := core.ResourceBlockJSON{}
-	if err := json.NewDecoder(val).Decode(&resJSON); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	var (
+		resJSON  core.ResourceBlockJSON
+		inputMap = result.(map[string]interface{})[core.ResourceTableName].([]interface{})
+	)
+	b, err := json.Marshal(inputMap[0])
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal resource: ", err.Error())
 	}
+	err = json.Unmarshal(b, &resJSON)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal resource: ", err.Error())
+	}
+
 	return c.JSON(http.StatusOK, resJSON)
 }

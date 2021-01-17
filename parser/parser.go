@@ -13,31 +13,10 @@ import (
 )
 
 func ParseFilename(bCtx *env.BubblyContext, filename string, val interface{}) error {
-	files, err := bubblyFiles(filename)
+	mergedBody, err := MergedHCLBodies(bCtx, filename)
 	if err != nil {
-		return fmt.Errorf("failed to get bubbly files: %s", err.Error())
+		return err
 	}
-
-	if len(files) == 0 {
-		return errors.New("no bubbly files found to parse")
-	}
-
-	parser := hclparse.NewParser()
-	hclFiles := []*hcl.File{}
-	for _, file := range files {
-		hclFile, diags := parser.ParseHCLFile(file)
-		if diags.HasErrors() {
-			return errors.New(diags.Error())
-		}
-		hclFiles = append(hclFiles, hclFile)
-	}
-
-	mergedBody := hcl.MergeFiles(hclFiles)
-
-	if mergedBody == nil {
-		return fmt.Errorf("HCL body is nil")
-	}
-
 	if err := DecodeBody(bCtx, mergedBody, val, cty.NilVal); err != nil {
 		return fmt.Errorf(`failed to decode body: %s`, err.Error())
 	}
@@ -54,6 +33,34 @@ func ParseResource(bCtx *env.BubblyContext, src []byte, value interface{}) error
 		return fmt.Errorf("failed to decode resource: %w", err)
 	}
 	return nil
+}
+
+func MergedHCLBodies(bCtx *env.BubblyContext, filename string) (hcl.Body, error) {
+	files, err := bubblyFiles(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bubbly files: %s", err.Error())
+	}
+
+	if len(files) == 0 {
+		return nil, errors.New("no bubbly files found to parse")
+	}
+
+	parser := hclparse.NewParser()
+	hclFiles := []*hcl.File{}
+	for _, file := range files {
+		hclFile, diags := parser.ParseHCLFile(file)
+		if diags.HasErrors() {
+			return nil, fmt.Errorf("failed to parse bubbly file: %s: %s", file, diags.Error())
+		}
+		hclFiles = append(hclFiles, hclFile)
+	}
+
+	mergedBody := hcl.MergeFiles(hclFiles)
+
+	if mergedBody == nil {
+		return nil, fmt.Errorf("provided filename produced nil HCL body: %s", filename)
+	}
+	return mergedBody, nil
 }
 
 func bubblyFiles(filename string) ([]string, error) {

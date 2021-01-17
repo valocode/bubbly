@@ -27,6 +27,8 @@ type StoreProviderType string
 const (
 	// PostgresStore is a Postgres provider.
 	PostgresStore StoreProviderType = "postgres"
+	// CockroachDBStore is a CockroachDB provider.
+	CockroachDBStore = "cockroachdb"
 )
 
 // StoreConfig stores the configuration of a bubbly store, used
@@ -38,24 +40,12 @@ type StoreConfig struct {
 	PostgresUser     string
 	PostgresPassword string
 	PostgresDatabase string
+
+	CockroachAddr     string
+	CockroachUser     string
+	CockroachPassword string
+	CockroachDatabase string
 }
-
-// ###########################################
-// Resources
-// ###########################################
-type ResourceConfig struct {
-	Provider ResourceProviderType
-}
-
-// ResourceProviderType is a resource manager provider
-type ResourceProviderType string
-
-const (
-	// Etcd is an Etcd provider
-	EtcdResourceProvider ResourceProviderType = "etcd"
-	// Buntdb is a Buntdb provider
-	BuntdbResourceProvider ResourceProviderType = "buntdb"
-)
 
 // ###########################################
 // Agent

@@ -8,7 +8,7 @@ import (
 	"github.com/verifa/bubbly/env"
 )
 
-// PostSchema uses the bubbly api endpoint to get a resource
+// PostSchema uses the bubbly api to post a schema
 func (c *Client) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
 
 	_, err := handleResponse(

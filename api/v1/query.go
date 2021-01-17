@@ -56,7 +56,8 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 		}
 	}
 
-	bCtx.Logger.Debug().RawJSON("response", byteRes).Msg("received query response from bubbly server")
+	// TODO: comment because produces SOOO MUCH NOISE...
+	// bCtx.Logger.Debug().RawJSON("response", byteRes).Msg("received query response from bubbly server")
 
 	// because the return from the bubbly server
 	// is simply a []byte representation of the graphql-go

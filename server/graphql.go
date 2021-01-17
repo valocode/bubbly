@@ -28,6 +28,8 @@ func Query(bCtx *env.BubblyContext, c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	bCtx.Logger.Info().Msgf("Received Graphql Query: %s", query)
+
 	results, err := serverStore.Query(query.Query)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())

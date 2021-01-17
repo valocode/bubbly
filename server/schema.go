@@ -10,8 +10,8 @@ import (
 	"github.com/verifa/bubbly/env"
 )
 
-// Schema godoc
-// @Summary Schema uploads the schema for bubbly
+// PostSchema godoc
+// @Summary PostSchema uploads the schema for bubbly
 // @ID schema
 // @Tags schema
 // @Param TODO
@@ -20,7 +20,7 @@ import (
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Router /api/schema [post]
-func Schema(bCtx *env.BubblyContext, c echo.Context) error {
+func PostSchema(bCtx *env.BubblyContext, c echo.Context) error {
 	var schema core.Tables
 	if err := c.Bind(&schema); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -41,7 +41,7 @@ func Schema(bCtx *env.BubblyContext, c echo.Context) error {
 		)
 	}
 
-	if err := serverStore.Create(schema); err != nil {
+	if err := serverStore.Apply(schema); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

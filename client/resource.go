@@ -10,9 +10,10 @@ import (
 )
 
 // GetResource uses the bubbly api endpoint to get a resource
+// TODO: with some of the new architecture it might be possible for client
+// to return an actual resource, and not just a byte... Don't want to create
+// a merge hell so making a note here
 func (c *Client) GetResource(bCtx *env.BubblyContext, id string) ([]byte, error) {
-
-	bCtx.Logger.Debug().Str("resource_id", id).Msg("Getting resource from bubbly API.")
 
 	resp, err := handleResponse(
 		http.Get(fmt.Sprintf("%s/api/resource/%s", c.HostURL, id)),

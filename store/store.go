@@ -1,8 +1,9 @@
 package store
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"sync"
 
 	"github.com/graphql-go/graphql"
@@ -15,6 +16,7 @@ import (
 // New creates a new Store for the given config.
 func New(bCtx *env.BubblyContext) (*Store, error) {
 	var (
+		s   = &Store{}
 		p   provider
 		err error
 	)
@@ -22,17 +24,26 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 	switch bCtx.StoreConfig.Provider {
 	case config.PostgresStore:
 		p, err = newPostgres(bCtx)
+	case config.CockroachDBStore:
+		p, err = newCockroachdb(bCtx)
 	default:
 		return nil, fmt.Errorf(`invalid provider: "%s"`, bCtx.StoreConfig.Provider)
 	}
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to create provider: %w", err)
 	}
 
-	return &Store{
-		p: p,
-	}, nil
+	s.p = p
+	schema, err := s.currentBubblySchema()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current schema: %w", err)
+	}
+
+	if err := s.setGraphQLSchema(schema); err != nil {
+		return nil, fmt.Errorf("failed to set graphql schema: %w", err)
+	}
+
+	return s, nil
 }
 
 // Store provides access to persisted readiness data.
@@ -40,11 +51,11 @@ type Store struct {
 	p provider
 
 	mu     sync.RWMutex
-	schema graphql.Schema
+	schema *graphql.Schema
 }
 
 // Schema gets the graphql schema for the store.
-func (s *Store) Schema() graphql.Schema {
+func (s *Store) Schema() *graphql.Schema {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.schema
@@ -52,11 +63,14 @@ func (s *Store) Schema() graphql.Schema {
 
 // Query queries the store.
 func (s *Store) Query(query string) (interface{}, error) {
+	if s.schema == nil {
+		return nil, errors.New("cannot perform query without a schema. Apply a schema first")
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	res := graphql.Do(graphql.Params{
-		Schema:        s.schema,
+		Schema:        *s.schema,
 		RequestString: query,
 	})
 
@@ -67,21 +81,28 @@ func (s *Store) Query(query string) (interface{}, error) {
 	return res.Data, nil
 }
 
-// Create creates a schema corresponding to a set of tables.
-func (s *Store) Create(tables core.Tables) error {
-	tables = addImplicitIDs(nil, tables)
-	if err := s.p.Create(tables); err != nil {
-		return fmt.Errorf("failed to create in provider: %w", err)
-	}
-
-	schema, err := newGraphQLSchema(tables, s.p)
+// Apply applies a schema corresponding to a set of tables.
+func (s *Store) Apply(tables core.Tables) error {
+	schema, err := s.currentBubblySchema()
 	if err != nil {
-		return fmt.Errorf("falied to build GraphQL schema: %w", err)
+		return fmt.Errorf("failed to get current schema: %w", err)
 	}
 
-	s.mu.Lock()
-	s.schema = schema
-	s.mu.Unlock()
+	// Append the internal tables containing definition of the schema and
+	// resource tables.
+	tables = append(tables, internalTables...)
+	addImplicitJoins(schema, tables, nil)
+
+	// Calculate the schema diff
+	// TODO: call some func to calculate the diff
+
+	if err := s.p.Apply(schema); err != nil {
+		return fmt.Errorf("failed to apply schema in provider: %w", err)
+	}
+
+	if err := s.setGraphQLSchema(schema); err != nil {
+		return fmt.Errorf("failed to set graphql schema: %w", err)
+	}
 
 	return nil
 }
@@ -89,79 +110,174 @@ func (s *Store) Create(tables core.Tables) error {
 // Save saves data into the store.
 func (s *Store) Save(data core.DataBlocks) error {
 
-	// Prepare the data for saving by splitting up the DataRefs from the "normal"
-	// data blocks
-	altData := make(core.DataBlocks, 0)
-	dataRefs := make(core.DataBlocks, 0)
-	if err := prepareDataRefs(data, &altData, &dataRefs); err != nil {
-		return fmt.Errorf("failed to process data references: %w", err)
+	var sc = newSaveContext()
+	// Prepare the data for saving by separating the data blocks that have
+	// data references in them (these need to be handled separately).
+	// Create the saveContext type to contain all the necessary data for the
+	// provider to save the data.
+	data = flatten(data, "")
+	// Order the data refs inside the saveContext
+	orderDataRefs(sc, data)
+
+	var err error
+	sc.Schema, err = s.currentBubblySchema()
+	if err != nil {
+		return fmt.Errorf("failed to get current schema: %w", err)
 	}
 
-	tables, err := s.p.Save(altData, dataRefs)
-	if err != nil {
+	if err := s.p.Save(sc); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}
 
-	schema, err := newGraphQLSchema(tables, s.p)
+	gqlSchema, err := newGraphQLSchema(sc.Schema, s.p)
 	if err != nil {
 		return fmt.Errorf("falied to build GraphQL schema: %w", err)
 	}
 
 	s.mu.Lock()
-	s.schema = schema
+	s.schema = &gqlSchema
 	s.mu.Unlock()
 
 	return nil
 }
 
-func (s *Store) GetResource(id string) (io.Reader, error) {
-	return s.p.GetResource(id)
+func (s *Store) setGraphQLSchema(schema *bubblySchema) error {
+	// Cannot create a graphql schema from an empty bubbly schema
+	if len(schema.Tables) == 0 {
+		return nil
+	}
+
+	gqlSchema, err := newGraphQLSchema(schema, s.p)
+	if err != nil {
+		return fmt.Errorf("falied to build GraphQL schema: %w", err)
+	}
+
+	s.mu.Lock()
+	s.schema = &gqlSchema
+	s.mu.Unlock()
+
+	return nil
 }
 
-func (s *Store) PutResource(id string, val string) error {
-	return s.p.PutResource(id, val)
+func (s *Store) currentBubblySchema() (*bubblySchema, error) {
+	// Check if the schema has been initialized
+	if s.schema == nil {
+		// This is fine, as we might be creating the schema in this process,
+		// so initialize the schema
+		return newBubblySchema(), nil
+	}
+
+	schemaQuery := fmt.Sprintf(`
+		{
+			%s (first: 1){
+				tables
+			}
+		}
+	`, core.SchemaTableName)
+
+	result, err := s.Query(schemaQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current tables: %w", err)
+	}
+	val := result.(map[string]interface{})[core.SchemaTableName].([]interface{})
+	if len(val) == 0 {
+		return newBubblySchema(), nil
+	}
+
+	var schema bubblySchema
+	b, err := json.Marshal(val[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal graphql response: %w", err)
+	}
+	err = json.Unmarshal(b, &schema)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal graphql response: %w", err)
+	}
+	return &schema, nil
 }
 
-func addImplicitIDs(parent *core.Table, tables core.Tables) core.Tables {
-	// We are adding at least one field (id) and possibly
-	// another (parent=_id) so pad this out.
-	altTables := make(core.Tables, 0, len(tables)+2)
+func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Table) {
 	for _, t := range tables {
-		t.Fields = append(t.Fields, core.TableField{
-			Name: idFieldName,
-			Type: cty.Number,
-		})
 		if parent != nil {
-			var (
-				parentIDName = parent.Name + "_id"
-				hasParentID  bool
-			)
-			for _, f := range t.Fields {
-				if f.Name == parentIDName {
+			var hasParentID bool
+			// Check if the parent was already added to the schema
+			for _, f := range t.Joins {
+				if f.Table == parent.Name {
 					hasParentID = true
 				}
 			}
 			if !hasParentID {
-				t.Fields = append(t.Fields, core.TableField{
-					Name: parentIDName,
-					Type: cty.Number,
+				t.Joins = append(t.Joins, core.TableJoin{
+					Table:  parent.Name,
+					Unique: parent.Unique,
 				})
 			}
 		}
 
-		t.Tables = addImplicitIDs(&t, t.Tables)
-		altTables = append(altTables, t)
+		addImplicitJoins(schema, t.Tables, &t)
+		// Clear the child tables
+		t.Tables = nil
+		schema.Tables[t.Name] = t
 	}
-	return altTables
 }
 
-type typeInfo struct {
-	ID     int64
-	Tables core.Tables
+var internalTables = core.Tables{resourceTable, schemaTable}
+var resourceTable = core.Table{
+	Name: core.ResourceTableName,
+	Fields: []core.TableField{
+		{
+			Name:   "id",
+			Type:   cty.String,
+			Unique: true,
+		},
+		{
+			Name: "name",
+			Type: cty.String,
+		},
+		{
+			Name: "kind",
+			Type: cty.String,
+		},
+		{
+			Name: "metadata",
+			Type: cty.Object(map[string]cty.Type{}),
+		},
+		{
+			Name: "api_version",
+			Type: cty.String,
+		},
+		{
+			Name: "spec",
+			Type: cty.String,
+		},
+	},
+}
+var schemaTable = core.Table{
+	Name: core.SchemaTableName,
+	Fields: []core.TableField{
+		{
+			Name:   "tables",
+			Type:   cty.Object(map[string]cty.Type{}),
+			Unique: false,
+		},
+	},
 }
 
-type resource struct {
-	ID         int64
-	ResourceID string `pg:",unique"`
-	Resource   string
+func newSaveContext() *saveContext {
+	return &saveContext{
+		Data:     make(core.DataBlocks, 0),
+		DataRefs: make(dataRefs, 0),
+	}
+}
+
+// saveContext is a struct that captures all the necessary context to save
+// the data blocks included in the context.
+type saveContext struct {
+	// Schema contains the bubblySchema which includes all the tables
+	Schema *bubblySchema
+	// Data contains all the data blocks that we want to save
+	Data core.DataBlocks
+	// DataRefs contains all the data ref values that exist in the given
+	// data blocks
+	DataRefs dataRefs
 }

@@ -1,12 +1,13 @@
-## workflow for 
+## workflow for running the build and unit tests
 
 on:
+  # run this workflow on master branch or a PR
   push:
     branches:
-      - '**'
+      - master
   pull_request:
     branches:
-      - '**'
+      - "**"
 
 name: simple
 jobs:
@@ -18,24 +19,24 @@ jobs:
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Install Go
-      # Skip install if testing action locally using act
-      if: ${{ !env.ACT }}
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: cache go mod
-      # Skip caching if testing action locally using act
-      if: ${{ !env.ACT }}
-      uses: actions/cache@v2
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    - name: Test
-      run: go test -failfast ./...
-    - name: Build
-      run: go build -o build/bubbly .
+      - name: Install Go
+        # Skip install if testing action locally using act
+        if: ${{ !env.ACT }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: cache go mod
+        # Skip caching if testing action locally using act
+        if: ${{ !env.ACT }}
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Test
+        run: go test -failfast ./...
+      - name: Build
+        run: go build -o build/bubbly .

@@ -28,19 +28,18 @@ func DefaultServerConfig() *ServerConfig {
 // or, preferentially, from provided environment variables.
 func DefaultStoreConfig() *StoreConfig {
 	return &StoreConfig{
-		Provider:         StoreProviderType(defaultEnv("BUBBLY_STORE_PROVIDER", string(PostgresStore))),
+		// Default provider
+		Provider: StoreProviderType(defaultEnv("BUBBLY_STORE_PROVIDER", string(PostgresStore))),
+		// Default configuration for Postgres
 		PostgresAddr:     defaultEnv("POSTGRES_ADDR", "postgres:5432"),
 		PostgresUser:     defaultEnv("POSTGRES_USER", "postgres"),
 		PostgresPassword: defaultEnv("POSTGRES_PASSWORD", "postgres"),
 		PostgresDatabase: defaultEnv("POSTGRES_DATABASE", "bubbly"),
-	}
-}
-
-// DefaultResourceConfig creates a ResourceConfig struct from defaults
-// or, preferentially, from provided environment variables.
-func DefaultResourceConfig() *ResourceConfig {
-	return &ResourceConfig{
-		Provider: ResourceProviderType(defaultEnv("BUBBLY_RESOURCE_PROVIDER", string(BuntdbResourceProvider))),
+		// Default configuration for CockroachDB
+		CockroachAddr:     defaultEnv("COCKROACH_ADDR", "cockroachdb:26257"),
+		CockroachUser:     defaultEnv("COCKROACH_USER", "root"),
+		CockroachPassword: defaultEnv("COCKROACH_PASSWORD", "admin"),
+		CockroachDatabase: defaultEnv("COCKROACH_DATABASE", "defaultdb"),
 	}
 }
 

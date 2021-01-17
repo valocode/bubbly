@@ -1,7 +1,6 @@
 version: "3.8"
 
 services:
-
   # The back-end database used by Bubbly and Grafana
   # TODO make volume ephemeral
   postgres:
@@ -21,27 +20,36 @@ services:
 
   # Grafana with GraphQL plugin
   grafana:
-    depends_on: 
+    depends_on:
       - "postgres"
     image: grafana/grafana:7.3.7
     container_name: grafana
     networks:
       - bubbly-net
-    environment: 
+    environment:
       GF_INSTALL_PLUGINS: "fifemon-graphql-datasource"
     ports:
       - "3000:3000"
 
-  # TODO delay starting Bubbly server until Postgres is set up
+  cockroachdb:
+    image: cockroachdb/cockroach:v20.1.10
+    command: ["start-single-node", "--insecure"]
+    networks:
+      - bubbly-net
+    ports:
+      - "8080:8080"
+      - "26257:26257"
 
   # Bubbly server
   bubbly:
-    depends_on: 
-      - "postgres"
+    depends_on:
+      - "cockroachdb"
     container_name: bubbly
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      BUBBLY_STORE_PROVIDER: "cockroachdb"
     networks:
       - bubbly-net
     ports:
@@ -49,6 +57,19 @@ services:
     command:
       - "server"
       - "--debug"
+
+  storefront:
+    depends_on:
+      - "bubbly"
+    build:
+      context: .
+      dockerfile: storefront/Dockerfile
+    environment:
+      BUBBLY_HOST: "bubbly"
+    networks:
+      - bubbly-net
+    ports:
+      - "8112:8112"
 
 # User-defined bridge network is different from the default bridge
 networks:

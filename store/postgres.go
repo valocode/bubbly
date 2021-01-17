@@ -2,300 +2,69 @@ package store
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
-	"strconv"
-	"strings"
 
-	"github.com/go-pg/pg/v10"
-	"github.com/go-pg/pg/v10/orm"
 	"github.com/graphql-go/graphql"
-	"github.com/verifa/bubbly/api/core"
+	"github.com/jackc/pgx/v4"
 	"github.com/verifa/bubbly/env"
-	"github.com/zclconf/go-cty/cty"
 )
 
-func newPostgres(bCtx *env.BubblyContext) (provider, error) {
-	db := pg.Connect(&pg.Options{
-		Addr:     bCtx.StoreConfig.PostgresAddr,
-		User:     bCtx.StoreConfig.PostgresUser,
-		Password: bCtx.StoreConfig.PostgresPassword,
-		Database: bCtx.StoreConfig.PostgresDatabase,
-	})
-
-	// Attempt to create a table to hold our typeInfo. This table
-	// probably already exists unless this is the first time
-	// that the server has been booted against this data store.
-	err := db.Model((*typeInfo)(nil)).CreateTable(&orm.CreateTableOptions{
-		IfNotExists: true,
-	})
+func newPostgres(bCtx *env.BubblyContext) (*postgres, error) {
+	connStr := fmt.Sprintf(
+		"postgres://%s:%s@%s/%s",
+		bCtx.StoreConfig.PostgresUser,
+		bCtx.StoreConfig.PostgresPassword,
+		bCtx.StoreConfig.PostgresAddr,
+		bCtx.StoreConfig.PostgresDatabase,
+	)
+	conn, err := psqlNewConn(bCtx, connStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create type info table in postgres: %w", err)
-	}
-
-	// Create table to store resources. Similar to typeInfo, this table likely
-	// exists unless this is a new data store.
-	err = db.Model((*resource)(nil)).CreateTable(&orm.CreateTableOptions{
-		IfNotExists: true,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create resource table in postgres: %w", err)
-	}
-
-	types, err := currentSchemaTypesPostgres(db)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current schema types: %w", err)
+		return nil, fmt.Errorf("failed to initialize connection to db: %w", err)
 	}
 
 	return &postgres{
-		db:    db,
-		types: types,
-		ctx:   context.Background(),
+		conn: conn,
 	}, nil
 }
 
 type postgres struct {
-	db    *pg.DB
-	types map[string]schemaType
-	ctx   context.Context
+	conn *pgx.Conn
 }
 
-func (p *postgres) Create(tables core.Tables) error {
-	var types map[string]schemaType
-	err := p.db.RunInTransaction(p.ctx, func(tx *pg.Tx) error {
-		info := &typeInfo{
-			Tables: tables,
-		}
-		if _, err := tx.Model(info).Insert(); err != nil {
-			return fmt.Errorf("failed to insert type info: %w", err)
-		}
-
-		types = newSchemaTypes(tables)
-		for n, t := range types {
-			// Create a query set to the type of our dynamic
-			// struct and give it the name we were given. Normally,
-			// pg would derive the name from the struct.
-			q := p.db.Model(t.Empty()).Table(n)
-			if err := q.CreateTable(nil); err != nil {
-				return fmt.Errorf("failed to create postgres table: %w", err)
-			}
-		}
-
-		return nil
-	})
+func (p *postgres) Apply(schema *bubblySchema) error {
+	tx, err := p.conn.Begin(context.Background())
 	if err != nil {
-		return fmt.Errorf("failed to create tables in postgres: %w", err)
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
+	defer tx.Rollback(context.Background())
 
-	// If we successfully committed the transaction we
-	// are safe to move forward with this info.
-	p.types = types
-
-	return nil
-}
-
-func (p *postgres) Save(data core.DataBlocks, refs core.DataBlocks) (core.Tables, error) {
-	if p.types == nil {
-		return nil, errors.New("postgres has no type information")
-	}
-
-	tableRefs := make(tableRefs)
-	err := p.db.RunInTransaction(p.ctx, func(tx *pg.Tx) error {
-		if err := p.save(tx, data, tableRefs); err != nil {
-			return err
-		}
-		return p.save(tx, refs, tableRefs)
-	})
+	err = psqlApplySchema(tx, schema)
 	if err != nil {
-		return nil, fmt.Errorf("failed to save data in postgres: %w", err)
+		return fmt.Errorf("failed to apply tables: %w", err)
 	}
 
-	return currentCoreTablesPostgres(p.db)
+	return tx.Commit(context.Background())
 }
 
-func (p *postgres) save(tx *pg.Tx, data core.DataBlocks, tableRefs tableRefs) error {
-	for _, d := range data {
-		// Retrieve the schema type for the data
-		// we are trying to insert.
-		st, ok := p.types[d.TableName]
-		if !ok {
-			return fmt.Errorf("unkown type: %s", d.TableName)
-		}
+func (p *postgres) Save(sc *saveContext) error {
+	tx, err := p.conn.Begin(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(context.Background())
 
-		// Create a new instance of a predefined struct
-		// that corresponds to both the data and the schema.
-		n, err := st.New(d, tableRefs)
-		if err != nil {
-			return fmt.Errorf("falied to create instance of %s: %w", d.TableName, err)
-		}
-
-		// Insert the data
-		if _, err := tx.Model(n).Table(d.TableName).Insert(); err != nil {
-			return fmt.Errorf("falied to insert %s: %w", d.TableName, err)
-		}
-
-		// Insert the model into tableRefs
-		tableRefs[d.TableName] = tableRef{
-			ID:    schemaTypeID(n),
-			Name:  d.TableName,
-			Value: n,
-		}
-
-		// Recursively insert all sub-data.
-		if err := p.save(tx, d.Data, tableRefs); err != nil {
-			return fmt.Errorf("failed to save data: %w", err)
-		}
+	err = psqlSaveData(tx, sc)
+	if err != nil {
+		return fmt.Errorf("failed to save data in postgres: %w", err)
 	}
 
-	return nil
+	return tx.Commit(context.Background())
 }
 
 func (p *postgres) ResolveScalar(params graphql.ResolveParams) (interface{}, error) {
-	var (
-		tableName = params.Info.FieldName
-		n         = p.types[tableName].Empty()
-		q         = p.db.Model(n).Table(tableName)
-	)
-
-	q = applyArgsPostgres(q, params.Args)
-
-	if err := q.Last(); err != nil {
-		return nil, fmt.Errorf("failed to resolve scalar %s: %w", tableName, err)
-	}
-
-	return n, nil
+	return psqlResolveScalar(p.conn, params)
 }
 
 func (p *postgres) ResolveList(params graphql.ResolveParams) (interface{}, error) {
-	var (
-		tableName = params.Info.FieldName
-		parent    = params.Source
-		n         = p.types[tableName].EmptySlice()
-		q         = p.db.Model(n).Table(tableName)
-	)
-
-	q = applyArgsPostgres(q, params.Args)
-
-	if isValidParent(parent) {
-		var (
-			parentIDField = schemaTypeName(parent) + "_id"
-			parentID      = strconv.FormatInt(schemaTypeID(parent), 10)
-		)
-		q = q.Where(parentIDField+" = ?", parentID)
-	}
-
-	if err := q.Select(); err != nil {
-		return nil, fmt.Errorf("failed to resolve list %s: %w", tableName, err)
-	}
-
-	return n, nil
-}
-
-func (p *postgres) LastValue(tableName, field string) (cty.Value, error) {
-	n, err := p.ResolveScalar(graphql.ResolveParams{
-		Info: graphql.ResolveInfo{
-			FieldName: tableName,
-		},
-	})
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("failed to resolve ref as scalar: %w", err)
-	}
-
-	val, err := schemaTypeVal(n, field)
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("failed to coerce value for %s: %w", field, err)
-	}
-
-	return val, nil
-}
-
-func (p *postgres) GetResource(id string) (io.Reader, error) {
-	var res resource
-	if err := p.db.Model(&res).Where("resource_id = ?", id).Select(); err != nil {
-		return nil, fmt.Errorf("could not find resource with id %s: %w", id, err)
-	}
-
-	return strings.NewReader(res.Resource), nil
-}
-
-func (p *postgres) PutResource(id string, val string) error {
-	res := &resource{
-		ResourceID: id,
-		Resource:   val,
-	}
-
-	if _, err := p.db.Model(res).OnConflict("(resource_id) DO UPDATE").Insert(res); err != nil {
-		return fmt.Errorf("failed to insert resource %s: %w", id, err)
-	}
-	return nil
-}
-
-func applyArgsPostgres(q *orm.Query, args map[string]interface{}) *orm.Query {
-	for k, v := range args {
-		if k != filterName {
-			q = q.Where(k+" = ?", v)
-			continue
-		}
-
-		hasSuffix := func(n string, filter string) (bool, string) {
-			if !strings.HasSuffix(n, filter) {
-				return false, ""
-			}
-			return true, strings.ReplaceAll(n, filter, "")
-		}
-
-		filter := v.(map[string]interface{})
-		for n, val := range filter {
-			if ok, f := hasSuffix(n, filterGreaterThan); ok {
-				q = q.Where(f+" > ?", val)
-				continue
-			}
-			if ok, f := hasSuffix(n, filterLessThan); ok {
-				q = q.Where(f+" < ?", val)
-				continue
-			}
-			if ok, f := hasSuffix(n, filterGreaterThanOrEqualTo); ok {
-				q = q.Where(f+" >= ?", val)
-				continue
-			}
-			if ok, f := hasSuffix(n, filterLessThanOrEqualTo); ok {
-				q = q.Where(f+" <= ?", val)
-				continue
-			}
-			// Important: test "_not_in" first so we don't
-			// accidentally match "_in".
-			if ok, f := hasSuffix(n, filterNotIn); ok {
-				q = q.Where(f+" NOT IN (?)", pg.In(val))
-				continue
-			}
-			if ok, f := hasSuffix(n, filterIn); ok {
-				q = q.Where(f+" IN (?)", pg.In(val))
-			}
-		}
-	}
-
-	return q
-}
-
-func currentCoreTablesPostgres(db *pg.DB) (core.Tables, error) {
-	// Try to load the most recent typeInfo.
-	// TODO(andrewhare): We need a plan for how to handle
-	// migrations from one typeInfo to another.
-	var info typeInfo
-	err := db.Model(&info).Last()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get type info from postgres: %w", err)
-	}
-
-	return info.Tables, nil
-}
-
-func currentSchemaTypesPostgres(db *pg.DB) (map[string]schemaType, error) {
-	tables, err := currentCoreTablesPostgres(db)
-	if errors.Is(err, pg.ErrNoRows) {
-		return nil, nil
-	}
-
-	return newSchemaTypes(tables), nil
+	return psqlResolveParams(p.conn, params)
 }

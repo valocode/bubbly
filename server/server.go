@@ -24,6 +24,10 @@ func setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 		middleware.Recover(),
 		middleware.RequestID(), // Generate a request IDs
 		VersionMiddleware,
+		// Setup CORS middleware to allow local docker-compose setup.
+		// TODO: make this more restrictive (default "*") or come up with an
+		// approach to avoid this
+		middleware.CORS(),
 	)
 	// setup the error handler
 	router.HTTPErrorHandler = func(err error, c echo.Context) {
@@ -34,7 +38,7 @@ func setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 			Str("Path", c.Path()).
 			Strs("QueryParams", c.ParamValues()).
 			Err(err).
-			Msg("Received an error")
+			Msg("received an error")
 
 		// Call the default handler to return the HTTP response
 		router.DefaultHTTPErrorHandler(err, c)

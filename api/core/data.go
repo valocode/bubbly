@@ -20,6 +20,7 @@ type DataBlocks []Data
 type Data struct {
 	TableName   string     `hcl:",label" json:"data"`
 	Fields      DataFields `hcl:"field,block" json:"fields"`
+	Joins       DataJoins  `hcl:"join,block" json:"joins"`
 	Data        DataBlocks `hcl:"data,block" json:"nested_data"`
 	ParentTable string     `json:"-"`
 }
@@ -33,74 +34,95 @@ type DataField struct {
 	Value cty.Value `hcl:"value,attr" json:"-"`
 }
 
+// DataFieldJSON is a json friendly version of DataField
+type DataFieldJSON struct {
+	Name    string                  `json:"name"`
+	Value   ctyjson.SimpleJSONValue `json:"value,omitempty"`
+	DataRef *parser.DataRef         `json:"data_ref,omitempty"`
+}
+
 // MarshalJSON implements a JSON marshaller for DataField
-func (f *DataField) MarshalJSON() ([]byte, error) {
-	d, err := NewJSONField(f)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert field into json: %w", err)
-	}
-	return json.Marshal(d)
+func (d *DataField) MarshalJSON() ([]byte, error) {
+	jsonVal, dataRef := ctyToJSON(d.Value)
+
+	return json.Marshal(&DataFieldJSON{
+		Name:    d.Name,
+		Value:   jsonVal,
+		DataRef: dataRef,
+	})
 }
 
 // UnmarshalJSON implements a JSON unmarshaller for DataField
-func (f *DataField) UnmarshalJSON(data []byte) error {
-	var jf JSONDataField
-	if err := json.Unmarshal(data, &jf); err != nil {
-		return fmt.Errorf("failed to unmarshal DataField: %w", err)
+func (d *DataField) UnmarshalJSON(data []byte) error {
+	var j DataFieldJSON
+	if err := json.Unmarshal(data, &j); err != nil {
+		return fmt.Errorf("failed to unmarshal DataFieldJSON: %w", err)
 	}
-	*f = jf.DataField()
+
+	*d = DataField{
+		Name:  j.Name,
+		Value: jsonToCty(j.DataRef, j.Value),
+	}
 	return nil
 }
 
-// DataFieldAlias is an alias to avoid a recursive stack overflow with JSONDataField
-type DataFieldAlias DataField
+// DataJoins is a slice of DataJoin
+type DataJoins []DataJoin
 
-// JSONDataField is a JSON-friendly version of Field
-type JSONDataField struct {
-	DataFieldAlias
-	Value   ctyjson.SimpleJSONValue `json:"value"`
-	DataRef *parser.DataRef         `json:"data_ref"`
+// DataJoin is a join within a Data block
+type DataJoin struct {
+	Table string    `hcl:",label" json:"table"`
+	Value cty.Value `hcl:"value,attr" json:"-"`
 }
 
-// DataField returns a DataField equivalent of JSONDataField
-func (f *JSONDataField) DataField() DataField {
-	field := DataField(f.DataFieldAlias)
-	// if JSONDataField stored a DataRef instead of a native cty.Value, then
-	// use that value. Else, use the native cty.Value
-	if f.DataRef != nil {
-		field.Value = cty.CapsuleVal(parser.DataRefType, f.DataRef)
-	} else {
-		field.Value = f.Value.Value
+// DataJoinJSON is a json friendly version of DataJoin
+type DataJoinJSON struct {
+	Table   string                  `json:"table"`
+	Value   ctyjson.SimpleJSONValue `json:"value,omitempty"`
+	DataRef *parser.DataRef         `json:"data_ref,omitempty"`
+}
+
+// MarshalJSON implements a JSON marshaller for DataJoin
+func (d *DataJoin) MarshalJSON() ([]byte, error) {
+	jsonVal, dataRef := ctyToJSON(d.Value)
+
+	return json.Marshal(&DataJoinJSON{
+		Table:   d.Table,
+		Value:   jsonVal,
+		DataRef: dataRef,
+	})
+}
+
+// UnmarshalJSON implements a JSON unmarshaller for DataJoin
+func (d *DataJoin) UnmarshalJSON(data []byte) error {
+	var j DataJoinJSON
+	if err := json.Unmarshal(data, &j); err != nil {
+		return fmt.Errorf("failed to unmarshal DataJoinJSON: %w", err)
 	}
-	return field
+
+	*d = DataJoin{
+		Table: j.Table,
+		Value: jsonToCty(j.DataRef, j.Value),
+	}
+	return nil
 }
 
-// NewJSONField creates a new JSONDataField based on the given DataField.
-// Noteworthy here is that it handles Capsule Values separately from the
-// SimpleJSONValue.
-func NewJSONField(f *DataField) (*JSONDataField, error) {
-	var retData *JSONDataField
+func ctyToJSON(value cty.Value) (ctyjson.SimpleJSONValue, *parser.DataRef) {
+	var dataRef parser.DataRef
 	switch {
-	case f.Value.Type().IsCapsuleType():
-		dataRef, ok := f.Value.EncapsulatedValue().(*parser.DataRef)
-		if !ok {
-			return nil, fmt.Errorf("invalid DataRef: %s", f.Value.GoString())
-		}
-		retData = &JSONDataField{
-			DataFieldAlias: DataFieldAlias(*f),
-			// assign NilVal to Value as we are using CapsuleVal
-			Value: ctyjson.SimpleJSONValue{
-				Value: cty.NilVal,
-			},
-			DataRef: dataRef,
-		}
+	case value.Type() == parser.DataRefType:
+		dataRef = *value.EncapsulatedValue().(*parser.DataRef)
 	default:
-		retData = &JSONDataField{
-			DataFieldAlias: DataFieldAlias(*f),
-			Value: ctyjson.SimpleJSONValue{
-				Value: f.Value,
-			},
-		}
+		return ctyjson.SimpleJSONValue{Value: value}, nil
 	}
-	return retData, nil
+	return ctyjson.SimpleJSONValue{Value: cty.NilVal}, &dataRef
+}
+
+func jsonToCty(dataRef *parser.DataRef, value ctyjson.SimpleJSONValue) cty.Value {
+	switch {
+	case dataRef != nil:
+		return cty.CapsuleVal(parser.DataRefType, dataRef)
+	default:
+		return value.Value
+	}
 }

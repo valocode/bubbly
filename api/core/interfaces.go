@@ -14,6 +14,9 @@ type Resource interface {
 	Namespace() string
 	// Return a string representation of the resource, mainly for diagnostics
 	String() string
+	// Data returns a Data block representation of the resource which can be
+	// sent to the bubbly store
+	Data() (Data, error)
 }
 
 type SubResource interface {

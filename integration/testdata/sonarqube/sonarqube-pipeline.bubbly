@@ -1,5 +1,5 @@
 
-//  defines a data source and a format for the data, and returns a cty.Value
+// defines a data source and a format for the data, and returns a cty.Value
 // representation of the external data.
 resource "extract" "sonarqube" {
     metadata {
@@ -77,8 +77,8 @@ resource "transform" "sonarqube" {
 
         data "repo_version" {
             // get the repo_id by referencing the above data block
-            field "repo_id" {
-                value = self.data.repo.id
+            join "repo" {
+                value = self.data.repo._id
             }
             field "commit" {
                 value = self.input.repository.commit_id
@@ -101,7 +101,7 @@ resource "transform" "sonarqube" {
                 // if the "id" field is blank, it should be auto-generated
                 // field "id" {}
                 field "repo_version_id" {
-                    value = self.data.repo_version.id
+                    value = self.data.repo_version._id
                 }
 
                 field "name" {

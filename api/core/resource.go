@@ -8,12 +8,16 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/parser"
 )
 
 const DefaultNamespace = "default"
+
+const ResourceTableName = "_resource"
+const SchemaTableName = "_schema"
 
 // ResourceBlocks is a wrapper for a slice of type ResourceBlock
 type ResourceBlocks []*ResourceBlock
@@ -26,10 +30,10 @@ type ResourceBlockHCLWrapper struct {
 
 // ResourceBlock represents the resource{} block in HCL.
 type ResourceBlock struct {
-	ResourceKind       string            `hcl:",label" json:"kind"`
-	ResourceName       string            `hcl:",label" json:"name"`
-	ResourceAPIVersion APIVersion        `hcl:"api_version,attr" json:"api_version"`
-	Metadata           *Metadata         `hcl:"metadata,block" json:"metadata"`
+	ResourceKind       string            `hcl:",label" json:"kind" mapstructure:"kind"`
+	ResourceName       string            `hcl:",label" json:"name" mapstructure:"name"`
+	ResourceAPIVersion APIVersion        `hcl:"api_version,attr" json:"api_version" mapstructure:"api_version"`
+	Metadata           *Metadata         `hcl:"metadata,block" json:"metadata" mapstructure:"metadata"`
 	SpecHCL            ResourceBlockSpec `hcl:"spec,block" json:"-"`
 }
 
@@ -74,8 +78,51 @@ func (r ResourceBlock) String() string {
 	)
 }
 
+// Data returns a Data block representation of the resource which can be
+// sent to the bubbly store.
+func (r ResourceBlock) Data() (Data, error) {
+	resJSON, err := r.ResourceBlockJSON()
+	if err != nil {
+		return Data{}, fmt.Errorf("failed to create ResourceBlockJSON for resource: %s: %w", r.String(), err)
+	}
+	return resJSON.Data()
+}
+
+// ResourceBlockJSON returns a ResourceBlockJSON representation of this
+// ResourceBlock
+func (r ResourceBlock) ResourceBlockJSON() (*ResourceBlockJSON, error) {
+	specBytes, err := r.specBytes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get raw spec for resource: %s: %w", r.String(), err)
+	}
+	return NewResourceBlockJSON(r, string(specBytes)), nil
+}
+
 // MarshalJSON is customized to marshal a ResourceBlock, and thereby a resource
 func (r ResourceBlock) MarshalJSON() ([]byte, error) {
+	resJSON, err := r.ResourceBlockJSON()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ResourceBlockJSON for resource: %s: %w", r.String(), err)
+	}
+	b, err := json.Marshal(resJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal ResourceBLockJSON: %w", err)
+	}
+	return b, nil
+}
+
+// UnmarshalJSON is customized to unmarshal a resource
+func (r *ResourceBlock) UnmarshalJSON(data []byte) error {
+	var resJSON ResourceBlockJSON
+	if err := json.Unmarshal(data, &resJSON); err != nil {
+		return fmt.Errorf("failed to unmarshal ResourceBlockJSON: %w", err)
+	}
+	var err error
+	*r, err = resJSON.ResourceBlock()
+	return err
+}
+
+func (r ResourceBlock) specBytes() ([]byte, error) {
 	// get the source range of the hcl spec{} block, so that we can extract it
 	// as raw text
 	var srcRange hcl.Range
@@ -95,23 +142,8 @@ func (r ResourceBlock) MarshalJSON() ([]byte, error) {
 	}
 	specBytes := srcRange.SliceBytes(fileBytes)
 	// specBytes contains the block paranthesis "{" and "}". Remove them
-	specBytes = specBytes[1 : len(specBytes)-1]
-	b, err := json.Marshal(NewResourceBlockJSON(r, string(specBytes)))
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal ResourceBLockJSON: %w", err)
-	}
-	return b, nil
-}
+	return specBytes[1 : len(specBytes)-1], nil
 
-// UnmarshalJSON is customized to unmarshal a resource
-func (r *ResourceBlock) UnmarshalJSON(data []byte) error {
-	var resJSON ResourceBlockJSON
-	if err := json.Unmarshal(data, &resJSON); err != nil {
-		return fmt.Errorf("failed to unmarshal ResourceBlockJSON: %w", err)
-	}
-	var err error
-	*r, err = resJSON.ResourceBlock()
-	return err
 }
 
 func NewResourceBlockJSON(resBlock ResourceBlock, specRaw string) *ResourceBlockJSON {
@@ -123,8 +155,8 @@ func NewResourceBlockJSON(resBlock ResourceBlock, specRaw string) *ResourceBlock
 
 type ResourceBlockAlias ResourceBlock
 type ResourceBlockJSON struct {
-	ResourceBlockAlias
-	SpecRaw string `json:"spec"`
+	ResourceBlockAlias `mapstructure:",squash"`
+	SpecRaw            string `json:"spec" mapstructure:"spec"`
 }
 
 func (r *ResourceBlockJSON) ResourceBlock() (ResourceBlock, error) {
@@ -133,9 +165,70 @@ func (r *ResourceBlockJSON) ResourceBlock() (ResourceBlock, error) {
 	return resBlock, err
 }
 
-func (r *ResourceBlockJSON) Validate() error {
-	// TODO: check the fields which are needed
-	return nil
+// Data produces a core.Data type of this resource.
+// The Data type is produced so that it can be sent to the store as any other
+// piece of data, and therefore the store does not need to implement anything
+// specific for a resource.
+func (r *ResourceBlockJSON) Data() (Data, error) {
+
+	var metaMap = make(map[string]cty.Value, 2)
+	metaMap["namespace"] = cty.StringVal(r.Namespace())
+
+	if r.Metadata != nil {
+		var metaLabels = make(map[string]cty.Value, len(r.Metadata.Labels))
+		for k, v := range r.Metadata.Labels {
+			metaLabels[k] = cty.StringVal(v)
+		}
+		metaMap["labels"] = cty.ObjectVal(metaLabels)
+	}
+	d := Data{
+		TableName: ResourceTableName,
+		Fields: DataFields{
+			DataField{
+				Name:  "id",
+				Value: cty.StringVal(r.String()),
+			},
+			DataField{
+				Name:  "name",
+				Value: cty.StringVal(r.ResourceName),
+			},
+			DataField{
+				Name:  "kind",
+				Value: cty.StringVal(r.ResourceKind),
+			},
+			DataField{
+				Name:  "api_version",
+				Value: cty.StringVal(string(r.ResourceAPIVersion)),
+			},
+			DataField{
+				Name:  "metadata",
+				Value: cty.ObjectVal(metaMap),
+			},
+			DataField{
+				Name:  "spec",
+				Value: cty.StringVal(r.SpecRaw),
+			},
+		},
+	}
+	return d, nil
+}
+
+// Namespace returns the namespace of the resource
+func (r *ResourceBlockJSON) Namespace() string {
+	if md := r.Metadata; md != nil {
+		if md.Namespace != "" {
+			return md.Namespace
+		}
+	}
+	return "default"
+}
+
+// String returns a human-friendly string ID for the resource
+func (r *ResourceBlockJSON) String() string {
+	return fmt.Sprintf(
+		"%s/%s/%s",
+		r.Namespace(), r.ResourceKind, r.ResourceName,
+	)
 }
 
 // ResourceKind represents the different kinds of resources
