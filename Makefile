@@ -1,11 +1,11 @@
 BIN=./build/bubbly
 
 # env vars for running tests
-#export BUBBLY_HOST=localhost
-#export BUBBLY_PORT=80
+export BUBBLY_HOST=localhost
+export BUBBLY_PORT=8111
 export BUBBLY_STORE_PROVIDER=postgres
-#export POSTGRES_ADDR=localhost:30000
-#export POSTGRES_DATABASE=bubbly
+export POSTGRES_ADDR=localhost:5432
+export POSTGRES_DATABASE=bubbly
 
 all: build
 
@@ -19,9 +19,9 @@ clean:
 
 ## testing
 
-test: test-unit
+test: test-unit test-integration
 
-test-unit: build
+test-unit:
 	go test ./...
 
 test-verbose:
@@ -36,30 +36,16 @@ display-coverage: test-coverage
 test-report:
 	go test -coverprofile=coverage.txt -covermode=atomic -json ./... > test_report.json
 
-test-integration: build test-unit
-	docker-compose up --build --abort-on-container-exit --remove-orphans integration $${BUBBLY_STORE_PROVIDER}
+# The integration tests depend on Bubbly Server and 
+# its Store (currently Postgres) being accessible. 
+# This is what the env variables in the beginning of 
+# this Makefile are for.
+test-integration:
+	go test ./integration -tags=integration -count=1
 
-# TODO test-integration-docker-down or docker-compose run integration?
-
-## runing a dev instance
-#.PHONY: dev
-#dev:
-#	skaffold dev --trigger manual
-
-## integration testing
-
-#.PHONY: kind-cleanup
-#kind-cleanup:
-#	kind delete cluster --name ${KIND_CLUSTER_NAME}
-
-#.PHONY: kind-bootstrap
-#kind-bootstrap:
-	# create the kind cluster
-#	kind create cluster --name ${KIND_CLUSTER_NAME} --config kind-config.yaml
-
-#.PHONY: integration
-#integration:
-#	go test ./integration -tags=integration
+.PHONY: dev
+dev:
+	docker-compose up --build --abort-on-container-exit --remove-orphans
 
 # Project is CI-enabled with Github Actions. You can run CI locally
 # using act (https://github.com/nektos/act). 
