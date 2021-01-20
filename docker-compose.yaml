@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  # The back-end database used by Bubbly and Grafana
+  postgres:
+    image: postgres:13.0
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "bubbly"
+    ports:
+      - "5432:5432"
+    command:
+      - "postgres"
+      - "-c"
+      - "log_statement=all"
+
+  # TODO Grafana
+
+  # TODO delay starting Bubbly server until Postgres is set up
+
+  # Bubbly server
+  bubbly:
+    depends_on: 
+      - "postgres"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8111:8111"
+    command:
+      - "server"
+      - "--debug"
+
+  # Integration tests compiled into a separate binary and
+  # run against the Bubbly server.
+  integration:
+    depends_on: 
+      - "postgres"
+      - "bubbly"
+    environment:
+      BUBBLY_HOST: "bubbly"
+      BUBBLY_PORT: "8111"
+      PROVIDER: "${BUBBLY_STORE_PROVIDER:-postgres}"
+      POSTGRES_ADDR: "postgres:5432"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DATABASE: "bubbly"
+    build:
+      context: .
+      dockerfile: ./integration/Dockerfile
