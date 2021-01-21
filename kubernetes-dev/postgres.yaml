@@ -1,0 +1,54 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  type: NodePort
+  ports:
+    - port: 5432
+      protocol: TCP
+      nodePort: 30000
+  selector:
+    app: postgres
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:13.0
+          args:
+            - "-c"
+            # log all statements to help with debugging
+            - "log_statement=all"
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          ports:
+            - containerPort: 5432
+              name: postgresdb
+      #     volumeMounts:
+      #       - name: pv-data
+      #         mountPath: /var/lib/postgresql/data
+      # volumes:
+      #   - name: pv-data
+      #     persistentVolumeClaim:
+      #       claimName: postgres-pv-claim

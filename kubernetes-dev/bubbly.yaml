@@ -1,3 +1,23 @@
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: bubbly
+spec:
+  rules:
+    - host: "bubbly.7f000001.nip.io"
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              serviceName: bubbly
+              servicePort: bubbly
+  backend:
+    serviceName: bubbly
+    servicePort: bubbly
+
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,7 +25,7 @@ metadata:
   labels:
     app: bubbly
 spec:
-  type: LoadBalancer
+  type: NodePort
   ports:
     - name: bubbly
       port: 8111
