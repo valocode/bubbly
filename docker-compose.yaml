@@ -8,6 +8,8 @@ services:
     environment:
       POSTGRES_PASSWORD: "postgres"
       POSTGRES_DB: "bubbly"
+    networks:
+      - bubbly-net
     ports:
       - "5432:5432"
     command:
@@ -15,7 +17,17 @@ services:
       - "-c"
       - "log_statement=all"
 
-  # TODO Grafana
+  # Grafana with GraphQL plugin
+  grafana:
+    depends_on: 
+      - "postgres"
+    image: grafana/grafana:7.3.7
+    networks:
+      - bubbly-net
+    environment: 
+      GF_INSTALL_PLUGINS: "fifemon-graphql-datasource"
+    ports:
+      - "3000:3000"
 
   # TODO delay starting Bubbly server until Postgres is set up
 
@@ -26,8 +38,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    networks:
+      - bubbly-net
     ports:
       - "8111:8111"
     command:
       - "server"
       - "--debug"
+
+# User-defined bridge network is different from the default bridge
+networks:
+  bubbly-net:
+    driver: bridge
+    internal: false

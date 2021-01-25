@@ -4,7 +4,7 @@ BIN=./build/bubbly
 export BUBBLY_HOST=localhost
 export BUBBLY_PORT=8111
 export BUBBLY_STORE_PROVIDER=postgres
-export POSTGRES_ADDR=localhost:5432
+export POSTGRES_ADDR=postgres:5432
 export POSTGRES_DATABASE=bubbly
 
 all: build
