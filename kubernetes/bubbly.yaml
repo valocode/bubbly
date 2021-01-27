@@ -41,7 +41,7 @@ spec:
             ]
       containers:
         - name: bubbly
-          image: verifa/bubbly
+          image: gcr.io/valocode-bubbly-infra/bubbly:latest
           args:
             - "server"
             - "--debug"

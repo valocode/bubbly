@@ -28,7 +28,7 @@ spec:
             ]
       containers:
         - name: bubbly-integration
-          image: verifa/bubbly-integration
+          image: gcr.io/valocode-bubbly-infra/bubbly:latest
           envFrom:
             - configMapRef:
                 name: postgres-config
