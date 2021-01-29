@@ -3,11 +3,13 @@ version: "3.8"
 services:
 
   # The back-end database used by Bubbly and Grafana
+  # TODO make volume ephemeral
   postgres:
     image: postgres:13.0
+    container_name: postgres
     environment:
-      POSTGRES_PASSWORD: "postgres"
-      POSTGRES_DB: "bubbly"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
+      POSTGRES_DB: "${POSTGRES_DATABASE:-bubbly}"
     networks:
       - bubbly-net
     ports:
@@ -22,6 +24,7 @@ services:
     depends_on: 
       - "postgres"
     image: grafana/grafana:7.3.7
+    container_name: grafana
     networks:
       - bubbly-net
     environment: 
@@ -35,6 +38,7 @@ services:
   bubbly:
     depends_on: 
       - "postgres"
+    container_name: bubbly
     build:
       context: .
       dockerfile: Dockerfile
