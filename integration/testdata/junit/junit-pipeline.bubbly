@@ -44,21 +44,11 @@ resource "transform" "junit" {
             iterator = it
             labels = ["test_case"]
             content {
-                field "name" {
-                    value = "This field exists in table_${it.value}"
+                fields = {
+                    "name": "This field exists in table_${it.value}"
                 }
             }
         }
-    }
-}
-
-// This is the upload step, just renamed to load...
-resource "load" "junit" {
-    api_version = "v1"
-    spec {
-        input "data" {}
-        // what do we need here?!
-        data = self.input.data
     }
 }
 

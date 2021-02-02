@@ -26,30 +26,23 @@ resource "transform" "gotest" {
         input "data" {}
 
         data "repo_version" {
-            field "commit" {
-                value = "madeupcommit54321"
+            fields = {
+                "commit": "madeupcommit54321"
             }
         }
 
         data "test_run" {
-            // TODO: once DataRef is supported
-            // field "repo_version_id" {
-            //     value = data.repo_version.id
-            // }
-            field "name" {
-                value = "testrun123"
-            }
-            field "description" {
-                value = "Golang unit tests in CI"
+            joins = ["repo_version"]
+            fields = {
+                "name": "testrun123"
+                "description": "Golang unit tests in CI"
             }
         }
 
         data "test_set" {
-            // field "test_run_id" {
-            //     value = data.test_run.id
-            // }
-            field "name" {
-                value = "golang_unit_tests"
+            joins = ["test_run"]
+            fields = {
+                "name": "golang_unit_tests"
             }
         }
 
@@ -58,11 +51,10 @@ resource "transform" "gotest" {
             iterator = it
             labels = ["test_case"]
             content {
-                field "name" {
-                    value = "${it.value.Package}/${it.value.Test}"
-                }
-                field "status" {
-                    value = it.value.Action
+                joins = ["test_set"]
+                fields = {
+                    "name": "${it.value.Package}/${it.value.Test}"
+                    "status": it.value.Action
                 }
             }
         }

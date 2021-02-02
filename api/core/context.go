@@ -4,10 +4,11 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+// NewResourceContext creates a new ResourceContext
 func NewResourceContext(namespace string, inputs cty.Value, newRes NewResourceFn) *ResourceContext {
 	return &ResourceContext{
 		Inputs:      inputs,
-		State:       NewResourceState(),
+		State:       make(ResourceState),
 		Namespace:   namespace,
 		NewResource: newRes,
 	}
@@ -21,10 +22,6 @@ type ResourceContext struct {
 	State       ResourceState
 	Namespace   string
 	NewResource NewResourceFn
-}
-
-func NewResourceState() ResourceState {
-	return ResourceState{}
 }
 
 type ResourceState map[string]cty.Value
@@ -59,8 +56,6 @@ func (r ResourceState) Value(path []string, inputs ...cty.Value) cty.Value {
 	}
 	return cty.ObjectVal(retVal)
 }
-
-// func (r ResourceContext)
 
 // NewResourceFn represents the function to create a new resource from a
 // ResourceBlock. This functionality is handled by the api package, and needs

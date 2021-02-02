@@ -31,12 +31,9 @@ func (b *bubblySchema) Data() (core.Data, error) {
 	}
 	return core.Data{
 		TableName: core.SchemaTableName,
-		Fields: core.DataFields{
-			core.DataField{
-				Name: "tables",
-				// "Smuggle" the json as a string
-				Value: cty.StringVal(string(bTables)),
-			},
+		Fields: map[string]cty.Value{
+			// "Smuggle" the json as a string
+			"tables": cty.StringVal(string(bTables)),
 		},
 	}, nil
 }

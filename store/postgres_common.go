@@ -33,36 +33,31 @@ func psqlNewConn(bCtx *env.BubblyContext, connStr string) (*pgx.Conn, error) {
 	return conn, nil
 }
 
-func psqlSaveData(tx pgx.Tx, sc *saveContext) error {
-	for _, d := range sc.Data {
-		table, ok := sc.Schema.Tables[d.TableName]
-		if !ok {
-			return fmt.Errorf("data block refers to non-existing table: %s", d.TableName)
-		}
-		// Get the list of fields that reference this table, and therefore
-		// those fields need to be RETURNED so that we can use their returned
-		// values to resolve the DataRefs
-		refFields := sc.DataRefs.RefFields(d.TableName)
-		// Create the sql builder which generates the sql string and args
-		sql, err := sqlDataBlockUpsert(sc, d, table, refFields)
-		if err != nil {
-			return err
-		}
-		// Generate the sql string and args
-		sqlStr, sqlArgs, err := sql.ToSql()
-		if err != nil {
-			return fmt.Errorf("failed to create SQL statement: %w", err)
-		}
-		row := tx.QueryRow(context.Background(), sqlStr, sqlArgs...)
-
-		retValues, err := psqlRowValues(row, d.TableName, refFields)
-		if err != nil {
-			return fmt.Errorf("failed to insert data block: %s: %w", d.TableName, err)
-		}
-
-		// Assign the returned values to the data ref values for this table.
-		sc.DataRefs[d.TableName] = retValues
+func psqlSaveNode(tx pgx.Tx, node *dataNode, schema *bubblySchema) error {
+	table, ok := schema.Tables[node.Data.TableName]
+	if !ok {
+		return fmt.Errorf("data block refers to non-existing table: %s", node.Data.TableName)
 	}
+
+	sql, err := psqlDataNodeUpsert(node, table)
+	if err != nil {
+		return err
+	}
+	// Generate the sql string and args
+	sqlStr, sqlArgs, err := sql.ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to create SQL statement: %w", err)
+	}
+	row := tx.QueryRow(context.Background(), sqlStr, sqlArgs...)
+
+	retValues, err := psqlRowValues(row, table.Name, node.orderedRefFields())
+	if err != nil {
+		return fmt.Errorf("failed to insert data block: %s: %w", table.Name, err)
+	}
+
+	// Asign the returned values so that if the child nodes need to resolve
+	// their data references they have values to do so
+	node.Return = retValues
 	return nil
 }
 
@@ -84,10 +79,8 @@ func psqlApplySchema(tx pgx.Tx, schema *bubblySchema) error {
 	if err != nil {
 		return fmt.Errorf("failed to create data block from schema: %w", err)
 	}
-	sc := newSaveContext()
-	sc.Schema = schema
-	sc.Data = append(sc.Data, d)
-	if err := psqlSaveData(tx, sc); err != nil {
+	node := newDataNode(&d)
+	if err := psqlSaveNode(tx, node, schema); err != nil {
 		return fmt.Errorf("failed to insert latest tables: %w", err)
 	}
 

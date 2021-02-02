@@ -52,12 +52,11 @@ func sqlTableCreate(table core.Table) (string, error) {
 	return fmt.Sprintf("CREATE TABLE %s ( %s );", table.Name, strings.Join(tableFields, ",")), nil
 }
 
-func sqlDataBlockUpsert(sc *saveContext, data core.Data, table core.Table, refFields []string) (sq.InsertBuilder, error) {
+func psqlDataNodeUpsert(node *dataNode, table core.Table) (sq.InsertBuilder, error) {
 	var (
-		lenFields      = len(data.Fields) + len(data.Joins)
-		index          = 0
-		fieldNames     = make([]string, lenFields)
-		conflictValues = make([]string, lenFields)
+		data           = node.Data
+		fieldNames     = node.orderedFields()
+		conflictValues = make([]string, 0, len(data.Fields))
 		uniqueFields   = make([]string, 0)
 		sqlOnConflict  = ""
 		sqlReturning   = ""
@@ -69,16 +68,8 @@ func sqlDataBlockUpsert(sc *saveContext, data core.Data, table core.Table, refFi
 		}
 	}
 
-	for _, field := range data.Fields {
-		fieldNames[index] = field.Name
-		conflictValues[index] = field.Name + "=EXCLUDED." + field.Name
-		index++
-	}
-
-	for _, join := range data.Joins {
-		fieldNames[index] = join.Table + tableJoinSuffix
-		conflictValues[index] = join.Table + tableJoinSuffix + "=EXCLUDED." + join.Table + tableJoinSuffix
-		index++
+	for _, name := range fieldNames {
+		conflictValues = append(conflictValues, name+"=EXCLUDED."+name)
 	}
 
 	// Create the UPSERT / ON CONFLICT part of the SQL statement, if any.
@@ -91,10 +82,8 @@ func sqlDataBlockUpsert(sc *saveContext, data core.Data, table core.Table, refFi
 	}
 
 	// Create the RETURNING part of the SQL statement, if any.
-	if len(refFields) > 0 {
-		sqlReturning = "RETURNING " + strings.Join(refFields, ",")
-	}
-	values, err := sqlArgValues(sc, data)
+	sqlReturning = "RETURNING " + strings.Join(node.orderedRefFields(), ",")
+	values, err := sqlArgValues(node)
 	if err != nil {
 		return sq.InsertBuilder{}, fmt.Errorf("failed to get SQL arguments: %w", err)
 	}
@@ -162,46 +151,31 @@ func applyGraphQLArgs(sql sq.SelectBuilder, args map[string]interface{}) sq.Sele
 	return sql
 }
 
-func sqlArgValues(sc *saveContext, data core.Data) ([]interface{}, error) {
+func sqlArgValues(node *dataNode) ([]interface{}, error) {
 	var (
-		lenValues = len(data.Fields) + len(data.Joins)
-		index     = 0
-		values    = make([]interface{}, lenValues)
+		data   = node.Data
+		values = make([]interface{}, 0, len(data.Fields))
 	)
 
-	for _, field := range data.Fields {
-		val, err := sqlValue(sc, field.Value)
+	for _, f := range node.orderedFields() {
+		val, err := sqlValue(node, data.Fields[f])
 		if err != nil {
-			return nil, fmt.Errorf("failed to get SQL value from cty.Value for field: %s: %w", field.Name, err)
+			return nil, fmt.Errorf("failed to get SQL value from cty.Value for field: %s: %w", f, err)
 		}
-		values[index] = val
-		index++
-	}
-	for _, join := range data.Joins {
-		val, err := sqlValue(sc, join.Value)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get SQL value from cty.Value for join: %s: %w", join.Table, err)
-		}
-		values[index] = val
-		index++
+		values = append(values, val)
 	}
 	return values, nil
 }
 
-func sqlValue(sc *saveContext, val cty.Value) (interface{}, error) {
+func sqlValue(node *dataNode, val cty.Value) (interface{}, error) {
 	// Check if the value is a capsule value, in which case it needs special
 	// treatment
 	if val.Type().IsCapsuleType() {
 		// Get the underlying DataRef type
 		ref := val.EncapsulatedValue().(*parser.DataRef)
-		if refVals, ok := sc.DataRefs[ref.TableName]; ok {
-			for field, value := range refVals {
-				if ref.Field == field {
-					if value == nil {
-						return nil, fmt.Errorf("data ref value has not been set: %s.%s", ref.TableName, ref.Field)
-					}
-					return value, nil
-				}
+		if parent, ok := node.Parents[ref.TableName]; ok {
+			if ret, ok := parent.Return[ref.Field]; ok {
+				return ret, nil
 			}
 		}
 		return nil, fmt.Errorf("could not find data ref: %s.%s", ref.TableName, ref.Field)

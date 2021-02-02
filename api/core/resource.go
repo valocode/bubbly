@@ -183,31 +183,13 @@ func (r *ResourceBlockJSON) Data() (Data, error) {
 	}
 	d := Data{
 		TableName: ResourceTableName,
-		Fields: DataFields{
-			DataField{
-				Name:  "id",
-				Value: cty.StringVal(r.String()),
-			},
-			DataField{
-				Name:  "name",
-				Value: cty.StringVal(r.ResourceName),
-			},
-			DataField{
-				Name:  "kind",
-				Value: cty.StringVal(r.ResourceKind),
-			},
-			DataField{
-				Name:  "api_version",
-				Value: cty.StringVal(string(r.ResourceAPIVersion)),
-			},
-			DataField{
-				Name:  "metadata",
-				Value: cty.ObjectVal(metaMap),
-			},
-			DataField{
-				Name:  "spec",
-				Value: cty.StringVal(r.SpecRaw),
-			},
+		Fields: map[string]cty.Value{
+			"id":          cty.StringVal(r.String()),
+			"name":        cty.StringVal(r.ResourceName),
+			"kind":        cty.StringVal(r.ResourceKind),
+			"api_version": cty.StringVal(string(r.ResourceAPIVersion)),
+			"metadata":    cty.ObjectVal(metaMap),
+			"spec":        cty.StringVal(r.SpecRaw),
 		},
 	}
 	return d, nil

@@ -47,10 +47,13 @@ func (c *cockroachdb) Apply(schema *bubblySchema) error {
 	return nil
 }
 
-func (c *cockroachdb) Save(sc *saveContext) error {
+func (c *cockroachdb) Save(schema *bubblySchema, tree dataTree) error {
 
 	err := crdbpgx.ExecuteTx(context.Background(), c.conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
-		return psqlSaveData(tx, sc)
+		saveNode := func(node *dataNode) error {
+			return psqlSaveNode(tx, node, schema)
+		}
+		return tree.traverse(saveNode)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to save data in cockroachdb: %w", err)

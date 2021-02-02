@@ -46,15 +46,17 @@ func (p *postgres) Apply(schema *bubblySchema) error {
 	return tx.Commit(context.Background())
 }
 
-func (p *postgres) Save(sc *saveContext) error {
+func (p *postgres) Save(schema *bubblySchema, tree dataTree) error {
 	tx, err := p.conn.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback(context.Background())
 
-	err = psqlSaveData(tx, sc)
-	if err != nil {
+	saveNode := func(node *dataNode) error {
+		return psqlSaveNode(tx, node, schema)
+	}
+	if err := tree.traverse(saveNode); err != nil {
 		return fmt.Errorf("failed to save data in postgres: %w", err)
 	}
 

@@ -83,14 +83,10 @@ resource "transform" "license_data" {
             iterator = it
             labels = ["spdx_license"]
             content {
-                field "id" {
-                    value =it.value.licenseId
-                }
-                field "name" {
-                    value = it.value.name
-                }
-                field "crossref_count" {
-                    value = length(it.value.crossRef)
+                fields = {
+                    "id": it.value.licenseId
+                    "name": it.value.name
+                    "crossref_count": length(it.value.crossRef)
                 }
             }
         }

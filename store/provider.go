@@ -7,7 +7,7 @@ import (
 // Provider provides an interface for persisting readiness data.
 type provider interface {
 	Apply(*bubblySchema) error
-	Save(*saveContext) error
+	Save(*bubblySchema, dataTree) error
 	ResolveScalar(graphql.ResolveParams) (interface{}, error)
 	ResolveList(graphql.ResolveParams) (interface{}, error)
 

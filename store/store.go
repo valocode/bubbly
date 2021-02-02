@@ -110,26 +110,20 @@ func (s *Store) Apply(tables core.Tables) error {
 // Save saves data into the store.
 func (s *Store) Save(data core.DataBlocks) error {
 
-	var sc = newSaveContext()
-	// Prepare the data for saving by separating the data blocks that have
-	// data references in them (these need to be handled separately).
-	// Create the saveContext type to contain all the necessary data for the
-	// provider to save the data.
-	data = flatten(data, "")
-	// Order the data refs inside the saveContext
-	orderDataRefs(sc, data)
-
-	var err error
-	sc.Schema, err = s.currentBubblySchema()
+	dataTree, err := createDataTree(data)
+	if err != nil {
+		return fmt.Errorf("failed to create tree of data blocks for storing: %w", err)
+	}
+	bubblySchema, err := s.currentBubblySchema()
 	if err != nil {
 		return fmt.Errorf("failed to get current schema: %w", err)
 	}
 
-	if err := s.p.Save(sc); err != nil {
+	if err := s.p.Save(bubblySchema, dataTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}
 
-	gqlSchema, err := newGraphQLSchema(sc.Schema, s.p)
+	gqlSchema, err := newGraphQLSchema(bubblySchema, s.p)
 	if err != nil {
 		return fmt.Errorf("falied to build GraphQL schema: %w", err)
 	}
@@ -261,23 +255,4 @@ var schemaTable = core.Table{
 			Unique: false,
 		},
 	},
-}
-
-func newSaveContext() *saveContext {
-	return &saveContext{
-		Data:     make(core.DataBlocks, 0),
-		DataRefs: make(dataRefs, 0),
-	}
-}
-
-// saveContext is a struct that captures all the necessary context to save
-// the data blocks included in the context.
-type saveContext struct {
-	// Schema contains the bubblySchema which includes all the tables
-	Schema *bubblySchema
-	// Data contains all the data blocks that we want to save
-	Data core.DataBlocks
-	// DataRefs contains all the data ref values that exist in the given
-	// data blocks
-	DataRefs dataRefs
 }

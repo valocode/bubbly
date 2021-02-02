@@ -9,23 +9,14 @@ func DataStruct() core.DataBlocks {
 	dataMap := core.DataBlocks{
 		{
 			TableName: "product",
-			Fields: []core.DataField{
-				{
-					Name:  "Name",
-					Value: cty.StringVal("1234"),
-				},
-				{
-					Name: "testField1",
-					Value: cty.ObjectVal(map[string]cty.Value{
-						"value": cty.StringVal("TestValue1"),
-					}),
-				},
-				{
-					Name: "testField2",
-					Value: cty.ObjectVal(map[string]cty.Value{
-						"value": cty.StringVal("TestValue2"),
-					}),
-				},
+			Fields: core.DataFields{
+				"Name": cty.StringVal("1234"),
+				"testField1": cty.ObjectVal(map[string]cty.Value{
+					"value": cty.StringVal("TestValue1"),
+				}),
+				"testField2": cty.ObjectVal(map[string]cty.Value{
+					"value": cty.StringVal("TestValue2"),
+				}),
 			},
 		},
 	}
