@@ -83,7 +83,7 @@ func (s *Store) Query(query string) (interface{}, error) {
 
 // Apply applies a schema corresponding to a set of tables.
 func (s *Store) Apply(tables core.Tables) error {
-	schema, err := s.currentBubblySchema()
+	currentSchema, err := s.currentBubblySchema()
 	if err != nil {
 		return fmt.Errorf("failed to get current schema: %w", err)
 	}
@@ -91,16 +91,29 @@ func (s *Store) Apply(tables core.Tables) error {
 	// Append the internal tables containing definition of the schema and
 	// resource tables.
 	tables = append(tables, internalTables...)
-	addImplicitJoins(schema, tables, nil)
+	newSchemaTables := make(map[string]core.Table)
+	for _, table := range tables {
+		newSchemaTables[table.Name] = table
+	}
+	newSchema := &bubblySchema{
+		Tables: newSchemaTables,
+	}
+	addImplicitJoins(currentSchema, tables, nil)
+	// addImplicitJoins(newSchema, tables, nil)
 
 	// Calculate the schema diff
-	// TODO: call some func to calculate the diff
+	cl, err := compareSchema(*currentSchema, *newSchema)
+	if err != nil {
+		return fmt.Errorf("failed to compare schemas: %w", err)
+	}
+	newSchema.Changelog = cl
+	// TODO call schema migration
 
-	if err := s.p.Apply(schema); err != nil {
+	if err := s.p.Apply(currentSchema); err != nil {
 		return fmt.Errorf("failed to apply schema in provider: %w", err)
 	}
 
-	if err := s.setGraphQLSchema(schema); err != nil {
+	if err := s.setGraphQLSchema(currentSchema); err != nil {
 		return fmt.Errorf("failed to set graphql schema: %w", err)
 	}
 

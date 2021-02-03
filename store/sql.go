@@ -49,7 +49,8 @@ func sqlTableCreate(table core.Table) (string, error) {
 		tableFields = append(tableFields, fmt.Sprintf("UNIQUE (%s)", strings.Join(uniqueFields, ",")))
 	}
 
-	return fmt.Sprintf("CREATE TABLE %s ( %s );", table.Name, strings.Join(tableFields, ",")), nil
+	// TODO:nate wait until merged with master
+	return fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s ( %s );", table.Name, strings.Join(tableFields, ",")), nil
 }
 
 func psqlDataNodeUpsert(node *dataNode, table core.Table) (sq.InsertBuilder, error) {

@@ -37,7 +37,7 @@ services:
 
   # One of the Store options for Bubbly
   cockroachdb:
-    image: cockroachdb/cockroach:v20.1.10
+    image: cockroachdb/cockroach:v20.2.4
     container_name: cockroachdb
     command: ["start-single-node", "--insecure"]
     networks:

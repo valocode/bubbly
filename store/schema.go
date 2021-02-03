@@ -19,7 +19,8 @@ func newBubblySchema() *bubblySchema {
 // This should be extended in the future to accommodate for schema diffing
 // and other neat tricks.
 type bubblySchema struct {
-	Tables map[string]core.Table
+	Tables    map[string]core.Table
+	Changelog Changelog
 }
 
 // Data returns a core.Data value of the schema so that it can be saved in the
