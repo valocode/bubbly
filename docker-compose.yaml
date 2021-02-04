@@ -1,12 +1,12 @@
 version: "3.8"
 
 services:
-  # The back-end database used by Bubbly and Grafana
-  # TODO make volume ephemeral
+  # One of the Store options for Bubbly
   postgres:
     image: postgres:13.0
     container_name: postgres
     environment:
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
       POSTGRES_DB: "${POSTGRES_DATABASE:-bubbly}"
     networks:
@@ -18,10 +18,9 @@ services:
       - "-c"
       - "log_statement=all"
 
-  # Grafana with GraphQL plugin
+  # Grafana with GraphQL plugin configured to use Bubbly
+  # as a default data source
   grafana:
-    depends_on:
-      - "postgres"
     image: grafana/grafana:7.3.7
     container_name: grafana
     networks:
@@ -30,9 +29,16 @@ services:
       GF_INSTALL_PLUGINS: "fifemon-graphql-datasource"
     ports:
       - "3000:3000"
+    volumes:
+      - type: bind
+        read_only: true
+        source: "./grafana/provisioning/datasources"
+        target: "/etc/grafana/provisioning/datasources"
 
+  # One of the Store options for Bubbly
   cockroachdb:
     image: cockroachdb/cockroach:v20.1.10
+    container_name: cockroachdb
     command: ["start-single-node", "--insecure"]
     networks:
       - bubbly-net
@@ -42,14 +48,12 @@ services:
 
   # Bubbly server
   bubbly:
-    depends_on:
-      - "cockroachdb"
     container_name: bubbly
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      BUBBLY_STORE_PROVIDER: "cockroachdb"
+      BUBBLY_STORE_PROVIDER: "${BUBBLY_STORE_PROVIDER:-postgres}"
     networks:
       - bubbly-net
     ports:
@@ -58,7 +62,9 @@ services:
       - "server"
       - "--debug"
 
+  # A GraphQL interface into Bubbly Store
   storefront:
+    container_name: storefront
     depends_on:
       - "bubbly"
     build:
