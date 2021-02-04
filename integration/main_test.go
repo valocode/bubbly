@@ -5,6 +5,7 @@ package integration
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -24,7 +25,7 @@ func TestMain(m *testing.M) {
 		bCtx.Logger.Fatal().Err(err).Msg("failed to create client")
 	}
 
-	tables, err := testData.TestSchema(".")
+	tables, err := testData.TestSchema(filepath.FromSlash("./testdata/schema/schema.bubbly"))
 	if err != nil {
 		bCtx.Logger.Fatal().Err(err).Msg("failed to parse schema")
 	}

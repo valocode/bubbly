@@ -23,21 +23,23 @@ func parseHCLFile(file string, val interface{}) error {
 	return parser.DecodeExpandBody(bCtx, hclFile.Body, val, cty.NilVal)
 }
 
-func TestSchema(baseDir string) (core.Tables, error) {
+// TestSchema reads and parses the Bubbly database schema file
+func TestSchema(schemaFile string) (core.Tables, error) {
 
 	tableWrapper := struct {
 		Tables core.Tables `hcl:"table,block"`
 	}{}
 
-	err := parseHCLFile(baseDir+"/testdata/schema/schema.bubbly", &tableWrapper)
+	err := parseHCLFile(schemaFile, &tableWrapper)
 	return tableWrapper.Tables, err
 }
 
-func TestAutomationData(baseDir string) (core.DataBlocks, error) {
+// TestAutomationData reads and parses the data to be loaded into Bubbly Store
+func TestAutomationData(dataFile string) (core.DataBlocks, error) {
 	dataWrapper := struct {
 		DataBlocks core.DataBlocks `hcl:"data,block"`
 	}{}
 
-	err := parseHCLFile(baseDir+"/testdata/testautomation/data.bubbly", &dataWrapper)
+	err := parseHCLFile(dataFile, &dataWrapper)
 	return dataWrapper.DataBlocks, err
 }
