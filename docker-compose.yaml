@@ -52,8 +52,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    depends_on:
+      - "${BUBBLY_STORE_PROVIDER:-cockroachdb}"
     environment:
-      BUBBLY_STORE_PROVIDER: "${BUBBLY_STORE_PROVIDER:-postgres}"
+      BUBBLY_STORE_PROVIDER: "${BUBBLY_STORE_PROVIDER:-cockroachdb}"
     networks:
       - bubbly-net
     ports:
