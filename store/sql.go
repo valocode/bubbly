@@ -222,7 +222,7 @@ func sqlType(ty cty.Type) (string, error) {
 	case ty == cty.Bool:
 		return "BOOL", nil
 	case ty == cty.Number:
-		return "INT", nil
+		return "INT8", nil
 	case ty == cty.String:
 		return "TEXT", nil
 	case ty.IsObjectType():
