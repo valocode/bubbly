@@ -5,18 +5,18 @@
 
 data "root" {
     fields = {
-        "name": "test_value"
+        "name": "first_root"
     }
 }
 
 data "child_a" {
     joins = ["root"]
     fields = {
-        "name": "test_value"
+        "name": "first_child"
     }
     data "grandchild_a" {
         fields = {
-            "name": "nested_value"
+            "name": "first_grandchild"
         }
     }
 }
@@ -24,6 +24,12 @@ data "child_a" {
 data "grandchild_a" {
     joins = ["child_a"]
     fields = {
-        "name": "join_value"
+        "name": "second_grandchild"
+    }
+}
+
+data "root" {
+    fields = {
+        "name": "second_root"
     }
 }

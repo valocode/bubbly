@@ -41,9 +41,6 @@ func (c *cockroachdb) Apply(schema *bubblySchema) error {
 		return fmt.Errorf("failed to apply tables: %w", err)
 	}
 
-	// If the apply was successful then store the current state of the tables.
-	// TODO: how does this work in distributed mode? If another store were to
-	// update the schema, this would need to be sync'd
 	return nil
 }
 
@@ -62,10 +59,6 @@ func (c *cockroachdb) Save(schema *bubblySchema, tree dataTree) error {
 	return nil
 }
 
-func (c *cockroachdb) ResolveScalar(params graphql.ResolveParams) (interface{}, error) {
-	return psqlResolveScalar(c.conn, params)
-}
-
-func (c *cockroachdb) ResolveList(params graphql.ResolveParams) (interface{}, error) {
-	return psqlResolveParams(c.conn, params)
+func (c *cockroachdb) ResolveQuery(graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
+	return psqlResolveRootQueries(c.conn, graph, params)
 }

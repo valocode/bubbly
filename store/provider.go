@@ -8,9 +8,5 @@ import (
 type provider interface {
 	Apply(*bubblySchema) error
 	Save(*bubblySchema, dataTree) error
-	ResolveScalar(graphql.ResolveParams) (interface{}, error)
-	ResolveList(graphql.ResolveParams) (interface{}, error)
-
-	// GetResource(id string) (io.Reader, error)
-	// PutResource(id, val string) error
+	ResolveQuery(graph *schemaGraph, params graphql.ResolveParams) (interface{}, error)
 }

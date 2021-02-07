@@ -5,25 +5,12 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
 )
 
-var mapScalar = graphql.NewScalar(graphql.ScalarConfig{
-	Name:        "Map",
-	Description: "The `Map` scalar type represents a Map for storing key/value pairs",
-	Serialize: func(value interface{}) interface{} {
-		return value
-	},
-	ParseValue: func(value interface{}) interface{} {
-		return value
-	},
-	ParseLiteral: func(value ast.Value) interface{} {
-		// TODO: not sure exactly what to do here...
-		fmt.Printf("Map ParseLiteral: %v\n", value)
-		return nil
-	},
-})
+const graphJoinDistance = 3
 
 // gqlField is our custom Graphql Field type so that we can store a field in
 // it's simplest form and iteratively add to it, before we convert it into a
@@ -34,15 +21,11 @@ var mapScalar = graphql.NewScalar(graphql.ScalarConfig{
 type gqlField struct {
 	Type *graphql.Object
 	Args graphql.FieldConfigArgument
-	// Store the type of a field as an InputObject which can be used to add
-	// this type as an argument based on filters
-	FilterType *graphql.InputObject
-	// Resolve graphql.FieldResolveFn
 }
 
 // newGraphQLSchema creates a new GraphQL schema wrapping the given provider
 // with a schema that corresponds to the given set of tables.
-func newGraphQLSchema(schema *bubblySchema, p provider) (graphql.Schema, error) {
+func newGraphQLSchema(graph *schemaGraph, s *Store) (graphql.Schema, error) {
 	var (
 		fields = make(map[string]gqlField)
 		// These are the top-level query fields. Each of these fields
@@ -50,17 +33,22 @@ func newGraphQLSchema(schema *bubblySchema, p provider) (graphql.Schema, error) 
 		queryFields = make(graphql.Fields)
 	)
 
-	// Iterate over the schema of tables, appending each table
-	// to queryFields.
-	for _, t := range schema.Tables {
-		addGraphFields(t, fields)
+	if len(graph.nodes) == 0 {
+		return graphql.Schema{}, nil
 	}
 
-	// Iterate over the schema of tables again, this time adding the joins
-	// to the graphql schema.
-	for _, t := range schema.Tables {
-		addGraphJoins(t, fields, p)
-	}
+	// Traverse the schema graph and add each node/table to the graphql fields
+	graph.traverse(func(node *schemaNode) error {
+		addGraphFields(*node.table, fields)
+		return nil
+	})
+	// Create the relationships among the types using graph neighbours within
+	// a certain distance of each other
+	graph.traverse(func(node *schemaNode) error {
+		paths := node.neighbours(graphJoinDistance)
+		addGraphEdges(*node.table, paths, fields)
+		return nil
+	})
 
 	// Finally, we want to populate the queryFields using the graphql types
 	// we have created
@@ -68,7 +56,7 @@ func newGraphQLSchema(schema *bubblySchema, p provider) (graphql.Schema, error) 
 		queryFields[field.Type.Name()] = &graphql.Field{
 			Type:    graphql.NewList(field.Type),
 			Args:    field.Args,
-			Resolve: p.ResolveList,
+			Resolve: s.resolveQuery,
 		}
 	}
 
@@ -111,13 +99,10 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 		gqlField.Args[f.Name] = &graphql.ArgumentConfig{Type: ft}
 	}
 
-	// Create the FilterType for this graphql field
-	gqlField.FilterType = graphQLFilterType(t.Name, gqlField.Args)
-
 	gqlField.Args[filterID] = &graphql.ArgumentConfig{
-		Type: gqlField.FilterType,
+		Type: graphQLFilterType(t.Name, gqlField.Args),
 	}
-	gqlField.Args[firstID] = &graphql.ArgumentConfig{
+	gqlField.Args[limitID] = &graphql.ArgumentConfig{
 		Type: graphql.Int,
 	}
 
@@ -135,47 +120,25 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 	fields[t.Name] = gqlField
 }
 
-func addGraphJoins(t core.Table, fields map[string]gqlField, p provider) {
-	// Get the type corresponding to the core.Table
+func addGraphEdges(t core.Table, paths []schemaPath, fields map[string]gqlField) {
 	var field = fields[t.Name]
-	for _, join := range t.Joins {
-
+	for _, path := range paths {
+		// We only care about the destination in the path and whether it is scalar.
+		// The middle or passing edges will be included as their own paths
 		var (
-			// Get the field of the table that the join refers to
-			joinField = fields[join.Table]
-			// Set the type of the nested type to "has many" be default, by
-			// making it a graphql List
-			fieldType    graphql.Output = graphql.NewList(field.Type)
-			fieldResolve                = p.ResolveList
+			edge                        = path[len(path)-1]
+			dstField                    = fields[edge.node.table.Name]
+			dstFieldType graphql.Output = dstField.Type
 		)
 
-		// populateGraphQLTypeArgs(joinArgs, joinType)
-		// Add the join "belongs to"
-		field.Type.AddFieldConfig(join.Table, &graphql.Field{
-			Type:    joinField.Type,
-			Args:    joinField.Args,
-			Resolve: p.ResolveScalar,
-		})
-		// Add the relationship field so that we know there is a join here
-		field.Type.AddFieldConfig(join.Table+"_id", &graphql.Field{
-			Type: graphql.Int,
-		})
-
-		// If the join is unique, then it only has one, and fieldType should
-		// not return a list but a single instance
-		if join.Unique {
-			fieldType = field.Type
-			fieldResolve = p.ResolveScalar
+		if !path.isScalar() {
+			dstFieldType = graphql.NewList(dstFieldType)
 		}
-		// populateGraphQLTypeArgs(fieldArgs, tType)
-		joinField.Type.AddFieldConfig(t.Name, &graphql.Field{
-			Type:    fieldType,
-			Args:    field.Args,
-			Resolve: fieldResolve,
+		field.Type.AddFieldConfig(edge.node.table.Name, &graphql.Field{
+			Type: dstFieldType,
+			Args: dstField.Args,
 		})
-		fields[join.Table] = joinField
 	}
-	fields[t.Name] = field
 }
 
 func graphQLFieldType(f core.TableField) *graphql.Scalar {
@@ -195,7 +158,7 @@ func graphQLFieldType(f core.TableField) *graphql.Scalar {
 
 const (
 	filterID = "filter"
-	firstID  = "first"
+	limitID  = "limit"
 )
 
 const (
@@ -247,16 +210,14 @@ func graphQLFilterType(typeName string, args graphql.FieldConfigArgument) *graph
 	)
 }
 
-func isValidParent(parent interface{}) bool {
-	if parent == nil {
+func isValidValue(value interface{}) bool {
+	if value == nil {
 		return false
 	}
 
-	if val, ok := parent.(map[string]interface{}); ok {
+	if val, ok := value.(map[string]interface{}); ok {
 		if len(val) == 0 {
 			// graphql-go passes nil maps as empty values
-			// and we don't work with maps so a map is not
-			// a valid parent.
 			return false
 		}
 	}
@@ -264,76 +225,52 @@ func isValidParent(parent interface{}) bool {
 	return true
 }
 
-// childBelongsToParent takes a parent and a child table name, and checks if
-// the child type in the graphql schema "belongs to" (as a relationship) the
-// parent type.
-// E.g. if we have a type repo and repo_version, where repo_version stores a
-// field "repo_id" which is a foreign key to repo, then repo_version belongs to
-// repo.
-// Hence if given the following graphl query then this function returns true
-// because the child (repo_version) belongs to the parent (repo)
-// {
-// 	 repo {
-// 		repo_version {
-// 			...
-// 		}
-// 	 }
-// }
-func childBelongsToParent(info graphql.ResolveInfo, parent string, child string) bool {
-	var (
-		queryFields = info.Schema.QueryType().Fields()
-		childField  = queryFields[child]
-		parentFK    = parent + tableJoinSuffix
-	)
-	// All top-level fields in the query type are graphql.Lists of
-	// of type graphql.Object, which has it's type fields
-	obj := childField.Type.(*graphql.List).OfType.(*graphql.Object)
-	// Check if the parent foreign key field exists in the child.
-	// Consider if "b" belongs to "a". Then "b" will have a field "a_id" which
-	// is the foreigh key.
-	_, ok := obj.Fields()[parentFK]
-	if !ok {
-		return false
-	}
-
-	return true
-}
-
-// queryFieldSelectionSet returns the list of fields in a query that should be
-// returned (because they are listed in the graphql query).
-// This also adds some fields that might not be listed, like the _id
-func queryFieldSelectionSet(params graphql.ResolveParams) []string {
-	var (
-		fieldNames      = make([]string, 0)
-		addTableIDField = true
-	)
-	for _, parent := range params.Info.FieldASTs {
-		for _, selection := range parent.SelectionSet.Selections {
-			if child, ok := selection.(*ast.Field); ok {
-				if child.SelectionSet != nil {
-					// If the childField selection set is not nil, it means that
-					// the childField is another object, which is another
-					// core.Table and therefore should be resolved separately.
-					// The relationship between parent and child can be either:
-					// 1. child belongs to parent, do nothing
-					// 2. parent belongs to child, return the parent's foreign
-					// key to the child
-					if !childBelongsToParent(params.Info, parent.Name.Value, child.Name.Value) {
-						fieldNames = append(fieldNames, child.Name.Value+tableJoinSuffix)
-					}
-					continue
-				}
-				if child.Name.Value == tableIDField {
-					addTableIDField = false
-				}
-				fieldNames = append(fieldNames, child.Name.Value)
-			}
+func parseValueToMap(astValue ast.Value) interface{} {
+	switch astValue.GetKind() {
+	case kinds.StringValue:
+		return astValue.GetValue()
+	case kinds.BooleanValue:
+		return astValue.GetValue()
+	case kinds.IntValue:
+		return astValue.GetValue()
+	case kinds.FloatValue:
+		return astValue.GetValue()
+	case kinds.ObjectValue:
+		var (
+			objFields = astValue.GetValue().([]*ast.ObjectField)
+			obj       = make(map[string]interface{}, len(objFields))
+		)
+		for _, v := range objFields {
+			obj[v.Name.Value] = parseValueToMap(v.Value)
 		}
+		return obj
+	case kinds.ListValue:
+		var (
+			astList = astValue.GetValue().([]ast.Value)
+			list    = make([]interface{}, 0, len(astList))
+		)
+		for _, v := range astList {
+			list = append(list, parseValueToMap(v))
+		}
+		return list
+	default:
+		return nil
 	}
-	// We likely want the ID field in case it needs to be referenced in the
-	// graphql query
-	if addTableIDField {
-		fieldNames = append(fieldNames, tableIDField)
-	}
-	return fieldNames
 }
+
+var mapScalar = graphql.NewScalar(graphql.ScalarConfig{
+	Name:        "Map",
+	Description: "The `Map` scalar type represents a Map for storing key/value pairs",
+	Serialize: func(value interface{}) interface{} {
+		return value
+	},
+	ParseValue: func(value interface{}) interface{} {
+		return value
+	},
+	ParseLiteral: func(astValue ast.Value) interface{} {
+		if astValue.GetKind() != kinds.ObjectValue {
+			return nil
+		}
+		return parseValueToMap(astValue)
+	},
+})

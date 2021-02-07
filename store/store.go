@@ -34,13 +34,8 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 	}
 
 	s.p = p
-	schema, err := s.currentBubblySchema()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current schema: %w", err)
-	}
-
-	if err := s.setGraphQLSchema(schema); err != nil {
-		return nil, fmt.Errorf("failed to set graphql schema: %w", err)
+	if err := s.syncSchema(); err != nil {
+		return nil, fmt.Errorf("failed to sync schema: %w", err)
 	}
 
 	return s, nil
@@ -50,8 +45,10 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 type Store struct {
 	p provider
 
-	mu     sync.RWMutex
-	schema *graphql.Schema
+	mu           sync.RWMutex
+	graph        *schemaGraph
+	bubblySchema *bubblySchema
+	schema       *graphql.Schema
 }
 
 // Schema gets the graphql schema for the store.
@@ -113,8 +110,8 @@ func (s *Store) Apply(tables core.Tables) error {
 		return fmt.Errorf("failed to apply schema in provider: %w", err)
 	}
 
-	if err := s.setGraphQLSchema(currentSchema); err != nil {
-		return fmt.Errorf("failed to set graphql schema: %w", err)
+	if err := s.updateSchema(currentSchema); err != nil {
+		return fmt.Errorf("failed to sync schema: %w", err)
 	}
 
 	return nil
@@ -127,43 +124,46 @@ func (s *Store) Save(data core.DataBlocks) error {
 	if err != nil {
 		return fmt.Errorf("failed to create tree of data blocks for storing: %w", err)
 	}
+	if err := s.p.Save(s.bubblySchema, dataTree); err != nil {
+		return fmt.Errorf("falied to save data in provider: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Store) syncSchema() error {
+
 	bubblySchema, err := s.currentBubblySchema()
 	if err != nil {
 		return fmt.Errorf("failed to get current schema: %w", err)
 	}
+	s.updateSchema(bubblySchema)
 
-	if err := s.p.Save(bubblySchema, dataTree); err != nil {
-		return fmt.Errorf("falied to save data in provider: %w", err)
+	return nil
+}
+
+func (s *Store) updateSchema(bubblySchema *bubblySchema) error {
+	graph, err := newSchemaGraphFromMap(bubblySchema.Tables)
+	if err != nil {
+		return fmt.Errorf("failed to build schema graph: %w", err)
 	}
 
-	gqlSchema, err := newGraphQLSchema(bubblySchema, s.p)
+	gqlSchema, err := newGraphQLSchema(graph, s)
 	if err != nil {
 		return fmt.Errorf("falied to build GraphQL schema: %w", err)
 	}
 
 	s.mu.Lock()
+	s.graph = graph
+	s.bubblySchema = bubblySchema
 	s.schema = &gqlSchema
 	s.mu.Unlock()
 
 	return nil
 }
 
-func (s *Store) setGraphQLSchema(schema *bubblySchema) error {
-	// Cannot create a graphql schema from an empty bubbly schema
-	if len(schema.Tables) == 0 {
-		return nil
-	}
-
-	gqlSchema, err := newGraphQLSchema(schema, s.p)
-	if err != nil {
-		return fmt.Errorf("falied to build GraphQL schema: %w", err)
-	}
-
-	s.mu.Lock()
-	s.schema = &gqlSchema
-	s.mu.Unlock()
-
-	return nil
+func (s *Store) resolveQuery(params graphql.ResolveParams) (interface{}, error) {
+	return s.p.ResolveQuery(s.graph, params)
 }
 
 func (s *Store) currentBubblySchema() (*bubblySchema, error) {
@@ -185,6 +185,9 @@ func (s *Store) currentBubblySchema() (*bubblySchema, error) {
 	result, err := s.Query(schemaQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current tables: %w", err)
+	}
+	if !isValidValue(result) {
+		return newBubblySchema(), nil
 	}
 	val := result.(map[string]interface{})[core.SchemaTableName].([]interface{})
 	if len(val) == 0 {
@@ -228,7 +231,10 @@ func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Tab
 	}
 }
 
-var internalTables = core.Tables{resourceTable, eventTable, schemaTable}
+const tableIDField = "_id"
+const tableJoinSuffix = "_id"
+
+var internalTables = core.Tables{resourceTable, schemaTable, eventTable}
 var resourceTable = core.Table{
 	Name: core.ResourceTableName,
 	Fields: []core.TableField{

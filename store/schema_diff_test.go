@@ -14,7 +14,7 @@ import (
 	"github.com/verifa/bubbly/api/core"
 )
 
-func Test_compareSchema(t *testing.T) {
+func TestCompareSchema(t *testing.T) {
 	// Test cases
 	// table added *
 	// field added *

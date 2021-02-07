@@ -27,7 +27,7 @@ var queryTests = []struct {
 		name: "root query",
 		query: `
 		{
-			root(name: "test_value") {
+			root(name: "first_root") {
 				name
 			}
 		}
@@ -35,7 +35,7 @@ var queryTests = []struct {
 		expected: map[string]interface{}{
 			"root": []interface{}{
 				map[string]interface{}{
-					"name": "test_value",
+					"name": "first_root",
 				},
 			},
 		},
@@ -44,9 +44,9 @@ var queryTests = []struct {
 		name: "root with child query",
 		query: `
 		{
-			root {
+			root(name: "first_root") {
 				name
-				child_a(name: "test_value") {
+				child_a(name: "first_child") {
 					name
 				}
 			}
@@ -55,10 +55,10 @@ var queryTests = []struct {
 		expected: map[string]interface{}{
 			"root": []interface{}{
 				map[string]interface{}{
-					"name": "test_value",
+					"name": "first_root",
 					"child_a": []interface{}{
 						map[string]interface{}{
-							"name": "test_value",
+							"name": "first_child",
 						},
 					},
 				},
@@ -69,11 +69,11 @@ var queryTests = []struct {
 		name: "root with grandchild query",
 		query: `
 		{
-			root {
+			root(name: "first_root") {
 				name
-				child_a(name: "test_value") {
+				child_a(name: "first_child") {
 					name
-					grandchild_a(name: "join_value") {
+					grandchild_a(name: "second_grandchild") {
 						name
 						child_a {
 							name
@@ -86,18 +86,46 @@ var queryTests = []struct {
 		expected: map[string]interface{}{
 			"root": []interface{}{
 				map[string]interface{}{
-					"name": "test_value",
+					"name": "first_root",
 					"child_a": []interface{}{
 						map[string]interface{}{
-							"name": "test_value",
+							"name": "first_child",
 							"grandchild_a": []interface{}{
 								map[string]interface{}{
 									"child_a": map[string]interface{}{
-										"name": "test_value",
+										"name": "first_child",
 									},
-									"name": "join_value",
+									"name": "second_grandchild",
 								},
 							},
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		name: "jump node query",
+		query: `
+		{
+			root(name: "first_root") {
+				name
+				grandchild_a {
+					name
+				}
+			}
+		}
+		`,
+		expected: map[string]interface{}{
+			"root": []interface{}{
+				map[string]interface{}{
+					"name": "first_root",
+					"grandchild_a": []interface{}{
+						map[string]interface{}{
+							"name": "first_grandchild",
+						},
+						map[string]interface{}{
+							"name": "second_grandchild",
 						},
 					},
 				},
@@ -120,8 +148,8 @@ func storeTests(t *testing.T, s *Store) {
 	for _, tt := range queryTests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual, err := s.Query(tt.query)
-			assert.NoErrorf(t, err, "failed to execute query %s", tt.name)
-			assert.Equal(t, tt.expected, actual, "query response is equal")
+			require.NoErrorf(t, err, "failed to execute query %s", tt.name)
+			require.Equal(t, tt.expected, actual, "query response is equal")
 		})
 	}
 
@@ -315,7 +343,7 @@ func TestCockroach(t *testing.T) {
 	bCtx.StoreConfig.CockroachPassword = "admin"
 
 	s, err := New(bCtx)
-	assert.NoErrorf(t, err, "failed to initialize store")
+	require.NoErrorf(t, err, "failed to initialize store")
 
 	storeTests(t, s)
 }
