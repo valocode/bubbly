@@ -3,11 +3,13 @@ package v1
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"net/http"
 	"path/filepath"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/verifa/bubbly/env"
 
 	"github.com/stretchr/testify/assert"
@@ -137,6 +139,106 @@ func TestExtractGit(t *testing.T) {
 	require.False(t, val.IsNull(), "the extract returned null type value")
 	assert.Equal(t, cty.BoolVal(true), val.Equals(expected), "the extract returned unexpected value")
 
+}
+
+func TestExtractGraphQL(t *testing.T) {
+
+	// Using GitHub GraphQL API as it is rich, mature, and interesting!
+	url := "https://api.github.com/graphql"
+
+	// The GraphQL query to send
+	query := `query { 
+		repository(owner:"octocat", name:"Hello-World") {
+			issues(first:3, states:CLOSED) {
+		  		edges {
+					node {
+			  			title
+			  			url
+			  		}
+		  		}
+			}
+	  	}
+	}`
+	// TODO: read actual query from a file
+
+	// To communicate with the GraphQL server, you'll need an OAuth token with the right scopes.
+	// More info: https://docs.github.com/en/graphql/guides/forming-calls-with-graphql#authenticating-with-graphql
+	var bearerToken string
+	if value, ok := os.LookupEnv("GH_TOKEN"); ok {
+		bearerToken = value
+	} else {
+		if value, ok := os.LookupEnv("GITHUB_TOKEN"); ok {
+			bearerToken = value
+		} else {
+			t.Skip("GitHub authentication token not set. Must set either $GH_TOKEN or $GITHUB_TOKEN to run this test.")
+		}
+	}
+
+	// Setting up Bubbly and the request
+	bCtx := env.NewBubblyContext()
+	bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+	// TODO: put format of the response in a separate file?
+	source := graphqlSource{
+		URL:         url,
+		Query:       query,
+		BearerToken: &bearerToken,
+		Format: cty.Object(map[string]cty.Type{
+			"data": cty.Object(map[string]cty.Type{
+				"repository": cty.Object(map[string]cty.Type{
+					"issues": cty.Object(map[string]cty.Type{
+						"edges": cty.List(cty.Object(map[string]cty.Type{
+							"node": cty.Object(map[string]cty.Type{
+								"title": cty.String,
+								"url":   cty.String,
+							}),
+						})),
+					}),
+				}),
+			}),
+		}),
+	}
+	setGraphQLSourceDefaults(bCtx, &source)
+
+	// Send the request to GitHub API endpoint and read the result
+	val, err := source.Resolve(bCtx)
+
+	// Validate the response
+	require.NoError(t, err, "error in resolving GraphQL extract")
+	require.NotNil(t, val, "nil value returned by GraphQL extract resolver")
+	require.False(t, val.IsNull(), "cty.NullVal returned by GraphQL extract resolver")
+
+	// TODO: read the expected response from a file?
+	expected := cty.ObjectVal(map[string]cty.Value{
+		"data": cty.ObjectVal(map[string]cty.Value{
+			"repository": cty.ObjectVal(map[string]cty.Value{
+				"issues": cty.ObjectVal(map[string]cty.Value{
+					"edges": cty.ListVal([]cty.Value{
+						cty.ObjectVal(map[string]cty.Value{
+							"node": cty.ObjectVal(map[string]cty.Value{
+								"title": cty.StringVal("Hello World in all programming languages"),
+								"url":   cty.StringVal("https://github.com/octocat/Hello-World/issues/7"),
+							}),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"node": cty.ObjectVal(map[string]cty.Value{
+								"title": cty.StringVal("test100"),
+								"url":   cty.StringVal("https://github.com/octocat/Hello-World/issues/10"),
+							}),
+						}),
+						cty.ObjectVal(map[string]cty.Value{
+							"node": cty.ObjectVal(map[string]cty.Value{
+								"title": cty.StringVal("test100"),
+								"url":   cty.StringVal("https://github.com/octocat/Hello-World/issues/11"),
+							}),
+						}),
+					}),
+				}),
+			}),
+		}),
+	})
+
+	require.Equal(t, cty.BoolVal(true), val.Equals(expected))
 }
 
 func TestExtractRestBaseline(t *testing.T) {

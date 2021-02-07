@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -91,6 +92,7 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		vals = append(vals, val)
 	}
 
+	// TODO: this switch has to be documented. why do we get the list of one item?
 	var val cty.Value
 	switch len(e.Spec.Source) {
 	case 0:
@@ -117,12 +119,63 @@ func (e *Extract) SpecValue() core.ResourceSpec {
 	return &e.Spec
 }
 
-// setRestSourceDefaults returns a restSource struct, with optional fields initialised
-// to "correct" values. They are "correct" in a sense that the code in this module
-// does not need to do unnecessary checks on empty fields which simplifies the logic.
+// set{*}SourceDefaults are the initialisers for some types of Source(s),
+// where Golang default values would not be sufficient. Their purpose is
+// to simplify the Resolve(ers) logic by avoiding checks on null or default
+// values where such checks would have been inconvenient or verbose.
+//
 // It was a deliberate design decision that the "correct" or "default" values for
 // optional fields are set AFTER the HCL parser has created and populated
-// the restSource structure.
+// the graphQLSource structure.
+//
+// TODO: why though? i don't remember anymore. it had something to do with HCL parser, maybe?
+//
+
+// setGraphQLSourceDefaults is the initialiser for the GraphQL Source type
+func setGraphQLSourceDefaults(bCtx *env.BubblyContext, dst *graphqlSource) error {
+	method := http.MethodPost
+	timeout := uint(1)
+
+	defaults := &graphqlSource{
+		Method:  &method,
+		Params:  &map[string]string{},
+		Headers: &map[string]string{},
+		Timeout: &timeout,
+	}
+
+	if err := mergo.Merge(dst, defaults); err != nil {
+		return fmt.Errorf("failed to initialise the data structure: %w", err)
+	}
+
+	// Mergo does not set empty and nil values, and for purposes of
+	// simplifying control flow logic it helps to set the following...
+
+	// Params is optional in HCL, but it helps to have an empty map instead of nil.
+	if dst.Params == nil {
+		dst.Params = &map[string]string{}
+	}
+	// Headers is optional in HCL
+	if dst.Headers == nil {
+		dst.Headers = &map[string]string{}
+	}
+
+	// If HTTP Basic Authentication is requested in HCL, the username is compulsory field,
+	// while the password and password_file are both optional since one or the other may be
+	// provided by the user. If the username is given, initialise the other two fields, unless
+	// already set.
+	if dst.BasicAuth != nil {
+		if dst.BasicAuth.Password == nil {
+			dst.BasicAuth.Password = new(string)
+		}
+		if dst.BasicAuth.PasswordFile == nil {
+			dst.BasicAuth.PasswordFile = new(string)
+		}
+	}
+
+	return nil
+}
+
+// setRestSourceDefaults is the initialiser for the REST Source type
 func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) error {
 
 	method := http.MethodGet
@@ -189,6 +242,8 @@ func (e *Extract) decode(bCtx *env.BubblyContext, ctx *core.ResourceContext) err
 			e.Spec.Source[idx] = new(gitSource)
 		case restExtractType:
 			e.Spec.Source[idx] = new(restSource)
+		case graphQLExtractType:
+			e.Spec.Source[idx] = new(graphqlSource)
 		default:
 			return fmt.Errorf("unsupported extract resource type: %s", e.Spec.Type)
 		}
@@ -198,17 +253,17 @@ func (e *Extract) decode(bCtx *env.BubblyContext, ctx *core.ResourceContext) err
 			return fmt.Errorf("failed to decode extract source: %w", err)
 		}
 
-		// Merge with default values for each resource type
+		// Merge with default values for those source types where it's necessary
 		switch dst := e.Spec.Source[idx].(type) {
 		case *restSource:
 			if err := setRestSourceDefaults(bCtx, dst); err != nil {
 				return fmt.Errorf("failed to decode extract: %w", err)
 			}
-		default:
-			// TODO:ofrolovs - I assume default means nothing, maybe this
-			// comment helps :)
+		case *graphqlSource:
+			if err := setGraphQLSourceDefaults(bCtx, dst); err != nil {
+				return fmt.Errorf("failed to decode extract: %w", err)
+			}
 		}
-
 	}
 	return nil
 }
@@ -217,6 +272,7 @@ var _ core.ResourceSpec = (*extractSpec)(nil)
 
 // FIXME source should be public because Data in Transform is public?!
 
+// SourceBlocks stores the HCL for the `source` block in `extract` type resource
 type SourceBlocks []source
 
 // extractSpec defines the spec for an extract
@@ -235,17 +291,236 @@ type extractSpec struct {
 type extractType string
 
 const (
-	jsonExtractType extractType = "json"
-	xmlExtractType              = "xml"
-	gitExtractType              = "git"
-	restExtractType             = "rest"
+	jsonExtractType    extractType = "json"
+	xmlExtractType                 = "xml"
+	gitExtractType                 = "git"
+	restExtractType                = "rest"
+	graphQLExtractType             = "graphql"
 )
 
 // Source is an interface for the different data sources that an Extract can have
 type source interface {
-	// returns an interface{} containing the parsed XML, JSON data, that should
-	// be converted into the Output cty.Value
+	// Resolve requests data in a way specific to the dynamic type of the interface,
+	// and handles the conversion of response to a dynamic value.
 	Resolve(*env.BubblyContext) (cty.Value, error)
+}
+
+// Compiler check to see that the source interface is implemented
+var _ source = (*graphqlSource)(nil)
+
+// graphqlSource represents the extract type for a GraphQL API query
+type graphqlSource struct {
+
+	// The body of the GraphQL `query { ... }`
+	Query string `hcl:"query"`
+
+	// URL (technically a URI reference, as per RFC 3986) represents the unparsed URL string.
+	// Note that URL Query Parameters (?key=val) must be provided separately as Params.
+	URL string `hcl:"url"`
+
+	// Method is "GET" or "POST" for protocols "http" and "https". The default is "POST".
+	Method *string `hcl:"method"`
+
+	// Params are URL query params which get prepended at the end of the url
+	// in the format ?key1=val1&key2=val2
+	Params *map[string]string `hcl:"params"`
+
+	// HTTP Headers to set, anything apart from Basic Authorization
+	// and Bearer Token for which there are custom fields.
+	Headers *map[string]string `hcl:"headers"`
+
+	// BasicAuth sets the `Authorization` header on every
+	// scrape request with the configured username and password.
+	// The `password` field, if set, overrides the `password_file` field.
+	// More information: https://swagger.io/docs/specification/authentication/basic-authentication/
+	BasicAuth *basicAuth `hcl:"basic_auth,block"`
+
+	// BearerToken sets the `Authorization` header on every
+	// scrape request with the configured bearer token.
+	// More information: https://swagger.io/docs/specification/authentication/bearer-authentication/
+	// If set, this option overrides `bearer_token_file`.
+	BearerToken *string `hcl:"bearer_token"`
+
+	// BearerTokenFile sets the `Authorization` header on every
+	// scrape request with the bearer token read from the configured file.
+	// This option can be overridden by `bearer_token`.
+	BearerTokenFile *string `hcl:"bearer_token_file"`
+
+	// Timeout in seconds is how long the extractor can wait before giving up
+	// trying to extract the data from this resource.
+	Timeout *uint `hcl:"timeout"`
+
+	// Format is is a dynamic type, usually built from an HCL type expression.
+	// It defines what is expected in response to the GraphQL API query.
+	Format cty.Type `hcl:"format"`
+}
+
+// Resolve performs a GraphQL query, parses the response, and returns a corresponding cty.Value
+func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
+
+	// Wrap the query into proper JSON as this is what the GraphQL end-point expects
+	query, err := json.Marshal(
+		struct {
+			Query string `json:"query"`
+		}{
+			Query: s.Query,
+		},
+	)
+
+	if err != nil {
+		return cty.NilVal, fmt.Errorf(`failed to marshal GraphQL query string into JSON: "%s"`, s.Query)
+	}
+
+	// HTTP method, "GET" or "POST", with the latter being the default
+	method := strings.ToUpper(*s.Method)
+
+	if method != http.MethodPost && method != http.MethodGet {
+		return cty.NilVal, fmt.Errorf("unsupported method: %s", method)
+	}
+
+	// HTTP request timeout:
+	//   * a positive integer is accepted and interpreted as value in seconds
+	//   * the default value 0 is interpreted as 1 second
+	//
+	var timeout time.Duration
+
+	switch {
+	case *s.Timeout == 0:
+		return cty.NilVal, fmt.Errorf("invalid timeout value: %d", *s.Timeout)
+	default:
+		timeout = time.Duration(*s.Timeout) * time.Second
+	}
+
+	// The 'Basic' HTTP Authentication Scheme as defined in RFC 7617.
+	//
+	// Activated by non-nil `basicAuth` field. When active,
+	// * the `basicAuth.username` must be a non-empty string
+	// * either `basicAuth.password` or `basicAuth.passwordFile` must be a non-empty string,
+	//   with the former overriding the latter.
+
+	var username, password string
+
+	if s.BasicAuth != nil {
+
+		if s.BasicAuth.Username == "" {
+			return cty.NilVal, fmt.Errorf("HTTP basic authentication requires a username")
+		}
+
+		username = s.BasicAuth.Username
+
+		switch {
+		case *s.BasicAuth.Password != "":
+			password = *s.BasicAuth.Password
+
+		case *s.BasicAuth.PasswordFile != "":
+			byteArr, err := ioutil.ReadFile(filepath.FromSlash(*s.BasicAuth.PasswordFile))
+			if err != nil {
+				return cty.NilVal, fmt.Errorf("failed to read the password for http basic authentication from a file: %w", err)
+			}
+			password = string(byteArr)
+		}
+	}
+
+	// URL query string
+	params := url.Values{}
+	for k, v := range *s.Params {
+		params.Add(k, v)
+	}
+
+	// Construct a URL string
+	us := s.URL
+	if len(params) > 0 {
+		us = fmt.Sprint(s.URL, "?", params.Encode())
+	}
+
+	// Validate the URL string using the `url` standard library module
+	u, err := url.Parse(us)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to parse endpoint url %s: %w", us, err)
+	}
+
+	// Create an object representing a HTTP request
+	body := bytes.NewReader(query)
+	httpRequest, err := http.NewRequest(method, u.String(), body)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to craft HTTP request object: %w", err)
+	}
+
+	// Authentication, if requested
+	if s.BasicAuth != nil {
+		httpRequest.SetBasicAuth(username, password)
+	}
+
+	// Add a bearer token, if requests. Adds a Header.
+	var bearerToken string
+	switch {
+	case s.BearerToken != nil:
+		bearerToken = *s.BearerToken
+	case s.BearerTokenFile != nil:
+		bt, err := ioutil.ReadFile(filepath.FromSlash(*s.BearerTokenFile))
+		if err != nil {
+			return cty.NilVal, fmt.Errorf("failed to read bearer token file: %w", err)
+		}
+		bearerToken = string(bt)
+	}
+	if bearerToken != "" {
+		httpRequest.Header.Set("Authorization", fmt.Sprint("Bearer ", bearerToken))
+	}
+
+	// Any other headers, if reqested
+	for k, v := range *s.Headers {
+		httpRequest.Header.Add(k, v)
+	}
+
+	// Log the request
+	if e := bCtx.Logger.Debug(); e.Enabled() {
+
+		dump, err := httputil.DumpRequestOut(httpRequest, true)
+		if err != nil {
+			e.Err(err).Msg("extract/graphql failed to dump HTTP request")
+		} else {
+			e.Bytes("httpRequest", dump).Msg("extract/graphql")
+		}
+	}
+
+	// Initiate the HTTP client
+	c := http.Client{Timeout: timeout}
+
+	// Make a request to GraphQL API end-point
+	httpResponse, err := c.Do(httpRequest)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to make HTTP request: %w", err)
+	}
+
+	// Log the response
+	if e := bCtx.Logger.Debug(); e.Enabled() {
+
+		dump, err := httputil.DumpResponse(httpResponse, true)
+		if err != nil {
+			e.Err(err).Msg("extract/graphql failed to dump HTTP response")
+		} else {
+			e.Bytes("httpResponse", dump).Msg("extract/graphql")
+		}
+	}
+
+	if httpResponse.StatusCode != http.StatusOK {
+		return cty.NilVal, fmt.Errorf("HTTP response status code: %d", httpResponse.StatusCode)
+	}
+
+	defer httpResponse.Body.Close()
+
+	// Parse the content of response body
+	var data interface{}
+	if err := json.NewDecoder(httpResponse.Body).Decode(&data); err != nil {
+		return cty.NilVal, fmt.Errorf("failed to decode JSON: %w", err)
+	}
+
+	val, err := gocty.ToCtyValue(data, s.Format)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to convert to desired data format: %w", err)
+	}
+
+	return val, nil
 }
 
 // Compiler check to see that the source interface is implemented
@@ -271,7 +546,7 @@ type restSource struct {
 	// Note that URL Query Parameters (?key=val) must be provided separately as Params.
 	URL string `hcl:"url"`
 
-	// Method is "GET" or "POST" for protocols "http" and "https"
+	// Method is "GET" or "POST" for protocols "http" and "https". The default is "GET".
 	Method *string `hcl:"method"`
 
 	// Params are URL query params which get prepended at the end of the url
@@ -306,11 +581,12 @@ type restSource struct {
 	// trying to extract the data from this resource.
 	Timeout *uint `hcl:"timeout"`
 
-	// Format is ?
+	// Format is a dynamic type, usually built from an HCL type expression.
+	// It defines what is expected in response to the REST API query.
 	Format cty.Type `hcl:"format"`
 }
 
-// Resolve returns a cty.Value representation of the data in response to a REST API query
+// Resolve performs a REST query, parses the response, and returns a corresponding dynamic value.
 func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 
 	// HTTP Method:
@@ -320,10 +596,8 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	//
 	method := strings.ToUpper(*s.Method)
 
-	switch method {
-	case http.MethodGet:
-		break
-	default:
+	// TODO: add support for POST requests
+	if method != http.MethodGet {
 		return cty.NilVal, fmt.Errorf("unsupported method: %s", method)
 	}
 
@@ -592,7 +866,7 @@ func (s *gitSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	}
 
 	// Construct Go data structure for conversion
-	// to cty.Value using well-defined cty.Type
+	// to cty.Value using a well-defined cty.Type
 	data := map[string]interface{}{
 		"is_bare":       isBare,
 		"commit_id":     headRef.Hash().String(),
@@ -693,11 +967,22 @@ func (s *xmlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	return val, nil
 }
 
+// walkTypeTransformData provides a fix to the problem inherent to the XML format,
+// namely the absence of syntax for lists. So, if XML parser has no access to some
+// kind of XML schema, it cannot tell upon encountering a single element, whether that
+// element stands by itself or is a first element in a list of length one. Contrast
+// this with JSON, which has an explicit notation for lists, and a list of one item
+// is not the same as the item on its own. Since the XML parser that we use does not
+// have a facility for XML schemas, after having parsed the data, we walk the resulting
+// tree with the following function and using the information from our extract's format
+// spec, convert single element instances which should have been lists of length one...
+// into the lists of length one.
 func walkTypeTransformData(data *mxj.Map, ty cty.Type) error {
 	path := make([]string, 0)
 	return walk(data, ty, path, 0)
 }
 
+// walk is the inner function for walkTypeTransformData and its functionality is described there
 func walk(data *mxj.Map, ty cty.Type, path []string, idx int) error {
 
 	pathStr := strings.Join(path, ".")
