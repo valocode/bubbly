@@ -3,8 +3,10 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/bubbly"
 	"github.com/verifa/bubbly/client"
 
@@ -12,6 +14,30 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/verifa/bubbly/env"
 )
+
+func eventQuery(t *testing.T, bCtx *env.BubblyContext) {
+	query := fmt.Sprintf(`
+			{
+				%s(id: "default/extract/gotest")  {
+					id
+					%s {
+						status
+						time
+					}
+				}
+			}
+		`, core.ResourceTableName, core.EventTableName)
+
+	client, err := client.New(bCtx)
+	require.NoError(t, err, "failed to establish a bubbly client")
+
+	resp, err := client.Query(bCtx, query)
+	require.NoError(t, err, "bubbly client failed to query the bubbly server")
+
+	bCtx.Logger.Debug().RawJSON("response", resp).Msg("received query response from bubbly server")
+
+	require.NotNil(t, string(resp))
+}
 
 // TestClientQuery tests that, given an injection of golang test data,
 // the bubbly client is able to use its Query method to query the data
@@ -40,6 +66,8 @@ func TestClientQuery(t *testing.T) {
 	bCtx.Logger.Debug().RawJSON("response", resp).Msg("received query response from bubbly server")
 
 	require.NotNil(t, string(resp))
+
+	eventQuery(t, bCtx)
 }
 
 // TestHCLQuery tests that, given an injection of golang test data,

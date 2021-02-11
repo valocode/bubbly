@@ -48,6 +48,7 @@ func psqlSaveNode(tx pgx.Tx, node *dataNode, schema *bubblySchema) error {
 	if err != nil {
 		return fmt.Errorf("failed to create SQL statement: %w", err)
 	}
+
 	row := tx.QueryRow(context.Background(), sqlStr, sqlArgs...)
 
 	retValues, err := psqlRowValues(row, table.Name, node.orderedRefFields())
@@ -58,6 +59,11 @@ func psqlSaveNode(tx pgx.Tx, node *dataNode, schema *bubblySchema) error {
 	// Asign the returned values so that if the child nodes need to resolve
 	// their data references they have values to do so
 	node.Return = retValues
+
+	// uncomment this to print the RETURNING values,
+	// useful for debugging JOIN behaviour
+	// fmt.Printf("SQL Return: %v\n", retValues)
+
 	return nil
 }
 

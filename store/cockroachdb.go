@@ -53,6 +53,7 @@ func (c *cockroachdb) Save(schema *bubblySchema, tree dataTree) error {
 		saveNode := func(node *dataNode) error {
 			return psqlSaveNode(tx, node, schema)
 		}
+
 		return tree.traverse(saveNode)
 	})
 	if err != nil {

@@ -228,7 +228,7 @@ func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Tab
 	}
 }
 
-var internalTables = core.Tables{resourceTable, schemaTable}
+var internalTables = core.Tables{resourceTable, eventTable, schemaTable}
 var resourceTable = core.Table{
 	Name: core.ResourceTableName,
 	Fields: []core.TableField{
@@ -259,6 +259,26 @@ var resourceTable = core.Table{
 		},
 	},
 }
+
+var eventTable = core.Table{
+	Name: core.EventTableName,
+	Fields: []core.TableField{
+		{
+			Name: "status",
+			Type: cty.String,
+		},
+		{
+			Name: "time",
+			Type: cty.String,
+		},
+	},
+	Joins: []core.TableJoin{
+		{
+			Table: core.ResourceTableName,
+		},
+	},
+}
+
 var schemaTable = core.Table{
 	Name: core.SchemaTableName,
 	Fields: []core.TableField{

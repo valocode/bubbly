@@ -7,9 +7,11 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
 )
 
 // PostResource godoc
@@ -45,7 +47,21 @@ func PostResource(bCtx *env.BubblyContext, c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := serverStore.Save(core.DataBlocks{d}); err != nil {
+	resource_event := core.Data{
+		TableName: core.EventTableName,
+		Fields: map[string]cty.Value{
+			"status": cty.StringVal(events.ResourceCreated.String()),
+			"time":   cty.StringVal(events.TimeNow()),
+		},
+		// this join means the _id pulled of the _resource row entry will be
+		// mapped to the
+		// _resource_id column of this row entry in _event
+		Joins: []string{core.ResourceTableName},
+	}
+
+	res_db := core.DataBlocks{d, resource_event}
+
+	if err := serverStore.Save(res_db); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
