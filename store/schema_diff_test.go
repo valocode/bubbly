@@ -11,171 +11,7 @@ import (
 	"github.com/verifa/bubbly/api/core"
 )
 
-func TestCompareSchema(t *testing.T) {
-	// Test cases
-	// table added *
-	// field added *
-	// join added *
-	// Tables added *
-	// table removed *
-	// field removed *
-	// join removed * list len 10
-	// Tables removed *
-	// Table updated
-	//	Table Unique Updated *
-	// field updated
-	//	field deleted *
-	//	field Unique updated *
-	//	field Type updated
-	// Join updated
-	// 	join unique updated
-
-	// TODO move to file
-	// might need to split it up since bubblySchema is not exported
-	schema1 := bubblySchema{Tables: map[string]core.Table{
-		"table1": {
-			Name: "table1",
-			Fields: []core.TableField{
-				{
-					Name: "field1",
-					Type: cty.String,
-				},
-				{
-					Name: "fieldToBeDeleted",
-					Type: cty.Number,
-				},
-			},
-			Joins: []core.TableJoin{
-				{
-					Table:  "tableToBeRemoved",
-					Unique: true,
-				},
-			},
-			Tables: []core.Table{
-				{
-					Name:   "tables_1",
-					Unique: false,
-					Fields: []core.TableField{
-						{
-							Name:   "field1",
-							Type:   cty.String,
-							Unique: true,
-						},
-						{
-							Name: "fieldToBeDeleted",
-						},
-					},
-					Joins: []core.TableJoin{
-						{
-							Table:  "tableJoin",
-							Unique: true,
-						},
-					},
-					Tables: []core.Table{
-						{
-							Name:   "sub_table_1",
-							Unique: false,
-						},
-					},
-				},
-				{
-					Name:   "tableToBeRemoved",
-					Unique: false,
-				},
-			},
-			Unique: true,
-		},
-		"table2": {
-			Name: "table2",
-			Fields: []core.TableField{
-				{
-					Name: "field2",
-					Type: cty.String,
-				},
-			},
-			Unique: false,
-		},
-		"tableToBeRemoved": {
-			Name: "tableToBeRemoved",
-		},
-	}}
-	schema2 := bubblySchema{Tables: map[string]core.Table{
-		"table1": {
-			Name: "table1",
-			Fields: []core.TableField{
-				{
-					Name: "field1",
-					Type: cty.Number,
-				},
-				{
-					Name:   "field11",
-					Type:   cty.Number,
-					Unique: true,
-				},
-			},
-			Joins: []core.TableJoin{
-				{
-					Table:  "table2",
-					Unique: true,
-				},
-			},
-			Unique: true,
-			Tables: []core.Table{
-				{
-					Name:   "tables_1",
-					Unique: true,
-					Joins: []core.TableJoin{
-						{
-							Table:  "tableJoin",
-							Unique: false,
-						},
-					},
-					Fields: []core.TableField{
-						{
-							Name:   "field1",
-							Type:   cty.Number,
-							Unique: false,
-						},
-					},
-					Tables: []core.Table{
-						{
-							Name:   "sub_table_1",
-							Unique: true,
-						},
-					},
-				},
-				{
-					Name: "tables_new",
-					Tables: []core.Table{
-						{
-							Name: "tables_tables_1",
-						},
-					},
-				},
-			},
-		},
-		"table2": {
-			Name: "table2",
-			Fields: []core.TableField{
-				{
-					Name: "field22",
-					Type: cty.String,
-				},
-			},
-			Unique: true,
-		},
-		"table3": {
-			Name: "table3",
-			Fields: []core.TableField{
-				{
-					Name: "field22",
-					Type: cty.String,
-				},
-			},
-			Unique: false,
-		},
-	}}
-
+func Test_compareSchema(t *testing.T) {
 	type args struct {
 		s1 bubblySchema
 		s2 bubblySchema
@@ -201,28 +37,7 @@ func TestCompareSchema(t *testing.T) {
 				s1: schema1,
 				s2: schema2,
 			},
-			want: []Entry{
-				{Action: "delete", TableName: "tableToBeRemoved", ElementType: "table", From: core.Table{Name: "tableToBeRemoved", Fields: []core.TableField(nil), Joins: []core.TableJoin(nil), Unique: false, Tables: []core.Table(nil)}, To: interface{}(nil)},
-				{Action: "update", TableName: "table1", ElementType: "field", From: cty.String, To: cty.Number},
-				{Action: "delete", TableName: "table1", ElementType: "field", From: core.TableField{Name: "fieldToBeDeleted", Unique: false, Type: cty.Number}, To: interface{}(nil)},
-
-				{Action: "create", TableName: "table1", ElementType: "field", From: interface{}(nil), To: core.TableField{Name: "field11", Unique: true, Type: cty.Number}},
-				{Action: "delete", TableName: "table1", ElementType: "join", From: core.TableJoin{Table: "tableToBeRemoved", Unique: true}, To: interface{}(nil)},
-				{Action: "create", TableName: "table1", ElementType: "join", From: interface{}(nil), To: core.TableJoin{Table: "table2", Unique: true}},
-				{Action: "update", TableName: "tables_1", ElementType: "field", From: cty.String, To: cty.Number},
-
-				{Action: "update", TableName: "tables_1", ElementType: "unique", From: true, To: false},
-				{Action: "delete", TableName: "tables_1", ElementType: "field", From: core.TableField{Name: "fieldToBeDeleted", Unique: false, Type: cty.NilType}, To: interface{}(nil)},
-				{Action: "update", TableName: "tables_1", ElementType: "join", From: true, To: false},
-				{Action: "update", TableName: "sub_table_1", ElementType: "unique", From: false, To: true},
-				{Action: "update", TableName: "tables_1", ElementType: "unique", From: false, To: true},
-				{Action: "delete", TableName: "tableToBeRemoved", ElementType: "table", From: core.Table{Name: "tableToBeRemoved", Fields: []core.TableField(nil), Joins: []core.TableJoin(nil), Unique: false, Tables: []core.Table(nil)}, To: interface{}(nil)},
-				{Action: "create", TableName: "tables_new", ElementType: "table", From: interface{}(nil), To: core.Table{Name: "tables_new", Fields: []core.TableField(nil), Joins: []core.TableJoin(nil), Unique: false, Tables: []core.Table{core.Table{Name: "tables_tables_1", Fields: []core.TableField(nil), Joins: []core.TableJoin(nil), Unique: false, Tables: []core.Table(nil)}}}},
-				{Action: "delete", TableName: "table2", ElementType: "field", From: core.TableField{Name: "field2", Unique: false, Type: cty.String}, To: interface{}(nil)},
-				{Action: "create", TableName: "table2", ElementType: "field", From: interface{}(nil), To: core.TableField{Name: "field22", Unique: false, Type: cty.String}},
-				{Action: "update", TableName: "table2", ElementType: "unique", From: false, To: true},
-				{Action: "create", TableName: "table3", ElementType: "table", From: interface{}(nil), To: core.Table{Name: "table3", Fields: []core.TableField{core.TableField{Name: "field22", Unique: false, Type: cty.String}}, Joins: []core.TableJoin(nil), Unique: false, Tables: []core.Table(nil)}},
-			},
+			want:    expectedChanges,
 			wantErr: false,
 		},
 	}
@@ -231,7 +46,187 @@ func TestCompareSchema(t *testing.T) {
 			got, gotErr := compareSchema(tt.args.s1, tt.args.s2)
 			require.NoError(t, gotErr)
 			assert.ElementsMatch(t, tt.want, got)
-
 		})
 	}
+}
+
+var schema1 = bubblySchema{Tables: map[string]core.Table{
+	"table1": {
+		Name: "table1",
+		Fields: []core.TableField{
+			{
+				Name: "field1",
+				Type: cty.String,
+			},
+			{
+				Name: "fieldToBeDeleted",
+				Type: cty.Number,
+			},
+		},
+		Joins: []core.TableJoin{
+			{
+				Table:  "table2",
+				Unique: true,
+			},
+		},
+		Tables: []core.Table{
+			{
+				Name:   "tables_1",
+				Unique: false,
+				Fields: []core.TableField{
+					{
+						Name:   "field1",
+						Type:   cty.String,
+						Unique: true,
+					},
+					{
+						Name:   "fieldToBeDeleted",
+						Type:   cty.String,
+						Unique: false,
+					},
+				},
+				Joins: []core.TableJoin{
+					{
+						Table:  "table1",
+						Unique: true,
+					},
+				},
+				Tables: []core.Table{
+					{
+						Name: "sub_table_1",
+						Fields: []core.TableField{
+							{
+								Name:   "field1",
+								Type:   cty.String,
+								Unique: true,
+							},
+						},
+						Tables: nil,
+						Unique: false,
+					},
+				},
+			},
+			{
+				Name: "tableToBeRemoved",
+				Fields: []core.TableField{
+					{
+						Name:   "field1",
+						Type:   cty.String,
+						Unique: true,
+					},
+				},
+				Tables: nil,
+				Unique: false,
+			},
+		},
+		Unique: true,
+	},
+	"table2": {
+		Name: "table2",
+		Fields: []core.TableField{
+			{
+				Name: "field2",
+				Type: cty.String,
+			},
+		},
+		Unique: false,
+	},
+}}
+var schema2 = bubblySchema{Tables: map[string]core.Table{
+	"table1": {
+		Name: "table1",
+		Fields: []core.TableField{
+			{
+				Name: "field1",
+				Type: cty.Number,
+			},
+			{
+				Name:   "field11",
+				Type:   cty.Number,
+				Unique: true,
+			},
+		},
+		Joins: []core.TableJoin{
+			{
+				Table:  "table2",
+				Unique: true,
+			},
+		},
+		Unique: true,
+		Tables: []core.Table{
+			{
+				Name:   "tables_1",
+				Unique: true,
+				Joins: []core.TableJoin{
+					{
+						Table:  "tableJoin",
+						Unique: false,
+					},
+				},
+				Fields: []core.TableField{
+					{
+						Name:   "field1",
+						Type:   cty.Number,
+						Unique: false,
+					},
+				},
+				Tables: []core.Table{
+					{
+						Name:   "sub_table_1",
+						Fields: nil,
+						Tables: nil,
+						Unique: true,
+					},
+				},
+			},
+			{
+				Name: "tables_new",
+				Tables: []core.Table{
+					{
+						Name: "tables_tables_1",
+					},
+				},
+			},
+		},
+	},
+	"table2": {
+		Name: "table2",
+		Fields: []core.TableField{
+			{
+				Name: "field22",
+				Type: cty.String,
+			},
+		},
+		Unique: true,
+	},
+	"table3": {
+		Name: "table3",
+		Fields: []core.TableField{
+			{
+				Name: "field22",
+				Type: cty.String,
+			},
+		},
+		Unique: false,
+	},
+}}
+
+var expectedChanges = []Entry{
+	{Action: "update", TableInfo: tableInfo{TableName: "table1", ElementName: "field1", ElementType: "field"}, From: cty.String, To: cty.Number},
+	{Action: "delete", TableInfo: tableInfo{TableName: "table1", ElementName: "table1", ElementType: "field"}, From: core.TableField{Name: "fieldToBeDeleted", Unique: false, Type: cty.Number}, To: nil},
+	{Action: "create", TableInfo: tableInfo{TableName: "table1", ElementName: "field11", ElementType: "field"}, From: nil, To: core.TableField{Name: "field11", Unique: true, Type: cty.Number}},
+	{Action: "update", TableInfo: tableInfo{TableName: "tables_1", ElementName: "field1", ElementType: "field"}, From: cty.String, To: cty.Number},
+	{Action: "update", TableInfo: tableInfo{TableName: "tables_1", ElementName: "field1", ElementType: "unique"}, From: true, To: false},
+	{Action: "delete", TableInfo: tableInfo{TableName: "tables_1", ElementName: "tables_1", ElementType: "field"}, From: core.TableField{Name: "fieldToBeDeleted", Unique: false, Type: cty.String}, To: nil},
+	{Action: "delete", TableInfo: tableInfo{TableName: "tables_1", ElementName: "table1", ElementType: "join"}, From: core.TableJoin{Table: "table1", Unique: true}, To: nil},
+	{Action: "create", TableInfo: tableInfo{TableName: "tables_1", ElementName: "tableJoin", ElementType: "join"}, From: nil, To: core.TableJoin{Table: "tableJoin", Unique: false}},
+	{Action: "delete", TableInfo: tableInfo{TableName: "sub_table_1", ElementName: "sub_table_1", ElementType: "field"}, From: core.TableField{Name: "field1", Unique: true, Type: cty.String}, To: nil},
+	{Action: "update", TableInfo: tableInfo{TableName: "sub_table_1", ElementName: "name", ElementType: "unique"}, From: false, To: true},
+	{Action: "update", TableInfo: tableInfo{TableName: "tables_1", ElementName: "name", ElementType: "unique"}, From: false, To: true},
+	{Action: "delete", TableInfo: tableInfo{TableName: "tableToBeRemoved", ElementName: "tableToBeRemoved", ElementType: "table"}, From: core.Table{Name: "tableToBeRemoved", Fields: []core.TableField{{Name: "field1", Unique: true, Type: cty.String}}, Joins: nil, Unique: false, Tables: nil}, To: nil},
+	{Action: "create", TableInfo: tableInfo{TableName: "tables_new", ElementName: "tables_new", ElementType: "table"}, From: nil, To: core.Table{Name: "tables_new", Fields: nil, Unique: false, Tables: []core.Table{{Name: "tables_tables_1", Fields: nil, Unique: false, Tables: nil}}}},
+	{Action: "delete", TableInfo: tableInfo{TableName: "table2", ElementName: "table2", ElementType: "field"}, From: core.TableField{Name: "field2", Unique: false, Type: cty.String}, To: nil},
+	{Action: "create", TableInfo: tableInfo{TableName: "table2", ElementName: "field22", ElementType: "field"}, From: nil, To: core.TableField{Name: "field22", Unique: false, Type: cty.String}},
+	{Action: "update", TableInfo: tableInfo{TableName: "table2", ElementName: "name", ElementType: "unique"}, From: false, To: true},
+	{Action: "create", TableInfo: tableInfo{TableName: "table3", ElementName: "table3", ElementType: "table"}, From: nil, To: core.Table{Name: "table3", Fields: []core.TableField{{Name: "field22", Unique: false, Type: cty.String}}, Joins: nil, Unique: false, Tables: nil}},
 }

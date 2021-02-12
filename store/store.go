@@ -98,7 +98,7 @@ func (s *Store) Query(query string) *graphql.Result {
 }
 
 // Apply applies a schema corresponding to a set of tables.
-func (s *Store) Apply(tables core.Tables) error {
+func (s *Store) Apply(bCtx *env.BubblyContext, tables core.Tables) error {
 	currentSchema, err := s.currentBubblySchema()
 	if err != nil {
 		return fmt.Errorf("failed to get current schema: %w", err)
@@ -115,7 +115,7 @@ func (s *Store) Apply(tables core.Tables) error {
 		Tables: newSchemaTables,
 	}
 	addImplicitJoins(currentSchema, tables, nil)
-	// addImplicitJoins(newSchema, tables, nil)
+	addImplicitJoins(newSchema, tables, nil)
 
 	// Calculate the schema diff
 	cl, err := compareSchema(*currentSchema, *newSchema)
@@ -123,7 +123,31 @@ func (s *Store) Apply(tables core.Tables) error {
 		return fmt.Errorf("failed to compare schemas: %w", err)
 	}
 	newSchema.Changelog = cl
-	// TODO call schema migration
+
+	// perform the schema migration if there is anything in the changelog
+	if len(cl) > 0 {
+		m, err := s.p.GenerateMigration(bCtx, cl)
+		if err != nil {
+			return err
+		}
+		err = s.p.Migrate(m)
+		if err != nil {
+			return err
+		}
+
+		if err := s.updateSchema(currentSchema); err != nil {
+			return fmt.Errorf("failed to sync schema: %w", err)
+		}
+	} else {
+		// since there is no schema, apply
+		if err := s.p.Apply(newSchema); err != nil {
+			return fmt.Errorf("failed to apply schema in provider: %w", err)
+		}
+		if err := s.updateSchema(currentSchema); err != nil {
+			return fmt.Errorf("failed to sync schema: %w", err)
+		}
+	}
+
 	if len(cl) == 0 {
 		return nil
 	}

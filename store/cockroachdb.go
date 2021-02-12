@@ -69,3 +69,11 @@ func (c *cockroachdb) ResolveQuery(graph *schemaGraph, params graphql.ResolvePar
 func (c *cockroachdb) HasTable(table core.Table) (bool, error) {
 	return psqlHasTable(c.conn, table)
 }
+
+func (c *cockroachdb) GenerateMigration(bCtx *env.BubblyContext, cl Changelog) (migration, error) {
+	return psqlGenerateMigration(bCtx, cl)
+}
+
+func (c *cockroachdb) Migrate(migrationList []string) error {
+	return psqlMigrate(c.conn, migrationList)
+}

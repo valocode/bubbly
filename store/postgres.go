@@ -56,6 +56,14 @@ func (p *postgres) Apply(schema *bubblySchema) error {
 	return tx.Commit(context.Background())
 }
 
+func (p *postgres) GenerateMigration(bCtx *env.BubblyContext, cl Changelog) (migration, error) {
+	return psqlGenerateMigration(bCtx, cl)
+}
+
+func (p *postgres) Migrate(migrationList []string) error {
+	return psqlMigrate(p.conn, migrationList)
+}
+
 func (p *postgres) Save(schema *bubblySchema, tree dataTree) error {
 	tx, err := p.conn.Begin(context.Background())
 	if err != nil {

@@ -135,11 +135,11 @@ var queryTests = []struct {
 	},
 }
 
-func storeTests(t *testing.T, s *Store) {
+func storeTests(bCtx *env.BubblyContext, t *testing.T, s *Store) {
 	tables := testData.Tables(t)
 	data := testData.DataBlocks(t)
 
-	err := s.Apply(tables)
+	err := s.Apply(bCtx, tables)
 	require.NoErrorf(t, err, "failed to apply schema")
 
 	err = s.Save(data)
@@ -374,10 +374,10 @@ func TestCockroach(t *testing.T) {
 	s, err := New(bCtx)
 	require.NoErrorf(t, err, "failed to initialize store")
 
-	storeTests(t, s)
+	storeTests(bCtx, t, s)
 }
 
-func TestPosgres(t *testing.T) {
+func TestPostgres(t *testing.T) {
 	pool, err := dockertest.NewPool("")
 	require.NoErrorf(t, err, "failed to create dockertest pool")
 
@@ -418,5 +418,5 @@ func TestPosgres(t *testing.T) {
 	s, err := New(bCtx)
 	assert.NoErrorf(t, err, "failed to initialize store")
 
-	storeTests(t, s)
+	storeTests(bCtx, t, s)
 }

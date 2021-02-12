@@ -150,7 +150,7 @@ func (d *DataStore) PostSchemaHandler(bCtx *env.BubblyContext, m *nats.Msg) erro
 		return fmt.Errorf("failed to decode schema into core.Tables: %w", err)
 	}
 
-	if err := d.Store.Apply(schema); err != nil {
+	if err := d.Store.Apply(bCtx, schema); err != nil {
 		return fmt.Errorf("failed to apply schema: %w", err)
 	}
 

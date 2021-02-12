@@ -25,11 +25,14 @@ func compareSchema(s1 bubblySchema, s2 bubblySchema) (Changelog, error) {
 			// DELETE
 			// The key does not exist in the second table and will be removed
 			changelog = append(changelog, Entry{
-				Action:      remove,
-				TableName:   table1.Name,
-				ElementType: "table",
-				From:        table1,
-				To:          nil,
+				Action: remove,
+				TableInfo: tableInfo{
+					TableName:   table1.Name,
+					ElementName: table1.Name,
+					ElementType: tableType,
+				},
+				From: table1,
+				To:   nil,
 			})
 		}
 	}
@@ -39,11 +42,14 @@ func compareSchema(s1 bubblySchema, s2 bubblySchema) (Changelog, error) {
 			// CREATE
 			// The key exist in only the second table and will be created
 			changelog = append(changelog, Entry{
-				Action:      create,
-				TableName:   table2.Name,
-				ElementType: "table",
-				From:        nil,
-				To:          table2,
+				Action: create,
+				TableInfo: tableInfo{
+					TableName:   table2.Name,
+					ElementName: table2.Name,
+					ElementType: tableType,
+				},
+				From: nil,
+				To:   table2,
 			})
 		}
 	}
@@ -64,14 +70,20 @@ var (
 	uniqueType Element = "unique"
 )
 
+// Changelog is a list of expectedChanges that will be applied by the migration
 type Changelog []Entry
 
-type Entry struct {
-	Action      DiffAction
-	TableName   string // TableName might be able to be removed with PATH in place
+type tableInfo struct {
+	TableName   string
+	ElementName string
 	ElementType Element
-	From        interface{}
-	To          interface{}
+}
+
+type Entry struct {
+	Action    DiffAction
+	TableInfo tableInfo
+	From      interface{}
+	To        interface{}
 }
 
 // calculateDiff will calculate the difference between two schemas.
@@ -87,11 +99,14 @@ func calculateDiff(t1 core.Table, t2 core.Table, cl *Changelog) {
 	compareTables(t1, t2, cl)
 	if t1.Unique != t2.Unique {
 		e := Entry{
-			Action:      update,
-			TableName:   t2.Name,
-			ElementType: uniqueType,
-			From:        t1.Unique,
-			To:          t2.Unique,
+			Action: update,
+			TableInfo: tableInfo{
+				TableName:   t2.Name,
+				ElementName: "name",
+				ElementType: uniqueType,
+			},
+			From: t1.Unique,
+			To:   t2.Unique,
 		}
 		*cl = append(*cl, e)
 	}
@@ -108,21 +123,27 @@ mainLoop:
 			}
 			if field1.Name == field2.Name && !reflect.DeepEqual(field1.Type, field2.Type) {
 				*cl = append(*cl, Entry{
-					Action:      update,
-					TableName:   t2.Name,
-					ElementType: fieldType,
-					From:        field1.Type,
-					To:          field2.Type,
+					Action: update,
+					TableInfo: tableInfo{
+						TableName:   t2.Name,
+						ElementName: field2.Name,
+						ElementType: fieldType,
+					},
+					From: field1.Type,
+					To:   field2.Type,
 				})
 				found = true
 			}
 			if field1.Name == field2.Name && field1.Unique != field2.Unique {
 				*cl = append(*cl, Entry{
-					Action:      update,
-					TableName:   t2.Name,
-					ElementType: uniqueType,
-					From:        field1.Unique,
-					To:          field2.Unique,
+					Action: update,
+					TableInfo: tableInfo{
+						TableName:   t2.Name,
+						ElementName: field2.Name,
+						ElementType: uniqueType,
+					},
+					From: field1.Unique,
+					To:   field2.Unique,
 				})
 				found = true
 				break fieldLoop
@@ -130,11 +151,14 @@ mainLoop:
 		}
 		if !found {
 			*cl = append(*cl, Entry{
-				Action:      remove,
-				TableName:   t1.Name,
-				ElementType: fieldType,
-				From:        field1,
-				To:          nil,
+				Action: remove,
+				TableInfo: tableInfo{
+					TableName:   t1.Name,
+					ElementName: t1.Name,
+					ElementType: fieldType,
+				},
+				From: field1,
+				To:   nil,
 			})
 		}
 	}
@@ -147,11 +171,14 @@ mainLoop:
 		}
 		if !found {
 			*cl = append(*cl, Entry{
-				Action:      create,
-				TableName:   t2.Name,
-				ElementType: fieldType,
-				From:        nil,
-				To:          schema2Field,
+				Action: create,
+				TableInfo: tableInfo{
+					TableName:   t2.Name,
+					ElementName: schema2Field.Name,
+					ElementType: fieldType,
+				},
+				From: nil,
+				To:   schema2Field,
 			})
 		}
 	}
@@ -164,11 +191,14 @@ func compareJoins(t1, t2 core.Table, cl *Changelog) {
 		for _, join2 := range t2.Joins {
 			if join1.Table == join2.Table && join1.Unique != join2.Unique {
 				*cl = append(*cl, Entry{
-					Action:      update,
-					TableName:   t2.Name,
-					ElementType: joinType,
-					From:        join1.Unique,
-					To:          join2.Unique,
+					Action: update,
+					TableInfo: tableInfo{
+						TableName:   t2.Name,
+						ElementName: join2.Table,
+						ElementType: joinType,
+					},
+					From: join1.Unique,
+					To:   join2.Unique,
 				})
 				found = true
 				break joinLoop
@@ -178,11 +208,14 @@ func compareJoins(t1, t2 core.Table, cl *Changelog) {
 		}
 		if !found {
 			*cl = append(*cl, Entry{
-				Action:      remove,
-				TableName:   t1.Name,
-				ElementType: joinType,
-				From:        join1,
-				To:          nil,
+				Action: remove,
+				TableInfo: tableInfo{
+					TableName:   t1.Name,
+					ElementName: join1.Table,
+					ElementType: joinType,
+				},
+				From: join1,
+				To:   nil,
 			})
 		}
 	}
@@ -198,11 +231,14 @@ func compareJoins(t1, t2 core.Table, cl *Changelog) {
 		}
 		if !found {
 			*cl = append(*cl, Entry{
-				Action:      create,
-				TableName:   t2.Name,
-				ElementType: joinType,
-				From:        nil,
-				To:          join2,
+				Action: create,
+				TableInfo: tableInfo{
+					TableName:   t2.Name,
+					ElementName: join2.Table,
+					ElementType: joinType,
+				},
+				From: nil,
+				To:   join2,
 			})
 		}
 	}
@@ -222,11 +258,14 @@ func compareTables(parentTable1, parentTable2 core.Table, cl *Changelog) {
 
 		if !found {
 			subCl = append(subCl, Entry{
-				Action:      remove,
-				TableName:   table1.Name,
-				ElementType: tableType,
-				From:        table1,
-				To:          nil,
+				Action: remove,
+				TableInfo: tableInfo{
+					TableName:   table1.Name,
+					ElementName: table1.Name,
+					ElementType: tableType,
+				},
+				From: table1,
+				To:   nil,
 			})
 		}
 		cl.combine(&subCl)
@@ -243,11 +282,14 @@ func compareTables(parentTable1, parentTable2 core.Table, cl *Changelog) {
 		if !found {
 			// no more recursion will be performed since the rest of the nested values are already to be created
 			subCl = append(subCl, Entry{
-				Action:      create,
-				TableName:   table2.Name,
-				ElementType: tableType,
-				From:        nil,
-				To:          table2,
+				Action: create,
+				TableInfo: tableInfo{
+					TableName:   table2.Name,
+					ElementName: table2.Name,
+					ElementType: tableType,
+				},
+				From: nil,
+				To:   table2,
 			})
 		}
 		cl.combine(&subCl)
