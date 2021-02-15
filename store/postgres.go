@@ -77,6 +77,10 @@ func (p *postgres) ResolveQuery(graph *schemaGraph, params graphql.ResolveParams
 	return psqlResolveRootQueries(p.conn, graph, params)
 }
 
+func (p *postgres) HasTable(table core.Table) (bool, error) {
+	return psqlHasTable(p.conn, table)
+}
+
 func psqlNewConn(bCtx *env.BubblyContext, connStr string) (*pgx.Conn, error) {
 	config, err := pgx.ParseConfig(connStr)
 	if err != nil {
@@ -94,6 +98,62 @@ func psqlNewConn(bCtx *env.BubblyContext, connStr string) (*pgx.Conn, error) {
 	}
 
 	return conn, nil
+}
+
+func psqlHasTable(conn *pgx.Conn, table core.Table) (bool, error) {
+	var (
+		sql = psql.Select("1").
+			Prefix("SELECT EXISTS (").
+			From("information_schema.tables").
+			Where(sq.Eq{"table_schema": "public"}).
+			Where(sq.Eq{"table_name": table.Name}).
+			Suffix(");")
+		exists bool
+	)
+	sqlStr, sqlArgs, err := sql.ToSql()
+	if err != nil {
+		return false, fmt.Errorf("failed to create sql query: %w", err)
+	}
+	row := conn.QueryRow(context.Background(), sqlStr, sqlArgs...)
+
+	if err := row.Scan(&exists); err != nil {
+		return false, fmt.Errorf("failed to get table status: %s: %w", table.Name, err)
+	}
+
+	return exists, nil
+}
+
+func psqlApplySchema(tx pgx.Tx, schema *bubblySchema) error {
+	for _, table := range schema.Tables {
+		if err := psqlApplyTable(tx, table); err != nil {
+			return err
+		}
+	}
+
+	// Store the new schema by converting it to core.Data and preparing a
+	// saveContext including the schema itself
+	d, err := schema.Data()
+	if err != nil {
+		return fmt.Errorf("failed to create data block from schema: %w", err)
+	}
+	node := newDataNode(&d)
+	if err := psqlSaveNode(tx, node, schema); err != nil {
+		return fmt.Errorf("failed to insert latest tables: %w", err)
+	}
+
+	return nil
+}
+
+func psqlApplyTable(tx pgx.Tx, table core.Table) error {
+	sql, err := psqlTableCreate(table)
+	if err != nil {
+		return fmt.Errorf("failed to prepare SQL statement: %w", err)
+	}
+	_, err = tx.Exec(context.Background(), sql)
+	if err != nil {
+		return fmt.Errorf("failed to create table: %s: %w", table.Name, err)
+	}
+	return nil
 }
 
 func psqlSaveNode(tx pgx.Tx, node *dataNode, schema *bubblySchema) error {
@@ -121,32 +181,6 @@ func psqlSaveNode(tx pgx.Tx, node *dataNode, schema *bubblySchema) error {
 	// Asign the returned values so that if the child nodes need to resolve
 	// their data references they have values to do so
 	node.Return = retValues
-	return nil
-}
-
-func psqlApplySchema(tx pgx.Tx, schema *bubblySchema) error {
-	for _, table := range schema.Tables {
-		sql, err := psqlTableCreate(table)
-		if err != nil {
-			return fmt.Errorf("failed to prepare SQL statement: %w", err)
-		}
-		_, err = tx.Exec(context.Background(), sql)
-		if err != nil {
-			return fmt.Errorf("failed to create table: %s: %w", table.Name, err)
-		}
-	}
-
-	// Store the new schema by converting it to core.Data and preparing a
-	// saveContext including the schema itself
-	d, err := schema.Data()
-	if err != nil {
-		return fmt.Errorf("failed to create data block from schema: %w", err)
-	}
-	node := newDataNode(&d)
-	if err := psqlSaveNode(tx, node, schema); err != nil {
-		return fmt.Errorf("failed to insert latest tables: %w", err)
-	}
-
 	return nil
 }
 
@@ -210,7 +244,7 @@ func psqlTableCreate(table core.Table) (string, error) {
 		tableFields = append(tableFields, fmt.Sprintf("UNIQUE (%s)", strings.Join(uniqueFields, ",")))
 	}
 
-	return fmt.Sprintf("CREATE TABLE %s ( %s );", table.Name, strings.Join(tableFields, ",")), nil
+	return fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s ( %s );", table.Name, strings.Join(tableFields, ",")), nil
 }
 
 func psqlDataNodeUpsert(node *dataNode, table core.Table) (sq.InsertBuilder, error) {

@@ -23,11 +23,13 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: docker-compose up
-        run: docker-compose up -d cockroachdb bubbly
-      - name: docker-compose check
-        run: docker ps -a
-      - name: integration-tests
-        run: go test -failfast -v ./... -tags=integration -count=1
-      - name: docker-compose logs
-        run: docker-compose logs
+      - name: Integration tests
+        run: |
+          docker-compose up -d cockroachdb
+          # just sleep a bit to wait for the containers to start
+          sleep 1
+          docker-compose up -d bubbly
+          sleep 1
+
+          docker-compose logs
+          go test ./... -tags=integration -count=1

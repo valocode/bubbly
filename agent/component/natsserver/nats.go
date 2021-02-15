@@ -17,7 +17,7 @@ const (
 	defaultLogStatisticsTimeout = 60
 )
 
-var _ component.NATSServer = (*NATSServer)(nil)
+var _ component.Component = (*NATSServer)(nil)
 
 type NATSServer struct {
 	*component.ComponentCore

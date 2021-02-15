@@ -28,7 +28,7 @@ func eventQuery(t *testing.T, bCtx *env.BubblyContext) {
 			}
 		`, core.ResourceTableName, core.EventTableName)
 
-	client, err := client.New(bCtx)
+	client, err := client.NewHTTP(bCtx)
 	require.NoError(t, err, "failed to establish a bubbly client")
 
 	resp, err := client.Query(bCtx, query)

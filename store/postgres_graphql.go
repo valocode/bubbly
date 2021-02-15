@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/graphql-go/graphql"
@@ -144,8 +145,13 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, pat
 		if !ok {
 			return fmt.Errorf("graphql query selection type not supported: %s", selection.GetSelectionSet().Kind)
 		}
-
 		var fieldName = subField.Name.Value
+		// We do not care about "meta fields" or whatever they are called in
+		// graphql that might get added by clients to help with caching and such
+		// and they typically start with __
+		if strings.HasPrefix(fieldName, "__") {
+			continue
+		}
 		// If subField has a selection set then it is not a scalar type, and is
 		// another table in our schema.
 		// TODO: the logic here is a little tricky and should be cleaned up once

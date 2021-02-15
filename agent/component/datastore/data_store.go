@@ -10,12 +10,7 @@ import (
 	"github.com/verifa/bubbly/store"
 )
 
-var _ component.DataStore = (*DataStore)(nil)
-
-type DataStore struct {
-	*component.ComponentCore
-	Store *store.Store
-}
+var _ component.Component = (*DataStore)(nil)
 
 // New returns a new DataStore Component initialised with a new *store.Store,
 // NATSServer configuration and default Subscriptions and Publications.
@@ -43,6 +38,11 @@ func New(bCtx *env.BubblyContext) (*DataStore, error) {
 
 	bCtx.Logger.Debug().Msg("successfully initialised the data store")
 	return d, nil
+}
+
+type DataStore struct {
+	*component.ComponentCore
+	Store *store.Store
 }
 
 // a list of DesiredSubscriptions that the data store attempts to subscribe to

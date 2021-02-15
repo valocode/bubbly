@@ -11,10 +11,7 @@ import (
 
 	"github.com/verifa/bubbly/config"
 	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/store"
 )
-
-var serverStore *store.Store
 
 type Server struct {
 	Config *config.ServerConfig
@@ -70,20 +67,6 @@ func (a *Server) setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 	a.initializeRoutes(bCtx, router)
 
 	return router
-}
-
-func InitStore(bCtx *env.BubblyContext) error {
-	var err error
-	serverStore, err = store.New(bCtx)
-	if err != nil {
-		return fmt.Errorf("failed to create store: %w", err)
-	}
-	return nil
-}
-
-// GetStore returns a pointer to the DB
-func GetStore() *store.Store {
-	return serverStore
 }
 
 func (a *Server) ListenAndServe(bCtx *env.BubblyContext) error {

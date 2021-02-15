@@ -7,6 +7,7 @@ import (
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgx"
 	"github.com/graphql-go/graphql"
 	"github.com/jackc/pgx/v4"
+	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
 )
 
@@ -61,4 +62,8 @@ func (c *cockroachdb) Save(schema *bubblySchema, tree dataTree) error {
 
 func (c *cockroachdb) ResolveQuery(graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
 	return psqlResolveRootQueries(c.conn, graph, params)
+}
+
+func (c *cockroachdb) HasTable(table core.Table) (bool, error) {
+	return psqlHasTable(c.conn, table)
 }

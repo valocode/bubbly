@@ -33,26 +33,6 @@ type Component interface {
 	Listen(agentContext context.Context) error
 }
 
-type DataStore interface {
-	Component
-}
-
-type UI interface {
-	Component
-}
-
-type Worker interface {
-	Component
-}
-
-type NATSServer interface {
-	Component
-}
-
-type APIServer interface {
-	Component
-}
-
 // ComponentType provides string representations of bubbly Components
 type ComponentType string
 

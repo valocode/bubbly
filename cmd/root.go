@@ -69,9 +69,6 @@ func initCommands(bCtx *env.BubblyContext, cmd *cobra.Command) {
 	applyCmd, _ := NewCmdApply(bCtx)
 	cmd.AddCommand(applyCmd)
 
-	serverCmd, _ := NewCmdServer(bCtx)
-	cmd.AddCommand(serverCmd)
-
 	agentCmd, _ := NewCmdAgent(bCtx)
 	cmd.AddCommand(agentCmd)
 }

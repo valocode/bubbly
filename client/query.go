@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/nats-io/nats.go"
 	"github.com/verifa/bubbly/agent/component"
 	"github.com/verifa/bubbly/env"
 )
@@ -46,9 +47,9 @@ func (c *HTTP) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
 func (n *NATS) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
 
 	pub := &component.Publication{
-		Subject: "store.Query",
+		Subject: component.StoreQuery,
 		Data:    []byte(query),
-		Encoder: "default",
+		Encoder: nats.DEFAULT_ENCODER,
 	}
 
 	reply := n.Request(bCtx, pub)

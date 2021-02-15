@@ -21,13 +21,13 @@ func (d *DataStore) GetResourceHandler(bCtx *env.BubblyContext, m *nats.Msg) err
 		Str("component", string(d.Type)).
 		Msg("processing message")
 
-	result, err := d.Store.Query(string(m.Data))
+	result := d.Store.Query(string(m.Data))
 
-	if err != nil {
-		return fmt.Errorf("failed to process message: %w", err)
+	if result.HasErrors() {
+		return fmt.Errorf("failed to process message: %v", result.Errors)
 	}
 
-	resultBytes, err := json.Marshal(result)
+	resultBytes, err := json.Marshal(result.Data)
 
 	if err != nil {
 		return fmt.Errorf("failed to marshal result of GetResource query: %w", err)
@@ -89,15 +89,15 @@ func (d *DataStore) GetResourcesByKindHandler(bCtx *env.BubblyContext, m *nats.M
 		Str("component", string(d.Type)).
 		Msg("processing message")
 
-	result, err := d.Store.Query(string(m.Data))
+	result := d.Store.Query(string(m.Data))
 
-	if err != nil {
-		return fmt.Errorf("unable to fetch resources from the data store: %w", err)
+	if result.HasErrors() {
+		return fmt.Errorf("unable to fetch resources from the data store: %v", result.Errors)
 	}
 
 	var (
 		resourceBlocksJSON []core.ResourceBlockJSON
-		inputMap           = result.(map[string]interface{})[core.ResourceTableName].([]interface{})
+		inputMap           = result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
 	)
 
 	// loop over the return store's return and create a core.
@@ -178,16 +178,11 @@ func (d *DataStore) QueryHandler(bCtx *env.BubblyContext, m *nats.Msg) error {
 		Str("component", string(d.Type)).
 		Msg("processing message")
 
-	results, err := d.Store.Query(string(m.Data))
+	result := d.Store.Query(string(m.Data))
+	resultBytes, err := json.Marshal(result)
 
 	if err != nil {
-		return fmt.Errorf("failed to query data store: %w", err)
-	}
-
-	resultBytes, err := json.Marshal(results)
-
-	if err != nil {
-		fmt.Errorf("failed to marshal Query response: %w", err)
+		return fmt.Errorf("failed to marshal Query response: %w", err)
 	}
 
 	pub := component.Publication{

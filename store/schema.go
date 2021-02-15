@@ -9,9 +9,14 @@ import (
 )
 
 func newBubblySchema() *bubblySchema {
-	return &bubblySchema{
+	schema := &bubblySchema{
 		Tables: make(map[string]core.Table),
 	}
+
+	for _, t := range internalTables {
+		schema.Tables[t.Name] = t
+	}
+	return schema
 }
 
 // bubblySchema contains the bubblySchema in a useable form, which is currently

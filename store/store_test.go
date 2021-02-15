@@ -147,9 +147,9 @@ func storeTests(t *testing.T, s *Store) {
 	// Run the query tests
 	for _, tt := range queryTests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := s.Query(tt.query)
-			require.NoErrorf(t, err, "failed to execute query %s", tt.name)
-			require.Equal(t, tt.expected, actual, "query response is equal")
+			actual := s.Query(tt.query)
+			require.Emptyf(t, actual.Errors, "failed to execute query %s", tt.name)
+			require.Equal(t, tt.expected, actual.Data, "query response is equal")
 		})
 	}
 
@@ -184,11 +184,8 @@ func storeTests(t *testing.T, s *Store) {
 				}
 			}
 		`
-	i, err := s.Query(resQuery)
-
-	require.NoError(t, err)
-	require.NotNil(t, i)
-
+	result := s.Query(resQuery)
+	require.Empty(t, result.Errors)
 	eventTests(t, s, &d)
 }
 
@@ -229,12 +226,10 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 				}
 			}
 		`, core.EventTableName)
-	i, err := s.Query(resQuery)
+	result := s.Query(resQuery)
+	require.Empty(t, result.Errors)
 
-	require.NoError(t, err)
-	require.NotNil(t, i)
-
-	a := i.(map[string]interface{})[core.ResourceTableName].([]interface{})
+	a := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
 
 	// Go through the returned query data and validate that the resource
 	// exists in the _resource table,
@@ -292,18 +287,17 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 			}
 		`, core.ResourceTableName, core.EventTableName)
 
-	i, err = s.Query(resQuery)
+	result = s.Query(resQuery)
+	assert.Empty(t, result.Errors)
 
-	require.NoError(t, err)
-	require.NotNil(t, i)
-
-	result := i.(map[string]interface{})[core.ResourceTableName].([]interface{})
+	events := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
 
 	// verify that the number of events stored for the "namespace/kind/name"
 	// resource is 2
-	for _, v := range result {
+	for _, v := range events {
 		require.Equal(t, 2, len(v.(map[string]interface{})))
 	}
+
 }
 
 func TestCockroach(t *testing.T) {

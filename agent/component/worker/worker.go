@@ -21,29 +21,22 @@ const (
 	defaultPollTimeout = 60
 )
 
-type Worker struct {
-	*component.ComponentCore
-	ResourceWorker *interval.ResourceWorker
-}
-
-// New returns a new DataStore Component initialised with a new *store.Store,
-// NATSServer configuration and default Subscriptions and Publications.
-// Returns an error if unable to create the underlying store.
-// Store using configuration provided from the bubbly context.
-func New(bCtx *env.BubblyContext) (*Worker, error) {
-	bCtx.Logger.Debug().Msg("initializing the worker")
-	w := &Worker{
+func New(bCtx *env.BubblyContext) *Worker {
+	return &Worker{
 		ComponentCore: &component.ComponentCore{
 			Type: component.WorkerComponent,
 			NATSServer: &component.NATS{
 				Config: bCtx.AgentConfig.NATSServerConfig,
 			},
+			DesiredSubscriptions: nil,
 		},
 		ResourceWorker: &interval.ResourceWorker{},
 	}
+}
 
-	bCtx.Logger.Debug().Msg("successfully initialised the worker")
-	return w, nil
+type Worker struct {
+	*component.ComponentCore
+	ResourceWorker *interval.ResourceWorker
 }
 
 // pollResources attempts to poll any available data store

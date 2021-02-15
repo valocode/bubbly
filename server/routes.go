@@ -10,7 +10,7 @@ import (
 )
 
 // initializeRoutes Builds the endpoints and grouping for a gin router
-func (a *Server) initializeRoutes(bCtx *env.BubblyContext,
+func (s *Server) initializeRoutes(bCtx *env.BubblyContext,
 	router *echo.Echo) {
 	// Keep Alive Test
 	router.GET("/healthz", func(c echo.Context) error {
@@ -20,19 +20,19 @@ func (a *Server) initializeRoutes(bCtx *env.BubblyContext,
 	api := router.Group("/api")
 	{
 		api.POST("/resource", func(c echo.Context) error {
-			return a.PostResource(bCtx, c)
+			return s.PostResource(bCtx, c)
 		})
 
 		api.GET("/resource/:namespace/:kind/:name", func(c echo.Context) error {
-			return a.GetResource(bCtx, c)
+			return s.GetResource(bCtx, c)
 		})
 
 		api.POST("/graphql", func(c echo.Context) error {
-			return a.Query(bCtx, c)
+			return s.Query(bCtx, c)
 		})
 
 		api.POST("/schema", func(c echo.Context) error {
-			return a.PostSchema(bCtx, c)
+			return s.PostSchema(bCtx, c)
 		})
 	}
 
@@ -48,7 +48,7 @@ func (a *Server) initializeRoutes(bCtx *env.BubblyContext,
 	alpha1 := router.Group("/alpha1")
 	{
 		alpha1.POST("/upload", func(c echo.Context) error {
-			return a.upload(bCtx, c)
+			return s.upload(bCtx, c)
 		})
 	}
 

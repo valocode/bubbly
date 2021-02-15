@@ -2,7 +2,6 @@ package store
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 
@@ -28,18 +27,30 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 	case config.CockroachDBStore:
 		p, err = newCockroachdb(bCtx)
 	default:
-		return nil, fmt.Errorf(`invalid provider: "%s"`, bCtx.StoreConfig.Provider)
+		return nil, fmt.Errorf("invalid provider: %s", bCtx.StoreConfig.Provider)
 	}
-
 	if err != nil {
-		return nil, fmt.Errorf("failed to create provider: %w", err)
+		return nil, fmt.Errorf("failed to connect to provider: %s: %w", bCtx.StoreConfig.Provider, err)
+	}
+	s.p = p
+
+	// Check if the provider database has the schema table.
+	// If not, it indicates a fresh database that should be initialized
+	schemaExists, err := s.p.HasTable(schemaTable)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing schema table: %w", err)
 	}
 
-	s.p = p
+	if !schemaExists {
+		// If the schema table does not exist yet we should create it
+		if err := s.p.Apply(newBubblySchema()); err != nil {
+			return nil, fmt.Errorf("failed to initialize the provider database with internal tables")
+		}
+	}
+
 	if err := s.syncSchema(); err != nil {
 		return nil, fmt.Errorf("failed to sync schema: %w", err)
 	}
-
 	return s, nil
 }
 
@@ -61,23 +72,15 @@ func (s *Store) Schema() *graphql.Schema {
 }
 
 // Query queries the store.
-func (s *Store) Query(query string) (interface{}, error) {
-	if s.schema == nil {
-		return nil, errors.New("cannot perform query without a schema. Apply a schema first")
-	}
+func (s *Store) Query(query string) *graphql.Result {
+
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	res := graphql.Do(graphql.Params{
+	return graphql.Do(graphql.Params{
 		Schema:        *s.schema,
 		RequestString: query,
 	})
-
-	if res.HasErrors() {
-		return nil, fmt.Errorf("failed to execute query: %v", res.Errors)
-	}
-
-	return res.Data, nil
 }
 
 // Apply applies a schema corresponding to a set of tables.
@@ -107,6 +110,9 @@ func (s *Store) Apply(tables core.Tables) error {
 	}
 	newSchema.Changelog = cl
 	// TODO call schema migration
+	if len(cl) == 0 {
+		return nil
+	}
 
 	if err := s.p.Apply(currentSchema); err != nil {
 		return fmt.Errorf("failed to apply schema in provider: %w", err)
@@ -172,26 +178,20 @@ func (s *Store) currentBubblySchema() (*bubblySchema, error) {
 	// Check if the schema has been initialized
 	if s.schema == nil {
 		// This is fine, as we might be creating the schema in this process,
-		// so initialize the schema
-		return newBubblySchema(), nil
-	}
-
-	schemaQuery := fmt.Sprintf(`
-		{
-			%s (first: 1){
-				tables
-			}
+		// so initialize the schema and set the graphql schema
+		if err := s.updateSchema(newBubblySchema()); err != nil {
+			return nil, fmt.Errorf("failed to initialize graphql schema with internal tables: %w", err)
 		}
-	`, core.SchemaTableName)
-
-	result, err := s.Query(schemaQuery)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current tables: %w", err)
 	}
-	if !isValidValue(result) {
+
+	result := s.Query(schemaQuery)
+	if result.HasErrors() {
+		return nil, fmt.Errorf("failed to get current tables: %v", result.Errors)
+	}
+	if !isValidValue(result.Data) {
 		return newBubblySchema(), nil
 	}
-	val := result.(map[string]interface{})[core.SchemaTableName].([]interface{})
+	val := result.Data.(map[string]interface{})[core.SchemaTableName].([]interface{})
 	if len(val) == 0 {
 		return newBubblySchema(), nil
 	}
@@ -207,35 +207,6 @@ func (s *Store) currentBubblySchema() (*bubblySchema, error) {
 	}
 	return &schema, nil
 }
-
-// TODO delete?
-// func (s *Store) GetResource(id string) (io.Reader, error) {
-// 	return s.p.GetResource(id)
-// }
-//
-// // TODO delete?
-// func (s *Store) PutResource(id string, val string, resBlock core.ResourceBlock) error {
-// 	return s.p.PutResource(id, val, resBlock)
-// }
-//
-// // TODO delete?
-// func (s *Store) GetResourcesByKind(resourceKind core.ResourceKind) (io.Reader, error) {
-// 	// TODO This currently mocks the store behavior until graphql is implemented
-// 	resString := "{\"kind\":\"pipeline_run\",\"name\":\"sonarqube\",\"api_version\":\"v1\",\"metadata\":{\"labels\":{\"environment\":\"prod\"},\"namespace\":\"qa\"},\"spec\":\"\\n        // specify the name of the pipeline resource to execute\\n        interval = \\\"22s\\\"\\n        pipeline = \\\"pipeline/sonarqube\\\"\\n        // specify the pipeline input(s) required\\n        input \\\"file\\\" {\\n            value = \\\"./testdata/sonarqube/sonarqube-example.json\\\"\\n        }\\n        input \\\"repo\\\" {\\n            value = \\\"./testdata/git/repo1.git\\\"\\n        }\\n    \"}"
-// 	resJSON := core.ResourceBlockJSON{}
-// 	err := json.Unmarshal([]byte(resString), &resJSON)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	resourceJson, err := json.Marshal(resJSON)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	bytes.NewReader(resourceJson)
-//
-// 	return bytes.NewReader(resourceJson), nil
-// }
 
 func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Table) {
 	for _, t := range tables {
@@ -264,6 +235,14 @@ func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Tab
 
 const tableIDField = "_id"
 const tableJoinSuffix = "_id"
+
+var schemaQuery = fmt.Sprintf(`
+{
+	%s {
+		tables
+	}
+}
+`, core.SchemaTableName)
 
 var internalTables = core.Tables{resourceTable, schemaTable, eventTable}
 var resourceTable = core.Table{

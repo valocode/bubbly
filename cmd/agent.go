@@ -25,10 +25,6 @@ var (
 
 			$ bubbly agent
 
-		Starts a bubbly agent with UI, API Server, NATS Server, Data Store, Resource Store and Worker components
-
-			$ bubbly agent --ui
-
 		Starts a bubbly agent with only the UI component
 		`,
 	)
@@ -40,8 +36,8 @@ var (
 
 		bubbly agent
 		
-		# Starts the bubbly agent running only the UI and API Server components
-		bubbly agent --ui --api-server`,
+		# Starts the bubbly agent running only the API Server components
+		bubbly agent --api-server`,
 	)
 )
 
@@ -135,10 +131,6 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 		"nats-server",
 		true,
 		"whether to run the NATS Server on this agent",
-	)
-	f.BoolVar(
-		&o.BubblyContext.AgentConfig.EnabledComponents.UI, "ui", false,
-		"whether to run the UI on this agent",
 	)
 	f.BoolVar(
 		&o.BubblyContext.AgentConfig.EnabledComponents.APIServer,
@@ -237,7 +229,6 @@ func (o *AgentOptions) Resolve(cmd *cobra.Command) error {
 	// If no specific component has been set,
 	// the agent should run all components
 	o.BubblyContext.AgentConfig.EnabledComponents = &config.AgentComponentsToggle{
-		UI:         true,
 		APIServer:  true,
 		DataStore:  true,
 		Worker:     true,
@@ -252,8 +243,6 @@ func (o *AgentOptions) Resolve(cmd *cobra.Command) error {
 func (o *AgentOptions) Run() error {
 
 	a := agent.New(o.BubblyContext)
-
-	a.Init(o.BubblyContext)
 
 	if err := a.Run(o.BubblyContext); err != nil {
 		return fmt.Errorf("error while running bubbly agent: %w", err)

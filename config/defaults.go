@@ -82,7 +82,6 @@ func DefaultNATSServerConfig() *NATSServerConfig {
 // instance with all components disabled
 func DefaultAgentComponentsEnabled() *AgentComponentsToggle {
 	return &AgentComponentsToggle{
-		UI:         false,
 		APIServer:  false,
 		DataStore:  false,
 		Worker:     false,

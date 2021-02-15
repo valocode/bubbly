@@ -9,7 +9,20 @@ import (
 	"github.com/verifa/bubbly/server"
 )
 
-var _ component.APIServer = (*APIServer)(nil)
+var _ component.Component = (*APIServer)(nil)
+
+func New(bCtx *env.BubblyContext) *APIServer {
+	return &APIServer{
+		ComponentCore: &component.ComponentCore{
+			Type: component.APIServerComponent,
+			NATSServer: &component.NATS{
+				Config: bCtx.AgentConfig.NATSServerConfig,
+			},
+			DesiredSubscriptions: nil,
+		},
+		Server: server.New(bCtx),
+	}
+}
 
 type APIServer struct {
 	*component.ComponentCore

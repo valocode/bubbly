@@ -2,6 +2,7 @@ package server
 
 import (
 	// "encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -13,6 +14,11 @@ import (
 type queryReq struct {
 	Query string `json:"query"`
 }
+
+// type graphqlErrors []graphqlError
+// type graphqlError struct {
+// 	Message string `json:"message"`
+// }
 
 // Query godoc
 // @Summary Query performs graphql related tasks
@@ -32,12 +38,14 @@ func (a *Server) Query(bCtx *env.BubblyContext, c echo.Context) error {
 
 	nc := client.NewNATS(bCtx)
 
-	nc.Connect(bCtx)
+	if err := nc.Connect(bCtx); err != nil {
+		return fmt.Errorf("failed to connect to NATS server: %w", err)
+	}
 
 	results, err := nc.Query(bCtx, query.Query)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.JSONBlob(200, results)
+	return c.JSONBlob(http.StatusOK, results)
 }
