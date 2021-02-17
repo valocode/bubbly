@@ -4,9 +4,12 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
+
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -33,7 +36,7 @@ func NewTask(taskBlock *taskBlockSpec) *Task {
 func (t *Task) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, t.taskBlockSpec.Body, t, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed to decode task "%s" body spec: %s`, t.Name(), err.Error()),
 			Value:  cty.NilVal,
 		}

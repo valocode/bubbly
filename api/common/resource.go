@@ -7,11 +7,13 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
 	"github.com/verifa/bubbly/parser"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // RunResource takes a given resource id as string and ResourceContext, with
@@ -20,7 +22,9 @@ func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, 
 	resource, err := GetResource(bCtx, ctx, id)
 	if err != nil {
 		return nil, core.ResourceOutput{
-			Error: err,
+			ID:     id,
+			Status: events.ResourceApplyFailure,
+			Error:  err,
 		}
 	}
 	runCtx := core.NewResourceContext(resource.Namespace(), inputs, ctx.NewResource)

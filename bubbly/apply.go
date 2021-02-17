@@ -5,9 +5,11 @@ import (
 	"fmt"
 
 	"github.com/verifa/bubbly/api"
+	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
 	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -54,21 +56,44 @@ func Apply(bCtx *env.BubblyContext, filename string) error {
 	return nil
 }
 
+// runResources runs all resources of ResourceRun kind provided by the
+// resource parser. On failure/success, it sends the ResourceRun kind's
+// resource output to the bubbly event store
 func runResources(bCtx *env.BubblyContext, resParser *api.ResourcesParserType) error {
 	for _, kind := range core.ResourceRunKinds() {
 		bCtx.Logger.Debug().Msgf("Running resource kinds %s", kind)
 		resources := resParser.ByKind(kind)
 		for _, resource := range resources {
 			bCtx.Logger.Debug().Msgf("Running resource %s ...", resource.String())
-			out := resource.Apply(
+			subResourceOutput := resource.Apply(
 				bCtx,
 				core.NewResourceContext(resource.Namespace(), cty.NilVal, api.NewResource),
 			)
-			if out.Error != nil {
+
+			runResourceOutput := core.ResourceOutput{
+				ID:     resource.String(),
+				Status: events.ResourceRunSuccess,
+				Error:  nil,
+			}
+
+			// if any child resource of the run resource has failed, then
+			// mark the run resource has failed and attach the error message
+			if subResourceOutput.Error != nil {
+				runResourceOutput.Status = events.ResourceRunFailure
+				runResourceOutput.Error = fmt.Errorf(`failed to run resource "%s": %w`, resource.String(), subResourceOutput.Error)
+			}
+
+			// load the output of the run resource to the event store
+			if err := common.LoadResourceOutput(bCtx, &runResourceOutput); err != nil {
 				return fmt.Errorf(
-					`Failed to apply resource "%s": %w`,
-					resource.String(), out.Error,
+					`failed to store the output of running resource "%s" to the store: %w`,
+					resource.String(),
+					err,
 				)
+			}
+
+			if runResourceOutput.Error != nil {
+				return runResourceOutput.Error
 			}
 		}
 	}

@@ -6,6 +6,8 @@ import (
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
+
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -30,7 +32,8 @@ func (t *TaskRun) SpecValue() core.ResourceSpec {
 func (t *TaskRun) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, t.SpecHCL.Body, &t.Spec, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     t.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, t.String(), err.Error()),
 			Value:  cty.NilVal,
 		}

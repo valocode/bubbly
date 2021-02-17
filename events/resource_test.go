@@ -7,7 +7,7 @@ import (
 )
 
 func TestResourceEvents(t *testing.T) {
-	c := ResourceCreated
+	c := ResourceCreatedUpdated
 
-	require.Equal(t, "CREATED", c.String())
+	require.Equal(t, "Created/Updated", c.String())
 }

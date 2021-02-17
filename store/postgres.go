@@ -63,10 +63,13 @@ func (p *postgres) Save(schema *bubblySchema, tree dataTree) error {
 	}
 	defer tx.Rollback(context.Background())
 
-	saveNode := func(node *dataNode) error {
+	saveNode := func(node *dataNode, blocks *core.DataBlocks) error {
 		return psqlSaveNode(tx, node, schema)
 	}
-	if err := tree.traverse(saveNode); err != nil {
+
+	_, err = tree.traverse(saveNode)
+
+	if err != nil {
 		return fmt.Errorf("failed to save data in postgres: %w", err)
 	}
 

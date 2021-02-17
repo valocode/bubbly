@@ -71,12 +71,14 @@ func TestDataTree(t *testing.T) {
 			// each node.Data.TableName to a list, and then doing equality on
 			// that list. Otherwise we would need to duplicate the tree and
 			// that's a bit of a PITA.
-			err = tree.traverse(func(node *dataNode) error {
+			_, err = tree.traverse(func(node *dataNode,
+				blocks *core.DataBlocks) error {
 				nodeList = append(nodeList, node.Data.TableName)
 				return nil
 			})
 			assert.NoErrorf(t, err, "failed traverse tree")
-			err = c.out.traverse(func(node *dataNode) error {
+			_, err = c.out.traverse(func(node *dataNode,
+				blocks *core.DataBlocks) error {
 				expNodeList = append(expNodeList, node.Data.TableName)
 				return nil
 			})

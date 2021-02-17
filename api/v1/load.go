@@ -6,10 +6,12 @@ import (
 
 	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
+
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
-	"github.com/zclconf/go-cty/cty"
 )
 
 var _ core.Load = (*Load)(nil)
@@ -33,7 +35,8 @@ func (l *Load) SpecValue() core.ResourceSpec {
 func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBodyWithInputs(bCtx, l.SpecHCL.Body, &l.Spec, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     l.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, l.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
@@ -41,7 +44,8 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 
 	if err := l.load(bCtx); err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     l.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed to load data to bubbly server: %w`, err),
 			Value:  cty.NilVal,
 		}
@@ -50,7 +54,8 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 	bCtx.Logger.Debug().Msg("JSON successfully loaded to bubbly server")
 
 	return core.ResourceOutput{
-		Status: core.ResourceOutputSuccess,
+		ID:     l.String(),
+		Status: events.ResourceApplySuccess,
 		Error:  nil,
 		Value:  cty.NilVal,
 	}

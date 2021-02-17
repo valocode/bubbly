@@ -1,7 +1,11 @@
 package core
 
 import (
+	"fmt"
+
 	"github.com/zclconf/go-cty/cty"
+
+	"github.com/verifa/bubbly/events"
 )
 
 // Tasks stores a map of Task by name
@@ -16,7 +20,7 @@ type Conditions map[string]Condition
 // ResourceOutput represents the output from applying a resource
 type ResourceOutput struct {
 	ID     string
-	Status ResourceOutputStatus
+	Status events.Event
 	Error  error
 	Value  cty.Value
 }
@@ -33,19 +37,62 @@ func (r *ResourceOutput) Output() cty.Value {
 	)
 }
 
-// ResourceOutputStatus represents the output statuses for a resource
-type ResourceOutputStatus string
+// Data produces a core.Data type of this resource.
+// The Data type is produced so that it can be sent to the store as any other
+// piece of data.
+// We omit the ResourceOutput's Value, as this is not relevant for loading to
+// the _event table of the store.
+// Note: If this Data is destined for the _event store,
+// you may be better suited using ResourceOutput.DataBlocks
+func (r *ResourceOutput) Data() Data {
+	// this data represents the data saved to the _event store
+	d := Data{
+		TableName: EventTableName,
+		Fields: map[string]cty.Value{
+			"status": cty.StringVal(r.Status.String()),
+			"error":  cty.StringVal(r.Error.Error()),
+			"time":   cty.StringVal(events.TimeNow()),
+		},
+		Joins: []string{ResourceTableName},
+	}
 
-// String gets a string value of a ResourceOutputStatus
-func (r *ResourceOutputStatus) String() string {
-	return string(*r)
+	return d
 }
 
-const (
-	// ResourceOutputSuccess represents success
-	ResourceOutputSuccess ResourceOutputStatus = "Success"
-	// ResourceOutputFailure represents failure
-	ResourceOutputFailure ResourceOutputStatus = "Failure"
-	// ResourceOutputMissingInputs represents missing inputs
-	ResourceOutputMissingInputs ResourceOutputStatus = "MissingInputs"
-)
+// DataBlocks produces a core.DataBlocks type of this resource.
+// We use DataBlocks in place of Data as two Data objects are required to save
+// data to the _event table
+func (r *ResourceOutput) DataBlocks() (DataBlocks, error) {
+
+	// The resourceID is needed in order to construct the join to the
+	// _resource table
+	if r.ID == "" {
+		return nil, fmt.Errorf(
+			"unsafe to produce datablocks from ResourceOutput due to missing ID")
+	}
+
+	// this data represents the join; how we connect the
+	// ResourceOutput to a resource stored in the _resource table
+	joinData := Data{
+		TableName: ResourceTableName,
+		Fields: DataFields{
+			"id": cty.StringVal(r.ID),
+		},
+	}
+
+	// this data represents the data saved to the _event store
+	eventData := Data{
+		TableName: EventTableName,
+		Fields: map[string]cty.Value{
+			"status": cty.StringVal(r.Status.String()),
+			"time":   cty.StringVal(events.TimeNow()),
+		},
+		Joins: []string{ResourceTableName},
+	}
+
+	if r.Error != nil {
+		eventData.Fields["error"] = cty.StringVal(r.Error.Error())
+	}
+
+	return DataBlocks{joinData, eventData}, nil
+}

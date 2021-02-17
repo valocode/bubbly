@@ -7,6 +7,8 @@ import (
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
+
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -27,7 +29,8 @@ func NewTransform(resBlock *core.ResourceBlock) *Transform {
 func (t *Transform) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBodyWithInputs(bCtx, t.SpecHCL.Body, &t.Spec, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     t.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, t.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
@@ -36,13 +39,15 @@ func (t *Transform) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) co
 	json, err := t.toJSON()
 	if err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     t.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  err,
 			Value:  cty.NilVal,
 		}
 	}
 	return core.ResourceOutput{
-		Status: core.ResourceOutputSuccess,
+		ID:     t.String(),
+		Status: events.ResourceApplySuccess,
 		Error:  nil,
 		Value:  cty.StringVal(string(json)),
 	}

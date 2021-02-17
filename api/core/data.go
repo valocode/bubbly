@@ -50,6 +50,20 @@ func (d *Data) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// IsValidResource verifies that any of Data's fields that are mandatory for a
+// valid core.Resource are non-null
+func (d *Data) IsValidResource() bool {
+	for k, v := range d.Fields {
+		if k == "metadata" {
+			continue
+		}
+		if v.IsNull() {
+			return false
+		}
+	}
+	return true
+}
+
 // MarshalJSON marshals DataFields into json
 func (d DataFields) MarshalJSON() ([]byte, error) {
 	var jsonFields = make([]DataFieldJSON, 0, len(d))

@@ -6,6 +6,8 @@ import (
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
+
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -33,7 +35,8 @@ func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 	if err := common.DecodeBodyWithInputs(bCtx, p.SpecHCL.Body, &p.Spec, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     p.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, p.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
@@ -52,7 +55,8 @@ func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 		if output.Error != nil {
 			return core.ResourceOutput{
-				Status: core.ResourceOutputFailure,
+				ID:     p.String(),
+				Status: events.ResourceApplyFailure,
 				Error:  fmt.Errorf(`failed to apply task "%s" with index %d in pipeline "%s": %w"`, taskSpec.Name, idx, p.String(), output.Error),
 				Value:  cty.NilVal,
 			}
@@ -65,7 +69,8 @@ func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 	}
 
 	return core.ResourceOutput{
-		Status: core.ResourceOutputSuccess,
+		ID:     p.String(),
+		Status: events.ResourceApplySuccess,
 		Error:  nil,
 		Value:  cty.NilVal,
 	}

@@ -4,9 +4,12 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
+
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
+
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -33,14 +36,14 @@ func NewCondition(conditionBlock *conditionBlockSpec) *Condition {
 func (c *Condition) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, c.conditionBlockSpec.Body, c, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed to decode condition "%s" body spec: %s`, c.Name, err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
 
 	return core.ResourceOutput{
-		Status: core.ResourceOutputSuccess,
+		Status: events.ResourceApplySuccess,
 		Error:  nil,
 		Value:  c.Value,
 	}

@@ -3,10 +3,28 @@ package events
 type Event int
 
 const (
-	ResourceCreated Event = iota
+	ResourceCreatedUpdated Event = iota // store V1 does not distinguish between these two lifecycle states
 	ResourceDestroyed
+	ResourceApplySuccess
+	ResourceApplyFailure
+	ResourceRunSuccess
+	ResourceRunFailure
 )
 
 func (e Event) String() string {
-	return [...]string{"CREATED", "DESTROYED"}[e]
+	return [...]string{
+		"Created/Updated",
+		"Destroyed",
+		"ApplySuccess",
+		"ApplyFailure",
+		"RunSuccess",
+		"RunFailure"}[e]
+}
+
+// ResourceOutputStatus represents the output statuses for a resource
+type ResourceOutputStatus string
+
+// String gets a string value of a ResourceOutputStatus
+func (r *ResourceOutputStatus) String() string {
+	return string(*r)
 }

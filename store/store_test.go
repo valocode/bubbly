@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -167,6 +168,7 @@ func storeTests(t *testing.T, s *Store) {
 		SpecRaw: "data {}",
 	}
 	d, err := resJSON.Data()
+
 	require.NoError(t, err)
 
 	err = s.Save(core.DataBlocks{d})
@@ -201,7 +203,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 		{
 			TableName: core.EventTableName,
 			Fields: map[string]cty.Value{
-				"status": cty.StringVal(events.ResourceCreated.String()),
+				"status": cty.StringVal(events.ResourceCreatedUpdated.String()),
 				"time":   cty.StringVal(events.TimeNow()),
 			},
 			// the _id value of the resource's row entry in _resource will be
@@ -247,7 +249,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 					for k, v := range e {
 						switch k {
 						case "status":
-							require.Equal(t, events.ResourceCreated.String(), v)
+							require.Equal(t, events.ResourceCreatedUpdated.String(), v)
 						}
 					}
 				}
@@ -290,14 +292,47 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 	result = s.Query(resQuery)
 	assert.Empty(t, result.Errors)
 
-	events := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
+	resEvents := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
 
 	// verify that the number of events stored for the "namespace/kind/name"
 	// resource is 2
-	for _, v := range events {
+	for _, v := range resEvents {
 		require.Equal(t, 2, len(v.(map[string]interface{})))
 	}
 
+	// check that we can load a resourceOutput to the store
+	resOutput := core.ResourceOutput{
+		ID:     "namespace/kind/name",
+		Status: events.ResourceApplyFailure,
+		Error:  errors.New("cannot get output of a null extract"),
+		Value:  cty.NilVal,
+	}
+
+	dataBlocks, err := resOutput.DataBlocks()
+
+	require.NoError(t, err)
+
+	err = s.Save(dataBlocks)
+
+	require.NoError(t, err)
+
+	resQuery = fmt.Sprintf(`
+			{
+				%s(id: "namespace/kind/name") {
+					id
+					%s(status: "ApplyFailure") {
+						status
+						time
+						error
+					}
+				}
+			}
+		`, core.ResourceTableName, core.EventTableName)
+
+	result = s.Query(resQuery)
+
+	assert.Empty(t, result.Errors)
+	assert.NotNil(t, result)
 }
 
 func TestCockroach(t *testing.T) {

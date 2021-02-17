@@ -18,12 +18,15 @@ import (
 	"github.com/imdario/mergo"
 
 	"github.com/clbanning/mxj"
-	git "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/hcl/v2"
+
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
+
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -50,14 +53,15 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 
 	if err := e.decode(bCtx, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     e.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf("failed to decode resource %s: %w", e.String(), err),
 		}
 	}
 
 	if e == nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			Status: events.ResourceApplyFailure,
 			Error:  errors.New("cannot get output of a null extract"),
 			Value:  cty.NilVal,
 		}
@@ -65,7 +69,7 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 
 	if e.Spec.Source == nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			Status: events.ResourceApplyFailure,
 			Error:  errors.New("cannot get output of an extract with null source"),
 			Value:  cty.NilVal,
 		}
@@ -73,7 +77,7 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 
 	if len(e.Spec.Source) == 0 {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			Status: events.ResourceApplyFailure,
 			Error:  errors.New("cannot get output of an extract with no source"),
 			Value:  cty.NilVal,
 		}
@@ -84,7 +88,8 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		val, err := src.Resolve(bCtx)
 		if err != nil {
 			return core.ResourceOutput{
-				Status: core.ResourceOutputFailure,
+				ID:     e.String(),
+				Status: events.ResourceApplyFailure,
 				Error:  fmt.Errorf("failed to resolve extract source: %w", err),
 				Value:  cty.NilVal,
 			}
@@ -97,7 +102,8 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 	switch len(e.Spec.Source) {
 	case 0:
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     e.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf("failed to resolve extract source: no sources defined"),
 			Value:  cty.NilVal,
 		}
@@ -108,7 +114,8 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 	}
 
 	return core.ResourceOutput{
-		Status: core.ResourceOutputSuccess,
+		ID:     e.String(),
+		Status: events.ResourceApplySuccess,
 		Error:  nil,
 		Value:  val,
 	}

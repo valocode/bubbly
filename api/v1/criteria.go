@@ -6,6 +6,8 @@ import (
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
+
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -32,7 +34,7 @@ func NewCriteria(resBlock *core.ResourceBlock) *Criteria {
 func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, c.SpecHCL.Body, &c.Spec, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, c.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
@@ -55,7 +57,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 		if output.Error != nil {
 			return core.ResourceOutput{
-				Status: core.ResourceOutputFailure,
+				Status: events.ResourceApplyFailure,
 				Error:  fmt.Errorf(`failed to apply query "%s" with index %d in criteria "%s": %w"`, querySpec.Name, idx, c.String(), output.Error),
 				Value:  cty.NilVal,
 			}
@@ -65,7 +67,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		// TODO
 		// p.Scope.InsertValue(bCtx, output.Output(), []string{"self", string(core.QueryResourceKind), resource.Name()})
 
-		bCtx.Logger.Debug().Str("query", resource.String()).Str("output_status", string(output.Status)).Str("output_value", output.Value.GoString()).Msg("query successfully processed")
+		bCtx.Logger.Debug().Str("query", resource.String()).Str("output_status", output.Status.String()).Str("output_value", output.Value.GoString()).Msg("query successfully processed")
 		c.Queries[resource.Name()] = resource
 
 	}
@@ -87,7 +89,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 		if output.Error != nil {
 			return core.ResourceOutput{
-				Status: core.ResourceOutputFailure,
+				Status: events.ResourceApplyFailure,
 				Error:  fmt.Errorf(`failed to apply condition "%s" with index %d in criteria "%s": %w"`, conditionSpec.Name, idx, c.String(), output.Error),
 				Value:  cty.NilVal,
 			}
@@ -101,7 +103,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 		bCtx.Logger.Debug().
 			Str("condition", condition.Name).
-			Str("output_status", string(output.Status)).
+			Str("output_status", output.Status.String()).
 			Str("output_value", output.Value.GoString()).
 			Msg("condition successfully processed")
 
@@ -121,7 +123,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 	if output.Error != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed to apply operation "%s" in criteria "%s": %w"`, operationSpec.Name, c.String(), output.Error),
 			Value:  cty.NilVal,
 		}
@@ -129,14 +131,14 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 	bCtx.Logger.Debug().
 		Str("operation", operation.Name()).
-		Str("output_status", string(output.Status)).
+		Str("output_status", output.Status.String()).
 		Str("output_value", output.Value.GoString()).
 		Msg("operation successfully processed")
 
 	c.Operation = operation
 
 	return core.ResourceOutput{
-		Status: core.ResourceOutputSuccess,
+		Status: events.ResourceApplySuccess,
 		Error:  nil,
 		Value:  operation.Value,
 	}

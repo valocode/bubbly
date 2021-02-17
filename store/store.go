@@ -62,6 +62,8 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 	if err := s.syncSchema(); err != nil {
 		return nil, fmt.Errorf("failed to sync schema: %w", err)
 	}
+
+	s.triggers = internalTriggers
 	return s, nil
 }
 
@@ -73,6 +75,7 @@ type Store struct {
 	graph        *schemaGraph
 	bubblySchema *bubblySchema
 	schema       *graphql.Schema
+	triggers     []*trigger
 }
 
 // Schema gets the graphql schema for the store.
@@ -144,6 +147,16 @@ func (s *Store) Save(data core.DataBlocks) error {
 		return fmt.Errorf("failed to create tree of data blocks for storing: %w", err)
 	}
 	if err := s.p.Save(s.bubblySchema, dataTree); err != nil {
+		return fmt.Errorf("falied to save data in provider: %w", err)
+	}
+
+	triggersTree, err := HandleTriggers(dataTree, s.triggers)
+
+	if err != nil {
+		return fmt.Errorf("data triggers failed: %w", err)
+	}
+
+	if err := s.p.Save(s.bubblySchema, triggersTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}
 
@@ -292,6 +305,10 @@ var eventTable = core.Table{
 	Fields: []core.TableField{
 		{
 			Name: "status",
+			Type: cty.String,
+		},
+		{
+			Name: "error",
 			Type: cty.String,
 		},
 		{

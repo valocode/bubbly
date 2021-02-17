@@ -4,11 +4,13 @@ import (
 	"fmt"
 
 	"github.com/verifa/bubbly/client"
+	"github.com/verifa/bubbly/events"
+
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
-	"github.com/zclconf/go-cty/cty"
 )
 
 var _ core.Query = (*Query)(nil)
@@ -29,7 +31,8 @@ func NewQuery(resBlock *core.ResourceBlock) *Query {
 func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, q.SpecHCL.Body, &q.Spec, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     q.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, q.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
@@ -39,7 +42,8 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 
 	if err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     q.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf("failed to establish bubbly client: %w", err),
 
 			Value: cty.NilVal,
@@ -50,7 +54,8 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 
 	if err != nil {
 		return core.ResourceOutput{
-			Status: core.ResourceOutputFailure,
+			ID:     q.String(),
+			Status: events.ResourceApplyFailure,
 			Error:  fmt.Errorf(`failed while running query "%s": %w`, q.Spec.Query, err),
 			Value:  cty.NilVal,
 		}
@@ -68,7 +73,8 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 	cVal := cty.StringVal(strNormalized)
 
 	return core.ResourceOutput{
-		Status: core.ResourceOutputSuccess,
+		ID:     q.String(),
+		Status: events.ResourceApplySuccess,
 		Error:  nil,
 		Value:  cVal,
 	}
