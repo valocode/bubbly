@@ -7,28 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// tests util.SuggestBubblyResources
-func TestSuggestBubblyResources(t *testing.T) {
-	tcs := []struct {
-		desc     string
-		expected string
-	}{
-		{
-			desc:     "basic",
-			expected: "Use 'bubbly api-resources' for a complete list of supported resources.",
-		},
-	}
-
-	for _, tc := range tcs {
-		t.Run(tc.desc, func(t *testing.T) {
-			actual := SuggestBubblyResources()
-
-			assert.Equal(t, tc.expected, actual)
-
-		})
-	}
-}
-
 // tests util.UsageErrorf
 func TestUsageErrorf(t *testing.T) {
 	tcs := []struct {

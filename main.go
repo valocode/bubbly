@@ -83,7 +83,7 @@ func main() {
 	}
 
 	// finally, print the final configuration to be used by bubbly
-	bCtx.Logger.Info().
+	bCtx.Logger.Debug().
 		Interface("final_config", bCtx.ServerConfig).
 		Str("final_log_level", bCtx.Logger.GetLevel().String()).
 		Msg("final bubbly context")

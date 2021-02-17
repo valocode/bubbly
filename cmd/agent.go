@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 
 	"github.com/verifa/bubbly/agent"
 	"github.com/verifa/bubbly/config"
@@ -58,7 +59,7 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 	cmd := &cobra.Command{
 		Use:     "agent [flags]",
 		Short:   "Start a bubbly agent",
-		Long:    agentLong + "\n\n" + cmdutil.SuggestBubblyResources(),
+		Long:    agentLong + "\n\n",
 		Example: agentExample,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -121,80 +122,83 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 	// agent.AgentDeploymentType's underlying type is a string,
 	// so we cast to *string on bind
 	f.StringVar(
-		(*string)(&o.BubblyContext.AgentConfig.DeploymentType), "deployment-type",
-		"single",
-		"the type of agent deployment. Available options are: single, "+
-			"distributed",
+		(*string)(&o.BubblyContext.AgentConfig.DeploymentType),
+		"deployment-type",
+		config.DefaultDeploymentType.String(),
+		"the type of agent deployment. Options: single",
 	)
 	f.BoolVar(
 		&o.BubblyContext.AgentConfig.EnabledComponents.NATSServer,
 		"nats-server",
-		true,
+		config.DefaultNATSServerToggle,
 		"whether to run the NATS Server on this agent",
 	)
 	f.BoolVar(
 		&o.BubblyContext.AgentConfig.EnabledComponents.APIServer,
 		"api-server",
-		false,
+		config.DefaultAPIServerToggle,
 		"whether to run the api server on this agent",
 	)
 	f.BoolVar(
 		&o.BubblyContext.AgentConfig.EnabledComponents.DataStore,
 		"data-store",
-		false,
+		config.DefaultDataStoreToggle,
 		"whether to run the data store on this agent",
 	)
 	f.BoolVar(
 		&o.BubblyContext.AgentConfig.EnabledComponents.Worker,
 		"worker",
-		false,
+		config.DefaultWorkerToggle,
 		"whether to run a bubbly worker on this agent",
 	)
 	f.StringVar(
 		(*string)(&o.BubblyContext.AgentConfig.StoreConfig.Provider),
 		"data-store-provider",
-		"postgres", "provider of the bubbly data store",
+		config.DefaultStoreProvider,
+		"provider of the bubbly data store",
 	)
 	f.StringVar(
 		&o.BubblyContext.AgentConfig.NATSServerConfig.Addr,
 		"nats-server-addr",
-		"",
+		config.DefaultNATSServerAddr,
 		"address of the NATS Server",
 	)
+	port, _ := strconv.Atoi(config.DefaultNATSServerPort)
 	f.IntVar(
 		&o.BubblyContext.AgentConfig.NATSServerConfig.Port,
 		"nats-server-port",
-		4223,
+		port,
 		"port of the NATS Server",
 	)
+	httpPort, _ := strconv.Atoi(config.DefaultNATSServerHTTPPort)
 	f.IntVar(
 		&o.BubblyContext.AgentConfig.NATSServerConfig.HTTPPort,
 		"nats-server-http-port",
-		8222,
+		httpPort,
 		"HTTP Port of the NATS Server",
 	)
 	f.StringVar(
 		&o.BubblyContext.AgentConfig.StoreConfig.PostgresAddr,
 		"data-store-addr",
-		"",
+		config.DefaultPostgresAddr,
 		"address of the data store",
 	)
 	f.StringVar(
 		&o.BubblyContext.AgentConfig.StoreConfig.PostgresUser,
 		"data-store-username",
-		"",
+		config.DefaultPostgresUser,
 		"username of the data store",
 	)
 	f.StringVar(
 		&o.BubblyContext.AgentConfig.StoreConfig.PostgresPassword,
 		"data-store-password",
-		"",
+		config.DefaultPostgresPassword,
 		"password of the data store",
 	)
 	f.StringVar(
 		&o.BubblyContext.AgentConfig.StoreConfig.PostgresDatabase,
 		"data-store-database",
-		"",
+		config.DefaultPostgresDatabase,
 		"database of the data store",
 	)
 

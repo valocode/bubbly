@@ -8,9 +8,7 @@ import (
 type ServerConfig struct {
 	Protocol string
 	Port     string
-	Host     string `validate:"required"`
-	Auth     bool
-	Token    string
+	Host     string
 }
 
 func (s ServerConfig) HostURL() string {
@@ -61,6 +59,15 @@ const (
 	// TODO: Implement
 	// DistributedDeployment AgentDeploymentType = "distributed"
 )
+
+func (a AgentDeploymentType) String() string {
+	switch a {
+	case SingleDeployment:
+		return "single"
+	default:
+		return "unsupported"
+	}
+}
 
 // AgentConfig stores the configuration of a bubbly agent
 type AgentConfig struct {

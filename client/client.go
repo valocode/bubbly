@@ -68,18 +68,6 @@ type HTTP struct {
 	*ClientCore
 	HostURL    string
 	HTTPClient *http.Client
-	Token      string
-}
-
-// AuthStruct -
-type AuthStruct struct {
-	Token string `json:"token"`
-}
-
-// AuthResponse -
-type AuthResponse struct {
-	Valid bool   `json:"valid"`
-	Token string `json:"token"`
 }
 
 func NewHTTP(bCtx *env.BubblyContext) (*HTTP, error) {
@@ -104,17 +92,11 @@ func NewHTTP(bCtx *env.BubblyContext) (*HTTP, error) {
 		c.HostURL = u.String()
 	}
 
-	if !sc.Auth {
-		return c, nil
-	}
-
 	// TODO: support authenticated clients
 	return c, nil
 }
 
 func (c *HTTP) do(req *http.Request) (io.ReadCloser, error) {
-	req.Header.Set("Authorization", c.Token)
-
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make HTTP request: %w", err)

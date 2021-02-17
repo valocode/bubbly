@@ -28,12 +28,8 @@ import (
 var (
 	_         cmdutil.Options = (*ApplyOptions)(nil)
 	applyLong                 = normalise.LongDesc(`
-		Apply a Bubbly configuration (collection of 1 or more Bubbly Resources) to a Bubbly server
-
-		    $ bubbly apply (-f (FILENAME | DIRECTORY)) [flags]
-
-		will first check for an exact match on FILENAME. If no such filename
-		exists, it will instead search for a directory.`)
+		Apply a bubbly configuration (collection of 1 or more bubbly resources resources) to a bubbly agent
+	`)
 
 	applyExample = normalise.Examples(`
 		# Apply the configuration in the file ./main.bubbly
@@ -69,8 +65,8 @@ func NewCmdApply(bCtx *env.BubblyContext) (*cobra.Command, *ApplyOptions) {
 	// cmd represents the apply command
 	cmd := &cobra.Command{
 		Use:     "apply (-f (FILENAME | DIRECTORY)) [flags]",
-		Short:   "Apply a Bubbly configuration to a Bubbly server",
-		Long:    applyLong + "\n\n" + cmdutil.SuggestBubblyResources(),
+		Short:   "Apply one or more bubbly resource to a bubbly agent",
+		Long:    applyLong + "\n\n",
 		Example: applyExample,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			bCtx.Logger.Debug().Strs("arguments", args).
@@ -128,7 +124,7 @@ func (o *ApplyOptions) Validate(cmd *cobra.Command) error {
 		return cmdutil.UsageErrorf(cmd, "Unexpected args: %v", o.Args)
 	}
 	if o.Filename == "" {
-		return fmt.Errorf("you must specify the filename or directory with -f %s", cmdutil.SuggestBubblyResources())
+		return fmt.Errorf("you must specify the filename or directory with -f")
 	}
 
 	// TODO: validation of a given o.Filename. It might be sufficient to delegate this to parser (as is currently implemented).

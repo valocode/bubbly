@@ -12,6 +12,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/clbanning/mxj v1.8.4
+	github.com/cli/cli v1.5.0 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.1.0
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
 	github.com/fzipp/gocyclo v0.3.1 // indirect
