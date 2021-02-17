@@ -468,7 +468,7 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 		if err != nil {
 			return cty.NilVal, fmt.Errorf("failed to read bearer token file: %w", err)
 		}
-		bearerToken = string(bt)
+		bearerToken = strings.TrimSpace(string(bt))
 	}
 	if bearerToken != "" {
 		httpRequest.Header.Set("Authorization", fmt.Sprint("Bearer ", bearerToken))
@@ -516,18 +516,67 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 
 	defer httpResponse.Body.Close()
 
-	// Parse the content of response body
-	var data interface{}
-	if err := json.NewDecoder(httpResponse.Body).Decode(&data); err != nil {
-		return cty.NilVal, fmt.Errorf("failed to decode JSON: %w", err)
+	// Parse the content of response body into `interface{}` for further processing later
+	var graphQLresponse interface{}
+	if err := json.NewDecoder(httpResponse.Body).Decode(&graphQLresponse); err != nil {
+		return cty.NilVal, fmt.Errorf("failed to decode GraphQL response: %w", err)
 	}
 
-	val, err := gocty.ToCtyValue(data, s.Format)
+	// As per GraphQL June 2018 spec, section 7.1:
+	// A response to a GraphQL operation must be a map.
+	// If the operation encountered any errors, the response map must contain an entry with key `errors`.
+	// If the operation completed without encountering any errors, this entry must not be present.
+	// https://spec.graphql.org/June2018/#sec-Response-Format
+
+	// So, the strategy is to attempt to the `errors` part of the response first,
+	// and if this fails, proceed to decoding the data.
+
+	// Describes the GraphQL response `errors` field format.
+	errfmt := cty.Object(map[string]cty.Type{
+		"errors": cty.List(cty.Object(map[string]cty.Type{
+			"message": cty.String,
+			"locations": cty.List(cty.Object(map[string]cty.Type{
+				"line":   cty.Number,
+				"column": cty.Number,
+			})),
+			"path": cty.List(cty.String),
+		})),
+	})
+	// TODO: not sure about `path` as it is a list of strings and numbers (mixed type)
+
+	// TODO: the above format assumes that the GraphQL server returns a well-formed error message
+	//       and that we don't fail to parse it for whatever reason. Maybe a more robust way would
+	//       be first to check if `errors` exist, and if so, attempt to decode using a more detailed
+	//       format. As it stands now, it's hard to distinguish between the cases when there is
+	//       no `errors` field from the case when there is but we fail to parse it.
+
+	// If there is an `error` field in response, the following operation succeeds,
+	// and this function must return error, and should not process the `data` block
+	errval, err := gocty.ToCtyValue(graphQLresponse, errfmt)
+	// TODO: there got to be a better way to check this...
+	if err == nil &&
+		!errval.IsNull() &&
+		!errval.GetAttr("errors").IsNull() &&
+		errval.GetAttr("errors").Length().GreaterThan(cty.NumberIntVal(0)) == cty.True {
+		// TODO: perhaps, if there is a locations/path in `error`, then `data` should be dumped as well?
+		return cty.NilVal, fmt.Errorf("error in GraphQL response: %v", errval)
+	}
+
+	// If there was no error returned by GraphQL, the `data` part of the response can be processed
+	// The GraphQL response is wrapped in `data` block but we don't require this in .bubbly `format` directive
+	// to avoid being verbose. So, wrap the expected type of response with the `data` block.
+	valfmt := cty.Object(map[string]cty.Type{
+		"data": s.Format,
+	})
+
+	val, err := gocty.ToCtyValue(graphQLresponse, valfmt)
 	if err != nil {
 		return cty.NilVal, fmt.Errorf("failed to convert to desired data format: %w", err)
 	}
 
-	return val, nil
+	// Don't return the top-level element as it's part of GraphQL response format,
+	// return only the actual data within it.
+	return val.GetAttr("data"), nil
 }
 
 // Compiler check to see that the source interface is implemented
@@ -691,7 +740,7 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 		if err != nil {
 			return cty.NilVal, fmt.Errorf("failed to read bearer token file: %w", err)
 		}
-		bearerToken = string(bt)
+		bearerToken = strings.TrimSpace(string(bt))
 	}
 	if bearerToken != "" {
 		httpRequest.Header.Set("Authorization", fmt.Sprint("Bearer ", bearerToken))

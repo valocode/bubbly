@@ -1,0 +1,189 @@
+#
+# Gets the latest information about the state of Bubbly GitHub repo.
+#
+# GitHub GraphQL end-point requires authentication.
+#
+# To access private repos, an access token with FULL `repo` scope is required.
+# https://docs.github.com/en/developers/apps/scopes-for-oauth-apps
+#
+# If the repo were public, a token with subscope for public repos only would have been ok.
+#
+# Once the access token is generated, it must be saved in the environment variable GH_TOKEN
+# before this script can be run.
+#
+
+resource "extract" "bubbly_repo" {
+	api_version = "v1"
+
+	spec {
+		type = "graphql"
+
+		source {
+			url = "https://api.github.com/graphql"
+			
+			query = <<EOT
+				query { 
+					repository(owner:"verifa", name:"bubbly") {
+
+						name
+
+						forkCount
+						stargazerCount
+						watchers {
+							totalCount
+						}
+
+						open_issues:issues(last:3, states:OPEN) {
+							totalCount
+							edges {
+								node {
+									url
+									title
+									state
+								}
+							}
+						}
+
+						closed_issues:issues(last:3, states:CLOSED) {
+							totalCount
+							edges {
+								node {
+									url
+									title
+									state
+								}
+							}
+						}
+					}
+				}
+			EOT
+
+			bearer_token = env("GH_TOKEN")
+
+			format = object({
+				repository: object({
+					name: string,
+					forkCount: number,
+					stargazerCount: number,
+					watchers: object({
+						totalCount: number
+					})
+					open_issues: object({
+						totalCount: number,
+						edges: list(object({
+							node: object({
+								url: string,
+								title: string,
+								state: string
+							})
+						}))
+					}),
+					closed_issues: object({
+						totalCount: number,
+						edges: list(object({
+							node: object({
+								url: string,
+								title: string,
+								state: string
+							})
+						}))
+					})
+				})
+			})
+		}
+	}
+}
+
+resource "transform" "bubbly_repo" {
+	api_version = "v1"
+
+	spec {
+		input "data" {}
+
+		# Some latest stats about popularity of the Bubbly repo
+		data "bubbly_repo" {
+			fields = {
+				"name":                self.input.data.repository.name
+				"fork_count":          self.input.data.repository.forkCount
+				"stargazer_count":     self.input.data.repository.stargazerCount
+				"watcher_count":       self.input.data.repository.watchers.totalCount
+				"open_issues_count":   self.input.data.repository.open_issues.totalCount
+				"closed_issues_count": self.input.data.repository.closed_issues.totalCount
+			}
+		}
+
+		# Last few open issues
+		dynamic "data" {
+			labels = ["issues"]
+
+			for_each = self.input.data.repository.open_issues.edges
+			iterator = it
+			
+			content {
+				joins = ["bubbly_repo"]
+				fields = {
+					"url":    it.value.node.url
+					"title":  it.value.node.title
+					"state":  it.value.node.state
+				}
+			}
+		}
+
+		# Last few closed issues
+		dynamic "data" {
+			labels = ["issues"]
+
+			for_each = self.input.data.repository.closed_issues.edges
+			iterator = it
+
+			content {
+				joins = ["bubbly_repo"]
+				fields = {
+					"url":    it.value.node.url
+					"title":  it.value.node.title
+					"state":  it.value.node.state
+				}
+			}
+		}
+	}
+}
+
+resource "load" "bubbly_repo" {
+	api_version = "v1"
+
+	spec {
+		input "data" {}
+		data = self.input.data
+	}
+}
+
+resource "pipeline" "bubbly_repo" {
+	api_version = "v1"
+
+	spec {
+		task "extract" {
+			resource = "extract/bubbly_repo"
+		}
+
+		task "transform" {
+			resource = "transform/bubbly_repo"
+			input "data" {
+				value = self.task.extract.value
+			}
+		}
+
+		task "load" {
+			resource = "load/bubbly_repo"
+			input "data" {
+				value = self.task.transform.value
+			}
+		}
+	}
+}
+
+resource "pipeline_run" "bubbly_repo" {
+	api_version = "v1"
+	spec {
+		pipeline = "pipeline/bubbly_repo"
+	}
+}

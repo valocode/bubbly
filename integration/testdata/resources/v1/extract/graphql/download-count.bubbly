@@ -1,0 +1,245 @@
+#
+# Calculates the total download count for the latest release of Docker Compose
+# using GitHub GraphQL end-point. In the future, once Bubbly is released,
+# we can repurpose this to report on Bubbly. And possible join it with `github.bubbly`
+#
+# NB: GitHub GraphQL end-point requires authentication.
+#
+# As Docker Compose is a public repo, a token with a subscope for public repos is ok.
+# To access private repos, an access token with FULL `repo` scope is required.
+# https://docs.github.com/en/developers/apps/scopes-for-oauth-apps
+#
+# This script reads the GitHub access from an environment variable GH_TOKEN
+#
+
+resource "extract" "bubbly_repo" {
+	api_version = "v1"
+
+	spec {
+		type = "graphql"
+
+		source {
+			url = "https://api.github.com/graphql"
+			
+			query = <<EOT
+				query { 
+					repository(owner:"docker", name:"compose") {
+
+						owner {
+							login
+						}
+						name
+
+						forkCount
+						stargazerCount
+						watchers {
+							totalCount
+						}
+
+						open_issues:issues(last:3, states:OPEN) {
+							totalCount
+							edges {
+								node {
+									url
+									title
+									state
+								}
+							}
+						}
+
+						closed_issues:issues(last:3, states:CLOSED) {
+							totalCount
+							edges {
+								node {
+									url
+									title
+									state
+								}
+							}
+						}
+
+						releases(last:1) {
+							totalCount
+							edges {
+								node {
+									id
+									name
+									createdAt
+
+									releaseAssets(first:100) {
+										totalCount
+										nodes {
+											name
+											downloadCount
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			EOT
+
+			bearer_token = env("GH_TOKEN")
+
+			format = object({
+				repository: object({
+					owner: object({
+						login: string
+					}),
+					name: string,
+					forkCount: number,
+					stargazerCount: number,
+					watchers: object({
+						totalCount: number
+					})
+					open_issues: object({
+						totalCount: number,
+						edges: list(object({
+							node: object({
+								url: string,
+								title: string,
+								state: string
+							})
+						}))
+					}),
+					closed_issues: object({
+						totalCount: number,
+						edges: list(object({
+							node: object({
+								url: string,
+								title: string,
+								state: string
+							})
+						}))
+					}),
+					releases: object({
+						totalCount: number,
+						edges: list(object({
+							node: object({
+								id: string,
+								name: string,
+								createdAt: string,
+								releaseAssets: object({
+									totalCount: number,
+									nodes: list(object({
+										name: string,
+										downloadCount: number
+									}))
+								})
+							})
+						}))
+					})
+				})
+			})
+		}
+	}
+}
+
+resource "transform" "bubbly_repo" {
+	api_version = "v1"
+
+	spec {
+		input "data" {}
+
+		# Summary about how popular is the repo and the latest release
+		data "bubbly_repo" {
+			fields = {
+				"owner":               self.input.data.repository.owner.login
+				"name":                self.input.data.repository.name
+				"fork_count":          self.input.data.repository.forkCount
+				"stargazer_count":     self.input.data.repository.stargazerCount
+				"watcher_count":       self.input.data.repository.watchers.totalCount
+				"open_issues_count":   self.input.data.repository.open_issues.totalCount
+				"closed_issues_count": self.input.data.repository.closed_issues.totalCount
+				"releases_count":      self.input.data.repository.releases.totalCount
+				"download_count":      sum([for k in self.input.data.repository.releases.edges[0].node.releaseAssets.nodes: (k.name == "run.sh") || (substr(k.name,-7,7) == ".sha256") ? 0 : k.downloadCount])
+			}
+			# Because the `(last:1)` argument is supplied to `releases`, we are confident that `releases.edges` only has one element.
+			#
+			# Docker Compose repo specific information: 
+			#   - Release assets include files ending in `.sha256` and the file `run.sh` which are _not_ releases,
+			#     thus should not be included in the total `download_count`.
+			#   - To filter out unsuitable entries, the HCL `for` expression is combined with the HCL conditional expression,
+			#     and the substring extraction HCL function (`substr`) is used to extract the suffix of the release asset name.
+			#   - Should such shenanigans not be necessary, HCL "Splat Expressions" feature makes for a convenient one liner to extract
+			#     all `downloadCount` entries from the list with the special `[*]` symbol. Example:
+			#
+			#     sum(self.input.data.repository.releases.edges[0].node.releaseAssets.nodes[*].downloadCount)
+		}
+
+		# Last few open issues
+		dynamic "data" {
+			labels = ["issues"]
+
+			for_each = self.input.data.repository.open_issues.edges
+			iterator = it
+			
+			content {
+				joins = ["bubbly_repo"]
+				fields = {
+					"url":    it.value.node.url
+					"title":  it.value.node.title
+					"state":  it.value.node.state
+				}
+			}
+		}
+
+		# Last few closed issues
+		dynamic "data" {
+			labels = ["issues"]
+
+			for_each = self.input.data.repository.closed_issues.edges
+			iterator = it
+
+			content {
+				joins = ["bubbly_repo"]
+				fields = {
+					"url":    it.value.node.url
+					"title":  it.value.node.title
+					"state":  it.value.node.state
+				}
+			}
+		}
+	}
+}
+
+resource "load" "bubbly_repo" {
+	api_version = "v1"
+
+	spec {
+		input "data" {}
+		data = self.input.data
+	}
+}
+
+resource "pipeline" "bubbly_repo" {
+	api_version = "v1"
+
+	spec {
+		task "extract" {
+			resource = "extract/bubbly_repo"
+		}
+
+		task "transform" {
+			resource = "transform/bubbly_repo"
+			input "data" {
+				value = self.task.extract.value
+			}
+		}
+
+		task "load" {
+			resource = "load/bubbly_repo"
+			input "data" {
+				value = self.task.transform.value
+			}
+		}
+	}
+}
+
+resource "pipeline_run" "bubbly_repo" {
+	api_version = "v1"
+	spec {
+		pipeline = "pipeline/bubbly_repo"
+	}
+}

@@ -143,10 +143,15 @@ func TestExtractGit(t *testing.T) {
 
 func TestExtractGraphQL(t *testing.T) {
 
+	// Setting up Bubbly
+	bCtx := env.NewBubblyContext()
+	bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
 	// Using GitHub GraphQL API as it is rich, mature, and interesting!
 	url := "https://api.github.com/graphql"
 
-	// The GraphQL query to send
+	// The GraphQL query to send:
+	// Read public repo information.
 	query := `query { 
 		repository(owner:"octocat", name:"Hello-World") {
 			issues(first:3, states:CLOSED) {
@@ -159,9 +164,10 @@ func TestExtractGraphQL(t *testing.T) {
 			}
 	  	}
 	}`
-	// TODO: read actual query from a file
 
 	// To communicate with the GraphQL server, you'll need an OAuth token with the right scopes.
+	// To read public repo information, `public_repo` scope (a subscope within `repo`) is required.
+	// For private repo information, the full `repo` scope is required.
 	// More info: https://docs.github.com/en/graphql/guides/forming-calls-with-graphql#authenticating-with-graphql
 	var bearerToken string
 	if value, ok := os.LookupEnv("GH_TOKEN"); ok {
@@ -174,31 +180,52 @@ func TestExtractGraphQL(t *testing.T) {
 		}
 	}
 
-	// Setting up Bubbly and the request
-	bCtx := env.NewBubblyContext()
-	bCtx.UpdateLogLevel(zerolog.DebugLevel)
-
-	// TODO: put format of the response in a separate file?
+	// Set up `extract/graphql` instance
 	source := graphqlSource{
 		URL:         url,
 		Query:       query,
 		BearerToken: &bearerToken,
 		Format: cty.Object(map[string]cty.Type{
-			"data": cty.Object(map[string]cty.Type{
-				"repository": cty.Object(map[string]cty.Type{
-					"issues": cty.Object(map[string]cty.Type{
-						"edges": cty.List(cty.Object(map[string]cty.Type{
-							"node": cty.Object(map[string]cty.Type{
-								"title": cty.String,
-								"url":   cty.String,
-							}),
-						})),
-					}),
+			"repository": cty.Object(map[string]cty.Type{
+				"issues": cty.Object(map[string]cty.Type{
+					"edges": cty.List(cty.Object(map[string]cty.Type{
+						"node": cty.Object(map[string]cty.Type{
+							"title": cty.String,
+							"url":   cty.String,
+						}),
+					})),
 				}),
 			}),
 		}),
 	}
 	setGraphQLSourceDefaults(bCtx, &source)
+
+	expected := cty.ObjectVal(map[string]cty.Value{
+		"repository": cty.ObjectVal(map[string]cty.Value{
+			"issues": cty.ObjectVal(map[string]cty.Value{
+				"edges": cty.ListVal([]cty.Value{
+					cty.ObjectVal(map[string]cty.Value{
+						"node": cty.ObjectVal(map[string]cty.Value{
+							"title": cty.StringVal("Hello World in all programming languages"),
+							"url":   cty.StringVal("https://github.com/octocat/Hello-World/issues/7"),
+						}),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"node": cty.ObjectVal(map[string]cty.Value{
+							"title": cty.StringVal("test100"),
+							"url":   cty.StringVal("https://github.com/octocat/Hello-World/issues/10"),
+						}),
+					}),
+					cty.ObjectVal(map[string]cty.Value{
+						"node": cty.ObjectVal(map[string]cty.Value{
+							"title": cty.StringVal("test100"),
+							"url":   cty.StringVal("https://github.com/octocat/Hello-World/issues/11"),
+						}),
+					}),
+				}),
+			}),
+		}),
+	})
 
 	// Send the request to GitHub API endpoint and read the result
 	val, err := source.Resolve(bCtx)
@@ -207,37 +234,6 @@ func TestExtractGraphQL(t *testing.T) {
 	require.NoError(t, err, "error in resolving GraphQL extract")
 	require.NotNil(t, val, "nil value returned by GraphQL extract resolver")
 	require.False(t, val.IsNull(), "cty.NullVal returned by GraphQL extract resolver")
-
-	// TODO: read the expected response from a file?
-	expected := cty.ObjectVal(map[string]cty.Value{
-		"data": cty.ObjectVal(map[string]cty.Value{
-			"repository": cty.ObjectVal(map[string]cty.Value{
-				"issues": cty.ObjectVal(map[string]cty.Value{
-					"edges": cty.ListVal([]cty.Value{
-						cty.ObjectVal(map[string]cty.Value{
-							"node": cty.ObjectVal(map[string]cty.Value{
-								"title": cty.StringVal("Hello World in all programming languages"),
-								"url":   cty.StringVal("https://github.com/octocat/Hello-World/issues/7"),
-							}),
-						}),
-						cty.ObjectVal(map[string]cty.Value{
-							"node": cty.ObjectVal(map[string]cty.Value{
-								"title": cty.StringVal("test100"),
-								"url":   cty.StringVal("https://github.com/octocat/Hello-World/issues/10"),
-							}),
-						}),
-						cty.ObjectVal(map[string]cty.Value{
-							"node": cty.ObjectVal(map[string]cty.Value{
-								"title": cty.StringVal("test100"),
-								"url":   cty.StringVal("https://github.com/octocat/Hello-World/issues/11"),
-							}),
-						}),
-					}),
-				}),
-			}),
-		}),
-	})
-
 	require.Equal(t, cty.BoolVal(true), val.Equals(expected))
 }
 

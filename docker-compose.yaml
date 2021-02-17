@@ -4,6 +4,7 @@ volumes:
   postgres-data:
 
 services:
+
   # One of the Store options for Bubbly
   postgres:
     image: postgres:13.0
@@ -24,6 +25,7 @@ services:
       - type: volume
         source: postgres-data
         target: /var/lib/postgresql/data
+
   # Grafana with GraphQL plugin
   grafana:
     image: grafana/grafana:7.3.7
@@ -53,12 +55,12 @@ services:
 
   # Bubbly server
   bubbly:
+    depends_on:
+      - "${BUBBLY_STORE_PROVIDER:-cockroachdb}"
     container_name: bubbly
     build:
       context: .
       dockerfile: Dockerfile
-    depends_on:
-      - "${BUBBLY_STORE_PROVIDER:-cockroachdb}"
     environment:
       BUBBLY_STORE_PROVIDER: "${BUBBLY_STORE_PROVIDER:-cockroachdb}"
     networks:

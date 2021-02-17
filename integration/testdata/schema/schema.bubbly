@@ -96,3 +96,50 @@ table "spdx_license" {
         type = number
     }
 }
+
+# GitHub GraphQL API
+table "bubbly_repo" {
+
+    field "owner" {
+        type = string
+    }
+    field "name" {
+        type = string
+    }
+    # TODO: would be useful if could say that (owner, name) tuple is unique
+
+    field "fork_count" {
+        type = number
+    }
+    field "stargazer_count" {
+        type = number
+    }
+    field "watcher_count" {
+        type = number
+    }
+    field "open_issues_count" {
+        type = number
+    }
+    field "closed_issues_count" {
+        type = number
+    }
+    field "releases_count" {
+        type = number
+    }
+    field "download_count" {
+        type = number
+    }
+
+    table "issues" {
+        field "title" {
+            type = string
+        }
+        field "url" {
+            type   = string
+            unique = true
+        }
+        field "state" {
+            type = string
+        }
+    }
+}

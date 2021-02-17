@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"os"
+
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
 	ctyyaml "github.com/zclconf/go-cty-yaml"
 	"github.com/zclconf/go-cty/cty"
@@ -45,6 +47,7 @@ func stdfunctions() map[string]function.Function {
 		"dirname":      funcs.DirnameFunc,
 		"distinct":     stdlib.DistinctFunc,
 		"element":      stdlib.ElementFunc,
+		"env":          EnvFunc,
 		"chunklist":    stdlib.ChunklistFunc,
 		// "file":             funcs.MakeFileFunc(s.BaseDir, false),
 		// "fileexists":       funcs.MakeFileExistsFunc(s.BaseDir),
@@ -127,3 +130,18 @@ func stdfunctions() map[string]function.Function {
 		"zipmap":          stdlib.ZipmapFunc,
 	}
 }
+
+// EnvFunc is a function that looks up the value of an environment variable.
+// If the variable is undefined, an empty string is returned instead.
+var EnvFunc = function.New(&function.Spec{
+	Params: []function.Parameter{
+		{
+			Name: "name",
+			Type: cty.String,
+		},
+	},
+	Type: function.StaticReturnType(cty.String),
+	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
+		return cty.StringVal(os.Getenv(args[0].AsString())), nil
+	},
+})
