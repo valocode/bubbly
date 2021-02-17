@@ -12,7 +12,7 @@ func newBubblySchema() *bubblySchema {
 	schema := &bubblySchema{
 		Tables: make(map[string]core.Table),
 	}
-
+	// Populate the fresh schema with the internal tables
 	for _, t := range internalTables {
 		schema.Tables[t.Name] = t
 	}

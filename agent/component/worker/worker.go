@@ -34,6 +34,7 @@ func New(bCtx *env.BubblyContext) *Worker {
 	}
 }
 
+// TODO: describe more about the Worker
 type Worker struct {
 	*component.ComponentCore
 	ResourceWorker *interval.ResourceWorker
@@ -109,7 +110,7 @@ func (w *Worker) pollResources(bCtx *env.BubblyContext) (*component.Publication,
 	return &pub, nil
 }
 
-// Run runs the interval.ResourceWorker and
+// Run runs the interval.ResourceWorker
 func (w *Worker) Run(bCtx *env.BubblyContext, agentContext context.Context) error {
 	bCtx.Logger.Debug().
 		Str(
@@ -134,6 +135,7 @@ func (w *Worker) Run(bCtx *env.BubblyContext, agentContext context.Context) erro
 	}
 }
 
+// run is a goroutine invoked from public Run method
 func (w *Worker) run(bCtx *env.BubblyContext, ch chan error) {
 	// poll for PipelineRun resources from the data store
 	reply, err := w.pollResources(bCtx)

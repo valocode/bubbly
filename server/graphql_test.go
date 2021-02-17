@@ -13,9 +13,9 @@ import (
 func IntegrationTestQuery(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	r := gofight.New()
-	s := New(bCtx)
+	server := New(bCtx)
 
-	router := s.setupRouter(bCtx)
+	router := server.setupRouter(bCtx)
 	// First, insert data into MemDb using the Upload functionality
 	r.POST("/alpha1/upload").
 		SetJSON(gofight.D{"data": testData.DataStruct()}).
@@ -38,9 +38,9 @@ func IntegrationTestQueryFail(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	r := gofight.New()
 
-	s := New(bCtx)
+	server := New(bCtx)
 
-	router := s.setupRouter(bCtx)
+	router := server.setupRouter(bCtx)
 
 	r.POST("/api/graphql").
 		SetJSON(gofight.D{

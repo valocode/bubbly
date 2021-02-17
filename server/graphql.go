@@ -1,7 +1,6 @@
 package server
 
 import (
-	// "encoding/json"
 	"fmt"
 	"net/http"
 
@@ -15,11 +14,6 @@ type queryReq struct {
 	Query string `json:"query"`
 }
 
-// type graphqlErrors []graphqlError
-// type graphqlError struct {
-// 	Message string `json:"message"`
-// }
-
 // Query godoc
 // @Summary Query performs graphql related tasks
 // @ID graphql
@@ -30,7 +24,7 @@ type queryReq struct {
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Router /api/graphql [post]
-func (a *Server) Query(bCtx *env.BubblyContext, c echo.Context) error {
+func (*Server) Query(bCtx *env.BubblyContext, c echo.Context) error {
 	var query queryReq
 	if err := c.Bind(&query); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
