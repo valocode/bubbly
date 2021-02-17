@@ -82,7 +82,6 @@ func (n *NATS) GetResource(bCtx *env.BubblyContext, resQuery string) ([]byte,
 func (n *NATS) PostResource(bCtx *env.BubblyContext, data []byte) error {
 	bCtx.Logger.Debug().
 		Interface("client", n.Config).
-		Interface("resource", data).
 		Msg("Posting resource to store")
 
 	request := component.Publication{
@@ -108,7 +107,6 @@ func (n *NATS) PostResource(bCtx *env.BubblyContext, data []byte) error {
 func (n *NATS) Upload(bCtx *env.BubblyContext, data []byte) error {
 	bCtx.Logger.Debug().
 		Interface("nats_client", n.Config).
-		Interface("schema", data).
 		Msg("Uploading data to the data store")
 
 	request := component.Publication{

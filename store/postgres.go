@@ -88,8 +88,7 @@ func psqlNewConn(bCtx *env.BubblyContext, connStr string) (*pgx.Conn, error) {
 	}
 
 	config.Logger = zerologadapter.NewLogger(*bCtx.Logger)
-	// TODO: set LogLevel properly... not just debug
-	config.LogLevel = pgx.LogLevelDebug
+	config.LogLevel = pgx.LogLevelInfo
 
 	// config.ConnConfig.LogLevel
 	conn, err := pgx.ConnectConfig(context.Background(), config)

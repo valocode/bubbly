@@ -40,6 +40,10 @@ func DefaultStoreConfig() *StoreConfig {
 		CockroachUser:     defaultEnv("COCKROACH_USER", "root"),
 		CockroachPassword: defaultEnv("COCKROACH_PASSWORD", "admin"),
 		CockroachDatabase: defaultEnv("COCKROACH_DATABASE", "defaultdb"),
+
+		// Default retry configs, so retry every 1 second up to 5 times
+		RetrySleep:    1,
+		RetryAttempts: 5,
 	}
 }
 

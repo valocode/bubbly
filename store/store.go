@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/graphql-go/graphql"
 	"github.com/zclconf/go-cty/cty"
@@ -21,13 +22,23 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 		err error
 	)
 
-	switch bCtx.StoreConfig.Provider {
-	case config.PostgresStore:
-		p, err = newPostgres(bCtx)
-	case config.CockroachDBStore:
-		p, err = newCockroachdb(bCtx)
-	default:
-		return nil, fmt.Errorf("invalid provider: %s", bCtx.StoreConfig.Provider)
+	for attempt := 1; attempt <= bCtx.StoreConfig.RetryAttempts; attempt++ {
+		switch bCtx.StoreConfig.Provider {
+		case config.PostgresStore:
+			p, err = newPostgres(bCtx)
+		case config.CockroachDBStore:
+			p, err = newCockroachdb(bCtx)
+		default:
+			return nil, fmt.Errorf("invalid provider: %s", bCtx.StoreConfig.Provider)
+		}
+		// If the connection succeeded then break out of the attempt loop
+		if err == nil {
+			break
+		}
+		bCtx.Logger.Warn().Err(err).Msgf("Store connection attempt %d failed. %d attempts left", attempt, bCtx.StoreConfig.RetryAttempts-attempt)
+
+		// Sleep for the specified amount of time
+		time.Sleep(time.Second * time.Duration(bCtx.StoreConfig.RetrySleep))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to provider: %s: %w", bCtx.StoreConfig.Provider, err)

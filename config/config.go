@@ -45,6 +45,9 @@ type StoreConfig struct {
 	CockroachUser     string
 	CockroachPassword string
 	CockroachDatabase string
+
+	RetrySleep    int
+	RetryAttempts int
 }
 
 // ###########################################
