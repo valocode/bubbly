@@ -1,10 +1,7 @@
 package store
 
 import (
-	"fmt"
 	"testing"
-
-	"github.com/r3labs/diff"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -233,10 +230,8 @@ func TestCompareSchema(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotErr := compareSchema(tt.args.s1, tt.args.s2)
 			require.NoError(t, gotErr)
-			assert.Equal(t, tt.want, got)
-			// fmt.Println(deep.Equal(tt.want, got))
-			cl, _ := diff.Diff(tt.want, got)
-			fmt.Println(cl)
+			assert.ElementsMatch(t, tt.want, got)
+
 		})
 	}
 }
