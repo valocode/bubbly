@@ -34,7 +34,7 @@ func (a *Server) PostSchema(bCtx *env.BubblyContext, c echo.Context) error {
 	sBytes, err := json.Marshal(schema)
 
 	if err != nil {
-		return err
+		echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	if err := nc.PostSchema(bCtx, sBytes); err != nil {

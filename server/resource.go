@@ -30,7 +30,7 @@ func (a *Server) PostResource(bCtx *env.BubblyContext,
 	// as bytes
 	resJSON := core.ResourceBlockJSON{}
 	if err := c.Bind(&resJSON); err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	// get the ResourceBlock from the JSON representation. We don't actually
@@ -39,7 +39,7 @@ func (a *Server) PostResource(bCtx *env.BubblyContext,
 	// If it fails, return an error code to show it
 	_, err := resJSON.ResourceBlock()
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal JSON resource: %w", err)
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("failed to unmarshal JSON resource: %w", err))
 	}
 
 	data, err := resJSON.Data()
@@ -50,7 +50,7 @@ func (a *Server) PostResource(bCtx *env.BubblyContext,
 	dBytes, err := json.Marshal(data)
 
 	if err != nil {
-		return fmt.Errorf("failed to marshal: %w", err)
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("failed to marshal: %w", err))
 	}
 	nc := client.NewNATS(bCtx)
 
@@ -100,7 +100,7 @@ func (a *Server) GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 	resultBytes, err := nc.GetResource(bCtx, resQuery)
 
 	if err != nil {
-		return fmt.Errorf("error getting resource: %w", err)
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error getting resource: %w", err))
 	}
 
 	var result interface{}
@@ -108,7 +108,7 @@ func (a *Server) GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 	err = json.Unmarshal(resultBytes, &result)
 
 	if err != nil {
-		return fmt.Errorf("error unmarshalling resource: %w", err)
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error unmarshalling resource: %w", err))
 	}
 
 	var (

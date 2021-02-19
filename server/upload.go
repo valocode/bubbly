@@ -32,7 +32,7 @@ func (a *Server) upload(bCtx *env.BubblyContext, c echo.Context) error {
 	sBytes, err := json.Marshal(data)
 
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	if err := nc.Upload(bCtx, sBytes); err != nil {

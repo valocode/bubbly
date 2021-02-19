@@ -33,7 +33,7 @@ func (*Server) Query(bCtx *env.BubblyContext, c echo.Context) error {
 	nc := client.NewNATS(bCtx)
 
 	if err := nc.Connect(bCtx); err != nil {
-		return fmt.Errorf("failed to connect to NATS server: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to NATS server: %w", err))
 	}
 
 	results, err := nc.Query(bCtx, query.Query)
