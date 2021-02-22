@@ -60,6 +60,9 @@ func initCommands(bCtx *env.BubblyContext, cmd *cobra.Command) {
 
 	// help topics
 	cmd.AddCommand(NewHelpTopic("environment"))
+
+	getCmd, _ := NewCmdGet(bCtx)
+	cmd.AddCommand(getCmd)
 }
 
 func initFlags(bCtx *env.BubblyContext, cmd *cobra.Command) {

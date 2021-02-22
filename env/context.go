@@ -12,7 +12,8 @@ import (
 // functions throughout the codebase.
 type BubblyContext struct {
 	// Logger stores the global bubbly logger
-	Logger *zerolog.Logger
+	Logger    *zerolog.Logger
+	CLIConfig *config.CLIConfig
 	// Config stores global bubbly configuration,
 	// such as bubbly server configuration
 	ServerConfig *config.ServerConfig
@@ -29,6 +30,7 @@ func NewBubblyContext() *BubblyContext {
 		ServerConfig: config.DefaultServerConfig(),
 		StoreConfig:  config.DefaultStoreConfig(),
 		AgentConfig:  config.DefaultAgentConfig(),
+		CLIConfig:    config.DefaultCLIConfig(),
 	}
 }
 

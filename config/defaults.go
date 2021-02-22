@@ -129,3 +129,10 @@ func DefaultAgentComponentsEnabled() *AgentComponentsToggle {
 		NATSServer: natsServerToggle,
 	}
 }
+
+func DefaultCLIConfig() *CLIConfig {
+	color, _ := strconv.ParseBool(defaultEnv("COLOR", "true"))
+	return &CLIConfig{
+		Color: color,
+	}
+}

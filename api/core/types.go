@@ -20,7 +20,7 @@ type Conditions map[string]Condition
 // ResourceOutput represents the output from applying a resource
 type ResourceOutput struct {
 	ID     string
-	Status events.Event
+	Status events.Status
 	Error  error
 	Value  cty.Value
 }

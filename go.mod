@@ -15,12 +15,14 @@ require (
 	github.com/cli/cli v1.5.0 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.1.0
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
+	github.com/fatih/color v1.10.0
 	github.com/fzipp/gocyclo v0.3.1 // indirect
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/graphql-go/graphql v0.7.9
 	github.com/graphql-go/handler v0.2.3
 	github.com/hako/durafmt v0.0.0-20200710122514-c0fb7b4da026
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/hcl/v2 v2.8.1
 	github.com/hashicorp/terraform v0.14.3
 	github.com/imdario/mergo v0.3.11
@@ -40,6 +42,7 @@ require (
 	github.com/ory/dockertest/v3 v3.6.3
 	github.com/r3labs/diff v1.1.0
 	github.com/rs/zerolog v1.20.0
+	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5

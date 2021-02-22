@@ -93,3 +93,11 @@ type NATSServerConfig struct {
 	Port     int
 	Addr     string
 }
+
+// ##########################
+// CLI
+// ##########################
+
+type CLIConfig struct {
+	Color bool
+}
