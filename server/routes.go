@@ -40,18 +40,6 @@ func (s *Server) initializeRoutes(bCtx *env.BubblyContext,
 		})
 	}
 
-	// API level versioning
-	// Establish grouping rules for versioning
-	v1 := router.Group("/v1")
-	{
-		v1.GET("/status", status)
-		v1.GET("/version", versionHandler)
-	}
-
 	// Serve Swagger files
 	router.GET("/swagger/*", echoSwagger.WrapHandler)
-}
-
-func status(c echo.Context) error {
-	return c.JSON(http.StatusOK, &Status{"alive"})
 }
