@@ -88,6 +88,7 @@ var eventStoreTrigger = &trigger{
 						Fields: map[string]cty.Value{
 							"status": cty.StringVal(events.ResourceCreatedUpdated.String()),
 							"time":   cty.StringVal(events.TimeNow()),
+							"error":  cty.StringVal(""),
 						},
 						Joins: []string{core.ResourceTableName},
 					},

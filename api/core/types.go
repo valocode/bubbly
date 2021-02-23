@@ -1,7 +1,7 @@
 package core
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/zclconf/go-cty/cty"
 
@@ -50,10 +50,14 @@ func (r *ResourceOutput) Data() Data {
 		TableName: EventTableName,
 		Fields: map[string]cty.Value{
 			"status": cty.StringVal(r.Status.String()),
-			"error":  cty.StringVal(r.Error.Error()),
+			"error":  cty.StringVal(""),
 			"time":   cty.StringVal(events.TimeNow()),
 		},
 		Joins: []string{ResourceTableName},
+	}
+
+	if r.Error != nil {
+		d.Fields["error"] = cty.StringVal(r.Error.Error())
 	}
 
 	return d
@@ -67,8 +71,7 @@ func (r *ResourceOutput) DataBlocks() (DataBlocks, error) {
 	// The resourceID is needed in order to construct the join to the
 	// _resource table
 	if r.ID == "" {
-		return nil, fmt.Errorf(
-			"unsafe to produce datablocks from ResourceOutput due to missing ID")
+		return nil, errors.New("unsafe to produce datablocks from ResourceOutput due to missing ID")
 	}
 
 	// this data represents the join; how we connect the
@@ -86,6 +89,7 @@ func (r *ResourceOutput) DataBlocks() (DataBlocks, error) {
 		Fields: map[string]cty.Value{
 			"status": cty.StringVal(r.Status.String()),
 			"time":   cty.StringVal(events.TimeNow()),
+			"error":  cty.StringVal(""),
 		},
 		Joins: []string{ResourceTableName},
 	}
