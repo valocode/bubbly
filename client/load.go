@@ -23,7 +23,7 @@ func (c *HTTP) Load(bCtx *env.BubblyContext, data core.DataBlocks) error {
 
 	// req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/alpha1/upload", c.HostURL), bytes.NewBuffer(jsonReq))
 	_, err = c.handleResponse(
-		http.Post(fmt.Sprintf("%s/alpha1/upload", c.HostURL), "application/json", bytes.NewBuffer(jsonReq)),
+		http.Post(fmt.Sprintf("%s/api/v1/upload", c.HostURL), "application/json", bytes.NewBuffer(jsonReq)),
 	)
 
 	if err != nil {

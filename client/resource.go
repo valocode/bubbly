@@ -21,7 +21,7 @@ func (h *HTTP) GetResource(bCtx *env.BubblyContext, id string) ([]byte, error) {
 	bCtx.Logger.Debug().Str("resource_id", id).Msg("Getting resource from bubbly API.")
 
 	resp, err := h.handleResponse(
-		http.Get(fmt.Sprintf("%s/api/resource/%s", h.HostURL, id)),
+		http.Get(fmt.Sprintf("%s/api/v1/resource/%s", h.HostURL, id)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf(`failed to get resource "%s": %w`, id, err)
@@ -35,7 +35,7 @@ func (h *HTTP) GetResource(bCtx *env.BubblyContext, id string) ([]byte, error) {
 func (h *HTTP) PostResource(bCtx *env.BubblyContext, resource []byte) error {
 
 	_, err := h.handleResponse(
-		http.Post(fmt.Sprintf("%s/api/resource", h.HostURL),
+		http.Post(fmt.Sprintf("%s/api/v1/resource", h.HostURL),
 			"application/json", bytes.NewBuffer(resource)),
 	)
 

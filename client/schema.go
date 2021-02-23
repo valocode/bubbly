@@ -15,7 +15,7 @@ import (
 func (c *HTTP) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
 
 	_, err := c.handleResponse(
-		http.Post(fmt.Sprintf("%s/api/schema", c.HostURL), "application/json", bytes.NewBuffer(schema)),
+		http.Post(fmt.Sprintf("%s/api/v1/schema", c.HostURL), "application/json", bytes.NewBuffer(schema)),
 	)
 	return err
 }

@@ -17,7 +17,7 @@ func IntegrationTestQuery(t *testing.T) {
 
 	router := server.setupRouter(bCtx)
 	// First, insert data into MemDb using the Upload functionality
-	r.POST("/alpha1/upload").
+	r.POST("/api/v1/upload").
 		SetJSON(gofight.D{"data": testData.DataStruct()}).
 		Run(router, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 			assert.Equal(t, http.StatusOK, r.Code)
@@ -25,7 +25,7 @@ func IntegrationTestQuery(t *testing.T) {
 
 		})
 	// Finally, Test the query function of graphql
-	r.POST("/api/graphql").
+	r.POST("/api/v1/graphql").
 		SetJSON(gofight.D{
 			"query": `{product(Name:"1234"){Name}}`,
 		}).
@@ -42,7 +42,7 @@ func IntegrationTestQueryFail(t *testing.T) {
 
 	router := server.setupRouter(bCtx)
 
-	r.POST("/api/graphql").
+	r.POST("/api/v1/graphql").
 		SetJSON(gofight.D{
 			"query": `{tablez(Name:"Boise Zoo"){Name}}`,
 		}).

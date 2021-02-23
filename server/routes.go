@@ -17,7 +17,7 @@ func (s *Server) initializeRoutes(bCtx *env.BubblyContext,
 		return c.String(http.StatusOK, "pong")
 	})
 
-	api := router.Group("/api")
+	api := router.Group("/api/v1")
 	{
 		api.POST("/resource", func(c echo.Context) error {
 			return s.PostResource(bCtx, c)
@@ -34,6 +34,10 @@ func (s *Server) initializeRoutes(bCtx *env.BubblyContext,
 		api.POST("/schema", func(c echo.Context) error {
 			return s.PostSchema(bCtx, c)
 		})
+
+		api.POST("/upload", func(c echo.Context) error {
+			return s.upload(bCtx, c)
+		})
 	}
 
 	// API level versioning
@@ -42,14 +46,6 @@ func (s *Server) initializeRoutes(bCtx *env.BubblyContext,
 	{
 		v1.GET("/status", status)
 		v1.GET("/version", versionHandler)
-	}
-
-	// Resource Level Versioning
-	alpha1 := router.Group("/alpha1")
-	{
-		alpha1.POST("/upload", func(c echo.Context) error {
-			return s.upload(bCtx, c)
-		})
 	}
 
 	// Serve Swagger files
