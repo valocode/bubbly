@@ -5,6 +5,19 @@ import (
 	"strconv"
 )
 
+// Default CLI configuration
+const (
+	defaultCLIColorToggle = true
+	DefaultDebugToggle    = false
+)
+
+// Default Bubbly API Server configuration
+const (
+	defaultAPIServerProtocol = "http"
+	DefaultAPIServerHost     = "127.0.0.1"
+	DefaultAPIServerPort     = "8111"
+)
+
 // Default store configuration
 const (
 	DefaultStoreProvider = "postgres"
@@ -55,9 +68,9 @@ func defaultEnv(key, defaultValue string) string {
 // or, preferentially, from provided environment variables.
 func DefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
-		Protocol: defaultEnv("BUBBLY_PROTOCOL", "http"),
-		Host:     defaultEnv("BUBBLY_HOST", "localhost"),
-		Port:     defaultEnv("BUBBLY_PORT", "8111"),
+		Protocol: defaultEnv("BUBBLY_PROTOCOL", defaultAPIServerProtocol),
+		Host:     defaultEnv("BUBBLY_HOST", DefaultAPIServerHost),
+		Port:     defaultEnv("BUBBLY_PORT", DefaultAPIServerPort),
 	}
 }
 
@@ -131,7 +144,7 @@ func DefaultAgentComponentsEnabled() *AgentComponentsToggle {
 }
 
 func DefaultCLIConfig() *CLIConfig {
-	color, _ := strconv.ParseBool(defaultEnv("COLOR", "true"))
+	color, _ := strconv.ParseBool(defaultEnv("COLOR", strconv.FormatBool(defaultCLIColorToggle)))
 	return &CLIConfig{
 		Color: color,
 	}

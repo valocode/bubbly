@@ -1,26 +1,17 @@
-/*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
 	"github.com/spf13/cobra"
 
+	agentCmd "github.com/verifa/bubbly/cmd/agent"
+	applyCmd "github.com/verifa/bubbly/cmd/apply"
+	getCmd "github.com/verifa/bubbly/cmd/get"
+	schemaCmd "github.com/verifa/bubbly/cmd/schema"
+	"github.com/verifa/bubbly/cmd/topics"
+	"github.com/verifa/bubbly/config"
 	"github.com/verifa/bubbly/env"
 
-	normalise "github.com/verifa/bubbly/util/normalise"
+	"github.com/verifa/bubbly/util/normalise"
 )
 
 var (
@@ -52,26 +43,29 @@ func NewCmdRoot(bCtx *env.BubblyContext) *cobra.Command {
 }
 
 func initCommands(bCtx *env.BubblyContext, cmd *cobra.Command) {
-	applyCmd, _ := NewCmdApply(bCtx)
+	applyCmd, _ := applyCmd.NewCmdApply(bCtx)
 	cmd.AddCommand(applyCmd)
 
-	agentCmd, _ := NewCmdAgent(bCtx)
+	agentCmd, _ := agentCmd.NewCmdAgent(bCtx)
 	cmd.AddCommand(agentCmd)
 
 	// help topics
-	cmd.AddCommand(NewHelpTopic("environment"))
+	cmd.AddCommand(topics.NewHelpTopic("environment"))
 
-	getCmd, _ := NewCmdGet(bCtx)
+	getCmd, _ := getCmd.NewCmdGet(bCtx)
 	cmd.AddCommand(getCmd)
+
+	cmd.AddCommand(schemaCmd.NewCmdSchema(bCtx))
 }
 
 func initFlags(bCtx *env.BubblyContext, cmd *cobra.Command) {
 
 	f := cmd.PersistentFlags()
 
-	f.StringVar(&bCtx.ServerConfig.Host, "host", "", "bubbly API server host")
-	f.StringVar(&bCtx.ServerConfig.Port, "port", "", "bubbly API server port")
-	f.Bool("debug", false, "set log level to debug")
+	f.StringVar(&bCtx.ServerConfig.Host, "host", config.DefaultAPIServerHost, "bubbly API server host")
+	f.StringVar(&bCtx.ServerConfig.Port, "port", config.DefaultAPIServerPort, "bubbly API server port")
+
+	f.Bool("debug", config.DefaultDebugToggle, "specify whether to enable debug logging")
 
 	cmd.InitDefaultHelpFlag()
 }

@@ -3,17 +3,14 @@
 package integration
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/rs/zerolog"
 
-	"github.com/verifa/bubbly/client"
+	schemaApplyCmd "github.com/verifa/bubbly/cmd/schema/apply"
 	"github.com/verifa/bubbly/env"
-
-	testData "github.com/verifa/bubbly/integration/testdata"
 )
 
 func TestMain(m *testing.M) {
@@ -21,23 +18,15 @@ func TestMain(m *testing.M) {
 	bCtx := env.NewBubblyContext()
 	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
-	c, err := client.NewHTTP(bCtx)
-	if err != nil {
-		bCtx.Logger.Fatal().Err(err).Msg("failed to create client")
-	}
+	schemaApplyCmd, _ := schemaApplyCmd.NewCmdApply(bCtx)
 
-	tables, err := testData.TestSchema(filepath.FromSlash("./testdata/schema/schema.bubbly"))
-	if err != nil {
-		bCtx.Logger.Fatal().Err(err).Msg("failed to parse schema")
-	}
+	schemaApplyCmd.SetArgs([]string{"-f", filepath.FromSlash("./testdata/schema/schema.bubbly")})
+	schemaApplyCmd.SilenceUsage = true
 
-	tableBytes, err := json.Marshal(tables)
-	if err != nil {
-		bCtx.Logger.Fatal().Err(err).Msg("failed to json marshal schema")
-	}
+	err := schemaApplyCmd.Execute()
 
-	if err := c.PostSchema(bCtx, tableBytes); err != nil {
-		bCtx.Logger.Fatal().Err(err).Msg("failed to post schema to bubbly server")
+	if err != nil {
+		bCtx.Logger.Fatal().Err(err).Msg("failed to apply schema")
 	}
 
 	// Run the tests in this module

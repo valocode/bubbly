@@ -1,10 +1,11 @@
-package cmd
+package agent
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
+
+	"github.com/fatih/color"
 
 	"github.com/verifa/bubbly/agent"
 	"github.com/verifa/bubbly/config"
@@ -42,11 +43,12 @@ var (
 	)
 )
 
-// AgentOptions contains resolved agent configurations needed to create
-// an agent.Agent
+// AgentOptions holds everything necessary to run the command.
+// Flag values received to the agent command are loaded into the embedded
+// BubblyContext and used to run the various agent components
 type AgentOptions struct {
-	cmdutil.Options // embedding
-	BubblyContext   *env.BubblyContext
+	cmdutil.Options
+	BubblyContext *env.BubblyContext
 }
 
 // NewCmdAgent creates a new cobra.Command representing "bubbly agent"
@@ -69,7 +71,7 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 				return validationError
 			}
 
-			resolveError := o.Resolve(cmd)
+			resolveError := o.Resolve()
 
 			if resolveError != nil {
 				return resolveError
@@ -90,7 +92,7 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 				).
 				Str(
 					"deployment_type",
-					string(bCtx.AgentConfig.DeploymentType),
+					bCtx.AgentConfig.DeploymentType.String(),
 				).
 				Msg("agent configuration")
 
@@ -100,10 +102,10 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 				return runError
 			}
 
-			o.Print(cmd)
+			o.Print()
 			return nil
 		},
-		PreRun: func(cmd *cobra.Command, _ []string) {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			// prior to running the agent, we merge defaults with the
 			// config provided by command flags to make sure
 			// we have a complete configuration
@@ -111,9 +113,10 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 				o.BubblyContext.AgentConfig,
 				config.DefaultAgentConfig(),
 			); err != nil {
-				bCtx.Logger.Error().Err(err).Msg("error when merging configs")
-				os.Exit(1)
+				return fmt.Errorf("error merging agent configuration with defaults: %w", err)
 			}
+
+			return nil
 		},
 	}
 
@@ -212,7 +215,7 @@ func (o *AgentOptions) Validate(cmd *cobra.Command) error {
 
 // Resolve resolves various AgentOptions attributes from the
 // provided arguments to the Command
-func (o *AgentOptions) Resolve(cmd *cobra.Command) error {
+func (o *AgentOptions) Resolve() error {
 	// Resolve the agent components
 
 	// if the user has specified specific components, only run those
@@ -254,6 +257,11 @@ func (o *AgentOptions) Run() error {
 	return nil
 }
 
-func (o *AgentOptions) Print(cmd *cobra.Command) {
-	fmt.Fprintf(cmd.OutOrStdout(), "Agent result: %t\n", true)
+// Print the success of instancing a new bubbly agent to the user
+func (o *AgentOptions) Print() {
+	if o.BubblyContext.CLIConfig.Color {
+		color.Green("agent provisioned successfully")
+	} else {
+		fmt.Println("agent provisioned successfully")
+	}
 }

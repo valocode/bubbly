@@ -23,17 +23,6 @@ func parseHCLFile(file string, val interface{}) error {
 	return parser.DecodeExpandBody(bCtx, hclFile.Body, val, cty.NilVal)
 }
 
-// TestSchema reads and parses the Bubbly database schema file
-func TestSchema(schemaFile string) (core.Tables, error) {
-
-	tableWrapper := struct {
-		Tables core.Tables `hcl:"table,block"`
-	}{}
-
-	err := parseHCLFile(schemaFile, &tableWrapper)
-	return tableWrapper.Tables, err
-}
-
 // TestAutomationData reads and parses the data to be loaded into Bubbly Store
 func TestAutomationData(dataFile string) (core.DataBlocks, error) {
 	dataWrapper := struct {

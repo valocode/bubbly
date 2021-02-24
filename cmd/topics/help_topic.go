@@ -1,10 +1,11 @@
-package cmd
+package topics
 
 import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/spf13/cobra"
 )
 
+// HelpTopics holds any additional help topics for bubbly.
 var HelpTopics = map[string]map[string]string{
 	"environment": {
 		"alias": "env",
@@ -13,6 +14,8 @@ var HelpTopics = map[string]map[string]string{
 			# general
 
 			DEBUG: set to true to enable debug logging. Default: false
+
+			COLOR: set to false to disable CLI color output. Default: true
 
 			# bubbly API server
 
@@ -73,6 +76,7 @@ var HelpTopics = map[string]map[string]string{
 	},
 }
 
+// NewHelpTopic creates a new cobra.Command representing "bubbly <topic>"
 func NewHelpTopic(topic string) *cobra.Command {
 	cmd := &cobra.Command{
 		Aliases: []string{HelpTopics[topic]["alias"]},

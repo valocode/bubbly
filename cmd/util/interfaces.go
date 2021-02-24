@@ -6,7 +6,7 @@ import (
 
 type Options interface {
 	Validate(cmd *cobra.Command) error
-	Resolve(cmd *cobra.Command) error
+	Resolve() error
 	Run() error
-	Print(cmd *cobra.Command)
+	Print()
 }
