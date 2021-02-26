@@ -41,15 +41,14 @@ func TestApply(t *testing.T) {
 		assert.NoError(t, err, "Failed to apply resource")
 	})
 
-	// TODO Oliver add this once the issue has been pinpointed :)
 	// Subtest
-	//t.Run("dynamic_source", func(t *testing.T) {
-	//	bCtx := env.NewBubblyContext()
-	//	bCtx.UpdateLogLevel(zerolog.DebugLevel)
-	//
-	//	err := bubbly.Apply(bCtx, "./testdata/resources/v1/extract/multisource/multisource.bubbly")
-	//	assert.NoError(t, err, "Failed to apply resource")
-	//})
+	t.Run("spdx-licenses.bubbly", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+		err := bubbly.Apply(bCtx, "./testdata/resources/v1/extract/spdx-licenses.bubbly")
+		assert.NoError(t, err, "Failed to apply resource")
+	})
 
 	// Subtest
 	t.Run("query", func(t *testing.T) {

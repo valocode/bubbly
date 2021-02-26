@@ -1,15 +1,14 @@
 #
 # Gets the latest information about the state of Bubbly GitHub repo.
 #
-# GitHub GraphQL end-point requires authentication.
+# NB: GitHub GraphQL end-point requires authentication.
 #
 # To access private repos, an access token with FULL `repo` scope is required.
 # https://docs.github.com/en/developers/apps/scopes-for-oauth-apps
 #
 # If the repo were public, a token with subscope for public repos only would have been ok.
 #
-# Once the access token is generated, it must be saved in the environment variable GH_TOKEN
-# before this script can be run.
+# This script reads the GitHub access token from an environment variable GH_TOKEN
 #
 
 resource "extract" "bubbly_repo" {
@@ -25,6 +24,9 @@ resource "extract" "bubbly_repo" {
 				query { 
 					repository(owner:"verifa", name:"bubbly") {
 
+						owner {
+							login
+						}
 						name
 
 						forkCount
@@ -62,6 +64,9 @@ resource "extract" "bubbly_repo" {
 
 			format = object({
 				repository: object({
+					owner: object({
+						login: string
+					}),
 					name: string,
 					forkCount: number,
 					stargazerCount: number,
@@ -101,9 +106,10 @@ resource "transform" "bubbly_repo" {
 		input "data" {}
 
 		# Some latest stats about popularity of the Bubbly repo
-		data "bubbly_repo" {
+		data "repo_stats" {
 			fields = {
-				"name":                self.input.data.repository.name
+				"owner":               self.input.data.repository.owner.login
+				"repo":                self.input.data.repository.name
 				"fork_count":          self.input.data.repository.forkCount
 				"stargazer_count":     self.input.data.repository.stargazerCount
 				"watcher_count":       self.input.data.repository.watchers.totalCount
@@ -120,7 +126,7 @@ resource "transform" "bubbly_repo" {
 			iterator = it
 			
 			content {
-				joins = ["bubbly_repo"]
+				joins = ["repo_stats"]
 				fields = {
 					"url":    it.value.node.url
 					"title":  it.value.node.title
@@ -137,7 +143,7 @@ resource "transform" "bubbly_repo" {
 			iterator = it
 
 			content {
-				joins = ["bubbly_repo"]
+				joins = ["repo_stats"]
 				fields = {
 					"url":    it.value.node.url
 					"title":  it.value.node.title
@@ -150,7 +156,6 @@ resource "transform" "bubbly_repo" {
 
 resource "load" "bubbly_repo" {
 	api_version = "v1"
-
 	spec {
 		input "data" {}
 		data = self.input.data
@@ -164,14 +169,12 @@ resource "pipeline" "bubbly_repo" {
 		task "extract" {
 			resource = "extract/bubbly_repo"
 		}
-
 		task "transform" {
 			resource = "transform/bubbly_repo"
 			input "data" {
 				value = self.task.extract.value
 			}
 		}
-
 		task "load" {
 			resource = "load/bubbly_repo"
 			input "data" {

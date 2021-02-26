@@ -1,10 +1,22 @@
+#
+# This file describes a data model to load into bubbly,
+# also known as the bubbly schema. A database schema is 
+# generated from bubbly schema by bubbly. In this specific
+# case, the schema is a set of sometimes unrelated tables,
+# which are then used by different Go tests and .bubbly scripts.
+# It's more convenient to have everything in one place than
+# to have to manage a multitude of individual schema files.
+#
 
+#
+# For integration/testdata/testautomation/golang/*.bubbly
+# and various Go tests.
+#
 table "repo" {
     field "name" {
         type = string
         unique = true
     }
-
     table "repo_version" {
         field "commit" {
             type = string
@@ -20,7 +32,7 @@ table "repo" {
 }
 
 table "code_issue" {
-    join "repo_version" { }
+    join "repo_version" {}
     field "name" {
         type = string
     }
@@ -36,7 +48,6 @@ table "test_run" {
     field "repo_version_id" {
         type = number
     }
-
     field "name" {
         type = string
         unique = true
@@ -44,11 +55,9 @@ table "test_run" {
     field "description" {
         type = string
     }
-
     field "elapsed" {
         type = number
     }
-
     table "test_set" {
         field "name" {
             type = string
@@ -56,16 +65,13 @@ table "test_run" {
         field "description" {
             type = string
         }
-
         table "test_case" {
-
             field "name" {
                 type = string
             }
             field "status" {
                 type = string
             }
-
             table "step" {
                 field "name" {
                     type = string
@@ -84,6 +90,9 @@ table "test_run" {
     }
 }
 
+#
+# For integration/testdata/resources/v1/extract/licenses/licenses.bubbly
+#
 table "spdx_license" {
     field "id" {
         type = string
@@ -97,16 +106,19 @@ table "spdx_license" {
     }
 }
 
-# GitHub GraphQL API
-table "bubbly_repo" {
+#
+# For integration/testdata/resources/v1/extract/graphql/github.bubbly
+#
+table "repo_stats" {
 
+    # TODO: would introducing multi-column `unique` constraints add value?
+    # The value of tuple (owner, repo) is unique
     field "owner" {
         type = string
     }
-    field "name" {
+    field "repo" {
         type = string
     }
-    # TODO: would be useful if could say that (owner, name) tuple is unique
 
     field "fork_count" {
         type = number
@@ -140,6 +152,36 @@ table "bubbly_repo" {
         }
         field "state" {
             type = string
+        }
+    }
+}
+
+#
+# For integration/testdata/resources/v1/extract/graphql/tempo.bubbly
+#
+table "tempo_periods" {
+    field "from_date" {
+        type = string
+        unique = true
+    }
+    field "to_date" {
+        type = string
+        unique = true
+    }
+
+    table "tempo_timesheet_approvals" {
+        field "url" {
+            type = string
+            unique = true
+        }
+        field "required_seconds" {
+            type = number
+        }
+        field "spent_seconds" {
+            type = number
+        }
+        field "spent_less_required_seconds" {
+            type = number
         }
     }
 }

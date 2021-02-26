@@ -9,10 +9,12 @@
 # To access private repos, an access token with FULL `repo` scope is required.
 # https://docs.github.com/en/developers/apps/scopes-for-oauth-apps
 #
-# This script reads the GitHub access from an environment variable GH_TOKEN
+# This script reads the GitHub access token from an environment variable GH_TOKEN
+#
+# TODO: we really do want to have local {...} blocks and to do variable interpolation
 #
 
-resource "extract" "bubbly_repo" {
+resource "extract" "e1" {
 	api_version = "v1"
 
 	spec {
@@ -136,17 +138,17 @@ resource "extract" "bubbly_repo" {
 	}
 }
 
-resource "transform" "bubbly_repo" {
+resource "transform" "t1" {
 	api_version = "v1"
 
 	spec {
 		input "data" {}
 
 		# Summary about how popular is the repo and the latest release
-		data "bubbly_repo" {
+		data "repo_stats" {
 			fields = {
 				"owner":               self.input.data.repository.owner.login
-				"name":                self.input.data.repository.name
+				"repo":                self.input.data.repository.name
 				"fork_count":          self.input.data.repository.forkCount
 				"stargazer_count":     self.input.data.repository.stargazerCount
 				"watcher_count":       self.input.data.repository.watchers.totalCount
@@ -176,7 +178,7 @@ resource "transform" "bubbly_repo" {
 			iterator = it
 			
 			content {
-				joins = ["bubbly_repo"]
+				joins = ["repo_stats"]
 				fields = {
 					"url":    it.value.node.url
 					"title":  it.value.node.title
@@ -193,7 +195,7 @@ resource "transform" "bubbly_repo" {
 			iterator = it
 
 			content {
-				joins = ["bubbly_repo"]
+				joins = ["repo_stats"]
 				fields = {
 					"url":    it.value.node.url
 					"title":  it.value.node.title
@@ -204,32 +206,28 @@ resource "transform" "bubbly_repo" {
 	}
 }
 
-resource "load" "bubbly_repo" {
+resource "load" "l1" {
 	api_version = "v1"
-
 	spec {
 		input "data" {}
 		data = self.input.data
 	}
 }
 
-resource "pipeline" "bubbly_repo" {
+resource "pipeline" "p1" {
 	api_version = "v1"
-
 	spec {
 		task "extract" {
-			resource = "extract/bubbly_repo"
+			resource = "extract/e1"
 		}
-
 		task "transform" {
-			resource = "transform/bubbly_repo"
+			resource = "transform/t1"
 			input "data" {
 				value = self.task.extract.value
 			}
 		}
-
 		task "load" {
-			resource = "load/bubbly_repo"
+			resource = "load/l1"
 			input "data" {
 				value = self.task.transform.value
 			}
@@ -237,9 +235,9 @@ resource "pipeline" "bubbly_repo" {
 	}
 }
 
-resource "pipeline_run" "bubbly_repo" {
+resource "pipeline_run" "pr1" {
 	api_version = "v1"
 	spec {
-		pipeline = "pipeline/bubbly_repo"
+		pipeline = "pipeline/p1"
 	}
 }

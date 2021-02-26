@@ -11,6 +11,7 @@ resource "extract" "spdx_list" {
             headers = {
                 "Accept": "application/vnd.github.v3+json"
             }
+            timeout = 5
 
             format = object({
                 licenseListVersion: string,
@@ -43,12 +44,14 @@ resource "extract" "spdx_licenses" {
             iterator = it
 
             content {
-                # Can use "${jsonencode(it)}" to see the value
                 url = it.value.detailsUrl
+
+                timeout = 5
 
                 # Notes: 
                 #   * match field is actually boolean in a string: "true"/"false".
                 #   * isFsfLibre field is absent in some records.
+                #
                 format = object({
                     isDeprecatedLicenseId: bool,
                     isFsfLibre: bool,
@@ -102,20 +105,19 @@ resource "load" "upload_license_data" {
     }
 }
 
-resource "pipeline" "multisource" {
+resource "pipeline" "licenses" {
     api_version = "v1"
 
     spec {
         
-        # The mock up saved in testdata has been shortened to three entries.
         task "extract_spdx_list" {
             resource = "extract/spdx_list"
             input "url" {
-                value = "https://raw.githubusercontent.com/spdx/license-list-data/master/json/licenses.json"
+                # TODO: update from tag v3.7 to master after failure handlers had been added to extract
+                value = "https://raw.githubusercontent.com/spdx/license-list-data/v3.5/json/licenses.json"
             }
         }
 
-        # The mock data representing three entries is saved in testdata.
         task "extract_spdx_licenses" {
             resource = "extract/spdx_licenses"
             input "spdx_list" {
@@ -139,10 +141,10 @@ resource "pipeline" "multisource" {
     }
 }
 
-resource "pipeline_run" "multisource" {
+resource "pipeline_run" "licenses" {
     api_version = "v1"
     spec {
         interval = "22s"
-        pipeline = "pipeline/multisource"
+        pipeline = "pipeline/licenses"
     }
 }

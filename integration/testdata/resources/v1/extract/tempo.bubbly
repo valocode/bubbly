@@ -1,0 +1,215 @@
+#
+# Computes the running balance of flexi-time.
+# 
+# Atlassian Tempo REST API v3
+# https://www.tempo.io/developers
+# https://apidocs.tempo.io/
+#
+# This script requires the following environment variables.
+#   - JIRA_USER_EMAIL Email address which is used to log into Tempo
+#   - ATLASSIAN_TOKEN Atlassian API access token
+#   - TEMPO_TOKEN     Tempo API access token
+#   - TEMPO_FROM      starting date
+#   - TEMPO_TO        retrieve results up to and including this date
+#
+# Notes:
+#   - The generate a Tempo API OAuth 2.0 token, go to Tempo>Settings, 
+#     scroll down to Data Access and select API integration.
+#     Remember, that Tempo Settings isn't the same thing as Atlassian
+#     Account Settings. Tempo Settings can be accessed by clicking 
+#     the blue gear on the bottom right of Tempo Web UI.
+#   - All date values are in the yyyy-mm-dd format
+#
+# Using Tempo REST API requires knowing the value of `accountId`, that is 
+# the current user's account ID. It is an opaque identifier that uniquely 
+# identifies the user.
+#
+# The `accountId` of the current user can found using the Jira REST API.
+# https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-myself/#api-rest-api-3-myself-get
+# 
+# To authenticate with Jira REST API, HTTP Basic scheme is used:
+#   * Your Verifa email (associated with your Atlassian/Jira account) is the user name
+#   * The Atlassian API token is the password
+#
+# Atlassian API Token (part of Atlassian account)
+# https://id.atlassian.com/manage-profile/security/api-tokens
+#
+
+resource "extract" "account_id" {
+    api_version = "v1"
+
+    spec {
+        type = "rest"
+
+        source {
+            url = "https://verifa.atlassian.net/rest/api/3/myself"
+
+            basic_auth {
+                username = env("JIRA_USER_EMAIL")
+                password = env("ATLASSIAN_TOKEN")
+            }
+
+            headers = {
+                "Accept": "application/json"
+            }
+            timeout = 5
+
+            format = object({
+                accountId: string,
+                displayName: string
+            })
+        }
+    }
+}
+
+
+# Tempo timesheets are based on the concept of an accounting period,
+# which is usually set to one week. Required and working time values
+# within that period are stored at one second granularity. To query
+# a specific period, the from and to dates must be correct to avoid
+# an error being returned.
+# 
+# So, in order to compute the running balance, first the from and to
+# boundaries of all accounting periods within the date range of interest
+# must be read.
+#
+# Retrieve from Tempo the list of exact start/end dates for each period,
+# defined by the environmental variables TEMPO_FROM and TEMPO_TO
+resource "extract" "periods" {
+    api_version = "v1"
+
+    spec {
+        type = "rest"
+
+        source {
+            url = "https://api.tempo.io/core/3/periods"
+
+            params = {
+                "from": env("TEMPO_FROM"),
+				"to":   env("TEMPO_TO")
+            }
+            timeout = 5
+
+			bearer_token = env("TEMPO_TOKEN")
+
+            format = object({
+                periods: list(object({
+					from: string,
+					to:   string,
+				}))
+            })
+        }
+    }
+}
+
+# To query approved timesheets we use Tempo API, which requires knowing the `accountId`,
+# which, in turn, is the property of the Atlassian (or Jira) user identity, which sits
+# above that of Tempo system. So, at this stage to query approved timesheets in Tempo, 
+# we already come knowing `accountId` value which we had acquired in `extract/account_id`
+# using a different API (using Jira API, not Tempo's).
+resource "extract" "timesheet_approvals" {
+    api_version = "v1"
+    
+    spec {
+        input account {}
+        input periods {}
+        type = "rest"
+
+        dynamic "source" {
+            for_each = self.input.periods.periods
+            iterator = it
+
+            content {
+				url = "https://api.tempo.io/core/3/timesheet-approvals/user/${self.input.account.accountId}"
+				bearer_token = env("TEMPO_TOKEN")
+
+				params = {
+					"from": it.value.from,
+					"to":   it.value.to
+				}
+				timeout = 5
+
+				# Only grab the fields that we actually need
+                format = object({
+					self: string,
+					period: object({
+						from: string,
+						to: string
+					}),
+                    requiredSeconds: number,
+					timeSpentSeconds: number
+                })
+            }
+        }
+    }
+}
+
+resource "transform" "compute" {
+    api_version = "v1"
+    spec {
+        input "timesheet_approvals" {}
+        dynamic "data" {
+            for_each = self.input.timesheet_approvals
+            iterator = it
+            labels = ["tempo_timesheet_approvals"]
+            content {
+                fields = {
+                    "url": it.value.self
+                    "required_seconds": it.value.requiredSeconds
+                    "spent_seconds":    it.value.timeSpentSeconds
+					"spent_less_required_seconds": (it.value.timeSpentSeconds - it.value.requiredSeconds)
+                }
+            }
+        }
+    }
+}
+
+resource "load" "l1" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        data = self.input.data
+    }
+}
+
+resource "pipeline" "tempo_timesheet" {
+    api_version = "v1"
+
+    spec {
+        task "extract_account_id" {
+            resource = "extract/account_id"
+        }
+        task "extract_periods" {
+            resource = "extract/periods"
+        }
+        task "extract_timesheet_approvals" {
+            resource = "extract/timesheet_approvals"
+            input "account" {
+                value = self.task.extract_account_id.value
+            }
+            input "periods" {
+                value = self.task.extract_periods.value
+            }
+        }
+        task "compute_running_total" {
+            resource = "transform/compute"
+            input "timesheet_approvals" {
+                value = self.task.extract_timesheet_approvals.value
+            }
+        }
+        task "load" {
+            resource = "load/l1"
+            input "data" {
+                value = self.task.compute_running_total.value
+            }
+        }
+    }
+}
+
+resource "pipeline_run" "tempo_timesheet" {
+    api_version = "v1"
+    spec {
+        #interval = "6h"
+        pipeline = "pipeline/tempo_timesheet"
+    }
+}
