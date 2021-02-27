@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"path/filepath"
 	"reflect"
@@ -479,17 +478,6 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 		httpRequest.Header.Add(k, v)
 	}
 
-	// Log the request
-	if e := bCtx.Logger.Debug(); e.Enabled() {
-
-		dump, err := httputil.DumpRequestOut(httpRequest, true)
-		if err != nil {
-			e.Err(err).Msg("extract/graphql failed to dump HTTP request")
-		} else {
-			e.Bytes("httpRequest", dump).Msg("extract/graphql")
-		}
-	}
-
 	// Initiate the HTTP client
 	c := http.Client{Timeout: timeout}
 
@@ -497,17 +485,6 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	httpResponse, err := c.Do(httpRequest)
 	if err != nil {
 		return cty.NilVal, fmt.Errorf("failed to make HTTP request: %w", err)
-	}
-
-	// Log the response
-	if e := bCtx.Logger.Debug(); e.Enabled() {
-
-		dump, err := httputil.DumpResponse(httpResponse, true)
-		if err != nil {
-			e.Err(err).Msg("extract/graphql failed to dump HTTP response")
-		} else {
-			e.Bytes("httpResponse", dump).Msg("extract/graphql")
-		}
 	}
 
 	if httpResponse.StatusCode != http.StatusOK {
@@ -749,17 +726,6 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	// Any other headers, if reqested
 	for k, v := range *s.Headers {
 		httpRequest.Header.Add(k, v)
-	}
-
-	// Log the request
-	if e := bCtx.Logger.Debug(); e.Enabled() {
-
-		dump, err := httputil.DumpRequestOut(httpRequest, true)
-		if err != nil {
-			e.Err(err).Msg("extract/rest failed to dump HTTP request")
-		} else {
-			e.Bytes("httpRequest", dump).Msg("extract/rest")
-		}
 	}
 
 	// Initiate the HTTP client
