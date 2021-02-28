@@ -21,7 +21,6 @@ import (
 
 	fixtureJSON "github.com/verifa/bubbly/api/v1/testdata/extract/json"
 	restGitHub0 "github.com/verifa/bubbly/api/v1/testdata/extract/rest/github"
-	restPrometheus0 "github.com/verifa/bubbly/api/v1/testdata/extract/rest/prometheus"
 	fixtureXML "github.com/verifa/bubbly/api/v1/testdata/extract/xml"
 )
 
@@ -237,60 +236,177 @@ func TestExtractGraphQL(t *testing.T) {
 	require.Equal(t, cty.BoolVal(true), val.Equals(expected))
 }
 
-func TestExtractRestBaseline(t *testing.T) {
+func TestExtractRESTfulJSON(t *testing.T) {
 
 	defer gock.Off()
 	bCtx := env.NewBubblyContext()
 
-	// This is the baseline test for REST API extract. It only makes
-	// a basic HTTP GET request without authentication or encoding
-	// any URL parameters, and reads JSON response sent back.
+	// Expected format of the end-point response
+	rFormat := cty.Object(map[string]cty.Type{
+		"status": cty.String,
+		"data": cty.Object(map[string]cty.Type{
+			"verified": cty.Bool,
+			"items":    cty.List(cty.Number),
+		}),
+	})
 
-	// The type and value of the result of this mocked REST API request
-	// is taken from Prometheus' "Runtime Information" section. As such,
-	// it is usually returned by a running Prometheus instance, although
-	// no guarantees are made about the format of the response between
-	// different versions of Prometheus.
-	//
-	// The API endpoint is:
-	//   GET http://localhost:9090/api/v1/status/runtimeinfo
+	// The value returned by the JSON end-point
+	rJSON := map[string]interface{}{
+		"status": "ok",
+		"data": map[string]interface{}{
+			"verified": true,
+			"items":    []int{0, 1, 2},
+		},
+	}
 
-	// The expected value returned by the mock server
-	// after it's been parsed by the extract
-	expected := restPrometheus0.ExpectedValue()
+	// Expected result of unmarshaling the value received
+	expected := cty.ObjectVal(map[string]cty.Value{
+		"status": cty.StringVal("ok"),
+		"data": cty.ObjectVal(map[string]cty.Value{
+			"verified": cty.BoolVal(true),
+			"items": cty.ListVal([]cty.Value{
+				cty.NumberIntVal(0),
+				cty.NumberIntVal(1),
+				cty.NumberIntVal(2),
+			}),
+		}),
+	})
 
-	// Describe a REST API source
-	scheme := "http"
+	// Describe the request
+	scheme := "https"
 	host := "localhost"
-	port := uint16(9090)
-	route := "api/v1/status/runtimeinfo"
+	port := uint16(8080)
+	route := "get/sequence"
 
 	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
 
 	source := restSource{
-		URL:    url,
-		Format: restPrometheus0.ExpectedType(),
+		URL:     url,
+		Decoder: "json",
+		Format:  rFormat,
 	}
 	setRestSourceDefaults(bCtx, &source)
 
-	// Mock the HTTP server and the REST API endpoint
-	s := source
+	//
+	// Subtests...
+	//
 
-	gockResponse := gock.New(s.URL).
-		Get("/").
-		Reply(http.StatusOK).
-		File(filepath.FromSlash("./testdata/extract/rest/prometheus/prometheus0.json"))
+	t.Run("json/GET", func(t *testing.T) {
 
-	// Make a REST API request
-	val, err := s.Resolve(bCtx)
+		// Mock the HTTP server and the REST API endpoint
+		s := source
+		method := http.MethodGet
+		s.Method = method
 
-	assert.True(t, gockResponse.Done(), "mock server reports no request was handled")
-	assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP status code")
-	assert.Empty(t, gockResponse.Mock.Request().URLStruct.RawQuery, "unexpected URL query key-value pairs in the request")
+		gockResponse := gock.New(s.URL).
+			Get(route).
+			Reply(http.StatusOK).
+			JSON(rJSON)
 
-	assert.Nil(t, err, "failed to Resolve() the extract")
-	require.False(t, val.IsNull(), "the extract returned null type value")
-	assert.Equal(t, cty.BoolVal(true), val.Equals(expected), "the extract returned unexpected value")
+		// Make a REST API request and decode the response
+		val, err := s.Resolve(bCtx)
+
+		require.True(t, gockResponse.Done(), "mock is not done")
+		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP error")
+
+		assert.Nil(t, err, "failed to Resolve() the extract")
+		require.False(t, val.IsNull(), "null value unmarshaled")
+		assert.Equal(t, cty.BoolVal(true), val.Equals(expected), "unexpected value unmarshaled")
+	})
+
+	t.Run("json/POST", func(t *testing.T) {
+
+		// Mock the HTTP server and the REST API endpoint
+		s := source
+		method := http.MethodPost
+		s.Method = method
+
+		gockResponse := gock.New(s.URL).
+			Post(route).
+			Reply(http.StatusOK).
+			JSON(rJSON)
+
+		// Make a REST API request and decode the response
+		val, err := s.Resolve(bCtx)
+
+		require.True(t, gockResponse.Done(), "mock is not done")
+		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP error")
+
+		assert.Nil(t, err, "failed to Resolve() the extract")
+		require.False(t, val.IsNull(), "null value unmarshaled")
+		assert.Equal(t, cty.BoolVal(true), val.Equals(expected), "unexpected value unmarshaled")
+	})
+}
+
+func TestExtractRESTfulXML(t *testing.T) {
+
+	defer gock.Off()
+	bCtx := env.NewBubblyContext()
+
+	// Expected format of the end-point response
+	rFormat := cty.Object(map[string]cty.Type{
+		"root": cty.Object(map[string]cty.Type{
+			"status": cty.String,
+			"data": cty.Object(map[string]cty.Type{
+				"verified": cty.Bool,
+				"count":    cty.Number,
+			}),
+		}),
+	})
+
+	// The value returned by the XML end-point
+	sXML := `<root><status>ok</status><data><verified>true</verified><count>101</count></data></root>`
+
+	// Expected result of unmarshaling the value received
+	expected := cty.ObjectVal(map[string]cty.Value{
+		"root": cty.ObjectVal(map[string]cty.Value{
+			"status": cty.StringVal("ok"),
+			"data": cty.ObjectVal(map[string]cty.Value{
+				"verified": cty.BoolVal(true),
+				"count":    cty.NumberIntVal(101),
+			}),
+		}),
+	})
+
+	// Describe the request
+	scheme := "https"
+	host := "localhost"
+	port := uint16(8080)
+	route := "get/sequence"
+
+	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
+
+	source := restSource{
+		URL:     url,
+		Decoder: "xml",
+		Format:  rFormat,
+	}
+	setRestSourceDefaults(bCtx, &source)
+
+	t.Run("xml/GET", func(t *testing.T) {
+
+		// Mock the HTTP server and the REST API endpoint
+		s := source
+		method := http.MethodGet
+		s.Method = method
+
+		gockResponse := gock.New(s.URL).
+			Get(route).
+			Reply(http.StatusOK).
+			BodyString(sXML)
+
+		// Make a REST API request and decode the response
+		val, err := s.Resolve(bCtx)
+
+		require.True(t, gockResponse.Done(), "mock is not done")
+		assert.Equal(t, http.StatusOK, gockResponse.StatusCode, "HTTP error")
+
+		assert.Nil(t, err, "failed to Resolve() the extract")
+		require.False(t, val.IsNull(), "null value unmarshaled")
+		assert.Equal(t, cty.BoolVal(true), val.Equals(expected), "unexpected value unmarshaled")
+	})
+
+	// TODO: xml/POST with a Param
 }
 
 func TestExtractRestBasicAuth(t *testing.T) {
@@ -307,8 +423,9 @@ func TestExtractRestBasicAuth(t *testing.T) {
 	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
 
 	source := restSource{
-		URL:    url,
-		Format: cty.EmptyObject,
+		URL:     url,
+		Decoder: "json",
+		Format:  cty.EmptyObject,
 	}
 	setRestSourceDefaults(bCtx, &source)
 
@@ -430,8 +547,9 @@ func TestExtractRestBearerToken(t *testing.T) {
 	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
 
 	source := restSource{
-		URL:    url,
-		Format: cty.EmptyObject,
+		URL:     url,
+		Decoder: "json",
+		Format:  cty.EmptyObject,
 	}
 	setRestSourceDefaults(bCtx, &source)
 
@@ -528,8 +646,9 @@ func TestExtractRestHeaders(t *testing.T) {
 	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
 
 	source := restSource{
-		URL:    url,
-		Format: cty.EmptyObject,
+		URL:     url,
+		Decoder: "json",
+		Format:  cty.EmptyObject,
 	}
 	setRestSourceDefaults(bCtx, &source)
 
@@ -586,8 +705,9 @@ func TestExtractRestParams(t *testing.T) {
 	url := fmt.Sprint(scheme, "://", host, ":", port, "/", route)
 
 	source := restSource{
-		URL:    url,
-		Format: restGitHub0.ExpectedType(),
+		URL:     url,
+		Decoder: "json",
+		Format:  restGitHub0.ExpectedType(),
 	}
 	setRestSourceDefaults(bCtx, &source)
 

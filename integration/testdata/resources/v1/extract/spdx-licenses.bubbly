@@ -7,7 +7,8 @@ resource "extract" "spdx_list" {
 
         source {
             url = self.input.url
-
+            decoder = "json"
+            
             headers = {
                 "Accept": "application/vnd.github.v3+json"
             }
@@ -45,7 +46,8 @@ resource "extract" "spdx_licenses" {
 
             content {
                 url = it.value.detailsUrl
-
+                #decoder, actually, is an optional argument)
+                #decoder = "json"
                 timeout = 5
 
                 # Notes:

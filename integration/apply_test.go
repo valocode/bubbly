@@ -45,17 +45,6 @@ func TestApply(t *testing.T) {
 	})
 
 	// Subtest
-	t.Run("rest2", func(t *testing.T) {
-
-		bCtx := env.NewBubblyContext()
-		bCtx.UpdateLogLevel(zerolog.DebugLevel)
-
-		err := bubbly.Apply(bCtx, "./testdata/rest2")
-		assert.NoError(t, err, "Failed to apply resource")
-
-	})
-
-	// Subtest
 	t.Run("spdx-licenses.bubbly", func(t *testing.T) {
 		bCtx := env.NewBubblyContext()
 		bCtx.UpdateLogLevel(zerolog.DebugLevel)

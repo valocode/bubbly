@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -36,7 +37,6 @@ var _ core.Extract = (*Extract)(nil)
 // Extract represents an extract type
 type Extract struct {
 	*core.ResourceBlock
-
 	Spec extractSpec `json:"spec"`
 }
 
@@ -96,7 +96,10 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		vals = append(vals, val)
 	}
 
-	// TODO: this switch has to be documented. why do we get the list of one item?
+	// We support dynamic blocks (HCL extension), so there may be more than one
+	// effective source block in the resource spec (`resource/spec/source[]`).
+	// When there is only one, the data structure representing that part of
+	// the spec is still a slice and in that case it has a length of one.
 	var val cty.Value
 	switch len(e.Spec.Source) {
 	case 0:
@@ -185,14 +188,12 @@ func setGraphQLSourceDefaults(bCtx *env.BubblyContext, dst *graphqlSource) error
 func setRestSourceDefaults(bCtx *env.BubblyContext, dst *restSource) error {
 
 	method := http.MethodGet
-	flavour := "json"
 	timeout := uint(1)
 
 	defaults := &restSource{
-		Method:  &method,
+		Method:  method,
 		Params:  &map[string]string{},
 		Headers: &map[string]string{},
-		Flavour: &flavour,
 		Timeout: &timeout,
 	}
 
@@ -377,7 +378,7 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 		return cty.NilVal, fmt.Errorf(`failed to marshal GraphQL query string into JSON: "%s"`, s.Query)
 	}
 
-	// HTTP method, "GET" or "POST", with the latter being the default
+	// HTTP method: "GET" or "POST", case-insensitive, default value "POST"
 	method := strings.ToUpper(*s.Method)
 
 	if method != http.MethodPost && method != http.MethodGet {
@@ -575,12 +576,15 @@ func newBasicAuth(username, password, passwordFile string) *basicAuth {
 // restSource represents the extract type for a REST API query
 type restSource struct {
 
+	// The body of a POST request. Ignored for a GET request.
+	Query *string `hcl:"query"`
+
 	// URL (technically a URI reference, as per RFC 3986) represents the unparsed URL string.
 	// Note that URL Query Parameters (?key=val) must be provided separately as Params.
 	URL string `hcl:"url"`
 
 	// Method is "GET" or "POST" for protocols "http" and "https". The default is "GET".
-	Method *string `hcl:"method"`
+	Method string `hcl:"method,optional"`
 
 	// Params are URL query params which get prepended at the end of the url
 	// in the format ?key1=val1&key2=val2
@@ -607,8 +611,8 @@ type restSource struct {
 	// This option can be overridden by `bearer_token`.
 	BearerTokenFile *string `hcl:"bearer_token_file"`
 
-	// Flavour is "json". This is the expected format of the response.
-	Flavour *string `hcl:"flavour"`
+	// Decoder is one of either "json" and "xml". It will be applied to extract's input.
+	Decoder string `hcl:"decoder,optional"`
 
 	// Timeout in seconds is how long the extractor can wait before giving up
 	// trying to extract the data from this resource.
@@ -622,15 +626,32 @@ type restSource struct {
 // Resolve performs a REST query, parses the response, and returns a corresponding dynamic value.
 func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 
-	// HTTP Method:
-	//   * "GET" or "POST", case-insensitive
-	//   * the default value "" is interpreted as GET
-	//   * any other value is invalid and raises error
-	//
-	method := strings.ToUpper(*s.Method)
+	// Format of the response
+	kind := s.Decoder
 
-	// TODO: add support for POST requests
-	if method != http.MethodGet {
+	switch kind {
+	case "":
+		kind = "json"
+	case "json":
+		break
+	case "xml":
+		break
+	default:
+		// TODO: figure out something clever to reuse const from ExtractType
+		return cty.NilVal, fmt.Errorf("unsupported response kind: %s", kind)
+	}
+
+	// HTTP Method: "GET" or "POST", case-insensitive, default value "GET"
+	method := strings.ToUpper(s.Method)
+
+	switch method {
+	case "":
+		method = http.MethodGet
+	case http.MethodGet:
+		break
+	case http.MethodPost:
+		break
+	default:
 		return cty.NilVal, fmt.Errorf("unsupported method: %s", method)
 	}
 
@@ -740,21 +761,17 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	if httpResponse.StatusCode != http.StatusOK {
 		return cty.NilVal, fmt.Errorf("HTTP response status code: %d", httpResponse.StatusCode)
 	}
-
 	defer httpResponse.Body.Close()
 
-	// Parse the content of response body
-	var data interface{}
-	if err := json.NewDecoder(httpResponse.Body).Decode(&data); err != nil {
-		return cty.NilVal, fmt.Errorf("failed to decode JSON: %w", err)
+	// Decode the body
+	switch kind {
+	case "json":
+		return readJSON(httpResponse.Body, s.Format)
+	case "xml":
+		return readXML(httpResponse.Body, s.Format)
 	}
 
-	val, err := gocty.ToCtyValue(data, s.Format)
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("failed to convert to desired data format: %w", err)
-	}
-
-	return val, nil
+	return cty.NilVal, fmt.Errorf("unsupported format: %s", kind)
 }
 
 // Compiler check to see that the source interface is implemented
@@ -919,31 +936,32 @@ type jsonSource struct {
 	Format cty.Type `hcl:"format,attr"`
 }
 
-// Resolve returns a cty.Value representation of the parsed JSON file
-func (s *jsonSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
+// readJSON reads in, decodes, and validates the format of data
+func readJSON(r io.Reader, ty cty.Type) (cty.Value, error) {
 
-	var barr []byte
-	var err error
-
-	// FIXME GitHub issue #39
-	barr, err = ioutil.ReadFile(s.File)
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("failed to read file %s: %w", s.File, err)
-	}
-
-	// Attempt to unmarshall the data into an empty interface data type
 	var data interface{}
-	err = json.Unmarshal(barr, &data)
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("failed to marshal JSON: %w", err)
+	if err := json.NewDecoder(r).Decode(&data); err != nil {
+		return cty.NilVal, fmt.Errorf("failed to decode JSON: %w", err)
 	}
 
-	val, err := gocty.ToCtyValue(data, s.Format)
+	val, err := gocty.ToCtyValue(data, ty)
 	if err != nil {
 		return cty.NilVal, err
 	}
 
 	return val, nil
+}
+
+// Resolve returns a cty.Value representation of the parsed JSON file
+func (s *jsonSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
+
+	f, err := os.Open(s.File)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to open file %s: %w", s.File, err)
+	}
+	defer f.Close()
+
+	return readJSON(f, s.Format)
 }
 
 // Compiler check to see that v1.XMLSource implements the Source interface
@@ -956,32 +974,19 @@ type xmlSource struct {
 	Format cty.Type `hcl:"format,attr"`
 }
 
-// Resolve returns a cty.Value representation of the XML file
-func (s *xmlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
+// readXML reads in, decodes, and validates the format of data
+func readXML(r io.Reader, ty cty.Type) (cty.Value, error) {
 
-	var barr []byte
-	var err error
-
-	// FIXME GitHub issue #39
-	barr, err = ioutil.ReadFile(s.File)
+	data, err := mxj.NewMapXmlReader(r, true)
 	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to decode XML: %w", err)
+	}
+
+	if err := fixListsInXML(&data, ty); err != nil {
 		return cty.NilVal, err
 	}
 
-	mxj.PrependAttrWithHyphen(false) // no "-" prefix on attributes
-	mxj.CastNanInf(true)             // use float64, not string for extremes
-
-	// Unmarshall the XML data into a Go object
-	data, err := mxj.NewMapXml(barr, true)
-	if err != nil {
-		return cty.NilVal, err
-	}
-
-	if err := walkTypeTransformData(&data, s.Format); err != nil {
-		return cty.NilVal, err
-	}
-
-	val, err := gocty.ToCtyValue(data, s.Format)
+	val, err := gocty.ToCtyValue(data, ty)
 	if err != nil {
 		return cty.NilVal, err
 	}
@@ -989,70 +994,101 @@ func (s *xmlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	return val, nil
 }
 
-// walkTypeTransformData provides a fix to the problem inherent to the XML format,
-// namely the absence of syntax for lists. So, if XML parser has no access to some
-// kind of XML schema, it cannot tell upon encountering a single element, whether that
-// element stands by itself or is a first element in a list of length one. Contrast
-// this with JSON, which has an explicit notation for lists, and a list of one item
-// is not the same as the item on its own. Since the XML parser that we use does not
-// have a facility for XML schemas, after having parsed the data, we walk the resulting
-// tree with the following function and using the information from our extract's format
-// spec, convert single element instances which should have been lists of length one...
-// into the lists of length one.
-func walkTypeTransformData(data *mxj.Map, ty cty.Type) error {
-	path := make([]string, 0)
-	return walk(data, ty, path, 0)
+// Resolve returns a cty.Value representation of the XML file
+func (s *xmlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
+
+	mxj.PrependAttrWithHyphen(false) // no "-" prefix on attributes
+	mxj.CastNanInf(true)             // use float64, not string for extremes
+
+	f, err := os.Open(s.File)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("failed to open file %s: %w", s.File, err)
+	}
+	defer f.Close()
+
+	return readXML(f, s.Format)
 }
 
-// walk is the inner function for walkTypeTransformData and its functionality is described there
-func walk(data *mxj.Map, ty cty.Type, path []string, idx int) error {
+// TODO: fixListsInXML could do with extensive unit testing of edge cases and better documentation
 
-	pathStr := strings.Join(path, ".")
+// fixListsInXML updates those elements in XML tree who should have been
+// the only member of a list of length one. In the absence of a schema or
+// a document type definition, the XML parser cannot tell which elements
+// must be placed into a list of length one. This is because XML does not
+// have syntax for lists, unlike JSON. But the format of data is known to _us_
+// via the resource definition. As there is no easy way to communicate this
+// information to the XML parser, the second best approach is to add a post-
+// processing step. It traverses the data format definition recursively, identifying
+// the lists in it, and validates selected branches of the XML tree, updating
+// those elements which should have been places in a list.
+func fixListsInXML(data *mxj.Map, ty cty.Type) error {
 
-	if idx > 0 {
-		pathStr += fmt.Sprint("[", idx, "]")
-	}
+	// Forward declaration: recursive inner function over the format spec
+	var f func(*mxj.Map, cty.Type, []string, int) error
 
-	if ty.IsObjectType() {
-		for x := range ty.AttributeTypes() {
-			path = append(path, x)
-			pathIdx := len(path) - 1
+	// Implementation: recursive inner function over the format spec
+	f = func(data *mxj.Map, ty cty.Type, path []string, idx int) error {
 
-			walk(data, ty.AttributeType(x), path, 0)
-			path = path[0:pathIdx]
+		// The full path to the current node
+		// in a format that XML manipulation functions understand.
+		pathStr := strings.Join(path, ".")
+
+		if idx > 0 {
+			pathStr += fmt.Sprint("[", idx, "]")
 		}
-	}
 
-	if ty.IsListType() {
+		// Traverse all fields of the objects recursively,
+		// as they may contain lists as well.
+		if ty.IsObjectType() {
+			for x := range ty.AttributeTypes() {
+				path = append(path, x)
+				pathIdx := len(path) - 1
 
-		vs, err := data.ValuesForPath(pathStr)
-		if err != nil {
-			return fmt.Errorf("wrong path (%s) in xml structure: %w", pathStr, err)
+				f(data, ty.AttributeType(x), path, 0)
+				path = path[0:pathIdx]
+			}
 		}
 
-		n := len(vs)
-		//t.Logf("ValuesForPath(%s): %d", pathStr, n)
+		// For any list declarated in the format spec,
+		// the XML tree has to be checked and updated,
+		// if necessary...
+		if ty.IsListType() {
 
-		switch n {
-		case 0:
-			return fmt.Errorf("xml data structure inconsistent state, ValuesForPath are zero at %s", pathStr)
-		case 1:
-			v := vs[0]
+			// Get the XML tree elements at that level
+			vs, err := data.ValuesForPath(pathStr)
+			if err != nil {
+				return fmt.Errorf("wrong path (%s) in XML syntax tree: %w", pathStr, err)
+			}
 
-			if reflect.TypeOf(v).Kind() == reflect.Map {
-				vv := make([]interface{}, 0)
-				vv = append(vv, v)
-				if err := data.SetValueForPath(vv, pathStr); err != nil {
-					return fmt.Errorf("cannot convert at path %s, error %w", pathStr, err)
+			n := len(vs)
+
+			// If there is only one conforming element present in the XML tree, it means
+			// the parser would not know that it had to make a list for it. To fix that,
+			// create a list of length one for that element and update the XML tree.
+			switch n {
+			case 0:
+				return fmt.Errorf("xml data structure inconsistent state, ValuesForPath are zero at %s", pathStr)
+			case 1:
+				v := vs[0]
+
+				if reflect.TypeOf(v).Kind() == reflect.Map {
+					vv := make([]interface{}, 0)
+					vv = append(vv, v)
+					if err := data.SetValueForPath(vv, pathStr); err != nil {
+						return fmt.Errorf("cannot convert at path %s, error %w", pathStr, err)
+					}
+				}
+				fallthrough
+			default:
+				for i := range vs {
+					return f(data, ty.ElementType(), path, i)
 				}
 			}
-			fallthrough
-		default:
-			for i := range vs {
-				return walk(data, ty.ElementType(), path, i)
-			}
 		}
+
+		return nil
 	}
 
-	return nil
+	path := make([]string, 0)
+	return f(data, ty, path, 0)
 }
