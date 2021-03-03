@@ -59,8 +59,7 @@ func TestTriggers(t *testing.T) {
 			ResourceName:       "name",
 			ResourceAPIVersion: "some version",
 			Metadata: &core.Metadata{
-				Labels:    map[string]string{"label": "is a label"},
-				Namespace: "namespace",
+				Labels: map[string]string{"label": "is a label"},
 			},
 		},
 		SpecRaw: "data {}",
@@ -80,7 +79,7 @@ func TestTriggers(t *testing.T) {
 
 	resQuery := fmt.Sprintf(`
 			{
-				%s(id: "namespace/kind/name")  {
+				%s(id: "kind/name")  {
 					id
 					%s {
 						status

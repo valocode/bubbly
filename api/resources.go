@@ -46,7 +46,6 @@ func (r ResourcesParserType) ByKind(kind core.ResourceKind) []core.Resource {
 // If successful, returns a pointer to the new resource
 // If unsuccessful, returns an error
 func NewResource(resBlock *core.ResourceBlock) (core.Resource, error) {
-	// TODO: mergo to set the default namespace
 	var resource core.Resource
 	switch resBlock.Kind() {
 	// TODO: use resBlock.APIVersion to get version of resource...

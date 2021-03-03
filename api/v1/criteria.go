@@ -50,7 +50,6 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 	for idx, querySpec := range c.Spec.Queries {
 		bCtx.Logger.Debug().Msgf("Applying query: %s", querySpec.Name)
 
-		// TODO: what about namespaces for the resource??
 		// use this resourceID to get the underlying Resource
 		resID := fmt.Sprintf("%s/%s", string(core.QueryResourceKind), querySpec.Name)
 		resource, output := common.RunResource(bCtx, ctx, resID, cty.NilVal)
@@ -84,7 +83,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 		output := condition.Apply(
 			bCtx,
-			core.NewResourceContext(c.Namespace(), cty.NilVal, ctx.NewResource),
+			core.NewResourceContext(cty.NilVal, ctx.NewResource),
 		)
 
 		if output.Error != nil {
@@ -118,7 +117,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 	output := operation.Apply(
 		bCtx,
-		core.NewResourceContext(c.Namespace(), cty.NilVal, ctx.NewResource),
+		core.NewResourceContext(cty.NilVal, ctx.NewResource),
 	)
 
 	if output.Error != nil {

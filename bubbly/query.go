@@ -20,7 +20,7 @@ var ErrNoResourcesFound = errors.New("no resources found")
 // Resource is a struct representing a bubbly resource extracted from a query
 // against the store.
 type Resource struct {
-	Id     string         // the unique identifier for the resource: namespace/kind/name
+	Id     string         // the unique identifier for the resource: kind/name
 	Events []events.Event `json:"_event"` // a slice of Events
 }
 

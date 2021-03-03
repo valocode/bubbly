@@ -67,7 +67,7 @@ func runResources(bCtx *env.BubblyContext, resParser *api.ResourcesParserType) e
 			bCtx.Logger.Debug().Msgf("Running resource %s ...", resource.String())
 			subResourceOutput := resource.Apply(
 				bCtx,
-				core.NewResourceContext(resource.Namespace(), cty.NilVal, api.NewResource),
+				core.NewResourceContext(cty.NilVal, api.NewResource),
 			)
 
 			runResourceOutput := core.ResourceOutput{

@@ -3,7 +3,6 @@
 // representation of the external data.
 resource "extract" "sonarqube" {
     metadata {
-        namespace = "qa"
         labels = {
             "environment": "prod"
         }
@@ -40,7 +39,7 @@ resource "extract" "sonarqube" {
 resource "task_run" "extract_sonarqube" {
   api_version = "v1"
   spec {
-    resource = "qa/extract/sonarqube"
+    resource = "extract/sonarqube"
     input "file" {
       value = "./testdata/sonarqube/sonarqube-example.json"
     }

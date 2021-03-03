@@ -48,7 +48,7 @@ func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 		// create the run ResourceContext for the SubResource to apply
 		runCtx := core.NewResourceContext(
-			p.Namespace(), ctx.State.Value([]string{"task"}, ctx.Inputs), ctx.NewResource,
+			ctx.State.Value([]string{"task"}, ctx.Inputs), ctx.NewResource,
 		)
 
 		output := t.Apply(bCtx, runCtx)

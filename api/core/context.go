@@ -5,11 +5,10 @@ import (
 )
 
 // NewResourceContext creates a new ResourceContext
-func NewResourceContext(namespace string, inputs cty.Value, newRes NewResourceFn) *ResourceContext {
+func NewResourceContext(inputs cty.Value, newRes NewResourceFn) *ResourceContext {
 	return &ResourceContext{
 		Inputs:      inputs,
 		State:       make(ResourceState),
-		Namespace:   namespace,
 		NewResource: newRes,
 	}
 }
@@ -20,7 +19,6 @@ type ResourceContext struct {
 	// Inputs contains any cty.Values that should be input to a resource
 	Inputs      cty.Value
 	State       ResourceState
-	Namespace   string
 	NewResource NewResourceFn
 }
 

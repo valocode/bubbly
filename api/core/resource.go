@@ -14,8 +14,6 @@ import (
 	"github.com/verifa/bubbly/parser"
 )
 
-const DefaultNamespace = "default"
-
 const ResourceTableName = "_resource"
 const SchemaTableName = "_schema"
 const EventTableName = "_event"
@@ -48,14 +46,9 @@ func (r ResourceBlock) Name() string {
 	return r.ResourceName
 }
 
-// Namespace returns the namespace of the resource
-func (r ResourceBlock) Namespace() string {
-	if md := r.Metadata; md != nil {
-		if md.Namespace != "" {
-			return md.Namespace
-		}
-	}
-	return "default"
+func (r ResourceBlock) ID() string {
+	// TODO nate
+	return fmt.Sprintf("%s/%s", r.Kind(), r.Name())
 }
 
 // Labels returns the labels of the resource
@@ -74,8 +67,8 @@ func (r ResourceBlock) APIVersion() APIVersion {
 // String returns a human-friendly string ID for the resource
 func (r ResourceBlock) String() string {
 	return fmt.Sprintf(
-		"%s/%s/%s",
-		r.Namespace(), r.ResourceKind, r.ResourceName,
+		"%s/%s",
+		r.ResourceKind, r.ResourceName,
 	)
 }
 
@@ -173,7 +166,6 @@ func (r *ResourceBlockJSON) ResourceBlock() (ResourceBlock, error) {
 func (r *ResourceBlockJSON) Data() (Data, error) {
 
 	var metaMap = make(map[string]cty.Value, 2)
-	metaMap["namespace"] = cty.StringVal(r.Namespace())
 
 	if r.Metadata != nil {
 		var metaLabels = make(map[string]cty.Value, len(r.Metadata.Labels))
@@ -196,21 +188,11 @@ func (r *ResourceBlockJSON) Data() (Data, error) {
 	return d, nil
 }
 
-// Namespace returns the namespace of the resource
-func (r *ResourceBlockJSON) Namespace() string {
-	if md := r.Metadata; md != nil {
-		if md.Namespace != "" {
-			return md.Namespace
-		}
-	}
-	return "default"
-}
-
 // String returns a human-friendly string ID for the resource
 func (r *ResourceBlockJSON) String() string {
 	return fmt.Sprintf(
-		"%s/%s/%s",
-		r.Namespace(), r.ResourceKind, r.ResourceName,
+		"%s/%s",
+		r.ResourceKind, r.ResourceName,
 	)
 }
 
@@ -269,8 +251,7 @@ func (a *APIVersion) String() string {
 // Metadata represents the metadata{} block in a resource... This could
 // probably also be versioned?
 type Metadata struct {
-	Labels    map[string]string `json:"labels,omitempty" hcl:"labels,attr"`
-	Namespace string            `json:"namespace,omitempty" hcl:"namespace,attr"`
+	Labels map[string]string `json:"labels,omitempty" hcl:"labels,attr"`
 }
 
 // ResourceBlockSpec represents the spec{} block within a resource

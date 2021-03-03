@@ -77,7 +77,7 @@ func (a *Server) PostResource(bCtx *env.BubblyContext,
 func (a *Server) GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 	resBlock := core.ResourceBlock{
 		ResourceName: c.Param("name"),
-		Metadata:     &core.Metadata{Namespace: c.Param("namespace")},
+		Metadata:     &core.Metadata{},
 		ResourceKind: c.Param("kind"),
 	}
 

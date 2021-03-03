@@ -3,7 +3,6 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -27,7 +26,7 @@ func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, 
 			Error:  err,
 		}
 	}
-	runCtx := core.NewResourceContext(resource.Namespace(), inputs, ctx.NewResource)
+	runCtx := core.NewResourceContext(inputs, ctx.NewResource)
 	return resource, resource.Apply(bCtx, runCtx)
 }
 
@@ -35,11 +34,12 @@ func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, 
 // pipelines) and returns the referenced resource or an error.
 // The bubbly client is used to access fetch the resource either via the REST
 // API (external) or via NATS (internal, TODO)
-func GetResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string) (core.Resource, error) {
-	resID, err := normalizeNamespace(id, ctx.Namespace)
-	if err != nil {
-		return nil, fmt.Errorf("could not normalize the resource ID: %w", err)
-	}
+func GetResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, resID string) (core.Resource, error) {
+	// TODO nate figure out if you can just use the id...
+	// resID, err := normalizeNamespace(id)
+	//if err != nil {
+	//	return nil, fmt.Errorf("could not normalize the resource ID: %w", err)
+	//}
 	client, err := client.NewHTTP(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the bubbly client: %w", err)
@@ -157,19 +157,4 @@ func compareInputsWithDecls(decls core.InputDeclarations, inputs cty.Value) (cty
 	return cty.ObjectVal(map[string]cty.Value{
 		"input": cty.ObjectVal(retInputs),
 	}), nil
-}
-
-func normalizeNamespace(id string, namespaceCtx string) (string, error) {
-	strVals := strings.Split(id, "/")
-	switch len(strVals) {
-	case 1:
-		return "", fmt.Errorf(`resource ID "%s" is missing kind`, id)
-	case 2:
-		// concatenate the namespace to the string
-		return fmt.Sprintf("%s/%s", namespaceCtx, id), nil
-	case 3:
-		return id, nil
-	default:
-		return "", fmt.Errorf(`incorrect resource ID format for "%s"`, id)
-	}
 }

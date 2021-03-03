@@ -63,7 +63,7 @@ const (
 func (w *ResourceWorker) Run(bCtx *env.BubblyContext, resources []core.Resource) error {
 	for _, pr := range resources {
 		prV1 := pr.(*v1.PipelineRun)
-		err := common.DecodeBody(bCtx, prV1.SpecHCL.Body, &prV1.Spec, core.NewResourceContext("", cty.NilVal, nil))
+		err := common.DecodeBody(bCtx, prV1.SpecHCL.Body, &prV1.Spec, core.NewResourceContext(cty.NilVal, nil))
 		if err != nil {
 			continue
 		}
@@ -107,7 +107,7 @@ mainloop:
 	for {
 		select {
 		case <-ticker.C:
-			resContext := core.NewResourceContext(pr.Resource.Namespace(), cty.NilVal, api.NewResource)
+			resContext := core.NewResourceContext(cty.NilVal, api.NewResource)
 			output := pr.Resource.Apply(bCtx, resContext)
 			if output.Error != nil {
 				bCtx.Logger.Error().Err(output.Error).Msg("error applying pipeline_run")

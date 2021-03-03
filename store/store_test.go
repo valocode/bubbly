@@ -161,8 +161,7 @@ func storeTests(bCtx *env.BubblyContext, t *testing.T, s *Store) {
 			ResourceName:       "name",
 			ResourceAPIVersion: "some version",
 			Metadata: &core.Metadata{
-				Labels:    map[string]string{"label": "is a label"},
-				Namespace: "namespace",
+				Labels: map[string]string{"label": "is a label"},
 			},
 		},
 		SpecRaw: "data {}",
@@ -177,7 +176,7 @@ func storeTests(bCtx *env.BubblyContext, t *testing.T, s *Store) {
 
 	resQuery := `
 			{
-				_resource(id: "namespace/kind/name") {
+				_resource(id: "kind/name") {
 					name
 					kind
 					api_version
@@ -220,7 +219,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 	// tables
 	resQuery := fmt.Sprintf(`
 			{
-				_resource(id: "namespace/kind/name")  {
+				_resource(id: "kind/name")  {
 					id
 					%s {
 						status
@@ -241,7 +240,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 		for k, v := range x {
 			switch k {
 			case "id":
-				require.Equal(t, "namespace/kind/name", v)
+				require.Equal(t, "kind/name", v)
 			case core.EventTableName:
 				et := v.([]interface{})
 				for _, v := range et {
@@ -257,7 +256,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 		}
 	}
 
-	// test adding an event to the "namespace/kind/name" resource
+	// test adding an event to the "kind/name" resource
 	d3 := core.DataBlocks{dSource,
 		{
 			TableName: core.EventTableName,
@@ -279,7 +278,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 
 	resQuery = fmt.Sprintf(`
 			{
-				%s(id: "namespace/kind/name")  {
+				%s(id: "kind/name")  {
 					id
 					%s {
 						status
@@ -294,7 +293,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 
 	resEvents := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
 
-	// verify that the number of events stored for the "namespace/kind/name"
+	// verify that the number of events stored for the "kind/name"
 	// resource is 2
 	for _, v := range resEvents {
 		require.Equal(t, 2, len(v.(map[string]interface{})))
@@ -302,7 +301,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 
 	// check that we can load a resourceOutput to the store
 	resOutput := core.ResourceOutput{
-		ID:     "namespace/kind/name",
+		ID:     "kind/name",
 		Status: events.ResourceApplyFailure,
 		Error:  errors.New("cannot get output of a null extract"),
 		Value:  cty.NilVal,
@@ -318,7 +317,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 
 	resQuery = fmt.Sprintf(`
 			{
-				%s(id: "namespace/kind/name") {
+				%s(id: "kind/name") {
 					id
 					%s(status: "ApplyFailure") {
 						status

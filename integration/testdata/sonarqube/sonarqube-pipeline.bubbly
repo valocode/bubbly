@@ -3,7 +3,6 @@
 // representation of the external data.
 resource "extract" "sonarqube" {
     metadata {
-        namespace = "qa"
         labels = {
             "environment": "prod"
         }
@@ -39,7 +38,6 @@ resource "extract" "sonarqube" {
 resource "extract" "git" {
     api_version = "v1"
     metadata {
-        namespace = "qa"
         labels = {
             "environment": "prod"
         }
@@ -60,7 +58,6 @@ resource "extract" "git" {
 resource "transform" "sonarqube" {
     api_version = "v1"
     metadata {
-        namespace = "qa"
         labels = {
             "environment": "prod"
         }
@@ -106,7 +103,6 @@ resource "transform" "sonarqube" {
 // defines the loading of transform output data to a bubbly server
 resource "load" "sonarqube" {
     metadata {
-        namespace = "qa"
         labels = {
             "environment": "prod"
         }
@@ -124,7 +120,6 @@ resource "load" "sonarqube" {
 // NOTE: only a pipeline_run actually triggers a pipeline to run
 resource "pipeline" "sonarqube" {
     metadata {
-        namespace = "qa"
         labels = {
             "environment": "prod"
         }
@@ -181,7 +176,6 @@ resource "pipeline" "sonarqube" {
 resource "pipeline_run" "sonarqube" {
     api_version = "v1"
     metadata {
-        namespace = "qa"
         labels = {
             "environment": "prod"
         }
@@ -203,7 +197,6 @@ resource "pipeline_run" "sonarqube" {
 resource "task_run" "extract_sonarqube" {
     api_version = "v1"
     metadata {
-        namespace = "qa"
         labels = {}
     }
     spec {
