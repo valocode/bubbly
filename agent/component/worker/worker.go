@@ -54,7 +54,7 @@ func (w *Worker) pollResources(bCtx *env.BubblyContext) (*component.Publication,
 				spec
 			}
 		}
-	`, core.ResourceTableName, core.PipelineRunResourceKind)
+	`, core.ResourceTableName, core.RunResourceKind)
 
 	// embed the query into a Publication
 	pub := component.Publication{
@@ -69,26 +69,28 @@ func (w *Worker) pollResources(bCtx *env.BubblyContext) (*component.Publication,
 
 		// if there is no error,
 		// then we've at least been sent a Publication from a data store
-		// which might contain some PipelineRun resources
+		// which might contain some Run resources
 		if err == nil {
 			resBlockJson := []core.ResourceBlockJSON{}
 			err = json.Unmarshal(reply.Data, &resBlockJson)
 
 			// if nil, then there are no resources in the _resource table of
 			// the data store matching the required constraint (
-			// PipelineRun type)
+			// Run type)
 			if resBlockJson == nil {
 				// just log
-				bCtx.Logger.Debug().Err(err).Msg("worker failed to request pipeline_run resources from data store")
+				bCtx.Logger.Debug().Err(err).Msg(
+					"worker failed to request run resources from data store")
 			} else if err != nil {
 				// we fail to unmarshal correctly. Just log,
 				// but it might be better to actually error here as a failure
 				// to unmarshal may indicate a corrupt _resource table format?
-				bCtx.Logger.Debug().Err(err).Msg("worker failed to request pipeline_run resources from data store")
+				bCtx.Logger.Debug().Err(err).Msg(
+					"worker failed to request run resources from data store")
 			} else if reflect.DeepEqual(resBlockJson, []core.ResourceBlockJSON{}) {
 				// handle the case where the response is non-nil but doesn't
 				// contain any resources
-				bCtx.Logger.Debug().Err(err).Str("required_kind", string(core.PipelineRunResourceKind)).Msg("no resources of required kind")
+				bCtx.Logger.Debug().Err(err).Str("required_kind", string(core.RunResourceKind)).Msg("no resources of required kind")
 			} else {
 				return reply, nil
 			}
@@ -137,7 +139,7 @@ func (w *Worker) Run(bCtx *env.BubblyContext, agentContext context.Context) erro
 
 // run is a goroutine invoked from public Run method
 func (w *Worker) run(bCtx *env.BubblyContext, ch chan error) {
-	// poll for PipelineRun resources from the data store
+	// poll for Run resources from the data store
 	reply, err := w.pollResources(bCtx)
 
 	if err != nil {
@@ -147,7 +149,8 @@ func (w *Worker) run(bCtx *env.BubblyContext, ch chan error) {
 	resourcesBlockJSON := []core.ResourceBlockJSON{}
 	err = json.Unmarshal(reply.Data, &resourcesBlockJSON)
 	if err != nil {
-		ch <- fmt.Errorf("failed to unmarshal pipeline_run resources from data store: %w", err)
+		ch <- fmt.Errorf("failed to unmarshal run resources from data store"+
+			": %w", err)
 	}
 
 	var resources []core.Resource
@@ -169,7 +172,9 @@ func (w *Worker) run(bCtx *env.BubblyContext, ch chan error) {
 
 	// worker now has access to resources, so can "do" the work of running them
 	// over their intervals
-	err = w.ResourceWorker.Run(bCtx, resources)
+	w.ResourceWorker.ParseResources(bCtx, resources)
+
+	err = w.ResourceWorker.Run(bCtx)
 	if err != nil {
 		ch <- fmt.Errorf("interval worker failure: %w", err)
 	}

@@ -36,7 +36,7 @@ resource "extract" "sonarqube" {
 }
 
 
-resource "task_run" "extract_sonarqube" {
+resource "run" "extract_sonarqube" {
   api_version = "v1"
   spec {
     resource = "extract/sonarqube"

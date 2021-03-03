@@ -93,11 +93,11 @@ resource "pipeline" "junit" {
     }
 }
 
-resource "pipeline_run" "junit" {
+resource "run" "junit" {
     api_version = "v1"
     spec {
         // specify the name of the pipeline resource to execute
-        pipeline = "junit"
+        resource = "junit"
         // specify the pipeline input(s) required
         input "file" {
             value = "./testdata/junit/junit.xml"

@@ -2,18 +2,37 @@ package interval
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"golang.org/x/sync/errgroup"
 
 	"github.com/hako/durafmt"
+	"github.com/zclconf/go-cty/cty"
+
 	"github.com/verifa/bubbly/api"
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
 	v1 "github.com/verifa/bubbly/api/v1"
 	"github.com/verifa/bubbly/env"
-	"github.com/zclconf/go-cty/cty"
 )
+
+const (
+	defaultRunInterval = "300s"
+)
+
+type RunKind int
+
+const (
+	IntervalRun RunKind = iota
+	OneOffRun
+)
+
+func (r RunKind) String() string {
+	return [...]string{
+		"IntervalRun",
+		"OneOffRun"}[r]
+}
 
 type ResourceWorker struct {
 	Pool           Pool
@@ -27,60 +46,91 @@ type ChannelContext struct {
 }
 
 type Pool struct {
-	Resources    []core.Resource
-	PipelineRuns []PipelineRun
+	Resources []core.Resource
+	Runs      []Run
 }
 
-type PipelineRun struct {
-	Resource v1.PipelineRun
+type Run struct {
+	Resource v1.Run
 	interval time.Duration
-	Channel  chan PipelineAction
+	Kind     RunKind
+	Channel  chan RunAction
 }
 
-type PipelinePool struct {
-	pipelineRunLoops []PipelineRunLoop
+type RunPool struct {
+	runLoops []RunLoop
 }
 
-type PipelineRunLoop struct {
+type RunLoop struct {
 	id       string
 	interval time.Duration
 	resource core.Resource
 }
 
 type ActionType string
-type PipelineAction struct {
+type RunAction struct {
 	Action        ActionType
 	ResourceBlock *core.ResourceBlock
 }
 
 const (
-	UpdatePipeline ActionType = "update"
-	StopPipeline   ActionType = "stop"
+	UpdateRun ActionType = "update"
+	StopRun   ActionType = "stop"
 )
 
-// Run parses the supplied resources into pipelineRuns, establishes the channels and will apply
-// the pipeline runs
-func (w *ResourceWorker) Run(bCtx *env.BubblyContext, resources []core.Resource) error {
-	for _, pr := range resources {
-		prV1 := pr.(*v1.PipelineRun)
-		err := common.DecodeBody(bCtx, prV1.SpecHCL.Body, &prV1.Spec, core.NewResourceContext(cty.NilVal, nil))
-		if err != nil {
-			continue
+// ParseResources takes a slice of core.Resource and appends relevant resources to the
+// worker's pool of resources. This method can be used to filter resources to only those
+// relevant to the worker, in the case that the slice of resources has come from
+// sources external to its private pollResources method
+func (w *ResourceWorker) ParseResources(bCtx *env.BubblyContext, resources []core.Resource) {
+	for _, r := range resources {
+		switch r.(type) {
+		case *v1.Run:
+			runV1 := r.(*v1.Run)
+			err := common.DecodeBody(bCtx, runV1.SpecHCL.Body, &runV1.Spec, core.NewResourceContext(cty.NilVal, nil))
+			if err != nil {
+				continue
+			}
+
+			// if true, then the run resource should not be run remotely
+			if runV1.Spec.Remote == nil {
+				continue
+			}
+
+			run := Run{
+				Resource: *runV1,
+				Kind:     IntervalRun,
+			}
+
+			var intervalDuration *durafmt.Durafmt
+
+			intervalDuration, err = durafmt.ParseString(defaultRunInterval)
+
+			// if an interval has been specified, we should try to use that
+			if runV1.Spec.Remote.Interval != "" {
+				intervalDuration, err = durafmt.ParseString(runV1.Spec.Remote.Interval)
+
+				// if the interval has been specified incorrectly, log this
+				// to the user and use the default instead
+				if err != nil {
+					bCtx.Logger.Error().Err(err).Str("default_interval", defaultRunInterval).Msg("incorrect interval format specified. Using default interval instead")
+				}
+				run.interval = intervalDuration.Duration()
+			} else {
+				bCtx.Logger.Debug().Str("run", runV1.String()).Msg("run has no interval specified; treating it as a one-off run")
+				run.Kind = OneOffRun
+			}
+
+			w.Pool.Runs = append(w.Pool.Runs, run)
+		default:
+			bCtx.Logger.Debug().Str("type", string(r.Kind())).Msg("resource worker does not support resources of this kind")
 		}
+	}
+}
 
-		intervalDuration, err := durafmt.ParseString(prV1.Spec.Interval)
-		if err != nil {
-			bCtx.Logger.Error().Err(err).Msg("malformed date")
-			continue
-		}
-
-		pipelineRun := PipelineRun{
-			Resource: *prV1,
-			interval: intervalDuration.Duration(),
-		}
-
-		w.Pool.PipelineRuns = append(w.Pool.PipelineRuns, pipelineRun)
-
+// Run establishes the channels and will apply the runs
+func (w *ResourceWorker) Run(bCtx *env.BubblyContext) error {
+	for _, run := range w.Pool.Runs {
 		eg := new(errgroup.Group)
 		var ctx, cancel = context.WithCancel(context.Background())
 		w.Context = ChannelContext{
@@ -88,19 +138,29 @@ func (w *ResourceWorker) Run(bCtx *env.BubblyContext, resources []core.Resource)
 			Cancel:  cancel,
 		}
 
-		pipelineRun.Channel = make(chan PipelineAction)
+		run.Channel = make(chan RunAction)
 		w.WorkerChannels = make(Channels)
-		w.WorkerChannels[pipelineRun.Resource.String()] = pipelineRun.Channel
+		w.WorkerChannels[run.Resource.String()] = run.Channel
+		// TODO: the logic for this errgroup is slight flawed considered our new
+		//  worker redesign. Somewhere here we probably want to notify NATS on
+		//  run failure, retry/purge the run from the worker pool and then move
+		//  on with life
 		eg.Go(func() error {
-			return pipelineRun.ApplyWithInterval(bCtx, w.WorkerChannels[pipelineRun.Resource.String()], ctx)
+			switch run.Kind {
+			case IntervalRun:
+				return run.ApplyWithInterval(bCtx, w.WorkerChannels[run.Resource.String()], ctx)
+			case OneOffRun:
+				return run.ApplyOneOff(bCtx)
+			}
+			return nil
 		})
 	}
 
 	return nil
 }
 
-// ApplyWithInterval will apply the underlying pipelineRun based on the defined interval
-func (pr *PipelineRun) ApplyWithInterval(bCtx *env.BubblyContext, ch <-chan PipelineAction, ctx context.Context) error {
+// ApplyWithInterval will apply the underlying run based on the defined interval
+func (pr *Run) ApplyWithInterval(bCtx *env.BubblyContext, ch <-chan RunAction, ctx context.Context) error {
 	ticker := time.NewTicker(pr.interval)
 	defer ticker.Stop()
 mainloop:
@@ -110,18 +170,18 @@ mainloop:
 			resContext := core.NewResourceContext(cty.NilVal, api.NewResource)
 			output := pr.Resource.Apply(bCtx, resContext)
 			if output.Error != nil {
-				bCtx.Logger.Error().Err(output.Error).Msg("error applying pipeline_run")
+				bCtx.Logger.Error().Err(output.Error).Msg("error applying run")
 			}
 			// TODO send output to NATS
 		case msg := <-ch:
 			switch msg.Action {
-			case UpdatePipeline:
+			case UpdateRun:
 				// The underlying resource has been changed, update it
 				err := pr.update(*msg.ResourceBlock)
 				if err != nil {
 					return err
 				}
-			case StopPipeline:
+			case StopRun:
 				pr.DeleteChannel()
 				break mainloop
 			default:
@@ -136,13 +196,35 @@ mainloop:
 	return nil
 }
 
-func (pr *PipelineRun) update(resBlock core.ResourceBlock) error {
+// ApplyOneOff is used to apply remote Run resources that lack a specified
+// interval. The resource is applied only once.
+func (pr *Run) ApplyOneOff(bCtx *env.BubblyContext) error {
+	resContext := core.NewResourceContext(cty.NilVal, api.NewResource)
+	output := pr.Resource.Apply(bCtx, resContext)
+	if output.Error != nil {
+		bCtx.Logger.Error().Err(output.Error).Msg("error applying run")
+	}
+	// TODO: better consider what action to perform if the worker fails to
+	//  run the current run resource
+
+	// load the output of the run resource to the event store
+	if err := common.LoadResourceOutput(bCtx, &output); err != nil {
+		return fmt.Errorf(
+			`failed to store the output of running resource "%s" to the store: %w`,
+			pr.Resource.String(),
+			err,
+		)
+	}
+	return nil
+}
+
+func (pr *Run) update(resBlock core.ResourceBlock) error {
 	newRes, err := api.NewResource(&resBlock)
 	if err != nil {
 		return err
 	}
-	// update the PipelineRunLoop's resource
-	prV1 := newRes.(*v1.PipelineRun)
-	pr.Resource = *prV1
+	// update the Run's resource
+	runV1 := newRes.(*v1.Run)
+	pr.Resource = *runV1
 	return nil
 }

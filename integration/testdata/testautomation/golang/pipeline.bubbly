@@ -96,12 +96,11 @@ resource "pipeline" "gotest" {
     }
 }
 
-resource "pipeline_run" "gotest" {
+resource "run" "gotest" {
     api_version = "v1"
     spec {
-        interval = "22s"
         // specify the name of the pipeline resource to execute
-        pipeline = "pipeline/gotest"
+        resource = "pipeline/gotest"
         // specify the pipeline input(s) required
         input "file" {
             value = "./testdata/testautomation/golang/test-report.json"

@@ -11,25 +11,25 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-var _ core.PipelineRun = (*PipelineRun)(nil)
+var _ core.Run = (*Run)(nil)
 
-type PipelineRun struct {
+type Run struct {
 	*core.ResourceBlock
-	Spec pipelineRunSpec
+	Spec runSpec
 }
 
-func NewPipelineRun(resBlock *core.ResourceBlock) *PipelineRun {
-	return &PipelineRun{
+func NewRun(resBlock *core.ResourceBlock) *Run {
+	return &Run{
 		ResourceBlock: resBlock,
 	}
 }
 
-func (p *PipelineRun) SpecValue() core.ResourceSpec {
+func (p *Run) SpecValue() core.ResourceSpec {
 	return &p.Spec
 }
 
 // Apply returns ...
-func (p *PipelineRun) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+func (p *Run) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, p.SpecHCL.Body, &p.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			ID:     p.String(),
@@ -39,12 +39,18 @@ func (p *PipelineRun) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) 
 		}
 	}
 
-	_, output := common.RunResource(bCtx, ctx, p.Spec.PipelineID, p.Spec.Inputs.Value())
+	_, output := common.RunResource(bCtx, ctx, p.Spec.ResourceID, p.Spec.Inputs.Value())
 	return output
 }
 
-type pipelineRunSpec struct {
+type runSpec struct {
 	Inputs     core.InputDefinitions `hcl:"input,block"`
-	PipelineID string                `hcl:"pipeline,attr"`
-	Interval   string                `hcl:"interval,optional"`
+	ResourceID string                `hcl:"resource,attr"`
+	Remote     *RemoteBlockSpec      `hcl:"remote,block"`
+}
+
+// remoteBlockSpec is the type representing any "remote {...}" definition block
+// in a run resource's HCL
+type RemoteBlockSpec struct {
+	Interval string `hcl:"interval,optional"`
 }

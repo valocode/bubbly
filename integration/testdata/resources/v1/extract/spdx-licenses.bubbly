@@ -48,7 +48,7 @@ resource "extract" "spdx_licenses" {
 
                 timeout = 5
 
-                # Notes: 
+                # Notes:
                 #   * match field is actually boolean in a string: "true"/"false".
                 #   * isFsfLibre field is absent in some records.
                 #
@@ -109,7 +109,7 @@ resource "pipeline" "licenses" {
     api_version = "v1"
 
     spec {
-        
+
         task "extract_spdx_list" {
             resource = "extract/spdx_list"
             input "url" {
@@ -141,10 +141,9 @@ resource "pipeline" "licenses" {
     }
 }
 
-resource "pipeline_run" "licenses" {
+resource "run" "licenses" {
     api_version = "v1"
     spec {
-        interval = "22s"
-        pipeline = "pipeline/licenses"
+        resource = "pipeline/licenses"
     }
 }

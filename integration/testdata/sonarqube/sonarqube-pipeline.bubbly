@@ -172,8 +172,8 @@ resource "pipeline" "sonarqube" {
     }
 }
 
-// A pipeline_run resources executes a pipeline resource.
-resource "pipeline_run" "sonarqube" {
+// A run resource runs a resource.
+resource "run" "sonarqube_pipeline" {
     api_version = "v1"
     metadata {
         labels = {
@@ -181,10 +181,13 @@ resource "pipeline_run" "sonarqube" {
         }
     }
     spec {
-        // specify the name of the pipeline resource to execute
-        interval = "22s"
-        pipeline = "pipeline/sonarqube"
-        // specify the pipeline input(s) required
+        // specify the name of the resource to run
+        resource = "pipeline/sonarqube"
+
+        // this run resource should be run remotely by a bubbly worker
+        remote {}
+
+        // specify the resource input(s) required
         input "file" {
             value = "./testdata/sonarqube/sonarqube-example.json"
         }
@@ -194,7 +197,8 @@ resource "pipeline_run" "sonarqube" {
     }
 }
 
-resource "task_run" "extract_sonarqube" {
+// Run the extract resource
+resource "run" "sonarqube_extract" {
     api_version = "v1"
     metadata {
         labels = {}

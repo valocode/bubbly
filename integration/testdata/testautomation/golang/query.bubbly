@@ -12,7 +12,7 @@ resource "query" "go" {
   }
 }
 
-resource "task_run" "go_query" {
+resource "run" "go_query" {
   api_version = "v1"
   spec {
     resource = "query/go"

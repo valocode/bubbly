@@ -30,7 +30,7 @@ resource "query" "golang_unit" {
   }
 }
 
-resource "task_run" "golang_query" {
+resource "run" "golang_query" {
   api_version = "v1"
   spec {
     resource = "query/golang_unit"

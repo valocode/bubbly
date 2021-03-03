@@ -208,10 +208,8 @@ const (
 	LoadResourceKind = "load"
 	// PipelineResourceKind represents the resource kind pipeline
 	PipelineResourceKind = "pipeline"
-	// PipelineRunResourceKind represents the resource kind pipeline_run
-	PipelineRunResourceKind = "pipeline_run"
-	// TaskRunResourceKind represents the resource kind task_run
-	TaskRunResourceKind = "task_run"
+	// RunResourceKind represents the resource kind run
+	RunResourceKind = "run"
 	// QueryResourceKind represents the resource kind query
 	QueryResourceKind = "query"
 	// CriteriaResourceKind represents the resource kind criteria
@@ -229,15 +227,13 @@ func ResourceKindPriority() []ResourceKind {
 		PipelineResourceKind,
 		CriteriaResourceKind,
 		// last in the priority come the "Run" kinds
-		PipelineRunResourceKind,
-		TaskRunResourceKind,
+		RunResourceKind,
 	}
 }
 
 func ResourceRunKinds() []ResourceKind {
 	return []ResourceKind{
-		TaskRunResourceKind,
-		PipelineRunResourceKind,
+		RunResourceKind,
 	}
 }
 

@@ -57,10 +57,8 @@ func NewResource(resBlock *core.ResourceBlock) (core.Resource, error) {
 		resource = v1.NewLoad(resBlock)
 	case core.PipelineResourceKind:
 		resource = v1.NewPipeline(resBlock)
-	case core.PipelineRunResourceKind:
-		resource = v1.NewPipelineRun(resBlock)
-	case core.TaskRunResourceKind:
-		resource = v1.NewTaskRun(resBlock)
+	case core.RunResourceKind:
+		resource = v1.NewRun(resBlock)
 	case core.QueryResourceKind:
 		resource = v1.NewQuery(resBlock)
 	case core.CriteriaResourceKind:

@@ -12,7 +12,12 @@ import (
 
 	"github.com/verifa/bubbly/bubbly"
 	"github.com/verifa/bubbly/env"
+	integration "github.com/verifa/bubbly/integration/testdata"
 )
+
+func testGet(t *testing.T, bCtx *env.BubblyContext, args []string) {
+	integration.TestBubblyCmd(t, bCtx, "get", args)
+}
 
 // TestApply simply validates that a given directory containing bubbly
 // configuration including a pipeline_run will result in a POST of data to
@@ -29,6 +34,9 @@ func TestApply(t *testing.T) {
 
 		err := bubbly.Apply(bCtx, "./testdata/sonarqube")
 		assert.NoError(t, err, "Failed to apply resource")
+
+		// test that `bubbly get all` returns valid resources from the apply
+		testGet(t, bCtx, []string{"all"})
 	})
 
 	// Subtest
@@ -39,6 +47,7 @@ func TestApply(t *testing.T) {
 
 		err := bubbly.Apply(bCtx, "./testdata/rest2")
 		assert.NoError(t, err, "Failed to apply resource")
+
 	})
 
 	// Subtest
@@ -75,13 +84,13 @@ func TestApply(t *testing.T) {
 	// })
 }
 
-func TestApplyTaskRun(t *testing.T) {
+func TestApplyRun(t *testing.T) {
 	// Subtest
-	t.Run("task_run_sonarqube_extract", func(t *testing.T) {
+	t.Run("sonarqube_run", func(t *testing.T) {
 		bCtx := env.NewBubblyContext()
 		bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
-		err := bubbly.Apply(bCtx, "./testdata/resources/v1/taskrun/extract_sonarqube.bubbly")
+		err := bubbly.Apply(bCtx, "./testdata/resources/v1/run/resources.bubbly")
 		assert.NoError(t, err, "Failed to apply resource")
 	})
 }

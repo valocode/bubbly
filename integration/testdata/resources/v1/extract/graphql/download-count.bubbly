@@ -235,9 +235,9 @@ resource "pipeline" "p1" {
 	}
 }
 
-resource "pipeline_run" "pr1" {
+resource "run" "pr1" {
 	api_version = "v1"
 	spec {
-		pipeline = "pipeline/p1"
+		resource = "pipeline/p1"
 	}
 }

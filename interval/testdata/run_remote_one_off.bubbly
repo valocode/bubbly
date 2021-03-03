@@ -1,0 +1,16 @@
+// Run the extract resource
+resource "run" "sonarqube_extract" {
+  api_version = "v1"
+  metadata {
+    labels = {}
+  }
+  spec {
+    resource = "extract/sonarqube"
+
+    remote {}
+
+    input "file" {
+      value = "./testdata/sonarqube/sonarqube-example.json"
+    }
+  }
+}

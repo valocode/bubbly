@@ -46,19 +46,14 @@ type Pipeline interface {
 	Resource
 }
 
-// PipelineRun interface is for any resources of type PipelineRun
-type PipelineRun interface {
+// Run interface is for any resources of type Run
+type Run interface {
 	Resource
 }
 
 // Task interface represents a task inside a pipeline
 type Task interface {
 	SubResource
-}
-
-// TaskRun interface is for any resources of type TaskRun
-type TaskRun interface {
-	Resource
 }
 
 // Query interface is for any resources of type Query

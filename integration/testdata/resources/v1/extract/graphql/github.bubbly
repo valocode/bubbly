@@ -184,9 +184,9 @@ resource "pipeline" "bubbly_repo" {
 	}
 }
 
-resource "pipeline_run" "bubbly_repo" {
+resource "run" "bubbly_repo" {
 	api_version = "v1"
 	spec {
-		pipeline = "pipeline/bubbly_repo"
+		resource = "pipeline/bubbly_repo"
 	}
 }
