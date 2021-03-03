@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 
@@ -14,7 +15,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-type migration []string
+type migration []statement
 
 // generateMigration creates a list of sql statements to be executed based on a changelog
 func psqlGenerateMigration(bCtx *env.BubblyContext, ch Changelog) (migration, error) {
@@ -111,21 +112,46 @@ func psqlGenerateMigration(bCtx *env.BubblyContext, ch Changelog) (migration, er
 
 // drop a table if it exists
 func deleteTableStatement(m *migration, table string) error {
-	statement := fmt.Sprintf("DROP TABLE IF EXISTS %s;", table)
-	*m = append(*m, statement)
+	s := statement{
+		sql:       "DROP TABLE IF EXISTS %s;",
+		arguments: []string{table},
+	}
+	*m = append(*m, s)
 	return nil
 }
 
-func psqlMigrate(conn *pgx.Conn, migrationList []string) error {
+type statement struct {
+	sql       string
+	arguments []string
+}
+
+// sanitize will sanitize sql input to protect against injections
+func sanitize(input string) string {
+	return pgx.Identifier.Sanitize([]string{input})
+}
+
+// formatQuery will take a query string and add the sanitized arguments
+func formatQuery(query string, args []string) string {
+	s := make([]interface{}, len(args))
+	for i, v := range args {
+		arg := sanitize(v)
+		// this will remove the extra "" that gets added around a string from sanitize()
+		s[i] = strings.Trim(arg, "\"")
+	}
+	return fmt.Sprintf(query, s...)
+}
+
+func psqlMigrate(conn *pgx.Conn, migrationList migration) error {
 	tx, err := conn.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback(context.Background())
+
 	for _, m := range migrationList {
-		_, err = tx.Exec(context.Background(), m)
+		_, err = tx.Exec(context.Background(), formatQuery(m.sql, m.arguments))
 		if err != nil {
-			return fmt.Errorf("failed to execute SQL: %w, QUERY: %s", err, m)
+			return fmt.Errorf("failed to execute SQL: %w, QUERY: %s", err, m.sql)
 		}
 	}
 
@@ -134,16 +160,21 @@ func psqlMigrate(conn *pgx.Conn, migrationList []string) error {
 
 // drop a column if it exists
 func dropColumnStatement(m *migration, table string, column string) error {
-	statement := fmt.Sprintf("ALTER TABLE IF EXISTS %s DROP COLUMN IF EXISTS %s;", table, column)
-	*m = append(*m, statement)
+	s := statement{
+		sql:       "ALTER TABLE IF EXISTS %s DROP COLUMN IF EXISTS %s;",
+		arguments: []string{table, column},
+	}
+	*m = append(*m, s)
 	return nil
 }
 
 // drop a constraint if it exists
 func dropConstraintStatement(m *migration, table string, constraint string) error {
-	statement := fmt.Sprintf("ALTER TABLE IF EXISTS %s DROP CONSTRAINT IF EXISTS %s;", table, constraint)
-
-	*m = append(*m, statement)
+	s := statement{
+		sql:       "ALTER TABLE IF EXISTS %s DROP CONSTRAINT IF EXISTS %s;",
+		arguments: []string{table, constraint},
+	}
+	*m = append(*m, s)
 	return nil
 }
 
@@ -155,21 +186,25 @@ func alterColumnStatement(bCtx *env.BubblyContext, m *migration, info tableInfo,
 	if !ok {
 		return fmt.Errorf("not able to parse value to cty.Type: %s", columnType)
 	}
-	columnType, err := psqlType(t)
+	sqlType, err := psqlType(t)
 	if err != nil {
 		return err
 	}
 	// this query checks to see if a particular column exists and then edits it in one go
 	switch bCtx.StoreConfig.Provider {
 	case config.PostgresStore:
-		statement := fmt.Sprintf("DO $$ "+
-			"BEGIN "+
-			"IF EXISTS(SELECT * FROM information_schema.columns WHERE table_name='%s' and column_name='%s') "+
-			"THEN "+
-			"ALTER TABLE \"public\".\"%s\" ALTER COLUMN \"%s\" TYPE %s USING \"%s\"::%s;"+
-			"END IF;"+
-			"END $$;", info.TableName, info.ElementName, info.TableName, info.ElementName, columnType, info.ElementName, columnType)
-		*m = append(*m, statement)
+		s := statement{
+			sql: "DO $$ " +
+				"BEGIN " +
+				"IF EXISTS(SELECT * FROM information_schema.columns WHERE table_name='%s' and column_name='%s') " +
+				"THEN " +
+				"ALTER TABLE \"public\".\"%s\" ALTER COLUMN \"%s\" TYPE %s USING \"%s\"::%s;" +
+				"END IF;" +
+				"END $$;",
+			arguments: []string{info.TableName, info.ElementName, info.TableName, info.ElementName, sqlType, info.ElementName, sqlType},
+		}
+
+		*m = append(*m, s)
 		break
 	case config.CockroachDBStore:
 		// FIXME
@@ -177,9 +212,15 @@ func alterColumnStatement(bCtx *env.BubblyContext, m *migration, info tableInfo,
 		// cockroach doesn't support altering column types in a transaction, so this horrible workaround
 		// has to be used instead. This will completely remove data from the original column
 
-		dropStatement := fmt.Sprintf("ALTER TABLE IF EXISTS %s DROP COLUMN IF EXISTS %s;", info.TableName, info.ElementName)
-		statement := fmt.Sprintf("ALTER TABLE IF EXISTS %s ADD COLUMN IF NOT EXISTS %s %s;", info.TableName, info.TableName, columnType)
-		*m = append(*m, dropStatement, statement)
+		dropStatement := statement{
+			sql:       "ALTER TABLE IF EXISTS %s DROP COLUMN IF EXISTS %s;",
+			arguments: []string{info.TableName, info.ElementName},
+		}
+		s := statement{
+			sql:       "ALTER TABLE IF EXISTS %s ADD COLUMN IF NOT EXISTS %s %s;",
+			arguments: []string{info.TableName, info.TableName, sqlType},
+		}
+		*m = append(*m, dropStatement, s)
 		break
 	default:
 		return fmt.Errorf("provider type %s not supported", bCtx.StoreConfig.Provider)
@@ -195,11 +236,17 @@ func alterJoinStatement(m *migration, info tableInfo, uniqueInterface interface{
 	if !ok {
 		return fmt.Errorf("uniqueInterface not assignable to bool: %s", uniqueInterface)
 	}
-	resetSQL := fmt.Sprintf("ALTER TABLE IF EXISTS %s DROP CONSTRAINT IF EXISTS %s_%s_unique;", info.TableName, info.TableName, info.ElementName)
+	resetSQL := statement{
+		sql:       "ALTER TABLE IF EXISTS %s DROP CONSTRAINT IF EXISTS %s_%s_unique;",
+		arguments: []string{info.TableName, info.TableName, info.ElementName},
+	}
 	*m = append(*m, resetSQL)
 	if unique {
-		statement := fmt.Sprintf("ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s_%s_unique UNIQUE (%s);", info.TableName, info.TableName, info.ElementName, info.ElementName)
-		*m = append(*m, statement)
+		s := statement{
+			sql:       "ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s_%s_unique UNIQUE (%s);",
+			arguments: []string{info.TableName, info.TableName, info.ElementName, info.ElementName},
+		}
+		*m = append(*m, s)
 	}
 	return nil
 }
@@ -235,8 +282,11 @@ func createTableStatement(m *migration, info tableInfo, tableInterface interface
 		uniqueConstraint = ""
 	}
 
-	statement := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (name text%s%s);", info.TableName, uniqueConstraint, columnSQL)
-	*m = append(*m, statement)
+	s := statement{
+		sql:       "CREATE TABLE IF NOT EXISTS %s (name text%s%s);",
+		arguments: []string{info.TableName, uniqueConstraint, columnSQL},
+	}
+	*m = append(*m, s)
 
 	for _, subTable := range table.Tables {
 		err := createTableStatement(m, info, subTable)
@@ -258,11 +308,17 @@ func createFieldStatement(m *migration, info tableInfo, fieldInterface interface
 		return err
 	}
 
-	statement := fmt.Sprintf("ALTER TABLE IF EXISTS %s ADD COLUMN IF NOT EXISTS %s %s;", info.TableName, info.ElementName, tableType)
-	*m = append(*m, statement)
+	s := statement{
+		sql:       "ALTER TABLE IF EXISTS %s ADD COLUMN IF NOT EXISTS %s %s;",
+		arguments: []string{info.TableName, info.ElementName, tableType},
+	}
+	*m = append(*m, s)
 
 	if field.Unique {
-		uniqueStatement := fmt.Sprintf("ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s_%s_key UNIQUE (%s);", info.TableName, info.TableName, info.ElementName, info.ElementName)
+		uniqueStatement := statement{
+			sql:       "ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s_%s_key UNIQUE (%s);",
+			arguments: []string{info.TableName, info.TableName, info.ElementName, info.ElementName},
+		}
 		*m = append(*m, uniqueStatement)
 	}
 
@@ -277,16 +333,27 @@ func createJoinStatement(m *migration, info tableInfo, joinInterface interface{}
 	if !ok {
 		return fmt.Errorf("uniqueInterface not assignable to bool: %s", joinInterface)
 	}
-	statement := fmt.Sprintf("ALTER TABLE IF EXISTS %s ADD COLUMN IF NOT EXISTS %s_id SERIAL;", info.TableName, info.ElementName)
+	s := statement{
+		sql:       "ALTER TABLE IF EXISTS %s ADD COLUMN IF NOT EXISTS %s_id SERIAL;",
+		arguments: []string{info.TableName, info.ElementName},
+	}
 	if join.Unique {
-		uniqueSQL := fmt.Sprintf("ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s_%s_unique UNIQUE (%s_id);", info.TableName, info.TableName, info.ElementName, info.ElementName)
-		*m = append(*m, statement, uniqueSQL)
+		uniqueSQL := statement{
+			sql:       "ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s_%s_unique UNIQUE (%s_id);",
+			arguments: []string{info.TableName, info.TableName, info.ElementName, info.ElementName},
+		}
+		*m = append(*m, s, uniqueSQL)
+	} else {
+		*m = append(*m, s)
 	}
 	return nil
 }
 
 func createUniqueConstraint(m *migration, info tableInfo) error {
-	statement := fmt.Sprintf("ALTER TABLE IF EXISTS %s ADD CONSTRAINT IF NOT EXISTS %s_%s_key UNIQUE(id);", info.TableName, info.TableName, info.ElementName)
-	*m = append(*m, statement)
+	s := statement{
+		sql:       "ALTER TABLE IF EXISTS %s ADD CONSTRAINT IF NOT EXISTS %s_%s_key UNIQUE(id);",
+		arguments: []string{info.TableName, info.TableName, info.ElementName},
+	}
+	*m = append(*m, s)
 	return nil
 }

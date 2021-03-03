@@ -26,6 +26,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.8.1
 	github.com/hashicorp/terraform v0.14.3
 	github.com/imdario/mergo v0.3.11
+	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v4 v4.10.1
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jondot/goweight v1.0.5 // indirect

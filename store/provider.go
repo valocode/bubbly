@@ -13,5 +13,5 @@ type provider interface {
 	ResolveQuery(graph *schemaGraph, params graphql.ResolveParams) (interface{}, error)
 	HasTable(core.Table) (bool, error)
 	GenerateMigration(ctx *env.BubblyContext, cl Changelog) (migration, error)
-	Migrate([]string) error
+	Migrate(migration) error
 }

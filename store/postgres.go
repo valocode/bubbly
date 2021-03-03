@@ -60,7 +60,7 @@ func (p *postgres) GenerateMigration(bCtx *env.BubblyContext, cl Changelog) (mig
 	return psqlGenerateMigration(bCtx, cl)
 }
 
-func (p *postgres) Migrate(migrationList []string) error {
+func (p *postgres) Migrate(migrationList migration) error {
 	return psqlMigrate(p.conn, migrationList)
 }
 
@@ -99,7 +99,7 @@ func psqlNewConn(bCtx *env.BubblyContext, connStr string) (*pgx.Conn, error) {
 	}
 
 	config.Logger = zerologadapter.NewLogger(*bCtx.Logger)
-	config.LogLevel = pgx.LogLevelInfo
+	config.LogLevel = pgx.LogLevelError
 
 	// config.ConnConfig.LogLevel
 	conn, err := pgx.ConnectConfig(context.Background(), config)

@@ -74,6 +74,6 @@ func (c *cockroachdb) GenerateMigration(bCtx *env.BubblyContext, cl Changelog) (
 	return psqlGenerateMigration(bCtx, cl)
 }
 
-func (c *cockroachdb) Migrate(migrationList []string) error {
+func (c *cockroachdb) Migrate(migrationList migration) error {
 	return psqlMigrate(c.conn, migrationList)
 }
