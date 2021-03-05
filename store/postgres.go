@@ -64,18 +64,18 @@ func (p *postgres) Migrate(migrationList migration) error {
 	return psqlMigrate(p.conn, migrationList)
 }
 
-func (p *postgres) Save(schema *bubblySchema, tree dataTree) error {
+func (p *postgres) Save(bCtx *env.BubblyContext, schema *bubblySchema, tree dataTree) error {
 	tx, err := p.conn.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback(context.Background())
 
-	saveNode := func(node *dataNode, blocks *core.DataBlocks) error {
+	saveNode := func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
 		return psqlSaveNode(tx, node, schema)
 	}
 
-	_, err = tree.traverse(saveNode)
+	_, err = tree.traverse(bCtx, saveNode)
 
 	if err != nil {
 		return fmt.Errorf("failed to save data in postgres: %w", err)

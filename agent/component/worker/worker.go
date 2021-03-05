@@ -22,7 +22,7 @@ const (
 )
 
 func New(bCtx *env.BubblyContext) *Worker {
-	return &Worker{
+	w := &Worker{
 		ComponentCore: &component.ComponentCore{
 			Type: component.WorkerComponent,
 			NATSServer: &component.NATS{
@@ -32,6 +32,12 @@ func New(bCtx *env.BubblyContext) *Worker {
 		},
 		ResourceWorker: &interval.ResourceWorker{},
 	}
+
+	w.DesiredSubscriptions = w.defaultSubscriptions()
+
+	bCtx.Logger.Debug().Msg("successfully initialised a worker")
+
+	return w
 }
 
 // TODO: describe more about the Worker
@@ -120,21 +126,19 @@ func (w *Worker) Run(bCtx *env.BubblyContext, agentContext context.Context) erro
 			string(w.Type)).
 		Msg("running component")
 
-	ch := make(chan error, 1)
-	defer close(ch)
+	nSubs, err := w.BulkSubscribe(bCtx)
 
-	// run the actual worker in a separate goroutine, but track its
-	// performance using a channel
-	go w.run(bCtx, ch)
-
-	select {
-	// if the api server fails, error
-	case err := <-ch:
-		return fmt.Errorf("error while running Worker: %w", err)
-	// if another agent component fails, error
-	case <-agentContext.Done():
-		return agentContext.Err()
+	if err != nil {
+		return fmt.Errorf("error during bulk subscription: %w", err)
 	}
+
+	w.Subscriptions = nSubs
+	bCtx.Logger.Debug().
+		Str("component", string(w.Type)).
+		Interface("subscriptions", w.Subscriptions).
+		Msg("component is listening for subscriptions")
+
+	return w.Listen(agentContext)
 }
 
 // run is a goroutine invoked from public Run method
@@ -177,5 +181,17 @@ func (w *Worker) run(bCtx *env.BubblyContext, ch chan error) {
 	err = w.ResourceWorker.Run(bCtx)
 	if err != nil {
 		ch <- fmt.Errorf("interval worker failure: %w", err)
+	}
+}
+
+// a list of DesiredSubscriptions that the data store attempts to subscribe to
+func (w *Worker) defaultSubscriptions() component.DesiredSubscriptions {
+	return component.DesiredSubscriptions{
+		component.DesiredSubscription{
+			Subject: component.WorkerPostRunResource,
+			Queue:   component.WorkerQueue,
+			Handler: w.PostRunResourceHandler,
+			Encoder: nats.DEFAULT_ENCODER,
+		},
 	}
 }

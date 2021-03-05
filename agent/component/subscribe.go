@@ -47,6 +47,7 @@ const (
 	StorePostSchema         Subject = "store.PostSchema"
 	StoreQuery              Subject = "store.Query"
 	StoreUpload             Subject = "store.Upload"
+	WorkerPostRunResource   Subject = "worker.PostRunResource"
 )
 
 type Queues []Queue

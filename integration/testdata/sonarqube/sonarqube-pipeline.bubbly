@@ -184,9 +184,6 @@ resource "run" "sonarqube_pipeline" {
         // specify the name of the resource to run
         resource = "pipeline/sonarqube"
 
-        // this run resource should be run remotely by a bubbly worker
-        remote {}
-
         // specify the resource input(s) required
         input "file" {
             value = "./testdata/sonarqube/sonarqube-example.json"

@@ -135,14 +135,14 @@ var queryTests = []struct {
 	},
 }
 
-func storeTests(bCtx *env.BubblyContext, t *testing.T, s *Store) {
+func storeTests(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 	tables := testData.Tables(t)
 	data := testData.DataBlocks(t)
 
 	err := s.Apply(bCtx, tables)
 	require.NoErrorf(t, err, "failed to apply schema")
 
-	err = s.Save(data)
+	err = s.Save(bCtx, data)
 	require.NoErrorf(t, err, "failed to save data")
 
 	// Run the query tests
@@ -170,7 +170,7 @@ func storeTests(bCtx *env.BubblyContext, t *testing.T, s *Store) {
 
 	require.NoError(t, err)
 
-	err = s.Save(core.DataBlocks{d})
+	err = s.Save(bCtx, core.DataBlocks{d})
 
 	require.NoError(t, err)
 
@@ -187,10 +187,10 @@ func storeTests(bCtx *env.BubblyContext, t *testing.T, s *Store) {
 		`
 	result := s.Query(resQuery)
 	require.Empty(t, result.Errors)
-	eventTests(t, s, &d)
+	eventTests(t, bCtx, s, &d)
 }
 
-func eventTests(t *testing.T, s *Store, d *core.Data) {
+func eventTests(t *testing.T, bCtx *env.BubblyContext, s *Store, d *core.Data) {
 	dSource := core.Data{
 		TableName: core.ResourceTableName,
 		Fields: core.DataFields{
@@ -211,7 +211,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 		},
 	}
 
-	err := s.Save(d2)
+	err := s.Save(bCtx, d2)
 
 	require.NoError(t, err)
 
@@ -272,7 +272,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 		},
 	}
 
-	err = s.Save(d3)
+	err = s.Save(bCtx, d3)
 
 	require.NoError(t, err)
 
@@ -311,7 +311,7 @@ func eventTests(t *testing.T, s *Store, d *core.Data) {
 
 	require.NoError(t, err)
 
-	err = s.Save(dataBlocks)
+	err = s.Save(bCtx, dataBlocks)
 
 	require.NoError(t, err)
 
@@ -373,7 +373,7 @@ func TestCockroach(t *testing.T) {
 	s, err := New(bCtx)
 	require.NoErrorf(t, err, "failed to initialize store")
 
-	storeTests(bCtx, t, s)
+	storeTests(t, bCtx, s)
 }
 
 func TestPostgres(t *testing.T) {
@@ -417,5 +417,5 @@ func TestPostgres(t *testing.T) {
 	s, err := New(bCtx)
 	assert.NoErrorf(t, err, "failed to initialize store")
 
-	storeTests(bCtx, t, s)
+	storeTests(t, bCtx, s)
 }

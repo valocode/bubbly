@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -16,10 +17,10 @@ import (
 type dataTree []*dataNode
 
 // traverse takes a callback function fn and visits each node in the tree
-func (t dataTree) traverse(fn visitFn) (core.DataBlocks, error) {
+func (t dataTree) traverse(bCtx *env.BubblyContext, fn visitFn) (core.DataBlocks, error) {
 	blocks := core.DataBlocks{}
 	for _, d := range t {
-		if err := visitNode(d, fn, &blocks); err != nil {
+		if err := visitNode(bCtx, d, fn, &blocks); err != nil {
 			return nil, fmt.Errorf("received an error when visiting data node: %s: %w", d.Data.TableName, err)
 		}
 	}
@@ -29,24 +30,24 @@ func (t dataTree) traverse(fn visitFn) (core.DataBlocks, error) {
 
 // visitNode is a wrapper around the callback visit function to make sure that
 // all the nodes are visited at least once, and at most once
-func visitNode(node *dataNode, fn visitFn, blocks *core.DataBlocks) error {
+func visitNode(bCtx *env.BubblyContext, node *dataNode, fn visitFn, blocks *core.DataBlocks) error {
 	// First check that all the parents have been visited because we cannot
 	// solve a node until all its parents have been solved
 	for _, parent := range node.Parents {
 		if !parent.Visited {
-			if err := visitNode(parent, fn, blocks); err != nil {
+			if err := visitNode(bCtx, parent, fn, blocks); err != nil {
 				return err
 			}
 		}
 	}
 	// Visit the node with the callback method
-	if err := fn(node, blocks); err != nil {
+	if err := fn(bCtx, node, blocks); err != nil {
 		return err
 	}
 	// If no error, mark the node as visited
 	node.Visited = true
 	for _, child := range node.Children {
-		if err := visitNode(child, fn, blocks); err != nil {
+		if err := visitNode(bCtx, child, fn, blocks); err != nil {
 			return err
 		}
 	}
@@ -54,7 +55,7 @@ func visitNode(node *dataNode, fn visitFn, blocks *core.DataBlocks) error {
 }
 
 // visitFn is a type declaration for the tree traversal visit callback function
-type visitFn func(node *dataNode, blocks *core.DataBlocks) error
+type visitFn func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error
 
 func newDataNode(d *core.Data) *dataNode {
 	return &dataNode{

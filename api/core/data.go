@@ -6,6 +6,7 @@ import (
 
 	"github.com/verifa/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
@@ -62,6 +63,27 @@ func (d *Data) IsValidResource() bool {
 		}
 	}
 	return true
+}
+
+// UnmarshalJSON unmarshals json into DataFields
+func (d *Data) ToResourceBlockJSON() (ResourceBlockJSON, error) {
+	rb := ResourceBlockJSON{}
+	for k, v := range d.Fields {
+		switch k {
+		case "kind":
+			_ = gocty.FromCtyValue(v, &rb.ResourceKind)
+		case "name":
+			_ = gocty.FromCtyValue(v, &rb.ResourceName)
+		case "api_version":
+			_ = gocty.FromCtyValue(v, &rb.ResourceAPIVersion)
+		case "spec":
+			_ = gocty.FromCtyValue(v, &rb.SpecRaw)
+		case "metadata":
+			_ = gocty.FromCtyValue(v, &rb.Metadata)
+		}
+	}
+
+	return rb, nil
 }
 
 // MarshalJSON marshals DataFields into json

@@ -102,6 +102,45 @@ func (n *NATS) PostResource(bCtx *env.BubblyContext, data []byte) error {
 	return nil
 }
 
+// PostResource uses the bubbly NATS client to publish a resource to a worker
+// The data is marshalled from a core.DataBlocks
+func (n *NATS) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) error {
+	bCtx.Logger.Debug().
+		Interface("client", n.Config).
+		Interface("resource", data).
+		Str("subject", string(component.WorkerPostRunResource)).
+		Msg("Posting resource to worker")
+
+	request := component.Publication{
+		Subject: component.WorkerPostRunResource,
+		Data:    data,
+		Encoder: nats.DEFAULT_ENCODER,
+	}
+
+	// publish the resource to the worker queue to be picked up and run.
+	// we offload responsibility for updating future state of the run resource to
+	// the worker that picks it up. What this means is that the worker should
+	// update the data store with the success/failure of the run
+	// if err := n.Publish(bCtx, &request); err != nil {
+	// 	return fmt.Errorf(`failed to post resource: %w`, err)
+	// }
+
+	err := n.Publish(bCtx, &request)
+
+	if err != nil {
+		return fmt.Errorf("failed to publish to worker: %w", err)
+	}
+
+	// if reply.Error != nil {
+	// 	return fmt.Errorf(
+	// 		`failed to post resource to worker: %w`,
+	// 		reply.Error,
+	// 	)
+	// }
+
+	return nil
+}
+
 // Upload uses the bubbly NATS client to upload arbitrary data to be saved
 // into the data store.
 func (n *NATS) Upload(bCtx *env.BubblyContext, data []byte) error {

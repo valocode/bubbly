@@ -61,7 +61,7 @@ func (d *DataStore) PostResourceHandler(bCtx *env.BubblyContext, m *nats.Msg) er
 		fmt.Errorf("failed to unmarshal into core.Data: %w", err)
 	}
 
-	if err := d.Store.Save(core.DataBlocks{data}); err != nil {
+	if err := d.Store.Save(bCtx, core.DataBlocks{data}); err != nil {
 		return fmt.Errorf("failed to save resource into store: %w", err)
 	}
 
@@ -216,7 +216,7 @@ func (d *DataStore) UploadHandler(bCtx *env.BubblyContext, m *nats.Msg) error {
 		return fmt.Errorf("failed to decode data into core.DataBlocks: %w", err)
 	}
 
-	if err := d.Store.Save(dbs); err != nil {
+	if err := d.Store.Save(bCtx, dbs); err != nil {
 		return fmt.Errorf("failed to save data to data store: %w", err)
 	}
 

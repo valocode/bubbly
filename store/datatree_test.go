@@ -5,8 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/verifa/bubbly/api/core"
+	"github.com/verifa/bubbly/env"
 )
 
 // some debugging function
@@ -55,6 +57,9 @@ func TestDataTree(t *testing.T) {
 		},
 	}
 
+	bCtx := env.NewBubblyContext()
+	bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
 	for _, c := range cases {
 		t.Run(c.desc, func(t *testing.T) {
 			tree, err := createDataTree(c.in)
@@ -71,13 +76,13 @@ func TestDataTree(t *testing.T) {
 			// each node.Data.TableName to a list, and then doing equality on
 			// that list. Otherwise we would need to duplicate the tree and
 			// that's a bit of a PITA.
-			_, err = tree.traverse(func(node *dataNode,
+			_, err = tree.traverse(bCtx, func(bCtx *env.BubblyContext, node *dataNode,
 				blocks *core.DataBlocks) error {
 				nodeList = append(nodeList, node.Data.TableName)
 				return nil
 			})
 			assert.NoErrorf(t, err, "failed traverse tree")
-			_, err = c.out.traverse(func(node *dataNode,
+			_, err = c.out.traverse(bCtx, func(bCtx *env.BubblyContext, node *dataNode,
 				blocks *core.DataBlocks) error {
 				expNodeList = append(expNodeList, node.Data.TableName)
 				return nil

@@ -15,6 +15,7 @@ import (
 	"github.com/verifa/bubbly/api/core"
 	v1 "github.com/verifa/bubbly/api/v1"
 	"github.com/verifa/bubbly/env"
+	"github.com/verifa/bubbly/events"
 )
 
 const (
@@ -94,6 +95,7 @@ func (w *ResourceWorker) ParseResources(bCtx *env.BubblyContext, resources []cor
 
 			// if true, then the run resource should not be run remotely
 			if runV1.Spec.Remote == nil {
+				bCtx.Logger.Debug().Str("resource", runV1.String()).Msg("run is of type local and therefore will be ignored by the worker")
 				continue
 			}
 
@@ -161,6 +163,7 @@ func (w *ResourceWorker) Run(bCtx *env.BubblyContext) error {
 
 // ApplyWithInterval will apply the underlying run based on the defined interval
 func (pr *Run) ApplyWithInterval(bCtx *env.BubblyContext, ch <-chan RunAction, ctx context.Context) error {
+	return nil
 	ticker := time.NewTicker(pr.interval)
 	defer ticker.Stop()
 mainloop:
@@ -199,16 +202,28 @@ mainloop:
 // ApplyOneOff is used to apply remote Run resources that lack a specified
 // interval. The resource is applied only once.
 func (pr *Run) ApplyOneOff(bCtx *env.BubblyContext) error {
+	bCtx.Logger.Debug().Str("id", pr.Resource.String()).Msg("run resource of type OneOffRun identified")
 	resContext := core.NewResourceContext(cty.NilVal, api.NewResource)
-	output := pr.Resource.Apply(bCtx, resContext)
-	if output.Error != nil {
-		bCtx.Logger.Error().Err(output.Error).Msg("error applying run")
+	subResourceOutput := pr.Resource.Apply(bCtx, resContext)
+
+	runResourceOutput := core.ResourceOutput{
+		ID:     pr.Resource.String(),
+		Status: events.ResourceRunSuccess,
+		Error:  nil,
 	}
+
+	// if any child resource of the run resource has failed, then
+	// mark the run resource has failed and attach the error message
+	if subResourceOutput.Error != nil {
+		runResourceOutput.Status = events.ResourceRunFailure
+		runResourceOutput.Error = fmt.Errorf(`failed to run resource "%s": %w`, pr.Resource.String(), subResourceOutput.Error)
+	}
+
 	// TODO: better consider what action to perform if the worker fails to
 	//  run the current run resource
 
 	// load the output of the run resource to the event store
-	if err := common.LoadResourceOutput(bCtx, &output); err != nil {
+	if err := common.LoadResourceOutput(bCtx, &runResourceOutput); err != nil {
 		return fmt.Errorf(
 			`failed to store the output of running resource "%s" to the store: %w`,
 			pr.Resource.String(),

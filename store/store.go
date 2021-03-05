@@ -64,6 +64,7 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 	}
 
 	s.triggers = internalTriggers
+	s.passiveTriggers = internalPassiveTriggers
 	return s, nil
 }
 
@@ -71,11 +72,12 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 type Store struct {
 	p provider
 
-	mu           sync.RWMutex
-	graph        *schemaGraph
-	bubblySchema *bubblySchema
-	schema       *graphql.Schema
-	triggers     []*trigger
+	mu              sync.RWMutex
+	graph           *schemaGraph
+	bubblySchema    *bubblySchema
+	schema          *graphql.Schema
+	triggers        []*trigger
+	passiveTriggers []*trigger
 }
 
 // Schema gets the graphql schema for the store.
@@ -164,24 +166,30 @@ func (s *Store) Apply(bCtx *env.BubblyContext, tables core.Tables) error {
 }
 
 // Save saves data into the store.
-func (s *Store) Save(data core.DataBlocks) error {
+func (s *Store) Save(bCtx *env.BubblyContext, data core.DataBlocks) error {
 
 	dataTree, err := createDataTree(data)
 	if err != nil {
 		return fmt.Errorf("failed to create tree of data blocks for storing: %w", err)
 	}
-	if err := s.p.Save(s.bubblySchema, dataTree); err != nil {
+	if err := s.p.Save(bCtx, s.bubblySchema, dataTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}
 
-	triggersTree, err := HandleTriggers(dataTree, s.triggers)
+	triggersTree, err := HandleTriggers(bCtx, dataTree, s.triggers, Active)
 
 	if err != nil {
 		return fmt.Errorf("data triggers failed: %w", err)
 	}
 
-	if err := s.p.Save(s.bubblySchema, triggersTree); err != nil {
+	if err := s.p.Save(bCtx, s.bubblySchema, triggersTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
+	}
+
+	_, err = HandleTriggers(bCtx, dataTree, s.triggers, Passive)
+
+	if err != nil {
+		return fmt.Errorf("passive triggers failed: %w", err)
 	}
 
 	return nil

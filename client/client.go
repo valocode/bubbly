@@ -205,7 +205,7 @@ func (n *NATS) Publish(bCtx *env.BubblyContext, pub *component.Publication) erro
 	defer n.Conn.Close()
 	defer n.EConn.Close()
 
-	if err := n.EConn.Publish(string(pub.Subject), pub); err != nil {
+	if err := n.EConn.Publish(string(pub.Subject), pub.Data); err != nil {
 		return fmt.Errorf(
 			`failed to publish subject "%s" with value "%s": %w`,
 			pub.Subject,

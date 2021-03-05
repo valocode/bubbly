@@ -93,4 +93,11 @@ func TestApplyRun(t *testing.T) {
 		err := bubbly.Apply(bCtx, "./testdata/resources/v1/run/resources.bubbly")
 		assert.NoError(t, err, "Failed to apply resource")
 	})
+	t.Run("remote_run", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+		err := bubbly.Apply(bCtx, "./testdata/resources/v1/run/remote_resources.bubbly")
+		assert.NoError(t, err, "Failed to apply remote resource")
+	})
 }

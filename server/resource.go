@@ -111,6 +111,10 @@ func (a *Server) GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error unmarshalling resource: %w", err))
 	}
 
+	if result == nil || result.(map[string]interface{})[core.ResourceTableName] == nil {
+		return c.JSON(http.StatusOK, core.ResourceBlockJSON{})
+	}
+
 	var (
 		resJSON  core.ResourceBlockJSON
 		inputMap = result.(map[string]interface{})[core.ResourceTableName].([]interface{})

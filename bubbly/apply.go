@@ -7,6 +7,7 @@ import (
 	"github.com/verifa/bubbly/api"
 	"github.com/verifa/bubbly/api/common"
 	"github.com/verifa/bubbly/api/core"
+	v1 "github.com/verifa/bubbly/api/v1"
 	"github.com/verifa/bubbly/client"
 	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/events"
@@ -64,6 +65,24 @@ func runResources(bCtx *env.BubblyContext, resParser *api.ResourcesParserType) e
 		bCtx.Logger.Debug().Msgf("Running resource kinds %s", kind)
 		resources := resParser.ByKind(kind)
 		for _, resource := range resources {
+
+			if kind == core.RunResourceKind {
+				r := resource.(*v1.Run)
+
+				runCtx := core.NewResourceContext(cty.NilVal, core.NewResourceContext(cty.NilVal, api.NewResource).NewResource)
+
+				if err := common.DecodeBody(bCtx, r.SpecHCL.Body, &r.Spec, runCtx); err != nil {
+					return fmt.Errorf("failed to form resource from block: %w", err)
+				}
+
+				if r.Spec.Remote != nil {
+					bCtx.Logger.Debug().Str("resource", r.String()).Msg("run is of type remote and therefore should only be run by a bubbly worker")
+					continue
+				} else {
+					bCtx.Logger.Debug().Str("resource", r.String()).Msg("run is of type local")
+				}
+			}
+
 			bCtx.Logger.Debug().Msgf("Running resource %s ...", resource.String())
 			subResourceOutput := resource.Apply(
 				bCtx,
