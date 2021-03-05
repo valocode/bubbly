@@ -64,7 +64,6 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 	}
 
 	s.triggers = internalTriggers
-	s.passiveTriggers = internalPassiveTriggers
 	return s, nil
 }
 

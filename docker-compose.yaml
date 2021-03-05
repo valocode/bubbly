@@ -56,13 +56,13 @@ services:
   # Bubbly server
   bubbly:
     depends_on:
-      - "${BUBBLY_STORE_PROVIDER:-cockroachdb}"
+      - "${BUBBLY_STORE_PROVIDER:-postgres}"
     container_name: bubbly
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      BUBBLY_STORE_PROVIDER: "${BUBBLY_STORE_PROVIDER:-cockroachdb}"
+      BUBBLY_STORE_PROVIDER: "${BUBBLY_STORE_PROVIDER:-postgres}"
     networks:
       - bubbly-net
     ports:
@@ -70,26 +70,6 @@ services:
     command:
       - "agent"
       - "--debug"
-      - "--api-server"
-      - "--nats-server"
-      - "--data-store"
-  bubbly-all:
-    depends_on:
-      - "${BUBBLY_STORE_PROVIDER:-cockroachdb}"
-    container_name: bubbly-all
-    build:
-      context: .
-      dockerfile: Dockerfile
-    environment:
-      BUBBLY_STORE_PROVIDER: "${BUBBLY_STORE_PROVIDER:-cockroachdb}"
-    networks:
-      - bubbly-net
-    ports:
-      - "8111:8111"
-    command:
-      - "agent"
-      - "--debug"
-
   # A GraphQL interface into Bubbly Store
   storefront:
     container_name: storefront

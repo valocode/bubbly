@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/graphql-go/graphql"
@@ -17,7 +18,10 @@ import (
 	"github.com/zclconf/go-cty/cty/gocty"
 )
 
-var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+var (
+	psql                          = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+	defaultStoreConnRetryAttempts = 10
+)
 
 func newPostgres(bCtx *env.BubblyContext) (*postgres, error) {
 	connStr := fmt.Sprintf(
@@ -42,6 +46,10 @@ type postgres struct {
 }
 
 func (p *postgres) Apply(schema *bubblySchema) error {
+	if err := p.Check(); err != nil {
+		return fmt.Errorf("postgres connection is invalid: %w", err)
+	}
+
 	tx, err := p.conn.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -65,6 +73,10 @@ func (p *postgres) Migrate(migrationList migration) error {
 }
 
 func (p *postgres) Save(bCtx *env.BubblyContext, schema *bubblySchema, tree dataTree) error {
+	if err := p.Check(); err != nil {
+		return fmt.Errorf("postgres connection is invalid: %w", err)
+	}
+
 	tx, err := p.conn.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -90,6 +102,16 @@ func (p *postgres) ResolveQuery(graph *schemaGraph, params graphql.ResolveParams
 
 func (p *postgres) HasTable(table core.Table) (bool, error) {
 	return psqlHasTable(p.conn, table)
+}
+
+func (p *postgres) Check() error {
+	for attempt := 1; attempt <= defaultStoreConnRetryAttempts; attempt++ {
+		if !p.conn.PgConn().IsBusy() {
+			return nil
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return errors.New("connection still busy after all retry attempts")
 }
 
 func psqlNewConn(bCtx *env.BubblyContext, connStr string) (*pgx.Conn, error) {
@@ -124,6 +146,18 @@ func psqlHasTable(conn *pgx.Conn, table core.Table) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to create sql query: %w", err)
 	}
+
+	for attempt := 1; attempt <= defaultStoreConnRetryAttempts; attempt++ {
+		if !conn.PgConn().IsBusy() {
+			break
+		} else {
+			if attempt == defaultStoreConnRetryAttempts {
+				return false, fmt.Errorf("failed to establish unbusy conn")
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
+
 	row := conn.QueryRow(context.Background(), sqlStr, sqlArgs...)
 
 	if err := row.Scan(&exists); err != nil {

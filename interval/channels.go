@@ -30,8 +30,8 @@ func (w *ResourceWorker) UpdateResourceWorker(resBlock *core.ResourceBlock) erro
 }
 
 // DeleteChannel will delete and close the specified channel
-func (pr *Run) DeleteChannel() {
-	pr.Channel <- RunAction{
+func (r *Run) DeleteChannel() {
+	r.Channel <- RunAction{
 		Action:        StopRun,
 		ResourceBlock: nil,
 	}

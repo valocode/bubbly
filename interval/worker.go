@@ -3,6 +3,7 @@ package interval
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -47,8 +48,15 @@ type ChannelContext struct {
 }
 
 type Pool struct {
+	mu        sync.RWMutex
 	Resources []core.Resource
 	Runs      []Run
+}
+
+func (p Pool) Remove(i int) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.Runs = append(p.Runs[:i], p.Runs[i+1:]...)
 }
 
 type Run struct {
@@ -123,7 +131,9 @@ func (w *ResourceWorker) ParseResources(bCtx *env.BubblyContext, resources []cor
 				run.Kind = OneOffRun
 			}
 
+			w.Pool.mu.Lock()
 			w.Pool.Runs = append(w.Pool.Runs, run)
+			w.Pool.mu.Unlock()
 		default:
 			bCtx.Logger.Debug().Str("type", string(r.Kind())).Msg("resource worker does not support resources of this kind")
 		}
@@ -132,7 +142,7 @@ func (w *ResourceWorker) ParseResources(bCtx *env.BubblyContext, resources []cor
 
 // Run establishes the channels and will apply the runs
 func (w *ResourceWorker) Run(bCtx *env.BubblyContext) error {
-	for _, run := range w.Pool.Runs {
+	for i, run := range w.Pool.Runs {
 		eg := new(errgroup.Group)
 		var ctx, cancel = context.WithCancel(context.Background())
 		w.Context = ChannelContext{
@@ -152,7 +162,15 @@ func (w *ResourceWorker) Run(bCtx *env.BubblyContext) error {
 			case IntervalRun:
 				return run.ApplyWithInterval(bCtx, w.WorkerChannels[run.Resource.String()], ctx)
 			case OneOffRun:
-				return run.ApplyOneOff(bCtx)
+				err := run.ApplyOneOff(bCtx)
+
+				if err == nil {
+					bCtx.Logger.Debug().Msg("run successful. Removing successful run from worker's pool")
+					w.Pool.Remove(i)
+					return nil
+				}
+
+				return err
 			}
 			return nil
 		})
@@ -162,16 +180,17 @@ func (w *ResourceWorker) Run(bCtx *env.BubblyContext) error {
 }
 
 // ApplyWithInterval will apply the underlying run based on the defined interval
-func (pr *Run) ApplyWithInterval(bCtx *env.BubblyContext, ch <-chan RunAction, ctx context.Context) error {
+func (r *Run) ApplyWithInterval(bCtx *env.BubblyContext, ch <-chan RunAction, ctx context.Context) error {
+	// TODO: fix concurrency bug in provider then enable
 	return nil
-	ticker := time.NewTicker(pr.interval)
+	ticker := time.NewTicker(r.interval)
 	defer ticker.Stop()
 mainloop:
 	for {
 		select {
 		case <-ticker.C:
 			resContext := core.NewResourceContext(cty.NilVal, api.NewResource)
-			output := pr.Resource.Apply(bCtx, resContext)
+			output := r.Resource.Apply(bCtx, resContext)
 			if output.Error != nil {
 				bCtx.Logger.Error().Err(output.Error).Msg("error applying run")
 			}
@@ -180,12 +199,12 @@ mainloop:
 			switch msg.Action {
 			case UpdateRun:
 				// The underlying resource has been changed, update it
-				err := pr.update(*msg.ResourceBlock)
+				err := r.update(*msg.ResourceBlock)
 				if err != nil {
 					return err
 				}
 			case StopRun:
-				pr.DeleteChannel()
+				r.DeleteChannel()
 				break mainloop
 			default:
 				// Unsupported message type -> Skip
@@ -201,13 +220,15 @@ mainloop:
 
 // ApplyOneOff is used to apply remote Run resources that lack a specified
 // interval. The resource is applied only once.
-func (pr *Run) ApplyOneOff(bCtx *env.BubblyContext) error {
-	bCtx.Logger.Debug().Str("id", pr.Resource.String()).Msg("run resource of type OneOffRun identified")
+func (r *Run) ApplyOneOff(bCtx *env.BubblyContext) error {
+	// TODO: fix concurrency bug in provider then enable
+	return nil
+	bCtx.Logger.Debug().Str("id", r.Resource.String()).Msg("run resource of type OneOffRun identified")
 	resContext := core.NewResourceContext(cty.NilVal, api.NewResource)
-	subResourceOutput := pr.Resource.Apply(bCtx, resContext)
+	subResourceOutput := r.Resource.Apply(bCtx, resContext)
 
 	runResourceOutput := core.ResourceOutput{
-		ID:     pr.Resource.String(),
+		ID:     r.Resource.String(),
 		Status: events.ResourceRunSuccess,
 		Error:  nil,
 	}
@@ -216,7 +237,7 @@ func (pr *Run) ApplyOneOff(bCtx *env.BubblyContext) error {
 	// mark the run resource has failed and attach the error message
 	if subResourceOutput.Error != nil {
 		runResourceOutput.Status = events.ResourceRunFailure
-		runResourceOutput.Error = fmt.Errorf(`failed to run resource "%s": %w`, pr.Resource.String(), subResourceOutput.Error)
+		runResourceOutput.Error = fmt.Errorf(`failed to run resource "%s": %w`, r.Resource.String(), subResourceOutput.Error)
 	}
 
 	// TODO: better consider what action to perform if the worker fails to
@@ -226,20 +247,21 @@ func (pr *Run) ApplyOneOff(bCtx *env.BubblyContext) error {
 	if err := common.LoadResourceOutput(bCtx, &runResourceOutput); err != nil {
 		return fmt.Errorf(
 			`failed to store the output of running resource "%s" to the store: %w`,
-			pr.Resource.String(),
+			r.Resource.String(),
 			err,
 		)
 	}
+
 	return nil
 }
 
-func (pr *Run) update(resBlock core.ResourceBlock) error {
+func (r *Run) update(resBlock core.ResourceBlock) error {
 	newRes, err := api.NewResource(&resBlock)
 	if err != nil {
 		return err
 	}
 	// update the Run's resource
 	runV1 := newRes.(*v1.Run)
-	pr.Resource = *runV1
+	r.Resource = *runV1
 	return nil
 }

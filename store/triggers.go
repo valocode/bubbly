@@ -135,20 +135,11 @@ var eventStoreTrigger = &trigger{
 	},
 }
 
-var internalPassiveTriggers = []*trigger{remoteRunTrigger}
-
 var remoteRunTrigger = &trigger{
 	id:          "default/trigger/remote_run_trigger",
 	description: "make a NATS publication upon new/updated entry to a run resource",
 	Kind:        Passive,
 	visitFn: func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
-		// isOneOffRemoteRun := func() bool {
-		// 	type res struct {
-		// 		kind string
-		// 	}
-		// 	return true
-		// }
-
 		switch node.Data.TableName {
 		// if the table is _resource, then we know a resource has been loaded to the store
 		case core.ResourceTableName:
@@ -172,9 +163,6 @@ var remoteRunTrigger = &trigger{
 				if resKind == core.RunResourceKind {
 					resJSON, _ := node.Data.ToResourceBlockJSON()
 
-					// let's make sure we can form a resource from it...
-					bCtx.Logger.Debug().Interface("block", resJSON).Str("id", fields["id"].AsString()).Interface("resource", node.Data.Fields).Msg("identified run resource that should be run by a worker")
-
 					resBlock, err := resJSON.ResourceBlock()
 
 					if err != nil {
@@ -193,40 +181,20 @@ var remoteRunTrigger = &trigger{
 						return fmt.Errorf("failed to form resource from block: %w", err)
 					}
 
-					bCtx.Logger.Debug().Interface("remote", r.Spec.Remote).Msg("remote!")
+					if r.Spec.Remote == nil {
+						bCtx.Logger.Debug().Str("resource", r.String()).Msg("run is of type local and therefore should not be run by a bubbly worker")
+						return nil
+					}
 
-					// ok, resource made just fine! Let's ship it...
+					// ok, resource validated as a remote run resource. Ship it to an available worker
 
 					client.NewNATS(bCtx)
 
-					// data := node.Data
-
-					// id := []byte(fields["id"].AsString())
-					//
-					// if id == nil {
-					// 	id = []byte(fields["id"].GoString())
-					// }
-
-					// dBytes, err := json.Marshal(data)
-					//
-					// if err != nil {
-					// 	return fmt.Errorf("failed to marshal resource into bytes")
-					// }
 					nc := client.NewNATS(bCtx)
 
 					if err := nc.Connect(bCtx); err != nil {
 						return fmt.Errorf("failed to connect to the NATS server: %w", err)
 					}
-					//
-					// bCtx.Logger.Debug().Interface("resource", data).Msg("publishing resource for a worker to pickup")
-					//
-					// var d2 core.Data
-					//
-					// err = json.Unmarshal(dBytes, &d2)
-					//
-					// if err != nil {
-					// 	return fmt.Errorf("failed to check unmarshal of data: %w", err)
-					// }
 
 					resJSONBytes, err := json.Marshal(resJSON)
 

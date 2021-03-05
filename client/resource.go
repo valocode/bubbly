@@ -121,22 +121,12 @@ func (n *NATS) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) error 
 	// we offload responsibility for updating future state of the run resource to
 	// the worker that picks it up. What this means is that the worker should
 	// update the data store with the success/failure of the run
-	// if err := n.Publish(bCtx, &request); err != nil {
-	// 	return fmt.Errorf(`failed to post resource: %w`, err)
-	// }
 
 	err := n.Publish(bCtx, &request)
 
 	if err != nil {
-		return fmt.Errorf("failed to publish to worker: %w", err)
+		return fmt.Errorf("failed to publish run resource to worker: %w", err)
 	}
-
-	// if reply.Error != nil {
-	// 	return fmt.Errorf(
-	// 		`failed to post resource to worker: %w`,
-	// 		reply.Error,
-	// 	)
-	// }
 
 	return nil
 }
