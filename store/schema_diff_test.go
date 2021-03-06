@@ -11,7 +11,7 @@ import (
 	"github.com/verifa/bubbly/api/core"
 )
 
-func Test_compareSchema(t *testing.T) {
+func TestCompareSchema(t *testing.T) {
 	type args struct {
 		s1 bubblySchema
 		s2 bubblySchema

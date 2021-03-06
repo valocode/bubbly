@@ -182,7 +182,7 @@ func (w *ResourceWorker) Run(bCtx *env.BubblyContext) error {
 // ApplyWithInterval will apply the underlying run based on the defined interval
 func (r *Run) ApplyWithInterval(bCtx *env.BubblyContext, ch <-chan RunAction, ctx context.Context) error {
 	// TODO: fix concurrency bug in provider then enable
-	return nil
+	//return nil
 	ticker := time.NewTicker(r.interval)
 	defer ticker.Stop()
 mainloop:
@@ -222,7 +222,7 @@ mainloop:
 // interval. The resource is applied only once.
 func (r *Run) ApplyOneOff(bCtx *env.BubblyContext) error {
 	// TODO: fix concurrency bug in provider then enable
-	return nil
+	//return nil
 	bCtx.Logger.Debug().Str("id", r.Resource.String()).Msg("run resource of type OneOffRun identified")
 	resContext := core.NewResourceContext(cty.NilVal, api.NewResource)
 	subResourceOutput := r.Resource.Apply(bCtx, resContext)

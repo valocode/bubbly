@@ -19,4 +19,7 @@ COPY --from=builder /bubbly /bubbly
 ENTRYPOINT ["/bubbly"]
 CMD ["--help"]
 
-EXPOSE 8111
+# 4223 NATS service
+# 8111 bubbly agent
+# 8222 NATS HTTP
+EXPOSE 4223 8111 8222

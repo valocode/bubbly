@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+
 	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zclconf/go-cty/cty"
@@ -334,7 +336,12 @@ func eventTests(t *testing.T, bCtx *env.BubblyContext, s *Store, d *core.Data) {
 	assert.NotNil(t, result)
 }
 
+// FIXME: CockroachDB support suspended due to lack or required features
 func TestCockroach(t *testing.T) {
+
+	t.SkipNow()
+	// FIXME: this test is out of date, see TestPostgres
+
 	pool, err := dockertest.NewPool("")
 
 	require.NoErrorf(t, err, "failed to create dockertest pool")
@@ -378,41 +385,56 @@ func TestCockroach(t *testing.T) {
 
 func TestPostgres(t *testing.T) {
 	pool, err := dockertest.NewPool("")
-	require.NoErrorf(t, err, "failed to create dockertest pool")
+	require.NoErrorf(t, err, "failed to connect to Docker")
 
 	resource, err := pool.RunWithOptions(
 		&dockertest.RunOptions{
 			Repository: "postgres",
 			Tag:        "13.0",
 			Env: []string{
-				"POSTGRES_PASSWORD=secret",
-				"POSTGRES_DB=bubbly",
+				"POSTGRES_PASSWORD=" + postgresPassword,
+				"POSTGRES_DB=" + postgresDatabase,
 			},
 		},
+		func(hc *docker.HostConfig) {
+			hc.AutoRemove = true
+			hc.RestartPolicy = docker.RestartPolicy{
+				Name: "no",
+			}
+		},
 	)
+	require.NoErrorf(t, err, "failed to start a container")
 
 	t.Cleanup(func() {
 		if err := pool.Purge(resource); err != nil {
-			t.Fatalf("Could not purge resource: %s", err)
+			t.Fatal("failed to remove a container or a volume:", err)
 		}
 	})
+	resource.Expire(360) // Tell docker to hard kill the container in X seconds
 
-	require.NoErrorf(t, err, "failed to start docker")
+	// Wait on the database
+	var db *sql.DB
 	err = pool.Retry(func() error {
-		db, err := sql.Open("pgx", fmt.Sprintf("postgresql://postgres:secret@localhost:%s/bubbly?sslmode=disable", resource.GetPort("5432/tcp")))
+		pgConnStr := fmt.Sprintf("postgresql://%s:%s@localhost:%s/%s?sslmode=disable", postgresUser, postgresPassword, resource.GetPort("5432/tcp"), postgresDatabase)
+		db, err = sql.Open("pgx", pgConnStr)
 		if err != nil {
 			return err
 		}
 		return db.Ping()
 	})
-	require.NoErrorf(t, err, "failed to connect to docker container")
+	require.NoErrorf(t, err, "failed to connect to the database container")
 
+	// We only used the connection for waiting on database, bubbly will manage its own
+	err = db.Close()
+	require.NoError(t, err, "failed to close the connection to database")
+
+	// Set up complete. Now for the test:
 	bCtx := env.NewBubblyContext()
 	bCtx.StoreConfig.Provider = config.PostgresStore
 	bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
-	bCtx.StoreConfig.PostgresDatabase = "bubbly"
-	bCtx.StoreConfig.PostgresUser = "postgres"
-	bCtx.StoreConfig.PostgresPassword = "secret"
+	bCtx.StoreConfig.PostgresDatabase = postgresDatabase
+	bCtx.StoreConfig.PostgresUser = postgresUser
+	bCtx.StoreConfig.PostgresPassword = postgresPassword
 
 	s, err := New(bCtx)
 	assert.NoErrorf(t, err, "failed to initialize store")

@@ -7,9 +7,13 @@ import (
 	"github.com/cockroachdb/cockroach-go/v2/crdb/crdbpgx"
 	"github.com/graphql-go/graphql"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
 )
+
+// FIXME: because Roach provider was heavy dependent on Postgres,
+//        it now also uses pgpool connection pool. Is that ok?
 
 func newCockroachdb(bCtx *env.BubblyContext) (*cockroachdb, error) {
 	connStr := fmt.Sprintf(
@@ -19,23 +23,23 @@ func newCockroachdb(bCtx *env.BubblyContext) (*cockroachdb, error) {
 		bCtx.StoreConfig.CockroachAddr,
 		bCtx.StoreConfig.CockroachDatabase,
 	)
-	conn, err := psqlNewConn(bCtx, connStr)
+	pool, err := psqlNewPool(bCtx, connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize connection to db: %w", err)
 	}
 
 	return &cockroachdb{
-		conn: conn,
+		pool: pool,
 	}, nil
 }
 
 type cockroachdb struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 func (c *cockroachdb) Apply(schema *bubblySchema) error {
 
-	err := crdbpgx.ExecuteTx(context.Background(), c.conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
+	err := crdbpgx.ExecuteTx(context.Background(), c.pool, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		return psqlApplySchema(tx, schema)
 	})
 	if err != nil {
@@ -47,7 +51,7 @@ func (c *cockroachdb) Apply(schema *bubblySchema) error {
 
 func (c *cockroachdb) Save(bCtx *env.BubblyContext, schema *bubblySchema, tree dataTree) error {
 
-	err := crdbpgx.ExecuteTx(context.Background(), c.conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
+	err := crdbpgx.ExecuteTx(context.Background(), c.pool, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		saveNode := func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
 			return psqlSaveNode(tx, node, schema)
 		}
@@ -64,11 +68,11 @@ func (c *cockroachdb) Save(bCtx *env.BubblyContext, schema *bubblySchema, tree d
 }
 
 func (c *cockroachdb) ResolveQuery(graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
-	return psqlResolveRootQueries(c.conn, graph, params)
+	return psqlResolveRootQueries(c.pool, graph, params)
 }
 
 func (c *cockroachdb) HasTable(table core.Table) (bool, error) {
-	return psqlHasTable(c.conn, table)
+	return psqlHasTable(c.pool, table)
 }
 
 func (c *cockroachdb) GenerateMigration(bCtx *env.BubblyContext, cl Changelog) (migration, error) {
@@ -76,5 +80,5 @@ func (c *cockroachdb) GenerateMigration(bCtx *env.BubblyContext, cl Changelog) (
 }
 
 func (c *cockroachdb) Migrate(migrationList migration) error {
-	return psqlMigrate(c.conn, migrationList)
+	return psqlMigrate(c.pool, migrationList)
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/verifa/bubbly/config"
 
@@ -141,7 +142,7 @@ func formatQuery(query string, args []string) string {
 	return fmt.Sprintf(query, s...)
 }
 
-func psqlMigrate(conn *pgx.Conn, migrationList migration) error {
+func psqlMigrate(conn *pgxpool.Pool, migrationList migration) error {
 	tx, err := conn.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)

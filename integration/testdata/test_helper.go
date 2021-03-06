@@ -27,8 +27,8 @@ func parseHCLFile(file string, val interface{}) error {
 	return parser.DecodeExpandBody(bCtx, hclFile.Body, val, cty.NilVal)
 }
 
-// TestAutomationData reads and parses the data to be loaded into Bubbly Store
-func TestAutomationData(dataFile string) (core.DataBlocks, error) {
+// readTestAutomationData reads and parses the data to be loaded into Bubbly Store
+func readTestAutomationData(dataFile string) (core.DataBlocks, error) {
 	dataWrapper := struct {
 		DataBlocks core.DataBlocks `hcl:"data,block"`
 	}{}
@@ -37,7 +37,10 @@ func TestAutomationData(dataFile string) (core.DataBlocks, error) {
 	return dataWrapper.DataBlocks, err
 }
 
+// FIXME: not sure a Test... case can be in testdata folder?
 func TestBubblyCmd(t *testing.T, bCtx *env.BubblyContext, cmdString string, args []string) {
+	t.Helper()
+
 	var cmd *cobra.Command
 	switch cmdString {
 	case "get":

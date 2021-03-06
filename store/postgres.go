@@ -9,8 +9,9 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/graphql-go/graphql"
-	"github.com/jackc/pgx/v4"
+	pgx "github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zerologadapter"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/verifa/bubbly/api/core"
 	"github.com/verifa/bubbly/env"
 	"github.com/verifa/bubbly/parser"
@@ -21,9 +22,11 @@ import (
 var (
 	psql                          = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 	defaultStoreConnRetryAttempts = 10
+	defaultStoreConnRetryTimeout  = "200ms"
 )
 
 func newPostgres(bCtx *env.BubblyContext) (*postgres, error) {
+
 	connStr := fmt.Sprintf(
 		"postgres://%s:%s@%s/%s",
 		bCtx.StoreConfig.PostgresUser,
@@ -31,26 +34,24 @@ func newPostgres(bCtx *env.BubblyContext) (*postgres, error) {
 		bCtx.StoreConfig.PostgresAddr,
 		bCtx.StoreConfig.PostgresDatabase,
 	)
-	conn, err := psqlNewConn(bCtx, connStr)
+
+	pool, err := psqlNewPool(bCtx, connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize connection to db: %w", err)
 	}
 
 	return &postgres{
-		conn: conn,
+		pool: pool,
 	}, nil
 }
 
 type postgres struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
 func (p *postgres) Apply(schema *bubblySchema) error {
-	if err := p.Check(); err != nil {
-		return fmt.Errorf("postgres connection is invalid: %w", err)
-	}
 
-	tx, err := p.conn.Begin(context.Background())
+	tx, err := p.pool.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -69,15 +70,12 @@ func (p *postgres) GenerateMigration(bCtx *env.BubblyContext, cl Changelog) (mig
 }
 
 func (p *postgres) Migrate(migrationList migration) error {
-	return psqlMigrate(p.conn, migrationList)
+	return psqlMigrate(p.pool, migrationList)
 }
 
 func (p *postgres) Save(bCtx *env.BubblyContext, schema *bubblySchema, tree dataTree) error {
-	if err := p.Check(); err != nil {
-		return fmt.Errorf("postgres connection is invalid: %w", err)
-	}
 
-	tx, err := p.conn.Begin(context.Background())
+	tx, err := p.pool.Begin(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -97,42 +95,51 @@ func (p *postgres) Save(bCtx *env.BubblyContext, schema *bubblySchema, tree data
 }
 
 func (p *postgres) ResolveQuery(graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
-	return psqlResolveRootQueries(p.conn, graph, params)
+	return psqlResolveRootQueries(p.pool, graph, params)
 }
 
 func (p *postgres) HasTable(table core.Table) (bool, error) {
-	return psqlHasTable(p.conn, table)
+	return psqlHasTable(p.pool, table)
 }
 
 func (p *postgres) Check() error {
+
+	t, err := time.ParseDuration(defaultStoreConnRetryTimeout)
+	if err != nil {
+		return fmt.Errorf("database connection timeout invalid value: %w", err)
+	}
+
 	for attempt := 1; attempt <= defaultStoreConnRetryAttempts; attempt++ {
-		if !p.conn.PgConn().IsBusy() {
+		conn, err := p.pool.Acquire(context.Background())
+		if err != nil {
+			time.Sleep(t)
+		} else {
+			conn.Release()
 			return nil
 		}
-		time.Sleep(500 * time.Millisecond)
 	}
-	return errors.New("connection still busy after all retry attempts")
+	return errors.New("database connection timeout")
 }
 
-func psqlNewConn(bCtx *env.BubblyContext, connStr string) (*pgx.Conn, error) {
-	config, err := pgx.ParseConfig(connStr)
+func psqlNewPool(bCtx *env.BubblyContext, connStr string) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse db config: %w", err)
 	}
 
-	config.Logger = zerologadapter.NewLogger(*bCtx.Logger)
-	config.LogLevel = pgx.LogLevelError
+	// TODO: log level should "scale" with bCtx.Logger level
+	config.ConnConfig.Logger = zerologadapter.NewLogger(*bCtx.Logger)
+	config.ConnConfig.LogLevel = pgx.LogLevelError
 
-	// config.ConnConfig.LogLevel
-	conn, err := pgx.ConnectConfig(context.Background(), config)
+	pool, err := pgxpool.ConnectConfig(context.Background(), config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to db: %w", err)
+		return nil, fmt.Errorf("failed to start database connection pool: %w", err)
 	}
 
-	return conn, nil
+	return pool, nil
 }
 
-func psqlHasTable(conn *pgx.Conn, table core.Table) (bool, error) {
+func psqlHasTable(pool *pgxpool.Pool, table core.Table) (bool, error) {
 	var (
 		sql = psql.Select("1").
 			Prefix("SELECT EXISTS (").
@@ -147,18 +154,7 @@ func psqlHasTable(conn *pgx.Conn, table core.Table) (bool, error) {
 		return false, fmt.Errorf("failed to create sql query: %w", err)
 	}
 
-	for attempt := 1; attempt <= defaultStoreConnRetryAttempts; attempt++ {
-		if !conn.PgConn().IsBusy() {
-			break
-		} else {
-			if attempt == defaultStoreConnRetryAttempts {
-				return false, fmt.Errorf("failed to establish unbusy conn")
-			}
-			time.Sleep(500 * time.Millisecond)
-		}
-	}
-
-	row := conn.QueryRow(context.Background(), sqlStr, sqlArgs...)
+	row := pool.QueryRow(context.Background(), sqlStr, sqlArgs...)
 
 	if err := row.Scan(&exists); err != nil {
 		return false, fmt.Errorf("failed to get table status: %s: %w", table.Name, err)

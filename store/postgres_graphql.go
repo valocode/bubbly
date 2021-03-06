@@ -10,6 +10,7 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func newSQLQueryBuilder() *sqlQueryBuilder {
@@ -54,13 +55,13 @@ type tableColumns struct {
 // What is a bit puzzling is that if you have a query with two fields, this
 // method gets called twice, once for each field, but each time the
 // graphql.ResolveParams contains a list of FieldASTs with one element
-func psqlResolveRootQueries(conn *pgx.Conn, graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
+func psqlResolveRootQueries(pool *pgxpool.Pool, graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
 	var (
 		result interface{}
 		err    error
 	)
 	for _, field := range params.Info.FieldASTs {
-		result, err = psqlResolveRootQuery(conn, graph, field)
+		result, err = psqlResolveRootQuery(pool, graph, field)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve query: %s: %w", field.Name.Value, err)
 		}
@@ -69,7 +70,7 @@ func psqlResolveRootQueries(conn *pgx.Conn, graph *schemaGraph, params graphql.R
 }
 
 // psqlResolveRootQuery resolves a single root graphql query
-func psqlResolveRootQuery(conn *pgx.Conn, graph *schemaGraph, field *ast.Field) (interface{}, error) {
+func psqlResolveRootQuery(pool *pgxpool.Pool, graph *schemaGraph, field *ast.Field) (interface{}, error) {
 	var (
 		result    = make(map[string]interface{})
 		qb        = newSQLQueryBuilder()
@@ -93,7 +94,7 @@ func psqlResolveRootQuery(conn *pgx.Conn, graph *schemaGraph, field *ast.Field) 
 	}
 
 	// Execute the query
-	rows, err := conn.Query(context.Background(), sqlStr, sqlArgs...)
+	rows, err := pool.Query(context.Background(), sqlStr, sqlArgs...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute SQL query: %s: %w", sqlStr, err)
 	}

@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/require"
 
 	"github.com/verifa/bubbly/api/core"
@@ -18,39 +19,58 @@ import (
 // both _resource and _event population using the event store trigger
 func TestEventTrigger(t *testing.T) {
 	pool, err := dockertest.NewPool("")
+	require.NoErrorf(t, err, "failed to connect to Docker")
 
-	require.NoErrorf(t, err, "failed to create dockertest pool")
-
+	// TODO: probably best to extract image version to a var, and maybe even read from env var, if available?
 	resource, err := pool.RunWithOptions(
 		&dockertest.RunOptions{
-			Repository: "cockroachdb/cockroach",
-			Tag:        "v20.1.10",
-			Cmd:        []string{"start-single-node", "--insecure"},
+			Repository: "postgres",
+			Tag:        "13.0",
+			Env: []string{
+				"POSTGRES_PASSWORD=" + postgresPassword,
+				"POSTGRES_DB=" + postgresDatabase,
+			},
+		},
+		func(hc *docker.HostConfig) {
+			hc.AutoRemove = true
+			hc.RestartPolicy = docker.RestartPolicy{
+				Name: "no",
+			}
 		},
 	)
+	require.NoErrorf(t, err, "failed to start a container")
 
 	t.Cleanup(func() {
 		if err := pool.Purge(resource); err != nil {
-			t.Fatalf("Could not purge resource: %s", err)
+			t.Fatal("failed to remove a container or a volume:", err)
 		}
 	})
+	resource.Expire(360) // Tell docker to hard kill the container in X seconds
+	// TODO: the hard limit for expiration probably is best set via env var, if available
 
-	require.NoErrorf(t, err, "failed to start docker")
+	// Wait on the database
+	var db *sql.DB
 	err = pool.Retry(func() error {
-		db, err := sql.Open("pgx", fmt.Sprintf("postgresql://root@localhost:%s/events?sslmode=disable", resource.GetPort("26257/tcp")))
+		pgConnStr := fmt.Sprintf("postgresql://%s:%s@localhost:%s/%s?sslmode=disable", postgresUser, postgresPassword, resource.GetPort("5432/tcp"), postgresDatabase)
+		db, err = sql.Open("pgx", pgConnStr)
 		if err != nil {
 			return err
 		}
 		return db.Ping()
 	})
-	require.NoErrorf(t, err, "failed to connect to docker container")
+	require.NoErrorf(t, err, "failed to connect to the database container")
 
+	// We only used the connection for waiting on database, bubbly will manage its own
+	err = db.Close()
+	require.NoError(t, err, "failed to close the connection to database")
+
+	// Set up complete. Now for the test:
 	bCtx := env.NewBubblyContext()
-	bCtx.StoreConfig.Provider = config.CockroachDBStore
-	bCtx.StoreConfig.CockroachAddr = fmt.Sprintf("localhost:%s", resource.GetPort("26257/tcp"))
-	bCtx.StoreConfig.CockroachDatabase = "defaultdb"
-	bCtx.StoreConfig.CockroachUser = "root"
-	bCtx.StoreConfig.CockroachPassword = "admin"
+	bCtx.StoreConfig.Provider = config.PostgresStore
+	bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
+	bCtx.StoreConfig.PostgresDatabase = postgresDatabase
+	bCtx.StoreConfig.PostgresUser = postgresUser
+	bCtx.StoreConfig.PostgresPassword = postgresPassword
 
 	// Test a simple resource
 	resJSON := core.ResourceBlockJSON{

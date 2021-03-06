@@ -20,6 +20,7 @@ import (
 )
 
 func testGet(t *testing.T, bCtx *env.BubblyContext, args []string) {
+	t.Helper()
 	integration.TestBubblyCmd(t, bCtx, "get", args)
 }
 

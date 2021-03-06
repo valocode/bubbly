@@ -53,7 +53,7 @@ services:
       - "8080:8080"
       - "26257:26257"
 
-  # Bubbly server
+  # Bubbly agent
   bubbly:
     depends_on:
       - "${BUBBLY_STORE_PROVIDER:-postgres}"
@@ -66,10 +66,13 @@ services:
     networks:
       - bubbly-net
     ports:
-      - "8111:8111"
+      - "8111:8111"   # bubbly agent
+      - "8222:8222"   # NATS HTTP
+      - "4223:4223"   # NATS service
     command:
       - "agent"
       - "--debug"
+
   # A GraphQL interface into Bubbly Store
   storefront:
     container_name: storefront
