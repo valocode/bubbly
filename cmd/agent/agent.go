@@ -53,6 +53,10 @@ type AgentOptions struct {
 
 // NewCmdAgent creates a new cobra.Command representing "bubbly agent"
 func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
+	// Set the ClientType as NATS, because all agents should run internally to
+	// bubbly and can talk directly to NATS
+	bCtx.ClientConfig.ClientType = config.NATSClientType
+
 	o := &AgentOptions{
 		BubblyContext: bCtx,
 	}

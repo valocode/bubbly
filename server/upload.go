@@ -1,14 +1,13 @@
 package server
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/client"
-	"github.com/valocode/bubbly/env"
 )
 
 // upload godoc
@@ -21,7 +20,7 @@ import (
 // @Success 200 {object} apiResponse
 // @Failure 400 {object} apiResponse
 // @Router /upload [post]
-func (a *Server) upload(bCtx *env.BubblyContext, c echo.Context) error {
+func (s *Server) upload(c echo.Context) error {
 	var data core.DataBlocks
 
 	binder := &echo.DefaultBinder{}
@@ -29,17 +28,12 @@ func (a *Server) upload(bCtx *env.BubblyContext, c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	nc := client.NewNATS(bCtx)
-
-	nc.Connect(bCtx)
-
-	sBytes, err := json.Marshal(data)
-
+	nc, err := client.New(s.bCtx)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
 	}
 
-	if err := nc.Upload(bCtx, sBytes); err != nil {
+	if err := nc.Load(s.bCtx, data); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

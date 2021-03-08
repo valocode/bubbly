@@ -16,6 +16,7 @@ import (
 type Server struct {
 	Config *config.ServerConfig
 	Server *http.Server
+	bCtx   *env.BubblyContext
 }
 
 func New(bCtx *env.BubblyContext) *Server {
@@ -26,19 +27,20 @@ func New(bCtx *env.BubblyContext) *Server {
 			// TODO: maybe we should use the bCtx Host here, unless it's localhost?
 			Addr: fmt.Sprintf(":%s", bCtx.ServerConfig.Port),
 		},
+		bCtx: bCtx,
 	}
 
-	a.Server.Handler = a.setupRouter(bCtx)
+	a.Server.Handler = a.setupRouter()
 
 	return a
 }
 
 // SetupRouter returns a pointer to an instance of our echo server with all the
 // routes initialized
-func (a *Server) setupRouter(bCtx *env.BubblyContext) *echo.Echo {
+func (s *Server) setupRouter() *echo.Echo {
 	// Initialize Router
 	router := echo.New()
-	router.Logger = lecho.From(*bCtx.Logger)
+	router.Logger = lecho.From(*s.bCtx.Logger)
 	router.Use(
 		middleware.Recover(),
 		middleware.RequestID(), // Generate a request IDs
@@ -48,12 +50,17 @@ func (a *Server) setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 		// approach to avoid this
 		middleware.CORS(),
 	)
-	// setup the error handler
+	// If multitenancy should be enabled
+	if s.bCtx.AuthConfig.Authentication {
+		router.Use(s.authMiddleware)
+	}
+
+	// Setup the error handler
 	router.HTTPErrorHandler = func(err error, c echo.Context) {
 		// TODO: send this to some telemetry/logging service...
 
 		// Log the output for the user
-		bCtx.Logger.Error().
+		s.bCtx.Logger.Error().
 			Str("Path", c.Path()).
 			Strs("QueryParams", c.ParamValues()).
 			Err(err).
@@ -64,12 +71,12 @@ func (a *Server) setupRouter(bCtx *env.BubblyContext) *echo.Echo {
 	}
 
 	// Initialize HTTP Routes
-	a.initializeRoutes(bCtx, router)
+	s.initializeRoutes(router)
 
 	return router
 }
 
-func (a *Server) ListenAndServe(bCtx *env.BubblyContext) error {
+func (a *Server) ListenAndServe() error {
 	var g errgroup.Group
 	g.Go(func() error {
 		if err := a.Server.ListenAndServe(); err != nil && err != http.

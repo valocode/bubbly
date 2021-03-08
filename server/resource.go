@@ -7,12 +7,9 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/nats-io/nats.go"
 
-	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/client"
-	"github.com/valocode/bubbly/env"
 )
 
 // PostResource godoc
@@ -26,8 +23,7 @@ import (
 // @Success 200 {object} apiResponse
 // @Failure 400 {object} apiResponse
 // @Router /resource [post]
-func (a *Server) PostResource(bCtx *env.BubblyContext,
-	c echo.Context) error {
+func (s *Server) PostResource(c echo.Context) error {
 	// read the resource into a ResourceBlockJSON which keeps the spec{} block
 	// as bytes
 	resJSON := core.ResourceBlockJSON{}
@@ -52,15 +48,16 @@ func (a *Server) PostResource(bCtx *env.BubblyContext,
 	}
 
 	dBytes, err := json.Marshal(data)
-
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("failed to marshal: %w", err))
 	}
-	nc := client.NewNATS(bCtx)
 
-	nc.Connect(bCtx)
+	nc, err := client.New(s.bCtx)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
+	}
 
-	if err := nc.PostResource(bCtx, dBytes); err != nil {
+	if err := nc.PostResource(s.bCtx, dBytes); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return c.JSON(http.StatusOK, &Status{"uploaded"})
@@ -80,9 +77,9 @@ func (a *Server) PostResource(bCtx *env.BubblyContext,
 // @Failure 400 {object} apiResponse
 // @Failure 415 {object} apiResponse
 // @Router /run/{name} [post]
-func (a *Server) RunResource(bCtx *env.BubblyContext, c echo.Context) error {
+func (s *Server) RunResource(c echo.Context) error {
 
-	workerRun, err := ProcessRunData(bCtx, c)
+	workerRun, err := ProcessRunData(s.bCtx, c)
 
 	if err != nil {
 		if err == http.ErrNotMultipart {
@@ -99,19 +96,12 @@ func (a *Server) RunResource(bCtx *env.BubblyContext, c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error marshalling workerRun: %w", err))
 	}
 
-	nc := client.NewNATS(bCtx)
-
-	nc.Connect(bCtx)
-
-	pub := component.Publication{
-		Subject: component.WorkerPostRunResource,
-		Data:    workerRunBytes,
-		Encoder: nats.DEFAULT_ENCODER,
+	nc, err := client.New(s.bCtx)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
 	}
 
-	err = nc.Publish(bCtx, &pub)
-
-	if err != nil {
+	if err := nc.PostResourceToWorker(s.bCtx, workerRunBytes); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error publishing run content to worker: %w", err))
 	}
 
@@ -129,7 +119,7 @@ func (a *Server) RunResource(bCtx *env.BubblyContext, c echo.Context) error {
 // @Success 200 {object} apiResponse
 // @Failure 400 {object} apiResponse
 // @Router /resource/{id} [get]
-func (a *Server) GetResource(bCtx *env.BubblyContext, c echo.Context) error {
+func (s *Server) GetResource(c echo.Context) error {
 	resBlock := core.ResourceBlock{
 		ResourceName: c.Param("name"),
 		Metadata:     &core.Metadata{},
@@ -148,24 +138,21 @@ func (a *Server) GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 		}
 	`, core.ResourceTableName, resBlock.String())
 
-	nc := client.NewNATS(bCtx)
+	nc, err := client.New(s.bCtx)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
+	}
 
-	nc.Connect(bCtx)
-
-	resultBytes, err := nc.GetResource(bCtx, resQuery)
-
+	resultBytes, err := nc.GetResource(s.bCtx, resQuery)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error getting resource: %w", err))
 	}
 
 	var result interface{}
-
 	err = json.Unmarshal(resultBytes, &result)
-
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error unmarshalling resource: %w", err))
 	}
-
 	if result == nil || result.(map[string]interface{})[core.ResourceTableName] == nil {
 		return c.JSON(http.StatusOK, core.ResourceBlockJSON{})
 	}

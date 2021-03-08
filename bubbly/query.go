@@ -27,7 +27,7 @@ type Resource struct {
 // QueryResources takes a graphql query string, queries the bubbly store and
 // returns resource and event information matching the query
 func QueryResources(bCtx *env.BubblyContext, query string) ([]Resource, error) {
-	c, err := client.NewHTTP(bCtx)
+	c, err := client.New(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bubbly client: %w", err)
 	}
