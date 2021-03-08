@@ -2,7 +2,7 @@ module.exports = {
   title: 'Bubbly',
   tagline: 'Release Readiness in a Bubble',
   url: 'https://bubbly.dev',
-  baseUrl: '/docs/',
+  baseUrl: '/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   onDuplicateRoutes: 'throw',
@@ -23,7 +23,6 @@ module.exports = {
           label: 'Docs',
           position: 'left',
         },
-        {to: 'blog', position: 'left'},
         {
           href: 'https://github.com/verifa/bubbly',
           label: 'GitHub',
