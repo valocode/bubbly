@@ -17,9 +17,6 @@ module.exports = {
       items: [
         'getting-started/installation',
         'getting-started/deployment',
-        'getting-started/first-schema',
-        'getting-started/first-resource',
-        'getting-started/first-pipeline',
         'getting-started/quickstart',
       ],
     },
@@ -27,15 +24,13 @@ module.exports = {
       type: 'category',
       label: 'Resources',
       items: [
+        'resources/overview',
         'resources/kinds',
       ],
     },
     {
-      type: 'category',
-      label: 'Schema',
-      items: [
-        'schema/migrations',
-      ],
+      type: 'doc',
+      id: 'schema/schema'
     },
     {
       type: 'category',
@@ -49,15 +44,6 @@ module.exports = {
       label: 'Tutorials',
       items: [
         'tutorials/github-metrics',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Registry',
-      items: [
-        'registry/purpose',
-        'registry/schemas',
-        'registry/resources',
       ],
     },
     {
