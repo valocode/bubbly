@@ -12,14 +12,15 @@ import (
 // functions throughout the codebase.
 type BubblyContext struct {
 	// Logger stores the global bubbly logger
-	Logger    *zerolog.Logger
-	CLIConfig *config.CLIConfig
+	Logger     *zerolog.Logger
+	AuthConfig *config.AuthConfig
 	// Config stores global bubbly configuration,
 	// such as bubbly server configuration
 	ServerConfig *config.ServerConfig
 	// Store provider configuration
 	StoreConfig *config.StoreConfig
 	AgentConfig *config.AgentConfig
+	CLIConfig   *config.CLIConfig
 	// TODO: Could also contain a client.Client... consider.
 }
 
@@ -27,6 +28,7 @@ type BubblyContext struct {
 func NewBubblyContext() *BubblyContext {
 	return &BubblyContext{
 		Logger:       NewDefaultLogger(),
+		AuthConfig:   config.DefaultAuthConfig(),
 		ServerConfig: config.DefaultServerConfig(),
 		StoreConfig:  config.DefaultStoreConfig(),
 		AgentConfig:  config.DefaultAgentConfig(),

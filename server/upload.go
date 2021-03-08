@@ -8,7 +8,6 @@ import (
 
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/client"
-	"github.com/valocode/bubbly/env"
 )
 
 // upload godoc
@@ -21,7 +20,7 @@ import (
 // @Success 200 {object} apiResponse
 // @Failure 400 {object} apiResponse
 // @Router /upload [post]
-func (a *Server) upload(bCtx *env.BubblyContext, c echo.Context) error {
+func (s *Server) upload(c echo.Context) error {
 	var data core.DataBlocks
 
 	binder := &echo.DefaultBinder{}
@@ -29,9 +28,9 @@ func (a *Server) upload(bCtx *env.BubblyContext, c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	nc := client.NewNATS(bCtx)
+	nc := client.NewNATS(s.bCtx)
 
-	nc.Connect(bCtx)
+	nc.Connect(s.bCtx)
 
 	sBytes, err := json.Marshal(data)
 
@@ -39,7 +38,7 @@ func (a *Server) upload(bCtx *env.BubblyContext, c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := nc.Upload(bCtx, sBytes); err != nil {
+	if err := nc.Upload(s.bCtx, sBytes); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

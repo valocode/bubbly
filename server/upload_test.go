@@ -17,7 +17,7 @@ func IntegrationTestUploadPassing(t *testing.T) {
 
 	s := New(bCtx)
 
-	router := s.setupRouter(bCtx)
+	router := s.setupRouter()
 
 	r.POST("/api/v1/upload").
 		SetJSON(gofight.D{"data": testData.DataStruct()}).
@@ -34,7 +34,7 @@ func TestUploadFailing(t *testing.T) {
 
 	s := New(bCtx)
 
-	router := s.setupRouter(bCtx)
+	router := s.setupRouter()
 
 	r.POST("/api/v1/upload").
 		SetJSON(testData.DataStructFailing()).

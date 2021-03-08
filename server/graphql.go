@@ -7,7 +7,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/valocode/bubbly/client"
-	"github.com/valocode/bubbly/env"
 )
 
 type queryReq struct {
@@ -31,7 +30,7 @@ type apiResponse struct {
 // @Failure 404 {object} apiResponse
 // @Failure 500 {object} apiResponse
 // @Router /graphql [post]
-func (*Server) Query(bCtx *env.BubblyContext, c echo.Context) error {
+func (s *Server) Query(c echo.Context) error {
 	var query queryReq
 
 	binder := &echo.DefaultBinder{}
@@ -39,13 +38,13 @@ func (*Server) Query(bCtx *env.BubblyContext, c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	nc := client.NewNATS(bCtx)
+	nc := client.NewNATS(s.bCtx)
 
-	if err := nc.Connect(bCtx); err != nil {
+	if err := nc.Connect(s.bCtx); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to NATS server: %w", err))
 	}
 
-	results, err := nc.Query(bCtx, query.Query)
+	results, err := nc.Query(s.bCtx, query.Query)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

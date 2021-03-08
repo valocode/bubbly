@@ -85,6 +85,16 @@ type AgentComponentsToggle struct {
 }
 
 // ##########################
+// Auth
+// ##########################
+
+type AuthConfig struct {
+	Authentication bool
+	MultiTenancy   bool
+	AuthAddr       string
+}
+
+// ##########################
 // NATS
 // ##########################
 
