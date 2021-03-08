@@ -269,7 +269,7 @@ func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Tab
 			if !hasParentID {
 				t.Joins = append(t.Joins, core.TableJoin{
 					Table:  parent.Name,
-					Unique: parent.Unique,
+					Single: parent.Unique,
 				})
 			}
 		}

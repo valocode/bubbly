@@ -25,5 +25,5 @@ type TableField struct {
 
 type TableJoin struct {
 	Table  string `hcl:",label" json:"name"`
-	Unique bool   `hcl:"unique,optional" json:"unique,omitempty"`
+	Single bool   `hcl:"single,optional" json:"single,omitempty"`
 }

@@ -66,7 +66,7 @@ var schema1 = bubblySchema{Tables: map[string]core.Table{
 		Joins: []core.TableJoin{
 			{
 				Table:  "table2",
-				Unique: true,
+				Single: true,
 			},
 		},
 		Tables: []core.Table{
@@ -88,7 +88,7 @@ var schema1 = bubblySchema{Tables: map[string]core.Table{
 				Joins: []core.TableJoin{
 					{
 						Table:  "table1",
-						Unique: true,
+						Single: true,
 					},
 				},
 				Tables: []core.Table{
@@ -149,7 +149,7 @@ var schema2 = bubblySchema{Tables: map[string]core.Table{
 		Joins: []core.TableJoin{
 			{
 				Table:  "table2",
-				Unique: true,
+				Single: true,
 			},
 		},
 		Unique: true,
@@ -160,7 +160,7 @@ var schema2 = bubblySchema{Tables: map[string]core.Table{
 				Joins: []core.TableJoin{
 					{
 						Table:  "tableJoin",
-						Unique: false,
+						Single: false,
 					},
 				},
 				Fields: []core.TableField{
@@ -218,8 +218,8 @@ var expectedChanges = []Entry{
 	{Action: "update", TableInfo: tableInfo{TableName: "tables_1", ElementName: "field1", ElementType: "field"}, From: cty.String, To: cty.Number},
 	{Action: "update", TableInfo: tableInfo{TableName: "tables_1", ElementName: "field1", ElementType: "unique"}, From: true, To: false},
 	{Action: "delete", TableInfo: tableInfo{TableName: "tables_1", ElementName: "tables_1", ElementType: "field"}, From: core.TableField{Name: "fieldToBeDeleted", Unique: false, Type: cty.String}, To: nil},
-	{Action: "delete", TableInfo: tableInfo{TableName: "tables_1", ElementName: "table1", ElementType: "join"}, From: core.TableJoin{Table: "table1", Unique: true}, To: nil},
-	{Action: "create", TableInfo: tableInfo{TableName: "tables_1", ElementName: "tableJoin", ElementType: "join"}, From: nil, To: core.TableJoin{Table: "tableJoin", Unique: false}},
+	{Action: "delete", TableInfo: tableInfo{TableName: "tables_1", ElementName: "table1", ElementType: "join"}, From: core.TableJoin{Table: "table1", Single: true}, To: nil},
+	{Action: "create", TableInfo: tableInfo{TableName: "tables_1", ElementName: "tableJoin", ElementType: "join"}, From: nil, To: core.TableJoin{Table: "tableJoin", Single: false}},
 	{Action: "delete", TableInfo: tableInfo{TableName: "sub_table_1", ElementName: "sub_table_1", ElementType: "field"}, From: core.TableField{Name: "field1", Unique: true, Type: cty.String}, To: nil},
 	{Action: "update", TableInfo: tableInfo{TableName: "sub_table_1", ElementName: "name", ElementType: "unique"}, From: false, To: true},
 	{Action: "update", TableInfo: tableInfo{TableName: "tables_1", ElementName: "name", ElementType: "unique"}, From: false, To: true},

@@ -189,7 +189,7 @@ func compareJoins(t1, t2 core.Table, cl *Changelog) {
 		found := false
 	joinLoop:
 		for _, join2 := range t2.Joins {
-			if join1.Table == join2.Table && join1.Unique != join2.Unique {
+			if join1.Table == join2.Table && join1.Single != join2.Single {
 				*cl = append(*cl, Entry{
 					Action: update,
 					TableInfo: tableInfo{
@@ -197,12 +197,12 @@ func compareJoins(t1, t2 core.Table, cl *Changelog) {
 						ElementName: join2.Table,
 						ElementType: joinType,
 					},
-					From: join1.Unique,
-					To:   join2.Unique,
+					From: join1.Single,
+					To:   join2.Single,
 				})
 				found = true
 				break joinLoop
-			} else if join1.Table == join2.Table && join1.Unique == join2.Unique {
+			} else if join1.Table == join2.Table && join1.Single == join2.Single {
 				found = true
 			}
 		}

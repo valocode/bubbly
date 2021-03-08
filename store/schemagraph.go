@@ -210,7 +210,7 @@ func tablesToGraph(nodes map[string]*schemaNode, tables core.Tables, parent *sch
 				return fmt.Errorf("join refers to unknown table: %s --> %s", table.Name, join.Table)
 			}
 			// Create the edge from parent to node
-			parent.addEdgeFromJoin(node, join.Unique)
+			parent.addEdgeFromJoin(node, join.Single)
 		}
 		// Handle the implicit joins, i.e. a table nested within a table
 		if parent != nil {

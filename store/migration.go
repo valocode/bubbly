@@ -270,7 +270,7 @@ func createTableStatement(m *migration, info tableInfo, tableInterface interface
 	// For now, we are not using a FK constraint, so this is just a "soft" reference to a parent table
 	for _, join := range table.Joins {
 		columnSQL += fmt.Sprintf(", %s SERIAL", join.Table)
-		if join.Unique {
+		if join.Single {
 			columnSQL += " UNIQUE"
 		}
 	}
@@ -337,7 +337,7 @@ func createJoinStatement(m *migration, info tableInfo, joinInterface interface{}
 		sql:       "ALTER TABLE IF EXISTS %s ADD COLUMN IF NOT EXISTS %s_id SERIAL;",
 		arguments: []string{info.TableName, info.ElementName},
 	}
-	if join.Unique {
+	if join.Single {
 		uniqueSQL := statement{
 			sql:       "ALTER TABLE IF EXISTS %s ADD CONSTRAINT %s_%s_unique UNIQUE (%s_id);",
 			arguments: []string{info.TableName, info.TableName, info.ElementName, info.ElementName},
