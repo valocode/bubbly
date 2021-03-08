@@ -12,7 +12,7 @@ import (
 )
 
 // PostSchema uses the bubbly api to post a schema
-func (c *HTTP) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
+func (c *httpClient) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
 
 	_, err := c.handleResponse(
 		http.Post(fmt.Sprintf("%s/api/v1/schema", c.HostURL), "application/json", bytes.NewBuffer(schema)),
@@ -20,7 +20,7 @@ func (c *HTTP) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
 	return err
 }
 
-func (n *NATS) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
+func (n *natsClient) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
 	bCtx.Logger.Debug().
 		Interface("nats_client", n.Config).
 		Str("subject", string(component.StorePostResource)).
@@ -33,7 +33,7 @@ func (n *NATS) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
 	}
 
 	// reply is a Publication received from a bubbly store
-	reply := n.Request(bCtx, &request)
+	reply := n.request(bCtx, &request)
 
 	if reply.Error != nil {
 		return fmt.Errorf("failed during schema post: %w", reply.Error)

@@ -6,43 +6,41 @@ import (
 	"github.com/labstack/echo/v4"
 
 	echoSwagger "github.com/swaggo/echo-swagger"
-	"github.com/valocode/bubbly/env"
 )
 
 // initializeRoutes Builds the endpoints and grouping for a gin router
-func (s *Server) initializeRoutes(bCtx *env.BubblyContext,
-	router *echo.Echo) {
+func (s *Server) initializeRoutes(router *echo.Echo) {
 	// Keep Alive Test
 	router.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "pong")
 	})
 
 	api := router.Group("/api/v1")
-	{
-		api.POST("/resource", func(c echo.Context) error {
-			return s.PostResource(bCtx, c)
-		})
 
-		api.POST("/run/:name", func(c echo.Context) error {
-			return s.RunResource(bCtx, c)
-		})
-
-		api.GET("/resource/:kind/:name", func(c echo.Context) error {
-			return s.GetResource(bCtx, c)
-		})
-
-		api.POST("/graphql", func(c echo.Context) error {
-			return s.Query(bCtx, c)
-		})
-
-		api.POST("/schema", func(c echo.Context) error {
-			return s.PostSchema(bCtx, c)
-		})
-
-		api.POST("/upload", func(c echo.Context) error {
-			return s.upload(bCtx, c)
-		})
+	// If multitenancy is enabled, add it the URL path
+	if s.bCtx.AuthConfig.MultiTenancy {
+		api.GET("/organizations", s.getOrganizations)
+		api.POST("/organization/new", s.createOrganization)
+		api.GET("/organization/exists", s.existsOrganization)
+		// Add base routes before adding organization level
+		api = api.Group("/o/:organization")
+		api.GET("/authorize", s.authorize)
+		api.GET("/users", s.getUsersInOrganization)
+		api.POST("/user/invite", s.inviteUserByEmail)
+		api.POST("/user/delete", s.deleteUser)
+		api.GET("/user/role", s.getUserRole)
+		api.POST("/user/role", s.setUserRole)
+		api.GET("/user/tokens", s.getUserTokens)
+		api.POST("/user/token/new", s.createUserToken)
+		api.POST("/user/token/delete", s.deleteUserToken)
 	}
+
+	api.POST("/run/:name", s.RunResource)
+	api.POST("/resource", s.PostResource)
+	api.GET("/resource/:kind/:name", s.GetResource)
+	api.POST("/graphql", s.Query)
+	api.POST("/schema", s.PostSchema)
+	api.POST("/upload", s.upload)
 
 	// Serve Swagger files
 	router.GET("/swagger/*", echoSwagger.WrapHandler)

@@ -69,7 +69,7 @@ func (a *APIServer) Run(bCtx *env.BubblyContext, agentContext context.Context) e
 }
 
 func (a *APIServer) run(bCtx *env.BubblyContext, ch chan error) {
-	if err := a.Server.ListenAndServe(bCtx); err != nil {
+	if err := a.Server.ListenAndServe(); err != nil {
 		bCtx.Logger.Debug().Err(err).Msg("API Server finished due to error")
 		ch <- fmt.Errorf("API Server failed: %w", err)
 	}

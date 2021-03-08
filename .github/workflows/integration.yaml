@@ -25,7 +25,7 @@ jobs:
             ${{ runner.os }}-go-
       - name: Integration tests
         run: |
-          docker-compose up -d cockroachdb bubbly
+          docker-compose up -d postgres bubbly
 
           # just sleep a bit to wait for the containers to start
           sleep 1

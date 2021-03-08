@@ -40,7 +40,7 @@ func ApplySchema(bCtx *env.BubblyContext, file string) error {
 		return fmt.Errorf("failed to json marshal schema tables: %w", err)
 	}
 
-	c, err := client.NewHTTP(bCtx)
+	c, err := client.New(bCtx)
 	if err != nil {
 		return fmt.Errorf("failed to create bubbly HTTP client: %w", err)
 	}

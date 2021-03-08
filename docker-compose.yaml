@@ -4,8 +4,30 @@ volumes:
   postgres-data:
 
 services:
+  # Bubbly agent
+  bubbly:
+    depends_on:
+      - "${BUBBLY_STORE_PROVIDER:-postgres}"
+    container_name: bubbly
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      BUBBLY_STORE_PROVIDER: "${BUBBLY_STORE_PROVIDER:-postgres}"
+      BUBBLY_AUTHENTICATION: "${BUBBLY_AUTHENTICATION:-false}"
+      BUBBLY_MULTITENANCY: "${BUBBLY_MULTITENANCY:-false}"
+      BUBBLY_AUTH_API: "http://bubbly-auth:1323/api/v1"
+    networks:
+      - bubbly-net
+    ports:
+      - "8111:8111" # bubbly agent
+      - "8222:8222" # NATS HTTP
+      - "4223:4223" # NATS service
+    command:
+      - "agent"
+      - "--debug"
 
-  # One of the Store options for Bubbly
+      # One of the Store options for Bubbly
   postgres:
     image: postgres:13.0
     container_name: postgres
@@ -25,68 +47,6 @@ services:
       - type: volume
         source: postgres-data
         target: /var/lib/postgresql/data
-
-  # Grafana with GraphQL plugin
-  grafana:
-    image: grafana/grafana:7.3.7
-    container_name: grafana
-    networks:
-      - bubbly-net
-    environment:
-      GF_INSTALL_PLUGINS: "fifemon-graphql-datasource"
-    ports:
-      - "3000:3000"
-    volumes:
-      - type: bind
-        read_only: true
-        source: "./grafana/provisioning/datasources"
-        target: "/etc/grafana/provisioning/datasources"
-
-  # One of the Store options for Bubbly
-  cockroachdb:
-    image: cockroachdb/cockroach:v20.2.4
-    container_name: cockroachdb
-    command: ["start-single-node", "--insecure"]
-    networks:
-      - bubbly-net
-    ports:
-      - "8080:8080"
-      - "26257:26257"
-
-  # Bubbly agent
-  bubbly:
-    depends_on:
-      - "${BUBBLY_STORE_PROVIDER:-postgres}"
-    container_name: bubbly
-    build:
-      context: .
-      dockerfile: Dockerfile
-    environment:
-      BUBBLY_STORE_PROVIDER: "${BUBBLY_STORE_PROVIDER:-postgres}"
-    networks:
-      - bubbly-net
-    ports:
-      - "8111:8111"   # bubbly agent
-      - "8222:8222"   # NATS HTTP
-      - "4223:4223"   # NATS service
-    command:
-      - "agent"
-      - "--debug"
-
-  # A GraphQL interface into Bubbly Store
-  storefront:
-    container_name: storefront
-    depends_on:
-      - "bubbly"
-    build:
-      context: .
-      dockerfile: storefront/Dockerfile
-    environment:
-      BUBBLY_HOST: "bubbly"
-    networks:
-      - bubbly-net
-    ports:
-      - "8112:8112"
 
 # User-defined bridge network is different from the default bridge
 networks:

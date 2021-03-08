@@ -7,13 +7,13 @@ import (
 
 // Default CLI configuration
 const (
-	defaultCLIColorToggle = true
+	DefaultCLIColorToggle = true
 	DefaultDebugToggle    = false
 )
 
 // Default Bubbly API Server configuration
 const (
-	defaultAPIServerProtocol = "http"
+	DefaultAPIServerProtocol = "http"
 	DefaultAPIServerHost     = "127.0.0.1"
 	DefaultAPIServerPort     = "8111"
 )
@@ -57,6 +57,9 @@ const (
 	DefaultDeploymentType   = SingleDeployment
 )
 
+// Default configuration for the bubbly client config
+const DefaultClientAuthToken = ""
+
 func defaultEnv(key, defaultValue string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
@@ -68,7 +71,7 @@ func defaultEnv(key, defaultValue string) string {
 // or, preferentially, from provided environment variables.
 func DefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
-		Protocol: defaultEnv("BUBBLY_PROTOCOL", defaultAPIServerProtocol),
+		Protocol: defaultEnv("BUBBLY_PROTOCOL", DefaultAPIServerProtocol),
 		Host:     defaultEnv("BUBBLY_HOST", DefaultAPIServerHost),
 		Port:     defaultEnv("BUBBLY_PORT", DefaultAPIServerPort),
 	}
@@ -112,6 +115,39 @@ func DefaultAgentConfig() *AgentConfig {
 	}
 }
 
+// DefaultAgentComponentsEnabled creates an AgentComponentsToggle struct
+// instance with all components disabled
+func DefaultAgentComponentsEnabled() *AgentComponentsToggle {
+	apiServerToggle, _ := strconv.ParseBool(defaultEnv("AGENT_API_SERVER_TOGGLE", strconv.FormatBool(DefaultAPIServerToggle)))
+	dataStoreToggle, _ := strconv.ParseBool(defaultEnv("AGENT_DATA_STORE_TOGGLE", strconv.FormatBool(DefaultDataStoreToggle)))
+	workerToggle, _ := strconv.ParseBool(defaultEnv("AGENT_WORKER_TOGGLE", strconv.FormatBool(DefaultWorkerToggle)))
+	natsServerToggle, _ := strconv.ParseBool(defaultEnv("AGENT_NATS_SERVER_TOGGLE", strconv.FormatBool(DefaultNATSServerToggle)))
+	return &AgentComponentsToggle{
+		APIServer:  apiServerToggle,
+		DataStore:  dataStoreToggle,
+		Worker:     workerToggle,
+		NATSServer: natsServerToggle,
+	}
+}
+
+// ###########################################
+// Auth
+// ###########################################
+
+func DefaultAuthConfig() *AuthConfig {
+	authentication, _ := strconv.ParseBool(defaultEnv("BUBBLY_AUTHENTICATION", "false"))
+	multiTenancy, _ := strconv.ParseBool(defaultEnv("BUBBLY_MULTITENANCY", "false"))
+	return &AuthConfig{
+		Authentication: authentication,
+		MultiTenancy:   multiTenancy,
+		AuthAddr:       defaultEnv("BUBBLY_AUTH_API", "http://bubbly-auth:1323/api/v1"),
+	}
+}
+
+// ###########################################
+// NATS
+// ###########################################
+
 // DefaultNATSServerConfig creates a NATSServerConfig struct from defaults
 // or, preferentially, from provided environment variables.
 func DefaultNATSServerConfig() *NATSServerConfig {
@@ -128,23 +164,23 @@ func DefaultNATSServerConfig() *NATSServerConfig {
 	}
 }
 
-// DefaultAgentComponentsEnabled creates an AgentComponentsToggle struct
-// instance with all components disabled
-func DefaultAgentComponentsEnabled() *AgentComponentsToggle {
-	apiServerToggle, _ := strconv.ParseBool(defaultEnv("AGENT_API_SERVER_TOGGLE", strconv.FormatBool(DefaultAPIServerToggle)))
-	dataStoreToggle, _ := strconv.ParseBool(defaultEnv("AGENT_DATA_STORE_TOGGLE", strconv.FormatBool(DefaultDataStoreToggle)))
-	workerToggle, _ := strconv.ParseBool(defaultEnv("AGENT_WORKER_TOGGLE", strconv.FormatBool(DefaultWorkerToggle)))
-	natsServerToggle, _ := strconv.ParseBool(defaultEnv("AGENT_NATS_SERVER_TOGGLE", strconv.FormatBool(DefaultNATSServerToggle)))
-	return &AgentComponentsToggle{
-		APIServer:  apiServerToggle,
-		DataStore:  dataStoreToggle,
-		Worker:     workerToggle,
-		NATSServer: natsServerToggle,
+// ###########################################
+// ClientConfig
+// ###########################################
+
+func DefaultClientConfig() *ClientConfig {
+	return &ClientConfig{
+		ClientType: HTTPClientType,
+		AuthToken:  defaultEnv("BUBBLY_AUTH_TOKEN", DefaultClientAuthToken),
 	}
 }
 
+// ###########################################
+// CLI
+// ###########################################
+
 func DefaultCLIConfig() *CLIConfig {
-	color, _ := strconv.ParseBool(defaultEnv("COLOR", strconv.FormatBool(defaultCLIColorToggle)))
+	color, _ := strconv.ParseBool(defaultEnv("COLOR", strconv.FormatBool(DefaultCLIColorToggle)))
 	return &CLIConfig{
 		Color: color,
 	}

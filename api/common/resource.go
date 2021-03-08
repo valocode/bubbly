@@ -35,7 +35,7 @@ func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, 
 // The bubbly client is used to access fetch the resource either via the REST
 // API (external) or via NATS (internal, TODO)
 func GetResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, resID string) (core.Resource, error) {
-	client, err := client.NewHTTP(bCtx)
+	client, err := client.New(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the bubbly client: %w", err)
 	}

@@ -69,7 +69,7 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 func (l *Load) load(bCtx *env.BubblyContext) error {
 	bCtx.Logger.Debug().Interface("server", bCtx.ServerConfig).Msg("loading to server with configuration")
 
-	c, err := client.NewHTTP(bCtx)
+	c, err := client.New(bCtx)
 
 	if err != nil {
 		return fmt.Errorf("failed to establish new client for loading: %w", err)
