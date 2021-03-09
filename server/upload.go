@@ -15,10 +15,12 @@ import (
 // @Summary This function will upload core.DataBlocks
 // @ID upload data
 // @Tags datablocks
-// @Param data body uploadStruct true "Datablocks"
+// @Param data body Data true "Datablocks"
 // @Accept json
 // @Produce json
-// @Router /alpha1/upload [post]
+// @Success 200 {object} apiResponse
+// @Failure 400 {object} apiResponse
+// @Router /upload [post]
 func (a *Server) upload(bCtx *env.BubblyContext, c echo.Context) error {
 	var data core.DataBlocks
 	if err := c.Bind(&data); err != nil {

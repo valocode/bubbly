@@ -14,13 +14,12 @@ import (
 // PostSchema godoc
 // @Summary PostSchema uploads the schema for bubbly
 // @ID schema
-// @Tags schema
-// @Param TODO
+// @Tag schema
 // @Accept json
 // @Produce json
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Router /api/schema [post]
+// @Success 200 {object} apiResponse
+// @Failure 400 {object} apiResponse
+// @Router /schema [post]
 func (a *Server) PostSchema(bCtx *env.BubblyContext, c echo.Context) error {
 	var schema core.Tables
 	if err := c.Bind(&schema); err != nil {

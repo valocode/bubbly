@@ -6,6 +6,7 @@ require (
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/Microsoft/go-winio v0.4.16 // indirect
+	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/appleboy/gofight v2.0.0+incompatible
 	github.com/appleboy/gofight/v2 v2.1.2
 	github.com/buger/jsonparser v1.0.0 // indirect

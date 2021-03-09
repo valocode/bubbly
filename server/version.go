@@ -10,7 +10,7 @@ var version string
 func VersionMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	// Set out header value for each response
 	return func(c echo.Context) error {
-		c.Response().Header().Set("X-BUBBLY-VERSION", version)
+		c.Response().Header().Set("x-bubbly-version", version)
 		return next(c)
 	}
 }

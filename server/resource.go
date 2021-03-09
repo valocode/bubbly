@@ -18,12 +18,12 @@ import (
 // @Description ATM this will only accept one resource per request
 // @ID Post-resource
 // @Tags resource
-// @Param resource body resourceMap true "Resource Body"
+// @Param resource body core.ResourceBlockJSON true "Resource Body"
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Router /api/resource [post]
+// @Success 200 {object} apiResponse
+// @Failure 400 {object} apiResponse
+// @Router /resource [post]
 func (a *Server) PostResource(bCtx *env.BubblyContext,
 	c echo.Context) error {
 	// read the resource into a ResourceBlockJSON which keeps the spec{} block
@@ -70,10 +70,9 @@ func (a *Server) PostResource(bCtx *env.BubblyContext,
 // @Param id path string true "Resource ID"
 // @Accept  json
 // @Produce  json
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @x-examples 12345
-// @Router /api/resource/{id} [get]
+// @Success 200 {object} apiResponse
+// @Failure 400 {object} apiResponse
+// @Router /resource/{id} [get]
 func (a *Server) GetResource(bCtx *env.BubblyContext, c echo.Context) error {
 	resBlock := core.ResourceBlock{
 		ResourceName: c.Param("name"),

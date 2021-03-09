@@ -47,7 +47,6 @@ func (r ResourceBlock) Name() string {
 }
 
 func (r ResourceBlock) ID() string {
-	// TODO nate
 	return fmt.Sprintf("%s/%s", r.Kind(), r.Name())
 }
 

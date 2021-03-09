@@ -1,4 +1,4 @@
-FROM golang:1.15.2-buster AS builder
+FROM golang:1.16.1-buster AS builder
 
 WORKDIR /src
 
@@ -10,6 +10,9 @@ RUN go mod download
 RUN apt-get update && apt-get install ca-certificates -y
 
 COPY . .
+
+RUN go get -u github.com/swaggo/swag/cmd/swag
+RUN swag init
 
 # compile the go binary
 RUN go build -o /bubbly

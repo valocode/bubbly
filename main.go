@@ -3,7 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/swaggo/swag/example/basic/docs"
+	"github.com/verifa/bubbly/docs"
+	_ "github.com/verifa/bubbly/docs"
 
 	"github.com/imdario/mergo"
 
@@ -14,17 +15,16 @@ import (
 )
 
 // @title Bubbly
-// @version 1.0  // Change version here
+// @version 0.1.1
+// @description this is the bubbly API server
 // @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@bubbly.io
+// @contact.url https://github.com/verifa/bubbly/issues
+// @contact.email info@bubbly.dev
 
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+// @license.name Mozilla Public License Version 2.0
+// @license.url https://www.mozilla.org/en-US/MPL/2.0/
 
-// @termsOfService http://bubbly.io/terms/
-
-// @host localhost:8111
+// @termsOfService https://bubbly.dev/terms/
 func main() {
 	setSwaggerInfo()
 	// TODO: remove once migrated fully to bCtx.Logger
@@ -98,9 +98,8 @@ func main() {
 func setSwaggerInfo() {
 	docs.SwaggerInfo.Title = "Bubbly Api"
 	docs.SwaggerInfo.Description = "API schema and information for the bubbly server"
-	docs.SwaggerInfo.Version = "1.0"
-	// TODO(server): Have host be defined by environment variables
-	docs.SwaggerInfo.Host = "localhost:8111"
-	docs.SwaggerInfo.BasePath = "/"
-	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+	docs.SwaggerInfo.Version = "0.1.0"
+	docs.SwaggerInfo.Host = config.DefaultAPIServerHost + ":" + config.DefaultAPIServerPort
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	docs.SwaggerInfo.Schemes = []string{"https"}
 }

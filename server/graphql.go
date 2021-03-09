@@ -14,16 +14,23 @@ type queryReq struct {
 	Query string `json:"query"`
 }
 
+type apiResponse struct {
+	Code    int    `json:"code" example:"200"`
+	Message string `json:"message" example:"data"`
+}
+
 // Query godoc
 // @Summary Query performs graphql related tasks
 // @ID graphql
 // @Tags graphql
-// @Param query body string true "Query String"
+// @Param query body queryReq true "Query String"
 // @Accept json
 // @Produce json
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Router /api/graphql [post]
+// @Success 200 {object} apiResponse
+// @Failure 400 {object} apiResponse
+// @Failure 404 {object} apiResponse
+// @Failure 500 {object} apiResponse
+// @Router /graphql [post]
 func (*Server) Query(bCtx *env.BubblyContext, c echo.Context) error {
 	var query queryReq
 	if err := c.Bind(&query); err != nil {

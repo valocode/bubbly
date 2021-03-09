@@ -1,7 +1,6 @@
 # ignore folders
 .git
 build
-docs
 kubernetes
 
 # ignore config files that are not required
