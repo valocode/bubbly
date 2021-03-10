@@ -1,44 +1,36 @@
 on:
   push:
     branches:
-      - 'master'
+      - "**"
 name: build-and-deploy
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
       HASH: $(git rev-parse --short "$GITHUB_SHA")
+      DOCKER_REPO: europe-north1-docker.pkg.dev/bubbly-saas-3276866d/bubbly
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-    
+
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+      - uses: google-github-actions/setup-gcloud@master
         with:
-          service_account_key: ${{ secrets.GCR_SA_KEY }}
-          project_id: valocode-bubbly-infra
+          service_account_key: ${{ secrets.GCP_ARTIFACT_REGISTRY_KEY }}
+          project_id: bubbly-saas-3276866d
           export_default_credentials: true
+      # Configure docker to use the gcloud command-line tool as a credential helper
+      - run: |
+          gcloud auth configure-docker europe-north1-docker.pkg.dev -q
 
       # Build docker image
       - name: Build
         run: |-
-          docker build -t gcr.io/valocode-bubbly-infra/bubbly:$GITHUB_SHA .
-      
-      # Tag as latest
-      - name: Tag
+          docker build -t ${DOCKER_REPO}/bubbly:${GITHUB_SHA} .
+          # Tag as latest as well
+          docker tag ${DOCKER_REPO}/bubbly:$GITHUB_SHA ${DOCKER_REPO}/bubbly:latest
+
+      - name: Push
         run: |-
-          docker tag gcr.io/valocode-bubbly-infra/bubbly:$GITHUB_SHA gcr.io/valocode-bubbly-infra/bubbly:latest
-      
-      # Configure docker to use the gcloud command-line tool as a credential helper
-      - run: |
-          gcloud auth configure-docker -q
-      
-      # Push image to Google Container Registry
-      - name: Push SHA
-        run: |-
-          docker push gcr.io/valocode-bubbly-infra/bubbly:$GITHUB_SHA
-      
-      # Push the latest tag too
-      - name: Push SHA
-        run: |-
-          docker push gcr.io/valocode-bubbly-infra/bubbly:latest
+          docker push ${DOCKER_REPO}/bubbly:$GITHUB_SHA
+          docker push ${DOCKER_REPO}/bubbly:latest
