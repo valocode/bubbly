@@ -1,0 +1,65 @@
+name: build-test
+
+on:
+  push:
+    branches:
+      - "**"
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node 12
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: 12.x
+      - run: yarn install
+        working-directory: website
+      - run: yarn run build
+        working-directory: website
+
+      - name: Write version file
+        working-directory: website
+        run: |
+          # write version info to artifact
+          echo "Built from GitHub repo ${{ github.repository }} version ${GITHUB_SHA::7}" > ./build/version.txt
+      - name: Create artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: bubbly-docs
+          path: ./website/build/
+          retention-days: 1
+
+  deploy:
+    needs: [build]
+    runs-on: ubuntu-latest
+    # only run on master branch
+    if: github.ref == 'refs/heads/master' || github.event_name == 'release'
+
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: bubbly-docs
+          path: ./docs
+      - name: Write deploy variables
+        id: vars
+        run: |
+          # set the deploy_env
+          if [ "${{ github.event_name }}" == "release" ]
+          then
+              echo "::set-output name=deploy_env::prod"
+          else
+              echo "::set-output name=deploy_env::staging"
+          fi
+      - name: Dump deployment variables
+        run: echo "${{ steps.vars.outputs.deploy_env }}"
+      - uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets.GCP_STORAGE_KEY }}
+          # project_id: bubbly-docs-07027f20
+          export_default_credentials: true
+      - name: Publish Documentation
+        run: gsutil -m rsync -r -c -d ./docs gs://${{ steps.vars.outputs.deploy_env }}-website-storage
