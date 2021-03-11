@@ -1,0 +1,33 @@
+table "repo_stats" {
+
+	field "id" {
+		type = string
+		unique = true
+	}
+
+    field "owner" {
+        type = string
+    }
+    field "repo" {
+        type = string
+    }
+
+    field "forks" {
+        type = number
+    }
+    field "stargazers" {
+        type = number
+    }
+    field "watchers" {
+        type = number
+    }
+
+    field "releases" {
+        type = number
+    }
+
+	# TODO there is more information that you'd like
+	#      to save, such as the total download count,
+	#      but you leave that for another day...
+}
+

@@ -1,0 +1,119 @@
+#
+# Fetch repo popularity stats for Docker Compose and 
+# compute the total download count for the latest release.
+#
+# NB: GitHub GraphQL end-point requires authentication.
+# The GitHub access token is read from an environment variable GH_TOKEN
+#
+
+resource "extract" "repo_stats" {
+	api_version = "v1"
+
+	spec {
+		type = "graphql"
+
+		source {
+			url = "https://api.github.com/graphql"
+
+			bearer_token = env("GH_TOKEN")
+
+			query = <<-EOT
+				query { 
+					repository(owner:"docker", name:"compose") {
+
+						owner {
+							login
+						}
+						name
+
+						forkCount
+						stargazerCount
+						watchers {
+							totalCount
+						}
+
+						releases(last:1) {
+							totalCount
+						}
+					}
+				}
+			EOT
+
+			format = object({
+				repository: object({
+					owner: object({
+						login: string
+					}),
+					name: string,
+					forkCount: number,
+					stargazerCount: number,
+					watchers: object({
+						totalCount: number
+					}),
+					releases: object({
+						totalCount: number
+					})
+				})
+			})
+		}
+	}
+}
+
+resource "transform" "repo_stats" {
+	api_version = "v1"
+
+	spec {
+		input "data" {}
+
+		data "repo_stats" {
+			fields = {
+				"id": join("/", [
+                                self.input.data.repository.owner.login, 
+                                self.input.data.repository.name
+                            ])
+				"owner":       self.input.data.repository.owner.login
+				"repo":        self.input.data.repository.name
+				"forks":       self.input.data.repository.forkCount
+				"stargazers":  self.input.data.repository.stargazerCount
+				"watchers":    self.input.data.repository.watchers.totalCount
+				"releases":    self.input.data.repository.releases.totalCount
+			}
+		}
+	}
+}
+
+resource "load" "repo_stats" {
+	api_version = "v1"
+	spec {
+		input "data" {}
+		data = self.input.data
+	}
+}
+
+resource "pipeline" "repo_stats" {
+	api_version = "v1"
+	spec {
+		task "extract" {
+			resource = "extract/repo_stats"
+		}
+		task "transform" {
+			resource = "transform/repo_stats"
+			input "data" {
+				value = self.task.extract.value
+			}
+		}
+		task "load" {
+			resource = "load/repo_stats"
+			input "data" {
+				value = self.task.transform.value
+			}
+		}
+	}
+}
+
+resource "run" "repo_stats" {
+	api_version = "v1"
+	spec {
+		resource = "pipeline/repo_stats"
+	}
+}

@@ -10,6 +10,9 @@ module.exports = {
   organizationName: 'valocode', // Usually your GitHub org/user name.
   projectName: 'bubbly', // Usually your repo name.
   themeConfig: {
+    prism: {
+      additionalLanguages: ['hcl'],
+    },
     navbar: {
       title: 'Bubbly',
       logo: {
