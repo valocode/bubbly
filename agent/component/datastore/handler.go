@@ -95,38 +95,47 @@ func (d *DataStore) GetResourcesByKindHandler(bCtx *env.BubblyContext, m *nats.M
 		return fmt.Errorf("unable to fetch resources from the data store: %v", result.Errors)
 	}
 
-	var (
-		resourceBlocksJSON []core.ResourceBlockJSON
-		inputMap           = result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
-	)
-
-	// loop over the return store's return and create a core.
-	// ResourceBlockJSON for each index.
-	for i := 0; i < len(inputMap); i++ {
-		var resBlockJSON core.ResourceBlockJSON
-		b, err := json.Marshal(inputMap[i])
-		if err != nil {
-			return fmt.Errorf("failed to marshal resources: %w", err)
+	pub := component.Publication{}
+	if result.Data.(map[string]interface{})[core.ResourceTableName] == nil {
+		pub = component.Publication{
+			Subject: component.Subject(m.Reply),
+			Encoder: nats.DEFAULT_ENCODER,
+			Data:    []byte{},
 		}
-		err = json.Unmarshal(b, &resBlockJSON)
+	} else {
+		var (
+			resourceBlocksJSON []core.ResourceBlockJSON
+			inputMap           = result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
+		)
 
-		resourceBlocksJSON = append(resourceBlocksJSON, resBlockJSON)
+		// loop over the return store's return and create a core.
+		// ResourceBlockJSON for each index.
+		for i := 0; i < len(inputMap); i++ {
+			var resBlockJSON core.ResourceBlockJSON
+			b, err := json.Marshal(inputMap[i])
+			if err != nil {
+				return fmt.Errorf("failed to marshal resources: %w", err)
+			}
+			err = json.Unmarshal(b, &resBlockJSON)
+
+			resourceBlocksJSON = append(resourceBlocksJSON, resBlockJSON)
+		}
+
+		// marshal the list of core.ResourceBlockJSON ready to be returned via NATS
+		b, err := json.Marshal(resourceBlocksJSON)
+
+		if err != nil {
+			return fmt.Errorf("failed to marshal []core.ResourceBlockJSON: %w", err)
+		}
+
+		pub = component.Publication{
+			Subject: component.Subject(m.Reply),
+			Encoder: nats.DEFAULT_ENCODER,
+			Data:    b,
+		}
 	}
 
-	// marshal the list of core.ResourceBlockJSON ready to be returned via NATS
-	b, err := json.Marshal(resourceBlocksJSON)
-
-	if err != nil {
-		fmt.Errorf("failed to marshal []core.ResourceBlockJSON: %w", err)
-	}
-
-	pub := component.Publication{
-		Subject: component.Subject(m.Reply),
-		Encoder: nats.DEFAULT_ENCODER,
-		Data:    b,
-	}
-
-	err = d.Publish(bCtx, pub)
+	err := d.Publish(bCtx, pub)
 	if err != nil {
 		return fmt.Errorf(`unable to publish message (subject "%s", value "%v") over encoded channel: %w`,
 			pub.Subject,
