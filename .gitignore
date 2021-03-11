@@ -34,3 +34,4 @@ dataaccess/*.db
 node_modules
 
 .idea
+dist/

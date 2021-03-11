@@ -1,0 +1,68 @@
+project_name: bubbly
+builds:
+  - binary: bubbly
+    main: main.go
+    ldflags:
+     - -s -w -X main.VERSION={{ .Version }}
+    env:
+     - CGO_ENABLED=0
+    id: linux
+    goos:
+     - linux
+    goarch:
+     - amd64
+     - arm64
+     - arm
+    goarm:
+     - 7
+  - id: darwin
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+  - id: windows
+    goos:
+      - windows
+archives:
+  - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    id: nix
+    builds: [linux, darwin]
+    format: tar.gz
+    files:
+      - none*
+  - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    id: windows
+    builds: [windows]
+    format: zip
+    files:
+      - none*
+brews:
+  - name: bubbly
+    tap:
+      owner: verifa
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    folder: Formula
+    homepage: "https://bubbly.dev/"
+    description: "Bubbly CLI"
+    dependencies:
+      - name: go
+    test: |
+      system "#{bin}/bubbly --version"
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+release:
+  github:
+    owner: verifa
+    name: bubbly
+  prerelease: auto
+  disable: false
