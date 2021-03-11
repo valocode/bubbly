@@ -7,6 +7,8 @@ COPY go.mod .
 
 RUN go mod download
 
+RUN apt-get update && apt-get install ca-certificates -y
+
 COPY . .
 
 # compile the go binary
@@ -15,6 +17,7 @@ RUN go build -o /bubbly
 # target for running in cluster
 FROM debian:buster-slim
 COPY --from=builder /bubbly /bubbly
+COPY --from=builder /etc/ssl/certs /etc/ssl/certs
 
 ENTRYPOINT ["/bubbly"]
 CMD ["--help"]

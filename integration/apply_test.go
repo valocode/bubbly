@@ -98,16 +98,14 @@ func TestApplyRun(t *testing.T) {
 		err := bubbly.Apply(bCtx, "./testdata/resources/v1/run/resources.bubbly")
 		assert.NoError(t, err, "Failed to apply resource")
 	})
-}
+	t.Run("remote_run", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
-func TestApplyRemote(t *testing.T) {
-	bCtx := env.NewBubblyContext()
-	bCtx.UpdateLogLevel(zerolog.DebugLevel)
+		err := bubbly.Apply(bCtx, "./testdata/resources/v1/run/remote_resources.bubbly")
+		require.NoError(t, err, "Failed to apply remote resource")
 
-	err := bubbly.Apply(bCtx, "./testdata/resources/v1/run/remote_resources.bubbly")
-	require.NoError(t, err, "Failed to apply remote resource")
-
-	getQuery := fmt.Sprintf(`
+		getQuery := fmt.Sprintf(`
 			{
 				%s(%s: "%s") {
 					id
@@ -119,22 +117,22 @@ func TestApplyRemote(t *testing.T) {
 				}
 			}
 		`, core.ResourceTableName, "id", "run/licenses_remote",
-		core.EventTableName)
+			core.EventTableName)
 
-	// wait for the run resource to actually be saved to the store
-	time.Sleep(2 * time.Second)
+		// wait for the run resource to actually be saved to the store
+		// TODO: consider a better mechanism for this "wait"
+		time.Sleep(2 * time.Second)
 
-	resources, err := bubbly.QueryResources(bCtx, getQuery)
+		resources, err := bubbly.QueryResources(bCtx, getQuery)
 
-	require.NoError(t, err)
+		require.NoError(t, err)
 
-	r := resources[0]
+		r := resources[0]
 
-	latestEvent := r.Events[len(r.Events)-1]
+		latestEvent := r.Events[len(r.Events)-1]
 
-	// if worker is enabled with remote running:
-	// require.Equal(t, events.ResourceRunSuccess.String(), latestEvent.Status)
-
-	// else:
-	require.Equal(t, events.ResourceCreatedUpdated.String(), latestEvent.Status)
+		// if the Worker is enabled with remote running, then we expect it to have
+		// run the resource successfully
+		require.Equal(t, events.ResourceRunSuccess.String(), latestEvent.Status, latestEvent.Error)
+	})
 }
