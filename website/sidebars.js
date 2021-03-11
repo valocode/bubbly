@@ -12,13 +12,8 @@ module.exports = {
       ],
     },
     {
-      type: 'category',
-      label: 'Getting Started',
-      items: [
-        'getting-started/installation',
-        'getting-started/deployment',
-        'getting-started/quickstart',
-      ],
+      type: 'doc',
+      id: 'getting-started/getting-started',
     },
     {
       type: 'category',
