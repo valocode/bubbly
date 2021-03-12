@@ -77,6 +77,3 @@ The Bubbly schema can be used to capture and store all the data you want to coll
 
 Bubbly is able to collect all this information into one database, and provide the queries necessary to extract the data.
 
-## Development Metrics
-
-TODO

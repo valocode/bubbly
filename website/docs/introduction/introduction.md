@@ -27,7 +27,7 @@ So how best to inform this measure of confidence in an efficient and reliable wa
 The problem around Release Readiness is one of data.
 All the tools used in the software process produce data, and that data should be used to measure attributes such as feature-completeness, quality and security of your product.
 
-The real problem is that this data gets scattered all over the place which results in:
+The real problem is that this data gets scattered all over the place, which results in:
 
 1. Broken relationships across the data
 2. Non-standard interfaces which make accessing the data hard (sometimes impossible)
@@ -39,16 +39,16 @@ The real problem is that this data gets scattered all over the place which resul
 Bubbly has been built to address the core problems mentioned above.
 This has been achieved by implementing a very lightweight *data platform* using a user-defined schema and data pipelines, with everything defined as code using a DSL built on top of HashiCorp's Configuration Language (HCL).
 
-A user defines a schema that models the metrics and Key Performance Indicators (KPIs) that you care about. This could include automated test results, OSS components, CVEs, development metrics, traceability across requirements, and anything else that you can think of :)
+A user defines a schema that models the metrics and Key Performance Indicators (KPIs) that you care about. This could include automated test results, OSS components, CVEs, development metrics, traceability across requirements, and anything else that you can think of.
 
 Data pipelines extract the data from a data source (i.e. the original source of the data), transform the data into your schema and load the results into a persistent database.
 
 A GraphQL API is automatically generated based on the user-defined schema, which is the main way of getting data out from Bubbly.
-What's noteworthy is that the generated GraphQL API is extended to include some cool tricks to make life that litle bit better :)
+What's noteworthy is that the generated GraphQL API is extended to include some cool tricks to make life that litle bit better.
 
 The data in Bubbly can now be used to make automated decisions in pipelines (e.g. check that results are good) and can be used to power dashboards.
 Any dashboard that supports GraphQL (like [Grafana](https://grafana.com/grafana/)) can be used to visualize the data.
-Bubbly also ships with its own UI, and this was born out of the need to understand the data hierarchy (something that ordinary dashboards do not do too well with).
+Bubbly will also ship with its own UI (work in progress), and this was born out of the need to understand the data hierarchy (something that ordinary dashboards do not do too well with).
 
 Check out the [Core Concepts](./core-concepts.md) for more information on things like the schema, HCL and data pipelines.
 
@@ -78,7 +78,9 @@ The things that Bubbly is not aiming to be:
 
 ### Architecture
 
-TODO: this is in progress... Check back soon!
+:::note TODO
+This is work in progress... Check back soon!
+:::
 
 ### Why Open Source?
 
