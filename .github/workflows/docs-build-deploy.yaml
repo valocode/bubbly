@@ -1,9 +1,15 @@
 # on any Github Release, build and deploy docusaurus documentation
-name: build-and-deploy-docs
+name: docs-build-deploy
 
 on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "**"
   release:
-    types: [ published ]
+    types: [published]
 
 jobs:
   build:
@@ -34,8 +40,8 @@ jobs:
   deploy:
     needs: [build]
     runs-on: ubuntu-latest
-    # only run on master branch
-    if: github.ref == 'refs/heads/master' || github.event_name == 'release'
+    # only run on main branch
+    if: github.ref == 'refs/heads/main' || github.event_name == 'release'
 
     steps:
       - uses: actions/download-artifact@v2

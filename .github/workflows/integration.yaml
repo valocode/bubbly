@@ -1,10 +1,10 @@
 ## workflow for running integration tests
 
 on:
-  # run this workflow on master branch or a PR
+  # run this workflow on main branch or a PR
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
       - "**"

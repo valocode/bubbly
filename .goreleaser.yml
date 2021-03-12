@@ -3,18 +3,18 @@ builds:
   - binary: bubbly
     main: main.go
     ldflags:
-     - -s -w -X main.VERSION={{ .Version }}
+      - -s -w -X main.VERSION={{ .Version }}
     env:
-     - CGO_ENABLED=0
+      - CGO_ENABLED=0
     id: linux
     goos:
-     - linux
+      - linux
     goarch:
-     - amd64
-     - arm64
-     - arm
+      - amd64
+      - arm64
+      - arm
     goarm:
-     - 7
+      - 7
   - id: darwin
     goos:
       - darwin
@@ -40,29 +40,27 @@ archives:
 brews:
   - name: bubbly
     tap:
-      owner: verifa
+      owner: valocode
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     folder: Formula
     homepage: "https://bubbly.dev/"
     description: "Bubbly CLI"
-    dependencies:
-      - name: go
     test: |
       system "#{bin}/bubbly --version"
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
+      - "^docs:"
+      - "^test:"
 release:
   github:
-    owner: verifa
+    owner: valocode
     name: bubbly
   prerelease: auto
   disable: false
