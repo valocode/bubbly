@@ -11,8 +11,8 @@ import (
 func NewCmdSchema(bCtx *env.BubblyContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "schema <command>",
-		Short: "manage your bubbly schema",
-		Long:  `manage your bubbly schema`,
+		Short: "Manage your bubbly schema",
+		Long:  `Manage your bubbly schema`,
 	}
 
 	schemaApplyCmd, _ := schemaApplyCmd.NewCmdApply(bCtx)

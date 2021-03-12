@@ -33,7 +33,7 @@ var (
 
 	agentExample = normalise.Examples(
 		`
-		# Starts the bubbly agent with all components (UI, API Server, NATS Server, Data Store, Resource Store and Worker) 
+		# Starts the bubbly agent with all components (API Server, NATS Server, Store and Worker) 
 		using application defaults
 
 		bubbly agent

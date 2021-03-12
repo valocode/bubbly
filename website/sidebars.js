@@ -31,7 +31,12 @@ module.exports = {
       type: 'category',
       label: 'CLI',
       items: [
-        'cli/cli',
+        'cli/bubbly',
+        'cli/bubbly-agent',
+        'cli/bubbly-apply',
+        'cli/bubbly-get',
+        'cli/bubbly-schema',
+        'cli/schema/bubbly-schema-apply',
       ],
     },
     {
