@@ -17,8 +17,3 @@ incomplete and is liable to change at any time.
 :::
 
 ## TODO
-
-- direct to public roadmap
-- optionally: discuss targetted next features (process, trigger, 
-    notification, http resources, agent redesign)
-- direct to communication channels for following / requesting 

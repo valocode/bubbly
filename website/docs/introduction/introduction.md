@@ -79,3 +79,28 @@ The things that Bubbly is not aiming to be:
 ### Architecture
 
 TODO: this is in progress... Check back soon!
+
+### Why Open Source?
+
+Bubbly is open source, licensed under the [Mozilla Public License v2](https://www.mozilla.org/en-US/MPL/2.0/).
+
+We have a few reasons for being open source:
+
+1. The team and company behind Bubbly are all big fans of open source, so it was never really considered not making it open source
+2. We want to focus on building the best product, and we firmly believe making the project OSS will help us achieve this
+3. We want to enable teams to be better. And that's why we are launching a SaaS service for Bubbly to get you up and running in minutes
+
+### Alternatives
+
+Bubbly was born due to (what we believe is) a gap in the market.
+For each project, when we needed to solve this issue we would re-invent something and build that on top of amazing OSS projects.
+
+Hence, the only real alternative that we know of is building it yourself with something like [Elastic](https://www.elastic.co/) and [Elastic Beats](https://www.elastic.co/beats/), or [InfluxDB Telegraf](https://www.influxdata.com/time-series-platform/telegraf/).
+You can of course roll your own SQL database, and define a schema (or schema migrator) and implement your own data access layer, which then needs to provide an SDK or a DSL in order to use, which means picking a language and implementing an API or a parser, and setup your own data-driven architecture using a pub/sub model or a message queue, deployed with security and auth tokens, coupled with a CLI... (do you see where this is going?)
+
+Of course it can be a very viable approach to build these things yourself, but what often happens in internal projects that start small, is that they snowball into something that needs to be reused in other projects and features get added on top (not designed from within), and eventually you end up developing a separate product that has it's own release schedules and sophisticated software archtiecture, when really what you should have been focusing on all along is your company's product.
+
+Let Bubbly be our product that you can apply to solve these problems, and if you need extra features or support then let us know!
+We might already be working on the feature that you need, or can prioritise it if we know people need it, and of course we are open to being sponsored and helping you to deploy Bubbly.
+
+And as it is open source we really welcome contributions!
