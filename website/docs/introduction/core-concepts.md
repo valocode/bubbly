@@ -183,6 +183,5 @@ executable.
 Bubbly requires an external database for the Bubbly Store to connect to. Currently supported are:
 
 - Postgres
-- CockroachDB (without Schema migrations)
 
 There are plans to support more databases in the future, and not just SQL databases but also stores like ElasticSearch.

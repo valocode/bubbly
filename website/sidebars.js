@@ -28,6 +28,10 @@ module.exports = {
       id: 'schema/schema'
     },
     {
+      type: 'doc',
+      id: 'api/api'
+    },
+    {
       type: 'category',
       label: 'CLI',
       items: [
