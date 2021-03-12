@@ -66,3 +66,4 @@ release:
     name: bubbly
   prerelease: auto
   disable: false
+  draft: false

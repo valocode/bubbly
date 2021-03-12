@@ -1,0 +1,33 @@
+# make sure that on any push, documentation can be built successfully
+name: build-docs
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node 12
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: 12.x
+      - run: yarn install
+        working-directory: website
+      - run: yarn run build
+        working-directory: website
+
+      - name: Write version file
+        working-directory: website
+        run: |
+          # write version info to artifact
+          echo "Built from GitHub repo ${{ github.repository }} version ${GITHUB_SHA::7}" > ./build/version.txt
+      - name: Create artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: bubbly-docs
+          path: ./website/build/
+          retention-days: 1

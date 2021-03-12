@@ -1,11 +1,9 @@
-name: build-test
+# on any Github Release, build and deploy docusaurus documentation
+name: build-and-deploy-docs
 
 on:
-  push:
-    branches:
-      - "**"
   release:
-    types: [published]
+    types: [ published ]
 
 jobs:
   build:
