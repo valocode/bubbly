@@ -22,12 +22,12 @@ incomplete and is liable to change at any time.
 
 ### Homebrew
 
-`brew install verifa/tap/bubbly`
+`brew install valocode/tap/bubbly`
 
 ### Releases
 
 Binaries for macOS, Windows and Linux AMD64/ARM are available to download on the
-[release page](https://github.com/verifa/bubbly/releases)
+[release page](https://github.com/valocode/bubbly/releases)
 
 ## Deployment
 

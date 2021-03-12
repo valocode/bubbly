@@ -22,7 +22,7 @@ resource "extract" "bubbly_repo" {
 			
 			query = <<EOT
 				query { 
-					repository(owner:"verifa", name:"bubbly") {
+					repository(owner:"valocode", name:"bubbly") {
 
 						owner {
 							login

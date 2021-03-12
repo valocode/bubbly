@@ -7,7 +7,7 @@ module.exports = {
   onBrokenMarkdownLinks: 'warn',
   onDuplicateRoutes: 'throw',
   favicon: 'img/logo.svg',
-  organizationName: 'verifa', // Usually your GitHub org/user name.
+  organizationName: 'valocode', // Usually your GitHub org/user name.
   projectName: 'bubbly', // Usually your repo name.
   themeConfig: {
     navbar: {
@@ -24,7 +24,7 @@ module.exports = {
           position: 'left',
         },
         {
-          href: 'https://github.com/verifa/bubbly',
+          href: 'https://github.com/valocode/bubbly',
           label: 'GitHub',
           position: 'right',
         },
@@ -68,7 +68,7 @@ module.exports = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/verifa/bubbly',
+              href: 'https://github.com/valocode/bubbly',
             },
           ],
         },
@@ -84,7 +84,7 @@ module.exports = {
           sidebarPath: require.resolve('./sidebars.js'),
           routeBasePath: '/',
           editUrl:
-            'https://github.com/verifa/bubbly/edit/master/website/',
+            'https://github.com/valocode/bubbly/edit/master/website/',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
