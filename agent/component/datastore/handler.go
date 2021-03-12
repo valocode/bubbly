@@ -58,7 +58,7 @@ func (d *DataStore) PostResourceHandler(bCtx *env.BubblyContext, m *nats.Msg) er
 	err := json.Unmarshal(m.Data, &data)
 
 	if err != nil {
-		fmt.Errorf("failed to unmarshal into core.Data: %w", err)
+		return fmt.Errorf("failed to unmarshal into core.Data: %w", err)
 	}
 
 	if err := d.Store.Save(bCtx, core.DataBlocks{data}); err != nil {
