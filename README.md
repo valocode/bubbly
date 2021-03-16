@@ -9,6 +9,7 @@ Bubbly emerged from a need that many lean software teams practicing Continuous I
 
 ## Bubbly Status
 [![Go Report Card](https://goreportcard.com/badge/github.com/valocode/bubbly)](https://goreportcard.com/report/github.com/valocode/bubbly)
+[![Known Vulnerabilities](https://snyk.io/test/github/valocode/bubbly/badge.svg)](https://snyk.io/test/github/valocode/bubbly)
 ### Problem
 
 The problem around Release Readiness is one of data. All the tools used in the software process produce data, and that data should be used to measure attributes such as feature-completeness, quality and security of your product.

@@ -186,3 +186,33 @@ table "tempo_periods" {
         }
     }
 }
+
+#
+# For integration/testdata/snyk/snyk-pipeline.bubbly
+#
+table "snyk_vulnerabilities" {
+    field "id" {
+        type = string
+    }
+    field "name" {
+        type = string
+    }
+    field "creationTime" {
+        type = string
+    }
+    field "cvssScore" {
+        type = string
+    }
+    field "language" {
+        type = string
+    }
+    field "severity" {
+        type = string
+    }
+    field "version" {
+        type = string
+    }
+    field "cve" {
+        type = string
+    }
+}

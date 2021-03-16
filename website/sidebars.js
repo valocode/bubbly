@@ -48,6 +48,7 @@ module.exports = {
       label: 'Tutorials',
       items: [
         'tutorials/github-metrics',
+        'tutorials/snyk-metrics'
       ],
     },
     {
