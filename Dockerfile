@@ -1,30 +1,32 @@
-FROM golang:1.16.1-buster AS builder
+# Stage 1 build
+FROM golang:1.16-buster AS builder
 
-WORKDIR /src
+WORKDIR $GOPATH/src/github.com/valocode/bubbly
 
 COPY go.sum .
 COPY go.mod .
 
 RUN go mod download
-
-RUN apt-get update && apt-get install ca-certificates -y
+RUN go mod verify
 
 COPY . .
 
+# generate swagger documentation
 RUN go get -u github.com/swaggo/swag/cmd/swag
 RUN swag init
 
-# compile the go binary
-RUN go build -o /bubbly
+RUN go build -o /go/bin/bubbly
 
-# target for running in cluster
-FROM debian:buster-slim
-COPY --from=builder /bubbly /bubbly
-COPY --from=builder /etc/ssl/certs /etc/ssl/certs
+# step 2 deploy
+FROM gcr.io/distroless/base-debian10
 
-ENTRYPOINT ["/bubbly"]
-CMD ["--help"]
+# Copy our static executable.
+COPY --from=builder /go/bin/bubbly go/bin/bubbly
 
+# Use an unprivileged user.
+USER nonroot:nonroot
+
+ENTRYPOINT ["go/bin/bubbly"]
 # 4223 NATS service
 # 8111 bubbly agent
 # 8222 NATS HTTP
