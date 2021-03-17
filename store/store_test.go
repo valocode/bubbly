@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -19,6 +20,13 @@ import (
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/events"
 	testData "github.com/valocode/bubbly/store/testdata"
+)
+
+const (
+	// postgresVersionTag defines the tag in
+	// the Postgres Docker image repository.
+	// The tests are run using that image.
+	postgresVersionTag string = "13.0"
 )
 
 var queryTests = []struct {
@@ -107,13 +115,47 @@ var queryTests = []struct {
 			},
 		},
 	},
+	// TODO not jumping nodes anymore, move test to a new "must fail" test set
+	/*
+		{
+			name: "jump node query",
+			query: `
+			{
+				root(name: "first_root") {
+					name
+					grandchild_a {
+						name
+					}
+				}
+			}
+			`,
+			expected: map[string]interface{}{
+				"root": []interface{}{
+					map[string]interface{}{
+						"name": "first_root",
+						"grandchild_a": []interface{}{
+							map[string]interface{}{
+								"name": "first_grandchild",
+							},
+							map[string]interface{}{
+								"name": "second_grandchild",
+							},
+						},
+					},
+				},
+			},
+		},
+	*/
 	{
-		name: "jump node query",
+		name: "two sibling blocks query",
 		query: `
 		{
 			root(name: "first_root") {
 				name
-				grandchild_a {
+				child_a(name: "first_child") {
+					name
+				}
+				child_c(name: "sibling_child") {
 					name
 				}
 			}
@@ -123,12 +165,14 @@ var queryTests = []struct {
 			"root": []interface{}{
 				map[string]interface{}{
 					"name": "first_root",
-					"grandchild_a": []interface{}{
+					"child_a": []interface{}{
 						map[string]interface{}{
-							"name": "first_grandchild",
+							"name": "first_child",
 						},
+					},
+					"child_c": []interface{}{
 						map[string]interface{}{
-							"name": "second_grandchild",
+							"name": "sibling_child",
 						},
 					},
 				},
@@ -137,26 +181,230 @@ var queryTests = []struct {
 	},
 }
 
-func storeTests(t *testing.T, bCtx *env.BubblyContext, s *Store) {
-	tables := testData.Tables(t)
-	data := testData.DataBlocks(t)
+var sqlGenTests = []struct {
+	name   string
+	schema string
+	data   string
+	query  string
+	want   interface{}
+}{
+	{
+		name:   "unrelated tables",
+		schema: "tables0.hcl",
+		data:   "data0.hcl",
+		query: `
+		{
+			A(whaat: "va1") {
+				whaat
+			}
+			B(whbbt: "vb1") {
+				whbbt
+			}
+		}
+		`,
+		want: map[string]interface{}{
+			"A": []interface{}{
+				map[string]interface{}{
+					"whaat": "va1",
+				},
+			},
+			"B": []interface{}{
+				map[string]interface{}{
+					"whbbt": "vb1",
+				},
+			},
+		},
+	},
+	{
+		name:   "single level nested field",
+		schema: "tables1.hcl",
+		data:   "data1.hcl",
+		query: `
+		{
+			A(whaat: "va1") {
+				whaat
+				B(whbbt: "vb1") {
+					whbbt
+				}
+			}
+		}
+		`,
+		want: map[string]interface{}{
+			"A": []interface{}{
+				map[string]interface{}{
+					"whaat": "va1",
+					"B": []interface{}{
+						map[string]interface{}{
+							"whbbt": "vb1",
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		name:   "single level nested field inverse simple arguments",
+		schema: "tables1.hcl",
+		data:   "data1.hcl",
+		query: `
+		{
+			B(whbbt: "va1") {
+				whbbt
+				A(whaat: "va1") {
+					whaat
+				}
+			}
+		}
+		`,
+		want: map[string]interface{}{
+			"B": []interface{}{
+				map[string]interface{}{
+					"whbbt": "vb1",
+					"A": []interface{}{
+						map[string]interface{}{
+							"whaat": "va1",
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		name:   "single level sibling fields",
+		schema: "tables2.hcl",
+		data:   "data2.hcl",
+		query: `
+		{
+			A {
+				whaat
+				B {
+					whbbt
+				}
+				C {
+					whcct
+				}
+			}
+		}
+		`,
+		want: map[string]interface{}{
+			"A": []interface{}{
+				map[string]interface{}{
+					"whaat": "va1",
+					"B": []interface{}{
+						map[string]interface{}{
+							"whbbt": "vb1",
+						},
+					},
+					"C": []interface{}{
+						map[string]interface{}{
+							"whcct": "vc1",
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		name:   "multi level nested fields",
+		schema: "tables3.hcl",
+		data:   "data3.hcl",
+		query: `
+		{
+			A {
+				whaat
+				B {
+					whbbt
+					C {
+						whcct
+					}
+				}
+			}
+		}
+		`,
+		want: map[string]interface{}{
+			"A": []interface{}{
+				map[string]interface{}{
+					"whaat": "va1",
+					"B": []interface{}{
+						map[string]interface{}{
+							"whbbt": "vb1",
+							"C": []interface{}{
+								map[string]interface{}{
+									"whcct": "vc1",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		name:   "multi level nested and sibling fields",
+		schema: "tables4.hcl",
+		data:   "data4.hcl",
+		query: `
+		{
+			A {
+				whaat
+				B {
+					whbbt
+					C {
+						whcct
+					}
+				}
+				D {
+					whddt
+				}
+			}
+		}
+		`,
+		want: map[string]interface{}{
+			"A": []interface{}{
+				map[string]interface{}{
+					"whaat": "va1",
+					"B": []interface{}{
+						map[string]interface{}{
+							"whbbt": "vb1",
+							"C": []interface{}{
+								map[string]interface{}{
+									"whcct": "vc1",
+								},
+							},
+						},
+					},
+					"D": []interface{}{
+						map[string]interface{}{
+							"whddt": "vd1",
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile string) {
+	t.Helper()
+
+	tables := testData.Tables(t, fromFile)
 
 	err := s.Apply(bCtx, tables)
 	require.NoErrorf(t, err, "failed to apply schema")
+}
 
-	err = s.Save(bCtx, data)
-	require.NoErrorf(t, err, "failed to save data")
+func loadTestDataOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile string) {
+	t.Helper()
 
-	// Run the query tests
-	for _, tt := range queryTests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual := s.Query(tt.query)
-			require.Emptyf(t, actual.Errors, "failed to execute query %s", tt.name)
-			require.Equal(t, tt.expected, actual.Data, "query response is equal")
-		})
-	}
+	data := testData.DataBlocks(t, fromFile)
 
-	// Test a simple resource
+	err := s.Save(bCtx, data)
+	require.NoErrorf(t, err, "failed to save test data into the store")
+}
+
+func createResJSONOrDie(t *testing.T) core.Data {
+	t.Helper()
+
 	resJSON := core.ResourceBlockJSON{
 		ResourceBlockAlias: core.ResourceBlockAlias{
 			ResourceKind:       "kind",
@@ -168,31 +416,60 @@ func storeTests(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 		},
 		SpecRaw: "data {}",
 	}
-	d, err := resJSON.Data()
 
+	data, err := resJSON.Data()
 	require.NoError(t, err)
 
-	err = s.Save(bCtx, core.DataBlocks{d})
-
-	require.NoError(t, err)
-
-	resQuery := `
-			{
-				_resource(id: "kind/name") {
-					name
-					kind
-					api_version
-					metadata
-					spec
-				}
-			}
-		`
-	result := s.Query(resQuery)
-	require.Empty(t, result.Errors)
-	eventTests(t, bCtx, s, &d)
+	return data
 }
 
-func eventTests(t *testing.T, bCtx *env.BubblyContext, s *Store, d *core.Data) {
+// runQueryTestsOrDie runs all basic query tests, or fails hard on error.
+func runQueryTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
+	t.Helper()
+
+	for _, tt := range queryTests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := s.Query(tt.query)
+			require.Emptyf(t, actual.Errors, "failed to execute query %s", tt.name)
+			require.Equal(t, tt.expected, actual.Data, "query response is equal")
+		})
+	}
+}
+
+// runResourceTestsOrDie runs all resource-related tests, or fails hard on error.
+func runResourceTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
+	t.Helper()
+
+	t.Run("resource", func(t *testing.T) {
+
+		data := createResJSONOrDie(t)
+
+		err := s.Save(bCtx, core.DataBlocks{data})
+		require.NoError(t, err)
+
+		resQuery := `
+				{
+					_resource(id: "kind/name") {
+						name
+						kind
+						api_version
+						metadata
+						spec
+					}
+				}
+			`
+
+		result := s.Query(resQuery)
+		require.Empty(t, result.Errors)
+	})
+}
+
+// runEventTestsOrDie runs all event-related tests, or fails hard on error.
+func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
+	t.Helper()
+
+	d := createResJSONOrDie(t)
+
 	dSource := core.Data{
 		TableName: core.ResourceTableName,
 		Fields: core.DataFields{
@@ -336,61 +613,88 @@ func eventTests(t *testing.T, bCtx *env.BubblyContext, s *Store, d *core.Data) {
 	assert.NotNil(t, result)
 }
 
-// FIXME: CockroachDB support suspended due to lack or required features
-func TestCockroach(t *testing.T) {
-
-	t.SkipNow()
-	// FIXME: this test is out of date, see TestPostgres
+// TODO: This was copied from TestPostgres for now. Extract the common func later
+func TestPostgresSQLGen(t *testing.T) {
 
 	pool, err := dockertest.NewPool("")
+	require.NoErrorf(t, err, "failed to connect to Docker")
 
-	require.NoErrorf(t, err, "failed to create dockertest pool")
+	// For SQL generation tests we run a new container for every test,
+	// because we'd like sensible table names without much clutter
+	// in the namespace. This also allows us to extend each test Schema
+	// and add more test cases for more complex GraphQL queries in the future.
 
-	resource, err := pool.RunWithOptions(
-		&dockertest.RunOptions{
-			Repository: "cockroachdb/cockroach",
-			Tag:        "v20.1.10",
-			Cmd:        []string{"start-single-node", "--insecure"},
-		},
-	)
+	for _, tt := range sqlGenTests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	t.Cleanup(func() {
-		if err := pool.Purge(resource); err != nil {
-			t.Fatalf("Could not purge resource: %s", err)
-		}
-	})
+			resource, err := pool.RunWithOptions(
+				&dockertest.RunOptions{
+					Repository: "postgres",
+					Tag:        postgresVersionTag,
+					Env: []string{
+						"POSTGRES_PASSWORD=" + postgresPassword,
+						"POSTGRES_DB=" + postgresDatabase,
+					},
+					Cmd: []string{
+						"-c",
+						"log_statement=all",
+					},
+				},
+				func(hc *docker.HostConfig) {
+					hc.AutoRemove = true
+					hc.RestartPolicy = docker.RestartPolicy{
+						Name: "no",
+					}
+				},
+			)
+			require.NoErrorf(t, err, "failed to start a container")
 
-	require.NoErrorf(t, err, "failed to start docker")
-	err = pool.Retry(func() error {
-		db, err := sql.Open("pgx", fmt.Sprintf("postgresql://root@localhost:%s/events?sslmode=disable", resource.GetPort("26257/tcp")))
-		if err != nil {
-			return err
-		}
-		return db.Ping()
-	})
-	require.NoErrorf(t, err, "failed to connect to docker container")
+			t.Cleanup(func() {
+				if err := pool.Purge(resource); err != nil {
+					t.Fatal("failed to remove a container or a volume:", err)
+				}
+			})
+			resource.Expire(360) // Tell docker to hard kill the container in X seconds
 
-	bCtx := env.NewBubblyContext()
-	bCtx.StoreConfig.Provider = config.CockroachDBStore
-	bCtx.StoreConfig.CockroachAddr = fmt.Sprintf("localhost:%s", resource.GetPort("26257/tcp"))
-	bCtx.StoreConfig.CockroachDatabase = "defaultdb"
-	bCtx.StoreConfig.CockroachUser = "root"
-	bCtx.StoreConfig.CockroachPassword = "admin"
+			// Wait until the database is ready
+			err = waitUntilDatabaseIsReady(t, pool, resource)
+			require.NoError(t, err, "failed database connection smoke test")
 
-	s, err := New(bCtx)
-	require.NoErrorf(t, err, "failed to initialize store")
+			// Initialise the Bubbly context
+			bCtx := env.NewBubblyContext()
+			bCtx.StoreConfig.Provider = config.PostgresStore
+			bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
+			bCtx.StoreConfig.PostgresDatabase = postgresDatabase
+			bCtx.StoreConfig.PostgresUser = postgresUser
+			bCtx.StoreConfig.PostgresPassword = postgresPassword
 
-	storeTests(t, bCtx, s)
+			// Initialise the Bubbly Store
+			s, err := New(bCtx)
+			assert.NoErrorf(t, err, "failed to initialize store")
+
+			// Apply the Bubbly Schema to the Bubbly Store
+			applySchemaOrDie(t, bCtx, s, filepath.Join("testdata", "sqlgen", tt.schema))
+
+			// Load the test data into the Bubbly Store
+			loadTestDataOrDie(t, bCtx, s, filepath.Join("testdata", "sqlgen", tt.data))
+
+			// Run the test
+			have := s.Query(tt.query)
+			require.Emptyf(t, have.Errors, "failed to execute query %s", tt.name)
+			require.Equal(t, tt.want, have.Data, "query response is equal")
+		})
+	}
 }
 
 func TestPostgres(t *testing.T) {
+
 	pool, err := dockertest.NewPool("")
 	require.NoErrorf(t, err, "failed to connect to Docker")
 
 	resource, err := pool.RunWithOptions(
 		&dockertest.RunOptions{
 			Repository: "postgres",
-			Tag:        "13.0",
+			Tag:        postgresVersionTag,
 			Env: []string{
 				"POSTGRES_PASSWORD=" + postgresPassword,
 				"POSTGRES_DB=" + postgresDatabase,
@@ -412,23 +716,11 @@ func TestPostgres(t *testing.T) {
 	})
 	resource.Expire(360) // Tell docker to hard kill the container in X seconds
 
-	// Wait on the database
-	var db *sql.DB
-	err = pool.Retry(func() error {
-		pgConnStr := fmt.Sprintf("postgresql://%s:%s@localhost:%s/%s?sslmode=disable", postgresUser, postgresPassword, resource.GetPort("5432/tcp"), postgresDatabase)
-		db, err = sql.Open("pgx", pgConnStr)
-		if err != nil {
-			return err
-		}
-		return db.Ping()
-	})
-	require.NoErrorf(t, err, "failed to connect to the database container")
+	// Wait until the database is ready
+	err = waitUntilDatabaseIsReady(t, pool, resource)
+	require.NoError(t, err, "failed database connection smoke test")
 
-	// We only used the connection for waiting on database, bubbly will manage its own
-	err = db.Close()
-	require.NoError(t, err, "failed to close the connection to database")
-
-	// Set up complete. Now for the test:
+	// Initialise the Bubbly context
 	bCtx := env.NewBubblyContext()
 	bCtx.StoreConfig.Provider = config.PostgresStore
 	bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
@@ -436,8 +728,59 @@ func TestPostgres(t *testing.T) {
 	bCtx.StoreConfig.PostgresUser = postgresUser
 	bCtx.StoreConfig.PostgresPassword = postgresPassword
 
+	// Initialise the Bubbly Store
 	s, err := New(bCtx)
 	assert.NoErrorf(t, err, "failed to initialize store")
 
-	storeTests(t, bCtx, s)
+	// Apply the Bubbly Schema to the Bubbly Store
+	applySchemaOrDie(t, bCtx, s, filepath.Join("testdata", "tables.hcl"))
+
+	// Load the test data into the Bubbly Store
+	loadTestDataOrDie(t, bCtx, s, filepath.Join("testdata", "data.hcl"))
+
+	// Run (sub)tests
+	runQueryTestsOrDie(t, bCtx, s)
+	runResourceTestsOrDie(t, bCtx, s)
+	runEventTestsOrDie(t, bCtx, s)
+}
+
+// TODO: extract into a helper as a similar block of code is used elsewhere in store (?) tests
+// waitUntilDatabaseIsReady employs exponential backoff retry algo to verify that the containerised database is up.
+// It returns an error if the connection to the database had failed.
+func waitUntilDatabaseIsReady(t *testing.T, pool *dockertest.Pool, resource *dockertest.Resource) error {
+
+	pgConnStr := fmt.Sprintf("postgresql://%s:%s@localhost:%s/%s?sslmode=disable",
+		postgresUser, postgresPassword, resource.GetPort("5432/tcp"), postgresDatabase)
+
+	return pool.Retry(func() error {
+
+		// Open does not necessarily establish the connection,
+		// it may just validate the arguments.
+		db, err := sql.Open("pgx", pgConnStr)
+
+		// If Open failed miserably though, that's enough
+		// to conclude that a connection cannot be established
+		// right now. Defer to the caller to decide how to proceed.
+		if err != nil {
+			return err
+		}
+
+		// So, Open had succeeded. Now can attempt Ping which
+		// will actually connect to the database.
+		err = db.Ping()
+
+		// Ping must have failed, defer to the caller
+		// to decide how to proceed.
+		if err != nil {
+			return err
+		}
+
+		// Ping was successfull, close the connection as bubbly
+		// will manage its own.
+		err = db.Close()
+
+		// Defer the decision to retry to the caller. If the DB
+		// was closed successfully though, the caller would not retry.
+		return err
+	})
 }

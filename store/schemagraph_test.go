@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -25,7 +26,7 @@ func printSchemaNode(node *schemaNode, depth int) {
 }
 
 func TestSchemaGraph(t *testing.T) {
-	tables := testData.Tables(t)
+	tables := testData.Tables(t, filepath.FromSlash("testdata/tables.hcl"))
 	graph, err := newSchemaGraph(tables)
 	require.NoErrorf(t, err, "failed to create schema graph")
 
