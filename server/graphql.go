@@ -6,8 +6,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/verifa/bubbly/client"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/client"
+	"github.com/valocode/bubbly/env"
 )
 
 type queryReq struct {

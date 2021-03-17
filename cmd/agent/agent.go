@@ -7,15 +7,15 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/verifa/bubbly/agent"
-	"github.com/verifa/bubbly/config"
+	"github.com/valocode/bubbly/agent"
+	"github.com/valocode/bubbly/config"
 
 	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
 
-	cmdutil "github.com/verifa/bubbly/cmd/util"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/util/normalise"
+	cmdutil "github.com/valocode/bubbly/cmd/util"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (

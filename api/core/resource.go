@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/parser"
 )
 
 const ResourceTableName = "_resource"

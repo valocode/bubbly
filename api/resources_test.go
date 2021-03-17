@@ -3,11 +3,11 @@ package api
 // import (
 // 	"testing"
 
-// 	"github.com/verifa/bubbly/env"
+// 	"github.com/valocode/bubbly/env"
 
 // 	"github.com/hashicorp/go-multierror"
-// 	"github.com/verifa/bubbly/api/core"
-// 	v1 "github.com/verifa/bubbly/api/v1"
+// 	"github.com/valocode/bubbly/api/core"
+// 	v1 "github.com/valocode/bubbly/api/v1"
 
 // 	"github.com/stretchr/testify/assert"
 // )

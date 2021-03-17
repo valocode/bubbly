@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	echoSwagger "github.com/swaggo/echo-swagger"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 )
 
 // initializeRoutes Builds the endpoints and grouping for a gin router

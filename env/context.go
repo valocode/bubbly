@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/rs/zerolog"
-	"github.com/verifa/bubbly/config"
+	"github.com/valocode/bubbly/config"
 )
 
 // BubblyContext holds global bubbly state that is required to be injected into

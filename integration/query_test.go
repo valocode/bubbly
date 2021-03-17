@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/bubbly"
-	"github.com/verifa/bubbly/client"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/client"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 )
 
 func eventQuery(t *testing.T, bCtx *env.BubblyContext) {

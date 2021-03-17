@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/verifa/bubbly/api/core"
+	"github.com/valocode/bubbly/api/core"
 )
 
 // compareSchema will take 2 schemas as arguments and return a Changelog

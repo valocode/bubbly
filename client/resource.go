@@ -8,8 +8,8 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/verifa/bubbly/agent/component"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/agent/component"
+	"github.com/valocode/bubbly/env"
 )
 
 // GetResource uses the bubbly api endpoint to get a resource

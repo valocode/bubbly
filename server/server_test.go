@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 )
 
 func TestHealth(t *testing.T) {

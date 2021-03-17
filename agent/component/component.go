@@ -5,7 +5,7 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 )
 
 // Component provides a NATS-compatible interface for bubbly agent services.

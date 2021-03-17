@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/verifa/bubbly/api/core"
+	"github.com/valocode/bubbly/api/core"
 )
 
 type Channels map[string]chan RunAction

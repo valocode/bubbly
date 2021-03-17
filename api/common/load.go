@@ -3,9 +3,9 @@ package common
 import (
 	"fmt"
 
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/client"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/client"
+	"github.com/valocode/bubbly/env"
 )
 
 // LoadResourceOutput sends a ResourceOutput to the store for saving

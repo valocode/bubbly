@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/stretchr/testify/assert"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 

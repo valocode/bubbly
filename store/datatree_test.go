@@ -7,8 +7,8 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/env"
 )
 
 // some debugging function

@@ -9,8 +9,8 @@ import (
 
 	"github.com/rs/zerolog"
 
-	schemaApplyCmd "github.com/verifa/bubbly/cmd/schema/apply"
-	"github.com/verifa/bubbly/env"
+	schemaApplyCmd "github.com/valocode/bubbly/cmd/schema/apply"
+	"github.com/valocode/bubbly/env"
 )
 
 func TestMain(m *testing.M) {

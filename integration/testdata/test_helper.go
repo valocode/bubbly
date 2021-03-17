@@ -8,10 +8,10 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/cmd/get"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/cmd/get"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 

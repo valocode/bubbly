@@ -8,10 +8,10 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
-	"github.com/verifa/bubbly/bubbly"
-	cmdutil "github.com/verifa/bubbly/cmd/util"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/util/normalise"
+	"github.com/valocode/bubbly/bubbly"
+	cmdutil "github.com/valocode/bubbly/cmd/util"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (

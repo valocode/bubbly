@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-	<testsuite tests="55" failures="0" time="0.350" name="github.com/verifa/bubbly/api">
+	<testsuite tests="55" failures="0" time="0.350" name="github.com/valocode/bubbly/api">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>
@@ -60,7 +60,7 @@
 		<testcase classname="api" name="TestNewResourceFails/basic_unsupported_resource_creation" time="0.000"></testcase>
 		<testcase classname="api" name="TestNewResourcesFromBlocks/basic_all_resource_types" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="110" failures="0" time="0.211" name="github.com/verifa/bubbly/api/core">
+	<testsuite tests="110" failures="0" time="0.211" name="github.com/valocode/bubbly/api/core">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>
@@ -175,7 +175,7 @@
 		<testcase classname="core" name="TestResourceBlockLabels/basic_extract_without_metadata" time="0.000"></testcase>
 		<testcase classname="core" name="TestResourceBlockString/basic_extract_without_metadata" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="120" failures="0" time="0.232" name="github.com/verifa/bubbly/api/v1">
+	<testsuite tests="120" failures="0" time="0.232" name="github.com/valocode/bubbly/api/v1">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>
@@ -300,7 +300,7 @@
 		<testcase classname="v1" name="TestValue" time="0.000"></testcase>
 		<testcase classname="v1" name="TestValue/basic_Value" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="10" failures="0" time="0.279" name="github.com/verifa/bubbly/bubbly">
+	<testsuite tests="10" failures="0" time="0.279" name="github.com/valocode/bubbly/bubbly">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>
@@ -315,7 +315,7 @@
 		<testcase classname="bubbly" name="TestApply" time="0.000"></testcase>
 		<testcase classname="bubbly" name="TestApply/sonarqube" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="20" failures="0" time="0.231" name="github.com/verifa/bubbly/client">
+	<testsuite tests="20" failures="0" time="0.231" name="github.com/valocode/bubbly/client">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>
@@ -340,7 +340,7 @@
 		<testcase classname="client" name="TestDescribeResourceGroup" time="0.000"></testcase>
 		<testcase classname="client" name="TestDescribeResourceGroup/basic_extract_resource_group_describe" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="90" failures="0" time="0.454" name="github.com/verifa/bubbly/cmd">
+	<testsuite tests="90" failures="0" time="0.454" name="github.com/valocode/bubbly/cmd">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>
@@ -435,7 +435,7 @@
 		<testcase classname="cmd" name="TestRootWithInvalidArg" time="0.000"></testcase>
 		<testcase classname="cmd" name="TestRootWithInvalidArg/test_root" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="35" failures="0" time="0.202" name="github.com/verifa/bubbly/cmd/util">
+	<testsuite tests="35" failures="0" time="0.202" name="github.com/valocode/bubbly/cmd/util">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>
@@ -485,7 +485,7 @@
 		<testcase classname="util" name="TestUsageErrorf" time="0.000"></testcase>
 		<testcase classname="util" name="TestUsageErrorf/basic" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="50" failures="0" time="0.190" name="github.com/verifa/bubbly/config">
+	<testsuite tests="50" failures="0" time="0.190" name="github.com/valocode/bubbly/config">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>
@@ -540,7 +540,7 @@
 		<testcase classname="config" name="TestSetupConfigs/basic_creation_of_Config_from_viper_bindings_and_defaults" time="0.000"></testcase>
 		<testcase classname="config" name="TestSetupConfigs/basic_creation_of_Config_from_viper_bindings_and_defaults#01" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="50" failures="0" time="0.242" name="github.com/verifa/bubbly/parser">
+	<testsuite tests="50" failures="0" time="0.242" name="github.com/valocode/bubbly/parser">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>
@@ -595,7 +595,7 @@
 		<testcase classname="parser" name="TestApplyFromJSONParser/basic_apply_from_json_over_junit_pipeline" time="0.000"></testcase>
 		<testcase classname="parser" name="TestExtractJSONConversion/basic_JSON_conversion_for_sonarqube_extract" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="20" failures="0" time="0.407" name="github.com/verifa/bubbly/server">
+	<testsuite tests="20" failures="0" time="0.407" name="github.com/valocode/bubbly/server">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>
@@ -620,7 +620,7 @@
 		<testcase classname="server" name="TestHealth" time="0.000"></testcase>
 		<testcase classname="server" name="TestUploadFailing" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="35" failures="0" time="0.190" name="github.com/verifa/bubbly/util/normalise">
+	<testsuite tests="35" failures="0" time="0.190" name="github.com/valocode/bubbly/util/normalise">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>

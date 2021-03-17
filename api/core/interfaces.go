@@ -1,6 +1,6 @@
 package core
 
-import "github.com/verifa/bubbly/env"
+import "github.com/valocode/bubbly/env"
 
 // Resource is the interface for any resources, such as Extract, Transform,
 // etc.

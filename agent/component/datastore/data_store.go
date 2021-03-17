@@ -5,9 +5,9 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/verifa/bubbly/agent/component"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/store"
+	"github.com/valocode/bubbly/agent/component"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/store"
 )
 
 var _ component.Component = (*DataStore)(nil)

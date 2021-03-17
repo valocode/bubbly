@@ -8,8 +8,8 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/env"
 )
 
 // FIXME: because Roach provider was heavy dependent on Postgres,

@@ -8,11 +8,11 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 
-	"github.com/verifa/bubbly/config"
+	"github.com/valocode/bubbly/config"
 
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 
-	"github.com/verifa/bubbly/api/core"
+	"github.com/valocode/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -209,7 +209,7 @@ func alterColumnStatement(bCtx *env.BubblyContext, m *migration, info tableInfo,
 		break
 	case config.CockroachDBStore:
 		// FIXME
-		// https://github.com/verifa/bubbly/issues/201
+		// https://github.com/valocode/bubbly/issues/201
 		// cockroach doesn't support altering column types in a transaction, so this horrible workaround
 		// has to be used instead. This will completely remove data from the original column
 

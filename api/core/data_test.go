@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/verifa/bubbly/parser"
+	"github.com/valocode/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 

@@ -6,8 +6,8 @@ import (
 
 	"github.com/appleboy/gofight/v2"
 	"github.com/stretchr/testify/assert"
-	"github.com/verifa/bubbly/env"
-	testData "github.com/verifa/bubbly/server/testdata/upload"
+	"github.com/valocode/bubbly/env"
+	testData "github.com/valocode/bubbly/server/testdata/upload"
 )
 
 // This creates a passing test for the upload route

@@ -76,7 +76,7 @@ module.exports = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Verifa. Built with docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Valocode. Built with docusaurus.`,
     },
   },
   presets: [

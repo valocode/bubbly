@@ -6,9 +6,9 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/verifa/bubbly/api"
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/api"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/env"
 )
 
 // PostRunResourceHandler receives a resourceBlockJSON matching a remote run

@@ -5,7 +5,7 @@ import (
 
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/verifa/bubbly/events"
+	"github.com/valocode/bubbly/events"
 )
 
 // Tasks stores a map of Task by name

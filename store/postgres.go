@@ -12,9 +12,9 @@ import (
 	pgx "github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zerologadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )

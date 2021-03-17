@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/verifa/bubbly/agent/component"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/server"
+	"github.com/valocode/bubbly/agent/component"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/server"
 )
 
 var _ component.Component = (*APIServer)(nil)

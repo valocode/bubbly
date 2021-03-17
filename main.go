@@ -3,22 +3,22 @@ package main
 import (
 	"os"
 
-	"github.com/verifa/bubbly/docs"
-	_ "github.com/verifa/bubbly/docs"
+	"github.com/valocode/bubbly/docs"
+	_ "github.com/valocode/bubbly/docs"
 
 	"github.com/imdario/mergo"
 
 	"github.com/rs/zerolog"
-	"github.com/verifa/bubbly/cmd"
-	"github.com/verifa/bubbly/config"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/cmd"
+	"github.com/valocode/bubbly/config"
+	"github.com/valocode/bubbly/env"
 )
 
 // @title Bubbly
 // @version 0.1.1
 // @description this is the bubbly API server
 // @contact.name API Support
-// @contact.url https://github.com/verifa/bubbly/issues
+// @contact.url https://github.com/valocode/bubbly/issues
 // @contact.email info@bubbly.dev
 
 // @license.name Mozilla Public License Version 2.0

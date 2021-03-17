@@ -2,8 +2,8 @@ package store
 
 import (
 	"github.com/graphql-go/graphql"
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/env"
 )
 
 // Provider provides an interface for persisting readiness data.

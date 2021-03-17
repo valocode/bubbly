@@ -10,8 +10,8 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/verifa/bubbly/config"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/config"
+	"github.com/valocode/bubbly/env"
 )
 
 const (

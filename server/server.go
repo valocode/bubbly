@@ -9,8 +9,8 @@ import (
 	"github.com/ziflex/lecho/v2"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/verifa/bubbly/config"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/config"
+	"github.com/valocode/bubbly/env"
 )
 
 type Server struct {

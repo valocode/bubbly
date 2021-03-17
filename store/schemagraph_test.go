@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	testData "github.com/verifa/bubbly/store/testdata"
+	testData "github.com/valocode/bubbly/store/testdata"
 )
 
 func printSchemaGraph(graph *schemaGraph) {
