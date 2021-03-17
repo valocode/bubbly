@@ -50,11 +50,16 @@ type tableColumns struct {
 	scalar bool
 }
 
-// psqlResolveRootQueries gets called for each top-level query and iterates
-// through the fields in that root query and resolves them.
+// FIXME: ofr I have a hunch that the following comment is related to GraphQL standard,
+//        which is rather prescriptive about how things should be evaluated, and also
+//        to the reference implementation `graphql-js`. Investigate later.
+//
 // What is a bit puzzling is that if you have a query with two fields, this
 // method gets called twice, once for each field, but each time the
-// graphql.ResolveParams contains a list of FieldASTs with one element
+// graphql.ResolveParams contains a list of FieldASTs with one element:
+
+// psqlResolveRootQueries is called for each top-level query and iterates
+// through the fields in that root query and resolves them.
 func psqlResolveRootQueries(pool *pgxpool.Pool, graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
 	var (
 		result interface{}
@@ -112,6 +117,21 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, graph *schemaGraph, field *ast.Fie
 }
 
 func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, path schemaPath) error {
+
+	// GraphQL fields are conceptually functions which return values,
+	// and occasionally accept arguments which alter their behaviour.
+	//
+	// This recursive function compiles a SQL query for the `field`,
+	// taking into account (optional) arguments for the `field`.
+	//
+	// It is recursive because the `field` may have a selection set
+	// associated with it, which in turn also requires a SQL (sub)query.
+	//
+	// Relevant parts of the GraphQL spec:
+	//   http://spec.graphql.org/June2018/#sec-Language.Fields
+	//   http://spec.graphql.org/June2018/#sec-Language.Arguments
+	//
+
 	// Create the tableColumns for this type/table in the query
 	var (
 		node = qb.node
@@ -121,8 +141,10 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, pat
 			scalar: isTableResultScalar(node, path),
 		}
 	)
-	// Increment the depth
+
+	// FIXME: Why is the depth being increased here?
 	qb.depth++
+
 	// Add the tableColumns to the list of table columns
 	qb.columns = append(qb.columns, &tb)
 
@@ -131,80 +153,132 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, pat
 	tb.fields = append(tb.fields, tableIDField)
 	qb.sql = qb.sql.Column(tb.alias + "." + tableIDField)
 
-	// TODO: this currently does not support all the graphql arguments, but
-	// more work will be done on this to enable things like calculating the
-	// cartesian product, so no need to solve it all right now
+	// GraphQL arguments are processed here
 	for _, arg := range field.Arguments {
-		qb.sql = qb.sql.Where(sq.Eq{tb.alias + "." + arg.Name.Value: arg.Value.GetValue()})
+
+		// The arguments can be of different kinds, from simple column names
+		// to our custom function names. We'll work through the possibilities,
+		// but if at the end the argument has not been resolved, raise an error.
+		argIsResolved := false
+
+		// Argument name equal to one of the column names for the current node (table)
+		// adds an equality predicate in the WHERE clause.
+		// Multiple expressions are `AND`ed together in the generated SQL.
+		for _, tf := range node.table.Fields {
+			if arg.Name.Value == tf.Name {
+				qb.sql = qb.sql.Where(sq.Eq{tb.alias + "." + arg.Name.Value: arg.Value.GetValue()})
+				argIsResolved = true
+				break
+			}
+		}
+
+		// Process arguments which are not column names...
+
+		// TODO: order_by
+		if arg.Name.Value == "order_by" {
+			return fmt.Errorf("argument not implemented: %s", arg.Name.Value)
+		}
+
+		// TODO: distinct_on
+		if arg.Name.Value == "distinct_on" {
+			return fmt.Errorf("argument not implemented: %s", arg.Name.Value)
+		}
+
+		// The argument name which is not a column name is a mistake, raise error.
+		if !argIsResolved {
+			return fmt.Errorf("unknown identifier %s.%s", tb.table, arg.Name.Value)
+		}
 	}
 
-	// Iterate over the selections/fields inside this field
+	// Iterate over the fields in the selection set (if any) for the current `field`
 	for _, selection := range field.SelectionSet.Selections {
-		// Make sure we don't miss any fields. Only ast.Field types should be
-		// supported right now.
+
+		// Only GraphQL `Field`s are supported at this point. http://spec.graphql.org/June2018/#sec-Language.Fields
+		// The `Selection` interface is implemented by the `ast.Field` type in this supported case.
 		subField, ok := selection.(*ast.Field)
 		if !ok {
 			return fmt.Errorf("graphql query selection type not supported: %s", selection.GetSelectionSet().Kind)
 		}
-		var fieldName = subField.Name.Value
-		// We do not care about "meta fields" or whatever they are called in
-		// graphql that might get added by clients to help with caching and such
-		// and they typically start with __
+
+		fieldName := subField.Name.Value
+
+		// Types and fields required by the GraphQL introspection system that are used
+		// in the same context as user‐defined types and fields are prefixed
+		// with "__" two underscores. This in order to avoid naming collisions
+		// with user‐defined GraphQL types. http://spec.graphql.org/June2018/#sec-Reserved-Names
+
+		// FIXME shouldn't we raise an error instead of skipping quietly?
+		// We skip this field if it has a reserved name
 		if strings.HasPrefix(fieldName, "__") {
 			continue
 		}
-		// If subField has a selection set then it is not a scalar type, and is
-		// another table in our schema.
-		// TODO: the logic here is a little tricky and should be cleaned up once
-		// we understand more about the different types of queries we want to make
-		// and this is coming in future versions so no need to spend lots of time
-		// now
+
+		// A non-nil selection set implies that the subField refers to another table in our schema.
 		if subField.SelectionSet != nil {
-			// If the current node has a oath to the child type in the graphql
-			// query
-			path := qb.node.shortestPath(fieldName)
-			if path == nil {
-				return fmt.Errorf("no path was found between tables: %s --> %s", qb.node.table.Name, fieldName)
-			}
-			var (
-				leftTable      = tb.table
-				leftTableAlias = tb.alias
-			)
-			for _, e := range path {
-				var (
-					rightTable      = e.node.table.Name
-					rightTableAlias = tableAlias(rightTable, qb.depth)
-				)
-				switch e.rel {
-				case oneToOne, oneToMany:
-					qb.sql = qb.sql.LeftJoin(joinOn(
-						tableAsAlias(rightTable, rightTableAlias),
-						tableColumn(leftTableAlias, tableIDField),
-						tableColumn(rightTableAlias, foreignKeyField(leftTable))))
-				case belongsTo:
-					qb.sql = qb.sql.LeftJoin(
-						joinOn(
-							tableAsAlias(rightTable, rightTableAlias),
-							tableColumn(rightTableAlias, tableIDField),
-							tableColumn(leftTableAlias, foreignKeyField(rightTable))))
+
+			// TODO: instead of searching the graph, check the node's edges for their destinations, and use those dest. in JOINs
+			// In the following example, the current qb.node is `A`, and subField is `B`, and we have just discovered, that `B`
+			// refers to another table.
+			//
+			// A {
+			//     name
+			//     B {
+			//        name
+			//     }
+			// }
+
+			/*
+				// If the current node has a path to the child type in the graphql query
+				path := qb.node.shortestPath(fieldName)
+				if path == nil {
+					return fmt.Errorf("no path was found between tables: %s --> %s", qb.node.table.Name, fieldName)
 				}
+			*/
 
-				leftTable = e.node.table.Name
-				leftTableAlias = tableAlias(e.node.table.Name, qb.depth)
+			// Are the parent field and the subfield connected in the graph at all?
+			var edgeToRelatedNode *schemaEdge
+			for _, p := range node.edges {
+				if p.node.table.Name == fieldName {
+					edgeToRelatedNode = p
+				}
+			}
+			if edgeToRelatedNode == nil {
+				return fmt.Errorf("no relationship found between tables: '%s', '%s'", node.table.Name, fieldName)
 			}
 
-			// Recursively resolve
+			var (
+				leftTable       = tb.table
+				leftTableAlias  = tb.alias
+				rightTable      = edgeToRelatedNode.node.table.Name
+				rightTableAlias = tableAlias(rightTable, qb.depth)
+			)
+
+			switch edgeToRelatedNode.rel {
+			case oneToOne, oneToMany:
+				qb.sql = qb.sql.LeftJoin(joinOn(
+					tableAsAlias(rightTable, rightTableAlias),
+					tableColumn(leftTableAlias, tableIDField),
+					tableColumn(rightTableAlias, foreignKeyField(leftTable))))
+			case belongsTo:
+				qb.sql = qb.sql.LeftJoin(
+					joinOn(
+						tableAsAlias(rightTable, rightTableAlias),
+						tableColumn(rightTableAlias, tableIDField),
+						tableColumn(leftTableAlias, foreignKeyField(rightTable))))
+			}
+
+			// Recursively resolve for the subField `B`, which may contain further nested fields.
 			qb.node = graph.nodeIndex[fieldName]
 			if err := psqlSubQuery(graph, qb, subField, path); err != nil {
 				return err
 			}
 			continue
+		} else {
+			// If subField did not have a selection set this it is just a column
+			// within the current table, so add it to the columns
+			tb.fields = append(tb.fields, fieldName)
+			qb.sql = qb.sql.Column(tableColumn(tb.alias, fieldName))
 		}
-
-		// If subField did not have a selection set this it is just a column
-		// within the current table, so add it to the columns
-		tb.fields = append(tb.fields, fieldName)
-		qb.sql = qb.sql.Column(tableColumn(tb.alias, fieldName))
 	}
 
 	return nil

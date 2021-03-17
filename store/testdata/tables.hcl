@@ -47,6 +47,8 @@ table "test_run" {
     
 }
 
+// Original test for GraphQL resolver's ability 
+// to deal with many-to-many relationships.
 table "root" {
     field "name" {
         unique = true
@@ -68,6 +70,13 @@ table "root" {
     table "child_b" {
         // Table root has only one child_b (one-to-one)
         unique = true
+        field "name" {
+            unique = true
+            type = string
+        }
+    }
+    // Regression test: sibling child nodes
+    table "child_c" {
         field "name" {
             unique = true
             type = string

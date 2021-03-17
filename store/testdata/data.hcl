@@ -21,6 +21,14 @@ data "child_a" {
     }
 }
 
+// Regression test: sibling child nodes
+data "child_c" {
+    joins = ["root"]
+    fields = {
+        "name": "sibling_child"
+    }
+}
+
 data "grandchild_a" {
     joins = ["child_a"]
     fields = {

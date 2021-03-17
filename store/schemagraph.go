@@ -6,16 +6,56 @@ import (
 	"github.com/valocode/bubbly/api/core"
 )
 
-// schemaGraph creates a graph from the bubbly schema
+// relType describes the relationship type of a directed edge from a --> b
+type relType int
+
+// The difference between `oneToOne` and `belongsTo` is in the order.
+// table "A" {
+//   table "B" { unique = true }
+// }
+// Table B belongs to A. And Table A has a oneToOne to B.
+// So the relationships describe the direction of the edge.
+
+const (
+	oneToOne relType = iota
+	oneToMany
+	belongsTo
+)
+
+// schemaNode represents a node in the schema graph.
+// A node is a wrapper around core.Table with the edges for explicit
+// relationships to other nodes (and therefore tables)
+type schemaNode struct {
+	table *core.Table
+	edges schemaPath
+}
+
+// nodeRefMap maps node names to the corresponding structures of type node
+type nodeRefMap map[string]*schemaNode
+
+// schemaNodes is a list of graph nodes
+type schemaNodes []*schemaNode
+
+// schemaEdge represents an edge in the graph
+type schemaEdge struct {
+	node *schemaNode
+	rel  relType
+}
+
+// schemaPath is a list graph edges
+type schemaPath []*schemaEdge
+
+// schemaGraph represents a graph created from the bubbly schema.
 type schemaGraph struct {
-	nodes []*schemaNode
+	nodes schemaNodes
 	// nodeIndex stores an index to the nodes using the schema table name.
 	// This is probably not the best for performance, but our schemas probably
 	// will not become huge and this is a great convienice for consumers of the
 	// graph, to not have to traverse the graph to find a node
-	nodeIndex map[string]*schemaNode
+	nodeIndex nodeRefMap
 }
 
+// traverse applies the callback function to every node of the schemaGraph.
 func (g *schemaGraph) traverse(fnVisit func(node *schemaNode) error) error {
 	var visited = make(map[string]struct{})
 	for _, n := range g.nodes {
@@ -26,6 +66,8 @@ func (g *schemaGraph) traverse(fnVisit func(node *schemaNode) error) error {
 	return nil
 }
 
+// visitSchemaNode is used by traverse function to make sure a node is "visited" only once,
+// that is to make sure that the callback function is applied to the node only once.
 func visitSchemaNode(node *schemaNode, visited map[string]struct{}, fnVisit func(node *schemaNode) error) error {
 	if err := fnVisit(node); err != nil {
 		return err
@@ -44,16 +86,8 @@ func visitSchemaNode(node *schemaNode, visited map[string]struct{}, fnVisit func
 	return nil
 }
 
-// schemaNode represents a node in the schema graph.
-// A node is a wrapper around core.Table with the edges for explicit
-// relationships to other nodes (and therefore tables)
-type schemaNode struct {
-	table *core.Table
-	edges []*schemaEdge
-}
-
-// shortestPath uses breadth-first search to find the shortest path between
-// two nodes in the graph
+// FIXME: ofr shortestPath needs to go
+// shortestPath uses breadth-first search to find the shortest path between two nodes in the graph
 func (n *schemaNode) shortestPath(dst string) schemaPath {
 	var (
 		visited   = make(map[string]struct{})
@@ -100,7 +134,7 @@ func (n *schemaNode) shortestPath(dst string) schemaPath {
 // neighbours takes a distance and returns a slice of paths to all of the nodes
 // within that distance in the graph
 func (n *schemaNode) neighbours(distance int) []schemaPath {
-	var visited = make(map[string]*schemaNode)
+	var visited = make(nodeRefMap)
 	return nodeNeighbours(n, schemaPath{}, visited, distance)
 }
 
@@ -108,8 +142,7 @@ func (n *schemaNode) neighbours(distance int) []schemaPath {
 // nodes. Noteworthy is the relationship that the edges describe
 func (n *schemaNode) addEdgeFromJoin(child *schemaNode, unique bool) {
 	var (
-		// This node (parent) has a oneToMany or oneToOne relationship with the
-		// child node
+		// This node has a oneToMany or oneToOne relationship with the child node
 		edgeToChild = &schemaEdge{node: child, rel: oneToMany}
 		// The child "belongsTo" the parent (this nodes)
 		edgeToParent = &schemaEdge{node: n, rel: belongsTo}
@@ -123,9 +156,6 @@ func (n *schemaNode) addEdgeFromJoin(child *schemaNode, unique bool) {
 	// Also add the reverse relationship
 	child.edges = append(child.edges, edgeToParent)
 }
-
-// schemaPath stores a slice of edges
-type schemaPath []*schemaEdge
 
 // isScalar returns true if the path from one node to another is scalar.
 // Scalar means that the return type is a single instance, rather than a slice,
@@ -143,39 +173,27 @@ func (p *schemaPath) isScalar() bool {
 	return isScalar
 }
 
-// relType desribes the relationship type of a directed edge from a --> b
-type relType int
-
-const (
-	oneToOne relType = iota
-	oneToMany
-	belongsTo
-)
-
-// schemaEdge represents an edge in the node graph
-type schemaEdge struct {
-	node *schemaNode
-	rel  relType
-}
-
 // newSchemaGraphFromMap is a wrapper around newSchemaGraph for backwards
-// compatability with the current way the schema is stored in the provider
+// compatibility with the current way the schema is stored in the provider
 func newSchemaGraphFromMap(tables map[string]core.Table) (*schemaGraph, error) {
-	var ts = make([]core.Table, 0, len(tables))
+	var ts = make(core.Tables, 0, len(tables))
 	for _, t := range tables {
 		ts = append(ts, t)
 	}
 	return newSchemaGraph(ts)
 }
 
-// newSchemaGraph takes a list of tables and creates a schemaGraph
+// newSchemaGraph takes a list of tables and creates a schemaGraph.
 func newSchemaGraph(tables core.Tables) (*schemaGraph, error) {
+
 	var (
-		nodes = make(map[string]*schemaNode)
+		nodes = make(nodeRefMap)
 		graph = &schemaGraph{nodeIndex: nodes}
 	)
 
-	collectTables(nodes, tables)
+	// Pull all the nodes from the definitions of tables.
+	nodes.createFrom(tables)
+
 	// First iterate over the top-level tables to extract the root nodes in the
 	// graph. Tables at the top-level, without any joins, do not have any edges
 	// going to them, so they are root nodes.
@@ -185,27 +203,32 @@ func newSchemaGraph(tables core.Tables) (*schemaGraph, error) {
 		}
 	}
 
-	if err := tablesToGraph(nodes, tables, nil); err != nil {
+	// Connect related nodes based on the information from the list of tables,
+	// each table in the list knows what other tables it is connected to.
+	if err := nodes.connectFrom(tables, nil); err != nil {
 		return graph, fmt.Errorf("failed to create graph: %w", err)
 	}
 	return graph, nil
 }
 
-func collectTables(nodes map[string]*schemaNode, tables core.Tables) {
+// createFrom creates a node for every table in the given list.
+func (nodes *nodeRefMap) createFrom(tables core.Tables) {
 	for index, t := range tables {
-		nodes[t.Name] = &schemaNode{table: &tables[index]}
-		collectTables(nodes, t.Tables)
+		(*nodes)[t.Name] = &schemaNode{table: &tables[index]}
+		nodes.createFrom(t.Tables)
 	}
 }
 
-func tablesToGraph(nodes map[string]*schemaNode, tables core.Tables, parent *schemaNode) error {
+// connectFrom connects related nodes based on join information stored in the given list of tables
+func (nodes *nodeRefMap) connectFrom(tables core.Tables, parent *schemaNode) error {
+
 	for _, table := range tables {
-		var node = nodes[table.Name]
+		var node = (*nodes)[table.Name]
 		// Handle the explicit joins
 		for _, join := range table.Joins {
 			// A join indicates that this table "belongs to" another talbe,
 			// i.e. this table is a child of that table
-			parent, ok := nodes[join.Table]
+			parent, ok := (*nodes)[join.Table]
 			if !ok {
 				return fmt.Errorf("join refers to unknown table: %s --> %s", table.Name, join.Table)
 			}
@@ -217,7 +240,7 @@ func tablesToGraph(nodes map[string]*schemaNode, tables core.Tables, parent *sch
 			parent.addEdgeFromJoin(node, table.Unique)
 		}
 		// Recurse
-		tablesToGraph(nodes, table.Tables, node)
+		nodes.connectFrom(table.Tables, node)
 
 		// Clear unnecessary data
 		table.Tables = nil
@@ -227,7 +250,9 @@ func tablesToGraph(nodes map[string]*schemaNode, tables core.Tables, parent *sch
 	return nil
 }
 
-func nodeNeighbours(node *schemaNode, path schemaPath, visited map[string]*schemaNode, remaining int) []schemaPath {
+// nodeNeighbours ???
+func nodeNeighbours(node *schemaNode, path schemaPath, visited nodeRefMap, remaining int) []schemaPath {
+
 	if remaining == 0 {
 		return []schemaPath{}
 	}
