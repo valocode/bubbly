@@ -94,6 +94,9 @@ A Resource's lifecycle has 2 parts:
         2. the resource is referenced by a `task` within a running `pipeline` resource. 
             1. See the [`pipeline` resource](../resources/kinds#pipeline) for more 
                information on `tasks`.
+        3. a `POST` request is sent to Bubbly's `/api/v1/run/:name` endpoint
+            1. See [`run` resource behaviour: `/api/v1/run/:name` endpoint](../resources/kinds#run-resource-behaviour-using-bubblys-apiv1runname-endpoint)
+            for more information on this `run` resource trigger.
             
 
 See [Resources](../resources/overview) for more information.

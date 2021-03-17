@@ -1,6 +1,6 @@
 module github.com/valocode/bubbly
 
-go 1.15
+go 1.16
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
@@ -22,6 +22,7 @@ require (
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
+	github.com/google/uuid v1.1.1
 	github.com/graphql-go/graphql v0.7.9
 	github.com/graphql-go/handler v0.2.3 // indirect
 	github.com/hako/durafmt v0.0.0-20200710122514-c0fb7b4da026

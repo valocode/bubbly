@@ -23,6 +23,10 @@ func (s *Server) initializeRoutes(bCtx *env.BubblyContext,
 			return s.PostResource(bCtx, c)
 		})
 
+		api.POST("/run/:name", func(c echo.Context) error {
+			return s.RunResource(bCtx, c)
+		})
+
 		api.GET("/resource/:kind/:name", func(c echo.Context) error {
 			return s.GetResource(bCtx, c)
 		})

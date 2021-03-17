@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 
 	"github.com/valocode/bubbly/agent/component"
@@ -24,7 +25,21 @@ func New(bCtx *env.BubblyContext) *Worker {
 			},
 			DesiredSubscriptions: nil,
 		},
-		ResourceWorker: &interval.ResourceWorker{},
+		ResourceWorker: &interval.ResourceWorker{
+			Pools: interval.Pools{
+				OneOff: interval.Pool{
+					Runs: make(map[uuid.UUID]interval.Run),
+				},
+				Interval: interval.IntervalPool{
+					IsRunning: false,
+					Pool: interval.Pool{
+						Runs: make(map[uuid.UUID]interval.Run),
+					},
+				},
+			},
+			WorkerChannels: nil,
+			Context:        interval.ChannelContext{},
+		},
 	}
 
 	w.DesiredSubscriptions = w.defaultSubscriptions()
