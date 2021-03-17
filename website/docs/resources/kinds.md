@@ -511,6 +511,12 @@ resource "run" "github_fork_count_run" {
 
 #### 2.2. _Continuous_ Remote `run`
 
+:::caution Behaviour Disabled
+The _continuous_ remote `run` type has been disabled for stability purposes while
+work to expand the Bubbly Worker's functionality is undergone. All _continuous_
+`run`s will default to _one-off_ runs in the meantime.
+:::
+
 If the `remote{}` block specifies the optional `interval` attribute, the `run` is
 _continuous_. The Bubbly Worker will run this resource continuously at this
 interval, loading the results of each interval run to the Bubbly Store
@@ -542,3 +548,119 @@ actually be run!
 Conceptually, this is similar to the behaviour employed by [TektonCD](https://github.com/tektoncd/pipeline/tree/master/docs#tekton-pipelines-entities)
 and its `TaskRun` and `PipelineRun` entities, which are themselves 
 the executors of TektonCD's `Task` and `Pipeline` entities respectively.
+
+### `run` Resource Behaviour: Using Bubbly's `/api/v1/run/:name` endpoint
+
+:::note Under Active Development
+This functionality is *under active development*. It may be incorrect and/or
+incomplete and is liable to change at any time.
+:::
+
+In some environments, it may be preferential to export the data produced within
+your software processes to Bubbly for remote processing.
+Bubbly's `/api/v1/run/:name` endpoint supports this use-case, providing the 
+ability
+to trigger the _run_ of a named `run` resource via a 
+[multipart formpost](https://everything.curl.dev/http/multipart) 
+(`POST` request with the body formatted with data as a series of parts).
+
+With this, it is possible to embed the input data to the named `run` resource
+within the `POST` request.
+
+#### Example
+
+Consider the following example `run` and `extract` resources:
+
+```hcl
+resource "extract" "sonarqube" {
+  metadata {
+    labels = {
+      "environment": "prod"
+    }
+  }
+  api_version = "v1"
+  spec {
+    input "file" {}
+    type = "json"
+    source {
+      file = self.input.file
+      #format = ...
+    }
+  }
+}
+
+resource "run" "sonarqube_remote" {
+  api_version = "v1"
+  spec {
+    remote {}
+
+    resource = "extract/sonarqube"
+    input "file" {
+      value = "./testdata/sonarqube/sonarqube-example.json"
+    }
+  }
+}
+```
+
+When _run_, the `sonarqube_remote` resource will attempt to run the
+`extract/sonarqube` resource, which parses the
+`./testdata/sonarqube/sonarqube-example.json` and extracts the data according
+to its defined `format` field.
+
+`sonarqube_remote`'s ``remote {}` block signifies that this `run` resource should
+be run _remotely_ by the Bubbly Worker. The challenge is that its `file` input 
+requires that the Bubbly Worker have available the 
+`./testdata/sonarqube/sonarqube-example.json` file _locally_. The 
+`/api/v1/run/:name`
+endpoint allows us to send this file, along with a run request, to Bubbly, via the
+following `cURL` commands:
+
+```shell
+$ curl \
+   -F "file=@</path/to/file.json>;type=application/json;filename=</path/to/file.json" \
+   http://<HOST>:<PORT>/api/v1/run/<RUN-NAME>
+```
+
+In this case, the following applies:
+```shell
+$ curl \
+  -F "file=@./testdata/sonarqube/sonarqube-example.json;type=application/json;filename=./testdata/sonarqube/sonarqube-example.json" \
+  http://<HOST>:<PORT>/api/v1/run/sonarqube_remote
+```
+
+In this case, the Bubbly Worker will save the contents to the relative directory
+`./testdata/sonarqube/sonarqube-example.json`.
+
+Similarly, the `.json` file can be compressed and sent to Bubbly as a `.zip` file via:
+
+```shell
+$ curl \
+  -F "file=@./testdata/sonarqube/sonarqube-example.zip;type=application/zip;filename=./testdata/sonarqube/sonarqube-example.zip" \
+  http://<HOST>:<PORT>/api/v1/run/sonarqube_remote
+```
+
+The Bubbly Worker will uncompress the contents to the relative directory `./testdata/sonarqube/<contents>`. 
+Paths defined internally within the `.zip` file are also maintained.
+
+#### Conventions
+
+:::caution
+
+There are several conventions that must be followed in order for Bubbly to handle the
+request correctly
+
+:::
+
+To keep this feature well-scoped, the Bubbly API Server
+enforces some conventions for the expected format and declaration of this input data:
+
+1. Currently, only one file upload is supported, and must be sourced using the `file` field name.
+   If multiple files are required, upload a `.zip` file
+2. The `type` field name is required; Bubbly uses this to determine the underlying content type of the file
+3. In cases where the path value specified by the `run`'s `input{}` is non-root, the `filename`
+   field is _required_, and _must_ match the path specified by the `run` resource's `input`; Bubbly uses this
+   to determine the relative path to use when saving the file to the Worker's local filesystem
+
+#### Limitations
+
+Currently, only `application/json` and `application/zip` content types are supported.

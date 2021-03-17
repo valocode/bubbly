@@ -3,7 +3,13 @@
 package integration
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"net/textproto"
+	"os"
 	"testing"
 	"time"
 
@@ -124,4 +130,179 @@ func TestApplyRun(t *testing.T) {
 		// run the resource successfully
 		require.Equal(t, events.ResourceRunSuccess.String(), latestEvent.Status, latestEvent.Error)
 	})
+	t.Run("remote_run_with_remote_input", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+		id := "run/sonarqube_remote"
+		client := &http.Client{}
+
+		// TODO: applying a remote resource which requires remote inputs
+		//  will always fail initially. Might be valuable to filter these run
+		//  resources and not auto-run them after apply to bubbly
+		err := bubbly.Apply(bCtx, "./testdata/resources/v1/run/remote_run_with_remote_input.bubbly")
+		require.NoError(t, err, "Failed to apply remote run resource")
+
+		t.Run("json", func(t *testing.T) {
+			filePath := "./testdata/sonarqube/sonarqube-example.json"
+
+			req, err := formRemoteInputRequest(
+				t,
+				fmt.Sprintf("http://127.0.0.1:8111/api/v1/%s", id),
+				nil,
+				"file",
+				"application/json",
+				filePath,
+			)
+
+			require.NoError(t, err)
+
+			client := &http.Client{}
+			res, err := client.Do(req)
+
+			require.NoError(t, err)
+			require.NotNil(t, res)
+
+			time.Sleep(2 * time.Second)
+			r := getResource(t, bCtx, id)
+
+			latestEvent := r.Events[len(r.Events)-1]
+
+			// if the Worker is enabled with remote running, then we expect it to have
+			// run the resource successfully
+			require.Equal(t, events.ResourceRunSuccess.String(), latestEvent.Status, latestEvent.Error)
+		})
+
+		t.Run("invalid_json", func(t *testing.T) {
+			// now send a POST request with invalid payload for the named run resource.
+			// That is, a request with content not matching the server-side run resource's
+			// input path
+			filePath := "./testdata/testautomation/golang/test-report.json"
+
+			req, err := formRemoteInputRequest(
+				t,
+				fmt.Sprintf("http://127.0.0.1:8111/api/v1/%s", id),
+				nil,
+				"file",
+				"application/json",
+				filePath,
+			)
+
+			require.NoError(t, err)
+
+			res, err := client.Do(req)
+
+			require.NoError(t, err)
+			require.NotNil(t, res)
+
+			time.Sleep(2 * time.Second)
+			r := getResource(t, bCtx, id)
+
+			latestEvent := r.Events[len(r.Events)-1]
+
+			// the run should fail, because the file uploaded is not a valid input
+			// to the resource
+			require.Equal(t, events.ResourceRunFailure.String(), latestEvent.Status, latestEvent.Error)
+		})
+
+		t.Run("zip", func(t *testing.T) {
+
+			// now send a POST request with a valid .zip payload
+			filePath := "./testdata/sonarqube/sonarqube-example.zip"
+
+			req, err := formRemoteInputRequest(
+				t,
+				fmt.Sprintf("http://127.0.0.1:8111/api/v1/%s", id),
+				nil,
+				"file",
+				"application/zip",
+				filePath,
+			)
+
+			require.NoError(t, err)
+
+			res, err := client.Do(req)
+
+			require.NoError(t, err)
+			require.NotNil(t, res)
+
+			time.Sleep(2 * time.Second)
+			r := getResource(t, bCtx, id)
+
+			latestEvent := r.Events[len(r.Events)-1]
+
+			// the run should succeed, because the .zip file uploaded contains the
+			// json file required by the run resource
+			require.Equal(t, events.ResourceRunSuccess.String(), latestEvent.Status, latestEvent.Error)
+		})
+	})
+}
+
+// helper function to get a bubbly.Resource, by id, from Bubbly via a graphQL query
+func getResource(t *testing.T, bCtx *env.BubblyContext, id string) bubbly.Resource {
+	t.Helper()
+	getQuery := fmt.Sprintf(`
+			{
+				%s(%s: "%s") {
+					id
+					%s {
+						status
+						time
+						error
+					}
+				}
+			}
+		`, core.ResourceTableName, "id", id,
+		core.EventTableName)
+
+	resources, err := bubbly.QueryResources(bCtx, getQuery)
+
+	require.NoError(t, err)
+	require.Len(t, resources, 1)
+
+	return resources[0]
+}
+
+// helper function which creates a new file upload via HTTP request
+func formRemoteInputRequest(t *testing.T, url string, params map[string]string, paramName, contentType string, path string) (*http.Request, error) {
+	t.Helper()
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition",
+		fmt.Sprintf(`form-data; name="%s"; filename="%s"`,
+			paramName, path))
+	h.Set("Content-Type", contentType)
+
+	part, err := writer.CreatePart(h)
+
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(part, file)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for key, val := range params {
+		_ = writer.WriteField(key, val)
+	}
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	return req, err
 }

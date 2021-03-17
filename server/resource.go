@@ -7,7 +7,9 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/nats-io/nats.go"
 
+	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
@@ -60,6 +62,58 @@ func (a *Server) PostResource(bCtx *env.BubblyContext,
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return c.JSON(http.StatusOK, &Status{"uploaded"})
+}
+
+// RunResource godoc
+// @Summary Takes a POST request to run a named `run` resource, using content
+// provided by a multipart form in the run if provided
+// @Description Will run the `run` resource specified by the provided name parameter.
+// Any inputs required by the resource should be provided within the POST request.
+// @ID Run-resource
+// @Tags resource,run
+// @Param name path string true "Run Resource Name"
+// @Accept  mpfd
+// @Produce  json
+// @Success 200 {object} apiResponse
+// @Failure 400 {object} apiResponse
+// @Failure 415 {object} apiResponse
+// @Router /run/{name} [post]
+func (a *Server) RunResource(bCtx *env.BubblyContext, c echo.Context) error {
+
+	workerRun, err := ProcessRunData(bCtx, c)
+
+	if err != nil {
+		if err == http.ErrNotMultipart {
+			return echo.NewHTTPError(http.StatusUnsupportedMediaType, fmt.Errorf("content must be of type %s", echo.MIMEMultipartForm))
+		}
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error while processing content: %w", err))
+	}
+
+	workerRun.Name = c.Param("name")
+
+	workerRunBytes, err := json.Marshal(workerRun)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error marshalling workerRun: %w", err))
+	}
+
+	nc := client.NewNATS(bCtx)
+
+	nc.Connect(bCtx)
+
+	pub := component.Publication{
+		Subject: component.WorkerPostRunResource,
+		Data:    workerRunBytes,
+		Encoder: nats.DEFAULT_ENCODER,
+	}
+
+	err = nc.Publish(bCtx, &pub)
+
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error publishing run content to worker: %w", err))
+	}
+
+	return c.JSON(http.StatusOK, "run request sent to the Bubbly Worker")
 }
 
 // GetResource godoc

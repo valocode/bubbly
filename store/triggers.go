@@ -14,6 +14,7 @@ import (
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/events"
+	"github.com/valocode/bubbly/server"
 )
 
 type Kind int
@@ -160,7 +161,9 @@ var remoteRunTrigger = &trigger{
 					return fmt.Errorf(`failed to convert kind "%s" to core.ResourceKind`, kind)
 				}
 
+				// make sure the resource is of kind run
 				if resKind == core.RunResourceKind {
+					// make sure that the run resource is of type remote
 					resJSON, _ := node.Data.ToResourceBlockJSON()
 
 					resBlock, err := resJSON.ResourceBlock()
@@ -170,8 +173,6 @@ var remoteRunTrigger = &trigger{
 					}
 
 					res, err := api.NewResource(&resBlock)
-
-					bCtx.Logger.Debug().Interface("res", res).Msg("got resource!")
 
 					r := res.(*v1.Run)
 
@@ -186,7 +187,11 @@ var remoteRunTrigger = &trigger{
 						return nil
 					}
 
-					// ok, resource validated as a remote run resource. Ship it to an available worker
+					// resource validated as a remote run resource.
+					// Now ship it to an available worker
+					wr := server.WorkerRun{
+						Name: r.Name(),
+					}
 
 					client.NewNATS(bCtx)
 
@@ -196,13 +201,13 @@ var remoteRunTrigger = &trigger{
 						return fmt.Errorf("failed to connect to the NATS server: %w", err)
 					}
 
-					resJSONBytes, err := json.Marshal(resJSON)
+					rBytes, err := json.Marshal(wr)
 
 					if err != nil {
-						return fmt.Errorf("failed to marshal resource into bytes")
+						return fmt.Errorf("failed to marshal ID into WorkerRun: %w", err)
 					}
 
-					if err := nc.PostResourceToWorker(bCtx, resJSONBytes); err != nil {
+					if err := nc.PostResourceToWorker(bCtx, rBytes); err != nil {
 						return fmt.Errorf("failed to post resource to worker: %w", err)
 					}
 
