@@ -3,7 +3,7 @@ package component
 import (
 	"github.com/nats-io/nats.go"
 
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 )
 
 type DesiredSubscriptions []DesiredSubscription

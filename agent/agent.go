@@ -7,13 +7,13 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/verifa/bubbly/agent/component"
-	"github.com/verifa/bubbly/agent/component/apiserver"
-	"github.com/verifa/bubbly/agent/component/datastore"
-	"github.com/verifa/bubbly/agent/component/natsserver"
-	"github.com/verifa/bubbly/agent/component/worker"
-	"github.com/verifa/bubbly/config"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/agent/component"
+	"github.com/valocode/bubbly/agent/component/apiserver"
+	"github.com/valocode/bubbly/agent/component/datastore"
+	"github.com/valocode/bubbly/agent/component/natsserver"
+	"github.com/valocode/bubbly/agent/component/worker"
+	"github.com/valocode/bubbly/config"
+	"github.com/valocode/bubbly/env"
 )
 
 const (

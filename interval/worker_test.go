@@ -6,10 +6,10 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 
-	"github.com/verifa/bubbly/api"
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
+	"github.com/valocode/bubbly/api"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/parser"
 )
 
 // parseBubblyFile parses a .bubbly file and returns a slice of core.Resource

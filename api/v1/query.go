@@ -3,14 +3,14 @@ package v1
 import (
 	"fmt"
 
-	"github.com/verifa/bubbly/client"
-	"github.com/verifa/bubbly/events"
+	"github.com/valocode/bubbly/client"
+	"github.com/valocode/bubbly/events"
 
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/verifa/bubbly/api/common"
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/api/common"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/env"
 )
 
 var _ core.Query = (*Query)(nil)

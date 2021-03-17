@@ -6,9 +6,9 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/verifa/bubbly/agent/component"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/interval"
+	"github.com/valocode/bubbly/agent/component"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/interval"
 )
 
 const (

@@ -7,12 +7,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/verifa/bubbly/config"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/config"
+	"github.com/valocode/bubbly/env"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
-	"github.com/verifa/bubbly/api/core"
+	"github.com/valocode/bubbly/api/core"
 
 	"github.com/stretchr/testify/require"
 )

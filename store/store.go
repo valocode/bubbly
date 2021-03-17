@@ -9,9 +9,9 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/config"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/config"
+	"github.com/valocode/bubbly/env"
 )
 
 // New creates a new Store for the given config.

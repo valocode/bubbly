@@ -22,10 +22,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/hcl/v2"
 
-	"github.com/verifa/bubbly/api/common"
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/events"
+	"github.com/valocode/bubbly/api/common"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/events"
 
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"

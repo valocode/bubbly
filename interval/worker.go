@@ -11,12 +11,12 @@ import (
 	"github.com/hako/durafmt"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/verifa/bubbly/api"
-	"github.com/verifa/bubbly/api/common"
-	"github.com/verifa/bubbly/api/core"
-	v1 "github.com/verifa/bubbly/api/v1"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/events"
+	"github.com/valocode/bubbly/api"
+	"github.com/valocode/bubbly/api/common"
+	"github.com/valocode/bubbly/api/core"
+	v1 "github.com/valocode/bubbly/api/v1"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/events"
 )
 
 const (

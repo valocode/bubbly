@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/rs/zerolog"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/zclconf/go-cty/cty"
@@ -19,9 +19,9 @@ import (
 
 	"gopkg.in/h2non/gock.v1"
 
-	fixtureJSON "github.com/verifa/bubbly/api/v1/testdata/extract/json"
-	restGitHub0 "github.com/verifa/bubbly/api/v1/testdata/extract/rest/github"
-	fixtureXML "github.com/verifa/bubbly/api/v1/testdata/extract/xml"
+	fixtureJSON "github.com/valocode/bubbly/api/v1/testdata/extract/json"
+	restGitHub0 "github.com/valocode/bubbly/api/v1/testdata/extract/rest/github"
+	fixtureXML "github.com/valocode/bubbly/api/v1/testdata/extract/xml"
 )
 
 func TestExtractJSON(t *testing.T) {

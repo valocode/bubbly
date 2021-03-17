@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 	"gopkg.in/h2non/gock.v1"
 )
 

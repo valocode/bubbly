@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 

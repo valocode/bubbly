@@ -10,10 +10,10 @@ import (
 	natsd "github.com/nats-io/nats-server/server"
 	"github.com/nats-io/nats.go"
 
-	"github.com/verifa/bubbly/agent/component"
-	"github.com/verifa/bubbly/config"
+	"github.com/valocode/bubbly/agent/component"
+	"github.com/valocode/bubbly/config"
 
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/env"
 )
 
 var (

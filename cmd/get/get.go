@@ -8,12 +8,12 @@ import (
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/bubbly"
-	cmdutil "github.com/verifa/bubbly/cmd/util"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/events"
-	"github.com/verifa/bubbly/util/normalise"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/bubbly"
+	cmdutil "github.com/valocode/bubbly/cmd/util"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/events"
+	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (

@@ -7,8 +7,8 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/verifa/bubbly/agent/component"
-	"github.com/verifa/bubbly/env"
+	"github.com/valocode/bubbly/agent/component"
+	"github.com/valocode/bubbly/env"
 )
 
 // PostSchema uses the bubbly api to post a schema

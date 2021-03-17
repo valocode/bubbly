@@ -1,4 +1,4 @@
-module github.com/verifa/bubbly
+module github.com/valocode/bubbly
 
 go 1.15
 

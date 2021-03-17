@@ -9,10 +9,10 @@ import (
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/client"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/parser"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/client"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/parser"
 )
 
 // Schema is the Go-native struct representation of a bubbly

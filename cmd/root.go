@@ -3,15 +3,15 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	agentCmd "github.com/verifa/bubbly/cmd/agent"
-	applyCmd "github.com/verifa/bubbly/cmd/apply"
-	getCmd "github.com/verifa/bubbly/cmd/get"
-	schemaCmd "github.com/verifa/bubbly/cmd/schema"
-	"github.com/verifa/bubbly/cmd/topics"
-	"github.com/verifa/bubbly/config"
-	"github.com/verifa/bubbly/env"
+	agentCmd "github.com/valocode/bubbly/cmd/agent"
+	applyCmd "github.com/valocode/bubbly/cmd/apply"
+	getCmd "github.com/valocode/bubbly/cmd/get"
+	schemaCmd "github.com/valocode/bubbly/cmd/schema"
+	"github.com/valocode/bubbly/cmd/topics"
+	"github.com/valocode/bubbly/config"
+	"github.com/valocode/bubbly/env"
 
-	"github.com/verifa/bubbly/util/normalise"
+	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (

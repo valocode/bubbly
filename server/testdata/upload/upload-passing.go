@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/verifa/bubbly/api/core"
+	"github.com/valocode/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
 )
 

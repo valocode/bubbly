@@ -3,7 +3,7 @@ package store
 import (
 	"fmt"
 
-	"github.com/verifa/bubbly/api/core"
+	"github.com/valocode/bubbly/api/core"
 )
 
 // schemaGraph creates a graph from the bubbly schema

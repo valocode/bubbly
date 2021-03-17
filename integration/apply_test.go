@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/verifa/bubbly/api/core"
-	"github.com/verifa/bubbly/bubbly"
-	"github.com/verifa/bubbly/env"
-	"github.com/verifa/bubbly/events"
-	integration "github.com/verifa/bubbly/integration/testdata"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/events"
+	integration "github.com/valocode/bubbly/integration/testdata"
 )
 
 func testGet(t *testing.T, bCtx *env.BubblyContext, args []string) {

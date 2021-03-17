@@ -8,7 +8,7 @@ import (
 
 	"github.com/zclconf/go-cty/cty"
 
-	"github.com/verifa/bubbly/api/core"
+	"github.com/valocode/bubbly/api/core"
 )
 
 func TestCompareSchema(t *testing.T) {
