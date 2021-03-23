@@ -42,6 +42,12 @@ type schemaEdge struct {
 	rel  relType
 }
 
+// isScalar returns true if the return type from the node which this edge points
+// to should be scalar. This is true, unless the edge relationship is oneToMany
+func (e *schemaEdge) isScalar() bool {
+	return e.rel != oneToMany
+}
+
 // schemaPath is a list graph edges
 type schemaPath []*schemaEdge
 

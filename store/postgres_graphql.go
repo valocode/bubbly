@@ -15,39 +15,41 @@ import (
 
 func newSQLQueryBuilder() *sqlQueryBuilder {
 	return &sqlQueryBuilder{
-		sql:     psql.Select(),
-		columns: make([]*tableColumns, 0),
-		depth:   0,
+		sql:   psql.Select(),
+		depth: 0,
 	}
 }
 
+// sqlQueryBuilder stores some context that is used for constructing the sql
+// statement that reflects a graphql query
 type sqlQueryBuilder struct {
-	sql     sq.SelectBuilder
-	columns rowColumns
-	node    *schemaNode
-	depth   int
-}
-
-// rowColumns stores a slice of table columns, which forms a complete SQL row
-// of SELECT'd values
-type rowColumns []*tableColumns
-
-func (r rowColumns) length() int {
-	var count = 0
-	for _, t := range r {
-		count += len(t.fields)
-	}
-	return count
+	sql   sq.SelectBuilder
+	node  *schemaNode
+	depth int
 }
 
 // tableColumns is used to store the columns that are SELECT'd in a SQl
 // statement, within one single table.
-// This is used so that the "structure" of a returned SQL row is maintained
+// This is quite a complex problem because of GraphQL queries have a hierarchy
+// and SQL queries return flat rows. How do we "unpack" flat rows into a hierarchy?
+// tableColumns stores the hierarchy of the graphql query and enables us to map
+// the returned SQL row to the structure defined by the GraphQL query
 type tableColumns struct {
-	table  string
-	alias  string
-	fields []string
-	scalar bool
+	table    string
+	alias    string
+	fields   []string
+	scalar   bool
+	children []*tableColumns
+}
+
+// length returns the number of fields in this tableColumns, which includes
+// all the fields in all the descendents (children of children of children...)
+func (t *tableColumns) length() int {
+	var count = len(t.fields)
+	for _, tt := range t.children {
+		count += tt.length()
+	}
+	return count
 }
 
 // FIXME: ofr I have a hunch that the following comment is related to GraphQL standard,
@@ -77,18 +79,24 @@ func psqlResolveRootQueries(pool *pgxpool.Pool, graph *schemaGraph, params graph
 // psqlResolveRootQuery resolves a single root graphql query
 func psqlResolveRootQuery(pool *pgxpool.Pool, graph *schemaGraph, field *ast.Field) (interface{}, error) {
 	var (
-		result    = make(map[string]interface{})
-		qb        = newSQLQueryBuilder()
-		rootTable = field.Name.Value
-		rootAlias = field.Name.Value + "_" + strconv.Itoa(qb.depth)
+		result      = make(map[string]interface{})
+		qb          = newSQLQueryBuilder()
+		rootTable   = field.Name.Value
+		rootAlias   = tableAlias(rootTable, 0)
+		rootColumns = tableColumns{
+			table:  rootTable,
+			alias:  rootAlias,
+			scalar: false,
+		}
 	)
 
 	// Set the starting node and initialize the sql statement
 	qb.node = graph.nodeIndex[rootTable]
 	qb.sql = qb.sql.From(tableAsAlias(rootTable, rootAlias))
+	// qb.columns = &rootColumns
 
 	// Recursively go through the graphql query and resolve the sub-fields
-	if err := psqlSubQuery(graph, qb, field, nil); err != nil {
+	if err := psqlSubQuery(graph, qb, &rootColumns, field, nil); err != nil {
 		return nil, fmt.Errorf("failed to process root query: %s: %w", rootTable, err)
 	}
 
@@ -109,14 +117,14 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, graph *schemaGraph, field *ast.Fie
 	// Iterate through the result set and append each row of results to the
 	// result value we are returning
 	for rows.Next() {
-		if err := psqlScanRowColumns(rows, result, qb.columns); err != nil {
+		if err := psqlScanRowColumns(rows, result, rootColumns); err != nil {
 			return nil, fmt.Errorf("failed scanning row values: %w", err)
 		}
 	}
 	return result[rootTable], nil
 }
 
-func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, path schemaPath) error {
+func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, field *ast.Field, path schemaPath) error {
 
 	// GraphQL fields are conceptually functions which return values,
 	// and occasionally accept arguments which alter their behaviour.
@@ -135,23 +143,16 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, pat
 	// Create the tableColumns for this type/table in the query
 	var (
 		node = qb.node
-		tb   = tableColumns{
-			table:  node.table.Name,
-			alias:  tableAlias(node.table.Name, qb.depth),
-			scalar: isTableResultScalar(node, path),
-		}
+		// tb   = qb.columns
 	)
 
 	// FIXME: Why is the depth being increased here?
 	qb.depth++
 
-	// Add the tableColumns to the list of table columns
-	qb.columns = append(qb.columns, &tb)
-
 	// Always return the ID field of a table as the first row as we need it when
 	// we aggregate the results up into the returned value
-	tb.fields = append(tb.fields, tableIDField)
-	qb.sql = qb.sql.Column(tb.alias + "." + tableIDField)
+	tc.fields = append(tc.fields, tableIDField)
+	qb.sql = qb.sql.Column(tc.alias + "." + tableIDField)
 
 	// GraphQL arguments are processed here
 	for _, arg := range field.Arguments {
@@ -166,7 +167,7 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, pat
 		// Multiple expressions are `AND`ed together in the generated SQL.
 		for _, tf := range node.table.Fields {
 			if arg.Name.Value == tf.Name {
-				qb.sql = qb.sql.Where(sq.Eq{tb.alias + "." + arg.Name.Value: arg.Value.GetValue()})
+				qb.sql = qb.sql.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
 				argIsResolved = true
 				break
 			}
@@ -186,7 +187,7 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, pat
 
 		// The argument name which is not a column name is a mistake, raise error.
 		if !argIsResolved {
-			return fmt.Errorf("unknown identifier %s.%s", tb.table, arg.Name.Value)
+			return fmt.Errorf("unknown identifier %s.%s", tc.table, arg.Name.Value)
 		}
 	}
 
@@ -203,9 +204,9 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, pat
 		fieldName := subField.Name.Value
 
 		// Types and fields required by the GraphQL introspection system that are used
-		// in the same context as user‐defined types and fields are prefixed
+		// in the same context as user-defined types and fields are prefixed
 		// with "__" two underscores. This in order to avoid naming collisions
-		// with user‐defined GraphQL types. http://spec.graphql.org/June2018/#sec-Reserved-Names
+		// with user-defined GraphQL types. http://spec.graphql.org/June2018/#sec-Reserved-Names
 
 		// FIXME shouldn't we raise an error instead of skipping quietly?
 		// We skip this field if it has a reserved name
@@ -227,14 +228,6 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, pat
 			//     }
 			// }
 
-			/*
-				// If the current node has a path to the child type in the graphql query
-				path := qb.node.shortestPath(fieldName)
-				if path == nil {
-					return fmt.Errorf("no path was found between tables: %s --> %s", qb.node.table.Name, fieldName)
-				}
-			*/
-
 			// Are the parent field and the subfield connected in the graph at all?
 			var edgeToRelatedNode *schemaEdge
 			for _, p := range node.edges {
@@ -247,8 +240,8 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, pat
 			}
 
 			var (
-				leftTable       = tb.table
-				leftTableAlias  = tb.alias
+				leftTable       = tc.table
+				leftTableAlias  = tc.alias
 				rightTable      = edgeToRelatedNode.node.table.Name
 				rightTableAlias = tableAlias(rightTable, qb.depth)
 			)
@@ -269,15 +262,21 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, field *ast.Field, pat
 
 			// Recursively resolve for the subField `B`, which may contain further nested fields.
 			qb.node = graph.nodeIndex[fieldName]
-			if err := psqlSubQuery(graph, qb, subField, path); err != nil {
+			subColumns := &tableColumns{
+				table:  fieldName,
+				alias:  tableAlias(fieldName, qb.depth),
+				scalar: edgeToRelatedNode.isScalar(),
+			}
+			if err := psqlSubQuery(graph, qb, subColumns, subField, path); err != nil {
 				return err
 			}
+			tc.children = append(tc.children, subColumns)
 			continue
 		} else {
 			// If subField did not have a selection set this it is just a column
 			// within the current table, so add it to the columns
-			tb.fields = append(tb.fields, fieldName)
-			qb.sql = qb.sql.Column(tableColumn(tb.alias, fieldName))
+			tc.fields = append(tc.fields, fieldName)
+			qb.sql = qb.sql.Column(tableColumn(tc.alias, fieldName))
 		}
 	}
 
@@ -305,12 +304,13 @@ func tableAsAlias(table, alias string) string {
 }
 
 // psqlScanRowColumns takes a single row (that is returned from a SQL query),
-// an existing result map that the row should be aggregated into, and a rowColumns
+// an existing result map that the row should be aggregated into, and a tableColumns
 // type which contains the columns in the row, grouped by their tables.
 // The rowColumns are used to unpack the row values into the result
-func psqlScanRowColumns(row pgx.Row, result map[string]interface{}, columns rowColumns) error {
+func psqlScanRowColumns(row pgx.Row, result map[string]interface{}, columns tableColumns) error {
 	var (
 		columnLen     = columns.length()
+		index         = 0
 		scanValues    = make([]interface{}, columnLen)
 		scanValuePtrs = make([]interface{}, columnLen)
 	)
@@ -324,55 +324,53 @@ func psqlScanRowColumns(row pgx.Row, result map[string]interface{}, columns rowC
 		return fmt.Errorf("failed to scan values: %w", err)
 	}
 
-	var (
-		parentVal = result
-		index     = 0
-	)
-	// For each table in columns, get the ID value from the scanned values and
-	// check whether a record with that ID already exists in the result values
-	for _, tc := range columns {
-		// Check if the value for this table of columns already exists.
-		// If not, initialize it
-		tVal, ok := parentVal[tc.table]
-		if !ok {
-			// Initialize the value from the scanned results for the group of
-			// columns in this table
-			var tColVal = make(map[string]interface{})
-			for _, field := range tc.fields {
-				tColVal[field] = scanValues[index]
-				index++
-			}
-			// Check if we expect the result to be a scalar value or a list.
-			// It is scalar depending on the relationship between the tables
-			if tc.scalar {
-				tVal = tColVal
-			} else {
-				tVal = make([]map[string]interface{}, 0, 1)
-				tVal = append(tVal.([]map[string]interface{}), tColVal)
-			}
-			// Set the value for this table back into parent after it has been
-			// initialized, and set the new parent value to this table column
-			// value
-			parentVal[tc.table] = tVal
-			parentVal = tColVal
+	psqlScanTableColumns(result, columns, scanValues, &index)
 
-			// Skip the rest and continue to the next table
-			continue
+	return nil
+}
+
+// psqlScanTableColumns is called recursively for each child in tableColumns.
+// A child in tableColumns means a graphql field was nested within another field,
+// and hence the returned value should reflect this structure and the children
+// of tableColumns should be nested within this tableColumns
+func psqlScanTableColumns(parentVal map[string]interface{}, tc tableColumns, scanValues []interface{}, index *int) {
+	var tColVal map[string]interface{}
+	// Check if the value for this table of columns already exists.
+	// If not, initialize it
+	tVal, ok := parentVal[tc.table]
+	if !ok {
+		// Initialize the value from the scanned results for the group of
+		// columns in this table
+		tColVal = make(map[string]interface{}, len(tc.fields))
+		for _, field := range tc.fields {
+			tColVal[field] = scanValues[*index]
+			*index++
 		}
+		// Check if we expect the result to be a scalar value or a list.
+		// It is scalar depending on the relationship between the tables
+		if tc.scalar {
+			tVal = tColVal
+		} else {
+			tVal = make([]map[string]interface{}, 0, 1)
+			tVal = append(tVal.([]map[string]interface{}), tColVal)
+		}
+		// Set the value for this table back into parent after it has been
+		// initialized, and set the new parent value to this table column
+		// value
+		parentVal[tc.table] = tVal
+	} else if tc.scalar {
+		// If the table value should be scalar and the value is already
+		// initialized, then we do not need to do anything.
+		// Set the new parentVal and continue to the next table
+		tColVal = tVal.(map[string]interface{})
+		*index += len(tc.fields)
+	} else {
 		// If the parentVal already contained a value for this table.
 		// Get the ID value from this result row
-		var tableIDVal = scanValues[index]
-
-		if tc.scalar {
-			// If the table value should be scalar and the value is already
-			// initialized, then we do not need to do anything.
-			// Set the new parentVal and continue to the next table
-			parentVal = tVal.(map[string]interface{})
-			index += len(tc.fields)
-			continue
-		}
-		var tColVal map[string]interface{}
-		var tListVal = tVal.([]map[string]interface{})
+		var (
+			tableIDVal = scanValues[*index]
+			tListVal   = tVal.([]map[string]interface{})
+		)
 		// If the value for this table already exists, and we expect a list,
 		// then we need to check if the value already exists in the list or if
 		// we should add it
@@ -388,28 +386,21 @@ func psqlScanRowColumns(row pgx.Row, result map[string]interface{}, columns rowC
 		if tColVal == nil {
 			tColVal = make(map[string]interface{})
 			for _, field := range tc.fields {
-				tColVal[field] = scanValues[index]
-				index++
+				tColVal[field] = scanValues[*index]
+				*index++
 			}
 			tListVal = append(tListVal, tColVal)
 
 		} else {
 			// Make sure we increment the index
-			index += len(tc.fields)
+			*index += len(tc.fields)
 		}
 		parentVal[tc.table] = tListVal
-		parentVal = tColVal
 	}
-
-	return nil
-}
-
-func isTableResultScalar(node *schemaNode, path schemaPath) bool {
-	// Check if nil, as this will happen when processing the root query, in
-	// which case we want to return a list, not scalar, so return false
-	if path == nil {
-		return false
+	// Iterate through the children and unpack the remaining scanValues (starting
+	// from the given index) into the given tColVal (which holds the value for
+	// this tableColumns)
+	for _, child := range tc.children {
+		psqlScanTableColumns(tColVal, *child, scanValues, index)
 	}
-	// Else, delegate to the path to figure out
-	return path.isScalar()
 }
