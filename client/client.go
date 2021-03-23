@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	natsd "github.com/nats-io/nats-server/server"
+	natsd "github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
 
 	"github.com/valocode/bubbly/agent/component"
