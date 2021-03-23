@@ -18,6 +18,7 @@ table "repo" {
         unique = true
     }
     table "repo_version" {
+        // join "repo" {}
         field "commit" {
             type = string
             unique = true

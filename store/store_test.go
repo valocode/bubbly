@@ -248,7 +248,7 @@ var sqlGenTests = []struct {
 		data:   "data1.hcl",
 		query: `
 		{
-			B(whbbt: "va1") {
+			B(whbbt: "vb1") {
 				whbbt
 				A(whaat: "va1") {
 					whaat
@@ -260,10 +260,8 @@ var sqlGenTests = []struct {
 			"B": []interface{}{
 				map[string]interface{}{
 					"whbbt": "vb1",
-					"A": []interface{}{
-						map[string]interface{}{
-							"whaat": "va1",
-						},
+					"A": map[string]interface{}{
+						"whaat": "va1",
 					},
 				},
 			},
