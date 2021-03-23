@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	natsd "github.com/nats-io/nats-server/server"
+	natsd "github.com/nats-io/nats-server/v2/server"
 
 	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/config"
