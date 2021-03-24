@@ -31,7 +31,9 @@ func (a *Server) PostResource(bCtx *env.BubblyContext,
 	// read the resource into a ResourceBlockJSON which keeps the spec{} block
 	// as bytes
 	resJSON := core.ResourceBlockJSON{}
-	if err := c.Bind(&resJSON); err != nil {
+
+	binder := &echo.DefaultBinder{}
+	if err := binder.BindBody(c, &resJSON); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

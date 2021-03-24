@@ -33,7 +33,9 @@ type apiResponse struct {
 // @Router /graphql [post]
 func (*Server) Query(bCtx *env.BubblyContext, c echo.Context) error {
 	var query queryReq
-	if err := c.Bind(&query); err != nil {
+
+	binder := &echo.DefaultBinder{}
+	if err := binder.BindBody(c, &query); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

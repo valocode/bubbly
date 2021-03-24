@@ -23,7 +23,9 @@ import (
 // @Router /upload [post]
 func (a *Server) upload(bCtx *env.BubblyContext, c echo.Context) error {
 	var data core.DataBlocks
-	if err := c.Bind(&data); err != nil {
+
+	binder := &echo.DefaultBinder{}
+	if err := binder.BindBody(c, &data); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
