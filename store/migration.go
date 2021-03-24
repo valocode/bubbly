@@ -30,29 +30,22 @@ func psqlGenerateMigration(bCtx *env.BubblyContext, ch Changelog) (migration, er
 				if err != nil {
 					return nil, err
 				}
-				break
 			case fieldType:
 				err := dropColumnStatement(&m, change.TableInfo.TableName, change.TableInfo.ElementName)
 				if err != nil {
 					return nil, err
 				}
-				break
 			case joinType:
 				err := dropConstraintStatement(&m, change.TableInfo.TableName, change.TableInfo.ElementName)
 				if err != nil {
 					return nil, err
 				}
-				break
 			case uniqueType:
 				err := dropConstraintStatement(&m, change.TableInfo.TableName, change.TableInfo.ElementName)
 				if err != nil {
 					return nil, err
 				}
-				break
-			default:
-				break
 			}
-			break
 		case update:
 			switch change.TableInfo.ElementType {
 			case fieldType:
@@ -61,18 +54,13 @@ func psqlGenerateMigration(bCtx *env.BubblyContext, ch Changelog) (migration, er
 				if err != nil {
 					return nil, err
 				}
-				break
 			case joinType:
 				// changing if the join is unique or not
 				err := alterJoinStatement(&m, change.TableInfo, change.To)
 				if err != nil {
 					return nil, err
 				}
-				break
-			default:
-				break
 			}
-			break
 		case create:
 			switch change.TableInfo.ElementType {
 			case tableType:
@@ -80,31 +68,22 @@ func psqlGenerateMigration(bCtx *env.BubblyContext, ch Changelog) (migration, er
 				if err != nil {
 					return nil, err
 				}
-				break
 			case fieldType:
 				err := createFieldStatement(&m, change.TableInfo, change.To)
 				if err != nil {
 					return nil, err
 				}
-				break
 			case joinType:
 				err := createJoinStatement(&m, change.TableInfo, change.To)
 				if err != nil {
 					return nil, err
 				}
-				break
 			case uniqueType:
 				err := createUniqueConstraint(&m, change.TableInfo)
 				if err != nil {
 					return nil, err
 				}
-				break
-			default:
-				break
 			}
-			break
-		default:
-			break
 		}
 	}
 
@@ -206,7 +185,7 @@ func alterColumnStatement(bCtx *env.BubblyContext, m *migration, info tableInfo,
 		}
 
 		*m = append(*m, s)
-		break
+
 	case config.CockroachDBStore:
 		// FIXME
 		// https://github.com/valocode/bubbly/issues/201
@@ -222,7 +201,7 @@ func alterColumnStatement(bCtx *env.BubblyContext, m *migration, info tableInfo,
 			arguments: []string{info.TableName, info.TableName, sqlType},
 		}
 		*m = append(*m, dropStatement, s)
-		break
+
 	default:
 		return fmt.Errorf("provider type %s not supported", bCtx.StoreConfig.Provider)
 	}
