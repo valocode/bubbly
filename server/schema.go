@@ -22,7 +22,8 @@ import (
 // @Router /schema [post]
 func (a *Server) PostSchema(bCtx *env.BubblyContext, c echo.Context) error {
 	var schema core.Tables
-	if err := c.Bind(&schema); err != nil {
+	binder := &echo.DefaultBinder{}
+	if err := binder.BindBody(c, &schema); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

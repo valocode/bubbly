@@ -22,7 +22,7 @@ require (
 	github.com/hashicorp/terraform v0.14.3
 	github.com/imdario/mergo v0.3.11
 	github.com/jackc/pgx/v4 v4.10.1
-	github.com/labstack/echo/v4 v4.1.17
+	github.com/labstack/echo/v4 v4.2.1
 	github.com/lib/pq v1.9.0 // indirect
 	github.com/likexian/gokit v0.20.15
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
