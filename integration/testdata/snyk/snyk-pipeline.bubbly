@@ -1,0 +1,166 @@
+resource "extract" "snyk" {
+    api_version = "v1"
+    spec {
+        input "file" { }
+        type = "json"
+        source {
+            file = self.input.file
+            format = object({
+                vulnerabilities: list(object({
+                    CVSSv3: string,
+                    alternativeIds: list(string),
+                    creationTime: string,
+                    credit: list(string),
+                    cvssScore: number,
+                    description: string,
+                    exploit: string,
+                    fixedIn: list(string),
+                    functions: list(string),
+                    functions_new: list(string),
+                    id: string,
+                    identifiers: object({
+                        CVE: list(string),
+                        CWE: list(string),
+                    }),
+                    language: string,
+                    modificationTime: string,
+                    moduleName: string,
+                    packageManager: string,
+                    packageName: string,
+                    patches: list(string),
+                    proprietary: bool,
+                    publicationTime: string,
+                    references: list(object({
+                        title: string,
+                        url: string,
+                    })),
+                    semver: object({
+                        hashesRange: list(string),
+                        vulnerable: list(string),
+                    }),
+                    severity: string,
+                    severityWithCritical: string,
+                    title: string,
+                    from: list(string),
+                    upgradePath: list(string),
+                    isUpgradable: bool,
+                    isPatchable: bool,
+                    name: string,
+                    version: string,
+                }))
+            })
+        }
+    }
+}
+
+resource "transform" "snyk" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+
+        dynamic "data" {
+            for_each = self.input.data.vulnerabilities
+            iterator = it
+            labels = ["snyk_vulnerabilities"]
+            content {
+                fields = {
+                    "id": it.value.id
+                    "name": it.value.name
+                    "creationTime": it.value.creationTime
+                    "cvssScore": it.value.cvssScore
+                    "language": it.value.language
+                    "severity": it.value.severity
+                    "version": it.value.version
+                    "cve": it.value.identifiers.CVE[0]
+                }
+            }
+        }
+    }
+}
+
+resource "load" "snyk" {
+    api_version = "v1"
+    spec {
+        input "data" {}
+        data = self.input.data
+    }
+}
+
+resource "pipeline" "snyk" {
+    api_version = "v1"
+    spec {
+        input "whatever" {
+            default = "./testdata/snyk/test.json"
+        }
+        task "extract_snyk" {
+            resource = "extract/snyk"
+            input "file" {
+                value = self.input.whatever
+            }
+        }
+        task "transform" {
+            resource = "transform/snyk"
+            input "data" {
+                value = self.task.extract_snyk.value
+            }
+        }
+        task "load" {
+            resource = "load/snyk"
+            input "data" {
+                value = self.task.transform.value
+            }
+        }
+    }
+}
+
+resource "run" "snyk" {
+    api_version = "v1"
+    spec {
+        resource = "pipeline/snyk"
+    }
+}
+
+resource "run" "sonarqube/extract" {
+    api_version = "v1"
+    spec {
+        resource = "extract/snyk"
+        input "file" {
+            value = "./testdata/snyk/test.json"
+        }
+    }
+}
+
+resource "query" "snyk_data" {
+    api_version = "v1"
+    spec {
+        query = <<EOT
+            {
+                snyk_vulnerabilities {
+                    severity
+                }
+            }
+        EOT
+    }
+}
+
+
+resource "criteria" "snyk_status" {
+    api_version = "v1"
+    spec {
+        query "snyk_data" {}
+        condition "no_high" {
+            value = length(regexall("high", self.query.snyk_data.value)) != 0
+        }
+
+        operation "release" {
+            value = self.condition.no_high.value
+        }
+    }
+}
+
+resource "run" "snyk_criteria" {
+    api_version = "v1"
+    spec {
+        resource = "criteria/snyk_status"
+    }
+}

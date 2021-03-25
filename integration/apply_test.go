@@ -59,6 +59,17 @@ func TestApply(t *testing.T) {
 		assert.NoError(t, err, "Failed to apply resource")
 	})
 
+	t.Run("snyk", func(t *testing.T) {
+		// Create a new server route for mocking a Bubbly server response
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+		err := bubbly.Apply(bCtx, "./testdata/snyk")
+		assert.NoError(t, err, "Failed to apply resource")
+
+		// test that `bubbly get all` returns valid resources from the apply
+		testGet(t, bCtx, []string{"extract/snyk"})
+	})
+
 	// Subtest
 	t.Run("query", func(t *testing.T) {
 		bCtx := env.NewBubblyContext()
@@ -75,13 +86,13 @@ func TestApply(t *testing.T) {
 	// This fails because the data does not exist.
 
 	// Subtest
-	// t.Run("criteria", func(t *testing.T) {
-	// 	bCtx := env.NewBubblyContext()
-	// 	bCtx.UpdateLogLevel(zerolog.DebugLevel)
-
-	// 	err := bubbly.Apply(bCtx, "./testdata/resources/v1/criteria/criteria.bubbly")
-	// 	assert.NoError(t, err, "Failed to apply resource")
-	// })
+	//t.Run("criteria", func(t *testing.T) {
+	//	bCtx := env.NewBubblyContext()
+	//	bCtx.UpdateLogLevel(zerolog.DebugLevel)
+	//
+	//	err := bubbly.Apply(bCtx, "./testdata/resources/v1/criteria/criteria.bubbly")
+	//	assert.NoError(t, err, "Failed to apply resource")
+	//})
 }
 
 func TestApplyRun(t *testing.T) {

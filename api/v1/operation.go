@@ -43,12 +43,19 @@ func (o *Operation) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) co
 		}
 	}
 
+	if o.Value == cty.BoolVal(false) {
+		return core.ResourceOutput{
+			Status: events.ResourceApplyFailure,
+			Error:  nil,
+			Value:  o.Value,
+		}
+	}
+
 	return core.ResourceOutput{
 		Status: events.ResourceApplySuccess,
 		Error:  nil,
 		Value:  o.Value,
 	}
-
 }
 
 // Name returns the name of the operation
