@@ -49,12 +49,6 @@ type DataStore struct {
 func (d *DataStore) defaultSubscriptions() component.DesiredSubscriptions {
 	return component.DesiredSubscriptions{
 		component.DesiredSubscription{
-			Subject: component.StoreGetResource,
-			Queue:   component.StoreQueue,
-			Handler: d.GetResourceHandler,
-			Encoder: nats.DEFAULT_ENCODER,
-		},
-		component.DesiredSubscription{
 			Subject: component.StorePostResource,
 			Queue:   component.StoreQueue,
 			Handler: d.PostResourceHandler,
