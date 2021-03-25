@@ -154,6 +154,10 @@ func (d *DataStore) QueryHandler(bCtx *env.BubblyContext, m *nats.Msg) error {
 		Msg("processing message")
 
 	result := d.Store.Query(string(m.Data))
+
+	if result.HasErrors() {
+		return fmt.Errorf("error while querying the data store: %v", result.Errors)
+	}
 	resultBytes, err := json.Marshal(result)
 
 	if err != nil {
