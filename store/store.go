@@ -252,7 +252,7 @@ func (s *Store) currentBubblySchema() (*bubblySchema, error) {
 	}
 
 	var schema bubblySchema
-	b, err := json.Marshal(val[0])
+	b, err := json.Marshal(val[len(val)-1])
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal graphql response: %w", err)
 	}
