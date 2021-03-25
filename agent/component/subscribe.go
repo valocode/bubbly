@@ -41,7 +41,6 @@ type Subject string
 // Any Subjects that components use to communicate with one another should be
 // defined centrally here
 const (
-	StoreGetResource        Subject = "store.GetResource"
 	StoreGetResourcesByKind Subject = "store.GetResourcesByKind"
 	StorePostResource       Subject = "store.PostResource"
 	StorePostSchema         Subject = "store.PostSchema"
