@@ -126,49 +126,40 @@ func (s *Server) GetResource(c echo.Context) error {
 		ResourceKind: c.Param("kind"),
 	}
 
-	resQuery := fmt.Sprintf(`
-		{
-			%s(id: "%s") {
-				name
-				kind
-				api_version
-				metadata
-				spec
-			}
-		}
-	`, core.ResourceTableName, resBlock.String())
-
 	nc, err := client.New(s.bCtx)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
 	}
 
-	resultBytes, err := nc.GetResource(s.bCtx, resQuery)
+	resultBytes, err := nc.GetResource(s.bCtx, resBlock.String())
+
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error getting resource: %w", err))
 	}
 
-	var result interface{}
-	err = json.Unmarshal(resultBytes, &result)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error unmarshalling resource: %w", err))
-	}
-	if result == nil || result.(map[string]interface{})[core.ResourceTableName] == nil {
-		return c.JSON(http.StatusOK, core.ResourceBlockJSON{})
-	}
+	return c.JSONBlob(http.StatusOK, resultBytes)
 
-	var (
-		resJSON  core.ResourceBlockJSON
-		inputMap = result.(map[string]interface{})[core.ResourceTableName].([]interface{})
-	)
-	b, err := json.Marshal(inputMap[0])
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal resource: ", err.Error())
-	}
-	err = json.Unmarshal(b, &resJSON)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal resource: ", err.Error())
-	}
-
-	return c.JSON(http.StatusOK, resJSON)
+	// var result interface{}
+	// err = json.Unmarshal(resultBytes, &result)
+	// if err != nil {
+	// 	return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error unmarshalling resource: %w", err))
+	// }
+	// if result == nil || result.(map[string]interface{})[core.ResourceTableName] == nil {
+	// 	return c.JSON(http.StatusOK, core.ResourceBlockJSON{})
+	// }
+	//
+	// var (
+	// 	resJSON  core.ResourceBlockJSON
+	// 	inputMap = result.(map[string]interface{})[core.ResourceTableName].([]interface{})
+	// )
+	// b, err := json.Marshal(inputMap[0])
+	// if err != nil {
+	// 	return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal resource: ", err.Error())
+	// }
+	// err = json.Unmarshal(b, &resJSON)
+	// if err != nil {
+	// 	return echo.NewHTTPError(http.StatusInternalServerError, "failed to unmarshal resource: ", err.Error())
+	// }
+	//
+	// return c.JSON(http.StatusOK, resJSON)
 }

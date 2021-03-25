@@ -2,14 +2,18 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
+	"github.com/graphql-go/graphql"
+	"github.com/hashicorp/go-multierror"
 	"github.com/nats-io/nats.go"
 
 	"github.com/valocode/bubbly/agent/component"
+	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/env"
 )
 
@@ -54,22 +58,36 @@ func (h *httpClient) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) 
 
 // GetResource uses the bubbly NATS client to get a resource from the data
 // store.
-// Returns a []byte representation of the requested resource or an error if
+// Takes a resource ID as input, returns a []byte representing the
+// core.ResourceBlock of the resource or an error if
 // the client was unable to get the resource.
-func (n *natsClient) GetResource(bCtx *env.BubblyContext, resQuery string) ([]byte,
+func (n *natsClient) GetResource(bCtx *env.BubblyContext, resID string) ([]byte,
 	error) {
+
+	// for the graphQL query
+	resQuery := fmt.Sprintf(`
+		{
+			%s(id: "%s") {
+				name
+				kind
+				api_version
+				metadata
+				spec
+			}
+		}
+	`, core.ResourceTableName, resID)
+
 	bCtx.Logger.Debug().
 		Interface("nats_client", n.Config).
 		Str("resource_query", resQuery).
 		Msg("Getting resource from store")
 
 	request := component.Publication{
-		Subject: component.StoreGetResource,
+		Subject: component.StoreQuery,
 		Data:    []byte(resQuery),
 		Encoder: nats.DEFAULT_ENCODER,
 	}
 
-	// reply is a Publication received from a bubbly store
 	reply := n.request(bCtx, &request)
 
 	if reply.Error != nil {
@@ -80,7 +98,37 @@ func (n *natsClient) GetResource(bCtx *env.BubblyContext, resQuery string) ([]by
 		)
 	}
 
-	return reply.Data, nil
+	var result graphql.Result
+
+	err := json.Unmarshal(reply.Data, &result)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response from query to store: %w", err)
+	}
+
+	if result.HasErrors() {
+		var graphqlErrors error
+
+		for _, qlError := range result.Errors {
+			graphqlErrors = multierror.Append(graphqlErrors, qlError)
+		}
+
+		return nil, fmt.Errorf("failed to get resource: %w", graphqlErrors)
+	}
+
+	if result.Data == nil || result.Data.(map[string]interface{})[core.ResourceTableName] == nil {
+		return nil, fmt.Errorf(`no resource found matching ID "%s"`, resID)
+	}
+
+	// the result is a []interface{}
+	resourceJSONSlice := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
+
+	// ...which we presume to be of length 1, since resources with identical
+	// IDs are upserted. Here we extract the first valid core.ResourceBlockJSON
+	// from the slice
+	resJSON, err := json.Marshal(resourceJSONSlice[0])
+
+	return resJSON, nil
 }
 
 // PostResource uses the bubbly natsClient client to publish a resource to the data
