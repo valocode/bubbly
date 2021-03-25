@@ -49,7 +49,7 @@ func TestQuery(t *testing.T) {
 			bCtx := env.NewBubblyContext()
 
 			// Create a new server route for mocking a Bubbly server response
-			gock.New(bCtx.ServerConfig.HostURL()).
+			gock.New(bCtx.ClientConfig.BubblyAddr).
 				Post(tc.route).
 				Reply(tc.responseCode).
 				JSON(tc.response)

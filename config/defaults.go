@@ -58,7 +58,10 @@ const (
 )
 
 // Default configuration for the bubbly client config
-const DefaultClientAuthToken = ""
+const (
+	DefaultClientAuthToken = ""
+	DefaultBubblyAddr      = "http://localhost:8111/api/v1"
+)
 
 func defaultEnv(key, defaultValue string) string {
 	if value, ok := os.LookupEnv(key); ok {
@@ -172,6 +175,7 @@ func DefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
 		ClientType: HTTPClientType,
 		AuthToken:  defaultEnv("BUBBLY_AUTH_TOKEN", DefaultClientAuthToken),
+		BubblyAddr: defaultEnv("BUBBLY_ADDR", DefaultBubblyAddr),
 	}
 }
 

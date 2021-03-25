@@ -21,13 +21,11 @@ import (
 // TODO: with some of the new architecture it might be possible for client
 //  to return an actual resource, and not just a byte... Don't want to create
 //  a merge hell so making a note here
-func (h *httpClient) GetResource(bCtx *env.BubblyContext, id string) ([]byte, error) {
+func (c *httpClient) GetResource(bCtx *env.BubblyContext, id string) ([]byte, error) {
 
 	bCtx.Logger.Debug().Str("resource_id", id).Msg("Getting resource from bubbly API.")
 
-	resp, err := h.handleResponse(
-		http.Get(fmt.Sprintf("%s/api/v1/resource/%s", h.HostURL, id)),
-	)
+	resp, err := c.handleRequest(http.MethodGet, "/resource/"+id, nil)
 	if err != nil {
 		return nil, fmt.Errorf(`failed to get resource "%s": %w`, id, err)
 	}
@@ -37,13 +35,9 @@ func (h *httpClient) GetResource(bCtx *env.BubblyContext, id string) ([]byte, er
 }
 
 // PostResource uses the bubbly api endpoint to post a resource
-func (h *httpClient) PostResource(bCtx *env.BubblyContext, resource []byte) error {
+func (c *httpClient) PostResource(bCtx *env.BubblyContext, resource []byte) error {
 
-	_, err := h.handleResponse(
-		http.Post(fmt.Sprintf("%s/api/v1/resource", h.HostURL),
-			"application/json", bytes.NewBuffer(resource)),
-	)
-
+	_, err := c.handleRequest(http.MethodPost, "/resource", bytes.NewBuffer(resource))
 	if err != nil {
 		return fmt.Errorf(`failed to post resource: %w`, err)
 	}
@@ -126,7 +120,7 @@ func (n *natsClient) GetResource(bCtx *env.BubblyContext, resID string) ([]byte,
 	// ...which we presume to be of length 1, since resources with identical
 	// IDs are upserted. Here we extract the first valid core.ResourceBlockJSON
 	// from the slice
-	resJSON, err := json.Marshal(resourceJSONSlice[0])
+	resJSON, _ := json.Marshal(resourceJSONSlice[0])
 
 	return resJSON, nil
 }
