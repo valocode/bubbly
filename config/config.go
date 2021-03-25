@@ -1,8 +1,6 @@
 package config
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // ServerConfig is a struct storing the server information.
 type ServerConfig struct {
@@ -102,6 +100,25 @@ type NATSServerConfig struct {
 	HTTPPort int
 	Port     int
 	Addr     string
+}
+
+// ##########################
+// Client
+// ##########################
+
+type ClientType string
+
+const (
+	NATSClientType ClientType = "NATS"
+	HTTPClientType ClientType = "HTTP"
+)
+
+// ClientConfig defines configurations for the Bubbly client, which will either
+// use NATS or HTTP
+type ClientConfig struct {
+	ClientType ClientType
+	// AuthToken is used only by the HTTP
+	AuthToken string
 }
 
 // ##########################

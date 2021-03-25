@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -26,9 +27,10 @@ func (s *Server) PostSchema(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	nc := client.NewNATS(s.bCtx)
-
-	nc.Connect(s.bCtx)
+	nc, err := client.New(s.bCtx)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
+	}
 
 	sBytes, err := json.Marshal(schema)
 

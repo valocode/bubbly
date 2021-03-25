@@ -193,16 +193,12 @@ var remoteRunTrigger = &trigger{
 						Name: r.Name(),
 					}
 
-					client.NewNATS(bCtx)
-
-					nc := client.NewNATS(bCtx)
-
-					if err := nc.Connect(bCtx); err != nil {
+					nc, err := client.New(bCtx)
+					if err != nil {
 						return fmt.Errorf("failed to connect to the NATS server: %w", err)
 					}
 
 					rBytes, err := json.Marshal(wr)
-
 					if err != nil {
 						return fmt.Errorf("failed to marshal ID into WorkerRun: %w", err)
 					}

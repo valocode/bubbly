@@ -38,10 +38,9 @@ func (s *Server) Query(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	nc := client.NewNATS(s.bCtx)
-
-	if err := nc.Connect(s.bCtx); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to NATS server: %w", err))
+	nc, err := client.New(s.bCtx)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
 	}
 
 	results, err := nc.Query(s.bCtx, query.Query)

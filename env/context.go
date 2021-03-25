@@ -18,9 +18,10 @@ type BubblyContext struct {
 	// such as bubbly server configuration
 	ServerConfig *config.ServerConfig
 	// Store provider configuration
-	StoreConfig *config.StoreConfig
-	AgentConfig *config.AgentConfig
-	CLIConfig   *config.CLIConfig
+	StoreConfig  *config.StoreConfig
+	AgentConfig  *config.AgentConfig
+	ClientConfig *config.ClientConfig
+	CLIConfig    *config.CLIConfig
 	// TODO: Could also contain a client.Client... consider.
 }
 
@@ -32,6 +33,7 @@ func NewBubblyContext() *BubblyContext {
 		ServerConfig: config.DefaultServerConfig(),
 		StoreConfig:  config.DefaultStoreConfig(),
 		AgentConfig:  config.DefaultAgentConfig(),
+		ClientConfig: config.DefaultClientConfig(),
 		CLIConfig:    config.DefaultCLIConfig(),
 	}
 }

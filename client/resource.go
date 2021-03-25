@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 // TODO: with some of the new architecture it might be possible for client
 //  to return an actual resource, and not just a byte... Don't want to create
 //  a merge hell so making a note here
-func (h *HTTP) GetResource(bCtx *env.BubblyContext, id string) ([]byte, error) {
+func (h *httpClient) GetResource(bCtx *env.BubblyContext, id string) ([]byte, error) {
 
 	bCtx.Logger.Debug().Str("resource_id", id).Msg("Getting resource from bubbly API.")
 
@@ -32,7 +33,7 @@ func (h *HTTP) GetResource(bCtx *env.BubblyContext, id string) ([]byte, error) {
 }
 
 // PostResource uses the bubbly api endpoint to post a resource
-func (h *HTTP) PostResource(bCtx *env.BubblyContext, resource []byte) error {
+func (h *httpClient) PostResource(bCtx *env.BubblyContext, resource []byte) error {
 
 	_, err := h.handleResponse(
 		http.Post(fmt.Sprintf("%s/api/v1/resource", h.HostURL),
@@ -46,11 +47,16 @@ func (h *HTTP) PostResource(bCtx *env.BubblyContext, resource []byte) error {
 	return nil
 }
 
+// PostResourceToWorker is not supported by the HTTP
+func (h *httpClient) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) error {
+	return errors.New("unsupported operation for the HTTP client: PostResourceToWorker")
+}
+
 // GetResource uses the bubbly NATS client to get a resource from the data
 // store.
 // Returns a []byte representation of the requested resource or an error if
 // the client was unable to get the resource.
-func (n *NATS) GetResource(bCtx *env.BubblyContext, resQuery string) ([]byte,
+func (n *natsClient) GetResource(bCtx *env.BubblyContext, resQuery string) ([]byte,
 	error) {
 	bCtx.Logger.Debug().
 		Interface("nats_client", n.Config).
@@ -64,7 +70,7 @@ func (n *NATS) GetResource(bCtx *env.BubblyContext, resQuery string) ([]byte,
 	}
 
 	// reply is a Publication received from a bubbly store
-	reply := n.Request(bCtx, &request)
+	reply := n.request(bCtx, &request)
 
 	if reply.Error != nil {
 		return nil, fmt.Errorf(
@@ -77,9 +83,9 @@ func (n *NATS) GetResource(bCtx *env.BubblyContext, resQuery string) ([]byte,
 	return reply.Data, nil
 }
 
-// PostResource uses the bubbly NATS client to publish a resource to the data
+// PostResource uses the bubbly natsClient client to publish a resource to the data
 // store.
-func (n *NATS) PostResource(bCtx *env.BubblyContext, data []byte) error {
+func (n *natsClient) PostResource(bCtx *env.BubblyContext, data []byte) error {
 	bCtx.Logger.Debug().
 		Interface("client", n.Config).
 		Msg("Posting resource to store")
@@ -90,7 +96,7 @@ func (n *NATS) PostResource(bCtx *env.BubblyContext, data []byte) error {
 		Encoder: nats.DEFAULT_ENCODER,
 	}
 
-	reply := n.Request(bCtx, &request)
+	reply := n.request(bCtx, &request)
 
 	if reply.Error != nil {
 		return fmt.Errorf(
@@ -102,9 +108,9 @@ func (n *NATS) PostResource(bCtx *env.BubblyContext, data []byte) error {
 	return nil
 }
 
-// PostResource uses the bubbly NATS client to publish a resource to a worker
+// PostResource uses the bubbly natsClient client to publish a resource to a worker
 // The data is marshalled from a core.DataBlocks
-func (n *NATS) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) error {
+func (n *natsClient) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) error {
 	bCtx.Logger.Debug().
 		Interface("client", n.Config).
 		Interface("resource", data).
@@ -122,33 +128,10 @@ func (n *NATS) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) error 
 	// the worker that picks it up. What this means is that the worker should
 	// update the data store with the success/failure of the run
 
-	err := n.Publish(bCtx, &request)
+	err := n.publish(bCtx, &request)
 
 	if err != nil {
 		return fmt.Errorf("failed to publish run resource to worker: %w", err)
-	}
-
-	return nil
-}
-
-// Upload uses the bubbly NATS client to upload arbitrary data to be saved
-// into the data store.
-func (n *NATS) Upload(bCtx *env.BubblyContext, data []byte) error {
-	bCtx.Logger.Debug().
-		Interface("nats_client", n.Config).
-		Msg("Uploading data to the data store")
-
-	request := component.Publication{
-		Subject: component.StoreUpload,
-		Data:    data,
-		Encoder: nats.DEFAULT_ENCODER,
-	}
-
-	// reply is a Publication received from a bubbly store
-	reply := n.Request(bCtx, &request)
-
-	if reply.Error != nil {
-		return fmt.Errorf("failed during upload: %w", reply.Error)
 	}
 
 	return nil

@@ -11,7 +11,7 @@ import (
 // LoadResourceOutput sends a ResourceOutput to the store for saving
 func LoadResourceOutput(bCtx *env.BubblyContext, resourceOutput *core.ResourceOutput) error {
 	// TODO: support check for internal vs external running
-	c, err := client.NewHTTP(bCtx)
+	c, err := client.New(bCtx)
 
 	if err != nil {
 		return fmt.Errorf("failed to initialize the bubbly client: %w", err)
