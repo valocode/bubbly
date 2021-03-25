@@ -3,50 +3,6 @@
 // The reason behind this is to make the test data more maintainable rather
 // than creating the data manually in Go (which ends up creating a lot of bloat)
 
-table "version" {
-    field "version" {
-        type = string
-        unique = true
-    }
-}
-
-table "network" {
-    field "name" {
-        type = string
-        unique = true
-    }
-}
-
-table "config" {
-    field "name" {
-        type = string
-        unique = true
-    }
-}
-
-table "test_run" {
-    join "config" {}
-    join "network" {}
-    join "version" {}
-
-    field "name" {
-        type = string
-        unique = true
-    }
-
-    field "result" {
-        type = bool
-    }
-
-    table "test_run_kpi" {
-        field "avg_pingpong" {
-            type = number
-        }
-        // add some more here
-    }
-    
-}
-
 // Original test for GraphQL resolver's ability 
 // to deal with many-to-many relationships.
 table "root" {
