@@ -11,40 +11,6 @@ import (
 	"github.com/valocode/bubbly/env"
 )
 
-// GetResourceHandler is responsible for handling subscriptions on the
-// StoreGetResource Subject. It takes a *nats.
-// Msg containing the id of a resource and sends a Publication back
-// containing the []byte representation of the resource.
-func (d *DataStore) GetResourceHandler(bCtx *env.BubblyContext, m *nats.Msg) error {
-	bCtx.Logger.Debug().
-		Interface("subscription", m.Sub).
-		Str("component", string(d.Type)).
-		Msg("processing message")
-
-	result := d.Store.Query(string(m.Data))
-
-	if result.HasErrors() {
-		return fmt.Errorf("failed to process message: %v", result.Errors)
-	}
-
-	resultBytes, err := json.Marshal(result.Data)
-
-	if err != nil {
-		return fmt.Errorf("failed to marshal result of GetResource query: %w", err)
-	}
-
-	// We use the Publish method and a Publication to reply! You'll notice
-	// that despite using a separate message system (
-	// request/reply vs subscribe/publish) the behaviour does not change much.
-	d.Publish(bCtx, component.Publication{
-		Subject: component.Subject(m.Reply),
-		Data:    resultBytes,
-		Encoder: nats.DEFAULT_ENCODER,
-	})
-
-	return nil
-}
-
 // PostResourceHandler receives a core.Data representation of the data and attempts
 // to load it into the store. Publishes a reply containing a nil error on failure
 func (d *DataStore) PostResourceHandler(bCtx *env.BubblyContext, m *nats.Msg) error {
