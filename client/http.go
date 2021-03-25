@@ -3,9 +3,9 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -13,40 +13,35 @@ import (
 )
 
 func newHTTP(bCtx *env.BubblyContext) (*httpClient, error) {
-	sc := bCtx.GetServerConfig()
-
-	c := &httpClient{
-		// ClientCore: &ClientCore{
-		// 	Type: HTTPClientType,
-		// },
-		Client: &http.Client{Timeout: defaultHTTPClientTimeout * time.Second},
+	return &httpClient{
+		client: &http.Client{Timeout: defaultHTTPClientTimeout * time.Second},
 		// Default bubbly server URL
-		HostURL: sc.HostURL(),
-	}
-
-	if sc.Protocol != "" && sc.Host != "" && sc.Port != "" {
-		us := sc.Protocol + "://" + sc.Host + ":" + sc.Port
-		u, err := url.Parse(us)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create client host: %w", err)
-		}
-		bCtx.Logger.Debug().Str("url", u.String()).Msg("custom bubbly host set")
-		c.HostURL = u.String()
-	}
-
-	// TODO: support authenticated clients
-	return c, nil
+		url:  bCtx.ClientConfig.BubblyAddr,
+		bCtx: bCtx,
+	}, nil
 }
 
 type httpClient struct {
-	// *ClientCore
-	HostURL string
-	Client  *http.Client
+	url    string
+	client *http.Client
+	bCtx   *env.BubblyContext
 }
 
-func (h *httpClient) newRequest() (*http.Request, error) {
+func (h *httpClient) handleRequest(method string, path string, body io.Reader) (*http.Response, error) {
+	url := h.url + path
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new request: %w", err)
+	}
+	req.Header.Set(echo.HeaderContentType, "application/json")
+	if h.bCtx.ClientConfig.AuthToken != "" {
+		// Copy the received header into the request
+		req.Header.Add(echo.HeaderAuthorization, h.bCtx.ClientConfig.AuthToken)
+	}
 
-	return nil, nil
+	h.bCtx.Logger.Debug().Str("url", url).Str("method", method).Msg("Making HTTP client request")
+
+	return h.handleResponse(h.client.Do(req))
 }
 
 func (h *httpClient) handleResponse(resp *http.Response, err error) (*http.Response,

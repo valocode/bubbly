@@ -14,9 +14,7 @@ import (
 // PostSchema uses the bubbly api to post a schema
 func (c *httpClient) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
 
-	_, err := c.handleResponse(
-		http.Post(fmt.Sprintf("%s/api/v1/schema", c.HostURL), "application/json", bytes.NewBuffer(schema)),
-	)
+	_, err := c.handleRequest(http.MethodPost, "/schema", bytes.NewBuffer(schema))
 	return err
 }
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/nats-io/nats.go"
 	"github.com/valocode/bubbly/agent/component"
@@ -21,11 +22,7 @@ func (c *httpClient) Load(bCtx *env.BubblyContext, data core.DataBlocks) error {
 		return fmt.Errorf("failed to marshal data for loading: %w", err)
 	}
 
-	// req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/alpha1/upload", c.HostURL), bytes.NewBuffer(jsonReq))
-	_, err = c.handleResponse(
-		c.Client.Post(fmt.Sprintf("%s/api/v1/upload", c.HostURL), "application/json", bytes.NewBuffer(dBytes)),
-	)
-
+	_, err = c.handleRequest(http.MethodPost, "/upload", bytes.NewBuffer(dBytes))
 	if err != nil {
 		return fmt.Errorf(`failed to post resource: %w`, err)
 	}

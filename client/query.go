@@ -30,11 +30,7 @@ func (c *httpClient) Query(bCtx *env.BubblyContext, query string) ([]byte, error
 		return nil, fmt.Errorf("failed to marshal query data for loading: %w", err)
 	}
 
-	bCtx.Logger.Debug().RawJSON("request", jsonReq).Str("host", c.HostURL).Msg("sending query request to the bubbly server")
-
-	resp, err := c.handleResponse(
-		http.Post(fmt.Sprintf("%s/api/v1/graphql", c.HostURL), "application/json", bytes.NewBuffer(jsonReq)),
-	)
+	resp, err := c.handleRequest(http.MethodPost, "/graphql", bytes.NewBuffer(jsonReq))
 	if err != nil {
 		return nil, fmt.Errorf("failed to make %s request for query: %w", http.MethodPost, err)
 	}

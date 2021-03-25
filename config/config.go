@@ -118,7 +118,8 @@ const (
 type ClientConfig struct {
 	ClientType ClientType
 	// AuthToken is used only by the HTTP
-	AuthToken string
+	AuthToken  string
+	BubblyAddr string
 }
 
 // ##########################
