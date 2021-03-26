@@ -388,14 +388,16 @@ var sqlGenTests = []struct {
 		query: `
 		{
 			test_run {
-				ok
-				location {
-					name
-				}
 				configuration {
 					name
 				}
-				version { name }
+				location {
+					name
+				}
+				ok
+				version {
+					name
+				}
 			}
 		}`,
 		want: map[string]interface{}{
