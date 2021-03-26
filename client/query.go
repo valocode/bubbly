@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/nats-io/nats.go"
 	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/env"
 )
@@ -42,17 +41,17 @@ func (c *httpClient) Query(bCtx *env.BubblyContext, query string) ([]byte, error
 
 func (n *natsClient) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
 
-	pub := &component.Publication{
+	req := &component.Request{
 		Subject: component.StoreQuery,
 		Data:    []byte(query),
-		Encoder: nats.DEFAULT_ENCODER,
 	}
 
-	reply := n.request(bCtx, pub)
-
-	if reply.Error != nil {
-		return nil, fmt.Errorf("NATS client failed to query: %w", reply.Error)
+	if err := n.request(bCtx, req); err != nil {
+		return nil, fmt.Errorf("NATS client failed to query: %w", err)
+	}
+	if req.Reply.Error != "" {
+		return nil, fmt.Errorf("NATS client failed to query: %s", req.Reply.Error)
 	}
 
-	return reply.Data, nil
+	return req.Reply.Data, nil
 }

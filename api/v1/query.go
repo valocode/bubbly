@@ -39,7 +39,6 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 	}
 
 	c, err := client.New(bCtx)
-
 	if err != nil {
 		return core.ResourceOutput{
 			ID:     q.String(),
@@ -49,9 +48,10 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 			Value: cty.NilVal,
 		}
 	}
+	defer c.Close()
+
 	// run the query against the bubbly store
 	byteRes, err := c.Query(bCtx, q.Spec.Query)
-
 	if err != nil {
 		return core.ResourceOutput{
 			ID:     q.String(),

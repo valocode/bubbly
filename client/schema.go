@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/nats-io/nats.go"
-
 	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/env"
 )
@@ -20,21 +18,16 @@ func (c *httpClient) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
 
 func (n *natsClient) PostSchema(bCtx *env.BubblyContext, schema []byte) error {
 	bCtx.Logger.Debug().
-		Interface("nats_client", n.Config).
-		Str("subject", string(component.StorePostResource)).
+		Str("subject", string(component.StorePostSchema)).
 		Msg("Posting schema to data store")
 
-	request := component.Publication{
+	req := component.Request{
 		Subject: component.StorePostSchema,
 		Data:    schema,
-		Encoder: nats.DEFAULT_ENCODER,
 	}
-
 	// reply is a Publication received from a bubbly store
-	reply := n.request(bCtx, &request)
-
-	if reply.Error != nil {
-		return fmt.Errorf("failed during schema post: %w", reply.Error)
+	if err := n.request(bCtx, &req); err != nil {
+		return fmt.Errorf("failed to post schema: %w", err)
 	}
 
 	return nil

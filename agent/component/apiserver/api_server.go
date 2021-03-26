@@ -11,27 +11,23 @@ import (
 
 var _ component.Component = (*APIServer)(nil)
 
-func New(bCtx *env.BubblyContext) *APIServer {
+func New(bCtx *env.BubblyContext) (*APIServer, error) {
+	server, err := server.New(bCtx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create server: %w", err)
+	}
 	return &APIServer{
 		ComponentCore: &component.ComponentCore{
-			Type: component.APIServerComponent,
-			NATSServer: &component.NATS{
-				Config: bCtx.AgentConfig.NATSServerConfig,
-			},
+			Type:                 component.APIServerComponent,
 			DesiredSubscriptions: nil,
 		},
-		Server: server.New(bCtx),
-	}
+		Server: server,
+	}, nil
 }
 
 type APIServer struct {
 	*component.ComponentCore
 	Server *server.Server
-}
-
-type Result struct {
-	Message string
-	Error   error
 }
 
 // Run runs the bubbly API Server.
@@ -66,6 +62,14 @@ func (a *APIServer) Run(bCtx *env.BubblyContext, agentContext context.Context) e
 	case <-agentContext.Done():
 		return agentContext.Err()
 	}
+}
+
+// Close overrides the ComponentCore Close() so that it can also close the server
+func (a *APIServer) Close() {
+	// Close the core connection
+	a.ComponentCore.Close()
+	// Also close the server's connection
+	a.Server.Close()
 }
 
 func (a *APIServer) run(bCtx *env.BubblyContext, ch chan error) {

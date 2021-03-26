@@ -78,9 +78,9 @@ func handleMultipartForm(bCtx *env.BubblyContext, form *multipart.Form) (WorkerR
 	case 0:
 		// an unsupported form part has been used when sending the data
 		if len(form.File) != 0 {
-			return WorkerRun{}, errors.New(fmt.Sprintf(`invalid form name: use "%s"`, defaultFormName))
+			return WorkerRun{}, fmt.Errorf(`invalid form name: use "%s"`, defaultFormName)
 		}
-		return WorkerRun{}, errors.New(fmt.Sprintf(`no files provided`))
+		return WorkerRun{}, fmt.Errorf(`no files provided`)
 	case 1:
 		bCtx.Logger.Debug().Str("name", files[0].Filename).Msg("identified valid content")
 	default:

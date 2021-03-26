@@ -39,6 +39,8 @@ func GetResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, resID strin
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the bubbly client: %w", err)
 	}
+	defer client.Close()
+
 	resByte, err := client.GetResource(bCtx, resID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resource using bubbly client: %w", err)

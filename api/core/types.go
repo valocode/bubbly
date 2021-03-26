@@ -37,32 +37,6 @@ func (r *ResourceOutput) Output() cty.Value {
 	)
 }
 
-// Data produces a core.Data type of this resource.
-// The Data type is produced so that it can be sent to the store as any other
-// piece of data.
-// We omit the ResourceOutput's Value, as this is not relevant for loading to
-// the _event table of the store.
-// Note: If this Data is destined for the _event store,
-// you may be better suited using ResourceOutput.DataBlocks
-func (r *ResourceOutput) Data() Data {
-	// this data represents the data saved to the _event store
-	d := Data{
-		TableName: EventTableName,
-		Fields: map[string]cty.Value{
-			"status": cty.StringVal(r.Status.String()),
-			"error":  cty.StringVal(""),
-			"time":   cty.StringVal(events.TimeNow()),
-		},
-		Joins: []string{ResourceTableName},
-	}
-
-	if r.Error != nil {
-		d.Fields["error"] = cty.StringVal(r.Error.Error())
-	}
-
-	return d
-}
-
 // DataBlocks produces a core.DataBlocks type of this resource.
 // We use DataBlocks in place of Data as two Data objects are required to save
 // data to the _event table

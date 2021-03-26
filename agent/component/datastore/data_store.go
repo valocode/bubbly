@@ -3,8 +3,6 @@ package datastore
 import (
 	"fmt"
 
-	"github.com/nats-io/nats.go"
-
 	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/store"
@@ -25,10 +23,7 @@ func New(bCtx *env.BubblyContext) (*DataStore, error) {
 
 	d := &DataStore{
 		ComponentCore: &component.ComponentCore{
-			Type: component.DataStoreComponent,
-			NATSServer: &component.NATS{
-				Config: bCtx.AgentConfig.NATSServerConfig,
-			},
+			Type:                 component.DataStoreComponent,
 			DesiredSubscriptions: nil,
 		},
 		Store: store,
@@ -48,35 +43,35 @@ type DataStore struct {
 // a list of DesiredSubscriptions that the data store attempts to subscribe to
 func (d *DataStore) defaultSubscriptions() component.DesiredSubscriptions {
 	return component.DesiredSubscriptions{
-		component.DesiredSubscription{
-			Subject: component.StorePostResource,
-			Queue:   component.StoreQueue,
-			Handler: d.PostResourceHandler,
-			Encoder: nats.DEFAULT_ENCODER,
-		},
+		// component.DesiredSubscription{
+		// 	Subject: component.StorePostResource,
+		// 	Queue:   component.StoreQueue,
+		// 	Reply:   true,
+		// 	Handler: d.PostResourceHandler,
+		// },
 		component.DesiredSubscription{
 			Subject: component.StoreGetResourcesByKind,
 			Queue:   component.StoreQueue,
-			Handler: d.GetResourcesByKindHandler,
-			Encoder: nats.DEFAULT_ENCODER,
+			Reply:   true,
+			Handler: d.getResourcesByKindHandler,
 		},
 		component.DesiredSubscription{
 			Subject: component.StorePostSchema,
 			Queue:   component.StoreQueue,
-			Handler: d.PostSchemaHandler,
-			Encoder: nats.DEFAULT_ENCODER,
+			Reply:   true,
+			Handler: d.postSchemaHandler,
 		},
 		component.DesiredSubscription{
 			Subject: component.StoreQuery,
 			Queue:   component.StoreQueue,
-			Handler: d.QueryHandler,
-			Encoder: nats.DEFAULT_ENCODER,
+			Reply:   true,
+			Handler: d.queryHandler,
 		},
 		component.DesiredSubscription{
 			Subject: component.StoreUpload,
 			Queue:   component.StoreQueue,
-			Handler: d.UploadHandler,
-			Encoder: nats.DEFAULT_ENCODER,
+			Reply:   true,
+			Handler: d.uploadHandler,
 		},
 	}
 }

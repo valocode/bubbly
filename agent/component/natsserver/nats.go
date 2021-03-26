@@ -68,7 +68,6 @@ func (n *NATSServer) Run(bCtx *env.BubblyContext, ctx context.Context) error {
 	).Msg("running component")
 
 	nSubs, err := n.BulkSubscribe(bCtx)
-
 	if err != nil {
 		return fmt.Errorf("error during bulk subscription: %w", err)
 	}
@@ -77,7 +76,6 @@ func (n *NATSServer) Run(bCtx *env.BubblyContext, ctx context.Context) error {
 	bCtx.Logger.Debug().Str("component", string(n.Type)).Interface("subscriptions", n.Subscriptions).Msg("component is listening for subscriptions")
 
 	go n.Server.Start()
-
 	go n.logStats(bCtx)
 
 	// Wait for the NATS Server to be able to accept connections before

@@ -6,13 +6,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/valocode/bubbly/env"
 )
 
 func TestHealth(t *testing.T) {
 	bCtx := env.NewBubblyContext()
-	s := New(bCtx)
+	s, err := New(bCtx)
+	require.NoError(t, err)
 
 	router := s.setupRouter()
 

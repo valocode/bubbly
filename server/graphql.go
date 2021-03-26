@@ -1,12 +1,9 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-
-	"github.com/valocode/bubbly/client"
 )
 
 type queryReq struct {
@@ -32,18 +29,12 @@ type apiResponse struct {
 // @Router /graphql [post]
 func (s *Server) Query(c echo.Context) error {
 	var query queryReq
-
 	binder := &echo.DefaultBinder{}
 	if err := binder.BindBody(c, &query); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	nc, err := client.New(s.bCtx)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
-	}
-
-	results, err := nc.Query(s.bCtx, query.Query)
+	results, err := s.Client.Query(s.bCtx, query.Query)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

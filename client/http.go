@@ -15,9 +15,8 @@ import (
 func newHTTP(bCtx *env.BubblyContext) (*httpClient, error) {
 	return &httpClient{
 		client: &http.Client{Timeout: defaultHTTPClientTimeout * time.Second},
-		// Default bubbly server URL
-		url:  bCtx.ClientConfig.BubblyAddr,
-		bCtx: bCtx,
+		url:    bCtx.ClientConfig.BubblyAddr,
+		bCtx:   bCtx,
 	}, nil
 }
 
@@ -25,6 +24,10 @@ type httpClient struct {
 	url    string
 	client *http.Client
 	bCtx   *env.BubblyContext
+}
+
+func (h *httpClient) Close() {
+	// Do nothing as nothing to close...
 }
 
 func (h *httpClient) handleRequest(method string, path string, body io.Reader) (*http.Response, error) {

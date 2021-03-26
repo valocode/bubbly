@@ -19,12 +19,13 @@ import (
 type Component interface {
 	// Connect to a NATS Server
 	Connect(bCtx *env.BubblyContext) error
+	Close()
 	// Subscribe to publications on a given subject
 	Subscribe(bCtx *env.BubblyContext, sub DesiredSubscription) (*nats.Subscription, error)
 	// BulkSubscribe to the component's DesiredSubscriptions
 	BulkSubscribe(bCtx *env.BubblyContext) ([]*nats.Subscription, error)
 	// Publish a publication
-	Publish(bCtx *env.BubblyContext, pub Publication) error
+	// Publish(bCtx *env.BubblyContext, pub Publication) error
 	// Run is the main entrypoint into running the underlying bubbly
 	// processes wrapped by the Component
 	Run(bCtx *env.BubblyContext, agentContext context.Context) error

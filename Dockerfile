@@ -1,18 +1,19 @@
 # Stage 1 build
 FROM golang:1.16-buster AS builder
 
+
 WORKDIR $GOPATH/src/github.com/valocode/bubbly
 
 COPY go.sum .
 COPY go.mod .
 
-RUN go mod download
-RUN go mod verify
+RUN go mod download \
+    && go mod verify \
+    && go get -u github.com/swaggo/swag/cmd/swag
 
 COPY . .
 
 # generate swagger documentation
-RUN go get -u github.com/swaggo/swag/cmd/swag
 RUN swag init
 
 RUN go build -o /go/bin/bubbly

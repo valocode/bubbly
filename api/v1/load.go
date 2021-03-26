@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/valocode/bubbly/client"
@@ -70,21 +69,12 @@ func (l *Load) load(bCtx *env.BubblyContext) error {
 	bCtx.Logger.Debug().Interface("server", bCtx.ServerConfig).Msg("loading to server with configuration")
 
 	c, err := client.New(bCtx)
-
 	if err != nil {
 		return fmt.Errorf("failed to establish new client for loading: %w", err)
 	}
+	c.Close()
 
-	var data core.DataBlocks
-
-	err = json.Unmarshal([]byte(l.Spec.Data), &data)
-
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal spec data for loading: %w", err)
-	}
-
-	err = c.Load(bCtx, data)
-
+	err = c.Load(bCtx, []byte(l.Spec.Data))
 	if err != nil {
 		return fmt.Errorf("failed to load spec data: %w", err)
 	}

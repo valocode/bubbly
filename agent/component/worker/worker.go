@@ -5,24 +5,16 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/nats-io/nats.go"
 
 	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/interval"
 )
 
-const (
-	defaultPollTimeout = 60
-)
-
 func New(bCtx *env.BubblyContext) *Worker {
 	w := &Worker{
 		ComponentCore: &component.ComponentCore{
-			Type: component.WorkerComponent,
-			NATSServer: &component.NATS{
-				Config: bCtx.AgentConfig.NATSServerConfig,
-			},
+			Type:                 component.WorkerComponent,
 			DesiredSubscriptions: nil,
 		},
 		ResourceWorker: &interval.ResourceWorker{
@@ -84,8 +76,8 @@ func (w *Worker) defaultSubscriptions() component.DesiredSubscriptions {
 		component.DesiredSubscription{
 			Subject: component.WorkerPostRunResource,
 			Queue:   component.WorkerQueue,
-			Handler: w.PostRunResourceHandler,
-			Encoder: nats.DEFAULT_ENCODER,
+			Reply:   false,
+			Handler: w.postRunResourceHandler,
 		},
 	}
 }

@@ -164,12 +164,6 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 		config.DefaultStoreProvider,
 		"provider of the bubbly data store",
 	)
-	f.StringVar(
-		&o.BubblyContext.AgentConfig.NATSServerConfig.Addr,
-		"nats-server-addr",
-		config.DefaultNATSServerAddr,
-		"address of the NATS Server",
-	)
 	port, _ := strconv.Atoi(config.DefaultNATSServerPort)
 	f.IntVar(
 		&o.BubblyContext.AgentConfig.NATSServerConfig.Port,

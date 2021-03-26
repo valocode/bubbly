@@ -1,14 +1,11 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-
-	"github.com/valocode/bubbly/api/core"
-	"github.com/valocode/bubbly/client"
 )
 
 // PostSchema godoc
@@ -21,24 +18,13 @@ import (
 // @Failure 400 {object} apiResponse
 // @Router /schema [post]
 func (s *Server) PostSchema(c echo.Context) error {
-	var schema core.Tables
-	binder := &echo.DefaultBinder{}
-	if err := binder.BindBody(c, &schema); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
 
-	nc, err := client.New(s.bCtx)
+	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("failed to read body of request: %w", err))
 	}
 
-	sBytes, err := json.Marshal(schema)
-
-	if err != nil {
-		echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	if err := nc.PostSchema(s.bCtx, sBytes); err != nil {
+	if err := s.Client.PostSchema(s.bCtx, body); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
