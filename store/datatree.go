@@ -33,22 +33,26 @@ func (t dataTree) traverse(bCtx *env.BubblyContext, fn visitFn) (core.DataBlocks
 func visitNode(bCtx *env.BubblyContext, node *dataNode, fn visitFn, blocks *core.DataBlocks) error {
 	// First check that all the parents have been visited because we cannot
 	// solve a node until all its parents have been solved
+	var parentsVisited = true
 	for _, parent := range node.Parents {
 		if !parent.Visited {
-			if err := visitNode(bCtx, parent, fn, blocks); err != nil {
-				return err
-			}
+			parentsVisited = false
+			break
 		}
 	}
-	// Visit the node with the callback method
-	if err := fn(bCtx, node, blocks); err != nil {
-		return err
-	}
-	// If no error, mark the node as visited
-	node.Visited = true
-	for _, child := range node.Children {
-		if err := visitNode(bCtx, child, fn, blocks); err != nil {
+	// Check that parents have been visited and that the node is not being
+	// visited more than once
+	if parentsVisited && !node.Visited {
+		// Visit the node with the callback method
+		if err := fn(bCtx, node, blocks); err != nil {
 			return err
+		}
+		// If no error, mark the node as visited
+		node.Visited = true
+		for _, child := range node.Children {
+			if err := visitNode(bCtx, child, fn, blocks); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
