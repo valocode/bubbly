@@ -742,6 +742,74 @@ func TestPostgres(t *testing.T) {
 	runEventTestsOrDie(t, bCtx, s)
 }
 
+// Tests that should bubbly go down, on reinitialisation the Store correctly
+// pulls the most recently applied schema
+func TestPostgresReinitialisation(t *testing.T) {
+
+	pool, err := dockertest.NewPool("")
+	require.NoErrorf(t, err, "failed to connect to Docker")
+
+	resource, err := pool.RunWithOptions(
+		&dockertest.RunOptions{
+			Repository: "postgres",
+			Tag:        postgresVersionTag,
+			Env: []string{
+				"POSTGRES_PASSWORD=" + postgresPassword,
+				"POSTGRES_DB=" + postgresDatabase,
+			},
+		},
+		func(hc *docker.HostConfig) {
+			hc.AutoRemove = true
+			hc.RestartPolicy = docker.RestartPolicy{
+				Name: "no",
+			}
+		},
+	)
+	require.NoErrorf(t, err, "failed to start a container")
+
+	t.Cleanup(func() {
+		if err := pool.Purge(resource); err != nil {
+			t.Fatal("failed to remove a container or a volume:", err)
+		}
+	})
+	resource.Expire(360) // Tell docker to hard kill the container in X seconds
+
+	// Wait until the database is ready
+	err = waitUntilDatabaseIsReady(t, pool, resource)
+	require.NoError(t, err, "failed database connection smoke test")
+
+	// Initialise the Bubbly context
+	bCtx := env.NewBubblyContext()
+	bCtx.StoreConfig.Provider = config.PostgresStore
+	bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
+	bCtx.StoreConfig.PostgresDatabase = postgresDatabase
+	bCtx.StoreConfig.PostgresUser = postgresUser
+	bCtx.StoreConfig.PostgresPassword = postgresPassword
+
+	// Initialise the Bubbly Store
+	s, err := New(bCtx)
+	assert.NoErrorf(t, err, "failed to initialize store")
+
+	// grab the "base" bubbly schema, set up from the internalTables
+	baseSchema, err := s.currentBubblySchema()
+
+	require.NoError(t, err)
+
+	// Apply a Bubbly Schema to the Bubbly Store
+	applySchemaOrDie(t, bCtx, s, filepath.Join("testdata", "tables.hcl"))
+
+	// feign re-initialisation of the Store, which should fetch the latest
+	// applied schema (from applySchemaOrDie)
+	s, err = New(bCtx)
+
+	newSchema, err := s.currentBubblySchema()
+
+	// this should return the schema that was formed from applySchemaOrDie,
+	// _not_ the baseSchema at row 0 in the _schema table
+	require.NotEqual(t, baseSchema, newSchema)
+
+}
+
 // TODO: extract into a helper as a similar block of code is used elsewhere in store (?) tests
 // waitUntilDatabaseIsReady employs exponential backoff retry algo to verify that the containerised database is up.
 // It returns an error if the connection to the database had failed.
