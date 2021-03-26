@@ -401,10 +401,10 @@ var sqlGenTests = []struct {
 					"location": map[string]interface{}{
 						"name": "Deep Dark Wood",
 					},
+					"configuration": map[string]interface{}{
+						"name": "Advanced",
+					},
 					/*
-						"configuration": map[string]interface{}{
-							"name": "Advanced",
-						},
 						"version": map[string]interface{}{
 							"name": "v1.0.1",
 						},
