@@ -392,6 +392,9 @@ var sqlGenTests = []struct {
 				location {
 					name
 				}
+				configuration {
+					name
+				}
 			}
 		}`,
 		want: map[string]interface{}{
