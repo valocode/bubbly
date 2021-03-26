@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/rs/zerolog"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
@@ -385,8 +386,8 @@ var sqlGenTests = []struct {
 func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile string) {
 	t.Helper()
 
-	tables := testData.Tables(t, fromFile)
-	t.Logf("Applying schema: %s", fromFile)
+	tables := testData.Tables(t, bCtx, fromFile)
+
 	err := s.Apply(DefaultTenantName, tables)
 	require.NoErrorf(t, err, "failed to apply schema")
 }
@@ -394,7 +395,7 @@ func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile 
 func loadTestDataOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile string) {
 	t.Helper()
 
-	data := testData.DataBlocks(t, fromFile)
+	data := testData.DataBlocks(t, bCtx, fromFile)
 
 	err := s.Save(DefaultTenantName, data)
 	require.NoErrorf(t, err, "failed to save test data into the store")
@@ -661,9 +662,11 @@ func TestPostgresSQLGen(t *testing.T) {
 
 			// Initialise the Bubbly context
 			bCtx := env.NewBubblyContext()
+			bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+			// Configure the Bubbly Store
 			bCtx.StoreConfig.Provider = config.PostgresStore
 			bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
-			// bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", "5432")
 			bCtx.StoreConfig.PostgresDatabase = postgresDatabase
 			bCtx.StoreConfig.PostgresUser = postgresUser
 			bCtx.StoreConfig.PostgresPassword = postgresPassword
@@ -672,7 +675,6 @@ func TestPostgresSQLGen(t *testing.T) {
 			s, err := New(bCtx)
 			require.NoErrorf(t, err, "failed to initialize store")
 
-			// t.Log(b)
 			// Apply the Bubbly Schema to the Bubbly Store
 			applySchemaOrDie(t, bCtx, s, filepath.Join("testdata", "sqlgen", tt.schema))
 
