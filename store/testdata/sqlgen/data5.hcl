@@ -16,17 +16,17 @@ data "configuration" {
 	}
 }
 
-// data "version" {
-// 	fields = {
-// 		"name": "v1.0.1"
-// 	}
-// }
+data "version" {
+	fields = {
+		"name": "v1.0.1"
+	}
+}
 
 data "test_run" {
 	joins = [
 		"location",
 		"configuration",
-//		"version",
+		"version",
 		]
 	fields = {
 		"ok": true

@@ -5,7 +5,7 @@ table "test_run" {
 
 	join "location" {}
 	join "configuration" {}
-	// join "version" {}
+	join "version" {}
 
 	field "ok" {
 		type = bool
@@ -26,9 +26,9 @@ table "configuration" {
 	}
 }
 
-// table "version" {
-// 	field "name" {
-// 		type = string
-// 		unique = true
-// 	}
-// }
+table "version" {
+	field "name" {
+		type = string
+		unique = true
+	}
+}

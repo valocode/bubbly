@@ -395,6 +395,7 @@ var sqlGenTests = []struct {
 				configuration {
 					name
 				}
+				version { name }
 			}
 		}`,
 		want: map[string]interface{}{
@@ -407,11 +408,9 @@ var sqlGenTests = []struct {
 					"configuration": map[string]interface{}{
 						"name": "Primitive",
 					},
-					/*
-						"version": map[string]interface{}{
-							"name": "v1.0.1",
-						},
-					*/
+					"version": map[string]interface{}{
+						"name": "v1.0.1",
+					},
 				},
 			},
 		},
