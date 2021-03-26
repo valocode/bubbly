@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/rs/zerolog"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
@@ -385,7 +386,7 @@ var sqlGenTests = []struct {
 func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile string) {
 	t.Helper()
 
-	tables := testData.Tables(t, fromFile)
+	tables := testData.Tables(t, bCtx, fromFile)
 
 	err := s.Apply(bCtx, tables)
 	require.NoErrorf(t, err, "failed to apply schema")
@@ -394,7 +395,7 @@ func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile 
 func loadTestDataOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile string) {
 	t.Helper()
 
-	data := testData.DataBlocks(t, fromFile)
+	data := testData.DataBlocks(t, bCtx, fromFile)
 
 	err := s.Save(bCtx, data)
 	require.NoErrorf(t, err, "failed to save test data into the store")
@@ -660,6 +661,9 @@ func TestPostgresSQLGen(t *testing.T) {
 
 			// Initialise the Bubbly context
 			bCtx := env.NewBubblyContext()
+			bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+			// Configure the Bubbly Store
 			bCtx.StoreConfig.Provider = config.PostgresStore
 			bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
 			bCtx.StoreConfig.PostgresDatabase = postgresDatabase

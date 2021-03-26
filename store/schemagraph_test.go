@@ -6,8 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/valocode/bubbly/env"
 	testData "github.com/valocode/bubbly/store/testdata"
 )
 
@@ -26,7 +28,11 @@ func printSchemaNode(node *schemaNode, depth int) {
 }
 
 func TestSchemaGraph(t *testing.T) {
-	tables := testData.Tables(t, filepath.FromSlash("testdata/tables.hcl"))
+
+	bCtx := env.NewBubblyContext()
+	bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+	tables := testData.Tables(t, bCtx, filepath.FromSlash("testdata/tables.hcl"))
 	graph, err := newSchemaGraph(tables)
 	require.NoErrorf(t, err, "failed to create schema graph")
 
