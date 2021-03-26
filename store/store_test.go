@@ -402,7 +402,7 @@ var sqlGenTests = []struct {
 						"name": "Deep Dark Wood",
 					},
 					"configuration": map[string]interface{}{
-						"name": "Advanced",
+						"name": "Primitive",
 					},
 					/*
 						"version": map[string]interface{}{
