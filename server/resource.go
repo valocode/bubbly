@@ -9,7 +9,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/valocode/bubbly/api/core"
-	"github.com/valocode/bubbly/client"
 )
 
 // PostResource godoc
@@ -48,17 +47,12 @@ func (s *Server) PostResource(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	dBytes, err := json.Marshal(data)
+	dBytes, err := json.Marshal(core.DataBlocks{data})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("failed to marshal: %w", err))
 	}
 
-	nc, err := client.New(s.bCtx)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
-	}
-
-	if err := nc.PostResource(s.bCtx, dBytes); err != nil {
+	if err := s.Client.PostResource(s.bCtx, dBytes); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return c.JSON(http.StatusOK, &Status{"uploaded"})
@@ -82,28 +76,20 @@ func (s *Server) PostResource(c echo.Context) error {
 func (s *Server) RunResource(c echo.Context) error {
 
 	workerRun, err := ProcessRunData(s.bCtx, c)
-
 	if err != nil {
 		if err == http.ErrNotMultipart {
 			return echo.NewHTTPError(http.StatusUnsupportedMediaType, fmt.Errorf("content must be of type %s", echo.MIMEMultipartForm))
 		}
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error while processing content: %w", err))
 	}
-
 	workerRun.Name = c.Param("name")
 
 	workerRunBytes, err := json.Marshal(workerRun)
-
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error marshalling workerRun: %w", err))
 	}
 
-	nc, err := client.New(s.bCtx)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
-	}
-
-	if err := nc.PostResourceToWorker(s.bCtx, workerRunBytes); err != nil {
+	if err := s.Client.PostResourceToWorker(s.bCtx, workerRunBytes); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error publishing run content to worker: %w", err))
 	}
 
@@ -130,13 +116,7 @@ func (s *Server) GetResource(c echo.Context) error {
 		ResourceKind: c.Param("kind"),
 	}
 
-	nc, err := client.New(s.bCtx)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("failed to connect to the NATS server: %w", err))
-	}
-
-	resultBytes, err := nc.GetResource(s.bCtx, resBlock.String())
-
+	resultBytes, err := s.Client.GetResource(s.bCtx, resBlock.String())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error getting resource: %w", err))
 	}

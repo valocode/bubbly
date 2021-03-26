@@ -2,6 +2,7 @@ package component
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/env"
 )
 
@@ -37,31 +37,21 @@ type ComponentCore struct {
 	// This is nested within the ComponentCore as Components are
 	// individually responsible for managing their own connection
 	// to a NATS Server.
-	NATSServer *NATS
+	// NATSServer *NATS
+	EConn *nats.EncodedConn
 	// DesiredSubscriptions represents the pre-configured subscriptions that
 	// the Component should _attempt_ to subscribe to.
 	DesiredSubscriptions DesiredSubscriptions
 	// Subscriptions holds subscriptions that the Component was successfully
 	// able to subscribe to via NATS.
 	Subscriptions []*nats.Subscription
-	// Publications represents the list of publications that a Component
-	// should publish at runtime.
-}
-
-type NATS struct {
-	mu     sync.Mutex
-	Config *config.NATSServerConfig
-	// Connection to the NATS Server.
-	// We do not store the EncodedConn because that is Publication-scoped and
-	// will therefore vary depending on the type of data being published.
-	Conn *nats.Conn
 }
 
 // Connect connects to a NATS server and attaches the nats.Conn
 // for use when the Component communicates (via NATS pub/request) with other
 // Components
 func (c *ComponentCore) Connect(bCtx *env.BubblyContext) error {
-	nc, err := nats.Connect(c.NATSServer.Config.Addr,
+	nc, err := nats.Connect(bCtx.ClientConfig.NATSAddr,
 		nats.Name(fmt.Sprintf("Bubbly Agent Component: %s", string(c.Type))),
 		nats.ErrorHandler(func(nc *nats.Conn, s *nats.Subscription, err error) {
 			if s != nil {
@@ -95,99 +85,62 @@ func (c *ComponentCore) Connect(bCtx *env.BubblyContext) error {
 		return fmt.Errorf(
 			`failed to establish a connection to the NATS
 			server at address "%s": %w`,
-			c.NATSServer.Config.Addr,
+			bCtx.ClientConfig.NATSAddr,
 			err,
 		)
 	}
 
 	bCtx.Logger.Debug().
 		Str("component", string(c.Type)).
-		Interface("nats_server", c.NATSServer.Config).
+		Interface("nats_server", bCtx.ClientConfig.NATSAddr).
 		Msg("successfully connected to NATS Server")
 
-	c.NATSServer.Conn = nc
-
-	return nil
-}
-
-// Publish publishes the data field of the given Publication to a NATS server.
-// It establishes an encoded connection using the provided pub.Encoder string,
-// allowing the encoding to be scoped to Publications
-func (c ComponentCore) Publish(bCtx *env.BubblyContext, pub Publication) error {
-	bCtx.Logger.Debug().
-		Str("component", string(c.Type)).
-		Interface("subject", pub.Subject).
-		Msg("publishing")
-
-	if err := c.checkConnection(bCtx); err != nil {
-		return fmt.Errorf("failed during connection check: %w", err)
-	}
-
-	// the component's existing encoded connection could use the wrong
-	// encoder type. Therefore,
-	// we always create a new Publication-scoped encoded connection
-	ec, err := nats.NewEncodedConn(c.NATSServer.Conn, string(pub.Encoder))
+	c.EConn, err = nats.NewEncodedConn(nc, nats.DEFAULT_ENCODER)
 	if err != nil {
-		return fmt.Errorf(
-			"unable to establish encoded connection to the NATS server: %w",
-			err,
-		)
-	}
-
-	// Publish the data containing within the Publication
-	if err := ec.Publish(
-		string(pub.Subject),
-		pub.Data,
-	); err != nil {
-		return fmt.Errorf(
-			`unable to publish message (subject "%s", value "%v") over encoded channel: %w`,
-			pub.Subject,
-			pub.Data,
-			err,
-		)
+		return fmt.Errorf("failed to create encoded NATS connection: %w", err)
 	}
 
 	return nil
 }
 
-// Request requests the data field of the given Publication to a NATS server.
-// It returns a non-nil Publication if unsuccessful and a Publication with
-// non-nil Data field if successful.
-func (c ComponentCore) Request(bCtx *env.BubblyContext, pub Publication) (*Publication, error) {
+func (c *ComponentCore) Close() {
+	c.EConn.Close()
+}
+
+// Request makes a Request-Reply publication to the NATS server.
+// The provided request is updated with the Reply, and the function returns an
+// error indicating if something went wrong
+func (c ComponentCore) Request(bCtx *env.BubblyContext, req *Request) error {
 	bCtx.Logger.Debug().
 		Str("component", string(c.Type)).
-		Interface("subject", pub.Subject).
-		Msg("publishing")
+		Interface("subject", req.Subject).
+		Msg("making a NATS request")
 
-	if err := c.checkConnection(bCtx); err != nil {
-		return nil, fmt.Errorf("failed during connection check: %w", err)
+	// Make sure the pointer where we will put the reply is initialized
+	// otherwise nats will fail when decoding
+	if req.Reply == nil {
+		req.Reply = &Reply{}
 	}
 
-	// the component's existing encoded connection could use the wrong
-	// encoder type. Therefore,
-	// we always create a new Publication-scoped encoded connection
-	ec, err := nats.NewEncodedConn(c.NATSServer.Conn, string(pub.Encoder))
-	if err != nil {
-		return nil, fmt.Errorf(
-			"unable to establish encoded connection to the NATS server: %w",
-			err,
-		)
-	}
-
-	var reply Publication
-
+	var reply []byte
 	// Publish the data containing within the Publication
-	if err := ec.Request(
-		string(pub.Subject),
-		pub.Data,
-		&reply.Data,
+	if err := c.EConn.Request(
+		string(req.Subject),
+		req.Data,
+		&reply,
 		defaultRequestTimeout*time.Second,
 	); err != nil {
 		// just return the err unwrapped: this lets us assert the nats.Err type upstream
-		return nil, err
+		return err
 	}
 
-	return &reply, nil
+	if err := json.Unmarshal(reply, req.Reply); err != nil {
+		return fmt.Errorf("failed to decode reply from request: %w", err)
+	}
+	if req.Reply.Error != "" {
+		return fmt.Errorf("received error from handler: %s", req.Reply.Error)
+	}
+	return nil
 }
 
 // Subscribe subscribes, via the NATS connection associated with the component,
@@ -197,36 +150,55 @@ func (c ComponentCore) Subscribe(bCtx *env.BubblyContext, sub DesiredSubscriptio
 		Str("subject", string(sub.Subject)).
 		Str("queue", string(sub.Queue)).
 		Str("component", string(c.Type)).
-		Interface("connection_addr", c.NATSServer.Conn.ConnectedAddr()).
 		Msg("subscribing")
 
-	// make sure that the component's NATS server connection is available. If not,
-	// re-establish it or error
-	if err := c.checkConnection(bCtx); err != nil {
-		return nil, fmt.Errorf("failed during connection check: %w", err)
-	}
-
-	// encoded connections are Subscription-scoped, since they depend on a specific
-	// encoder. So we create a new one.
-	ec, err := nats.NewEncodedConn(c.NATSServer.Conn, sub.Encoder)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"unable to establish encoded connection to the NATS server: %w",
-			err,
-		)
-	}
-
 	// Create a queue subscription
-	nSub, err := ec.QueueSubscribe(
+	nSub, err := c.EConn.QueueSubscribe(
 		string(sub.Subject),
 		string(sub.Queue),
 		func(m *nats.Msg) {
-			if err := sub.Handler(bCtx, m); err != nil {
-				bCtx.Logger.Debug().Err(err).
+			val, err := sub.Handler(bCtx, m)
+			if err != nil {
+				bCtx.Logger.Debug().
+					Err(err).
 					Str("component", string(c.Type)).
 					Str("subject", string(sub.Subject)).
 					Str("queue", string(sub.Queue)).
-					Msg("failed to handle publish/request to subscription")
+					Msg("failed to handle subscription")
+				// Check if we should reply indicating an error
+				if sub.Reply {
+					reply, _ := json.Marshal(Reply{Data: nil, Error: fmt.Errorf("failed to handle suscription: %w", err).Error()})
+					c.EConn.Publish(m.Reply, reply)
+					return
+				}
+			}
+			// If we should reply to the subscription, create the reply and
+			// send it
+			if sub.Reply {
+				// First convert the returned value into bytes, and then into
+				// RawBytes so that it doesn't get double-encoded by JSON
+				b, err := json.Marshal(val)
+				if err != nil {
+					bCtx.Logger.Debug().
+						Err(err).
+						Str("component", string(c.Type)).
+						Str("subject", string(sub.Subject)).
+						Str("queue", string(sub.Queue)).
+						Msg("failed to marshal reply into raw bytes")
+					reply, _ := json.Marshal(Reply{Data: nil, Error: fmt.Errorf("failed to marshal reply into raw bytes: %w", err).Error()})
+					c.EConn.Publish(m.Reply, reply)
+					return
+				}
+				reply, _ := json.Marshal(Reply{Data: b, Error: ""})
+				if err := c.EConn.Publish(m.Reply, reply); err != nil {
+					bCtx.Logger.Debug().
+						Err(err).
+						Str("component", string(c.Type)).
+						Str("subject", string(sub.Subject)).
+						Str("queue", string(sub.Queue)).
+						Msg("failed to publish reply")
+
+				}
 			}
 		},
 	)
@@ -298,31 +270,6 @@ func (c ComponentCore) BulkSubscribe(bCtx *env.BubblyContext) ([]*nats.Subscript
 
 	bCtx.Logger.Debug().Str("component", string(c.Type)).Interface("subscriptions", nSubs).Msg("finished bulk subscribe")
 	return nSubs, nil
-}
-
-// checkConnection checks that the Component has a valid connection to the
-// NATS server prior to a subscription/publication. If not,
-// it attempts to connect to the NATS server.
-func (c ComponentCore) checkConnection(bCtx *env.BubblyContext) error {
-	c.NATSServer.mu.Lock()
-	defer c.NATSServer.mu.Unlock()
-
-	switch c.NATSServer.Conn.Status() {
-	case nats.CONNECTED:
-		bCtx.Logger.Debug().
-			Interface("connection_addr", c.NATSServer.Conn.ConnectedAddr()).
-			Msg("already connected to a NATS server")
-		return nil
-	case nats.CLOSED:
-		if err := c.Connect(bCtx); err != nil {
-			return fmt.Errorf("failed to connect to the NATS Server: %w", err)
-		} else {
-			bCtx.Logger.Debug().
-				Interface("connection_addr", c.NATSServer.Conn.ConnectedAddr()).
-				Msg("successfully connected to a NATS server")
-		}
-	}
-	return nil
 }
 
 // Listen takes a context and listens for its closure.

@@ -45,7 +45,6 @@ const (
 const (
 	DefaultNATSServerHTTPPort = "8222"
 	DefaultNATSServerPort     = "4223"
-	DefaultNATSServerAddr     = "localhost:4223"
 )
 
 // Default configuration for the bubbly agent components
@@ -61,6 +60,7 @@ const (
 const (
 	DefaultClientAuthToken = ""
 	DefaultBubblyAddr      = "http://localhost:8111/api/v1"
+	DefaultNATSAddr        = "localhost:4223"
 )
 
 func defaultEnv(key, defaultValue string) string {
@@ -163,7 +163,6 @@ func DefaultNATSServerConfig() *NATSServerConfig {
 	return &NATSServerConfig{
 		HTTPPort: httpPort,
 		Port:     port,
-		Addr:     defaultEnv("NATS_SERVER_ADDR", DefaultNATSServerAddr),
 	}
 }
 
@@ -176,6 +175,7 @@ func DefaultClientConfig() *ClientConfig {
 		ClientType: HTTPClientType,
 		AuthToken:  defaultEnv("BUBBLY_AUTH_TOKEN", DefaultClientAuthToken),
 		BubblyAddr: defaultEnv("BUBBLY_ADDR", DefaultBubblyAddr),
+		NATSAddr:   defaultEnv("BUBBLY_NATS_ADDR", DefaultNATSAddr),
 	}
 }
 

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/config"
 
 	"github.com/valocode/bubbly/env"
@@ -24,11 +23,12 @@ type Client interface {
 	PostResource(*env.BubblyContext, []byte) error
 	PostResourceToWorker(*env.BubblyContext, []byte) error
 	// Data blocks
-	Load(*env.BubblyContext, core.DataBlocks) error
+	Load(*env.BubblyContext, []byte) error
 	// GraphQL Queries
 	Query(*env.BubblyContext, string) ([]byte, error)
 	// Applying a schema
 	PostSchema(*env.BubblyContext, []byte) error
+	Close()
 }
 
 // New creates a new bubbly Client.

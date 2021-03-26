@@ -99,7 +99,6 @@ type AuthConfig struct {
 type NATSServerConfig struct {
 	HTTPPort int
 	Port     int
-	Addr     string
 }
 
 // ##########################
@@ -120,6 +119,7 @@ type ClientConfig struct {
 	// AuthToken is used only by the HTTP
 	AuthToken  string
 	BubblyAddr string
+	NATSAddr   string
 }
 
 // ##########################

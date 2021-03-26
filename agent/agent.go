@@ -93,7 +93,6 @@ func (a *Agent) runAsSingle(bCtx *env.BubblyContext) error {
 	// If single, the we must also run the NATS server as a part of the
 	// bubbly agent. Therefore we instance a new NATS server
 	ns := natsserver.New(bCtx)
-
 	g.Go(func() error {
 		return ns.Run(bCtx, agentContext)
 	})
@@ -113,7 +112,6 @@ func (a *Agent) runAsSingle(bCtx *env.BubblyContext) error {
 	if a.Config.EnabledComponents.DataStore {
 		g.Go(func() error {
 			dStore, err := datastore.New(bCtx)
-
 			if err != nil {
 				return fmt.Errorf("failed to create data store: %w", err)
 			}
@@ -125,13 +123,9 @@ func (a *Agent) runAsSingle(bCtx *env.BubblyContext) error {
 			if err := dStore.Connect(bCtx); err != nil {
 				return fmt.Errorf("failed to connect to the NATS Server: %w", err)
 			}
+			defer dStore.Close()
 
 			a.Components.DataStore = dStore
-			// close the NATS Server connection established above only when
-			// the go routine terminates,
-			// since the lifetime of the connection should match the lifetime
-			// of the component
-			defer dStore.NATSServer.Conn.Close()
 			return dStore.Run(bCtx, agentContext)
 		})
 	}
@@ -142,7 +136,10 @@ func (a *Agent) runAsSingle(bCtx *env.BubblyContext) error {
 			// establish the APIServer Component, which consists of a server.
 			// Server instance responsible for handling HTTP requests and
 			// publishing/requesting data via NATS to other Components.
-			s := apiserver.New(bCtx)
+			s, err := apiserver.New(bCtx)
+			if err != nil {
+				return fmt.Errorf("failed to create API server agent: %w", err)
+			}
 
 			// Components are responsible for maintaining individual connections
 			// to the NATS Server. Connect connects to the NATSServer defined by
@@ -151,7 +148,7 @@ func (a *Agent) runAsSingle(bCtx *env.BubblyContext) error {
 			if err := s.Connect(bCtx); err != nil {
 				return fmt.Errorf("failed to connect to the NATS Server: %w", err)
 			}
-			defer s.NATSServer.Conn.Close()
+			defer s.Close()
 			return s.Run(bCtx, agentContext)
 		})
 	}
@@ -163,10 +160,9 @@ func (a *Agent) runAsSingle(bCtx *env.BubblyContext) error {
 			if err := worker.Connect(bCtx); err != nil {
 				return fmt.Errorf("failed to connect to the NATS Server: %w", err)
 			}
+			defer worker.Close()
 
 			a.Components.Worker = worker
-
-			defer worker.NATSServer.Conn.Close()
 			return worker.Run(bCtx, agentContext)
 		})
 	}

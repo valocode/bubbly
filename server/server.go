@@ -9,6 +9,7 @@ import (
 	"github.com/ziflex/lecho/v2"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/env"
 )
@@ -16,23 +17,29 @@ import (
 type Server struct {
 	Config *config.ServerConfig
 	Server *http.Server
+	Client client.Client
 	bCtx   *env.BubblyContext
 }
 
-func New(bCtx *env.BubblyContext) *Server {
+func New(bCtx *env.BubblyContext) (*Server, error) {
+	client, err := client.New(bCtx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init client: %w", err)
+	}
 	// create the http server
-	a := &Server{
+	server := &Server{
 		Config: bCtx.ServerConfig,
 		Server: &http.Server{
 			// TODO: maybe we should use the bCtx Host here, unless it's localhost?
 			Addr: fmt.Sprintf(":%s", bCtx.ServerConfig.Port),
 		},
-		bCtx: bCtx,
+		Client: client,
+		bCtx:   bCtx,
 	}
 
-	a.Server.Handler = a.setupRouter()
+	server.Server.Handler = server.setupRouter()
 
-	return a
+	return server, nil
 }
 
 // SetupRouter returns a pointer to an instance of our echo server with all the
@@ -76,10 +83,10 @@ func (s *Server) setupRouter() *echo.Echo {
 	return router
 }
 
-func (a *Server) ListenAndServe() error {
+func (s *Server) ListenAndServe() error {
 	var g errgroup.Group
 	g.Go(func() error {
-		if err := a.Server.ListenAndServe(); err != nil && err != http.
+		if err := s.Server.ListenAndServe(); err != nil && err != http.
 			ErrServerClosed {
 			return err
 		}
@@ -87,4 +94,8 @@ func (a *Server) ListenAndServe() error {
 	})
 
 	return g.Wait()
+}
+
+func (s *Server) Close() {
+	s.Client.Close()
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/appleboy/gofight/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/valocode/bubbly/env"
 	testData "github.com/valocode/bubbly/server/testdata/upload"
 )
@@ -13,7 +14,8 @@ import (
 func IntegrationTestQuery(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	r := gofight.New()
-	server := New(bCtx)
+	server, err := New(bCtx)
+	require.NoError(t, err)
 
 	router := server.setupRouter()
 	// First, insert data into MemDb using the Upload functionality
@@ -38,7 +40,8 @@ func IntegrationTestQueryFail(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	r := gofight.New()
 
-	server := New(bCtx)
+	server, err := New(bCtx)
+	require.NoError(t, err)
 
 	router := server.setupRouter()
 

@@ -10,7 +10,6 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/hashicorp/go-multierror"
-	"github.com/nats-io/nats.go"
 
 	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/api/core"
@@ -72,41 +71,26 @@ func (n *natsClient) GetResource(bCtx *env.BubblyContext, resID string) ([]byte,
 	`, core.ResourceTableName, resID)
 
 	bCtx.Logger.Debug().
-		Interface("nats_client", n.Config).
-		Str("resource_query", resQuery).
+		Str("resource_id", resID).
 		Msg("Getting resource from store")
 
-	request := component.Publication{
+	req := component.Request{
 		Subject: component.StoreQuery,
 		Data:    []byte(resQuery),
-		Encoder: nats.DEFAULT_ENCODER,
 	}
-
-	reply := n.request(bCtx, &request)
-
-	if reply.Error != nil {
-		return nil, fmt.Errorf(
-			`failed to get resource from query %s: %w`,
-			resQuery,
-			reply.Error,
-		)
+	if err := n.request(bCtx, &req); err != nil {
+		return nil, fmt.Errorf("failed to get resource from query: %w", err)
 	}
 
 	var result graphql.Result
-
-	err := json.Unmarshal(reply.Data, &result)
-
-	if err != nil {
+	if err := json.Unmarshal(req.Reply.Data, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response from query to store: %w", err)
 	}
-
 	if result.HasErrors() {
 		var graphqlErrors error
-
 		for _, qlError := range result.Errors {
 			graphqlErrors = multierror.Append(graphqlErrors, qlError)
 		}
-
 		return nil, fmt.Errorf("failed to get resource: %w", graphqlErrors)
 	}
 
@@ -114,37 +98,29 @@ func (n *natsClient) GetResource(bCtx *env.BubblyContext, resID string) ([]byte,
 		return nil, fmt.Errorf(`no resource found matching ID "%s"`, resID)
 	}
 
-	// the result is a []interface{}
+	// the result is always []interface{}
 	resourceJSONSlice := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
 
 	// ...which we presume to be of length 1, since resources with identical
 	// IDs are upserted. Here we extract the first valid core.ResourceBlockJSON
 	// from the slice
-	resJSON, _ := json.Marshal(resourceJSONSlice[0])
-
-	return resJSON, nil
+	return json.Marshal(resourceJSONSlice[0])
 }
 
 // PostResource uses the bubbly natsClient client to publish a resource to the data
 // store.
 func (n *natsClient) PostResource(bCtx *env.BubblyContext, data []byte) error {
 	bCtx.Logger.Debug().
-		Interface("client", n.Config).
+		Str("subject", string(component.StoreUpload)).
 		Msg("Posting resource to store")
 
-	request := component.Publication{
-		Subject: component.StorePostResource,
+	req := component.Request{
+		Subject: component.StoreUpload,
 		Data:    data,
-		Encoder: nats.DEFAULT_ENCODER,
 	}
 
-	reply := n.request(bCtx, &request)
-
-	if reply.Error != nil {
-		return fmt.Errorf(
-			`failed to post resource: %w`,
-			reply.Error,
-		)
+	if err := n.request(bCtx, &req); err != nil {
+		return fmt.Errorf("failed to post resource: %w", err)
 	}
 
 	return nil
@@ -154,25 +130,14 @@ func (n *natsClient) PostResource(bCtx *env.BubblyContext, data []byte) error {
 // The data is marshalled from a core.DataBlocks
 func (n *natsClient) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) error {
 	bCtx.Logger.Debug().
-		Interface("client", n.Config).
-		Interface("resource", data).
 		Str("subject", string(component.WorkerPostRunResource)).
 		Msg("Posting resource to worker")
-
-	request := component.Publication{
-		Subject: component.WorkerPostRunResource,
-		Data:    data,
-		Encoder: nats.DEFAULT_ENCODER,
-	}
 
 	// publish the resource to the worker queue to be picked up and run.
 	// we offload responsibility for updating future state of the run resource to
 	// the worker that picks it up. What this means is that the worker should
 	// update the data store with the success/failure of the run
-
-	err := n.publish(bCtx, &request)
-
-	if err != nil {
+	if err := n.EConn.Publish(string(component.WorkerPostRunResource), data); err != nil {
 		return fmt.Errorf("failed to publish run resource to worker: %w", err)
 	}
 

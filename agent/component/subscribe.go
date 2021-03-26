@@ -15,7 +15,9 @@ type DesiredSubscriptions []DesiredSubscription
 type DesiredSubscription struct {
 	Subject Subject
 	Queue   Queue
-	Encoder string
+	// Reply tells whether this subscription should reply with the result from
+	// the Handler. This is used for the Request-Reply subscriptions
+	Reply bool
 	// We pass a handler function in with any subscription.
 	// TODO: consider the alternative of a single / generic handler with a
 	//  switch for handling the different subject types.
@@ -28,7 +30,7 @@ type DesiredSubscription struct {
 // Subscription subject. It is by bubbly components when receiving request
 // /publish messages in order to process (and optionally reply)
 // to these messages
-type SubscriptionHandlerFn func(*env.BubblyContext, *nats.Msg) error
+type SubscriptionHandlerFn func(*env.BubblyContext, *nats.Msg) (interface{}, error)
 
 type Subjects []Subject
 
@@ -42,11 +44,11 @@ type Subject string
 // defined centrally here
 const (
 	StoreGetResourcesByKind Subject = "store.GetResourcesByKind"
-	StorePostResource       Subject = "store.PostResource"
-	StorePostSchema         Subject = "store.PostSchema"
-	StoreQuery              Subject = "store.Query"
-	StoreUpload             Subject = "store.Upload"
-	WorkerPostRunResource   Subject = "worker.PostRunResource"
+	// StorePostResource       Subject = "store.PostResource"
+	StorePostSchema       Subject = "store.PostSchema"
+	StoreQuery            Subject = "store.Query"
+	StoreUpload           Subject = "store.Upload"
+	WorkerPostRunResource Subject = "worker.PostRunResource"
 )
 
 type Queues []Queue

@@ -173,11 +173,12 @@ var remoteRunTrigger = &trigger{
 					}
 
 					res, err := api.NewResource(&resBlock)
+					if err != nil {
+						return fmt.Errorf("failed to create resource from block: %w", err)
+					}
 
 					r := res.(*v1.Run)
-
 					runCtx := core.NewResourceContext(cty.NilVal, core.NewResourceContext(cty.NilVal, api.NewResource).NewResource)
-
 					if err := common.DecodeBody(bCtx, r.SpecHCL.Body, &r.Spec, runCtx); err != nil {
 						return fmt.Errorf("failed to form resource from block: %w", err)
 					}
@@ -197,6 +198,7 @@ var remoteRunTrigger = &trigger{
 					if err != nil {
 						return fmt.Errorf("failed to connect to the NATS server: %w", err)
 					}
+					defer nc.Close()
 
 					rBytes, err := json.Marshal(wr)
 					if err != nil {

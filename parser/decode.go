@@ -57,7 +57,6 @@ func processVariables(bCtx *env.BubblyContext, inputs cty.Value, traversals []hc
 				if err != nil {
 					return cty.NilVal, fmt.Errorf("could not create DataRef from variable %s", traversalString(bCtx, tr))
 				}
-				fmt.Println(dataRef.GoString())
 				dataRefs = appendDataRef(dataRefs, dataRef, traverserName(bCtx, tr[2]), traverserName(bCtx, tr[3]))
 			}
 
