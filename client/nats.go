@@ -12,22 +12,22 @@ import (
 	"github.com/valocode/bubbly/env"
 )
 
-// newNATS returns a new *client.natsClient bubbly client, using the natsClient server configuration embedded
+// newNATS returns a new *client.natsClient bubbly client, using the NATS server configuration embedded
 // within the bubbly context.
 func newNATS(bCtx *env.BubblyContext) (*natsClient, error) {
 	bCtx.Logger.Debug().
 		Interface("client_config", bCtx.AgentConfig.NATSServerConfig).
-		Msg("creating a natsClient client")
+		Msg("creating a NATS client")
 
 	sc := bCtx.AgentConfig.NATSServerConfig
 
-	// This configure the natsClient Server using natsd package
+	// This configure the NATS Server using natsd package
 	nopts := &natsd.Options{}
 
 	nopts.HTTPPort = sc.HTTPPort
 	nopts.Port = sc.Port
 
-	// Create the natsClient Server
+	// Create the NATS Server
 	s := natsd.New(nopts)
 	c := &natsClient{
 		Config: sc,
@@ -42,7 +42,7 @@ func newNATS(bCtx *env.BubblyContext) (*natsClient, error) {
 }
 
 type natsClient struct {
-	// The configuration of the natsClient server this client should attempt to
+	// The configuration of the NATS server this client should attempt to
 	// connect to
 	Config *config.NATSServerConfig
 	Server *natsd.Server
@@ -55,18 +55,18 @@ type natsClient struct {
 // The response is decoded into a new Publication,
 // which is returned to the caller.
 func (n *natsClient) request(bCtx *env.BubblyContext, req *component.Publication) *component.Publication {
-	// Connect to the natsClient Server if a connection has not already been
+	// Connect to the NATS Server if a connection has not already been
 	// established by this client
 	if n.Conn == nil || n.EConn == nil {
 		bCtx.Logger.Debug().
-			Msg("client is missing required connection to the natsClient Server. " +
+			Msg("client is missing required connection to the NATS Server. " +
 				"Attemping to connect")
 
 		if err := n.EncodedConnect(bCtx, req.Encoder); err != nil {
 			return &component.Publication{
 				Subject: req.Subject,
 				Error: fmt.Errorf(
-					"failed to connect to the natsClient Server: %w",
+					"failed to connect to the NATS Server: %w",
 					err),
 			}
 		}
@@ -97,20 +97,20 @@ func (n *natsClient) request(bCtx *env.BubblyContext, req *component.Publication
 }
 
 // publish sends a Publication (https://docs.nats.io/nats-concepts/pubsub)
-// over a natsClient server. It returns an error if a connection to the natsClient server
+// over a NATS server. It returns an error if a connection to the NATS server
 // could not be established or if it was not possible to publish a message on
 // the given subject.
 func (n *natsClient) publish(bCtx *env.BubblyContext, pub *component.Publication) error {
 
-	// Connect to the natsClient Server if a connection has not already been
+	// Connect to the NATS Server if a connection has not already been
 	// established by this client.
 	if n.Conn == nil || n.EConn == nil {
 		bCtx.Logger.Debug().
-			Msg("client is missing required connection to the natsClient Server. " +
+			Msg("client is missing required connection to the NATS Server. " +
 				"Attemping to connect")
 
 		if err := n.EncodedConnect(bCtx, pub.Encoder); err != nil {
-			return fmt.Errorf("failed to connect to the natsClient Server: %w", err)
+			return fmt.Errorf("failed to connect to the NATS Server: %w", err)
 		}
 	}
 
@@ -129,13 +129,13 @@ func (n *natsClient) publish(bCtx *env.BubblyContext, pub *component.Publication
 	return nil
 }
 
-// Connect connects to a natsClient server.
+// Connect connects to a NATS server.
 // It attaches the nats.Conn to
-// the natsClient Client on a successful connection,
+// the NATS Client on a successful connection,
 // or an error if it was not possible to establish such.
 func (n *natsClient) connect(bCtx *env.BubblyContext) error {
 	nc, err := nats.Connect(n.Config.Addr,
-		nats.Name("Bubbly natsClient Server"),
+		nats.Name("Bubbly NATS Server"),
 		nats.ErrorHandler(func(nc *nats.Conn, s *nats.Subscription, err error) {
 			if s != nil {
 				bCtx.Logger.Error().
@@ -152,7 +152,7 @@ func (n *natsClient) connect(bCtx *env.BubblyContext) error {
 
 	if err != nil {
 		return fmt.Errorf(
-			`client failed to establish a connection to the natsClient
+			`client failed to establish a connection to the NATS
 			server at address "%s": %w`,
 			n.Config.Addr,
 			err,
@@ -182,19 +182,19 @@ func (n *natsClient) EncodedConnect(bCtx *env.BubblyContext,
 		encoderType = nats.DEFAULT_ENCODER
 	}
 
-	// make sure that the underlying natsClient server connection has already been
+	// make sure that the underlying NATS server connection has already been
 	// established
 	if n.Conn == nil {
 		if err := n.connect(bCtx); err != nil {
 			return fmt.Errorf("client failed to establish unencoded connection to"+
-				" to the natsClient Server: %w", err)
+				" to the NATS Server: %w", err)
 		}
 	}
 
 	ec, err := nats.NewEncodedConn(n.Conn, string(encoderType))
 	if err != nil {
 		return fmt.Errorf(
-			"client unable to establish encoded connection to the natsClient server"+
+			"client unable to establish encoded connection to the NATS server"+
 				": %w",
 			err,
 		)
@@ -202,7 +202,7 @@ func (n *natsClient) EncodedConnect(bCtx *env.BubblyContext,
 
 	bCtx.Logger.Debug().
 		Interface("nats_server", n.Config).
-		Msg("client successfully established encoded connected to natsClient Server")
+		Msg("client successfully established encoded connected to NATS Server")
 
 	n.EConn = ec
 
