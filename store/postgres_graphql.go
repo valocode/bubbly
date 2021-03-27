@@ -142,8 +142,8 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, tc *ta
 
 	// Create the tableColumns for this type/table in the query
 	var (
-		node = qb.node
-		// tb   = qb.columns
+		node      = qb.node
+		subFields = make([]*ast.Field, 0)
 	)
 
 	// FIXME: Why is the depth being increased here?
@@ -193,7 +193,6 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, tc *ta
 
 	// Iterate over the fields in the selection set (if any) for the current `field`
 	for _, selection := range field.SelectionSet.Selections {
-
 		// Only GraphQL `Field`s are supported at this point. http://spec.graphql.org/June2018/#sec-Language.Fields
 		// The `Selection` interface is implemented by the `ast.Field` type in this supported case.
 		subField, ok := selection.(*ast.Field)
@@ -214,63 +213,13 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, tc *ta
 			continue
 		}
 
-		// A non-nil selection set implies that the subField refers to another table in our schema.
+		// A non-nil selection set implies that the subField refers to another
+		// table in our schema.
+		// We need to process the columns/fields for this table first, before we
+		// process any subFields, so simply append these to a slice and process
+		// at the end of the function
 		if subField.SelectionSet != nil {
-
-			// TODO: instead of searching the graph, check the node's edges for their destinations, and use those dest. in JOINs
-			// In the following example, the current qb.node is `A`, and subField is `B`, and we have just discovered, that `B`
-			// refers to another table.
-			//
-			// A {
-			//     name
-			//     B {
-			//        name
-			//     }
-			// }
-
-			// Are the parent field and the subfield connected in the graph at all?
-			var edgeToRelatedNode *schemaEdge
-			for _, p := range node.edges {
-				if p.node.table.Name == fieldName {
-					edgeToRelatedNode = p
-				}
-			}
-			if edgeToRelatedNode == nil {
-				return fmt.Errorf("no relationship found between tables: '%s', '%s'", node.table.Name, fieldName)
-			}
-
-			var (
-				leftTable       = tc.table
-				leftTableAlias  = tc.alias
-				rightTable      = edgeToRelatedNode.node.table.Name
-				rightTableAlias = tableAlias(rightTable, qb.depth)
-			)
-
-			switch edgeToRelatedNode.rel {
-			case oneToOne, oneToMany:
-				qb.sql = qb.sql.LeftJoin(joinOn(
-					tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
-					tableColumn(leftTableAlias, tableIDField),
-					tableColumn(rightTableAlias, foreignKeyField(leftTable))))
-			case belongsTo:
-				qb.sql = qb.sql.LeftJoin(
-					joinOn(
-						tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
-						tableColumn(rightTableAlias, tableIDField),
-						tableColumn(leftTableAlias, foreignKeyField(rightTable))))
-			}
-
-			// Recursively resolve for the subField `B`, which may contain further nested fields.
-			qb.node = graph.NodeIndex[fieldName]
-			subColumns := &tableColumns{
-				table:  fieldName,
-				alias:  tableAlias(fieldName, qb.depth),
-				scalar: edgeToRelatedNode.isScalar(),
-			}
-			if err := psqlSubQuery(tenant, graph, qb, subColumns, subField, path); err != nil {
-				return err
-			}
-			tc.children = append(tc.children, subColumns)
+			subFields = append(subFields, subField)
 			continue
 		} else {
 			// If subField did not have a selection set this it is just a column
@@ -279,7 +228,67 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, tc *ta
 			qb.sql = qb.sql.Column(tableColumn(tc.alias, fieldName))
 		}
 	}
+	// Once we have processed this fields columns, proceed to the subFields.
+	// This is to ensure the correct order of columns in the SQL SELECT statement
+	for _, subField := range subFields {
 
+		// TODO: instead of searching the graph, check the node's edges for their destinations, and use those dest. in JOINs
+		// In the following example, the current qb.node is `A`, and subField is `B`, and we have just discovered, that `B`
+		// refers to another table.
+		//
+		// A {
+		//     name
+		//     B {
+		//        name
+		//     }
+		// }
+
+		// Are the parent field and the subfield connected in the graph at all?
+		var (
+			fieldName         = subField.Name.Value
+			edgeToRelatedNode *schemaEdge
+		)
+		for _, p := range node.edges {
+			if p.node.table.Name == fieldName {
+				edgeToRelatedNode = p
+			}
+		}
+		if edgeToRelatedNode == nil {
+			return fmt.Errorf("no relationship found between tables: '%s', '%s'", node.table.Name, fieldName)
+		}
+
+		var (
+			leftTable       = tc.table
+			leftTableAlias  = tc.alias
+			rightTable      = edgeToRelatedNode.node.table.Name
+			rightTableAlias = tableAlias(rightTable, qb.depth)
+		)
+		switch edgeToRelatedNode.rel {
+		case oneToOne, oneToMany:
+			qb.sql = qb.sql.LeftJoin(joinOn(
+				tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
+				tableColumn(leftTableAlias, tableIDField),
+				tableColumn(rightTableAlias, foreignKeyField(leftTable))))
+		case belongsTo:
+			qb.sql = qb.sql.LeftJoin(
+				joinOn(
+					tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
+					tableColumn(rightTableAlias, tableIDField),
+					tableColumn(leftTableAlias, foreignKeyField(rightTable))))
+		}
+
+		// Recursively resolve for the subField `B`, which may contain further nested fields.
+		qb.node = graph.NodeIndex[fieldName]
+		subColumns := &tableColumns{
+			table:  fieldName,
+			alias:  tableAlias(fieldName, qb.depth),
+			scalar: edgeToRelatedNode.isScalar(),
+		}
+		if err := psqlSubQuery(tenant, graph, qb, subColumns, subField, path); err != nil {
+			return err
+		}
+		tc.children = append(tc.children, subColumns)
+	}
 	return nil
 }
 
