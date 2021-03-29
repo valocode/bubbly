@@ -6,6 +6,10 @@ import (
 	"github.com/valocode/bubbly/api/core"
 )
 
+//
+// The Schema Graph is a graph representation of the Bubbly Schema.
+//
+
 // relType describes the relationship type of a directed edge from a --> b
 type relType int
 
@@ -190,8 +194,13 @@ func internalSchemaGraph() *schemaGraph {
 	return graph
 }
 
-// newSchemaGraphFromMap is a wrapper around newSchemaGraph for backwards
-// compatibility with the current way the schema is stored in the provider
+// newSchemaGraphFromMap returns a new Schema Graph,
+// created from the tables contained in the Bubbly Schema.
+//
+// It is implemented as a wrapper around newSchemaGraph for backwards
+// compatibility with the current way the schema is stored in the provider.
+//
+// FIXME: This project is too young to have "backwards compatibility" layer!
 func newSchemaGraphFromMap(tables map[string]core.Table) (*schemaGraph, error) {
 	var ts = make(core.Tables, 0, len(tables))
 	for _, t := range tables {
@@ -200,7 +209,8 @@ func newSchemaGraphFromMap(tables map[string]core.Table) (*schemaGraph, error) {
 	return newSchemaGraph(ts)
 }
 
-// newSchemaGraph takes a list of tables and creates a schemaGraph.
+// newSchemaGraph returns a new Schema Graph,
+// created from the tables coming from the Bubbly Schema.
 func newSchemaGraph(tables core.Tables) (*schemaGraph, error) {
 
 	var (

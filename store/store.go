@@ -15,6 +15,13 @@ import (
 )
 
 const DefaultTenantName = "default"
+//
+// The Bubbly Store is an abstraction for structured data stored in Bubbly,
+// as well as the metadata describing it.
+//
+// The Bubbly Store brings together the Bubbly Schema, the Bubbly Schema Graph,
+// the GraphQL Schema, and the underlying RDBMS. The latter is known as a "provider".
+//
 
 // New creates a new Store for the given config.
 func New(bCtx *env.BubblyContext) (*Store, error) {
@@ -238,7 +245,6 @@ func (s *Store) syncSchema(tenant string) error {
 		return fmt.Errorf("failed to get current schema: %w", err)
 	}
 	s.updateSchema(tenant, bubblySchema)
-
 	return nil
 }
 
@@ -293,6 +299,8 @@ func (s *Store) currentBubblySchema(tenant string) (*bubblySchema, error) {
 	return &bSchema, nil
 }
 
+// updateSchema creates a new GraphQL schema from a provided Bubbly Schema,
+// and binds that GraphQL schema to the Bubbly Store instance.
 func (s *Store) updateSchema(tenant string, bubblySchema *bubblySchema) error {
 	graph, err := newSchemaGraphFromMap(bubblySchema.Tables)
 	if err != nil {
@@ -350,7 +358,10 @@ var schemaQuery = fmt.Sprintf(`
 }
 `, core.SchemaTableName)
 
+// internalTables is the minimum set of tables in a valid Bubbly Schema.
+// This set of tables is created when a new Bubbly Schema is created.
 var internalTables = core.Tables{resourceTable, schemaTable, eventTable}
+
 var resourceTable = core.Table{
 	Name: core.ResourceTableName,
 	Fields: []core.TableField{

@@ -481,6 +481,252 @@ var sqlGenTests = []struct {
 			},
 		},
 	},
+	{
+		name:   "graphql order_by 1",
+		schema: "tables5.hcl",
+		data:   "data5.hcl",
+		query: `
+		{
+			test_run(order_by: [
+				{table: "location", field: "name", order: "DESC"}, 
+				{table: "configuration", field: "name", order: "DESC"}
+				]) {
+				configuration {
+					name
+				}
+				location {
+					name
+				}
+			}
+		}`,
+		want: map[string]interface{}{
+			"test_run": []interface{}{
+				map[string]interface{}{
+					"location": map[string]interface{}{
+						"name": "Secret Underground Facility on the Moon",
+					},
+					"configuration": map[string]interface{}{
+						"name": "Magic",
+					},
+				},
+				map[string]interface{}{
+					"location": map[string]interface{}{
+						"name": "Gold Coast City Skyline",
+					},
+					"configuration": map[string]interface{}{
+						"name": "Approved by Wombats",
+					},
+				},
+				map[string]interface{}{
+					"location": map[string]interface{}{
+						"name": "Deep Dark Wood",
+					},
+					"configuration": map[string]interface{}{
+						"name": "Primitive",
+					},
+				},
+			},
+		},
+	},
+	{
+		name:   "graphql order_by totoro asc",
+		schema: "tables6.hcl",
+		data:   "data6.hcl",
+		query: `
+		{
+			hideaways(location: "Deep Dark Wood",
+				order_by: [
+					{table: "characters", field: "name", order: "ASC"}
+				]) {
+				location
+				ready
+				distance_from_x
+				crew {
+					count
+					characters {
+						name
+					}
+				}
+			}
+		}`,
+		want: map[string]interface{}{
+			"hideaways": []interface{}{
+				map[string]interface{}{
+					"location":        "Deep Dark Wood",
+					"distance_from_x": 1500,
+					"ready":           true,
+					"crew": []interface{}{
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Chibi-Totoro",
+							},
+						},
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Chuu-Totoro",
+							},
+						},
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Oh-Totoro",
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		name:   "graphql order_by totoro desc",
+		schema: "tables6.hcl",
+		data:   "data6.hcl",
+		query: `
+		{
+			hideaways(location: "Deep Dark Wood",
+				order_by: [
+					{table: "characters", field: "name", order: "DESC"}
+				]) {
+				location
+				ready
+				distance_from_x
+				crew {
+					count
+					characters {
+						name
+					}
+				}
+			}
+		}`,
+		want: map[string]interface{}{
+			"hideaways": []interface{}{
+				map[string]interface{}{
+					"location":        "Deep Dark Wood",
+					"distance_from_x": 1500,
+					"ready":           true,
+					"crew": []interface{}{
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Oh-Totoro",
+							},
+						},
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Chuu-Totoro",
+							},
+						},
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Chibi-Totoro",
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		name:   "graphql order_by full house",
+		schema: "tables6.hcl",
+		data:   "data6.hcl",
+		query: `
+		{
+			hideaways(
+				order_by: [
+					{table: "hideaways", field: "location", order: "DESC"}
+					{table: "crew", field: "count", order: "DESC"}
+					{table: "characters", field: "name", order: "ASC"}
+				]) {
+				location
+				ready
+				distance_from_x
+				crew {
+					count
+					characters {
+						name
+					}
+				}
+			}
+		}`,
+		want: map[string]interface{}{
+			"hideaways": []interface{}{
+				map[string]interface{}{
+					"location":        "Secret Underground Facility on the Moon",
+					"distance_from_x": 384400,
+					"ready":           true,
+					"crew": []interface{}{
+						map[string]interface{}{
+							"count": 42,
+							"characters": map[string]interface{}{
+								"name": "Little Green Man",
+							},
+						},
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Little Green Man Leader",
+							},
+						},
+					},
+				},
+				map[string]interface{}{
+					"location":        "Gold Coast Villa",
+					"distance_from_x": 12500,
+					"ready":           false,
+					"crew": []interface{}{
+						map[string]interface{}{
+							"count": 2,
+							"characters": map[string]interface{}{
+								"name": "Smol European Mouse",
+							},
+						},
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Old Horse with Shady Past",
+							},
+						},
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Wombat",
+							},
+						},
+					},
+				},
+				map[string]interface{}{
+					"location":        "Deep Dark Wood",
+					"distance_from_x": 1500,
+					"ready":           true,
+					"crew": []interface{}{
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Chibi-Totoro",
+							},
+						},
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Chuu-Totoro",
+							},
+						},
+						map[string]interface{}{
+							"count": 1,
+							"characters": map[string]interface{}{
+								"name": "Oh-Totoro",
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile string) {
@@ -786,7 +1032,6 @@ func TestPostgresSQLGen(t *testing.T) {
 			require.NoError(t, err)
 			require.Emptyf(t, have.Errors, "failed to execute query %s", tt.name)
 			require.Equal(t, tt.want, have.Data, "query response is equal")
-
 		})
 	}
 }
