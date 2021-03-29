@@ -35,34 +35,63 @@ data "test_run" {
 
 ### Entry 2
 
-// data "location" {
-// 	fields = {
-// 		"name": "Gold Coast City Skyline"
-// 	}
-// }
+data "location" {
+	fields = {
+		"name": "Gold Coast City Skyline"
+	}
+}
 
-// data "test_run" {
-// 	joins = [
-// 		"location"
-// 	]
-// 	fields = {
-// 		"ok": false
-// 	}
-// }
+data "configuration" {
+	fields = {
+		"name": "Approved by Wombats"
+	}
+}
+
+data "version" {
+	fields = {
+		"name": "v2.5"
+	}
+}
+
+
+data "test_run" {
+	joins = [
+		"version",
+		"configuration",
+		"location",
+	]
+	fields = {
+		"ok": false
+	}
+}
 
 ### Entry 3
 
-// data "location" {
-// 	fields = {
-// 		"name": "Secret Underground Facility on the Moon"
-// 	}
-// }
+data "location" {
+	fields = {
+		"name": "Secret Underground Facility on the Moon"
+	}
+}
 
-// data "test_run" {
-// 	joins = [
-// 		"location"
-// 	]
-// 	fields = {
-// 		"ok": true
-// 	}
-// }
+data "configuration" {
+	fields = {
+		"name": "Magic"
+	}
+}
+
+data "version" {
+	fields = {
+		"name": "X.Y.Z-1"
+	}
+}
+
+data "test_run" {
+	joins = [
+		"location",
+		"version",
+		"configuration",
+	]
+	fields = {
+		"ok": true
+	}
+}
