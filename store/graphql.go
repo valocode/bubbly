@@ -10,6 +10,12 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+//
+// The GraphQL Schema is a representation of the Bubbly Schema Graph,
+// enabling GraphQL access to Bubbly.
+//
+
+// graphJoinDistance ???
 const graphJoinDistance = 3
 
 // gqlField is our custom Graphql Field type so that we can store a field in
@@ -26,6 +32,7 @@ type gqlField struct {
 // newGraphQLSchema creates a new GraphQL schema wrapping the given provider
 // with a schema that corresponds to the given set of tables.
 func newGraphQLSchema(graph *schemaGraph, s *Store) (graphql.Schema, error) {
+
 	var (
 		fields = make(map[string]gqlField)
 		// These are the top-level query fields. Each of these fields
@@ -42,6 +49,7 @@ func newGraphQLSchema(graph *schemaGraph, s *Store) (graphql.Schema, error) {
 		addGraphFields(*node.table, fields)
 		return nil
 	})
+
 	// Create the relationships among the types using graph neighbours within
 	// a certain distance of each other
 	graph.traverse(func(node *schemaNode) error {
@@ -120,6 +128,7 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 	fields[t.Name] = gqlField
 }
 
+// addGraphEdges ???
 func addGraphEdges(t core.Table, paths []schemaPath, fields map[string]gqlField) {
 	var field = fields[t.Name]
 	for _, path := range paths {
@@ -141,6 +150,7 @@ func addGraphEdges(t core.Table, paths []schemaPath, fields map[string]gqlField)
 	}
 }
 
+// graphQLFieldType ???
 func graphQLFieldType(f core.TableField) *graphql.Scalar {
 	switch ty := f.Type; {
 	case ty == cty.Bool:
@@ -182,6 +192,7 @@ var listFilters = []string{
 	filterNotIn,
 }
 
+// graphQLFilterType ???
 func graphQLFilterType(typeName string, args graphql.FieldConfigArgument) *graphql.InputObject {
 	var (
 		// Micro-opt: we know the size of the field map is the total number
@@ -210,14 +221,16 @@ func graphQLFilterType(typeName string, args graphql.FieldConfigArgument) *graph
 	)
 }
 
+// isValidValue ???
 func isValidValue(value interface{}) bool {
+
 	if value == nil {
 		return false
 	}
 
+	// graphql-go passes nil maps as empty values
 	if val, ok := value.(map[string]interface{}); ok {
 		if len(val) == 0 {
-			// graphql-go passes nil maps as empty values
 			return false
 		}
 	}
@@ -225,6 +238,7 @@ func isValidValue(value interface{}) bool {
 	return true
 }
 
+// parseValueToMap ???
 func parseValueToMap(astValue ast.Value) interface{} {
 	switch astValue.GetKind() {
 	case kinds.StringValue:
@@ -258,6 +272,7 @@ func parseValueToMap(astValue ast.Value) interface{} {
 	}
 }
 
+// FIXME: what's going on here?
 var mapScalar = graphql.NewScalar(graphql.ScalarConfig{
 	Name:        "Map",
 	Description: "The `Map` scalar type represents a Map for storing key/value pairs",

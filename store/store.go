@@ -14,6 +14,14 @@ import (
 	"github.com/valocode/bubbly/env"
 )
 
+//
+// The Bubbly Store is an abstraction for structured data stored in Bubbly,
+// as well as the metadata describing it.
+//
+// The Bubbly Store brings together the Bubbly Schema, the Bubbly Schema Graph,
+// the GraphQL Schema, and the underlying RDBMS. The latter is known as a "provider".
+//
+
 // New creates a new Store for the given config.
 func New(bCtx *env.BubblyContext) (*Store, error) {
 	var (
@@ -194,6 +202,7 @@ func (s *Store) Save(bCtx *env.BubblyContext, data core.DataBlocks) error {
 	return nil
 }
 
+// syncSchema ???
 func (s *Store) syncSchema() error {
 
 	bubblySchema, err := s.currentBubblySchema()
@@ -205,7 +214,10 @@ func (s *Store) syncSchema() error {
 	return nil
 }
 
+// updateSchema creates a new GraphQL schema from a provided Bubbly Schema,
+// and binds that GraphQL schema to the Bubbly Store instance.
 func (s *Store) updateSchema(bubblySchema *bubblySchema) error {
+
 	graph, err := newSchemaGraphFromMap(bubblySchema.Tables)
 	if err != nil {
 		return fmt.Errorf("failed to build schema graph: %w", err)
@@ -216,6 +228,7 @@ func (s *Store) updateSchema(bubblySchema *bubblySchema) error {
 		return fmt.Errorf("falied to build GraphQL schema: %w", err)
 	}
 
+	// FIXME: why mutex? who's accessing this concurrently?
 	s.mu.Lock()
 	s.graph = graph
 	s.bubblySchema = bubblySchema
@@ -225,11 +238,14 @@ func (s *Store) updateSchema(bubblySchema *bubblySchema) error {
 	return nil
 }
 
+// resolveQuery ???
 func (s *Store) resolveQuery(params graphql.ResolveParams) (interface{}, error) {
 	return s.p.ResolveQuery(s.graph, params)
 }
 
+// currentBubblySchema ???
 func (s *Store) currentBubblySchema() (*bubblySchema, error) {
+
 	// Check if the schema has been initialized
 	if s.schema == nil {
 		// This is fine, as we might be creating the schema in this process,
@@ -299,7 +315,10 @@ var schemaQuery = fmt.Sprintf(`
 }
 `, core.SchemaTableName)
 
+// internalTables is the minimum set of tables in a valid Bubbly Schema.
+// This set of tables is created when a new Bubbly Schema is created.
 var internalTables = core.Tables{resourceTable, schemaTable, eventTable}
+
 var resourceTable = core.Table{
 	Name: core.ResourceTableName,
 	Fields: []core.TableField{
