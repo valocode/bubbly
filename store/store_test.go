@@ -481,6 +481,34 @@ var sqlGenTests = []struct {
 			},
 		},
 	},
+	{
+		name:   "graphql order_by 1",
+		schema: "tables5.hcl",
+		data:   "data5.hcl",
+		query: `
+		{
+			test_run(order_by: [{location: {name: ASC}}, {configuration: {name: DESC}}]) {
+				configuration {
+					name
+				}
+				location(name: "Deep Dark Wood") {
+					name
+				}
+			}
+		}`,
+		want: map[string]interface{}{
+			"test_run": []interface{}{
+				map[string]interface{}{
+					"location": map[string]interface{}{
+						"name": "Deep Dark Wood",
+					},
+					"configuration": map[string]interface{}{
+						"name": "Primitive",
+					},
+				},
+			},
+		},
+	},
 }
 
 func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile string) {
