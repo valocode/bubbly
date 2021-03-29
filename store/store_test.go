@@ -905,9 +905,11 @@ func TestPostgresReinitialisation(t *testing.T) {
 	// feign re-initialisation of the Store, which should fetch the latest
 	// applied schema (from applySchemaOrDie)
 	s, err = New(bCtx)
+	require.NoError(t, err)
 
 	newSchema, err := s.currentBubblySchema()
-
+	require.NoError(t, err)
+	
 	// this should return the schema that was formed from applySchemaOrDie,
 	// _not_ the baseSchema at row 0 in the _schema table
 	require.NotEqual(t, baseSchema, newSchema)
