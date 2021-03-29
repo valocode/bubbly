@@ -15,7 +15,7 @@ jobs:
     strategy:
       # matrix lets us expand our range of OSs / go
       matrix:
-        go-version: [1.15.5]
+        go-version: [1.16.2]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
