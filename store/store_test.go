@@ -941,7 +941,6 @@ func TestPostgresReinitialisation(t *testing.T) {
 	// this should return the schema that was formed from applySchemaOrDie,
 	// _not_ the baseSchema at row 0 in the _schema table
 	require.NotEqual(t, baseSchema, newSchema)
-
 }
 
 // TODO: extract into a helper as a similar block of code is used elsewhere in store (?) tests

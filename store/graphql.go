@@ -20,12 +20,14 @@ const graphJoinDistance = 3
 
 // gqlField is our custom Graphql Field type so that we can store a field in
 // it's simplest form and iteratively add to it, before we convert it into a
-// real graphql field.
+// real GraphQL field.
 // One challenge is that we need to "reuse" fields inside joins, and in some
 // cases the end field type might be a List or a Scalar, so it is just easier
 // to encapsulate that inside this struct rather than add lots of complexity.
 type gqlField struct {
+	// Type is the GraphQL type of the current field.
 	Type *graphql.Object
+	// Args maps GraphQL argument names for the current field to their configuration objects.
 	Args graphql.FieldConfigArgument
 }
 
@@ -84,19 +86,22 @@ func newGraphQLSchema(graph *schemaGraph, s *Store) (graphql.Schema, error) {
 	return graphql.NewSchema(cfg)
 }
 
-// addGraphFields takes all the tables in the schema and creates our custom
-// graphql fields which we use for later processing.
+// addGraphFields updates the `gqlField` map containing GraphQL Field definitions
+// with information for every field of the Table `t`, which is a table coming
+// from the Bubbly Schema.
 func addGraphFields(t core.Table, fields map[string]gqlField) {
+
 	// These are the fields for this specific table
 	// which will correspond to fields on the GraphQL
 	// type, created dynamically below.
 	var (
-		// typeFields are the fields that will be nested inside this type that
-		// we are creating.
-		typeFields = make(graphql.Fields)
-		// gqlField is the graphql field which we are populating now
+		// gqlField is the current GraphQL field, which we are populating now
 		gqlField = fields[t.Name]
+
+		// typeFields are the GraphQL fields nested inside the current field (gqlField)
+		typeFields = make(graphql.Fields)
 	)
+
 	// Initialize the args
 	gqlField.Args = make(graphql.FieldConfigArgument)
 
@@ -150,95 +155,8 @@ func addGraphEdges(t core.Table, paths []schemaPath, fields map[string]gqlField)
 	}
 }
 
-// graphQLFieldType ???
-func graphQLFieldType(f core.TableField) *graphql.Scalar {
-	switch ty := f.Type; {
-	case ty == cty.Bool:
-		return graphql.Boolean
-	case ty == cty.Number:
-		return graphql.Int
-	case ty == cty.String:
-		return graphql.String
-	case ty.IsObjectType():
-		return mapScalar
-	default:
-		panic(fmt.Sprintf("Unsupported GraphQL conversion from cty.Type: %s", f.Type.GoString()))
-	}
-}
-
-const (
-	filterID = "filter"
-	limitID  = "limit"
-)
-
-const (
-	filterGreaterThan          = "_gt"
-	filterLessThan             = "_lt"
-	filterGreaterThanOrEqualTo = "_gte"
-	filterLessThanOrEqualTo    = "_lte"
-	filterIn                   = "_in"
-	filterNotIn                = "_not_in"
-)
-
-var scalarFilters = []string{
-	filterGreaterThan,
-	filterLessThan,
-	filterGreaterThanOrEqualTo,
-	filterLessThanOrEqualTo,
-}
-
-var listFilters = []string{
-	filterIn,
-	filterNotIn,
-}
-
-// graphQLFilterType ???
-func graphQLFilterType(typeName string, args graphql.FieldConfigArgument) *graphql.InputObject {
-	var (
-		// Micro-opt: we know the size of the field map is the total number
-		// of filter ops times the number of args we are given.
-		numFields = (len(scalarFilters) + len(listFilters)) * len(args)
-		fields    = make(graphql.InputObjectConfigFieldMap, numFields)
-	)
-	for n, a := range args {
-		for _, f := range scalarFilters {
-			fields[n+f] = &graphql.InputObjectFieldConfig{
-				Type: a.Type,
-			}
-		}
-		for _, f := range listFilters {
-			fields[n+f] = &graphql.InputObjectFieldConfig{
-				Type: graphql.NewList(a.Type),
-			}
-		}
-	}
-
-	return graphql.NewInputObject(
-		graphql.InputObjectConfig{
-			Name:   typeName + "_filter",
-			Fields: fields,
-		},
-	)
-}
-
-// isValidValue ???
-func isValidValue(value interface{}) bool {
-
-	if value == nil {
-		return false
-	}
-
-	// graphql-go passes nil maps as empty values
-	if val, ok := value.(map[string]interface{}); ok {
-		if len(val) == 0 {
-			return false
-		}
-	}
-
-	return true
-}
-
-// parseValueToMap ???
+// parseValueToMap converts the given value representing
+// a GraphQL AST to a standard Go map.
 func parseValueToMap(astValue ast.Value) interface{} {
 	switch astValue.GetKind() {
 	case kinds.StringValue:
@@ -289,3 +207,95 @@ var mapScalar = graphql.NewScalar(graphql.ScalarConfig{
 		return parseValueToMap(astValue)
 	},
 })
+
+// graphQLFieldType returns a GraphQL type capable of representing the value of the provided Bubbly Schema Field.
+// GraphQL types: https://spec.graphql.org/June2018/#sec-Types
+func graphQLFieldType(f core.TableField) *graphql.Scalar {
+	switch ty := f.Type; {
+	case ty == cty.Bool:
+		return graphql.Boolean
+	case ty == cty.Number:
+		return graphql.Int
+	case ty == cty.String:
+		return graphql.String
+	case ty.IsObjectType():
+		return mapScalar
+	default:
+		panic(fmt.Sprintf("Unsupported GraphQL conversion from cty.Type: %s", f.Type.GoString()))
+	}
+}
+
+const (
+	filterID  = "filter"
+	limitID   = "limit"
+	orderByID = "order_by"
+)
+
+const (
+	filterGreaterThan          = "_gt"
+	filterLessThan             = "_lt"
+	filterGreaterThanOrEqualTo = "_gte"
+	filterLessThanOrEqualTo    = "_lte"
+	filterIn                   = "_in"
+	filterNotIn                = "_not_in"
+)
+
+var scalarFilters = []string{
+	filterGreaterThan,
+	filterLessThan,
+	filterGreaterThanOrEqualTo,
+	filterLessThanOrEqualTo,
+}
+
+var listFilters = []string{
+	filterIn,
+	filterNotIn,
+}
+
+// graphQLFilterType creates and returns an "input object",
+// describing a GraphQL argument for the type identified by its name.
+// An input object defines a structured collection of fields which may be supplied to a field argument.
+func graphQLFilterType(typeName string, args graphql.FieldConfigArgument) *graphql.InputObject {
+	var (
+		// Micro-opt: we know the size of the field map is the total number
+		// of filter ops times the number of args we are given.
+		numFields = (len(scalarFilters) + len(listFilters)) * len(args)
+		fields    = make(graphql.InputObjectConfigFieldMap, numFields)
+	)
+	for n, a := range args {
+		for _, f := range scalarFilters {
+			fields[n+f] = &graphql.InputObjectFieldConfig{
+				Type: a.Type,
+			}
+		}
+		for _, f := range listFilters {
+			fields[n+f] = &graphql.InputObjectFieldConfig{
+				Type: graphql.NewList(a.Type),
+			}
+		}
+	}
+
+	return graphql.NewInputObject(
+		graphql.InputObjectConfig{
+			Name:   typeName + "_filter",
+			Fields: fields,
+		},
+	)
+}
+
+// isValidValue (for what/whom) ???
+func isValidValue(value interface{}) bool {
+
+	if value == nil {
+		return false
+	}
+
+	// graphql-go passes nil maps as empty values
+	if val, ok := value.(map[string]interface{}); ok {
+		if len(val) == 0 {
+			return false
+		}
+	}
+
+	return true
+}
