@@ -37,8 +37,7 @@ func newNATS(bCtx *env.BubblyContext) (*natsClient, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf(
-			`client failed to establish a connection to the NATS
-				server at address "%s": %w`,
+			`client failed to establish a connection to the NATS server at address "%s": %w`,
 			bCtx.ClientConfig.NATSAddr,
 			err,
 		)

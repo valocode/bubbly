@@ -19,6 +19,7 @@ import (
 type Component interface {
 	// Connect to a NATS Server
 	Connect(bCtx *env.BubblyContext) error
+	// Close is used to close any resources, such as connections to NATS, DBs
 	Close()
 	// Subscribe to publications on a given subject
 	Subscribe(bCtx *env.BubblyContext, sub DesiredSubscription) (*nats.Subscription, error)

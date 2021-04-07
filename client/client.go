@@ -28,6 +28,7 @@ type Client interface {
 	Query(*env.BubblyContext, string) ([]byte, error)
 	// Applying a schema
 	PostSchema(*env.BubblyContext, []byte) error
+	// Close closes any connections, e.g. to NATS
 	Close()
 }
 

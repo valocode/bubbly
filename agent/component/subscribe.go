@@ -44,11 +44,10 @@ type Subject string
 // defined centrally here
 const (
 	StoreGetResourcesByKind Subject = "store.GetResourcesByKind"
-	// StorePostResource       Subject = "store.PostResource"
-	StorePostSchema       Subject = "store.PostSchema"
-	StoreQuery            Subject = "store.Query"
-	StoreUpload           Subject = "store.Upload"
-	WorkerPostRunResource Subject = "worker.PostRunResource"
+	StorePostSchema         Subject = "store.PostSchema"
+	StoreQuery              Subject = "store.Query"
+	StoreUpload             Subject = "store.Upload"
+	WorkerPostRunResource   Subject = "worker.PostRunResource"
 )
 
 type Queues []Queue

@@ -16,6 +16,7 @@ import (
 	"github.com/valocode/bubbly/env"
 )
 
+// Just some random value that probably won't be in use. It can be changed
 const TEST_PORT = 8131
 
 func RunServerOnPort(port int) *server.Server {
@@ -45,7 +46,8 @@ func TestNATS(t *testing.T) {
 		component.StorePostSchema, component.StoreQuery, component.StoreUpload}
 	for _, sub := range subjects {
 		ec.QueueSubscribe(string(sub), string(component.StoreQueue), func(m *nats.Msg) {
-			reply, _ := json.Marshal(component.Reply{})
+			reply, err := json.Marshal(component.Reply{})
+			require.NoError(t, err)
 			ec.Publish(m.Reply, reply)
 		})
 	}

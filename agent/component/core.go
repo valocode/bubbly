@@ -33,11 +33,7 @@ const (
 // It is recommended that all bubbly agent components embed ComponentCore.
 type ComponentCore struct {
 	Type ComponentType
-	// NATSServer contains the connections to the NATS Server.
-	// This is nested within the ComponentCore as Components are
-	// individually responsible for managing their own connection
-	// to a NATS Server.
-	// NATSServer *NATS
+	// EConn contains the an encoded connection to the NATS server
 	EConn *nats.EncodedConn
 	// DesiredSubscriptions represents the pre-configured subscriptions that
 	// the Component should _attempt_ to subscribe to.

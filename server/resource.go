@@ -21,7 +21,6 @@ import (
 // @Produce  json
 // @Success 200 {object} apiResponse
 // @Failure 400 {object} apiResponse
-// @Failure 500 {object} apiResponse
 // @Router /resource [post]
 func (s *Server) PostResource(c echo.Context) error {
 	// read the resource into a ResourceBlockJSON which keeps the spec{} block
@@ -106,8 +105,6 @@ func (s *Server) RunResource(c echo.Context) error {
 // @Produce  json
 // @Success 200 {object} apiResponse
 // @Failure 400 {object} apiResponse
-// @Failure 400 {object} apiResponse
-// @Failure 500 {object} apiResponse
 // @Router /resource/{id} [get]
 func (s *Server) GetResource(c echo.Context) error {
 	resBlock := core.ResourceBlock{
