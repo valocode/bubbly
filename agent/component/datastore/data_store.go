@@ -43,12 +43,6 @@ type DataStore struct {
 // a list of DesiredSubscriptions that the data store attempts to subscribe to
 func (d *DataStore) defaultSubscriptions() component.DesiredSubscriptions {
 	return component.DesiredSubscriptions{
-		// component.DesiredSubscription{
-		// 	Subject: component.StorePostResource,
-		// 	Queue:   component.StoreQueue,
-		// 	Reply:   true,
-		// 	Handler: d.PostResourceHandler,
-		// },
 		component.DesiredSubscription{
 			Subject: component.StoreGetResourcesByKind,
 			Queue:   component.StoreQueue,

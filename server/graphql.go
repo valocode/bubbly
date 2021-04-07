@@ -25,7 +25,6 @@ type apiResponse struct {
 // @Success 200 {object} apiResponse
 // @Failure 400 {object} apiResponse
 // @Failure 404 {object} apiResponse
-// @Failure 500 {object} apiResponse
 // @Router /graphql [post]
 func (s *Server) Query(c echo.Context) error {
 	var query queryReq

@@ -98,7 +98,8 @@ func (n *natsClient) GetResource(bCtx *env.BubblyContext, resID string) ([]byte,
 		return nil, fmt.Errorf(`no resource found matching ID "%s"`, resID)
 	}
 
-	// the result is always []interface{}
+	// the result is always []interface{} because this is what the graphql
+	// resolver will return
 	resourceJSONSlice := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
 
 	// ...which we presume to be of length 1, since resources with identical
