@@ -16,15 +16,19 @@ incomplete and is liable to change at any time.
 :::
 
 # Infrastructure
+
 To run the tutorial, you'll need the Bubbly Agent running with its Store connected to your external Postgresql database,
-as described in the Getting Started section. In addition, you will need to have `gosec` 
+as described in the Getting Started section. In addition, you will need to have `gosec`
+
 ```shell
 go get github.com/securego/gosec/v2/cmd/gosec
 ```
 
 # Introduction
+
 [gosec](https://github.com/securego/gosec) is a powerful tool that scans for errors in your code by leveraging Go's AST.
 Gosec will scan the provided directory, and provide results similar to the example below.
+
 ```json
 {
   "Issues": [
@@ -45,10 +49,13 @@ Gosec will scan the provided directory, and provide results similar to the examp
   ]
 }
 ```
+
 In this example, we will write a `Bubbly` pipeline that will determine if you have any issues with a `HIGH` severity.
 
 # Updating the Bubbly Schema
+
 First, we will need to update our `Bubbly Schema` to support adding the severity of an issue.
+
 ```hcl
 table "gosec_issues" {
     field "severity" {
@@ -59,10 +66,13 @@ table "gosec_issues" {
 ```
 
 # Writing the Pipeline
+
 Now, we will create a new `.bubbly` file that will handle our new pipeline
 
 ## Extract
-Here, we will simply extract just the severity from the issues. 
+
+Here, we will simply extract just the severity from the issues.
+
 ```hcl
 resource "extract" "gosec" {
   api_version = "v1"
@@ -82,7 +92,9 @@ resource "extract" "gosec" {
 ```
 
 ## Transform
+
 Now that we have the severity, it is time to transform it into a format that `Bubbly` can handle.
+
 ```hcl
 resource "transform" "gosec" {
   api_version = "v1"
@@ -103,7 +115,9 @@ resource "transform" "gosec" {
 ```
 
 ## Load
+
 The next step is to load the data!
+
 ```hcl
 resource "load" "gosec" {
   api_version = "v1"
@@ -115,7 +129,9 @@ resource "load" "gosec" {
 ```
 
 ## Pipeline
-In this step, we will stitch all the data together in a single pipeline. 
+
+In this step, we will stitch all the data together in a single pipeline.
+
 ```hcl
 resource "pipeline" "gosec" {
   api_version = "v1"
@@ -146,7 +162,9 @@ resource "pipeline" "gosec" {
 ```
 
 ## Run
+
 Next, we will add a simple `run` resource for the pipeline.
+
 ```hcl
 resource "run" "gosec" {
   api_version = "v1"
@@ -157,8 +175,10 @@ resource "run" "gosec" {
 ```
 
 ## Run
-We will also create a `run` resource for extracting the results from a specified file. Make sure to change the path to 
+
+We will also create a `run` resource for extracting the results from a specified file. Make sure to change the path to
 reflect the location of the file you are looking to upload.
+
 ```hcl
 resource "run" "gosec/extract" {
   api_version = "v1"
@@ -172,8 +192,10 @@ resource "run" "gosec/extract" {
 ```
 
 ## Query
-Now that the data is uploaded, it is time to start querying the data. Here we will query for just the severity of the 
+
+Now that the data is uploaded, it is time to start querying the data. Here we will query for just the severity of the
 issue.
+
 ```hcl
 resource "query" "gosec_data" {
   api_version = "v1"
@@ -190,7 +212,9 @@ resource "query" "gosec_data" {
 ```
 
 ## Criteria
+
 Here, we will write a quick criteria, that will pass on the condition that there are no issues with "HIGH" severity
+
 ```hcl
 resource "criteria" "gosec_status" {
   api_version = "v1"
@@ -208,7 +232,9 @@ resource "criteria" "gosec_status" {
 ```
 
 ## Run
+
 The final step is to just write a `run` resource for the criteria as follows.
+
 ```hcl
 resource "run" "gosec_criteria" {
   api_version = "v1"
@@ -219,6 +245,7 @@ resource "run" "gosec_criteria" {
 ```
 
 # Results
-In this tutorial, we took a look at what goes into writing a pipeline for ensuring that your code doesn't include any 
+
+In this tutorial, we took a look at what goes into writing a pipeline for ensuring that your code doesn't include any
 issues with "HIGH" severity. `Gosec` is a powerful tool, and there are many other interesting ways to inspect your code
 quality.
