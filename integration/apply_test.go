@@ -70,6 +70,15 @@ func TestApply(t *testing.T) {
 		testGet(t, bCtx, []string{"extract/snyk"})
 	})
 
+	t.Run("gosec", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+		err := bubbly.Apply(bCtx, "./testdata/gosec")
+		assert.NoError(t, err, "failed to apply resource")
+
+		testGet(t, bCtx, []string{"extract/gosec"})
+	})
+
 	// Subtest
 	t.Run("query", func(t *testing.T) {
 		bCtx := env.NewBubblyContext()

@@ -215,3 +215,30 @@ table "snyk_vulnerabilities" {
         type = string
     }
 }
+
+#
+# For integration/testdata/gosec/gosec.bubbly
+#
+table "gosec_issues" {
+    field "details" {
+        type = string
+    }
+    field "rule_id" {
+        type = string
+    }
+    field "severity" {
+        type = string
+    }
+    field "line" {
+        type = string
+    }
+    field "code_column" {
+        type = string
+    }
+    field "file" {
+        type = string
+    }
+    field "code" {
+        type = string
+    }
+}
