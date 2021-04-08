@@ -87,7 +87,7 @@ module.exports = {
           sidebarPath: require.resolve('./sidebars.js'),
           routeBasePath: '/',
           editUrl:
-            'https://github.com/valocode/bubbly/edit/master/website/',
+            'https://github.com/valocode/bubbly/edit/main/docs/',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),

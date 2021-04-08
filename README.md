@@ -1,6 +1,8 @@
-![bubbly-logo](/img/bubbly-blue-wide.png)
+
 # Bubbly
-## Introduction to Bubbly
+
+![bubbly-logo](/docs/static/img/bubbly-blue-wide.png)
+
 Bubbly - Release Readiness in a Bubble
 
 Bubbly emerged from a need that many lean software teams practicing Continuous Integration and Delivery have: the need to be better performers. The idea is quite simple: build a model that can capture all the metrics that you care about, extract data from any tool in your process, and use those metrics to drive better and more automated decisions.
@@ -8,8 +10,9 @@ Bubbly emerged from a need that many lean software teams practicing Continuous I
 **Release Readiness** is a term that we use to define the state of being ready to release software. What is interesting to consider is how different teams define their release readiness. Often teams have planned to implement some features and run automated quality and security checks throughout the process (static analysis, automated tests, CVE checks, etc.). Ultimately the decision of being release ready comes down to a measure of confidence. So how best to inform this measure of confidence in an efficient and reliable way?
 
 ## Bubbly Status
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/valocode/bubbly)](https://goreportcard.com/report/github.com/valocode/bubbly)
-[![Known Vulnerabilities](https://snyk.io/test/github/valocode/bubbly/badge.svg)](https://snyk.io/test/github/valocode/bubbly)
+
 ### Problem
 
 The problem around Release Readiness is one of data. All the tools used in the software process produce data, and that data should be used to measure attributes such as feature-completeness, quality and security of your product.
@@ -34,6 +37,7 @@ A GraphQL API is automatically generated based on the user-defined schema, which
 The data in Bubbly can now be used to make automated decisions in pipelines (e.g. check that results are good) and can be used to power dashboards. Any dashboard that supports GraphQL (like [Grafana](https://grafana.com/grafana/)) can be used to visualize the data. Bubbly also ships with its own UI, and this was born out of the need to understand the data hierarchy (something that ordinary dashboards do not do too well with).
 
 Check out the [Core Concepts](https://docs.bubbly.dev/introduction/core-concepts) for more information on things like the schema, HCL and data pipelines.
+
 #### Goals
 
 The goal of Bubbly was to be a "bridge" between data, and make connecting and accessing data as simple, reliable and fun as possible! Writing data pipelines feels awesome!
@@ -47,6 +51,7 @@ Some ways in which Bubbly could be used are:
     A decision protocol to formally define your Release Readiness Criteria, and automatically apply that to all products
 
 If you want to see some use cases that we are currently solving with Bubbly, check out the Use Cases.
+
 #### Non-Goals
 
 The things that Bubbly is not aiming to be:
@@ -86,12 +91,17 @@ We might already be working on the feature that you need, or can prioritise it i
 And as it is open source we really welcome contributions!
 
 ## Install
-See our [Installation Guide](https://docs.bubbly.dev/getting-started/getting-started#installation)
-## Getting Started
-See our [Getting Started Guide](https://docs.bubbly.dev/getting-started/getting-started)
-## Contributing
-See our [Contributing Guide](./website/docs/contributing/contributing.md)
 
+See our [Installation Guide](https://docs.bubbly.dev/getting-started/getting-started#installation)
+
+## Getting Started
+
+See our [Getting Started Guide](https://docs.bubbly.dev/getting-started/getting-started)
+
+## Contributing
+
+See our [Contributing Guide](./docs/docs/contributing/contributing.md)
 
 ## License
+
 [Mozilla Public License Version 2.0](https://www.mozilla.org/en-US/MPL/)

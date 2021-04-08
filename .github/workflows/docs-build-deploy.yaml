@@ -21,12 +21,12 @@ jobs:
         with:
           node-version: 12.x
       - run: yarn install
-        working-directory: website
+        working-directory: docs
       - run: yarn run build
-        working-directory: website
+        working-directory: docs
 
       - name: Write version file
-        working-directory: website
+        working-directory: docs
         run: |
           # write version info to artifact
           echo "Built from GitHub repo ${{ github.repository }} version ${GITHUB_SHA::7}" > ./build/version.txt
@@ -34,7 +34,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: bubbly-docs
-          path: ./website/build/
+          path: ./docs/build/
           retention-days: 1
 
   deploy:
