@@ -46,9 +46,9 @@ We are not aiming to replace every tool you are already using, in fact, without 
 
 Some ways in which Bubbly could be used are:
 
-    Real-time knowledgebase of all products and their high-level release readiness state
-    Catalogue of OSS components, licenses, CVEs and approvals/rejections for those
-    A decision protocol to formally define your Release Readiness Criteria, and automatically apply that to all products
+* Real-time knowledgebase of all products and their high-level release readiness state.
+* Catalogue of OSS components, licenses, CVEs and approvals/rejections for those.
+* A decision protocol to formally define your Release Readiness Criteria, and automatically apply that to all products.
 
 If you want to see some use cases that we are currently solving with Bubbly, check out the Use Cases.
 
@@ -56,10 +56,11 @@ If you want to see some use cases that we are currently solving with Bubbly, che
 
 The things that Bubbly is not aiming to be:
 
-    A testing tool/framework
-    A traditional monitoring tool (think Ops metrics, like Prometheus)
-    Another dashboard (like Grafana)
-        We like to make the distinction between a "dashboard" which typically has some specific views to visualize data, vs a "knowledgebase" which is more like a web app that has multiple dashboards inside it
+* A testing tool/framework.
+* A traditional monitoring tool (think Ops metrics, like Prometheus).
+* Another dashboard (like Grafana).
+  
+  We like to make the distinction between a "dashboard" which typically has some specific views to visualize data, vs a "knowledgebase" which is more like a web app that has multiple dashboards inside it.
 
 ## Architecture
 
@@ -71,9 +72,9 @@ Bubbly is open source, licensed under the [Mozilla Public License v2](https://ww
 
 We have a few reasons for being open source:
 
-1. The team and company behind Bubbly are all big fans of open source, so it was never really considered not making it open source
-2. We want to focus on building the best product, and we firmly believe making the project OSS will help us achieve this
-3. We want to enable teams to be better. And that's why we are launching a SaaS service for Bubbly to get you up and running in minutes
+1. The team and company behind Bubbly are all big fans of open source, so it was never really considered not making it open source.
+2. We want to focus on building the best product, and we firmly believe making the project OSS will help us achieve this.
+3. We want to enable teams to be better. And that's why we are launching a SaaS service for Bubbly to get you up and running in minutes.
 
 ## Alternatives
 
