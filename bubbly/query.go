@@ -32,7 +32,7 @@ func QueryResources(bCtx *env.BubblyContext, query string) ([]Resource, error) {
 		return nil, fmt.Errorf("failed to create bubbly client: %w", err)
 	}
 
-	res, err := c.Query(bCtx, query)
+	res, err := c.Query(bCtx, nil, query)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to query: %w", err)

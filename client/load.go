@@ -12,7 +12,7 @@ import (
 // Load takes the output from a load resource and POSTs it to the Bubbly
 // server.
 // Returns an error if loading was unsuccessful
-func (c *httpClient) Load(bCtx *env.BubblyContext, data []byte) error {
+func (c *httpClient) Load(bCtx *env.BubblyContext, _ *component.MessageAuth, data []byte) error {
 
 	_, err := c.handleRequest(http.MethodPost, "/upload", bytes.NewBuffer(data))
 	if err != nil {
@@ -24,13 +24,16 @@ func (c *httpClient) Load(bCtx *env.BubblyContext, data []byte) error {
 
 // Upload uses the bubbly NATS client to upload arbitrary data to be saved
 // into the data store.
-func (n *natsClient) Load(bCtx *env.BubblyContext, data []byte) error {
+func (n *natsClient) Load(bCtx *env.BubblyContext, auth *component.MessageAuth, data []byte) error {
 	bCtx.Logger.Debug().
 		Msg("Uploading data to the data store")
 
 	req := component.Request{
 		Subject: component.StoreUpload,
-		Data:    data,
+		Data: component.MessageData{
+			Auth: auth,
+			Data: data,
+		},
 	}
 	// reply is a Publication received from a bubbly store
 	if err := n.request(bCtx, &req); err != nil {

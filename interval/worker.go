@@ -14,6 +14,7 @@ import (
 
 	"github.com/zclconf/go-cty/cty"
 
+	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/api"
 	"github.com/valocode/bubbly/api/common"
 	"github.com/valocode/bubbly/api/core"
@@ -119,7 +120,7 @@ const (
 
 // RunIntervalRuns establishes the channels and will run runs of type IntervalRun
 // TODO: how to handle additions to the Pool during runtime?
-func (w *ResourceWorker) RunIntervalRuns(bCtx *env.BubblyContext) error {
+func (w *ResourceWorker) RunIntervalRuns(bCtx *env.BubblyContext, auth *component.MessageAuth) error {
 	iPool := w.Pools.Interval
 	for _, run := range iPool.Pool.Runs {
 		eg := new(errgroup.Group)
@@ -137,7 +138,7 @@ func (w *ResourceWorker) RunIntervalRuns(bCtx *env.BubblyContext) error {
 		//  run failure, retry/purge the run from the worker pool and then move
 		//  on
 		eg.Go(func() error {
-			return run.ApplyWithInterval(bCtx, w.WorkerChannels[run.Resource.String()], ctx)
+			return run.ApplyWithInterval(bCtx, w.WorkerChannels[run.Resource.String()], ctx, auth)
 		})
 	}
 
@@ -146,7 +147,7 @@ func (w *ResourceWorker) RunIntervalRuns(bCtx *env.BubblyContext) error {
 
 // RunOneOffRuns runs all resources within the resource worker's OneOff Pool.
 // That is, all of its one-off run resources
-func (w *ResourceWorker) RunOneOffRuns(bCtx *env.BubblyContext) error {
+func (w *ResourceWorker) RunOneOffRuns(bCtx *env.BubblyContext, auth *component.MessageAuth) error {
 	w.Pools.OneOff.mu.Lock()
 	bCtx.Logger.Debug().Int("pool", len(w.Pools.OneOff.Runs)).Msg("number of one-off runs to run")
 	for _, run := range w.Pools.OneOff.Runs {
@@ -164,7 +165,7 @@ func (w *ResourceWorker) RunOneOffRuns(bCtx *env.BubblyContext) error {
 
 		bCtx.Logger.Debug().Str("dir", dir).Msg("running one-off run resource")
 
-		err := run.ApplyOneOff(bCtx)
+		err := run.ApplyOneOff(bCtx, auth)
 
 		// regardless of outcome, purge the one-off resource from the worker
 		// pool to prevent run build up
@@ -225,7 +226,7 @@ func (w *ResourceWorker) ParseResource(bCtx *env.BubblyContext, r core.Resource,
 	switch r.(type) {
 	case *v1.Run:
 		runV1 := r.(*v1.Run)
-		err := common.DecodeBody(bCtx, runV1.SpecHCL.Body, &runV1.Spec, core.NewResourceContext(cty.NilVal, nil))
+		err := common.DecodeBody(bCtx, runV1.SpecHCL.Body, &runV1.Spec, core.NewResourceContext(cty.NilVal, api.NewResource, nil))
 		if err != nil {
 			bCtx.Logger.Error().Str("resource", runV1.String()).Msg("worker failed to decode resource")
 			return fmt.Errorf("worker failed to decode resource: %w", err)
@@ -315,14 +316,14 @@ func (w *ResourceWorker) parseInputData(input server.RemoteInput) (string, error
 
 // ApplyWithInterval will apply the underlying run based on the defined interval
 // TODO: enable once functionality is stabilised
-func (r *Run) ApplyWithInterval(bCtx *env.BubblyContext, ch <-chan RunAction, ctx context.Context) error {
+func (r *Run) ApplyWithInterval(bCtx *env.BubblyContext, ch <-chan RunAction, ctx context.Context, auth *component.MessageAuth) error {
 	ticker := time.NewTicker(r.interval)
 	defer ticker.Stop()
 mainloop:
 	for {
 		select {
 		case <-ticker.C:
-			resContext := core.NewResourceContext(cty.NilVal, api.NewResource)
+			resContext := core.NewResourceContext(cty.NilVal, api.NewResource, auth)
 			output := r.Resource.Apply(bCtx, resContext)
 			if output.Error != nil {
 				bCtx.Logger.Error().Err(output.Error).Msg("error applying run")
@@ -353,9 +354,9 @@ mainloop:
 
 // ApplyOneOff is used to apply remote Run resources that lack a specified
 // interval. The resource is applied only once.
-func (r *Run) ApplyOneOff(bCtx *env.BubblyContext) error {
+func (r *Run) ApplyOneOff(bCtx *env.BubblyContext, auth *component.MessageAuth) error {
 	bCtx.Logger.Debug().Str("id", r.Resource.String()).Msg("run resource of type OneOffRun identified")
-	resContext := core.NewResourceContext(cty.NilVal, api.NewResource)
+	resContext := core.NewResourceContext(cty.NilVal, api.NewResource, auth)
 	subResourceOutput := r.Resource.Apply(bCtx, resContext)
 
 	runResourceOutput := core.ResourceOutput{
@@ -375,7 +376,7 @@ func (r *Run) ApplyOneOff(bCtx *env.BubblyContext) error {
 	//  run the current run resource
 
 	// load the output of the run resource to the event store
-	if err := common.LoadResourceOutput(bCtx, &runResourceOutput); err != nil {
+	if err := common.LoadResourceOutput(bCtx, &runResourceOutput, auth); err != nil {
 		return fmt.Errorf(
 			`failed to store the output of running resource "%s" to the store: %w`,
 			r.Resource.String(),

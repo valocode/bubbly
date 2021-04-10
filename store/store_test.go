@@ -415,10 +415,7 @@ func createResJSONOrDie(t *testing.T) core.Data {
 		SpecRaw: "data {}",
 	}
 
-	data, err := resJSON.Data()
-	require.NoError(t, err)
-
-	return data
+	return resJSON.Data()
 }
 
 // runQueryTestsOrDie runs all basic query tests, or fails hard on error.

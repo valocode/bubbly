@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/valocode/bubbly/agent/component"
 )
 
 // authorize godoc
@@ -17,9 +18,9 @@ import (
 // @Failure 400 {object} apiResponse
 // @Router /authorize [post]
 func (s *Server) authorize(c echo.Context) error {
-	var reqAuth = c.Get(requestAuthKey).(requestAuth)
+	auth := s.getAuthFromContext(c)
 	// Create a new request to get the authorization information
-	return c.JSON(http.StatusOK, reqAuth)
+	return c.JSON(http.StatusOK, auth)
 }
 
 func (s *Server) getOrganizations(c echo.Context) error {
@@ -68,17 +69,17 @@ func (s *Server) deleteUserToken(c echo.Context) error {
 
 func (s *Server) handleAuthServiceRequest(c echo.Context, method string, path string) error {
 	var (
-		reqAuth = c.Get(requestAuthKey).(requestAuth)
-		client  = &http.Client{}
+		auth   = s.getAuthFromContext(c)
+		client = &http.Client{}
 	)
 	req, err := http.NewRequest(method, s.bCtx.AuthConfig.AuthAddr+path, c.Request().Body)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to create auth service request: "+err.Error())
 	}
 	q := req.URL.Query()
-	q.Add("user_id", reqAuth.UserID)
-	if reqAuth.Organization != "" {
-		q.Add("organization", reqAuth.Organization)
+	q.Add("user_id", auth.UserID)
+	if auth.Organization != "" {
+		q.Add("organization", auth.Organization)
 	}
 	req.URL.RawQuery = q.Encode()
 
@@ -110,4 +111,14 @@ func doOrganizationQuery(client *http.Client, req *http.Request) ([]byte, error)
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "failed to read response from auth service: "+err.Error())
 	}
 	return respBytes, nil
+}
+
+const authContextKey = "auth"
+
+func (s *Server) getAuthFromContext(c echo.Context) *component.MessageAuth {
+	if !s.bCtx.AuthConfig.Authentication {
+		return nil
+	}
+	auth := c.Get(authContextKey).(component.MessageAuth)
+	return &auth
 }

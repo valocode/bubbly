@@ -46,7 +46,7 @@ func ApplySchema(bCtx *env.BubblyContext, file string) error {
 	}
 	defer c.Close()
 
-	if err := c.PostSchema(bCtx, tableBytes); err != nil {
+	if err := c.PostSchema(bCtx, nil, tableBytes); err != nil {
 		return fmt.Errorf("failed to post schema to bubbly server: %w", err)
 	}
 

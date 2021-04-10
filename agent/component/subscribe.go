@@ -1,8 +1,6 @@
 package component
 
 import (
-	"github.com/nats-io/nats.go"
-
 	"github.com/valocode/bubbly/env"
 )
 
@@ -30,7 +28,7 @@ type DesiredSubscription struct {
 // Subscription subject. It is by bubbly components when receiving request
 // /publish messages in order to process (and optionally reply)
 // to these messages
-type SubscriptionHandlerFn func(*env.BubblyContext, *nats.Msg) (interface{}, error)
+type SubscriptionHandlerFn func(*env.BubblyContext, string, string, MessageData) (interface{}, error)
 
 type Subjects []Subject
 

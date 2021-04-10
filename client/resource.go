@@ -20,7 +20,7 @@ import (
 // TODO: with some of the new architecture it might be possible for client
 //  to return an actual resource, and not just a byte... Don't want to create
 //  a merge hell so making a note here
-func (c *httpClient) GetResource(bCtx *env.BubblyContext, id string) ([]byte, error) {
+func (c *httpClient) GetResource(bCtx *env.BubblyContext, _ *component.MessageAuth, id string) ([]byte, error) {
 
 	bCtx.Logger.Debug().Str("resource_id", id).Msg("Getting resource from bubbly API.")
 
@@ -34,7 +34,7 @@ func (c *httpClient) GetResource(bCtx *env.BubblyContext, id string) ([]byte, er
 }
 
 // PostResource uses the bubbly api endpoint to post a resource
-func (c *httpClient) PostResource(bCtx *env.BubblyContext, resource []byte) error {
+func (c *httpClient) PostResource(bCtx *env.BubblyContext, _ *component.MessageAuth, resource []byte) error {
 
 	_, err := c.handleRequest(http.MethodPost, "/resource", bytes.NewBuffer(resource))
 	if err != nil {
@@ -45,7 +45,7 @@ func (c *httpClient) PostResource(bCtx *env.BubblyContext, resource []byte) erro
 }
 
 // PostResourceToWorker is not supported by the HTTP
-func (h *httpClient) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) error {
+func (h *httpClient) PostResourceToWorker(bCtx *env.BubblyContext, _ *component.MessageAuth, data []byte) error {
 	return errors.New("unsupported operation for the HTTP client: PostResourceToWorker")
 }
 
@@ -54,7 +54,7 @@ func (h *httpClient) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) 
 // Takes a resource ID as input, returns a []byte representing the
 // core.ResourceBlock of the resource or an error if
 // the client was unable to get the resource.
-func (n *natsClient) GetResource(bCtx *env.BubblyContext, resID string) ([]byte,
+func (n *natsClient) GetResource(bCtx *env.BubblyContext, auth *component.MessageAuth, resID string) ([]byte,
 	error) {
 
 	// for the graphQL query
@@ -76,7 +76,10 @@ func (n *natsClient) GetResource(bCtx *env.BubblyContext, resID string) ([]byte,
 
 	req := component.Request{
 		Subject: component.StoreQuery,
-		Data:    []byte(resQuery),
+		Data: component.MessageData{
+			Auth: auth,
+			Data: []byte(resQuery),
+		},
 	}
 	if err := n.request(bCtx, &req); err != nil {
 		return nil, fmt.Errorf("failed to get resource from query: %w", err)
@@ -110,14 +113,17 @@ func (n *natsClient) GetResource(bCtx *env.BubblyContext, resID string) ([]byte,
 
 // PostResource uses the bubbly natsClient client to publish a resource to the data
 // store.
-func (n *natsClient) PostResource(bCtx *env.BubblyContext, data []byte) error {
+func (n *natsClient) PostResource(bCtx *env.BubblyContext, auth *component.MessageAuth, data []byte) error {
 	bCtx.Logger.Debug().
 		Str("subject", string(component.StoreUpload)).
 		Msg("Posting resource to store")
 
 	req := component.Request{
 		Subject: component.StoreUpload,
-		Data:    data,
+		Data: component.MessageData{
+			Auth: auth,
+			Data: data,
+		},
 	}
 
 	if err := n.request(bCtx, &req); err != nil {
@@ -129,7 +135,7 @@ func (n *natsClient) PostResource(bCtx *env.BubblyContext, data []byte) error {
 
 // PostResource uses the bubbly natsClient client to publish a resource to a worker
 // The data is marshalled from a core.DataBlocks
-func (n *natsClient) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) error {
+func (n *natsClient) PostResourceToWorker(bCtx *env.BubblyContext, auth *component.MessageAuth, data []byte) error {
 	bCtx.Logger.Debug().
 		Str("subject", string(component.WorkerPostRunResource)).
 		Msg("Posting resource to worker")
@@ -138,7 +144,12 @@ func (n *natsClient) PostResourceToWorker(bCtx *env.BubblyContext, data []byte) 
 	// we offload responsibility for updating future state of the run resource to
 	// the worker that picks it up. What this means is that the worker should
 	// update the data store with the success/failure of the run
-	if err := n.EConn.Publish(string(component.WorkerPostRunResource), data); err != nil {
+	if err := n.EConn.Publish(
+		string(component.WorkerPostRunResource),
+		component.MessageData{
+			Auth: auth,
+			Data: data,
+		}); err != nil {
 		return fmt.Errorf("failed to publish run resource to worker: %w", err)
 	}
 

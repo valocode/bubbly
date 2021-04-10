@@ -84,17 +84,12 @@ func TestEventTrigger(t *testing.T) {
 		},
 		SpecRaw: "data {}",
 	}
-	d, err := resJSON.Data()
-
-	require.NoError(t, err)
 
 	s, err := New(bCtx)
-
 	require.NoError(t, err)
 
 	// save the blocks to the store
-	err = s.Save(bCtx, core.DataBlocks{d})
-
+	err = s.Save(bCtx, core.DataBlocks{resJSON.Data()})
 	require.NoError(t, err)
 
 	resQuery := fmt.Sprintf(`
@@ -111,8 +106,6 @@ func TestEventTrigger(t *testing.T) {
 
 	// query to make sure that the default trigger responsible for loading data into the _event table has worked
 	result := s.Query(resQuery)
-
 	t.Logf("%v", result.Data)
-
 	require.NotEmpty(t, result)
 }

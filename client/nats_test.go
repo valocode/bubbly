@@ -39,16 +39,14 @@ func TestNATS(t *testing.T) {
 			assert.NoError(t, err)
 		}))
 	require.NoErrorf(t, err, "nats connect")
-	ec, err := nats.NewEncodedConn(nc, nats.DEFAULT_ENCODER)
+	ec, err := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
 	require.NoErrorf(t, err, "nats encoded connect")
 
 	subjects := component.Subjects{component.StoreGetResourcesByKind,
 		component.StorePostSchema, component.StoreQuery, component.StoreUpload}
 	for _, sub := range subjects {
-		ec.QueueSubscribe(string(sub), string(component.StoreQueue), func(m *nats.Msg) {
-			reply, err := json.Marshal(component.Reply{})
-			require.NoError(t, err)
-			ec.Publish(m.Reply, reply)
+		ec.QueueSubscribe(string(sub), string(component.StoreQueue), func(subject string, reply string, data component.MessageData) {
+			ec.Publish(reply, component.Reply{})
 		})
 	}
 
@@ -62,12 +60,12 @@ func TestNATS(t *testing.T) {
 	}
 	b, err := json.Marshal(tables)
 	require.NoErrorf(t, err, "marshal tables")
-	err = client.PostSchema(bCtx, b)
+	err = client.PostSchema(bCtx, nil, b)
 	require.NoErrorf(t, err, "post schema")
 
 	// RESOURCE
 	b, err = json.Marshal("test")
 	require.NoError(t, err)
-	err = client.PostResource(bCtx, b)
+	err = client.PostResource(bCtx, nil, b)
 	require.NoError(t, err)
 }

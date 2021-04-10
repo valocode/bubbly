@@ -167,7 +167,7 @@ func TestApplyRun(t *testing.T) {
 
 			req, err := formRemoteInputRequest(
 				t,
-				fmt.Sprintf("http://127.0.0.1:8111/api/v1/%s", id),
+				bCtx.ClientConfig.BubblyAddr+"/"+id,
 				nil,
 				"file",
 				"application/json",
@@ -200,7 +200,7 @@ func TestApplyRun(t *testing.T) {
 
 			req, err := formRemoteInputRequest(
 				t,
-				fmt.Sprintf("http://127.0.0.1:8111/api/v1/%s", id),
+				bCtx.ClientConfig.BubblyAddr+"/"+id,
 				nil,
 				"file",
 				"application/json",
@@ -231,7 +231,7 @@ func TestApplyRun(t *testing.T) {
 
 			req, err := formRemoteInputRequest(
 				t,
-				fmt.Sprintf("http://127.0.0.1:8111/api/v1/%s", id),
+				bCtx.ClientConfig.BubblyAddr+"/"+id,
 				nil,
 				"file",
 				"application/zip",

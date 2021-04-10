@@ -75,7 +75,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		condition := NewCondition(conditionSpec)
 		output := condition.Apply(
 			bCtx,
-			core.NewResourceContext(ctx.State.Value([]string{"query"}, ctx.Inputs), ctx.NewResource),
+			core.NewResourceContext(ctx.State.Value([]string{"query"}, ctx.Inputs), ctx.NewResource, ctx.Auth),
 		)
 		if output.Error != nil {
 			return core.ResourceOutput{
@@ -102,7 +102,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 	operation := NewOperation(operationSpec)
 	output := operation.Apply(
 		bCtx,
-		core.NewResourceContext(ctx.State.Value([]string{"condition"}, ctx.Inputs), ctx.NewResource),
+		core.NewResourceContext(ctx.State.Value([]string{"condition"}, ctx.Inputs), ctx.NewResource, ctx.Auth),
 	)
 	if output.Error != nil {
 		return core.ResourceOutput{

@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"github.com/graphql-go/graphql"
-	"github.com/nats-io/nats.go"
 
 	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/api"
@@ -20,12 +19,12 @@ import (
 // (optionally) input data needed to run the resource.
 // It gets the resource from the store, adds it to the worker's one-off pool,
 // saves any remote inputs to the Worker's local filesystem and then runs it.
-func (w *Worker) postRunResourceHandler(bCtx *env.BubblyContext, m *nats.Msg) (interface{}, error) {
+func (w *Worker) postRunResourceHandler(bCtx *env.BubblyContext, subject string, reply string, data component.MessageData) (interface{}, error) {
 	var wr server.WorkerRun
-	if err := json.Unmarshal(m.Data, &wr); err != nil {
+	if err := json.Unmarshal(data.Data, &wr); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal data into WorkerRun: %w", err)
 	}
-
+	// Validate WorkerRun
 	if reflect.DeepEqual(server.WorkerRun{}, wr) {
 		return nil, errors.New("worker run cannot be empty")
 	}
@@ -34,12 +33,12 @@ func (w *Worker) postRunResourceHandler(bCtx *env.BubblyContext, m *nats.Msg) (i
 	}
 
 	bCtx.Logger.Debug().
-		Interface("subscription", m.Sub).
+		Str("subject", subject).
 		Str("component", string(w.Type)).
 		Str("resource", string(wr.Name)).
 		Msg("processing request to run resource")
 
-	res, err := w.getRunResource(bCtx, wr.Name)
+	res, err := w.getRunResource(bCtx, data.Auth, wr.Name)
 	if err != nil {
 		return nil, fmt.Errorf("interval worker failed to get resource: %w", err)
 	}
@@ -51,7 +50,7 @@ func (w *Worker) postRunResourceHandler(bCtx *env.BubblyContext, m *nats.Msg) (i
 	}
 
 	// TODO: Support Interval Runs
-	err = w.ResourceWorker.RunOneOffRuns(bCtx)
+	err = w.ResourceWorker.RunOneOffRuns(bCtx, data.Auth)
 	if err != nil {
 		return nil, fmt.Errorf("interval worker failure: %w", err)
 	}
@@ -61,7 +60,7 @@ func (w *Worker) postRunResourceHandler(bCtx *env.BubblyContext, m *nats.Msg) (i
 
 // sends a NATS publication querying the Bubbly Store for a named run resource.
 // Returns the fetched core.Resource or and error if unsuccessful.
-func (w *Worker) getRunResource(bCtx *env.BubblyContext, name string) (core.Resource, error) {
+func (w *Worker) getRunResource(bCtx *env.BubblyContext, auth *component.MessageAuth, name string) (core.Resource, error) {
 	// We want to fetch all resource of type pipeline run from the data
 	// store. So form a graphql query representing such
 	resQuery := fmt.Sprintf(`
@@ -79,7 +78,10 @@ func (w *Worker) getRunResource(bCtx *env.BubblyContext, name string) (core.Reso
 	// embed the query into a Request
 	req := component.Request{
 		Subject: component.StoreQuery,
-		Data:    []byte(resQuery),
+		Data: component.MessageData{
+			Auth: auth,
+			Data: []byte(resQuery),
+		},
 	}
 
 	// reply is a Publication received from a bubbly store

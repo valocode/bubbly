@@ -32,7 +32,7 @@ func eventQuery(t *testing.T, bCtx *env.BubblyContext) {
 	require.NoError(t, err, "failed to establish a bubbly client")
 	defer client.Close()
 
-	resp, err := client.Query(bCtx, query)
+	resp, err := client.Query(bCtx, nil, query)
 	require.NoError(t, err, "bubbly client failed to query the bubbly server")
 
 	bCtx.Logger.Debug().RawJSON("response", resp).Msg("received query response from bubbly server")
@@ -62,7 +62,7 @@ func TestClientQuery(t *testing.T) {
 	require.NoError(t, err, "failed to establish a bubbly client")
 	defer client.Close()
 
-	resp, err := client.Query(bCtx, query)
+	resp, err := client.Query(bCtx, nil, query)
 	require.NoError(t, err, "bubbly client failed to query the bubbly server")
 
 	// too verbose to include full, so just log a snippet

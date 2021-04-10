@@ -25,8 +25,7 @@ import (
 func (s *Server) PostResource(c echo.Context) error {
 	// read the resource into a ResourceBlockJSON which keeps the spec{} block
 	// as bytes
-	resJSON := core.ResourceBlockJSON{}
-
+	var resJSON core.ResourceBlockJSON
 	binder := &echo.DefaultBinder{}
 	if err := binder.BindBody(c, &resJSON); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -38,20 +37,16 @@ func (s *Server) PostResource(c echo.Context) error {
 	// If it fails, return an error code to show it
 	_, err := resJSON.ResourceBlock()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("failed to unmarshal JSON resource: %w", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("invalid resource: %w", err))
 	}
 
-	data, err := resJSON.Data()
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	dBytes, err := json.Marshal(core.DataBlocks{data})
+	dBytes, err := json.Marshal(core.DataBlocks{resJSON.Data()})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("failed to marshal: %w", err))
 	}
 
-	if err := s.Client.PostResource(s.bCtx, dBytes); err != nil {
+	auth := s.getAuthFromContext(c)
+	if err := s.Client.PostResource(s.bCtx, auth, dBytes); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return c.JSON(http.StatusOK, &Status{"uploaded"})
@@ -88,7 +83,8 @@ func (s *Server) RunResource(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error marshalling workerRun: %w", err))
 	}
 
-	if err := s.Client.PostResourceToWorker(s.bCtx, workerRunBytes); err != nil {
+	auth := s.getAuthFromContext(c)
+	if err := s.Client.PostResourceToWorker(s.bCtx, auth, workerRunBytes); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error publishing run content to worker: %w", err))
 	}
 
@@ -113,7 +109,8 @@ func (s *Server) GetResource(c echo.Context) error {
 		ResourceKind: c.Param("kind"),
 	}
 
-	resultBytes, err := s.Client.GetResource(s.bCtx, resBlock.String())
+	auth := s.getAuthFromContext(c)
+	resultBytes, err := s.Client.GetResource(s.bCtx, auth, resBlock.String())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error getting resource: %w", err))
 	}

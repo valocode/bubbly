@@ -44,7 +44,7 @@ func Apply(bCtx *env.BubblyContext, filename string) error {
 		if err != nil {
 			return fmt.Errorf("failed to convert resource %s to json: %w", res.String(), err)
 		}
-		err = client.PostResource(bCtx, resByte)
+		err = client.PostResource(bCtx, nil, resByte)
 		if err != nil {
 			return fmt.Errorf("failed to post resource: %w", err)
 		}
@@ -69,7 +69,7 @@ func runResources(bCtx *env.BubblyContext, resParser *api.ResourcesParserType) e
 			if kind == core.RunResourceKind {
 				r := resource.(*v1.Run)
 
-				runCtx := core.NewResourceContext(cty.NilVal, core.NewResourceContext(cty.NilVal, api.NewResource).NewResource)
+				runCtx := core.NewResourceContext(cty.NilVal, api.NewResource, nil)
 
 				if err := common.DecodeBody(bCtx, r.SpecHCL.Body, &r.Spec, runCtx); err != nil {
 					return fmt.Errorf("failed to form resource from block: %w", err)
@@ -86,7 +86,7 @@ func runResources(bCtx *env.BubblyContext, resParser *api.ResourcesParserType) e
 			bCtx.Logger.Debug().Msgf("Running resource %s ...", resource.String())
 			subResourceOutput := resource.Apply(
 				bCtx,
-				core.NewResourceContext(cty.NilVal, api.NewResource),
+				core.NewResourceContext(cty.NilVal, api.NewResource, nil),
 			)
 
 			runResourceOutput := core.ResourceOutput{
@@ -103,7 +103,7 @@ func runResources(bCtx *env.BubblyContext, resParser *api.ResourcesParserType) e
 			}
 
 			// load the output of the run resource to the event store
-			if err := common.LoadResourceOutput(bCtx, &runResourceOutput); err != nil {
+			if err := common.LoadResourceOutput(bCtx, &runResourceOutput, nil); err != nil {
 				return fmt.Errorf(
 					`failed to store the output of running resource "%s" to the store: %w`,
 					resource.String(),

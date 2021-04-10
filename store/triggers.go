@@ -178,7 +178,8 @@ var remoteRunTrigger = &trigger{
 					}
 
 					r := res.(*v1.Run)
-					runCtx := core.NewResourceContext(cty.NilVal, core.NewResourceContext(cty.NilVal, api.NewResource).NewResource)
+					// TODO: need to pass RequestAuth instead of nil
+					runCtx := core.NewResourceContext(cty.NilVal, api.NewResource, nil)
 					if err := common.DecodeBody(bCtx, r.SpecHCL.Body, &r.Spec, runCtx); err != nil {
 						return fmt.Errorf("failed to form resource from block: %w", err)
 					}
@@ -205,7 +206,8 @@ var remoteRunTrigger = &trigger{
 						return fmt.Errorf("failed to marshal ID into WorkerRun: %w", err)
 					}
 
-					if err := nc.PostResourceToWorker(bCtx, rBytes); err != nil {
+					// TODO: need to pass RequestAuth instead of nil
+					if err := nc.PostResourceToWorker(bCtx, nil, rBytes); err != nil {
 						return fmt.Errorf("failed to post resource to worker: %w", err)
 					}
 

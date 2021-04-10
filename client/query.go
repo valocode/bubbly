@@ -16,7 +16,7 @@ import (
 // Returns a []byte representing the interface{} returned from the graphql-go
 // request if successful
 // Returns an error if querying was unsuccessful
-func (c *httpClient) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
+func (c *httpClient) Query(bCtx *env.BubblyContext, _ *component.MessageAuth, query string) ([]byte, error) {
 
 	// We must wrap the data with a "query" key such that it can be
 	// unmarshalled correctly by server.Query into a queryReq
@@ -39,11 +39,14 @@ func (c *httpClient) Query(bCtx *env.BubblyContext, query string) ([]byte, error
 	return ioutil.ReadAll(resp.Body)
 }
 
-func (n *natsClient) Query(bCtx *env.BubblyContext, query string) ([]byte, error) {
+func (n *natsClient) Query(bCtx *env.BubblyContext, auth *component.MessageAuth, query string) ([]byte, error) {
 
 	req := &component.Request{
 		Subject: component.StoreQuery,
-		Data:    []byte(query),
+		Data: component.MessageData{
+			Auth: auth,
+			Data: []byte(query),
+		},
 	}
 
 	if err := n.request(bCtx, req); err != nil {

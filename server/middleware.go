@@ -5,17 +5,8 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/valocode/bubbly/agent/component"
 )
-
-const requestAuthKey = "auth"
-
-// requestAuth contains information about the user making the request and the
-// organization against which the request is being made
-type requestAuth struct {
-	Organization string `json:"organization"`
-	UserID       string `json:"user_id"`
-	Role         string `json:"role"`
-}
 
 func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -57,14 +48,14 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(resp.StatusCode, "authorization request failed")
 		}
 
-		var reqAuth requestAuth
-		err = json.NewDecoder(resp.Body).Decode(&reqAuth)
+		var auth component.MessageAuth
+		err = json.NewDecoder(resp.Body).Decode(&auth)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed getting request authentication: "+err.Error())
 		}
 		// Set the request auth into the echo request so that the handlers can
 		// use it later
-		c.Set(requestAuthKey, reqAuth)
+		c.Set(authContextKey, auth)
 		return next(c)
 	}
 }
