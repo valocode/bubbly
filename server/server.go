@@ -24,7 +24,7 @@ type Server struct {
 func New(bCtx *env.BubblyContext) (*Server, error) {
 	client, err := client.New(bCtx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init client: %w", err)
+		return nil, fmt.Errorf("failed to create NATS client: %w", err)
 	}
 	// create the http server
 	server := &Server{

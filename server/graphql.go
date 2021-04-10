@@ -33,7 +33,8 @@ func (s *Server) Query(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	results, err := s.Client.Query(s.bCtx, query.Query)
+	auth := s.getAuthFromContext(c)
+	results, err := s.Client.Query(s.bCtx, auth, query.Query)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

@@ -24,7 +24,8 @@ func (s *Server) PostSchema(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("failed to read body of request: %w", err))
 	}
 
-	if err := s.Client.PostSchema(s.bCtx, body); err != nil {
+	auth := s.getAuthFromContext(c)
+	if err := s.Client.PostSchema(s.bCtx, auth, body); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

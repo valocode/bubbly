@@ -41,7 +41,7 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 		}
 	}
 
-	if err := l.load(bCtx); err != nil {
+	if err := l.load(bCtx, ctx); err != nil {
 		return core.ResourceOutput{
 			ID:     l.String(),
 			Status: events.ResourceApplyFailure,
@@ -60,21 +60,20 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 	}
 }
 
-// load creates a new client using server configurations determined from
-// available viper bindings, then POSTs the load resource's Spec.Data
-// to the bubbly server
+// load creates a new client then POSTs the load resource's Spec.Data
+// to the bubbly server.
 // load outputs an error if any part of this process fails, nil if
 // the data is successfully POSTed to the bubbly server.
-func (l *Load) load(bCtx *env.BubblyContext) error {
+func (l *Load) load(bCtx *env.BubblyContext, ctx *core.ResourceContext) error {
 	bCtx.Logger.Debug().Interface("server", bCtx.ServerConfig).Msg("loading to server with configuration")
 
 	c, err := client.New(bCtx)
 	if err != nil {
 		return fmt.Errorf("failed to establish new client for loading: %w", err)
 	}
-	c.Close()
+	defer c.Close()
 
-	err = c.Load(bCtx, []byte(l.Spec.Data))
+	err = c.Load(bCtx, ctx.Auth, []byte(l.Spec.Data))
 	if err != nil {
 		return fmt.Errorf("failed to load spec data: %w", err)
 	}

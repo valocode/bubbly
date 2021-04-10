@@ -78,7 +78,7 @@ func (r ResourceBlock) Data() (Data, error) {
 	if err != nil {
 		return Data{}, fmt.Errorf("failed to create ResourceBlockJSON for resource: %s: %w", r.String(), err)
 	}
-	return resJSON.Data()
+	return resJSON.Data(), nil
 }
 
 // ResourceBlockJSON returns a ResourceBlockJSON representation of this
@@ -162,7 +162,7 @@ func (r *ResourceBlockJSON) ResourceBlock() (ResourceBlock, error) {
 // The Data type is produced so that it can be sent to the store as any other
 // piece of data, and therefore the store does not need to implement anything
 // specific for a resource.
-func (r *ResourceBlockJSON) Data() (Data, error) {
+func (r *ResourceBlockJSON) Data() Data {
 
 	var metaMap = make(map[string]cty.Value, 2)
 
@@ -184,7 +184,7 @@ func (r *ResourceBlockJSON) Data() (Data, error) {
 			"spec":        cty.StringVal(r.SpecRaw),
 		},
 	}
-	return d, nil
+	return d
 }
 
 // String returns a human-friendly string ID for the resource

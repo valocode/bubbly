@@ -91,7 +91,7 @@ func (c *ComponentCore) Connect(bCtx *env.BubblyContext) error {
 		Interface("nats_server", bCtx.ClientConfig.NATSAddr).
 		Msg("successfully connected to NATS Server")
 
-	c.EConn, err = nats.NewEncodedConn(nc, nats.DEFAULT_ENCODER)
+	c.EConn, err = nats.NewEncodedConn(nc, nats.JSON_ENCODER)
 	if err != nil {
 		return fmt.Errorf("failed to create encoded NATS connection: %w", err)
 	}
@@ -152,10 +152,10 @@ func (c ComponentCore) Subscribe(bCtx *env.BubblyContext, sub DesiredSubscriptio
 	nSub, err := c.EConn.QueueSubscribe(
 		string(sub.Subject),
 		string(sub.Queue),
-		func(m *nats.Msg) {
-			val, err := sub.Handler(bCtx, m)
+		func(subject string, reply string, data MessageData) {
+			val, err := sub.Handler(bCtx, subject, reply, data)
 			if err != nil {
-				bCtx.Logger.Debug().
+				bCtx.Logger.Error().
 					Err(err).
 					Str("component", string(c.Type)).
 					Str("subject", string(sub.Subject)).
@@ -163,8 +163,7 @@ func (c ComponentCore) Subscribe(bCtx *env.BubblyContext, sub DesiredSubscriptio
 					Msg("failed to handle subscription")
 				// Check if we should reply indicating an error
 				if sub.Reply {
-					reply, _ := json.Marshal(Reply{Data: nil, Error: fmt.Errorf("failed to handle suscription: %w", err).Error()})
-					c.EConn.Publish(m.Reply, reply)
+					c.EConn.Publish(reply, Reply{Data: nil, Error: fmt.Errorf("failed to handle suscription: %w", err).Error()})
 					return
 				}
 			}
@@ -181,12 +180,10 @@ func (c ComponentCore) Subscribe(bCtx *env.BubblyContext, sub DesiredSubscriptio
 						Str("subject", string(sub.Subject)).
 						Str("queue", string(sub.Queue)).
 						Msg("failed to marshal reply into raw bytes")
-					reply, _ := json.Marshal(Reply{Data: nil, Error: fmt.Errorf("failed to marshal reply into raw bytes: %w", err).Error()})
-					c.EConn.Publish(m.Reply, reply)
+					c.EConn.Publish(reply, Reply{Data: nil, Error: fmt.Errorf("failed to marshal reply into raw bytes: %w", err).Error()})
 					return
 				}
-				reply, _ := json.Marshal(Reply{Data: b, Error: ""})
-				if err := c.EConn.Publish(m.Reply, reply); err != nil {
+				if err := c.EConn.Publish(reply, Reply{Data: b, Error: ""}); err != nil {
 					bCtx.Logger.Debug().
 						Err(err).
 						Str("component", string(c.Type)).

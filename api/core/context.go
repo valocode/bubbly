@@ -1,15 +1,17 @@
 package core
 
 import (
+	"github.com/valocode/bubbly/agent/component"
 	"github.com/zclconf/go-cty/cty"
 )
 
 // NewResourceContext creates a new ResourceContext
-func NewResourceContext(inputs cty.Value, newRes NewResourceFn) *ResourceContext {
+func NewResourceContext(inputs cty.Value, newRes NewResourceFn, auth *component.MessageAuth) *ResourceContext {
 	return &ResourceContext{
 		Inputs:      inputs,
 		State:       make(ResourceState),
 		NewResource: newRes,
+		Auth:        auth,
 	}
 }
 
@@ -20,6 +22,7 @@ type ResourceContext struct {
 	Inputs      cty.Value
 	State       ResourceState
 	NewResource NewResourceFn
+	Auth        *component.MessageAuth
 }
 
 type ResourceState map[string]cty.Value

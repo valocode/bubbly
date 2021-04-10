@@ -51,7 +51,7 @@ func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 	defer c.Close()
 
 	// run the query against the bubbly store
-	byteRes, err := c.Query(bCtx, q.Spec.Query)
+	byteRes, err := c.Query(bCtx, ctx.Auth, q.Spec.Query)
 	if err != nil {
 		return core.ResourceOutput{
 			ID:     q.String(),

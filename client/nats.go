@@ -43,7 +43,7 @@ func newNATS(bCtx *env.BubblyContext) (*natsClient, error) {
 		)
 	}
 
-	c.EConn, err = nats.NewEncodedConn(nc, nats.DEFAULT_ENCODER)
+	c.EConn, err = nats.NewEncodedConn(nc, nats.JSON_ENCODER)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create encoded connection to NATS server: %w", err)
 	}

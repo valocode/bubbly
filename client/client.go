@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/config"
 
 	"github.com/valocode/bubbly/env"
@@ -19,15 +20,15 @@ const (
 // Every Client must implement the Client interface's methods
 type Client interface {
 	// Resources
-	GetResource(*env.BubblyContext, string) ([]byte, error)
-	PostResource(*env.BubblyContext, []byte) error
-	PostResourceToWorker(*env.BubblyContext, []byte) error
+	GetResource(*env.BubblyContext, *component.MessageAuth, string) ([]byte, error)
+	PostResource(*env.BubblyContext, *component.MessageAuth, []byte) error
+	PostResourceToWorker(*env.BubblyContext, *component.MessageAuth, []byte) error
 	// Data blocks
-	Load(*env.BubblyContext, []byte) error
+	Load(*env.BubblyContext, *component.MessageAuth, []byte) error
 	// GraphQL Queries
-	Query(*env.BubblyContext, string) ([]byte, error)
+	Query(*env.BubblyContext, *component.MessageAuth, string) ([]byte, error)
 	// Applying a schema
-	PostSchema(*env.BubblyContext, []byte) error
+	PostSchema(*env.BubblyContext, *component.MessageAuth, []byte) error
 	// Close closes any connections, e.g. to NATS
 	Close()
 }

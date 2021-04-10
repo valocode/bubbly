@@ -60,7 +60,7 @@ func TestQuery(t *testing.T) {
 				t.Errorf(err.Error())
 			}
 
-			byteRes, err := c.Query(bCtx, tc.query)
+			byteRes, err := c.Query(bCtx, nil, tc.query)
 			assert.NoError(t, err)
 
 			t.Log(string(byteRes))

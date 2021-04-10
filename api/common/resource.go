@@ -26,7 +26,7 @@ func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, 
 			Error:  err,
 		}
 	}
-	runCtx := core.NewResourceContext(inputs, ctx.NewResource)
+	runCtx := core.NewResourceContext(inputs, ctx.NewResource, ctx.Auth)
 	return resource, resource.Apply(bCtx, runCtx)
 }
 
@@ -41,7 +41,7 @@ func GetResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, resID strin
 	}
 	defer client.Close()
 
-	resByte, err := client.GetResource(bCtx, resID)
+	resByte, err := client.GetResource(bCtx, ctx.Auth, resID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resource using bubbly client: %w", err)
 	}
