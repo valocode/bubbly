@@ -33,7 +33,7 @@ func newGraphQLSchema(graph *schemaGraph, s *Store) (graphql.Schema, error) {
 		queryFields = make(graphql.Fields)
 	)
 
-	if len(graph.nodes) == 0 {
+	if len(graph.Nodes) == 0 {
 		return graphql.Schema{}, nil
 	}
 

@@ -115,7 +115,7 @@ var queryTests = []struct {
 			},
 		},
 	},
-	// TODO not jumping nodes anymore, move test to a new "must fail" test set
+	// TODO not jumping Nodes anymore, move test to a new "must fail" test set
 	/*
 		{
 			name: "jump node query",

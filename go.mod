@@ -39,6 +39,7 @@ require (
 	github.com/zclconf/go-cty v1.7.1
 	github.com/zclconf/go-cty-yaml v1.0.2
 	github.com/ziflex/lecho/v2 v2.1.0
+	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
