@@ -8,10 +8,11 @@ import (
 
 // Provider provides an interface for persisting readiness data.
 type provider interface {
-	Apply(*bubblySchema) error
-	Save(*env.BubblyContext, *schemaGraph, dataTree) error
-	ResolveQuery(graph *schemaGraph, params graphql.ResolveParams) (interface{}, error)
-	HasTable(core.Table) (bool, error)
-	GenerateMigration(ctx *env.BubblyContext, cl Changelog) (migration, error)
-	Migrate(migration) error
+	Tenants() ([]string, error)
+	CreateTenant(string) error
+	Apply(string, *bubblySchema) error
+	Migrate(string, *bubblySchema, changelog) error
+	Save(*env.BubblyContext, string, *schemaGraph, dataTree) error
+	ResolveQuery(string, *schemaGraph, graphql.ResolveParams) (interface{}, error)
+	HasTable(string, core.Table) (bool, error)
 }

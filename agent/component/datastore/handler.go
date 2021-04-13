@@ -15,7 +15,11 @@ func (d *DataStore) getResourcesByKindHandler(bCtx *env.BubblyContext, subject s
 		Str("component", string(d.Type)).
 		Msg("processing message")
 
-	return d.Store.Query(string(data.Data)), nil
+	var tenant = ""
+	if data.Auth != nil {
+		tenant = data.Auth.Organization
+	}
+	return d.Store.Query(tenant, string(data.Data)), nil
 }
 
 func (d *DataStore) postSchemaHandler(bCtx *env.BubblyContext, subject string, reply string, data component.MessageData) (interface{}, error) {
@@ -24,12 +28,17 @@ func (d *DataStore) postSchemaHandler(bCtx *env.BubblyContext, subject string, r
 		Str("component", string(d.Type)).
 		Msg("processing message")
 
-	var schema core.Tables
+	var (
+		tenant = ""
+		schema core.Tables
+	)
 	if err := json.Unmarshal(data.Data, &schema); err != nil {
 		return nil, fmt.Errorf("failed to decode schema into core.Tables: %w", err)
 	}
-
-	if err := d.Store.Apply(schema); err != nil {
+	if data.Auth != nil {
+		tenant = data.Auth.Organization
+	}
+	if err := d.Store.Apply(tenant, schema); err != nil {
 		return nil, fmt.Errorf("failed to apply schema: %w", err)
 	}
 	return nil, nil
@@ -41,7 +50,11 @@ func (d *DataStore) queryHandler(bCtx *env.BubblyContext, subject string, reply 
 		Str("component", string(d.Type)).
 		Msg("processing message")
 
-	result := d.Store.Query(string(data.Data))
+	var tenant = ""
+	if data.Auth != nil {
+		tenant = data.Auth.Organization
+	}
+	result := d.Store.Query(tenant, string(data.Data))
 	if result.HasErrors() {
 		return nil, fmt.Errorf("error while querying the data store: %v", result.Errors)
 	}
@@ -54,11 +67,17 @@ func (d *DataStore) uploadHandler(bCtx *env.BubblyContext, subject string, reply
 		Str("component", string(d.Type)).
 		Msg("processing message")
 
-	var dbs core.DataBlocks
+	var (
+		tenant = ""
+		dbs    core.DataBlocks
+	)
 	if err := json.Unmarshal(data.Data, &dbs); err != nil {
 		return nil, fmt.Errorf("failed to decode data into core.DataBlocks: %w", err)
 	}
-	if err := d.Store.Save(dbs); err != nil {
+	if data.Auth != nil {
+		tenant = data.Auth.Organization
+	}
+	if err := d.Store.Save(tenant, dbs); err != nil {
 		return nil, fmt.Errorf("failed to save data to data store: %w", err)
 	}
 

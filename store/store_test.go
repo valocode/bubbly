@@ -386,8 +386,8 @@ func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile 
 	t.Helper()
 
 	tables := testData.Tables(t, fromFile)
-
-	err := s.Apply(tables)
+	t.Logf("Applying schema: %s", fromFile)
+	err := s.Apply("", tables)
 	require.NoErrorf(t, err, "failed to apply schema")
 }
 
@@ -396,7 +396,7 @@ func loadTestDataOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile
 
 	data := testData.DataBlocks(t, fromFile)
 
-	err := s.Save(data)
+	err := s.Save("", data)
 	require.NoErrorf(t, err, "failed to save test data into the store")
 }
 
@@ -424,7 +424,7 @@ func runQueryTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 
 	for _, tt := range queryTests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := s.Query(tt.query)
+			actual := s.Query("", tt.query)
 			require.Emptyf(t, actual.Errors, "failed to execute query %s", tt.name)
 			require.Equal(t, tt.expected, actual.Data, "query response is equal")
 		})
@@ -439,7 +439,7 @@ func runResourceTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 
 		data := createResJSONOrDie(t)
 
-		err := s.Save(core.DataBlocks{data})
+		err := s.Save("", core.DataBlocks{data})
 		require.NoError(t, err)
 
 		resQuery := `
@@ -454,7 +454,7 @@ func runResourceTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 				}
 			`
 
-		result := s.Query(resQuery)
+		result := s.Query("", resQuery)
 		require.Empty(t, result.Errors)
 	})
 }
@@ -485,7 +485,7 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 		},
 	}
 
-	err := s.Save(d2)
+	err := s.Save("", d2)
 
 	require.NoError(t, err)
 
@@ -501,7 +501,7 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 				}
 			}
 		`, core.EventTableName)
-	result := s.Query(resQuery)
+	result := s.Query("", resQuery)
 	require.Empty(t, result.Errors)
 
 	a := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
@@ -546,7 +546,7 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 		},
 	}
 
-	err = s.Save(d3)
+	err = s.Save("", d3)
 
 	require.NoError(t, err)
 
@@ -562,7 +562,7 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 			}
 		`, core.ResourceTableName, core.EventTableName)
 
-	result = s.Query(resQuery)
+	result = s.Query("", resQuery)
 	assert.Empty(t, result.Errors)
 
 	resEvents := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
@@ -585,7 +585,7 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 
 	require.NoError(t, err)
 
-	err = s.Save(dataBlocks)
+	err = s.Save("", dataBlocks)
 
 	require.NoError(t, err)
 
@@ -602,7 +602,7 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 			}
 		`, core.ResourceTableName, core.EventTableName)
 
-	result = s.Query(resQuery)
+	result = s.Query("", resQuery)
 
 	assert.Empty(t, result.Errors)
 	assert.NotNil(t, result)
@@ -659,14 +659,16 @@ func TestPostgresSQLGen(t *testing.T) {
 			bCtx := env.NewBubblyContext()
 			bCtx.StoreConfig.Provider = config.PostgresStore
 			bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
+			// bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", "5432")
 			bCtx.StoreConfig.PostgresDatabase = postgresDatabase
 			bCtx.StoreConfig.PostgresUser = postgresUser
 			bCtx.StoreConfig.PostgresPassword = postgresPassword
 
 			// Initialise the Bubbly Store
 			s, err := New(bCtx)
-			assert.NoErrorf(t, err, "failed to initialize store")
+			require.NoErrorf(t, err, "failed to initialize store")
 
+			// t.Log(b)
 			// Apply the Bubbly Schema to the Bubbly Store
 			applySchemaOrDie(t, bCtx, s, filepath.Join("testdata", "sqlgen", tt.schema))
 
@@ -674,9 +676,10 @@ func TestPostgresSQLGen(t *testing.T) {
 			loadTestDataOrDie(t, bCtx, s, filepath.Join("testdata", "sqlgen", tt.data))
 
 			// Run the test
-			have := s.Query(tt.query)
+			have := s.Query("", tt.query)
 			require.Emptyf(t, have.Errors, "failed to execute query %s", tt.name)
 			require.Equal(t, tt.want, have.Data, "query response is equal")
+
 		})
 	}
 }
@@ -788,7 +791,7 @@ func TestPostgresReinitialisation(t *testing.T) {
 	assert.NoErrorf(t, err, "failed to initialize store")
 
 	// grab the "base" bubbly schema, set up from the internalTables
-	baseSchema, err := s.currentBubblySchema()
+	baseSchema, err := s.currentBubblySchema("")
 
 	require.NoError(t, err)
 
@@ -798,8 +801,10 @@ func TestPostgresReinitialisation(t *testing.T) {
 	// feign re-initialisation of the Store, which should fetch the latest
 	// applied schema (from applySchemaOrDie)
 	s, err = New(bCtx)
+	require.NoErrorf(t, err, "failed to re-initialise the store")
 
-	newSchema, err := s.currentBubblySchema()
+	newSchema, err := s.currentBubblySchema("")
+	require.NoErrorf(t, err, "failed to get current bubbly schema")
 
 	// this should return the schema that was formed from applySchemaOrDie,
 	// _not_ the baseSchema at row 0 in the _schema table

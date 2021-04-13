@@ -54,9 +54,9 @@ func newGraphQLSchema(graph *schemaGraph, s *Store) (graphql.Schema, error) {
 	// we have created
 	for _, field := range fields {
 		queryFields[field.Type.Name()] = &graphql.Field{
-			Type:    graphql.NewList(field.Type),
-			Args:    field.Args,
-			Resolve: s.resolveQuery,
+			Type: graphql.NewList(field.Type),
+			Args: field.Args,
+			// Resolve: s.resolveQuery,
 		}
 	}
 

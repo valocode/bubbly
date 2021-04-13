@@ -7,11 +7,11 @@ import (
 	"github.com/valocode/bubbly/api/core"
 )
 
-// compareSchema will take 2 schemas as arguments and return a Changelog
+// compareSchema will take 2 schemas as arguments and return a changelog
 // elements are matched on Name, and if a Name is not matched in the 2nd schema,
 // this will be treated as a deletion.
-func compareSchema(s1 bubblySchema, s2 bubblySchema) (Changelog, error) {
-	var changelog Changelog
+func compareSchema(s1 bubblySchema, s2 bubblySchema) (changelog, error) {
+	var changelog changelog
 	for tableName, table1 := range s1.Tables {
 		if tableName != table1.Name {
 			return nil, fmt.Errorf("map key and table name do not match for table %s", table1.Name)
@@ -24,7 +24,7 @@ func compareSchema(s1 bubblySchema, s2 bubblySchema) (Changelog, error) {
 		} else {
 			// DELETE
 			// The key does not exist in the second table and will be removed
-			changelog = append(changelog, Entry{
+			changelog = append(changelog, changeEntry{
 				Action: remove,
 				TableInfo: tableInfo{
 					TableName:   table1.Name,
@@ -41,7 +41,7 @@ func compareSchema(s1 bubblySchema, s2 bubblySchema) (Changelog, error) {
 		if !ok {
 			// CREATE
 			// The key exist in only the second table and will be created
-			changelog = append(changelog, Entry{
+			changelog = append(changelog, changeEntry{
 				Action: create,
 				TableInfo: tableInfo{
 					TableName:   table2.Name,
@@ -70,8 +70,8 @@ var (
 	uniqueType Element = "unique"
 )
 
-// Changelog is a list of expectedChanges that will be applied by the migration
-type Changelog []Entry
+// changelog is a list of expectedChanges that will be applied by the migration
+type changelog []changeEntry
 
 type tableInfo struct {
 	TableName   string
@@ -79,7 +79,7 @@ type tableInfo struct {
 	ElementType Element
 }
 
-type Entry struct {
+type changeEntry struct {
 	Action    DiffAction
 	TableInfo tableInfo
 	From      interface{}
@@ -93,12 +93,12 @@ type Entry struct {
 // will be views as an update on field1, but if field1 has its name changed:
 // field1: "hello world" -> field2: "hello world"
 // These will be treated as 2 separate entities, field1 will be seen as deleted, and field2 will be added
-func calculateDiff(t1 core.Table, t2 core.Table, cl *Changelog) {
+func calculateDiff(t1 core.Table, t2 core.Table, cl *changelog) {
 	compareFields(t1, t2, cl)
 	compareJoins(t1, t2, cl)
 	compareTables(t1, t2, cl)
 	if t1.Unique != t2.Unique {
-		e := Entry{
+		e := changeEntry{
 			Action: update,
 			TableInfo: tableInfo{
 				TableName:   t2.Name,
@@ -112,7 +112,7 @@ func calculateDiff(t1 core.Table, t2 core.Table, cl *Changelog) {
 	}
 }
 
-func compareFields(t1, t2 core.Table, cl *Changelog) {
+func compareFields(t1, t2 core.Table, cl *changelog) {
 mainLoop:
 	for _, field1 := range t1.Fields {
 		found := false
@@ -122,7 +122,7 @@ mainLoop:
 				break mainLoop
 			}
 			if field1.Name == field2.Name && !reflect.DeepEqual(field1.Type, field2.Type) {
-				*cl = append(*cl, Entry{
+				*cl = append(*cl, changeEntry{
 					Action: update,
 					TableInfo: tableInfo{
 						TableName:   t2.Name,
@@ -135,7 +135,7 @@ mainLoop:
 				found = true
 			}
 			if field1.Name == field2.Name && field1.Unique != field2.Unique {
-				*cl = append(*cl, Entry{
+				*cl = append(*cl, changeEntry{
 					Action: update,
 					TableInfo: tableInfo{
 						TableName:   t2.Name,
@@ -150,7 +150,7 @@ mainLoop:
 			}
 		}
 		if !found {
-			*cl = append(*cl, Entry{
+			*cl = append(*cl, changeEntry{
 				Action: remove,
 				TableInfo: tableInfo{
 					TableName:   t1.Name,
@@ -170,7 +170,7 @@ mainLoop:
 			}
 		}
 		if !found {
-			*cl = append(*cl, Entry{
+			*cl = append(*cl, changeEntry{
 				Action: create,
 				TableInfo: tableInfo{
 					TableName:   t2.Name,
@@ -184,13 +184,13 @@ mainLoop:
 	}
 }
 
-func compareJoins(t1, t2 core.Table, cl *Changelog) {
+func compareJoins(t1, t2 core.Table, cl *changelog) {
 	for _, join1 := range t1.Joins {
 		found := false
 	joinLoop:
 		for _, join2 := range t2.Joins {
 			if join1.Table == join2.Table && join1.Single != join2.Single {
-				*cl = append(*cl, Entry{
+				*cl = append(*cl, changeEntry{
 					Action: update,
 					TableInfo: tableInfo{
 						TableName:   t2.Name,
@@ -207,7 +207,7 @@ func compareJoins(t1, t2 core.Table, cl *Changelog) {
 			}
 		}
 		if !found {
-			*cl = append(*cl, Entry{
+			*cl = append(*cl, changeEntry{
 				Action: remove,
 				TableInfo: tableInfo{
 					TableName:   t1.Name,
@@ -230,7 +230,7 @@ func compareJoins(t1, t2 core.Table, cl *Changelog) {
 			}
 		}
 		if !found {
-			*cl = append(*cl, Entry{
+			*cl = append(*cl, changeEntry{
 				Action: create,
 				TableInfo: tableInfo{
 					TableName:   t2.Name,
@@ -244,10 +244,10 @@ func compareJoins(t1, t2 core.Table, cl *Changelog) {
 	}
 }
 
-func compareTables(parentTable1, parentTable2 core.Table, cl *Changelog) {
+func compareTables(parentTable1, parentTable2 core.Table, cl *changelog) {
 	for _, table1 := range parentTable1.Tables {
 		found := false
-		var subCl Changelog
+		var subCl changelog
 		for _, table2 := range parentTable2.Tables {
 			if table1.Name != table2.Name {
 				continue
@@ -257,7 +257,7 @@ func compareTables(parentTable1, parentTable2 core.Table, cl *Changelog) {
 		}
 
 		if !found {
-			subCl = append(subCl, Entry{
+			subCl = append(subCl, changeEntry{
 				Action: remove,
 				TableInfo: tableInfo{
 					TableName:   table1.Name,
@@ -272,7 +272,7 @@ func compareTables(parentTable1, parentTable2 core.Table, cl *Changelog) {
 	}
 	for _, table2 := range parentTable2.Tables {
 		found := false
-		var subCl Changelog
+		var subCl changelog
 		for _, table1 := range parentTable1.Tables {
 			if table2.Name == table1.Name {
 				found = true
@@ -281,7 +281,7 @@ func compareTables(parentTable1, parentTable2 core.Table, cl *Changelog) {
 		}
 		if !found {
 			// no more recursion will be performed since the rest of the nested values are already to be created
-			subCl = append(subCl, Entry{
+			subCl = append(subCl, changeEntry{
 				Action: create,
 				TableInfo: tableInfo{
 					TableName:   table2.Name,
@@ -296,7 +296,7 @@ func compareTables(parentTable1, parentTable2 core.Table, cl *Changelog) {
 	}
 }
 
-func (cl *Changelog) combine(newCl *Changelog) {
+func (cl *changelog) combine(newCl *changelog) {
 	for _, entry := range *newCl {
 		*cl = append(*cl, entry)
 	}
