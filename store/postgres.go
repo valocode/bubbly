@@ -92,7 +92,7 @@ func (p *postgres) Save(bCtx *env.BubblyContext, tenant string, graph *schemaGra
 	saveNode := func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
 		// Check that the data node we are saving exists in the schema graph.
 		// Otherwise it does not exist in our schema
-		tNode, ok := graph.nodeIndex[node.Data.TableName]
+		tNode, ok := graph.NodeIndex[node.Data.TableName]
 		if !ok {
 			return fmt.Errorf("data block refers to non-existing table: %s", node.Data.TableName)
 		}
