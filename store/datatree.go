@@ -11,7 +11,7 @@ import (
 )
 
 // dataTree stores a slice of "root" dataNodes.
-// The idea is that the "root" data Nodes are those Nodes which can be saved
+// The idea is that the "root" data nodes are those nodes which can be saved
 // independently (i.e. they have no data references).
 // This way, we have a starting point when traversing the tree
 type dataTree []*dataNode
@@ -29,7 +29,7 @@ func (t dataTree) traverse(bCtx *env.BubblyContext, fn visitFn) (core.DataBlocks
 }
 
 // visitNode is a wrapper around the callback visit function to make sure that
-// all the Nodes are visited at least once, and at most once
+// all the nodes are visited at least once, and at most once
 func visitNode(bCtx *env.BubblyContext, node *dataNode, fn visitFn, blocks *core.DataBlocks) error {
 	// First check that all the parents have been visited because we cannot
 	// solve a node until all its parents have been solved
@@ -89,7 +89,7 @@ type dataNode struct {
 	// A node will only have one dataNode per parent table. If there are multiple
 	// data references on a table name, they are grouped together.
 	Parents map[string]*dataNode
-	// Children stores a slice of child Nodes, that have this node as their
+	// Children stores a slice of child nodes, that have this node as their
 	// parent.
 	// Unlike the Parents field, a node can have multiple Children with the same
 	// table name, and thus, we store them as a slice and not a map.
@@ -149,7 +149,7 @@ func createDataTree(data core.DataBlocks) (dataTree, error) {
 	return dataNodes, nil
 }
 
-// dataBlocksToNodes is recursively called to convert all data blocks into Nodes
+// dataBlocksToNodes is recursively called to convert all data blocks into nodes
 func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string]*dataNode) (dataTree, error) {
 	var dataNodes = make(dataTree, 0)
 	for index, d := range data {
@@ -203,13 +203,13 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 			dataRefs[ref.TableName] = tableRefs
 		}
 
-		// Create a node for the current data block and add it to the map of Nodes.
+		// Create a node for the current data block and add it to the map of nodes.
 		// Store reference to the data block and not the local for loop variable
 		node := newDataNode(&data[index])
 		nodes[d.TableName] = node
 
 		// If there are no data refs, then it's easy, just add this data block
-		// to the root data Nodes
+		// to the root data nodes
 		if len(dataRefs) == 0 {
 			dataNodes = append(dataNodes, node)
 		}
