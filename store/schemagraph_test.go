@@ -32,7 +32,7 @@ func TestSchemaGraph(t *testing.T) {
 
 	rootNode := graph.NodeIndex["root"]
 	path := rootNode.shortestPath("grandchild_a")
-	assert.NotNilf(t, path, "there should be a path between the Nodes")
+	assert.NotNilf(t, path, "there should be a path between the nodes")
 	paths := rootNode.neighbours(2)
 	assert.NotEmptyf(t, paths, "the node should have neighbours")
 }

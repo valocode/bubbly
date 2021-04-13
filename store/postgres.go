@@ -218,7 +218,7 @@ func psqlSaveNode(tx pgx.Tx, node *dataNode, schema *bubblySchema) error {
 		return fmt.Errorf("failed to insert data block: %s: %w", table.Name, err)
 	}
 
-	// Asign the returned values so that if the child Nodes need to resolve
+	// Asign the returned values so that if the child nodes need to resolve
 	// their data references they have values to do so
 	node.Return = retValues
 	return nil
