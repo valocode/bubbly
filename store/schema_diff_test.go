@@ -19,7 +19,7 @@ func TestCompareSchema(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    Changelog
+		want    changelog
 		wantErr bool
 	}{
 		{
@@ -211,7 +211,7 @@ var schema2 = bubblySchema{Tables: map[string]core.Table{
 	},
 }}
 
-var expectedChanges = []Entry{
+var expectedChanges = []changeEntry{
 	{Action: "update", TableInfo: tableInfo{TableName: "table1", ElementName: "field1", ElementType: "field"}, From: cty.String, To: cty.Number},
 	{Action: "delete", TableInfo: tableInfo{TableName: "table1", ElementName: "table1", ElementType: "field"}, From: core.TableField{Name: "fieldToBeDeleted", Unique: false, Type: cty.Number}, To: nil},
 	{Action: "create", TableInfo: tableInfo{TableName: "table1", ElementName: "field11", ElementType: "field"}, From: nil, To: core.TableField{Name: "field11", Unique: true, Type: cty.Number}},

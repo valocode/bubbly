@@ -14,6 +14,8 @@ import (
 	"github.com/valocode/bubbly/env"
 )
 
+const defaultTenantName = "default"
+
 // New creates a new Store for the given config.
 func New(bCtx *env.BubblyContext) (*Store, error) {
 	var (
@@ -45,22 +47,8 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 	}
 	s.p = p
 
-	// Check if the provider database has the schema table.
-	// If not, it indicates a fresh database that should be initialized
-	schemaExists, err := s.p.HasTable(schemaTable)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check existing schema table: %w", err)
-	}
-
-	if !schemaExists {
-		// If the schema table does not exist yet we should create it
-		if err := s.p.Apply(newBubblySchema()); err != nil {
-			return nil, fmt.Errorf("failed to initialize the provider database with internal tables")
-		}
-	}
-
-	if err := s.syncSchema(); err != nil {
-		return nil, fmt.Errorf("failed to sync schema: %w", err)
+	if err := s.initStoreSchemas(); err != nil {
+		return nil, fmt.Errorf("failed to initialize the store schemas: %w", err)
 	}
 
 	s.triggers = internalTriggers
@@ -79,28 +67,29 @@ type Store struct {
 	triggers  []*trigger
 }
 
-// Schema gets the graphql schema for the store.
-func (s *Store) Schema() *graphql.Schema {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.gqlSchema
-}
-
 // Query queries the store.
-func (s *Store) Query(query string) *graphql.Result {
-
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+func (s *Store) Query(tenant string, query string) *graphql.Result {
+	// First we need to fetch the GraphQL for the given tenant
+	// TODO: use kv store here
+	graph := s.graph
+	schema := s.gqlSchema
+	// Next we need to add the resolvers to the graphql fields, as these cannot
+	// be stored together with the schema in DB
+	for _, field := range schema.QueryType().Fields() {
+		field.Resolve = func(p graphql.ResolveParams) (interface{}, error) {
+			return s.p.ResolveQuery(tenant, graph, p)
+		}
+	}
 
 	return graphql.Do(graphql.Params{
-		Schema:        *s.gqlSchema,
+		Schema:        *schema,
 		RequestString: query,
 	})
 }
 
 // Apply applies a schema corresponding to a set of tables.
-func (s *Store) Apply(tables core.Tables) error {
-	currentSchema, err := s.currentBubblySchema()
+func (s *Store) Apply(tenant string, tables core.Tables) error {
+	currentSchema, err := s.currentBubblySchema(tenant)
 	if err != nil {
 		return fmt.Errorf("failed to get current schema: %w", err)
 	}
@@ -115,7 +104,7 @@ func (s *Store) Apply(tables core.Tables) error {
 	newSchema := &bubblySchema{
 		Tables: newSchemaTables,
 	}
-	addImplicitJoins(currentSchema, tables, nil)
+	// addImplicitJoins(currentSchema, tables, nil)
 	addImplicitJoins(newSchema, tables, nil)
 
 	// Calculate the schema diff
@@ -123,41 +112,15 @@ func (s *Store) Apply(tables core.Tables) error {
 	if err != nil {
 		return fmt.Errorf("failed to compare schemas: %w", err)
 	}
-	newSchema.Changelog = cl
+	newSchema.changelog = cl
 
-	// perform the schema migration if there is anything in the changelog
-	if len(cl) > 0 {
-		m, err := s.p.GenerateMigration(s.bCtx, cl)
-		if err != nil {
-			return err
-		}
-		err = s.p.Migrate(m)
-		if err != nil {
-			return err
-		}
-
-		if err := s.updateSchema(currentSchema); err != nil {
-			return fmt.Errorf("failed to sync schema: %w", err)
-		}
-	} else {
-		// since there is no schema, apply
-		if err := s.p.Apply(newSchema); err != nil {
-			return fmt.Errorf("failed to apply schema in provider: %w", err)
-		}
-		if err := s.updateSchema(currentSchema); err != nil {
-			return fmt.Errorf("failed to sync schema: %w", err)
-		}
+	// Perform the migration based on the changelog
+	if err := s.p.Migrate(tenant, newSchema, cl); err != nil {
+		return fmt.Errorf("failed to migrate schema: %w", err)
 	}
 
-	if len(cl) == 0 {
-		return nil
-	}
-
-	if err := s.p.Apply(currentSchema); err != nil {
-		return fmt.Errorf("failed to apply schema in provider: %w", err)
-	}
-
-	if err := s.updateSchema(currentSchema); err != nil {
+	// Update the store cache
+	if err := s.updateSchema(tenant, newSchema); err != nil {
 		return fmt.Errorf("failed to sync schema: %w", err)
 	}
 
@@ -165,14 +128,14 @@ func (s *Store) Apply(tables core.Tables) error {
 }
 
 // Save saves data into the store.
-func (s *Store) Save(data core.DataBlocks) error {
+func (s *Store) Save(tenant string, data core.DataBlocks) error {
 
 	dataTree, err := createDataTree(data)
 	if err != nil {
 		return fmt.Errorf("failed to create tree of data blocks for storing: %w", err)
 	}
 
-	if err := s.p.Save(s.bCtx, s.graph, dataTree); err != nil {
+	if err := s.p.Save(s.bCtx, tenant, s.graph, dataTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}
 
@@ -181,7 +144,7 @@ func (s *Store) Save(data core.DataBlocks) error {
 		return fmt.Errorf("data triggers failed: %w", err)
 	}
 
-	if err := s.p.Save(s.bCtx, s.graph, triggersTree); err != nil {
+	if err := s.p.Save(s.bCtx, tenant, s.graph, triggersTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}
 
@@ -193,34 +156,63 @@ func (s *Store) Save(data core.DataBlocks) error {
 	return nil
 }
 
-// resolveQuery is the handler for resolving graphql queries
-func (s *Store) resolveQuery(params graphql.ResolveParams) (interface{}, error) {
-	return s.p.ResolveQuery(s.graph, params)
+func (s *Store) initStoreSchemas() error {
+	var tenants []string
+	// If multitenancy is enabled, fetch the tenants from the store
+	if s.bCtx.AuthConfig.MultiTenancy {
+		var err error
+		tenants, err = s.p.Tenants()
+		if err != nil {
+			return fmt.Errorf("failed to get tenants from provider: %w", err)
+		}
+	} else {
+		tenants = []string{defaultTenantName}
+	}
+	// Iterate through the tenants an initialize the cache of schemas
+	for _, tenant := range tenants {
+		// Check if the provider database has the schema table.
+		// If not, it indicates a fresh database that should be initialized
+		schemaExists, err := s.p.HasTable(tenant, schemaTable)
+		if err != nil {
+			return fmt.Errorf("failed to check existing schema table: %w", err)
+		}
+		if !schemaExists {
+			// If the schema table does not exist yet we should create it
+			if err := s.p.Apply(tenant, newBubblySchema()); err != nil {
+				return fmt.Errorf("failed to initialize the provider database with internal tables")
+			}
+		}
+
+		if err := s.syncSchema(tenant); err != nil {
+			return fmt.Errorf("failed to sync schema for tenant %s: %w", tenant, err)
+		}
+	}
+	return nil
 }
 
 // syncSchema is used by a store instance to sync it's internally stored schema
-// with the current schema in the provider
-func (s *Store) syncSchema() error {
-	bubblySchema, err := s.currentBubblySchema()
+// for the specified tenant in the provider's databases
+func (s *Store) syncSchema(tenant string) error {
+	bubblySchema, err := s.currentBubblySchema(tenant)
 	if err != nil {
 		return fmt.Errorf("failed to get current schema: %w", err)
 	}
-	s.updateSchema(bubblySchema)
+	s.updateSchema(tenant, bubblySchema)
 
 	return nil
 }
 
-func (s *Store) currentBubblySchema() (*bubblySchema, error) {
+func (s *Store) currentBubblySchema(tenant string) (*bubblySchema, error) {
 	// Check if the schema has been initialized
 	if s.gqlSchema == nil {
 		// This is fine, as we might be creating the schema in this process,
 		// so initialize the schema and set the graphql schema
-		if err := s.updateSchema(newBubblySchema()); err != nil {
+		if err := s.updateSchema(tenant, newBubblySchema()); err != nil {
 			return nil, fmt.Errorf("failed to initialize graphql schema with internal tables: %w", err)
 		}
 	}
 
-	result := s.Query(schemaQuery)
+	result := s.Query(tenant, schemaQuery)
 	if result.HasErrors() {
 		return nil, fmt.Errorf("failed to get current tables: %v", result.Errors)
 	}
@@ -244,7 +236,7 @@ func (s *Store) currentBubblySchema() (*bubblySchema, error) {
 	return &schema, nil
 }
 
-func (s *Store) updateSchema(bubblySchema *bubblySchema) error {
+func (s *Store) updateSchema(tenant string, bubblySchema *bubblySchema) error {
 	graph, err := newSchemaGraphFromMap(bubblySchema.Tables)
 	if err != nil {
 		return fmt.Errorf("failed to build schema graph: %w", err)

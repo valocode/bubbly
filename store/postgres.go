@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/graphql-go/graphql"
@@ -13,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v4/log/zerologadapter"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
@@ -20,10 +20,16 @@ import (
 )
 
 var (
-	psql                          = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+	psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+)
+
+const (
+	psqlBubblySchemaPrefix        = "bb_"
 	defaultStoreConnRetryAttempts = 10
 	defaultStoreConnRetryTimeout  = "200ms"
 )
+
+var _ provider = (*postgres)(nil)
 
 func newPostgres(bCtx *env.BubblyContext) (*postgres, error) {
 
@@ -49,7 +55,7 @@ type postgres struct {
 	pool *pgxpool.Pool
 }
 
-func (p *postgres) Apply(schema *bubblySchema) error {
+func (p *postgres) Apply(tenant string, schema *bubblySchema) error {
 
 	tx, err := p.pool.Begin(context.Background())
 	if err != nil {
@@ -65,15 +71,17 @@ func (p *postgres) Apply(schema *bubblySchema) error {
 	return tx.Commit(context.Background())
 }
 
-func (p *postgres) GenerateMigration(bCtx *env.BubblyContext, cl Changelog) (migration, error) {
-	return psqlGenerateMigration(bCtx, cl)
+func (p *postgres) Migrate(tenant string, schema *bubblySchema, cl changelog) error {
+	pgSchema := psqlBubblySchemaPrefix + tenant
+	migration, err := psqlGenerateMigration(config.PostgresStore, pgSchema, cl)
+	if err != nil {
+		return fmt.Errorf("failed to generate migration list: %w", err)
+	}
+	// fmt.Printf("\nRUNNING MIGRATION\n%#v\n\n\n", migration)
+	return psqlMigrate(p.pool, schema, migration)
 }
 
-func (p *postgres) Migrate(migrationList migration) error {
-	return psqlMigrate(p.pool, migrationList)
-}
-
-func (p *postgres) Save(bCtx *env.BubblyContext, graph *schemaGraph, tree dataTree) error {
+func (p *postgres) Save(bCtx *env.BubblyContext, tenant string, graph *schemaGraph, tree dataTree) error {
 
 	tx, err := p.pool.Begin(context.Background())
 	if err != nil {
@@ -102,31 +110,20 @@ func (p *postgres) Save(bCtx *env.BubblyContext, graph *schemaGraph, tree dataTr
 	return tx.Commit(context.Background())
 }
 
-func (p *postgres) ResolveQuery(graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
+func (p *postgres) ResolveQuery(tenant string, graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
 	return psqlResolveRootQueries(p.pool, graph, params)
 }
 
-func (p *postgres) HasTable(table core.Table) (bool, error) {
-	return psqlHasTable(p.pool, table)
+func (p *postgres) Tenants() ([]string, error) {
+	return psqlTenantSchemas(p.pool)
 }
 
-func (p *postgres) Check() error {
+func (p *postgres) CreateTenant(name string) error {
+	return psqlCreateSchema(p.pool, name)
+}
 
-	t, err := time.ParseDuration(defaultStoreConnRetryTimeout)
-	if err != nil {
-		return fmt.Errorf("database connection timeout invalid value: %w", err)
-	}
-
-	for attempt := 1; attempt <= defaultStoreConnRetryAttempts; attempt++ {
-		conn, err := p.pool.Acquire(context.Background())
-		if err != nil {
-			time.Sleep(t)
-		} else {
-			conn.Release()
-			return nil
-		}
-	}
-	return errors.New("database connection timeout")
+func (p *postgres) HasTable(tenant string, table core.Table) (bool, error) {
+	return psqlHasTable(p.pool, table)
 }
 
 func psqlNewPool(bCtx *env.BubblyContext, connStr string) (*pgxpool.Pool, error) {
@@ -147,6 +144,51 @@ func psqlNewPool(bCtx *env.BubblyContext, connStr string) (*pgxpool.Pool, error)
 	return pool, nil
 }
 
+func psqlTenantSchemas(pool *pgxpool.Pool) ([]string, error) {
+	var (
+		sql = psql.Select("schema_name").
+			From("information_schema.schemata")
+		schemas = make([]string, 0)
+	)
+
+	sqlStr, _, err := sql.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create sql query: %w", err)
+	}
+
+	rows, err := pool.Query(context.Background(), sqlStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute SQL query: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schema string
+		if err := rows.Scan(&schema); err != nil {
+			return nil, fmt.Errorf("failed to scan schema value: %w", err)
+		}
+		// Check that the schema is a bubbly schema
+		if strings.HasPrefix(schema, psqlBubblySchemaPrefix) {
+			schemas = append(schemas, schema)
+		}
+	}
+
+	return schemas, nil
+}
+
+func psqlCreateSchema(pool *pgxpool.Pool, name string) error {
+	var (
+		schemaName = psqlBubblySchemaPrefix + name
+		sqlStr     = "CREATE SCHEMA IF NOT EXISTS " + schemaName
+	)
+
+	_, err := pool.Exec(context.Background(), sqlStr)
+	if err != nil {
+		return fmt.Errorf("failed to execute SQL: %w", err)
+	}
+	return nil
+}
+
 func psqlHasTable(pool *pgxpool.Pool, table core.Table) (bool, error) {
 	var (
 		sql = psql.Select("1").
@@ -163,7 +205,6 @@ func psqlHasTable(pool *pgxpool.Pool, table core.Table) (bool, error) {
 	}
 
 	row := pool.QueryRow(context.Background(), sqlStr, sqlArgs...)
-
 	if err := row.Scan(&exists); err != nil {
 		return false, fmt.Errorf("failed to get table status: %s: %w", table.Name, err)
 	}
