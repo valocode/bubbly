@@ -7,6 +7,7 @@ import (
 	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/store"
 )
 
 func (d *DataStore) getResourcesByKindHandler(bCtx *env.BubblyContext, subject string, reply string, data component.MessageData) (interface{}, error) {
@@ -15,7 +16,7 @@ func (d *DataStore) getResourcesByKindHandler(bCtx *env.BubblyContext, subject s
 		Str("component", string(d.Type)).
 		Msg("processing message")
 
-	var tenant = ""
+	var tenant = store.DefaultTenantName
 	if data.Auth != nil {
 		tenant = data.Auth.Organization
 	}
@@ -29,7 +30,7 @@ func (d *DataStore) postSchemaHandler(bCtx *env.BubblyContext, subject string, r
 		Msg("processing message")
 
 	var (
-		tenant = ""
+		tenant = store.DefaultTenantName
 		schema core.Tables
 	)
 	if err := json.Unmarshal(data.Data, &schema); err != nil {
@@ -50,7 +51,7 @@ func (d *DataStore) queryHandler(bCtx *env.BubblyContext, subject string, reply 
 		Str("component", string(d.Type)).
 		Msg("processing message")
 
-	var tenant = ""
+	var tenant = store.DefaultTenantName
 	if data.Auth != nil {
 		tenant = data.Auth.Organization
 	}
@@ -68,7 +69,7 @@ func (d *DataStore) uploadHandler(bCtx *env.BubblyContext, subject string, reply
 		Msg("processing message")
 
 	var (
-		tenant = ""
+		tenant = store.DefaultTenantName
 		dbs    core.DataBlocks
 	)
 	if err := json.Unmarshal(data.Data, &dbs); err != nil {
