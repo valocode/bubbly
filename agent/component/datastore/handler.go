@@ -29,7 +29,7 @@ func (d *DataStore) postSchemaHandler(bCtx *env.BubblyContext, subject string, r
 		return nil, fmt.Errorf("failed to decode schema into core.Tables: %w", err)
 	}
 
-	if err := d.Store.Apply(bCtx, schema); err != nil {
+	if err := d.Store.Apply(schema); err != nil {
 		return nil, fmt.Errorf("failed to apply schema: %w", err)
 	}
 	return nil, nil
@@ -58,7 +58,7 @@ func (d *DataStore) uploadHandler(bCtx *env.BubblyContext, subject string, reply
 	if err := json.Unmarshal(data.Data, &dbs); err != nil {
 		return nil, fmt.Errorf("failed to decode data into core.DataBlocks: %w", err)
 	}
-	if err := d.Store.Save(bCtx, dbs); err != nil {
+	if err := d.Store.Save(dbs); err != nil {
 		return nil, fmt.Errorf("failed to save data to data store: %w", err)
 	}
 

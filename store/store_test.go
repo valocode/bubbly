@@ -387,7 +387,7 @@ func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile 
 
 	tables := testData.Tables(t, fromFile)
 
-	err := s.Apply(bCtx, tables)
+	err := s.Apply(tables)
 	require.NoErrorf(t, err, "failed to apply schema")
 }
 
@@ -396,7 +396,7 @@ func loadTestDataOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile
 
 	data := testData.DataBlocks(t, fromFile)
 
-	err := s.Save(bCtx, data)
+	err := s.Save(data)
 	require.NoErrorf(t, err, "failed to save test data into the store")
 }
 
@@ -439,7 +439,7 @@ func runResourceTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 
 		data := createResJSONOrDie(t)
 
-		err := s.Save(bCtx, core.DataBlocks{data})
+		err := s.Save(core.DataBlocks{data})
 		require.NoError(t, err)
 
 		resQuery := `
@@ -485,7 +485,7 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 		},
 	}
 
-	err := s.Save(bCtx, d2)
+	err := s.Save(d2)
 
 	require.NoError(t, err)
 
@@ -546,7 +546,7 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 		},
 	}
 
-	err = s.Save(bCtx, d3)
+	err = s.Save(d3)
 
 	require.NoError(t, err)
 
@@ -585,7 +585,7 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 
 	require.NoError(t, err)
 
-	err = s.Save(bCtx, dataBlocks)
+	err = s.Save(dataBlocks)
 
 	require.NoError(t, err)
 
