@@ -14,7 +14,7 @@ import (
 	"github.com/valocode/bubbly/env"
 )
 
-const defaultTenantName = "default"
+const DefaultTenantName = "default"
 
 // New creates a new Store for the given config.
 func New(bCtx *env.BubblyContext) (*Store, error) {
@@ -166,7 +166,10 @@ func (s *Store) initStoreSchemas() error {
 			return fmt.Errorf("failed to get tenants from provider: %w", err)
 		}
 	} else {
-		tenants = []string{defaultTenantName}
+		tenants = []string{DefaultTenantName}
+		if err := s.p.CreateTenant(DefaultTenantName); err != nil {
+			return fmt.Errorf("failed creating default tenant %s: %w", DefaultTenantName, err)
+		}
 	}
 	// Iterate through the tenants an initialize the cache of schemas
 	for _, tenant := range tenants {

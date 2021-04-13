@@ -63,7 +63,7 @@ func (p *postgres) Apply(tenant string, schema *bubblySchema) error {
 	}
 	defer tx.Rollback(context.Background())
 
-	err = psqlApplySchema(tx, schema)
+	err = psqlApplySchema(tx, tenant, schema)
 	if err != nil {
 		return fmt.Errorf("failed to apply tables: %w", err)
 	}
@@ -72,13 +72,11 @@ func (p *postgres) Apply(tenant string, schema *bubblySchema) error {
 }
 
 func (p *postgres) Migrate(tenant string, schema *bubblySchema, cl changelog) error {
-	pgSchema := psqlBubblySchemaPrefix + tenant
-	migration, err := psqlGenerateMigration(config.PostgresStore, pgSchema, cl)
+	migration, err := psqlGenerateMigration(config.PostgresStore, tenant, cl)
 	if err != nil {
 		return fmt.Errorf("failed to generate migration list: %w", err)
 	}
-	// fmt.Printf("\nRUNNING MIGRATION\n%#v\n\n\n", migration)
-	return psqlMigrate(p.pool, schema, migration)
+	return psqlMigrate(p.pool, tenant, schema, migration)
 }
 
 func (p *postgres) Save(bCtx *env.BubblyContext, tenant string, graph *schemaGraph, tree dataTree) error {
@@ -98,7 +96,7 @@ func (p *postgres) Save(bCtx *env.BubblyContext, tenant string, graph *schemaGra
 		if !ok {
 			return fmt.Errorf("data block refers to non-existing table: %s", node.Data.TableName)
 		}
-		return psqlSaveNode(tx, node, *tNode.table)
+		return psqlSaveNode(tx, tenant, node, *tNode.table)
 	}
 
 	_, err = tree.traverse(bCtx, saveNode)
@@ -111,7 +109,7 @@ func (p *postgres) Save(bCtx *env.BubblyContext, tenant string, graph *schemaGra
 }
 
 func (p *postgres) ResolveQuery(tenant string, graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
-	return psqlResolveRootQueries(p.pool, graph, params)
+	return psqlResolveRootQueries(p.pool, tenant, graph, params)
 }
 
 func (p *postgres) Tenants() ([]string, error) {
@@ -123,7 +121,7 @@ func (p *postgres) CreateTenant(name string) error {
 }
 
 func (p *postgres) HasTable(tenant string, table core.Table) (bool, error) {
-	return psqlHasTable(p.pool, table)
+	return psqlHasTable(p.pool, tenant, table)
 }
 
 func psqlNewPool(bCtx *env.BubblyContext, connStr string) (*pgxpool.Pool, error) {
@@ -189,12 +187,12 @@ func psqlCreateSchema(pool *pgxpool.Pool, name string) error {
 	return nil
 }
 
-func psqlHasTable(pool *pgxpool.Pool, table core.Table) (bool, error) {
+func psqlHasTable(pool *pgxpool.Pool, tenant string, table core.Table) (bool, error) {
 	var (
 		sql = psql.Select("1").
 			Prefix("SELECT EXISTS (").
 			From("information_schema.tables").
-			Where(sq.Eq{"table_schema": "public"}).
+			Where(sq.Eq{"table_schema": psqlSchemaName(tenant)}).
 			Where(sq.Eq{"table_name": table.Name}).
 			Suffix(");")
 		exists bool
@@ -212,9 +210,9 @@ func psqlHasTable(pool *pgxpool.Pool, table core.Table) (bool, error) {
 	return exists, nil
 }
 
-func psqlApplySchema(tx pgx.Tx, schema *bubblySchema) error {
+func psqlApplySchema(tx pgx.Tx, tenant string, schema *bubblySchema) error {
 	for _, table := range schema.Tables {
-		if err := psqlApplyTable(tx, table); err != nil {
+		if err := psqlApplyTable(tx, tenant, table); err != nil {
 			return err
 		}
 	}
@@ -227,15 +225,15 @@ func psqlApplySchema(tx pgx.Tx, schema *bubblySchema) error {
 	}
 	node := newDataNode(&d)
 	// Save the data block node to the schemaTable
-	if err := psqlSaveNode(tx, node, schemaTable); err != nil {
+	if err := psqlSaveNode(tx, tenant, node, schemaTable); err != nil {
 		return fmt.Errorf("failed to save schema data block: %w", err)
 	}
 
 	return nil
 }
 
-func psqlApplyTable(tx pgx.Tx, table core.Table) error {
-	sql, err := psqlTableCreate(table)
+func psqlApplyTable(tx pgx.Tx, tenant string, table core.Table) error {
+	sql, err := psqlTableCreate(tenant, table)
 	if err != nil {
 		return fmt.Errorf("failed to prepare SQL statement: %w", err)
 	}
@@ -246,9 +244,9 @@ func psqlApplyTable(tx pgx.Tx, table core.Table) error {
 	return nil
 }
 
-func psqlSaveNode(tx pgx.Tx, node *dataNode, table core.Table) error {
+func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) error {
 
-	sql, err := psqlDataNodeUpsert(node, table)
+	sql, err := psqlDataNodeUpsert(tenant, node, table)
 	if err != nil {
 		return err
 	}
@@ -301,7 +299,7 @@ func psqlRowValues(row pgx.Row, tableName string, fields []string) (map[string]i
 	return retVal, nil
 }
 
-func psqlTableCreate(table core.Table) (string, error) {
+func psqlTableCreate(tenant string, table core.Table) (string, error) {
 	var (
 		fieldLen     = len(table.Fields) + len(table.Joins)
 		tableFields  = make([]string, 0, fieldLen)
@@ -327,13 +325,13 @@ func psqlTableCreate(table core.Table) (string, error) {
 	}
 
 	if len(uniqueFields) > 0 {
-		tableFields = append(tableFields, fmt.Sprintf("UNIQUE (%s)", strings.Join(uniqueFields, ",")))
+		tableFields = append(tableFields, "UNIQUE ("+strings.Join(uniqueFields, ",")+")")
 	}
 
-	return fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s ( %s );", table.Name, strings.Join(tableFields, ",")), nil
+	return "CREATE TABLE IF NOT EXISTS " + psqlAbsTableName(tenant, table.Name) + " ( " + strings.Join(tableFields, ",") + " );", nil
 }
 
-func psqlDataNodeUpsert(node *dataNode, table core.Table) (sq.InsertBuilder, error) {
+func psqlDataNodeUpsert(tenant string, node *dataNode, table core.Table) (sq.InsertBuilder, error) {
 	var (
 		data           = node.Data
 		fieldNames     = node.orderedFields()
@@ -368,7 +366,7 @@ func psqlDataNodeUpsert(node *dataNode, table core.Table) (sq.InsertBuilder, err
 	if err != nil {
 		return sq.InsertBuilder{}, fmt.Errorf("failed to get SQL arguments: %w", err)
 	}
-	return psql.Insert(data.TableName).
+	return psql.Insert(psqlAbsTableName(tenant, data.TableName)).
 		Columns(fieldNames...).
 		Values(values...).
 		Suffix(sqlOnConflict).
@@ -454,4 +452,12 @@ func psqlType(ty cty.Type) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported SQL type: %s", ty.GoString())
 	}
+}
+
+func psqlSchemaName(tenant string) string {
+	return psqlBubblySchemaPrefix + tenant
+}
+
+func psqlAbsTableName(tenant string, table string) string {
+	return psqlBubblySchemaPrefix + tenant + "." + table
 }

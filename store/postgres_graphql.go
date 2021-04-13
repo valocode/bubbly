@@ -62,13 +62,13 @@ func (t *tableColumns) length() int {
 
 // psqlResolveRootQueries is called for each top-level query and iterates
 // through the fields in that root query and resolves them.
-func psqlResolveRootQueries(pool *pgxpool.Pool, graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
+func psqlResolveRootQueries(pool *pgxpool.Pool, tenant string, graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
 	var (
 		result interface{}
 		err    error
 	)
 	for _, field := range params.Info.FieldASTs {
-		result, err = psqlResolveRootQuery(pool, graph, field)
+		result, err = psqlResolveRootQuery(pool, tenant, graph, field)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve query: %s: %w", field.Name.Value, err)
 		}
@@ -77,7 +77,7 @@ func psqlResolveRootQueries(pool *pgxpool.Pool, graph *schemaGraph, params graph
 }
 
 // psqlResolveRootQuery resolves a single root graphql query
-func psqlResolveRootQuery(pool *pgxpool.Pool, graph *schemaGraph, field *ast.Field) (interface{}, error) {
+func psqlResolveRootQuery(pool *pgxpool.Pool, tenant string, graph *schemaGraph, field *ast.Field) (interface{}, error) {
 	var (
 		result      = make(map[string]interface{})
 		qb          = newSQLQueryBuilder()
@@ -92,11 +92,11 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, graph *schemaGraph, field *ast.Fie
 
 	// Set the starting node and initialize the sql statement
 	qb.node = graph.NodeIndex[rootTable]
-	qb.sql = qb.sql.From(tableAsAlias(rootTable, rootAlias))
+	qb.sql = qb.sql.From(tableAsAlias(psqlAbsTableName(tenant, rootTable), rootAlias))
 	// qb.columns = &rootColumns
 
 	// Recursively go through the graphql query and resolve the sub-fields
-	if err := psqlSubQuery(graph, qb, &rootColumns, field, nil); err != nil {
+	if err := psqlSubQuery(tenant, graph, qb, &rootColumns, field, nil); err != nil {
 		return nil, fmt.Errorf("failed to process root query: %s: %w", rootTable, err)
 	}
 
@@ -124,7 +124,7 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, graph *schemaGraph, field *ast.Fie
 	return result[rootTable], nil
 }
 
-func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, field *ast.Field, path schemaPath) error {
+func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, field *ast.Field, path schemaPath) error {
 
 	// GraphQL fields are conceptually functions which return values,
 	// and occasionally accept arguments which alter their behaviour.
@@ -249,13 +249,13 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, fie
 			switch edgeToRelatedNode.rel {
 			case oneToOne, oneToMany:
 				qb.sql = qb.sql.LeftJoin(joinOn(
-					tableAsAlias(rightTable, rightTableAlias),
+					tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
 					tableColumn(leftTableAlias, tableIDField),
 					tableColumn(rightTableAlias, foreignKeyField(leftTable))))
 			case belongsTo:
 				qb.sql = qb.sql.LeftJoin(
 					joinOn(
-						tableAsAlias(rightTable, rightTableAlias),
+						tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
 						tableColumn(rightTableAlias, tableIDField),
 						tableColumn(leftTableAlias, foreignKeyField(rightTable))))
 			}
@@ -267,7 +267,7 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, fie
 				alias:  tableAlias(fieldName, qb.depth),
 				scalar: edgeToRelatedNode.isScalar(),
 			}
-			if err := psqlSubQuery(graph, qb, subColumns, subField, path); err != nil {
+			if err := psqlSubQuery(tenant, graph, qb, subColumns, subField, path); err != nil {
 				return err
 			}
 			tc.children = append(tc.children, subColumns)
