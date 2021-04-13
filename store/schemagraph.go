@@ -24,7 +24,7 @@ const (
 
 // schemaNode represents a node in the schema graph.
 // A node is a wrapper around core.Table with the edges for explicit
-// relationships to other nodes (and therefore tables)
+// relationships to other Nodes (and therefore tables)
 type schemaNode struct {
 	table *core.Table
 	edges schemaPath
@@ -33,7 +33,7 @@ type schemaNode struct {
 // nodeRefMap maps node names to the corresponding structures of type node
 type nodeRefMap map[string]*schemaNode
 
-// schemaNodes is a list of graph nodes
+// schemaNodes is a list of graph Nodes
 type schemaNodes []*schemaNode
 
 // schemaEdge represents an edge in the graph
@@ -53,18 +53,18 @@ type schemaPath []*schemaEdge
 
 // schemaGraph represents a graph created from the bubbly schema.
 type schemaGraph struct {
-	nodes schemaNodes
-	// nodeIndex stores an index to the nodes using the schema table name.
+	Nodes schemaNodes
+	// NodeIndex stores an index to the Nodes using the schema table name.
 	// This is probably not the best for performance, but our schemas probably
 	// will not become huge and this is a great convienice for consumers of the
 	// graph, to not have to traverse the graph to find a node
-	nodeIndex nodeRefMap
+	NodeIndex nodeRefMap
 }
 
 // traverse applies the callback function to every node of the schemaGraph.
 func (g *schemaGraph) traverse(fnVisit func(node *schemaNode) error) error {
 	var visited = make(map[string]struct{})
-	for _, n := range g.nodes {
+	for _, n := range g.Nodes {
 		if err := visitSchemaNode(n, visited, fnVisit); err != nil {
 			return fmt.Errorf("failed to traverse schema graph: %w", err)
 		}
@@ -93,7 +93,7 @@ func visitSchemaNode(node *schemaNode, visited map[string]struct{}, fnVisit func
 }
 
 // FIXME: ofr shortestPath needs to go
-// shortestPath uses breadth-first search to find the shortest path between two nodes in the graph
+// shortestPath uses breadth-first search to find the shortest path between two Nodes in the graph
 func (n *schemaNode) shortestPath(dst string) schemaPath {
 	var (
 		visited   = make(map[string]struct{})
@@ -137,7 +137,7 @@ func (n *schemaNode) shortestPath(dst string) schemaPath {
 	return nil
 }
 
-// neighbours takes a distance and returns a slice of paths to all of the nodes
+// neighbours takes a distance and returns a slice of paths to all of the Nodes
 // within that distance in the graph
 func (n *schemaNode) neighbours(distance int) []schemaPath {
 	var visited = make(nodeRefMap)
@@ -145,12 +145,12 @@ func (n *schemaNode) neighbours(distance int) []schemaPath {
 }
 
 // addEdgeFromJoin takes a node and creates bi-directional edges between the
-// nodes. Noteworthy is the relationship that the edges describe
+// Nodes. Noteworthy is the relationship that the edges describe
 func (n *schemaNode) addEdgeFromJoin(child *schemaNode, unique bool) {
 	var (
 		// This node has a oneToMany or oneToOne relationship with the child node
 		edgeToChild = &schemaEdge{node: child, rel: oneToMany}
-		// The child "belongsTo" the parent (this nodes)
+		// The child "belongsTo" the parent (this Nodes)
 		edgeToParent = &schemaEdge{node: n, rel: belongsTo}
 	)
 	if unique {
@@ -194,22 +194,22 @@ func newSchemaGraph(tables core.Tables) (*schemaGraph, error) {
 
 	var (
 		nodes = make(nodeRefMap)
-		graph = &schemaGraph{nodeIndex: nodes}
+		graph = &schemaGraph{NodeIndex: nodes}
 	)
 
-	// Pull all the nodes from the definitions of tables.
+	// Pull all the Nodes from the definitions of tables.
 	nodes.createFrom(tables)
 
-	// First iterate over the top-level tables to extract the root nodes in the
+	// First iterate over the top-level tables to extract the root Nodes in the
 	// graph. Tables at the top-level, without any joins, do not have any edges
-	// going to them, so they are root nodes.
+	// going to them, so they are root Nodes.
 	for _, table := range tables {
 		if len(table.Joins) == 0 {
-			graph.nodes = append(graph.nodes, nodes[table.Name])
+			graph.Nodes = append(graph.Nodes, nodes[table.Name])
 		}
 	}
 
-	// Connect related nodes based on the information from the list of tables,
+	// Connect related Nodes based on the information from the list of tables,
 	// each table in the list knows what other tables it is connected to.
 	if err := nodes.connectFrom(tables, nil); err != nil {
 		return graph, fmt.Errorf("failed to create graph: %w", err)
@@ -225,7 +225,7 @@ func (nodes *nodeRefMap) createFrom(tables core.Tables) {
 	}
 }
 
-// connectFrom connects related nodes based on join information stored in the given list of tables
+// connectFrom connects related Nodes based on join information stored in the given list of tables
 func (nodes *nodeRefMap) connectFrom(tables core.Tables, parent *schemaNode) error {
 
 	for _, table := range tables {

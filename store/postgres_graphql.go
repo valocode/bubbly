@@ -91,7 +91,7 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, graph *schemaGraph, field *ast.Fie
 	)
 
 	// Set the starting node and initialize the sql statement
-	qb.node = graph.nodeIndex[rootTable]
+	qb.node = graph.NodeIndex[rootTable]
 	qb.sql = qb.sql.From(tableAsAlias(rootTable, rootAlias))
 	// qb.columns = &rootColumns
 
@@ -261,7 +261,7 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, fie
 			}
 
 			// Recursively resolve for the subField `B`, which may contain further nested fields.
-			qb.node = graph.nodeIndex[fieldName]
+			qb.node = graph.NodeIndex[fieldName]
 			subColumns := &tableColumns{
 				table:  fieldName,
 				alias:  tableAlias(fieldName, qb.depth),
