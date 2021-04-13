@@ -89,7 +89,7 @@ func TestEventTrigger(t *testing.T) {
 	require.NoError(t, err)
 
 	// save the blocks to the store
-	err = s.Save(bCtx, core.DataBlocks{resJSON.Data()})
+	err = s.Save(core.DataBlocks{resJSON.Data()})
 	require.NoError(t, err)
 
 	resQuery := fmt.Sprintf(`

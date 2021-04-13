@@ -49,11 +49,17 @@ func (c *cockroachdb) Apply(schema *bubblySchema) error {
 	return nil
 }
 
-func (c *cockroachdb) Save(bCtx *env.BubblyContext, schema *bubblySchema, tree dataTree) error {
+func (c *cockroachdb) Save(bCtx *env.BubblyContext, graph *schemaGraph, tree dataTree) error {
 
 	err := crdbpgx.ExecuteTx(context.Background(), c.pool, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		saveNode := func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
-			return psqlSaveNode(tx, node, schema)
+			// Check that the data node we are saving exists in the schema graph.
+			// Otherwise it does not exist in our schema
+			tNode, ok := graph.nodeIndex[node.Data.TableName]
+			if !ok {
+				return fmt.Errorf("data block refers to non-existing table: %s", node.Data.TableName)
+			}
+			return psqlSaveNode(tx, node, *tNode.table)
 		}
 
 		_, err := tree.traverse(bCtx, saveNode)

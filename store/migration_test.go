@@ -90,7 +90,7 @@ func TestApplyMigrationSchemaPostgres(t *testing.T) {
 	}
 
 	// Create tables in db
-	err = s.Apply(bCtx, schema)
+	err = s.Apply(schema)
 	assert.NoError(t, err)
 
 	// run tests
@@ -140,7 +140,7 @@ func TestApplyMigrationSchemaCockroach(t *testing.T) {
 	for _, table := range schema1.Tables {
 		schema = append(schema, table)
 	}
-	err = s.Apply(bCtx, schema)
+	err = s.Apply(schema)
 	assert.NoError(t, err)
 	// run tests
 	m, err := s.p.GenerateMigration(bCtx, expectedChanges)

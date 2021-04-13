@@ -73,7 +73,7 @@ func (p *postgres) Migrate(migrationList migration) error {
 	return psqlMigrate(p.pool, migrationList)
 }
 
-func (p *postgres) Save(bCtx *env.BubblyContext, schema *bubblySchema, tree dataTree) error {
+func (p *postgres) Save(bCtx *env.BubblyContext, graph *schemaGraph, tree dataTree) error {
 
 	tx, err := p.pool.Begin(context.Background())
 	if err != nil {
@@ -81,8 +81,16 @@ func (p *postgres) Save(bCtx *env.BubblyContext, schema *bubblySchema, tree data
 	}
 	defer tx.Rollback(context.Background())
 
+	// Create a callback function that wil be called for each node in the data
+	// tree we visit and will save that node
 	saveNode := func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
-		return psqlSaveNode(tx, node, schema)
+		// Check that the data node we are saving exists in the schema graph.
+		// Otherwise it does not exist in our schema
+		tNode, ok := graph.nodeIndex[node.Data.TableName]
+		if !ok {
+			return fmt.Errorf("data block refers to non-existing table: %s", node.Data.TableName)
+		}
+		return psqlSaveNode(tx, node, *tNode.table)
 	}
 
 	_, err = tree.traverse(bCtx, saveNode)
@@ -177,8 +185,9 @@ func psqlApplySchema(tx pgx.Tx, schema *bubblySchema) error {
 		return fmt.Errorf("failed to create data block from schema: %w", err)
 	}
 	node := newDataNode(&d)
-	if err := psqlSaveNode(tx, node, schema); err != nil {
-		return fmt.Errorf("failed to insert latest tables: %w", err)
+	// Save the data block node to the schemaTable
+	if err := psqlSaveNode(tx, node, schemaTable); err != nil {
+		return fmt.Errorf("failed to save schema data block: %w", err)
 	}
 
 	return nil
@@ -196,11 +205,7 @@ func psqlApplyTable(tx pgx.Tx, table core.Table) error {
 	return nil
 }
 
-func psqlSaveNode(tx pgx.Tx, node *dataNode, schema *bubblySchema) error {
-	table, ok := schema.Tables[node.Data.TableName]
-	if !ok {
-		return fmt.Errorf("data block refers to non-existing table: %s", node.Data.TableName)
-	}
+func psqlSaveNode(tx pgx.Tx, node *dataNode, table core.Table) error {
 
 	sql, err := psqlDataNodeUpsert(node, table)
 	if err != nil {
