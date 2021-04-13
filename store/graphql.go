@@ -86,6 +86,22 @@ func newGraphQLSchema(graph *schemaGraph, s *Store) (graphql.Schema, error) {
 	return graphql.NewSchema(cfg)
 }
 
+// Support for order_by argument
+var orderByType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "order_by",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"table": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		},
+		"field": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		},
+		"order": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		},
+	},
+})
+
 // addGraphFields updates the `gqlField` map containing GraphQL Field definitions
 // with information for every field of the Table `t`, which is a table coming
 // from the Bubbly Schema.
@@ -117,6 +133,9 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 	}
 	gqlField.Args[limitID] = &graphql.ArgumentConfig{
 		Type: graphql.Int,
+	}
+	gqlField.Args[orderByID] = &graphql.ArgumentConfig{
+		Type: graphql.NewList(orderByType),
 	}
 
 	// Create a GraphQL type for the current table so that we

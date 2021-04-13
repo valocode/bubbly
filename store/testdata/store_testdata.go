@@ -40,6 +40,5 @@ func DataBlocks(t *testing.T, bCtx *env.BubblyContext, fromFile string) core.Dat
 	err = parser.DecodeExpandBody(bCtx, body, &dataWrapper, cty.NilVal)
 	require.NoErrorf(t, err, "failed to decode data blocks")
 
-	bCtx.Logger.Debug().Interface("Data", dataWrapper.Data).Msg("This get loaded into the DB:")
 	return dataWrapper.Data
 }

@@ -13,6 +13,11 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+const (
+	orderAsc  string = "ASC"
+	orderDesc string = "DESC"
+)
+
 func newSQLQueryBuilder() *sqlQueryBuilder {
 	return &sqlQueryBuilder{
 		sql:   psql.Select(),
@@ -173,11 +178,70 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, fie
 			}
 		}
 
-		// Process arguments which are not column names...
+		// FIXME: how do I do process the args in a more abstract way, without having to fiddle with AST objects?
 
-		// TODO: order_by
+		// Process the arguments that are not GraphQL/DB field/column names...
 		if arg.Name.Value == "order_by" {
-			return fmt.Errorf("argument not implemented: %s", arg.Name.Value)
+
+			// This argument's value is a slice of values representing (table, field, order) tuples.
+			orderByItems, ok := (arg.Value.GetValue()).([]ast.Value)
+			if !ok {
+				return fmt.Errorf("argument type is wrong in `order_by`: %s : %#v", arg.Name.Value, arg.Value.GetValue())
+			}
+
+			// Process each of the {table, field, order} objects...
+			for _, item := range orderByItems {
+
+				fields, ok := item.GetValue().([]*ast.ObjectField)
+				if !ok {
+					return fmt.Errorf("failed to type cast argument value for `order_by`, step 2, value: %#v", item.GetValue())
+				}
+
+				// FIXME probably best to make it a proper type {table,field, order}
+				ob := map[string]string{}
+
+				// Process a single {table, field, order} entry
+				for _, objectField := range fields {
+
+					switch objectField.Name.Value {
+					case "table":
+						s, ok := objectField.GetValue().(*ast.StringValue)
+						if !ok {
+							return fmt.Errorf("failed to type cast argument value for `order_by`, step 3: %#v: %#v", objectField.Name.Value, objectField)
+						}
+						ob["table"], _ = s.GetValue().(string)
+
+					case "field":
+						s, ok := objectField.GetValue().(*ast.StringValue)
+						if !ok {
+							return fmt.Errorf("failed to type cast argument value for `order_by`, step 3, value: %#v", objectField)
+						}
+						ob["field"] = s.GetValue().(string)
+
+					case "order":
+						s, ok := objectField.GetValue().(*ast.StringValue)
+						if !ok {
+							return fmt.Errorf("failed to type cast argument value for `order_by`, step 3, value: %#v", objectField)
+						}
+						ob["order"] = s.GetValue().(string)
+					}
+				}
+
+				t := ob["table"]
+				f := ob["field"]
+				order := strings.ToUpper(ob["order"])
+
+				if order != orderAsc && order != orderDesc {
+					return fmt.Errorf("invalid sorting order for: %s", ob["order"])
+				}
+
+				// Augment the SQL query with the ORDER BY statement.
+				qb.sql = qb.sql.OrderBy(tableColumn(tableAlias(t, qb.depth), f) + " " + order)
+
+				// The current argument has been successfully resolved, 
+				// no further processing is required
+				argIsResolved = true
+			}
 		}
 
 		// TODO: distinct_on

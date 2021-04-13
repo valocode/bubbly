@@ -487,17 +487,36 @@ var sqlGenTests = []struct {
 		data:   "data5.hcl",
 		query: `
 		{
-			test_run(order_by: [{location: {name: ASC}}, {configuration: {name: DESC}}]) {
+			test_run(order_by: [
+				{table: "location", field: "name", order: "DESC"}, 
+				{table: "configuration", field: "name", order: "DESC"}
+				]) {
 				configuration {
 					name
 				}
-				location(name: "Deep Dark Wood") {
+				location {
 					name
 				}
 			}
 		}`,
 		want: map[string]interface{}{
 			"test_run": []interface{}{
+				map[string]interface{}{
+					"location": map[string]interface{}{
+						"name": "Secret Underground Facility on the Moon",
+					},
+					"configuration": map[string]interface{}{
+						"name": "Magic",
+					},
+				},
+				map[string]interface{}{
+					"location": map[string]interface{}{
+						"name": "Gold Coast City Skyline",
+					},
+					"configuration": map[string]interface{}{
+						"name": "Approved by Wombats",
+					},
+				},
 				map[string]interface{}{
 					"location": map[string]interface{}{
 						"name": "Deep Dark Wood",
@@ -812,6 +831,7 @@ func TestPostgresSQLGen(t *testing.T) {
 			have := s.Query(tt.query)
 			require.Emptyf(t, have.Errors, "failed to execute query %s", tt.name)
 			require.Equal(t, tt.want, have.Data, "query response is equal")
+			t.Logf("have: %#v", have)
 		})
 	}
 }
@@ -937,7 +957,7 @@ func TestPostgresReinitialisation(t *testing.T) {
 
 	newSchema, err := s.currentBubblySchema()
 	require.NoError(t, err)
-	
+
 	// this should return the schema that was formed from applySchemaOrDie,
 	// _not_ the baseSchema at row 0 in the _schema table
 	require.NotEqual(t, baseSchema, newSchema)
