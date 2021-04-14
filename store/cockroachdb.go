@@ -52,7 +52,7 @@ func (c *cockroachdb) Apply(tenant string, schema *bubblySchema) error {
 	return nil
 }
 
-func (c *cockroachdb) Migrate(tenant string, schema *bubblySchema, cl changelog) error {
+func (c *cockroachdb) Migrate(tenant string, schema *bubblySchema, cl schemaUpdates) error {
 	pgSchema := psqlBubblySchemaPrefix + tenant
 	migration, err := psqlGenerateMigration(config.CockroachDBStore, pgSchema, cl)
 	if err != nil {

@@ -7,11 +7,11 @@ import (
 	"github.com/valocode/bubbly/api/core"
 )
 
-// compareSchema will take 2 schemas as arguments and return a changelog
+// compareSchema will take 2 schemas as arguments and return a schemaUpdates
 // elements are matched on Name, and if a Name is not matched in the 2nd schema,
 // this will be treated as a deletion.
-func compareSchema(s1 bubblySchema, s2 bubblySchema) (changelog, error) {
-	var changelog changelog
+func compareSchema(s1 bubblySchema, s2 bubblySchema) (schemaUpdates, error) {
+	var changelog schemaUpdates
 	for tableName, table1 := range s1.Tables {
 		if tableName != table1.Name {
 			return nil, fmt.Errorf("map key and table name do not match for table %s", table1.Name)
@@ -70,8 +70,8 @@ var (
 	uniqueType Element = "unique"
 )
 
-// changelog is a list of expectedChanges that will be applied by the migration
-type changelog []changeEntry
+// schemaUpdates is a list of expectedChanges that will be applied by the migration
+type schemaUpdates []changeEntry
 
 type tableInfo struct {
 	TableName   string
@@ -93,7 +93,7 @@ type changeEntry struct {
 // will be views as an update on field1, but if field1 has its name changed:
 // field1: "hello world" -> field2: "hello world"
 // These will be treated as 2 separate entities, field1 will be seen as deleted, and field2 will be added
-func calculateDiff(t1 core.Table, t2 core.Table, cl *changelog) {
+func calculateDiff(t1 core.Table, t2 core.Table, cl *schemaUpdates) {
 	compareFields(t1, t2, cl)
 	compareJoins(t1, t2, cl)
 	compareTables(t1, t2, cl)
@@ -112,7 +112,7 @@ func calculateDiff(t1 core.Table, t2 core.Table, cl *changelog) {
 	}
 }
 
-func compareFields(t1, t2 core.Table, cl *changelog) {
+func compareFields(t1, t2 core.Table, cl *schemaUpdates) {
 mainLoop:
 	for _, field1 := range t1.Fields {
 		found := false
@@ -184,7 +184,7 @@ mainLoop:
 	}
 }
 
-func compareJoins(t1, t2 core.Table, cl *changelog) {
+func compareJoins(t1, t2 core.Table, cl *schemaUpdates) {
 	for _, join1 := range t1.Joins {
 		found := false
 	joinLoop:
@@ -244,10 +244,10 @@ func compareJoins(t1, t2 core.Table, cl *changelog) {
 	}
 }
 
-func compareTables(parentTable1, parentTable2 core.Table, cl *changelog) {
+func compareTables(parentTable1, parentTable2 core.Table, cl *schemaUpdates) {
 	for _, table1 := range parentTable1.Tables {
 		found := false
-		var subCl changelog
+		var subCl schemaUpdates
 		for _, table2 := range parentTable2.Tables {
 			if table1.Name != table2.Name {
 				continue
@@ -272,7 +272,7 @@ func compareTables(parentTable1, parentTable2 core.Table, cl *changelog) {
 	}
 	for _, table2 := range parentTable2.Tables {
 		found := false
-		var subCl changelog
+		var subCl schemaUpdates
 		for _, table1 := range parentTable1.Tables {
 			if table2.Name == table1.Name {
 				found = true
@@ -296,7 +296,7 @@ func compareTables(parentTable1, parentTable2 core.Table, cl *changelog) {
 	}
 }
 
-func (cl *changelog) combine(newCl *changelog) {
+func (cl *schemaUpdates) combine(newCl *schemaUpdates) {
 	for _, entry := range *newCl {
 		*cl = append(*cl, entry)
 	}

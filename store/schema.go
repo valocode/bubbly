@@ -25,7 +25,7 @@ func newBubblySchema() *bubblySchema {
 // and other neat tricks.
 type bubblySchema struct {
 	Tables    map[string]core.Table
-	changelog changelog
+	changelog schemaUpdates
 }
 
 // Data returns a core.Data value of the schema so that it can be saved in the
