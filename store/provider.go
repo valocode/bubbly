@@ -10,6 +10,7 @@ import (
 type provider interface {
 	Tenants() ([]string, error)
 	CreateTenant(string) error
+	Close()
 	Apply(string, *bubblySchema) error
 	Migrate(string, *bubblySchema, schemaUpdates) error
 	Save(*env.BubblyContext, string, *schemaGraph, dataTree) error

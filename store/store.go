@@ -3,9 +3,9 @@ package store
 import (
 	"encoding/json"
 	"fmt"
-	"sync"
 	"time"
 
+	"github.com/cornelk/hashmap"
 	"github.com/graphql-go/graphql"
 	"github.com/zclconf/go-cty/cty"
 
@@ -19,17 +19,22 @@ const DefaultTenantName = "default"
 // New creates a new Store for the given config.
 func New(bCtx *env.BubblyContext) (*Store, error) {
 	var (
-		s   = &Store{bCtx: bCtx}
-		p   provider
+		s = &Store{
+			bCtx:     bCtx,
+			graphs:   &hashmap.HashMap{},
+			schemas:  &hashmap.HashMap{},
+			triggers: &hashmap.HashMap{},
+		}
 		err error
 	)
 
+	// Connect to the provider's database RetryAttempts times, with a RetrySleep
 	for attempt := 1; attempt <= bCtx.StoreConfig.RetryAttempts; attempt++ {
 		switch bCtx.StoreConfig.Provider {
 		case config.PostgresStore:
-			p, err = newPostgres(bCtx)
+			s.p, err = newPostgres(bCtx)
 		case config.CockroachDBStore:
-			p, err = newCockroachdb(bCtx)
+			s.p, err = newCockroachdb(bCtx)
 		default:
 			return nil, fmt.Errorf("invalid provider: %s", bCtx.StoreConfig.Provider)
 		}
@@ -45,13 +50,11 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to provider: %s: %w", bCtx.StoreConfig.Provider, err)
 	}
-	s.p = p
 
 	if err := s.initStoreSchemas(); err != nil {
 		return nil, fmt.Errorf("failed to initialize the store schemas: %w", err)
 	}
 
-	s.triggers = internalTriggers
 	return s, nil
 }
 
@@ -60,30 +63,21 @@ type Store struct {
 	bCtx *env.BubblyContext
 	p    provider
 
-	graph     *schemaGraph
-	mu        sync.RWMutex
-	gqlSchema *graphql.Schema
-	triggers  []*trigger
+	graphs   *hashmap.HashMap
+	schemas  *hashmap.HashMap
+	triggers *hashmap.HashMap
 }
 
 // Query queries the store.
-func (s *Store) Query(tenant string, query string) *graphql.Result {
-	// First we need to fetch the GraphQL for the given tenant
-	// TODO: use kv store here
-	graph := s.graph
-	schema := s.gqlSchema
-	// Next we need to add the resolvers to the graphql fields, as these cannot
-	// be stored together with the schema in DB
-	for _, field := range schema.QueryType().Fields() {
-		field.Resolve = func(p graphql.ResolveParams) (interface{}, error) {
-			return s.p.ResolveQuery(tenant, graph, p)
-		}
+func (s *Store) Query(tenant string, query string) (*graphql.Result, error) {
+	schema, ok := s.schemas.GetStringKey(tenant)
+	if !ok {
+		return nil, fmt.Errorf("no schema exists for tenant %s", tenant)
 	}
-
 	return graphql.Do(graphql.Params{
-		Schema:        *schema,
+		Schema:        schema.(graphql.Schema),
 		RequestString: query,
-	})
+	}), nil
 }
 
 // Apply applies a schema corresponding to a set of tables.
@@ -127,31 +121,52 @@ func (s *Store) Apply(tenant string, tables core.Tables) error {
 
 // Save saves data into the store.
 func (s *Store) Save(tenant string, data core.DataBlocks) error {
+	var (
+		graph    *schemaGraph
+		triggers []*trigger
+	)
 
 	dataTree, err := createDataTree(data)
 	if err != nil {
 		return fmt.Errorf("failed to create tree of data blocks for storing: %w", err)
 	}
+	graphVal, ok := s.graphs.GetStringKey(tenant)
+	if !ok {
+		return fmt.Errorf("no schema exists for tenant %s", tenant)
+	}
+	graph = graphVal.(*schemaGraph)
 
-	if err := s.p.Save(s.bCtx, tenant, s.graph, dataTree); err != nil {
+	triggersVal, ok := s.triggers.GetStringKey(tenant)
+	if !ok {
+		return fmt.Errorf("no triggers exist for tenant %s", tenant)
+	}
+	triggers = triggersVal.([]*trigger)
+
+	if err := s.p.Save(s.bCtx, tenant, graph, dataTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}
 
-	triggersTree, err := HandleTriggers(s.bCtx, dataTree, s.triggers, Active)
+	triggersTree, err := HandleTriggers(s.bCtx, dataTree, triggers, Active)
 	if err != nil {
 		return fmt.Errorf("data triggers failed: %w", err)
 	}
 
-	if err := s.p.Save(s.bCtx, tenant, s.graph, triggersTree); err != nil {
+	if err := s.p.Save(s.bCtx, tenant, graph, triggersTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}
 
-	_, err = HandleTriggers(s.bCtx, dataTree, s.triggers, Passive)
+	_, err = HandleTriggers(s.bCtx, dataTree, triggers, Passive)
 	if err != nil {
 		return fmt.Errorf("passive triggers failed: %w", err)
 	}
 
 	return nil
+}
+
+// Close closes the connection to the store's own database and the provider
+func (s *Store) Close() {
+	// Close the provider's connection
+	s.p.Close()
 }
 
 func (s *Store) initStoreSchemas() error {
@@ -165,11 +180,14 @@ func (s *Store) initStoreSchemas() error {
 		}
 	} else {
 		tenants = []string{DefaultTenantName}
+		// Make sure we have created the default tenant, as this will not get
+		// called otherwise as there is no idea of creating a tenant in single
+		// tenancy mode
 		if err := s.p.CreateTenant(DefaultTenantName); err != nil {
 			return fmt.Errorf("failed creating default tenant %s: %w", DefaultTenantName, err)
 		}
 	}
-	// Iterate through the tenants an initialize the cache of schemas
+	// Iterate through the tenants and initialize the cache of schemas
 	for _, tenant := range tenants {
 		// Check if the provider database has the schema table.
 		// If not, it indicates a fresh database that should be initialized
@@ -188,6 +206,7 @@ func (s *Store) initStoreSchemas() error {
 			return fmt.Errorf("failed to sync schema for tenant %s: %w", tenant, err)
 		}
 	}
+
 	return nil
 }
 
@@ -204,16 +223,33 @@ func (s *Store) syncSchema(tenant string) error {
 }
 
 func (s *Store) currentBubblySchema(tenant string) (*bubblySchema, error) {
-	// Check if the schema has been initialized
-	if s.gqlSchema == nil {
-		// This is fine, as we might be creating the schema in this process,
-		// so initialize the schema and set the graphql schema
-		if err := s.updateSchema(tenant, newBubblySchema()); err != nil {
-			return nil, fmt.Errorf("failed to initialize graphql schema with internal tables: %w", err)
+	var (
+		schema graphql.Schema
+		err    error
+	)
+	schemaVal, ok := s.schemas.GetStringKey(tenant)
+	if !ok {
+		// If there was no schema for this tenant, it might be because we are
+		// initialising the store. In order to do this, we need at least some
+		// minimum viable graphq schema to query the provider for the existing
+		// schema
+		graph := internalSchemaGraph()
+		schemaVal, err = newGraphQLSchema(graph, func(p graphql.ResolveParams) (interface{}, error) {
+			return s.p.ResolveQuery(tenant, graph, p)
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed creating GraphQL schema of internal tables: %w", err)
 		}
 	}
+	schema = schemaVal.(graphql.Schema)
 
-	result := s.Query(tenant, schemaQuery)
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: schemaQuery,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current schema: %w", err)
+	}
 	if result.HasErrors() {
 		return nil, fmt.Errorf("failed to get current tables: %v", result.Errors)
 	}
@@ -225,16 +261,16 @@ func (s *Store) currentBubblySchema(tenant string) (*bubblySchema, error) {
 		return newBubblySchema(), nil
 	}
 
-	var schema bubblySchema
+	var bSchema bubblySchema
 	b, err := json.Marshal(val[len(val)-1])
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal graphql response: %w", err)
 	}
-	err = json.Unmarshal(b, &schema)
+	err = json.Unmarshal(b, &bSchema)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal graphql response: %w", err)
 	}
-	return &schema, nil
+	return &bSchema, nil
 }
 
 func (s *Store) updateSchema(tenant string, bubblySchema *bubblySchema) error {
@@ -242,17 +278,16 @@ func (s *Store) updateSchema(tenant string, bubblySchema *bubblySchema) error {
 	if err != nil {
 		return fmt.Errorf("failed to build schema graph: %w", err)
 	}
-
-	gqlSchema, err := newGraphQLSchema(graph, s)
+	schema, err := newGraphQLSchema(graph, func(p graphql.ResolveParams) (interface{}, error) {
+		return s.p.ResolveQuery(tenant, graph, p)
+	})
 	if err != nil {
-		return fmt.Errorf("falied to build GraphQL schema: %w", err)
+		return fmt.Errorf("failed to create GraphQL schema from graph: %w", err)
 	}
 
-	s.mu.Lock()
-	s.graph = graph
-	s.gqlSchema = &gqlSchema
-	s.mu.Unlock()
-
+	s.graphs.Set(tenant, graph)
+	s.schemas.Set(tenant, schema)
+	s.triggers.Set(tenant, internalTriggers)
 	return nil
 }
 

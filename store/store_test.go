@@ -424,7 +424,8 @@ func runQueryTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 
 	for _, tt := range queryTests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := s.Query(DefaultTenantName, tt.query)
+			actual, err := s.Query(DefaultTenantName, tt.query)
+			require.NoError(t, err)
 			require.Emptyf(t, actual.Errors, "failed to execute query %s", tt.name)
 			require.Equal(t, tt.expected, actual.Data, "query response is equal")
 		})
@@ -454,7 +455,8 @@ func runResourceTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 				}
 			`
 
-		result := s.Query(DefaultTenantName, resQuery)
+		result, err := s.Query(DefaultTenantName, resQuery)
+		require.NoError(t, err)
 		require.Empty(t, result.Errors)
 	})
 }
@@ -501,7 +503,8 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 				}
 			}
 		`, core.EventTableName)
-	result := s.Query(DefaultTenantName, resQuery)
+	result, err := s.Query(DefaultTenantName, resQuery)
+	require.NoError(t, err)
 	require.Empty(t, result.Errors)
 
 	a := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
@@ -562,7 +565,8 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 			}
 		`, core.ResourceTableName, core.EventTableName)
 
-	result = s.Query(DefaultTenantName, resQuery)
+	result, err = s.Query(DefaultTenantName, resQuery)
+	require.NoError(t, err)
 	assert.Empty(t, result.Errors)
 
 	resEvents := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
@@ -602,8 +606,8 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 			}
 		`, core.ResourceTableName, core.EventTableName)
 
-	result = s.Query(DefaultTenantName, resQuery)
-
+	result, err = s.Query(DefaultTenantName, resQuery)
+	require.NoError(t, err)
 	assert.Empty(t, result.Errors)
 	assert.NotNil(t, result)
 }
@@ -676,7 +680,8 @@ func TestPostgresSQLGen(t *testing.T) {
 			loadTestDataOrDie(t, bCtx, s, filepath.Join("testdata", "sqlgen", tt.data))
 
 			// Run the test
-			have := s.Query(DefaultTenantName, tt.query)
+			have, err := s.Query(DefaultTenantName, tt.query)
+			require.NoError(t, err)
 			require.Emptyf(t, have.Errors, "failed to execute query %s", tt.name)
 			require.Equal(t, tt.want, have.Data, "query response is equal")
 

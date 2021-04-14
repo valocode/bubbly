@@ -40,6 +40,10 @@ type cockroachdb struct {
 	pool *pgxpool.Pool
 }
 
+func (c *cockroachdb) Close() {
+	c.pool.Close()
+}
+
 func (c *cockroachdb) Apply(tenant string, schema *bubblySchema) error {
 
 	err := crdbpgx.ExecuteTx(context.Background(), c.pool, pgx.TxOptions{}, func(tx pgx.Tx) error {

@@ -25,7 +25,7 @@ type gqlField struct {
 
 // newGraphQLSchema creates a new GraphQL schema wrapping the given provider
 // with a schema that corresponds to the given set of tables.
-func newGraphQLSchema(graph *schemaGraph, s *Store) (graphql.Schema, error) {
+func newGraphQLSchema(graph *schemaGraph, resolveFn graphql.FieldResolveFn) (graphql.Schema, error) {
 	var (
 		fields = make(map[string]gqlField)
 		// These are the top-level query fields. Each of these fields
@@ -54,8 +54,9 @@ func newGraphQLSchema(graph *schemaGraph, s *Store) (graphql.Schema, error) {
 	// we have created
 	for _, field := range fields {
 		queryFields[field.Type.Name()] = &graphql.Field{
-			Type: graphql.NewList(field.Type),
-			Args: field.Args,
+			Type:    graphql.NewList(field.Type),
+			Args:    field.Args,
+			Resolve: resolveFn,
 		}
 	}
 

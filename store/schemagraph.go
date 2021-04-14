@@ -179,6 +179,17 @@ func (p *schemaPath) isScalar() bool {
 	return isScalar
 }
 
+// internalSchemaGraph returns a schema graph based on the internal tables
+func internalSchemaGraph() *schemaGraph {
+	graph, err := newSchemaGraph(internalTables)
+	if err != nil {
+		// This is controlled entirely by development so no input can affect this
+		// so panic as a developer has done something wrong
+		panic("failed to create schema graph from internal tables")
+	}
+	return graph
+}
+
 // newSchemaGraphFromMap is a wrapper around newSchemaGraph for backwards
 // compatibility with the current way the schema is stored in the provider
 func newSchemaGraphFromMap(tables map[string]core.Table) (*schemaGraph, error) {
