@@ -55,6 +55,10 @@ type postgres struct {
 	pool *pgxpool.Pool
 }
 
+func (p *postgres) Close() {
+	p.pool.Close()
+}
+
 func (p *postgres) Apply(tenant string, schema *bubblySchema) error {
 
 	tx, err := p.pool.Begin(context.Background())

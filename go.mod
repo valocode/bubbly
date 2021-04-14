@@ -12,6 +12,8 @@ require (
 	github.com/clbanning/mxj v1.8.4
 	github.com/cockroachdb/cockroach-go/v2 v2.1.0
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
+	github.com/cornelk/hashmap v1.0.1
+	github.com/dchest/siphash v1.2.2 // indirect
 	github.com/fatih/color v1.10.0
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/golang/protobuf v1.4.3 // indirect
@@ -39,7 +41,6 @@ require (
 	github.com/zclconf/go-cty v1.7.1
 	github.com/zclconf/go-cty-yaml v1.0.2
 	github.com/ziflex/lecho/v2 v2.1.0
-	go.etcd.io/bbolt v1.3.5
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a

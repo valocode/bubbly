@@ -20,7 +20,7 @@ func (d *DataStore) getResourcesByKindHandler(bCtx *env.BubblyContext, subject s
 	if data.Auth != nil {
 		tenant = data.Auth.Organization
 	}
-	return d.Store.Query(tenant, string(data.Data)), nil
+	return d.Store.Query(tenant, string(data.Data))
 }
 
 func (d *DataStore) postSchemaHandler(bCtx *env.BubblyContext, subject string, reply string, data component.MessageData) (interface{}, error) {
@@ -55,9 +55,9 @@ func (d *DataStore) queryHandler(bCtx *env.BubblyContext, subject string, reply 
 	if data.Auth != nil {
 		tenant = data.Auth.Organization
 	}
-	result := d.Store.Query(tenant, string(data.Data))
-	if result.HasErrors() {
-		return nil, fmt.Errorf("error while querying the data store: %v", result.Errors)
+	result, err := d.Store.Query(tenant, string(data.Data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to query the data store: %w", err)
 	}
 	return result, nil
 }

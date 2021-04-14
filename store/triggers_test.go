@@ -105,7 +105,8 @@ func TestEventTrigger(t *testing.T) {
 		`, core.ResourceTableName, core.EventTableName)
 
 	// query to make sure that the default trigger responsible for loading data into the _event table has worked
-	result := s.Query(DefaultTenantName, resQuery)
+	result, err := s.Query(DefaultTenantName, resQuery)
+	require.NoError(t, err)
 	t.Logf("%v", result.Data)
 	require.NotEmpty(t, result)
 }
