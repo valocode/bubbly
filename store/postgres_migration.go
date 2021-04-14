@@ -14,8 +14,8 @@ import (
 
 type migration []string
 
-// generateMigration creates a list of sql statements to be executed based on a changelog
-func psqlGenerateMigration(provider config.StoreProviderType, tenant string, ch changelog) (migration, error) {
+// generateMigration creates a list of sql statements to be executed based on a schemaUpdates
+func psqlGenerateMigration(provider config.StoreProviderType, tenant string, ch schemaUpdates) (migration, error) {
 	var m migration
 	for _, change := range ch {
 		tableName := change.TableInfo.TableName

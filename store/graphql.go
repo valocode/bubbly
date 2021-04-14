@@ -56,7 +56,6 @@ func newGraphQLSchema(graph *schemaGraph, s *Store) (graphql.Schema, error) {
 		queryFields[field.Type.Name()] = &graphql.Field{
 			Type: graphql.NewList(field.Type),
 			Args: field.Args,
-			// Resolve: s.resolveQuery,
 		}
 	}
 

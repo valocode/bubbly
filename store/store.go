@@ -60,7 +60,6 @@ type Store struct {
 	bCtx *env.BubblyContext
 	p    provider
 
-	// bubblySchema *bubblySchema
 	graph     *schemaGraph
 	mu        sync.RWMutex
 	gqlSchema *graphql.Schema
@@ -104,7 +103,6 @@ func (s *Store) Apply(tenant string, tables core.Tables) error {
 	newSchema := &bubblySchema{
 		Tables: newSchemaTables,
 	}
-	// addImplicitJoins(currentSchema, tables, nil)
 	addImplicitJoins(newSchema, tables, nil)
 
 	// Calculate the schema diff
@@ -114,7 +112,7 @@ func (s *Store) Apply(tenant string, tables core.Tables) error {
 	}
 	newSchema.changelog = cl
 
-	// Perform the migration based on the changelog
+	// Perform the migration based on the schemaUpdates
 	if err := s.p.Migrate(tenant, newSchema, cl); err != nil {
 		return fmt.Errorf("failed to migrate schema: %w", err)
 	}

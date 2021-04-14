@@ -71,7 +71,7 @@ func (p *postgres) Apply(tenant string, schema *bubblySchema) error {
 	return tx.Commit(context.Background())
 }
 
-func (p *postgres) Migrate(tenant string, schema *bubblySchema, cl changelog) error {
+func (p *postgres) Migrate(tenant string, schema *bubblySchema, cl schemaUpdates) error {
 	migration, err := psqlGenerateMigration(config.PostgresStore, tenant, cl)
 	if err != nil {
 		return fmt.Errorf("failed to generate migration list: %w", err)

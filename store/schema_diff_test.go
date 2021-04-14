@@ -19,7 +19,7 @@ func TestCompareSchema(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    changelog
+		want    schemaUpdates
 		wantErr bool
 	}{
 		{
