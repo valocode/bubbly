@@ -101,7 +101,7 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, graph *schemaGraph, field *ast.Fie
 	// qb.columns = &rootColumns
 
 	// Recursively go through the graphql query and resolve the sub-fields
-	if err := psqlSubQuery(graph, qb, &rootColumns, field, nil); err != nil {
+	if err := psqlSubQuery(graph, qb, &rootColumns, &rootColumns, field, nil); err != nil {
 		return nil, fmt.Errorf("failed to process root query: %s: %w", rootTable, err)
 	}
 
@@ -129,7 +129,7 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, graph *schemaGraph, field *ast.Fie
 	return result[rootTable], nil
 }
 
-func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, field *ast.Field, path schemaPath) error {
+func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, root *tableColumns, tc *tableColumns, field *ast.Field, path schemaPath) error {
 
 	// GraphQL fields are conceptually functions which return values,
 	// and occasionally accept arguments which alter their behaviour.
@@ -149,6 +149,13 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, fie
 	var (
 		node      = qb.node
 		subFields = make([]*ast.Field, 0)
+
+		// The `order_by` GraphQL argument can only be processed after all table aliases
+		// are known. That includes the tables referenced by the GraphQL subfields.
+		// Therefore, upon encountering the `order_by` argument in one of the root
+		// types, it is stored in this variable for processing after all the table
+		// aliases are known, that is after the rest of the GraphQL query had been processed.
+		orderByArg *ast.Argument
 	)
 
 	// FIXME: Why is the depth being increased here?
@@ -178,70 +185,28 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, fie
 			}
 		}
 
+		if argIsResolved {
+			continue
+		}
+
 		// FIXME: how do I do process the args in a more abstract way, without having to fiddle with AST objects?
 
 		// Process the arguments that are not GraphQL/DB field/column names...
+
+		// FIXME: maybe use a switch for what follows, instead of a set of ifs?
+
+		// The order_by argument is allowed only at the top level. Futhermore, it cannot be processed until
+		// all subfields had been processed, because at the top level the alias names of tables are not known.
+		// Therefore, defer the processing of this argument by saving a pointer to it for later processing.
 		if arg.Name.Value == "order_by" {
 
-			// This argument's value is a slice of values representing (table, field, order) tuples.
-			orderByItems, ok := (arg.Value.GetValue()).([]ast.Value)
-			if !ok {
-				return fmt.Errorf("argument type is wrong in `order_by`: %s : %#v", arg.Name.Value, arg.Value.GetValue())
+			if qb.depth != 1 {
+				return fmt.Errorf("the `order_by` argument is supported only for the root types")
 			}
 
-			// Process each of the {table, field, order} objects...
-			for _, item := range orderByItems {
+			orderByArg = arg
 
-				fields, ok := item.GetValue().([]*ast.ObjectField)
-				if !ok {
-					return fmt.Errorf("failed to type cast argument value for `order_by`, step 2, value: %#v", item.GetValue())
-				}
-
-				// FIXME probably best to make it a proper type {table,field, order}
-				ob := map[string]string{}
-
-				// Process a single {table, field, order} entry
-				for _, objectField := range fields {
-
-					switch objectField.Name.Value {
-					case "table":
-						s, ok := objectField.GetValue().(*ast.StringValue)
-						if !ok {
-							return fmt.Errorf("failed to type cast argument value for `order_by`, step 3: %#v: %#v", objectField.Name.Value, objectField)
-						}
-						ob["table"], _ = s.GetValue().(string)
-
-					case "field":
-						s, ok := objectField.GetValue().(*ast.StringValue)
-						if !ok {
-							return fmt.Errorf("failed to type cast argument value for `order_by`, step 3, value: %#v", objectField)
-						}
-						ob["field"] = s.GetValue().(string)
-
-					case "order":
-						s, ok := objectField.GetValue().(*ast.StringValue)
-						if !ok {
-							return fmt.Errorf("failed to type cast argument value for `order_by`, step 3, value: %#v", objectField)
-						}
-						ob["order"] = s.GetValue().(string)
-					}
-				}
-
-				t := ob["table"]
-				f := ob["field"]
-				order := strings.ToUpper(ob["order"])
-
-				if order != orderAsc && order != orderDesc {
-					return fmt.Errorf("invalid sorting order for: %s", ob["order"])
-				}
-
-				// Augment the SQL query with the ORDER BY statement.
-				qb.sql = qb.sql.OrderBy(tableColumn(tableAlias(t, qb.depth), f) + " " + order)
-
-				// The current argument has been successfully resolved, 
-				// no further processing is required
-				argIsResolved = true
-			}
+			argIsResolved = true
 		}
 
 		// TODO: distinct_on
@@ -293,6 +258,7 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, fie
 			qb.sql = qb.sql.Column(tableColumn(tc.alias, fieldName))
 		}
 	}
+
 	// Once we have processed this fields columns, proceed to the subFields.
 	// This is to ensure the correct order of columns in the SQL SELECT statement
 	for _, subField := range subFields {
@@ -349,12 +315,98 @@ func psqlSubQuery(graph *schemaGraph, qb *sqlQueryBuilder, tc *tableColumns, fie
 			alias:  tableAlias(fieldName, qb.depth),
 			scalar: edgeToRelatedNode.isScalar(),
 		}
-		if err := psqlSubQuery(graph, qb, subColumns, subField, path); err != nil {
+		if err := psqlSubQuery(graph, qb, root, subColumns, subField, path); err != nil {
 			return err
 		}
 		tc.children = append(tc.children, subColumns)
 	}
+
+	// TODO: make error messages more helpful (and more systematic) in the following code
+	// Process order_by, if available. At this point all table aliases are known.
+	if orderByArg != nil {
+
+		arg := orderByArg
+
+		// This argument's value is a slice of values representing (table, field, order) tuples.
+		orderByItems, ok := (arg.Value.GetValue()).([]ast.Value)
+		if !ok {
+			return fmt.Errorf("argument type is wrong in `order_by`: %s : %#v", arg.Name.Value, arg.Value.GetValue())
+		}
+
+		// Process each of the {table, field, order} objects...
+		for _, item := range orderByItems {
+
+			fields, ok := item.GetValue().([]*ast.ObjectField)
+			if !ok {
+				return fmt.Errorf("failed to type cast argument value for `order_by`, step 2, value: %#v", item.GetValue())
+			}
+
+			// FIXME probably best to make it a proper type {table,field, order}
+			ob := map[string]string{}
+
+			// Process a single {table, field, order} entry
+			for _, objectField := range fields {
+
+				switch objectField.Name.Value {
+				case "table":
+					s, ok := objectField.GetValue().(*ast.StringValue)
+					if !ok {
+						return fmt.Errorf("failed to type cast argument value for `order_by`, step 3: %#v: %#v", objectField.Name.Value, objectField)
+					}
+					ob["table"], _ = s.GetValue().(string) // FIXME: is this safe?
+
+				case "field":
+					s, ok := objectField.GetValue().(*ast.StringValue)
+					if !ok {
+						return fmt.Errorf("failed to type cast argument value for `order_by`, step 3, value: %#v", objectField)
+					}
+					ob["field"] = s.GetValue().(string) // FIXME: is this safe?
+
+				case "order":
+					s, ok := objectField.GetValue().(*ast.StringValue)
+					if !ok {
+						return fmt.Errorf("failed to type cast argument value for `order_by`, step 3, value: %#v", objectField)
+					}
+					ob["order"] = s.GetValue().(string) // FIXME: is this safe?
+				}
+			}
+
+			tableName := ob["table"]
+			f := ob["field"]
+			order := strings.ToUpper(ob["order"])
+
+			if order != orderAsc && order != orderDesc {
+				return fmt.Errorf("invalid sorting order for: %s", ob["order"])
+			}
+
+			// Lookup the table alias by table name
+			ta := findAliasFor(tableName, root)
+			if ta == "" {
+				return fmt.Errorf("could not find the table alias for: %s", tableName)
+			}
+
+			// Augment the SQL query with the ORDER BY statement.
+			qb.sql = qb.sql.OrderBy(tableColumn(ta, f) + " " + order)
+		}
+	}
+
 	return nil
+}
+
+// findAliasFor takes a table name and traverses the tableColumns tree recursively, looking for the first match
+// on the table name. On match, it returns the stored table name alias for that table name.
+// If the the table name cannot be found in the tree, the empty string is returned.
+func findAliasFor(tableName string, tc *tableColumns) string {
+	if tc.table == tableName {
+		return tc.alias
+	} else {
+		for _, subtc := range tc.children {
+			if alias := findAliasFor(tableName, subtc); alias != "" {
+				return alias
+			}
+		}
+	}
+	return ""
 }
 
 func joinOn(table, leftColumn, rightColumn string) string {
