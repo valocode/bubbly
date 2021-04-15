@@ -73,9 +73,17 @@ func (s *Store) CreateTenant(tenant string) error {
 	if err := s.p.CreateTenant(tenant); err != nil {
 		return fmt.Errorf("error creating tenant %s: %w", tenant, err)
 	}
-	// Initialize the internal schema for the tenant
-	if err := s.p.Apply(tenant, newBubblySchema()); err != nil {
-		return fmt.Errorf("failed to initialize schema with internal tables for tenant %s: %w", tenant, err)
+	// We should check that a schema already exists, and if not, we should
+	// initialize one
+	ok, err := s.p.HasTable(tenant, schemaTable)
+	if err != nil {
+		return fmt.Errorf("error checking if provider has schema for tenant %s: %w", tenant, err)
+	}
+	if !ok {
+		// Initialize the internal schema for the tenant
+		if err := s.p.Apply(tenant, newBubblySchema()); err != nil {
+			return fmt.Errorf("failed to initialize schema with internal tables for tenant %s: %w", tenant, err)
+		}
 	}
 	return nil
 }
