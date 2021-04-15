@@ -10,6 +10,15 @@ import (
 	"github.com/valocode/bubbly/store"
 )
 
+func (d *DataStore) createTenant(bCtx *env.BubblyContext, subject string, reply string, data component.MessageData) (interface{}, error) {
+	bCtx.Logger.Debug().
+		Str("subject", subject).
+		Str("component", string(d.Type)).
+		Msg("processing message")
+	tenant := string(data.Data)
+	return nil, d.Store.CreateTenant(tenant)
+}
+
 func (d *DataStore) getResourcesByKindHandler(bCtx *env.BubblyContext, subject string, reply string, data component.MessageData) (interface{}, error) {
 	bCtx.Logger.Debug().
 		Str("subject", subject).

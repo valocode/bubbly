@@ -29,6 +29,8 @@ type Client interface {
 	Query(*env.BubblyContext, *component.MessageAuth, string) ([]byte, error)
 	// Applying a schema
 	PostSchema(*env.BubblyContext, *component.MessageAuth, []byte) error
+	// Creates a tenant in the store. Only applicable to NATS
+	CreateTenant(*env.BubblyContext, *component.MessageAuth, string) error
 	// Close closes any connections, e.g. to NATS
 	Close()
 }

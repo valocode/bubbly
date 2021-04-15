@@ -171,7 +171,8 @@ func psqlTenantSchemas(pool *pgxpool.Pool) ([]string, error) {
 		}
 		// Check that the schema is a bubbly schema
 		if strings.HasPrefix(schema, psqlBubblySchemaPrefix) {
-			schemas = append(schemas, schema)
+			// Append the bubbly schema and remove the prefix to get the tenant name
+			schemas = append(schemas, schema[len(psqlBubblySchemaPrefix):])
 		}
 	}
 
