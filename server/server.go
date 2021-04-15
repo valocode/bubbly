@@ -71,7 +71,7 @@ func (s *Server) setupRouter() *echo.Echo {
 			Str("Path", c.Path()).
 			Strs("QueryParams", c.ParamValues()).
 			Err(err).
-			Msg("received an error")
+			Msg("API server error")
 
 		// Call the default handler to return the HTTP response
 		router.DefaultHTTPErrorHandler(err, c)

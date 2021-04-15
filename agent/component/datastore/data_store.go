@@ -52,6 +52,12 @@ func (d *DataStore) Close() {
 func (d *DataStore) defaultSubscriptions() component.DesiredSubscriptions {
 	return component.DesiredSubscriptions{
 		component.DesiredSubscription{
+			Subject: component.StoreCreateTenant,
+			Queue:   component.StoreQueue,
+			Reply:   true,
+			Handler: d.createTenant,
+		},
+		component.DesiredSubscription{
 			Subject: component.StoreGetResourcesByKind,
 			Queue:   component.StoreQueue,
 			Reply:   true,

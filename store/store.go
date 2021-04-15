@@ -68,6 +68,18 @@ type Store struct {
 	triggers *hashmap.HashMap
 }
 
+// CreateTenant creates a tenant schema in the provider
+func (s *Store) CreateTenant(tenant string) error {
+	if err := s.p.CreateTenant(tenant); err != nil {
+		return fmt.Errorf("error creating tenant %s: %w", tenant, err)
+	}
+	// Initialize the internal schema for the tenant
+	if err := s.p.Apply(tenant, newBubblySchema()); err != nil {
+		return fmt.Errorf("failed to initialize schema with internal tables for tenant %s: %w", tenant, err)
+	}
+	return nil
+}
+
 // Query queries the store.
 func (s *Store) Query(tenant string, query string) (*graphql.Result, error) {
 	schema, ok := s.schemas.GetStringKey(tenant)
@@ -183,7 +195,7 @@ func (s *Store) initStoreSchemas() error {
 		// Make sure we have created the default tenant, as this will not get
 		// called otherwise as there is no idea of creating a tenant in single
 		// tenancy mode
-		if err := s.p.CreateTenant(DefaultTenantName); err != nil {
+		if err := s.CreateTenant(DefaultTenantName); err != nil {
 			return fmt.Errorf("failed creating default tenant %s: %w", DefaultTenantName, err)
 		}
 	}
