@@ -10,7 +10,7 @@ import (
 // compareSchema will take 2 schemas as arguments and return a schemaUpdates
 // elements are matched on Name, and if a Name is not matched in the 2nd schema,
 // this will be treated as a deletion.
-func compareSchema(s1 bubblySchema, s2 bubblySchema) (schemaUpdates, error) {
+func compareSchema(s1 *bubblySchema, s2 *bubblySchema) (schemaUpdates, error) {
 	var changelog schemaUpdates
 	for tableName, table1 := range s1.Tables {
 		if tableName != table1.Name {
@@ -96,31 +96,18 @@ type changeEntry struct {
 func calculateDiff(t1 core.Table, t2 core.Table, cl *schemaUpdates) {
 	compareFields(t1, t2, cl)
 	compareJoins(t1, t2, cl)
-	compareTables(t1, t2, cl)
-	if t1.Unique != t2.Unique {
-		e := changeEntry{
-			Action: update,
-			TableInfo: tableInfo{
-				TableName:   t2.Name,
-				ElementName: "name",
-				ElementType: uniqueType,
-			},
-			From: t1.Unique,
-			To:   t2.Unique,
-		}
-		*cl = append(*cl, e)
-	}
 }
 
 func compareFields(t1, t2 core.Table, cl *schemaUpdates) {
-mainLoop:
 	for _, field1 := range t1.Fields {
 		found := false
 	fieldLoop:
 		for _, field2 := range t2.Fields {
 			if reflect.DeepEqual(field1, field2) {
-				break mainLoop
+				found = true
+				break fieldLoop
 			}
+			// Check if same field but different type
 			if field1.Name == field2.Name && !reflect.DeepEqual(field1.Type, field2.Type) {
 				*cl = append(*cl, changeEntry{
 					Action: update,
@@ -134,6 +121,7 @@ mainLoop:
 				})
 				found = true
 			}
+			// Check if same field but "Unique" has changed
 			if field1.Name == field2.Name && field1.Unique != field2.Unique {
 				*cl = append(*cl, changeEntry{
 					Action: update,
@@ -154,7 +142,7 @@ mainLoop:
 				Action: remove,
 				TableInfo: tableInfo{
 					TableName:   t1.Name,
-					ElementName: t1.Name,
+					ElementName: field1.Name,
 					ElementType: fieldType,
 				},
 				From: field1,
@@ -241,63 +229,5 @@ func compareJoins(t1, t2 core.Table, cl *schemaUpdates) {
 				To:   join2,
 			})
 		}
-	}
-}
-
-func compareTables(parentTable1, parentTable2 core.Table, cl *schemaUpdates) {
-	for _, table1 := range parentTable1.Tables {
-		found := false
-		var subCl schemaUpdates
-		for _, table2 := range parentTable2.Tables {
-			if table1.Name != table2.Name {
-				continue
-			}
-			calculateDiff(table1, table2, &subCl)
-			found = true
-		}
-
-		if !found {
-			subCl = append(subCl, changeEntry{
-				Action: remove,
-				TableInfo: tableInfo{
-					TableName:   table1.Name,
-					ElementName: table1.Name,
-					ElementType: tableType,
-				},
-				From: table1,
-				To:   nil,
-			})
-		}
-		cl.combine(&subCl)
-	}
-	for _, table2 := range parentTable2.Tables {
-		found := false
-		var subCl schemaUpdates
-		for _, table1 := range parentTable1.Tables {
-			if table2.Name == table1.Name {
-				found = true
-				break
-			}
-		}
-		if !found {
-			// no more recursion will be performed since the rest of the nested values are already to be created
-			subCl = append(subCl, changeEntry{
-				Action: create,
-				TableInfo: tableInfo{
-					TableName:   table2.Name,
-					ElementName: table2.Name,
-					ElementType: tableType,
-				},
-				From: nil,
-				To:   table2,
-			})
-		}
-		cl.combine(&subCl)
-	}
-}
-
-func (cl *schemaUpdates) combine(newCl *schemaUpdates) {
-	for _, entry := range *newCl {
-		*cl = append(*cl, entry)
 	}
 }

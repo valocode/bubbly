@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -27,7 +28,11 @@ func psqlGenerateMigration(provider config.StoreProviderType, tenant string, ch 
 			case fieldType:
 				m = append(m, "ALTER TABLE IF EXISTS "+psqlAbsTableName(tenant, tableName)+" DROP COLUMN IF EXISTS "+change.TableInfo.ElementName)
 			case joinType, uniqueType:
-				m = append(m, "ALTER TABLE IF EXISTS "+psqlAbsTableName(tenant, tableName)+" DROP CONSTRAINT IF EXISTS "+change.TableInfo.ElementName)
+				stmt, err := removeJoinStatement(tenant, change.TableInfo, change.From)
+				if err != nil {
+					return nil, err
+				}
+				m = append(m, stmt)
 			default:
 				return nil, fmt.Errorf("unsupported element type: %s", change.TableInfo.ElementType)
 			}
@@ -40,14 +45,11 @@ func psqlGenerateMigration(provider config.StoreProviderType, tenant string, ch 
 				}
 				m = append(m, stmts...)
 			case joinType:
-				// changing if the join is unique or not
-				stmts, err := alterJoinStatement(tenant, change.TableInfo, change.To)
-				if err != nil {
-					return nil, err
-				}
-				m = append(m, stmts...)
+				// If a join has been changed, it means it's Single attribute
+				// has changed, and this does not affect anything in Postgres
+				// but only affects the GraphQL resolvers
 			case uniqueType:
-				// TODO: is there something that needs doing here ?
+				// TODO: we should update the column to add a unique constraint...
 			default:
 				return nil, fmt.Errorf("unsupported element type: %s", change.TableInfo.ElementType)
 			}
@@ -121,7 +123,7 @@ func psqlMigrate(conn *pgxpool.Pool, tenant string, schema *bubblySchema, migr m
 func alterColumnStatement(provider config.StoreProviderType, tenant string, info tableInfo, columnType interface{}) ([]string, error) {
 	t, ok := (columnType).(cty.Type)
 	if !ok {
-		return nil, fmt.Errorf("not able to parse value to cty.Type: %s", columnType)
+		return nil, fmt.Errorf("cannot assign type %s to cty.Type", reflect.TypeOf(columnType).String())
 	}
 	sqlType, err := psqlType(t)
 	if err != nil {
@@ -157,30 +159,11 @@ func alterColumnStatement(provider config.StoreProviderType, tenant string, info
 	}
 }
 
-// alter a join constraint if it exists. This will first drop an existing constraint and then add it again
-// with the updated values. This is because there is not a simple way to alter a constraint in SQL
-func alterJoinStatement(tenant string, info tableInfo, uniqueInterface interface{}) ([]string, error) {
-	unique, ok := (uniqueInterface).(bool)
-	if !ok {
-		return nil, fmt.Errorf("uniqueInterface not assignable to bool: %s", uniqueInterface)
-	}
-	var statements = make([]string, 0, 1)
-	statements = append(statements,
-		"ALTER TABLE IF EXISTS "+psqlAbsTableName(tenant, info.TableName)+" DROP CONSTRAINT IF EXISTS "+info.TableName+"_"+info.ElementName+"_unique;",
-	)
-	if unique {
-		statements = append(statements,
-			"ALTER TABLE IF EXISTS "+psqlAbsTableName(tenant, info.TableName)+" ADD CONSTRAINT "+info.TableName+"_"+info.ElementName+"_unique UNIQUE ("+info.ElementName+");",
-		)
-	}
-	return statements, nil
-}
-
 // this will create a column in a table, and then if specified add the UNIQUE constraint
 func createFieldStatement(tenant string, info tableInfo, fieldInterface interface{}) ([]string, error) {
 	field, ok := (fieldInterface).(core.TableField)
 	if !ok {
-		return nil, fmt.Errorf("fieldInterface not assignable to core.TableField: %s", fieldInterface)
+		return nil, fmt.Errorf("cannot assign type %s to core.TableField", reflect.TypeOf(fieldInterface).String())
 	}
 	fieldType, err := psqlType(field.Type)
 	if err != nil {
@@ -204,11 +187,16 @@ func createFieldStatement(tenant string, info tableInfo, fieldInterface interfac
 func createJoinStatement(tenant string, info tableInfo, joinInterface interface{}) (string, error) {
 	join, ok := (joinInterface).(core.TableJoin)
 	if !ok {
-		return "", fmt.Errorf("uniqueInterface not assignable to bool: %s", joinInterface)
+		return "", fmt.Errorf("cannot assign type %s to core.TableJoin", reflect.TypeOf(joinInterface).String())
 	}
-	if join.Single {
-		return "ALTER TABLE IF EXISTS " + psqlAbsTableName(tenant, info.TableName) + " ADD CONSTRAINT " + info.TableName + "_" + info.ElementName + "_unique UNIQUE (" + info.ElementName + tableJoinSuffix + ");", nil
-	} else {
-		return "ALTER TABLE IF EXISTS " + psqlAbsTableName(tenant, info.TableName) + " ADD COLUMN IF NOT EXISTS " + info.TableName + tableJoinSuffix + " SERIAL;", nil
+	return "ALTER TABLE IF EXISTS " + psqlAbsTableName(tenant, info.TableName) + " ADD COLUMN IF NOT EXISTS " + join.Table + tableJoinSuffix + " SERIAL;", nil
+}
+
+// removeJoinStatement removes a the column which acts as a join for a table
+func removeJoinStatement(tenant string, info tableInfo, joinInterface interface{}) (string, error) {
+	join, ok := (joinInterface).(core.TableJoin)
+	if !ok {
+		return "", fmt.Errorf("cannot assign type %s to core.TableJoin", reflect.TypeOf(joinInterface).String())
 	}
+	return "ALTER TABLE IF EXISTS " + psqlAbsTableName(tenant, info.TableName) + " DROP COLUMN IF EXISTS " + join.Table + tableJoinSuffix, nil
 }
