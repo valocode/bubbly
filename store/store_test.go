@@ -382,20 +382,22 @@ var sqlGenTests = []struct {
 		},
 	},
 	{
-		name:   "order by",
+		name:   "graphql field order 1",
 		schema: "tables5.hcl",
 		data:   "data5.hcl",
 		query: `
 		{
 			test_run {
-				ok
-				location {
-					name
-				}
 				configuration {
 					name
 				}
-				version { name }
+				location(name: "Deep Dark Wood") {
+					name
+				}
+				ok
+				version {
+					name
+				}
 			}
 		}`,
 		want: map[string]interface{}{
@@ -410,6 +412,70 @@ var sqlGenTests = []struct {
 					},
 					"version": map[string]interface{}{
 						"name": "v1.0.1",
+					},
+				},
+			},
+		},
+	},
+	{
+		name:   "graphql field order 2",
+		schema: "tables5.hcl",
+		data:   "data5.hcl",
+		query: `
+		{
+			test_run {
+				ok
+				location(name: "Deep Dark Wood") {
+					name
+				}
+				version {
+					name
+				}
+				configuration {
+					name
+				}
+			}
+		}`,
+		want: map[string]interface{}{
+			"test_run": []interface{}{
+				map[string]interface{}{
+					"ok": true,
+					"location": map[string]interface{}{
+						"name": "Deep Dark Wood",
+					},
+					"configuration": map[string]interface{}{
+						"name": "Primitive",
+					},
+					"version": map[string]interface{}{
+						"name": "v1.0.1",
+					},
+				},
+			},
+		},
+	},
+	{
+		name:   "graphql field order 3",
+		schema: "tables5.hcl",
+		data:   "data5.hcl",
+		query: `
+		{
+			test_run {
+				configuration {
+					name
+				}
+				location(name: "Deep Dark Wood") {
+					name
+				}
+			}
+		}`,
+		want: map[string]interface{}{
+			"test_run": []interface{}{
+				map[string]interface{}{
+					"location": map[string]interface{}{
+						"name": "Deep Dark Wood",
+					},
+					"configuration": map[string]interface{}{
+						"name": "Primitive",
 					},
 				},
 			},
