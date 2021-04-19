@@ -28,6 +28,21 @@ func (t dataTree) traverse(bCtx *env.BubblyContext, fn visitFn) (core.DataBlocks
 	return blocks, nil
 }
 
+// reset goes over the tree and resets the tree so that it can be traversed again
+func (t dataTree) reset() {
+	for _, n := range t {
+		resetDataNode(n)
+	}
+}
+
+// resetDataNode takes a node, resets it, and then calls itself for the node's children
+func resetDataNode(node *dataNode) {
+	node.Visited = false
+	for _, c := range node.Children {
+		resetDataNode(c)
+	}
+}
+
 // visitNode is a wrapper around the callback visit function to make sure that
 // all the nodes are visited at least once, and at most once
 func visitNode(bCtx *env.BubblyContext, node *dataNode, fn visitFn, blocks *core.DataBlocks) error {
