@@ -45,32 +45,31 @@ resource "extract" "spdx_licenses" {
             iterator = it
 
             content {
-                url = it.value.detailsUrl
-                #decoder, actually, is an optional argument)
-                #decoder = "json"
+                # The original URLs refer to the spdx.org website which has stopped accepting connections
+                # from GitHub Actions. The license details files though are also available from the same
+                # repo from which the list of licenses is pulled from. Thus, rewrite the URLs in the license
+                # list to refer to the GitHub repo, which is not blocked from being accessed via GitHub Actions.
+                url = replace(
+                    it.value.detailsUrl,
+                    "http://spdx.org/licenses/",
+                    "https://raw.githubusercontent.com/spdx/license-list-data/v3.5/json/details/"
+                )
+
+                # The replacement URLs point to GitHub, so set the MIME type recommended for it.
+                headers = {
+                    "Accept": "application/vnd.github.v3+json"
+                }
+
+                # HTTP request timeout in seconds
                 timeout = 5
 
-                # Notes:
-                #   * match field is actually boolean in a string: "true"/"false".
-                #   * isFsfLibre field is absent in some records.
-                #
+                # The only fields which MUST be specified in the format are the ones
+                # which MUST be present, otherwise an error is raised by Bubbly.
+                # Other (optional) fields may be accessed regardless of being defined here,
+                # by checking their presence using HCL `lookup` or `contain` functions at their point of use.
                 format = object({
-                    isDeprecatedLicenseId: bool,
-                    isFsfLibre: bool,
-                    licenseText: string,
                     name: string,
                     licenseId: string,
-                    crossRef: list(object({
-                        isLive: bool,
-                        isValid: bool,
-                        isWayBackLink: bool,
-                        match: string,
-                        url: string,
-                        order: number,
-                        timestamp: string
-                    })),
-                    seeAlso: list(string),
-                    isOsiApproved: bool
                 })
             }
         }
@@ -87,11 +86,18 @@ resource "transform" "license_data" {
             for_each = self.input.spdx_licenses
             iterator = it
             labels = ["spdx_license"]
+
+            # The crossref_count field is optional and may not be present
+            # in every license data file. Therefore, before using it,
+            # we must check if it is available. If it's not available,
+            # this is interpreted as the absence of cross reference
+            # information for this license, and thus the `length` function
+            # is provided an empty list to count instead.
             content {
                 fields = {
                     "id": it.value.licenseId
                     "name": it.value.name
-                    "crossref_count": length(it.value.crossRef)
+                    "crossref_count": length(lookup(it.value, "crossRef", []))
                 }
             }
         }
