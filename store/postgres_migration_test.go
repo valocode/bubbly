@@ -1,151 +1,147 @@
 package store
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/valocode/bubbly/config"
-	"github.com/valocode/bubbly/env"
-
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
-	"github.com/valocode/bubbly/api/core"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/test"
 )
 
 const (
 	postgresDatabase = "bubbly"
 	postgresUser     = "postgres"
 	postgresPassword = "secret"
-
-	cockroachDatabase = "defaultdb"
-	cockroachUser     = "root"
-	cockroachPassword = "admin"
 )
 
 func TestApplyMigrationSchemaPostgres(t *testing.T) {
-	pool, err := dockertest.NewPool("")
-	require.NoErrorf(t, err, "failed to connect to Docker")
-
-	resource, err := pool.RunWithOptions(
-		&dockertest.RunOptions{
-			Repository: "postgres",
-			Tag:        "13.0",
-			Env: []string{
-				"POSTGRES_PASSWORD=" + postgresPassword,
-				"POSTGRES_DB=" + postgresDatabase,
-			},
-		},
-		func(hc *docker.HostConfig) {
-			hc.AutoRemove = true
-			hc.RestartPolicy = docker.RestartPolicy{
-				Name: "no",
-			}
-		},
-	)
-	require.NoErrorf(t, err, "failed to start a container")
-
-	t.Cleanup(func() {
-		if err := pool.Purge(resource); err != nil {
-			t.Fatal("failed to remove a container or a volume:", err)
-		}
-	})
-	resource.Expire(360) // Tell docker to hard kill the container in X seconds
-
-	var db *sql.DB
-	err = pool.Retry(func() error {
-		pgConnStr := fmt.Sprintf("postgresql://%s:%s@localhost:%s/%s?sslmode=disable", postgresUser, postgresPassword, resource.GetPort("5432/tcp"), postgresDatabase)
-		db, err = sql.Open("pgx", pgConnStr)
-		if err != nil {
-			return err
-		}
-		return db.Ping()
-	})
-	require.NoErrorf(t, err, "failed to connect to the database container")
-
-	// We only used the connection for waiting on database, bubbly will manage its own
-	err = db.Close()
-	require.NoError(t, err, "failed to close the connection to database")
-
 	// Set up complete. Now for the test:
 	bCtx := env.NewBubblyContext()
-	bCtx.StoreConfig.Provider = config.PostgresStore
-	bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
-	bCtx.StoreConfig.PostgresDatabase = postgresDatabase
-	bCtx.StoreConfig.PostgresUser = postgresUser
-	bCtx.StoreConfig.PostgresPassword = postgresPassword
+	for _, tt := range schemaDiffTests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Start postgres in docker
+			resource := test.RunPostgresDocker(t)
+			bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
+			// // Create the bubbly schemas
+			s1 := newBubblySchemaFromTables(tt.s1)
+			s2 := newBubblySchemaFromTables(tt.s2)
 
-	// Get a handle to the bubbly store
-	s, err := New(bCtx)
-	assert.NoErrorf(t, err, "failed to initialize store")
+			// Get a handle to the bubbly store
+			s, err := New(bCtx)
+			assert.NoErrorf(t, err, "failed to initialize store")
 
-	// Prepare definitions of db tables
-	schema := core.Tables{}
-	for _, table := range schema1.Tables {
-		schema = append(schema, table)
+			// Apply the initial schema
+			err = s.Apply(DefaultTenantName, tt.s1)
+			assert.NoError(t, err)
+			curSchema, err := s.currentBubblySchema(DefaultTenantName)
+			assert.NoError(t, err)
+			// Verify that no changes are needed
+			curChanges, err := compareSchema(curSchema, s1)
+			assert.NoError(t, err)
+			assert.Empty(t, curChanges)
+
+			// Apply the second schema, which triggers a migration
+			err = s.Apply(DefaultTenantName, tt.s2)
+			assert.NoError(t, err)
+			newSchema, err := s.currentBubblySchema(DefaultTenantName)
+			assert.NoError(t, err)
+			// Verify that no changes are needed
+			newChanges, err := compareSchema(newSchema, s2)
+			assert.NoError(t, err)
+			assert.Empty(t, newChanges)
+
+			sqlStr := "select table_name,column_name,data_type from information_schema.columns where table_schema = '" + psqlSchemaName(DefaultTenantName) + "';"
+			postgres, ok := s.p.(*postgres)
+			require.Truef(t, ok, "error casting store provider to postgres")
+			rows, err := postgres.pool.Query(context.TODO(), sqlStr)
+			require.NoError(t, err)
+			defer rows.Close()
+
+			type sqlColumn struct {
+				table      string
+				column     string
+				columnType string
+			}
+
+			var sqlColumns = make([]sqlColumn, 0)
+			for rows.Next() {
+				var tableName, columnName, columnType string
+				err := rows.Scan(&tableName, &columnName, &columnType)
+				require.NoError(t, err)
+
+				sqlColumns = append(sqlColumns, sqlColumn{table: tableName, column: columnName, columnType: columnType})
+				table, ok := s2.Tables[tableName]
+				assert.Truef(t, ok, "table %s exists postgres but not in the bubbly schema after migration", tableName)
+				// Continue onto next in for loop if table not found
+				if !ok {
+					continue
+				}
+				var foundField bool
+				for _, field := range table.Fields {
+					if field.Name == columnName {
+						foundField = true
+						break
+					}
+				}
+				// Check if _id field
+				if !foundField && columnName == tableIDField {
+					foundField = true
+				}
+				// Check if foreign key field because of join
+				if !foundField && strings.HasSuffix(columnName, tableJoinSuffix) {
+					joinTableName := columnName[:len(columnName)-len(tableJoinSuffix)]
+					for _, join := range table.Joins {
+						if join.Table == joinTableName {
+							foundField = true
+							break
+						}
+					}
+				}
+				assert.Truef(t, foundField, "table %s has column %s in postgres which does not exist in the bubbly schema after migration", tableName, columnName)
+			}
+
+			// Now iterate over the schema and check that everything exists in postgres
+			for _, table := range s2.Tables {
+				var foundTable bool
+				for _, col := range sqlColumns {
+					if col.table == table.Name {
+						foundTable = true
+						break
+					}
+				}
+				assert.Truef(t, foundTable, "table %s exists in the bubbly schema but not in postgres after the migration", table.Name)
+				if !foundTable {
+					continue
+				}
+
+				// Check the fields
+				for _, field := range table.Fields {
+					var foundField bool
+					for _, col := range sqlColumns {
+						if col.table == table.Name && col.column == field.Name {
+							foundField = true
+							break
+						}
+					}
+					assert.Truef(t, foundField, "field %s in table %s exists in the bubbly schema but not in postgres after the migration", field.Name, table.Name)
+				}
+				// Check the join
+				for _, join := range table.Joins {
+					var foundJoin bool
+					for _, col := range sqlColumns {
+						if col.table == table.Name && col.column == join.Table+tableJoinSuffix {
+							foundJoin = true
+							break
+						}
+					}
+					assert.Truef(t, foundJoin, "join to table %s in table %s exists in the bubbly schema but not in postgres after the migration", join.Table, table.Name)
+				}
+			}
+		})
 	}
-
-	// Create tables in db
-	err = s.Apply(DefaultTenantName, schema)
-	assert.NoError(t, err)
-
-	// run tests
-	err = s.p.Migrate(DefaultTenantName, &schema1, expectedChanges)
-	assert.NoError(t, err)
-}
-
-// FIXME: CockroachDB support suspended due to lack or required features
-func TestApplyMigrationSchemaCockroach(t *testing.T) {
-
-	t.SkipNow()
-	// FIXME: this test is out of date, see TestPostgres
-
-	pool, err := dockertest.NewPool("")
-	require.NoErrorf(t, err, "failed to create dockertest pool")
-
-	resource, err := pool.RunWithOptions(
-		&dockertest.RunOptions{
-			Repository: "cockroachdb/cockroach-unstable",
-			Tag:        "v21.1.0-alpha.3", // Warning! This is using an alpha version
-			Cmd:        []string{"start-single-node", "--insecure"},
-		},
-	)
-	require.NoErrorf(t, err, "failed to start docker")
-	err = pool.Retry(func() error {
-		db, err := sql.Open("pgx", fmt.Sprintf("postgresql://root@localhost:%s/events?sslmode=disable", resource.GetPort("26257/tcp")))
-		if err != nil {
-			return err
-		}
-		return db.Ping()
-	})
-	require.NoErrorf(t, err, "failed to connect to docker container")
-
-	bCtx := env.NewBubblyContext()
-	bCtx.StoreConfig.Provider = config.CockroachDBStore
-	bCtx.StoreConfig.CockroachAddr = fmt.Sprintf("localhost:%s", resource.GetPort("26257/tcp"))
-	bCtx.StoreConfig.CockroachDatabase = cockroachDatabase
-	bCtx.StoreConfig.CockroachUser = cockroachUser
-	bCtx.StoreConfig.CockroachPassword = cockroachPassword
-
-	s, err := New(bCtx)
-	assert.NoErrorf(t, err, "failed to initialize store")
-	schema := core.Tables{}
-	for _, table := range schema1.Tables {
-		schema = append(schema, table)
-	}
-	err = s.Apply(DefaultTenantName, schema)
-	assert.NoError(t, err)
-	// run tests
-	err = s.p.Migrate(DefaultTenantName, &schema1, expectedChanges)
-	assert.NoError(t, err)
-
-	t.Cleanup(func() {
-		if err := pool.Purge(resource); err != nil {
-			t.Fatalf("Could not purge resource: %s", err)
-		}
-	})
 }

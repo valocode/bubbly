@@ -112,20 +112,9 @@ func (s *Store) Apply(tenant string, tables core.Tables) error {
 		return fmt.Errorf("failed to get current schema: %w", err)
 	}
 
-	// Append the internal tables containing definition of the schema and
-	// resource tables.
-	tables = append(tables, internalTables...)
-	newSchemaTables := make(map[string]core.Table)
-	for _, table := range tables {
-		newSchemaTables[table.Name] = table
-	}
-	newSchema := &bubblySchema{
-		Tables: newSchemaTables,
-	}
-	addImplicitJoins(newSchema, tables, nil)
-
+	newSchema := newBubblySchemaFromTables(tables)
 	// Calculate the schema diff
-	cl, err := compareSchema(*currentSchema, *newSchema)
+	cl, err := compareSchema(currentSchema, newSchema)
 	if err != nil {
 		return fmt.Errorf("failed to compare schemas: %w", err)
 	}
@@ -305,31 +294,6 @@ func (s *Store) updateSchema(tenant string, bubblySchema *bubblySchema) error {
 	s.graphs.Set(tenant, graph)
 	s.schemas.Set(tenant, schema)
 	return nil
-}
-
-func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Table) {
-	for _, t := range tables {
-		if parent != nil {
-			var hasParentID bool
-			// Check if the parent was already added to the schema
-			for _, f := range t.Joins {
-				if f.Table == parent.Name {
-					hasParentID = true
-				}
-			}
-			if !hasParentID {
-				t.Joins = append(t.Joins, core.TableJoin{
-					Table:  parent.Name,
-					Single: parent.Unique,
-				})
-			}
-		}
-
-		addImplicitJoins(schema, t.Tables, &t)
-		// Clear the child tables
-		t.Tables = nil
-		schema.Tables[t.Name] = t
-	}
 }
 
 const (

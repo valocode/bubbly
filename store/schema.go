@@ -14,14 +14,6 @@ import (
 // as well as the connections between them.
 //
 
-// bubblySchema contains the bubblySchema in a useable form, which is
-// currently a map of the tables. It also contains a list of expected
-// changes that will be applied by the migration.
-type bubblySchema struct {
-	Tables    map[string]core.Table
-	changelog schemaUpdates
-}
-
 // newBubblySchema makes an empty data structure, representing
 // a new Bubbly Schema, and then populates it with the minimum
 // set of tables necessary for Bubbly to work.
@@ -36,6 +28,30 @@ func newBubblySchema() *bubblySchema {
 	}
 
 	return schema
+}
+
+func newBubblySchemaFromTables(tables core.Tables) *bubblySchema {
+	schemaTables := make(map[string]core.Table)
+	// Append the internal tables containing definition of the schema and
+	// resource tables.
+	tables = append(tables, internalTables...)
+	for _, table := range tables {
+		schemaTables[table.Name] = table
+	}
+	schema := &bubblySchema{
+		Tables: schemaTables,
+	}
+	addImplicitJoins(schema, tables, nil)
+	return schema
+}
+
+// bubblySchema contains the bubblySchema in a useable form, which is currently
+// a map of the tables.
+// This should be extended in the future to accommodate for schema diffing
+// and other neat tricks.
+type bubblySchema struct {
+	Tables    map[string]core.Table
+	changelog schemaUpdates
 }
 
 // Data returns a representation of the Bubbly Schema in a format,
@@ -54,4 +70,29 @@ func (b *bubblySchema) Data() (core.Data, error) {
 			"tables": cty.StringVal(string(bTables)), // "Smuggle" the JSON as a string
 		},
 	}, nil
+}
+
+func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Table) {
+	for _, t := range tables {
+		if parent != nil {
+			var hasParentID bool
+			// Check if the parent was already added to the schema
+			for _, f := range t.Joins {
+				if f.Table == parent.Name {
+					hasParentID = true
+				}
+			}
+			if !hasParentID {
+				t.Joins = append(t.Joins, core.TableJoin{
+					Table:  parent.Name,
+					Single: t.Unique,
+				})
+			}
+		}
+
+		addImplicitJoins(schema, t.Tables, &t)
+		// Clear the child tables
+		t.Tables = nil
+		schema.Tables[t.Name] = t
+	}
 }
