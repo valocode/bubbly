@@ -7,6 +7,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 
+	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/api"
 	"github.com/valocode/bubbly/api/common"
 	"github.com/valocode/bubbly/api/core"
@@ -84,138 +85,144 @@ func HandleTriggers(bCtx *env.BubblyContext, tree dataTree, triggers []*trigger,
 	return nil, nil
 }
 
-var internalTriggers = []*trigger{eventStoreTrigger, remoteRunTrigger}
-
-var eventStoreTrigger = &trigger{
-	id:          "default/trigger/event_store_trigger",
-	description: "update event store upon new/updated entry to resource store",
-	Kind:        Active,
-	visitFn: func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
-		switch node.Data.TableName {
-		// if the table is _resource, then we know a resource has been loaded to the store
-		case core.ResourceTableName:
-			// if the _resource is provided only to provide a FK for another
-			// _event entry (and therefore the only field provided is the "id"),
-			// then we do not want to update the event store as that will take
-			// place _anyway_.
-			if len(node.Data.Fields) != 1 && node.Data.IsValidResource() {
-				fields := node.Data.Fields
-
-				// get the id of the resource
-				id := fields["id"]
-
-				if id.IsNull() {
-					return fmt.Errorf(`DataBlock missing required "%s" field`, "id")
-				}
-
-				newEventBlocks := core.DataBlocks{
-					core.Data{
-						TableName: core.ResourceTableName,
-						Fields: core.DataFields{
-							"id": id,
-						},
-					},
-					core.Data{
-						TableName: core.EventTableName,
-						Fields: map[string]cty.Value{
-							"status": cty.StringVal(events.ResourceCreatedUpdated.String()),
-							"time":   cty.StringVal(events.TimeNow()),
-							"error":  cty.StringVal(""),
-						},
-						Joins: []string{core.ResourceTableName},
-					},
-				}
-
-				*blocks = append(*blocks, newEventBlocks...)
-			}
-
-		case core.SchemaTableName:
-			// TODO
-		default:
-			// fmt.Printf("trigger has no action for table: %s\n", node.Data.TableName)
-		}
-		return nil
-	},
+func createInternalTriggers(tenant string) []*trigger {
+	return []*trigger{eventStoreTrigger(tenant), remoteRunTrigger(tenant)}
 }
 
-var remoteRunTrigger = &trigger{
-	id:          "default/trigger/remote_run_trigger",
-	description: "make a NATS publication upon new/updated entry to a run resource",
-	Kind:        Passive,
-	visitFn: func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
-		switch node.Data.TableName {
-		// if the table is _resource, then we know a resource has been loaded to the store
-		case core.ResourceTableName:
-			// if the _resource is provided only to provide a FK for another
-			// _event entry (and therefore the only field provided is the "id"),
-			// then we do not want to update the event store as that will take
-			// place _anyway_.
+func eventStoreTrigger(tenant string) *trigger {
+	return &trigger{
+		id:          "default/trigger/event_store_trigger",
+		description: "update event store upon new/updated entry to resource store",
+		Kind:        Active,
+		visitFn: func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
+			switch node.Data.TableName {
+			// if the table is _resource, then we know a resource has been loaded to the store
+			case core.ResourceTableName:
+				// if the _resource is provided only to provide a FK for another
+				// _event entry (and therefore the only field provided is the "id"),
+				// then we do not want to update the event store as that will take
+				// place _anyway_.
+				if len(node.Data.Fields) != 1 && node.Data.IsValidResource() {
+					fields := node.Data.Fields
 
-			if len(node.Data.Fields) != 1 && node.Data.IsValidResource() {
-				fields := node.Data.Fields
+					// get the id of the resource
+					id := fields["id"]
 
-				// get the kind of the resource
-				kind := fields["kind"]
+					if id.IsNull() {
+						return fmt.Errorf(`DataBlock missing required "%s" field`, "id")
+					}
 
-				var resKind core.ResourceKind
+					newEventBlocks := core.DataBlocks{
+						core.Data{
+							TableName: core.ResourceTableName,
+							Fields: core.DataFields{
+								"id": id,
+							},
+						},
+						core.Data{
+							TableName: core.EventTableName,
+							Fields: map[string]cty.Value{
+								"status": cty.StringVal(events.ResourceCreatedUpdated.String()),
+								"time":   cty.StringVal(events.TimeNow()),
+								"error":  cty.StringVal(""),
+							},
+							Joins: []string{core.ResourceTableName},
+						},
+					}
 
-				if err := gocty.FromCtyValue(kind, &resKind); err != nil {
-					return fmt.Errorf(`failed to convert kind "%s" to core.ResourceKind`, kind)
+					*blocks = append(*blocks, newEventBlocks...)
 				}
 
-				// make sure the resource is of kind run
-				if resKind == core.RunResourceKind {
-					// make sure that the run resource is of type remote
-					resJSON, _ := node.Data.ToResourceBlockJSON()
+			case core.SchemaTableName:
+				// TODO
+			default:
+				// fmt.Printf("trigger has no action for table: %s\n", node.Data.TableName)
+			}
+			return nil
+		},
+	}
+}
 
-					resBlock, err := resJSON.ResourceBlock()
+func remoteRunTrigger(tenant string) *trigger {
+	return &trigger{
+		id:          "default/trigger/remote_run_trigger",
+		description: "make a NATS publication upon new/updated entry to a run resource",
+		Kind:        Passive,
+		visitFn: func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
+			switch node.Data.TableName {
+			// if the table is _resource, then we know a resource has been loaded to the store
+			case core.ResourceTableName:
+				// if the _resource is provided only to provide a FK for another
+				// _event entry (and therefore the only field provided is the "id"),
+				// then we do not want to update the event store as that will take
+				// place _anyway_.
 
-					if err != nil {
-						return fmt.Errorf("failed to form resource from block: %w", err)
+				if len(node.Data.Fields) != 1 && node.Data.IsValidResource() {
+					fields := node.Data.Fields
+
+					// get the kind of the resource
+					kind := fields["kind"]
+
+					var resKind core.ResourceKind
+
+					if err := gocty.FromCtyValue(kind, &resKind); err != nil {
+						return fmt.Errorf(`failed to convert kind "%s" to core.ResourceKind`, kind)
 					}
 
-					res, err := api.NewResource(&resBlock)
-					if err != nil {
-						return fmt.Errorf("failed to create resource from block: %w", err)
-					}
+					// make sure the resource is of kind run
+					if resKind == core.RunResourceKind {
+						// make sure that the run resource is of type remote
+						resJSON, _ := node.Data.ToResourceBlockJSON()
 
-					r := res.(*v1.Run)
-					// TODO: need to pass RequestAuth instead of nil
-					runCtx := core.NewResourceContext(cty.NilVal, api.NewResource, nil)
-					if err := common.DecodeBody(bCtx, r.SpecHCL.Body, &r.Spec, runCtx); err != nil {
-						return fmt.Errorf("failed to form resource from block: %w", err)
-					}
+						resBlock, err := resJSON.ResourceBlock()
 
-					if r.Spec.Remote == nil {
-						bCtx.Logger.Debug().Str("resource", r.String()).Msg("run is of type local and therefore should not be run by a bubbly worker")
-						return nil
-					}
+						if err != nil {
+							return fmt.Errorf("failed to form resource from block: %w", err)
+						}
 
-					// resource validated as a remote run resource.
-					// Now ship it to an available worker
-					wr := server.WorkerRun{
-						Name: r.Name(),
-					}
+						res, err := api.NewResource(&resBlock)
+						if err != nil {
+							return fmt.Errorf("failed to create resource from block: %w", err)
+						}
 
-					nc, err := client.New(bCtx)
-					if err != nil {
-						return fmt.Errorf("failed to connect to the NATS server: %w", err)
-					}
-					defer nc.Close()
+						r := res.(*v1.Run)
+						// Create an auth message with the organization set to the tenant
+						auth := &component.MessageAuth{Organization: tenant}
+						runCtx := core.NewResourceContext(cty.NilVal, api.NewResource, auth)
+						if err := common.DecodeBody(bCtx, r.SpecHCL.Body, &r.Spec, runCtx); err != nil {
+							return fmt.Errorf("failed to form resource from block: %w", err)
+						}
 
-					rBytes, err := json.Marshal(wr)
-					if err != nil {
-						return fmt.Errorf("failed to marshal ID into WorkerRun: %w", err)
-					}
+						if r.Spec.Remote == nil {
+							bCtx.Logger.Debug().Str("resource", r.String()).Msg("run is of type local and therefore should not be run by a bubbly worker")
+							return nil
+						}
 
-					// TODO: need to pass RequestAuth instead of nil
-					if err := nc.PostResourceToWorker(bCtx, nil, rBytes); err != nil {
-						return fmt.Errorf("failed to post resource to worker: %w", err)
-					}
+						// resource validated as a remote run resource.
+						// Now ship it to an available worker
+						wr := server.WorkerRun{
+							Name: r.Name(),
+						}
 
+						nc, err := client.New(bCtx)
+						if err != nil {
+							return fmt.Errorf("failed to connect to the NATS server: %w", err)
+						}
+						defer nc.Close()
+
+						rBytes, err := json.Marshal(wr)
+						if err != nil {
+							return fmt.Errorf("failed to marshal ID into WorkerRun: %w", err)
+						}
+
+						if err := nc.PostResourceToWorker(bCtx, auth, rBytes); err != nil {
+							return fmt.Errorf("failed to post resource to worker: %w", err)
+						}
+
+					}
 				}
 			}
-		}
-		return nil
-	},
+			return nil
+		},
+	}
 }

@@ -27,10 +27,9 @@ const DefaultTenantName = "default"
 func New(bCtx *env.BubblyContext) (*Store, error) {
 	var (
 		s = &Store{
-			bCtx:     bCtx,
-			graphs:   &hashmap.HashMap{},
-			schemas:  &hashmap.HashMap{},
-			triggers: &hashmap.HashMap{},
+			bCtx:    bCtx,
+			graphs:  &hashmap.HashMap{},
+			schemas: &hashmap.HashMap{},
 		}
 		err error
 	)
@@ -70,9 +69,8 @@ type Store struct {
 	bCtx *env.BubblyContext
 	p    provider
 
-	graphs   *hashmap.HashMap
-	schemas  *hashmap.HashMap
-	triggers *hashmap.HashMap
+	graphs  *hashmap.HashMap
+	schemas *hashmap.HashMap
 }
 
 // CreateTenant creates a tenant schema in the provider
@@ -148,10 +146,7 @@ func (s *Store) Apply(tenant string, tables core.Tables) error {
 
 // Save saves data into the store.
 func (s *Store) Save(tenant string, data core.DataBlocks) error {
-	var (
-		graph    *schemaGraph
-		triggers []*trigger
-	)
+	var graph *schemaGraph
 
 	dataTree, err := createDataTree(data)
 	if err != nil {
@@ -162,17 +157,11 @@ func (s *Store) Save(tenant string, data core.DataBlocks) error {
 		return fmt.Errorf("no schema exists for tenant %s", tenant)
 	}
 	graph = graphVal.(*schemaGraph)
-
-	triggersVal, ok := s.triggers.GetStringKey(tenant)
-	if !ok {
-		return fmt.Errorf("no triggers exist for tenant %s", tenant)
-	}
-	triggers = triggersVal.([]*trigger)
-
 	if err := s.p.Save(s.bCtx, tenant, graph, dataTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}
 
+	triggers := createInternalTriggers(tenant)
 	triggersTree, err := HandleTriggers(s.bCtx, dataTree, triggers, Active)
 	if err != nil {
 		return fmt.Errorf("data triggers failed: %w", err)
@@ -315,7 +304,6 @@ func (s *Store) updateSchema(tenant string, bubblySchema *bubblySchema) error {
 
 	s.graphs.Set(tenant, graph)
 	s.schemas.Set(tenant, schema)
-	s.triggers.Set(tenant, internalTriggers)
 	return nil
 }
 
