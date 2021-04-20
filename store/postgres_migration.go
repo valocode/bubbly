@@ -123,7 +123,7 @@ func psqlMigrate(conn *pgxpool.Pool, tenant string, schema *bubblySchema, migr m
 func alterColumnStatement(provider config.StoreProviderType, tenant string, info tableInfo, columnType interface{}) ([]string, error) {
 	t, ok := (columnType).(cty.Type)
 	if !ok {
-		return nil, fmt.Errorf("cannot assign type %s to cty.Type", reflect.TypeOf(columnType).String())
+		return nil, fmt.Errorf("cannot assign type to cty.Type: %s", reflect.TypeOf(columnType).String())
 	}
 	sqlType, err := psqlType(t)
 	if err != nil {
@@ -163,7 +163,7 @@ func alterColumnStatement(provider config.StoreProviderType, tenant string, info
 func createFieldStatement(tenant string, info tableInfo, fieldInterface interface{}) ([]string, error) {
 	field, ok := (fieldInterface).(core.TableField)
 	if !ok {
-		return nil, fmt.Errorf("cannot assign type %s to core.TableField", reflect.TypeOf(fieldInterface).String())
+		return nil, fmt.Errorf("cannot assign type to core.TableField: %s", reflect.TypeOf(fieldInterface).String())
 	}
 	fieldType, err := psqlType(field.Type)
 	if err != nil {
@@ -187,7 +187,7 @@ func createFieldStatement(tenant string, info tableInfo, fieldInterface interfac
 func createJoinStatement(tenant string, info tableInfo, joinInterface interface{}) (string, error) {
 	join, ok := (joinInterface).(core.TableJoin)
 	if !ok {
-		return "", fmt.Errorf("cannot assign type %s to core.TableJoin", reflect.TypeOf(joinInterface).String())
+		return "", fmt.Errorf("cannot assign type to core.TableJoin: %s", reflect.TypeOf(joinInterface).String())
 	}
 	return "ALTER TABLE IF EXISTS " + psqlAbsTableName(tenant, info.TableName) + " ADD COLUMN IF NOT EXISTS " + join.Table + tableJoinSuffix + " SERIAL;", nil
 }
@@ -196,7 +196,7 @@ func createJoinStatement(tenant string, info tableInfo, joinInterface interface{
 func removeJoinStatement(tenant string, info tableInfo, joinInterface interface{}) (string, error) {
 	join, ok := (joinInterface).(core.TableJoin)
 	if !ok {
-		return "", fmt.Errorf("cannot assign type %s to core.TableJoin", reflect.TypeOf(joinInterface).String())
+		return "", fmt.Errorf("cannot assign type to core.TableJoin: %s", reflect.TypeOf(joinInterface).String())
 	}
 	return "ALTER TABLE IF EXISTS " + psqlAbsTableName(tenant, info.TableName) + " DROP COLUMN IF EXISTS " + join.Table + tableJoinSuffix, nil
 }
