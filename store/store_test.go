@@ -727,6 +727,106 @@ var sqlGenTests = []struct {
 			},
 		},
 	},
+	{
+		name:   "graphql distinct on latest",
+		schema: "tables7.hcl",
+		data:   "data7.hcl",
+		query: `
+		{
+			test_run(
+				order_by: [
+					{table: "location", field: "name", order: "ASC"},
+					{table: "configuration", field: "name", order: "ASC"},
+					{table: "version", field: "name", order: "ASC"},
+					{table: "test_run", field: "finish_epoch", order: "DESC"}
+				],
+				distinct_on: [
+					{table: "location", field: "name"},
+					{table: "configuration", field: "name"},
+					{table: "version", field: "name"},
+				]
+			) {
+				configuration {
+					name
+				}
+				location(name: "Oliver's NEON workstation") {
+					name
+				}
+				version {
+					name
+				}
+				ok
+				finish_epoch
+			}
+		}`,
+		want: map[string]interface{}{
+			"test_run": []interface{}{
+				map[string]interface{}{
+					"ok":           true,
+					"finish_epoch": "1611111111",
+					"location": map[string]interface{}{
+						"name": "Oliver's NEON workstation",
+					},
+					"configuration": map[string]interface{}{
+						"name": "So-so",
+					},
+					"version": map[string]interface{}{
+						"name": "v1.0.1",
+					},
+				},
+			},
+		},
+	},
+	{
+		name:   "graphql distinct on first",
+		schema: "tables7.hcl",
+		data:   "data7.hcl",
+		query: `
+		{
+			test_run(
+				order_by: [
+					{table: "location", field: "name", order: "ASC"},
+					{table: "configuration", field: "name", order: "ASC"},
+					{table: "version", field: "name", order: "ASC"},
+					{table: "test_run", field: "finish_epoch", order: "ASC"}
+				],
+				distinct_on: [
+					{table: "location", field: "name"},
+					{table: "configuration", field: "name"},
+					{table: "version", field: "name"},
+				]
+			) {
+				configuration {
+					name
+				}
+				location(name: "Oliver's NEON workstation") {
+					name
+				}
+				version {
+					name
+				}
+				ok
+				finish_epoch
+			}
+		}`,
+		want: map[string]interface{}{
+			"test_run": []interface{}{
+				map[string]interface{}{
+					"ok":           false,
+					"finish_epoch": "1311111111",
+					"location": map[string]interface{}{
+						"name": "Oliver's NEON workstation",
+					},
+					"configuration": map[string]interface{}{
+						"name": "So-so",
+					},
+					"version": map[string]interface{}{
+						"name": "v1.0.1",
+					},
+				},
+			},
+		},
+	},
 }
 
 func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile string) {
