@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/zclconf/go-cty/cty"
@@ -107,9 +108,8 @@ func eventStoreTrigger(tenant string) *trigger {
 
 					// get the id of the resource
 					id := fields["id"]
-
 					if id.IsNull() {
-						return fmt.Errorf(`DataBlock missing required "%s" field`, "id")
+						return errors.New("DataBlock missing required field: id")
 					}
 
 					newEventBlocks := core.DataBlocks{
