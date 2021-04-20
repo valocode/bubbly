@@ -99,6 +99,19 @@ var orderByType = graphql.NewInputObject(graphql.InputObjectConfig{
 	},
 })
 
+// Support for distinct_on argument
+var distinctOnType = graphql.NewInputObject(graphql.InputObjectConfig{
+	Name: "distinct_on",
+	Fields: graphql.InputObjectConfigFieldMap{
+		"table": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		},
+		"field": &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		},
+	},
+})
+
 // addGraphFields updates the `gqlField` map containing GraphQL Field definitions
 // with information for every field of the Table `t`, which is a table coming
 // from the Bubbly Schema.
@@ -131,6 +144,10 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 	}
 	gqlField.Args[orderByID] = &graphql.ArgumentConfig{
 		Type: graphql.NewList(orderByType),
+	}
+	// FIXME it would be great to define HERE that `distinct_on` requires `order_by`
+	gqlField.Args[distinctOnID] = &graphql.ArgumentConfig{
+		Type: graphql.NewList(distinctOnType),
 	}
 
 	// Create a GraphQL type for the current table so that we
@@ -186,9 +203,10 @@ func graphQLFieldType(f core.TableField) *graphql.Scalar {
 }
 
 const (
-	filterID  = "filter"
-	limitID   = "limit"
-	orderByID = "order_by"
+	filterID     = "filter"
+	limitID      = "limit"
+	orderByID    = "order_by"
+	distinctOnID = "distinct_on"
 )
 
 const (

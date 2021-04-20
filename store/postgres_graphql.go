@@ -156,6 +156,10 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		// types, it is stored in this variable for processing after all the table
 		// aliases are known, that is after the rest of the GraphQL query had been processed.
 		orderByArg *ast.Argument
+
+		// The `distinct_on` GraphQL argument can only be processed after `order_by`
+		// argument had been processed. It requires `order_by` argument to be present.
+		distinctOnArg *ast.Argument
 	)
 
 	// FIXME: Why is the depth being increased here?
@@ -199,19 +203,23 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		// all subfields had been processed, because at the top level the alias names of tables are not known.
 		// Therefore, defer the processing of this argument by saving a pointer to it for later processing.
 		if arg.Name.Value == "order_by" {
-
 			if qb.depth != 1 {
 				return fmt.Errorf("the `order_by` argument is supported only for the root types")
 			}
-
 			orderByArg = arg
-
 			argIsResolved = true
 		}
 
-		// TODO: distinct_on
+		// The `distinct_on` argument is allowed only at the top level. It cannot be used without a matching
+		// `order_by` argument. The principle of operation of the pair of arguments (`order_by`, `distinct_on`)
+		// is described in https://www.postgresql.org/docs/13/sql-select.html#SQL-DISTINCT
+		// Note, that `DISTINCT ON` is a Postgres specific extension to the SQL language.
+		// These two arguments used together allow us to solve the problem of selecting the top value
+		// in a partitioned data set, without having to resort to subqueries, or joins. This is important
+		// for SQL auto-generation from the GraphQL schema.
 		if arg.Name.Value == "distinct_on" {
-			return fmt.Errorf("argument not implemented: %s", arg.Name.Value)
+			distinctOnArg = arg
+			argIsResolved = true
 		}
 
 		// The argument name which is not a column name is a mistake, raise error.
@@ -321,6 +329,7 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 	}
 
 	// TODO: make error messages more helpful (and more systematic) in the following code
+
 	// Process order_by, if available. At this point all table aliases are known.
 	if orderByArg != nil {
 
@@ -387,6 +396,80 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 			// Augment the SQL query with the ORDER BY statement.
 			qb.sql = qb.sql.OrderBy(tableColumn(ta, f) + " " + order)
 		}
+	}
+
+	// Process distinct_on, if available. At this point all table aliases are known.
+	if distinctOnArg != nil {
+
+		// This argument may only be used, if the `order_by` argument is also used.
+		if orderByArg == nil {
+			return fmt.Errorf("distinct_on argument cannot be used without matching order_by argument")
+		}
+
+		arg := distinctOnArg
+
+		// TODO validate impedance matching between the `distinct_on` and `order_by` argument values
+
+		// This argument's value is a slice of values representing (table, field) tuples.
+		distinctOnItems, ok := (arg.Value.GetValue()).([]ast.Value)
+		if !ok {
+			return fmt.Errorf("wrong argument type in `distinct_on`: %s: %#v", arg.Name.Value, arg.Value.GetValue())
+		}
+
+		distinctOnAliases := []string{}
+
+		// Process each of the (table, field) objects
+		for _, item := range distinctOnItems {
+
+			fields, ok := item.GetValue().([]*ast.ObjectField)
+			if !ok {
+				return fmt.Errorf("failed to type cast argument value: %#v", item.GetValue())
+			}
+
+			// FIXME probably best to make it a proper type {table, field}
+			v := map[string]string{}
+
+			// Process each field of the current object
+			for _, objectField := range fields {
+				switch objectField.Name.Value {
+				case "table":
+					tableName, ok := objectField.GetValue().(*ast.StringValue)
+					if !ok {
+						return fmt.Errorf(
+							"failed to extract field value in GraphQL argument: %#v: %#v",
+							objectField.Name.Value, objectField)
+					}
+					v["table"], _ = tableName.GetValue().(string) // FIXME is this safe?
+				case "field":
+					fieldName, ok := objectField.GetValue().(*ast.StringValue)
+					if !ok {
+						return fmt.Errorf(
+							"failed to extract field value in GraphQL argument: %#v: %#v",
+							objectField.Name.Value, objectField)
+					}
+					v["field"], _ = fieldName.GetValue().(string) // FIXME is this safe?
+				default:
+					// FIXME this should never happen as the GraphQL structure is validated by graphql module?
+					return fmt.Errorf("invalid field name in GraphQL argument: %s", objectField.Name.Value)
+				}
+			}
+
+			// Find the alias (tableName_1, or whatever number) for the current table name
+			tableNameAlias := findAliasFor(v["table"], root)
+			if tableNameAlias == "" {
+				return fmt.Errorf("could not find the table alias for: %s", v["table"])
+			}
+			if v["field"] == "" {
+				return fmt.Errorf("GraphQL argument: column name cannot be an empty string")
+			}
+
+			// Save an alias referring to the table.field just processed
+			distinctOnAliases = append(distinctOnAliases, tableColumn(tableNameAlias, v["field"]))
+		}
+
+		// Join all attributes in `distinct_on` into a string, properly formatted for a SQL query
+		// FIXME is this... SQL injection vulnerability?
+		qb.sql = qb.sql.Options(fmt.Sprintf("DISTINCT ON (%s)", strings.Join(distinctOnAliases, ", ")))
 	}
 
 	return nil
