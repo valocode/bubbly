@@ -38,4 +38,8 @@ jobs:
           # just sleep a bit to wait for the containers to start
           sleep 1
           docker-compose logs
-          go test ./... -tags=integration -count=1
+          go test ./... -tags=integration -count=1 -json | tee integration.json
+      - name: Run Gosec Security Scanner
+        run: |
+          curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
+          gosec -fmt json -no-fail -out out.json ./...
