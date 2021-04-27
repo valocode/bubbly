@@ -202,7 +202,7 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		// The order_by argument is allowed only at the top level. Futhermore, it cannot be processed until
 		// all subfields had been processed, because at the top level the alias names of tables are not known.
 		// Therefore, defer the processing of this argument by saving a pointer to it for later processing.
-		if arg.Name.Value == "order_by" {
+		if arg.Name.Value == orderByID {
 			if qb.depth != 1 {
 				return fmt.Errorf("the `order_by` argument is supported only for the root types")
 			}
@@ -217,7 +217,7 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		// These two arguments used together allow us to solve the problem of selecting the top value
 		// in a partitioned data set, without having to resort to subqueries, or joins. This is important
 		// for SQL auto-generation from the GraphQL schema.
-		if arg.Name.Value == "distinct_on" {
+		if arg.Name.Value == distinctOnID {
 			distinctOnArg = arg
 			argIsResolved = true
 		}
@@ -328,73 +328,37 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		tc.children = append(tc.children, subColumns)
 	}
 
-	// TODO: make error messages more helpful (and more systematic) in the following code
-
 	// Process order_by, if available. At this point all table aliases are known.
 	if orderByArg != nil {
 
 		arg := orderByArg
 
-		// This argument's value is a slice of values representing (table, field, order) tuples.
-		orderByItems, ok := (arg.Value.GetValue()).([]ast.Value)
-		if !ok {
-			return fmt.Errorf("argument type is wrong in `order_by`: %s : %#v", arg.Name.Value, arg.Value.GetValue())
+		// Decode the {table, field, order} entries in GraphQL argument value
+		orderByItems, err := decodeOrderByExpression(arg)
+		if err != nil {
+			return err
 		}
 
-		// Process each of the {table, field, order} objects...
-		for _, item := range orderByItems {
+		// Validate every entry, adding it to the ORDER BY clause on success.
+		// Abort and return an error if any field fails validation.
+		for _, e := range orderByItems {
 
-			fields, ok := item.GetValue().([]*ast.ObjectField)
-			if !ok {
-				return fmt.Errorf("failed to type cast argument value for `order_by`, step 2, value: %#v", item.GetValue())
+			// TODO validate the table name using our naming rules (once we have them)
+			// TODO validate the field name using our naming rules (once we have them)
+
+			// FIXME can this be validated in the GraphQL layer instead?s
+			if !isValidSortOrder(e.order) {
+				return fmt.Errorf("invalid sorting order for entry: %#v", e)
 			}
 
-			// FIXME probably best to make it a proper type {table,field, order}
-			ob := map[string]string{}
-
-			// Process a single {table, field, order} entry
-			for _, objectField := range fields {
-
-				switch objectField.Name.Value {
-				case "table":
-					s, ok := objectField.GetValue().(*ast.StringValue)
-					if !ok {
-						return fmt.Errorf("failed to type cast argument value for `order_by`, step 3: %#v: %#v", objectField.Name.Value, objectField)
-					}
-					ob["table"], _ = s.GetValue().(string) // FIXME: is this safe?
-
-				case "field":
-					s, ok := objectField.GetValue().(*ast.StringValue)
-					if !ok {
-						return fmt.Errorf("failed to type cast argument value for `order_by`, step 3, value: %#v", objectField)
-					}
-					ob["field"] = s.GetValue().(string) // FIXME: is this safe?
-
-				case "order":
-					s, ok := objectField.GetValue().(*ast.StringValue)
-					if !ok {
-						return fmt.Errorf("failed to type cast argument value for `order_by`, step 3, value: %#v", objectField)
-					}
-					ob["order"] = s.GetValue().(string) // FIXME: is this safe?
-				}
-			}
-
-			tableName := ob["table"]
-			f := ob["field"]
-			order := strings.ToUpper(ob["order"])
-
-			if order != orderAsc && order != orderDesc {
-				return fmt.Errorf("invalid sorting order for: %s", ob["order"])
-			}
-
-			// Lookup the table alias by table name
-			ta := findAliasFor(tableName, root)
+			// Find what alias had been assigned to the requested table.
+			ta := findAliasFor(e.table, root)
 			if ta == "" {
-				return fmt.Errorf("could not find the table alias for: %s", tableName)
+				return fmt.Errorf("could not find the table alias for: %s", e.table)
 			}
 
 			// Augment the SQL query with the ORDER BY statement.
-			qb.sql = qb.sql.OrderBy(tableColumn(ta, f) + " " + order)
+			qb.sql = qb.sql.OrderBy(tableColumn(ta, e.field) + " " + e.order)
 		}
 	}
 
@@ -410,64 +374,34 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 
 		// TODO validate impedance matching between the `distinct_on` and `order_by` argument values
 
-		// This argument's value is a slice of values representing (table, field) tuples.
-		distinctOnItems, ok := (arg.Value.GetValue()).([]ast.Value)
-		if !ok {
-			return fmt.Errorf("wrong argument type in `distinct_on`: %s: %#v", arg.Name.Value, arg.Value.GetValue())
+		// Decode the {table, field} entries in GraphQL argument value
+		distinctOnItems, err := decodeOrderByExpression(arg)
+		if err != nil {
+			return err
 		}
 
+		// Squirrel does not support DISTINCT ON (...) clause directly, but its use was raised
+		// with the maintainers and the recommended workaround is to use the .Options() method
+		// To do that, we first collect all aliases which would go into (...) for the clause.
+		// can be generated as well as to validate all field values.
 		distinctOnAliases := []string{}
+		for _, e := range distinctOnItems {
 
-		// Process each of the (table, field) objects
-		for _, item := range distinctOnItems {
+			// TODO validate the table name using our naming rules (once we have them)
+			// TODO validate the field name using our naming rules (once we have them)
+			// There is no sorting order for `distinct_on` and GraphQL layer would handle.
 
-			fields, ok := item.GetValue().([]*ast.ObjectField)
-			if !ok {
-				return fmt.Errorf("failed to type cast argument value: %#v", item.GetValue())
+			// Find what alias had been assigned to the requested table.
+			tableAlias := findAliasFor(e.table, root)
+			if tableAlias == "" {
+				return fmt.Errorf("could not find the table alias for: %s", e.table)
 			}
-
-			// FIXME probably best to make it a proper type {table, field}
-			v := map[string]string{}
-
-			// Process each field of the current object
-			for _, objectField := range fields {
-				switch objectField.Name.Value {
-				case "table":
-					tableName, ok := objectField.GetValue().(*ast.StringValue)
-					if !ok {
-						return fmt.Errorf(
-							"failed to extract field value in GraphQL argument: %#v: %#v",
-							objectField.Name.Value, objectField)
-					}
-					v["table"], _ = tableName.GetValue().(string) // FIXME is this safe?
-				case "field":
-					fieldName, ok := objectField.GetValue().(*ast.StringValue)
-					if !ok {
-						return fmt.Errorf(
-							"failed to extract field value in GraphQL argument: %#v: %#v",
-							objectField.Name.Value, objectField)
-					}
-					v["field"], _ = fieldName.GetValue().(string) // FIXME is this safe?
-				default:
-					// FIXME this should never happen as the GraphQL structure is validated by graphql module?
-					return fmt.Errorf("invalid field name in GraphQL argument: %s", objectField.Name.Value)
-				}
-			}
-
-			// Find the alias (tableName_1, or whatever number) for the current table name
-			tableNameAlias := findAliasFor(v["table"], root)
-			if tableNameAlias == "" {
-				return fmt.Errorf("could not find the table alias for: %s", v["table"])
-			}
-			if v["field"] == "" {
-				return fmt.Errorf("GraphQL argument: column name cannot be an empty string")
-			}
-
-			// Save an alias referring to the table.field just processed
-			distinctOnAliases = append(distinctOnAliases, tableColumn(tableNameAlias, v["field"]))
+			distinctOnAliases = append(distinctOnAliases, tableColumn(tableAlias, e.field))
 		}
 
-		// Join all attributes in `distinct_on` into a string, properly formatted for a SQL query
+		// There is no SQL builder for DISTINCT ON (...) clause in SQL, and the recommended
+		// workaround is to use .Options() method which inserts its argument string right
+		// after SELECT key word in SQL.
 		// FIXME is this... SQL injection vulnerability?
 		qb.sql = qb.sql.Options(fmt.Sprintf("DISTINCT ON (%s)", strings.Join(distinctOnAliases, ", ")))
 	}
@@ -475,9 +409,88 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 	return nil
 }
 
-// findAliasFor takes a table name and traverses the tableColumns tree recursively, looking for the first match
-// on the table name. On match, it returns the stored table name alias for that table name.
-// If the the table name cannot be found in the tree, the empty string is returned.
+// orderByExpression stores the information necessary for the `order_by` and `distinct_on` GraphQL
+// arguments. In the case of `distinct_on`, the order struct field is unused.
+type orderByExpression struct {
+	table string
+	field string
+	order string // FIXME this can be its own type, with String() method
+}
+
+// decodeOrderByExpression ??? to decode expressions for order_by and distinct_on clauses
+func decodeOrderByExpression(arg *ast.Argument) ([]orderByExpression, error) {
+
+	// The argument value is the slice of (table, field) or (table, field, order) values
+	argValues, ok := (arg.Value.GetValue()).([]ast.Value)
+	if !ok {
+		return nil, fmt.Errorf("could not understand the GraphQL argument %s: %#v", arg.Name.Value, arg.Value.GetValue())
+	}
+
+	// Every expression of the form {table, field, order} or {table, field}
+	// is decoded and stored in the following slice.
+	exps := make([]orderByExpression, 0)
+
+	// Each value is either a (table, field) or a (table, field, order)
+	for _, argValue := range argValues {
+
+		// Each value is a slice of pointers to the values representing fields
+		objectFields, ok := argValue.GetValue().([]*ast.ObjectField)
+		if !ok {
+			return nil, fmt.Errorf("could not convert a value into the list of GraphQL argument fields: %#v", argValues)
+		}
+
+		// Initialise a structure to store the expression
+		e := orderByExpression{}
+
+		// Each field is either `table`, `field`, or `order`
+		for _, objectField := range objectFields {
+
+			s, err := objectFieldToString(*objectField)
+			if err != nil {
+				return nil, err
+			}
+
+			switch objectField.Name.Value {
+			case "table":
+				e.table = s
+			case "field":
+				e.field = s
+			case "order":
+				e.order = s
+			default:
+				// FIXME this would be impossible, since GraphQL layer validated the input format?
+				return nil, fmt.Errorf("unsupported GraphQL argument value: %s", s)
+			}
+		}
+
+		// Now that all fields had been set, store the record
+		// in the slice of results to be returned from this method.
+		exps = append(exps, e)
+	}
+
+	return exps, nil
+}
+
+// objectFieldToString extracts the value of the given objectField,
+// if that value is not a string, then error is returned instead.
+func objectFieldToString(objectField ast.ObjectField) (string, error) {
+	fieldValue, ok := objectField.GetValue().(*ast.StringValue)
+	if !ok {
+		return "", fmt.Errorf(
+			"failed to extract field value in GraphQL argument: %s: %#v",
+			objectField.Name.Value, objectField)
+	}
+	s, ok := fieldValue.GetValue().(string)
+	if !ok {
+		return "", fmt.Errorf("failed to convert GraphQL field value to a string: %#v", fieldValue)
+	}
+	return s, nil
+}
+
+// findAliasFor takes a table name and returns the value of the alias
+// which had been assigned to that table in the tableColumns hierarchy.
+// If the hierarchy does not contain the alias for this table name,
+// the empty string is returned.
 func findAliasFor(tableName string, tc *tableColumns) string {
 	if tc.table == tableName {
 		return tc.alias
@@ -489,6 +502,16 @@ func findAliasFor(tableName string, tc *tableColumns) string {
 		}
 	}
 	return ""
+}
+
+// isValidSortOrder returns true, if given value is a valid SQL attribute
+// for specifying sorting order. This function is case-insensitive.
+func isValidSortOrder(o string) bool {
+	o = strings.ToUpper(o)
+	if o == orderAsc || o == orderDesc {
+		return true
+	}
+	return false
 }
 
 func joinOn(table, leftColumn, rightColumn string) string {
