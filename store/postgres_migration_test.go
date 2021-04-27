@@ -25,7 +25,7 @@ func TestApplyMigrationSchemaPostgres(t *testing.T) {
 	for _, tt := range schemaDiffTests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Start postgres in docker
-			resource := test.RunPostgresDocker(t)
+			resource := test.RunPostgresDocker(bCtx, t)
 			bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
 			// // Create the bubbly schemas
 			s1 := newBubblySchemaFromTables(tt.s1)

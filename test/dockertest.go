@@ -7,9 +7,14 @@ import (
 
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/require"
+	"github.com/valocode/bubbly/env"
 )
 
-func RunPostgresDocker(t *testing.T) *dockertest.Resource {
+// RunPostgresDocker runs a docker container for postgres, using the provided
+// BubblyContext to set it up (user, password, database).
+// This is convenient because the same BubblyContext will be used by the test
+// that connects to the postgres database
+func RunPostgresDocker(bCtx *env.BubblyContext, t *testing.T) *dockertest.Resource {
 	pool, err := dockertest.NewPool("")
 	require.NoErrorf(t, err, "failed to create dockertest pool")
 
@@ -18,9 +23,9 @@ func RunPostgresDocker(t *testing.T) *dockertest.Resource {
 			Repository: "postgres",
 			Tag:        "13.0",
 			Env: []string{
-				"POSTGRES_USER=postgres",
-				"POSTGRES_PASSWORD=postgres",
-				"POSTGRES_DB=bubbly",
+				"POSTGRES_USER=" + bCtx.StoreConfig.PostgresUser,
+				"POSTGRES_PASSWORD=" + bCtx.StoreConfig.PostgresPassword,
+				"POSTGRES_DB=" + bCtx.StoreConfig.PostgresDatabase,
 			},
 		},
 	)
@@ -32,16 +37,16 @@ func RunPostgresDocker(t *testing.T) *dockertest.Resource {
 		}
 	})
 
-	err = waitUntilDatabaseIsReady(t, pool, resource)
+	err = waitUntilDatabaseIsReady(bCtx, t, pool, resource)
 	require.NoErrorf(t, err, "error waiting for database to be ready")
 
 	return resource
 }
 
-func waitUntilDatabaseIsReady(t *testing.T, pool *dockertest.Pool, resource *dockertest.Resource) error {
-
+func waitUntilDatabaseIsReady(bCtx *env.BubblyContext, t *testing.T, pool *dockertest.Pool, resource *dockertest.Resource) error {
 	pgConnStr := fmt.Sprintf("postgresql://%s:%s@localhost:%s/%s?sslmode=disable",
-		"postgres", "postgres", resource.GetPort("5432/tcp"), "bubbly")
+		bCtx.StoreConfig.PostgresUser, bCtx.StoreConfig.PostgresPassword,
+		resource.GetPort("5432/tcp"), bCtx.StoreConfig.PostgresDatabase)
 
 	return pool.Retry(func() error {
 
