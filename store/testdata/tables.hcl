@@ -25,7 +25,7 @@ table "root" {
     }
     table "child_b" {
         // Table root has only one child_b (one-to-one)
-        unique = true
+        single = true
         field "name" {
             unique = true
             type = string

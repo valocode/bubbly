@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/env"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // some debugging function
@@ -31,11 +32,11 @@ func TestDataTree(t *testing.T) {
 			in: core.DataBlocks{
 				{
 					TableName: "root",
-					Fields:    core.DataFields{},
+					Fields:    core.DataFields{"foo": cty.BoolVal(true)},
 					Data: core.DataBlocks{
 						{
 							TableName: "root_nested",
-							Fields:    core.DataFields{},
+							Fields:    core.DataFields{"foo": cty.BoolVal(true)},
 						},
 					},
 				},
@@ -47,9 +48,9 @@ func TestDataTree(t *testing.T) {
 			},
 			out: dataTree{
 				&dataNode{
-					Data: &core.Data{TableName: "root"},
+					Data: &core.Data{TableName: "root", Fields: core.DataFields{"foo": cty.BoolVal(true)}},
 					Children: []*dataNode{
-						{Data: &core.Data{TableName: "root_nested"}},
+						{Data: &core.Data{TableName: "root_nested", Fields: core.DataFields{"foo": cty.BoolVal(true)}}},
 						{Data: &core.Data{TableName: "root_join"}},
 					},
 				},

@@ -264,7 +264,7 @@ func (nodes *nodeRefMap) connectFrom(tables core.Tables, parent *schemaNode) err
 		}
 		// Handle the implicit joins, i.e. a table nested within a table
 		if parent != nil {
-			parent.addEdgeFromJoin(node, table.Unique)
+			parent.addEdgeFromJoin(node, table.Single)
 		}
 		// Recurse
 		nodes.connectFrom(table.Tables, node)

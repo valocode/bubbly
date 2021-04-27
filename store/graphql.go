@@ -136,6 +136,10 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 		gqlField.Args[f.Name] = &graphql.ArgumentConfig{Type: ft}
 	}
 
+	// Add the _id field to the schema
+	typeFields[tableIDField] = &graphql.Field{Type: graphql.String}
+	gqlField.Args[tableIDField] = &graphql.ArgumentConfig{Type: graphql.String}
+
 	gqlField.Args[filterID] = &graphql.ArgumentConfig{
 		Type: graphQLFilterType(t.Name, gqlField.Args),
 	}

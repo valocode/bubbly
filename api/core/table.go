@@ -12,6 +12,7 @@ type Table struct {
 	Name   string       `hcl:",label" json:"name"`
 	Fields []TableField `hcl:"field,block" json:"fields"`
 	Joins  []TableJoin  `hcl:"join,block" json:"joins,omitempty"`
+	Single bool         `hcl:"single,optional" json:"single,omitempty"`
 	Unique bool         `hcl:"unique,optional" json:"unique,omitempty"`
 	Tables []Table      `hcl:"table,block" json:"tables,omitempty"`
 }
@@ -25,5 +26,6 @@ type TableField struct {
 
 type TableJoin struct {
 	Table  string `hcl:",label" json:"name"`
+	Unique bool   `hcl:"unique,optional" json:"unique,omitempty"`
 	Single bool   `hcl:"single,optional" json:"single,omitempty"`
 }
