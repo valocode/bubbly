@@ -109,7 +109,7 @@ var schemaDiffTests = []struct {
 	{
 		name: "Test create implicit single join",
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}, core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}},
-		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}, Unique: true}}}},
+		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}, Single: true}}}},
 		want: schemaUpdates{
 			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: "join"}, From: nil, To: core.TableJoin{Table: "a", Single: true}},
 		},
@@ -169,7 +169,7 @@ var schema1 = core.Tables{
 		Tables: []core.Table{
 			{
 				Name:   "tables_1",
-				Unique: false,
+				Single: false,
 				Fields: []core.TableField{
 					{
 						Name:   "field1",
@@ -193,7 +193,7 @@ var schema1 = core.Tables{
 							},
 						},
 						Tables: nil,
-						Unique: false,
+						Single: false,
 					},
 				},
 			},
@@ -207,10 +207,10 @@ var schema1 = core.Tables{
 					},
 				},
 				Tables: nil,
-				Unique: false,
+				Single: false,
 			},
 		},
-		Unique: true,
+		Single: true,
 	},
 	core.Table{
 		Name: "table2",
@@ -220,6 +220,6 @@ var schema1 = core.Tables{
 				Type: cty.String,
 			},
 		},
-		Unique: false,
+		Single: false,
 	},
 }

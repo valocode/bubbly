@@ -13,6 +13,7 @@ require (
 	github.com/cockroachdb/cockroach-go/v2 v2.1.0
 	github.com/containerd/continuity v0.0.0-20201208142359-180525291bb7 // indirect
 	github.com/cornelk/hashmap v1.0.1
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/siphash v1.2.2 // indirect
 	github.com/fatih/color v1.10.0
 	github.com/go-git/go-git/v5 v5.2.0

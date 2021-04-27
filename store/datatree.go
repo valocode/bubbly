@@ -171,7 +171,16 @@ func createDataTree(data core.DataBlocks) (dataTree, error) {
 // dataBlocksToNodes is recursively called to convert all data blocks into nodes
 func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string]*dataNode) (dataTree, error) {
 	var dataNodes = make(dataTree, 0)
-	for index, d := range data {
+	for index := range data {
+		// Store reference to the data block so that we can update it
+		d := &data[index]
+		// Ensure the data block has initialized fields. If the fields are not
+		// initialized, it's because none were provided and so this might be a
+		// data block that only does joins, in which case we will add those joins
+		// as fields, which means this needs to be init'd
+		if d.Fields == nil {
+			d.Fields = make(core.DataFields)
+		}
 		// dataRefs stores a map of table references containing a map of fields
 		var dataRefs = make(map[string]map[string]struct{})
 
@@ -223,8 +232,8 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 		}
 
 		// Create a node for the current data block and add it to the map of nodes.
-		// Store reference to the data block and not the local for loop variable
-		node := newDataNode(&data[index])
+
+		node := newDataNode(d)
 		nodes[d.TableName] = node
 
 		// If there are no data refs, then it's easy, just add this data block
@@ -244,7 +253,7 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 			parentNode.addChild(node, fields)
 		}
 
-		childNodes, err := dataBlocksToNodes(d.Data, &d, nodes)
+		childNodes, err := dataBlocksToNodes(d.Data, d, nodes)
 		if err != nil {
 			return nil, err
 		}
@@ -257,3 +266,35 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 
 	return dataNodes, nil
 }
+
+// func validateDataNode(graph *schemaGraph, node *dataNode) error {
+// 	// Check the table exists
+// 	tNode, ok := graph.NodeIndex[node.Data.TableName]
+// 	if !ok {
+// 		return fmt.Errorf("data block refers to unknown schema table %s", node.Data.TableName)
+// 	}
+
+// 	// Check that the data block has fields, because otherwise this is just
+// 	// an empty record which we don't want to save...
+// 	if len(node.Data.Fields) == 0 {
+// 		return fmt.Errorf("no fields or joins to store for data block: %s", node.Data.TableName)
+// 	}
+
+// 	// Check the fields in the data block exist in the schema table
+// 	// TODO: check field names, but handle also the "foreign key" fields that
+// 	// create joins
+// 	// for name := range node.Data.Fields {
+// 	// 	var fieldExists bool
+// 	// 	for _, tField := range tNode.table.Fields {
+// 	// 		if name == tField.Name {
+// 	// 			fieldExists = true
+// 	// 			break
+// 	// 		}
+// 	// 	}
+// 	// 	if !fieldExists {
+// 	// 		return fmt.Errorf("data block refers to unknown schema field %s.%s", node.Data.TableName, name)
+// 	// 	}
+// 	// }
+
+// 	return nil
+// }

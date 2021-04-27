@@ -19,11 +19,35 @@ type DataBlocks []Data
 // Data will reference a Table name, and assign the Field values into the
 // corresponding Field values in the Table
 type Data struct {
-	TableName string     `hcl:",label" json:"data"`
-	Fields    DataFields `hcl:"fields" json:"fields"`
-	Joins     []string   `hcl:"joins,optional" json:"joins"`
-	Data      DataBlocks `hcl:"data,block" json:"nested_data"`
+	TableName string          `hcl:",label" json:"data"`
+	Fields    DataFields      `hcl:"fields,optional" json:"fields"`
+	Joins     []string        `hcl:"joins,optional" json:"joins"`
+	Policy    DataBlockPolicy `hcl:"policy,optional" json:"policy"`
+	Data      DataBlocks      `hcl:"data,block" json:"nested_data"`
 }
+
+// DataBlockPolicy defines the policy for how the data block shall be handled.
+// When the bubbly store goes to save a data block, it should consider whether
+// it should create and/or update the data block (default behaviour), only
+// create the data block (fail on conflict), or only reference an existing data
+// block with matching field values so that another data block can join to it
+type DataBlockPolicy string
+
+const (
+	EmptyPolicy DataBlockPolicy = ""
+	// DefaultPolicy is to create or update
+	DefaultPolicy DataBlockPolicy = CreateUpdatePolicy
+	// CreateUpdatePolicy means either create or update an existing data block
+	// based on the unique constraints applied to the schema table that this data
+	// block refers to
+	CreateUpdatePolicy DataBlockPolicy = "create_update"
+	// CreatePolicy means only create. If a conflict occurs on unique constraints
+	// on the corresponding schema table, then error
+	CreatePolicy DataBlockPolicy = "create"
+	// ReferencePolicy means do not create or update, but only retrieve a reference
+	// to an already saved data block, with the matching field values
+	ReferencePolicy DataBlockPolicy = "reference"
+)
 
 // DataFields is a slice of DataField
 type DataFields map[string]cty.Value

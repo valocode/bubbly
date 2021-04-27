@@ -192,6 +192,11 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 				break
 			}
 		}
+		// Resolve the id field
+		if arg.Name.Value == tableIDField {
+			qb.sql = qb.sql.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
+			argIsResolved = true
+		}
 
 		if argIsResolved {
 			continue
