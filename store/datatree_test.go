@@ -1,8 +1,6 @@
 package store
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -11,15 +9,6 @@ import (
 	"github.com/valocode/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
-
-// some debugging function
-func printTree(nodes []*dataNode, depth int) {
-	indent := strings.Repeat("\t", depth)
-	for _, node := range nodes {
-		fmt.Printf("%s%d: %s: %#v\n", indent, depth, node.Data.TableName, node.RefFields)
-		printTree(node.Children, depth+1)
-	}
-}
 
 func TestDataTree(t *testing.T) {
 	cases := []struct {

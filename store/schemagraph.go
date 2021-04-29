@@ -96,58 +96,6 @@ func visitSchemaNode(node *schemaNode, visited map[string]struct{}, fnVisit func
 	return nil
 }
 
-// FIXME: ofr shortestPath needs to go
-// shortestPath uses breadth-first search to find the shortest path between two nodes in the graph
-func (n *schemaNode) shortestPath(dst string) schemaPath {
-	var (
-		visited   = make(map[string]struct{})
-		pathQueue = make([]schemaPath, 0)
-	)
-
-	// If the dst node is the root node, then just return an empty path
-	if n.table.Name == dst {
-		return schemaPath{}
-	}
-
-	// Iterate over the root node's edges and create the initial pathQueue
-	for _, e := range n.edges {
-		if _, ok := visited[e.node.table.Name]; !ok {
-			pathQueue = append(pathQueue, schemaPath{e})
-			visited[e.node.table.Name] = struct{}{}
-		}
-	}
-
-	for len(pathQueue) > 0 {
-		var (
-			// Get the latest path in the queue
-			path = pathQueue[0]
-			// From the path, get the last node in the path, as we want to
-			// traverse that node's edges
-			tail = path[len(path)-1]
-		)
-		if tail.node.table.Name == dst {
-			return path
-		}
-		for _, e := range tail.node.edges {
-			if _, ok := visited[e.node.table.Name]; !ok {
-				pathQueue = append(pathQueue, append(path, e))
-				visited[e.node.table.Name] = struct{}{}
-			}
-		}
-		// Remove first element from the queue
-		pathQueue = pathQueue[1:]
-	}
-
-	return nil
-}
-
-// neighbours takes a distance and returns a slice of paths to all of the nodes
-// within that distance in the graph
-func (n *schemaNode) neighbours(distance int) []schemaPath {
-	var visited = make(nodeRefMap)
-	return nodeNeighbours(n, schemaPath{}, visited, distance)
-}
-
 // addEdgeFromJoin takes a node and creates bi-directional edges between the
 // nodes. Noteworthy is the relationship that the edges describe
 func (n *schemaNode) addEdgeFromJoin(child *schemaNode, unique bool) {
@@ -165,22 +113,6 @@ func (n *schemaNode) addEdgeFromJoin(child *schemaNode, unique bool) {
 	n.edges = append(n.edges, edgeToChild)
 	// Also add the reverse relationship
 	child.edges = append(child.edges, edgeToParent)
-}
-
-// isScalar returns true if the path from one node to another is scalar.
-// Scalar means that the return type is a single instance, rather than a slice,
-// and is primarily used by the graphql API to return the correct value
-func (p *schemaPath) isScalar() bool {
-	var isScalar = true
-	for _, e := range *p {
-		switch e.rel {
-		case oneToMany:
-			isScalar = false
-		default:
-			// oneToOne and hasOne both return scalar values, so do nothing
-		}
-	}
-	return isScalar
 }
 
 // internalSchemaGraph returns a schema graph based on the internal tables
@@ -275,23 +207,4 @@ func (nodes *nodeRefMap) connectFrom(tables core.Tables, parent *schemaNode) err
 		// table.Joins = nil
 	}
 	return nil
-}
-
-// nodeNeighbours ???
-func nodeNeighbours(node *schemaNode, path schemaPath, visited nodeRefMap, remaining int) []schemaPath {
-
-	if remaining == 0 {
-		return []schemaPath{}
-	}
-	visited[node.table.Name] = node
-
-	var paths = make([]schemaPath, 0, 1)
-	for _, e := range node.edges {
-		if _, ok := visited[e.node.table.Name]; !ok {
-			var childPath = append(path, e)
-			paths = append(paths, childPath)
-			paths = append(paths, nodeNeighbours(e.node, childPath, visited, remaining-1)...)
-		}
-	}
-	return paths
 }

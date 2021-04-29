@@ -15,9 +15,6 @@ import (
 // enabling GraphQL access to Bubbly.
 //
 
-// graphJoinDistance ???
-const graphJoinDistance = 3
-
 // gqlField is our custom Graphql Field type so that we can store a field in
 // it's simplest form and iteratively add to it, before we convert it into a
 // real graphql field.
@@ -49,11 +46,9 @@ func newGraphQLSchema(graph *schemaGraph, resolveFn graphql.FieldResolveFn) (gra
 		return nil
 	})
 
-	// Create the relationships among the types using graph neighbours within
-	// a certain distance of each other
+	// Create the relationships among the adjacent nodes
 	graph.traverse(func(node *schemaNode) error {
-		paths := node.neighbours(graphJoinDistance)
-		addGraphEdges(*node.table, paths, fields)
+		addGraphEdges(node, fields)
 		return nil
 	})
 
@@ -169,18 +164,15 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 }
 
 // addGraphEdges ???
-func addGraphEdges(t core.Table, paths []schemaPath, fields map[string]gqlField) {
-	var field = fields[t.Name]
-	for _, path := range paths {
-		// We only care about the destination in the path and whether it is scalar.
-		// The middle or passing edges will be included as their own paths
+func addGraphEdges(n *schemaNode, fields map[string]gqlField) {
+	var field = fields[n.table.Name]
+
+	for _, edge := range n.edges {
 		var (
-			edge                        = path[len(path)-1]
 			dstField                    = fields[edge.node.table.Name]
 			dstFieldType graphql.Output = dstField.Type
 		)
-
-		if !path.isScalar() {
+		if !edge.isScalar() {
 			dstFieldType = graphql.NewList(dstFieldType)
 		}
 		field.Type.AddFieldConfig(edge.node.table.Name, &graphql.Field{
