@@ -390,7 +390,6 @@ func psqlTableCreate(tenant string, table core.Table) (string, error) {
 	var (
 		fieldLen    = len(table.Fields) + len(table.Joins)
 		tableFields = make([]string, 0, fieldLen)
-		// uniqueFields = make([]string, 0)
 	)
 
 	tableFields = append(tableFields, tableIDField+" SERIAL PRIMARY KEY")
@@ -401,23 +400,12 @@ func psqlTableCreate(tenant string, table core.Table) (string, error) {
 			return "", fmt.Errorf("failed to create SQL statement for table: %s: %w", table.Name, err)
 		}
 		tableFields = append(tableFields, field.Name+" "+sqlType)
-
-		// if field.Unique {
-		// 	uniqueFields = append(uniqueFields, field.Name)
-		// }
 	}
 	// Add the joins as fields to the SQL table
 	for _, join := range table.Joins {
 		fieldName := join.Table + "_id"
 		tableFields = append(tableFields, fieldName+" INT8")
-		// if join.Unique {
-		// 	uniqueFields = append(uniqueFields, fieldName)
-		// }
 	}
-
-	// if len(uniqueFields) > 0 {
-	// 	tableFields = append(tableFields, "UNIQUE ("+strings.Join(uniqueFields, ",")+")")
-	// }
 
 	return "CREATE TABLE IF NOT EXISTS " + psqlAbsTableName(tenant, table.Name) + " ( " + strings.Join(tableFields, ",") + " );", nil
 }

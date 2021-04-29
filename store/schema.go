@@ -73,9 +73,7 @@ func (b *bubblySchema) Data() (core.Data, error) {
 }
 
 func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Table) {
-	for index := range tables {
-		// Get a reference to the table so that we can modify it
-		t := tables[index]
+	for _, t := range tables {
 		if parent != nil {
 			var hasParentID bool
 			// Check if the parent was already added to the schema
