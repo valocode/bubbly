@@ -2,7 +2,6 @@ package store
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/valocode/bubbly/api/core"
 )
@@ -29,7 +28,7 @@ func compareSchema(s1 *bubblySchema, s2 *bubblySchema) (schemaUpdates, error) {
 				TableInfo: tableInfo{
 					TableName:   table1.Name,
 					ElementName: table1.Name,
-					ElementType: tableType,
+					ElementType: tableElement,
 				},
 				From: table1,
 				To:   nil,
@@ -46,7 +45,7 @@ func compareSchema(s1 *bubblySchema, s2 *bubblySchema) (schemaUpdates, error) {
 				TableInfo: tableInfo{
 					TableName:   table2.Name,
 					ElementName: table2.Name,
-					ElementType: tableType,
+					ElementType: tableElement,
 				},
 				From: nil,
 				To:   table2,
@@ -64,10 +63,13 @@ var (
 	remove DiffAction = "delete"
 	create DiffAction = "create"
 
-	tableType  Element = "table"
-	fieldType  Element = "field"
-	joinType   Element = "join"
-	uniqueType Element = "unique"
+	tableElement    Element = "table"
+	fieldElement    Element = "field"
+	fieldType       Element = "fieldType"
+	fieldUniqueAttr Element = "fieldUnique"
+	joinElement     Element = "join"
+	joinSingleAttr  Element = "joinSingle"
+	joinUniqueAttr  Element = "joinUnique"
 )
 
 // schemaUpdates is a list of expectedChanges that will be applied by the migration
@@ -101,14 +103,13 @@ func calculateDiff(t1 core.Table, t2 core.Table, cl *schemaUpdates) {
 func compareFields(t1, t2 core.Table, cl *schemaUpdates) {
 	for _, field1 := range t1.Fields {
 		found := false
-	fieldLoop:
 		for _, field2 := range t2.Fields {
-			if reflect.DeepEqual(field1, field2) {
-				found = true
-				break fieldLoop
+			if field1.Name != field2.Name {
+				continue
 			}
+			found = true
 			// Check if same field but different type
-			if field1.Name == field2.Name && !reflect.DeepEqual(field1.Type, field2.Type) {
+			if !field1.Type.Equals(field2.Type) {
 				*cl = append(*cl, changeEntry{
 					Action: update,
 					TableInfo: tableInfo{
@@ -119,22 +120,19 @@ func compareFields(t1, t2 core.Table, cl *schemaUpdates) {
 					From: field1.Type,
 					To:   field2.Type,
 				})
-				found = true
 			}
 			// Check if same field but "Unique" has changed
-			if field1.Name == field2.Name && field1.Unique != field2.Unique {
+			if field1.Unique != field2.Unique {
 				*cl = append(*cl, changeEntry{
 					Action: update,
 					TableInfo: tableInfo{
 						TableName:   t2.Name,
 						ElementName: field2.Name,
-						ElementType: uniqueType,
+						ElementType: fieldUniqueAttr,
 					},
 					From: field1.Unique,
 					To:   field2.Unique,
 				})
-				found = true
-				break fieldLoop
 			}
 		}
 		if !found {
@@ -143,7 +141,7 @@ func compareFields(t1, t2 core.Table, cl *schemaUpdates) {
 				TableInfo: tableInfo{
 					TableName:   t1.Name,
 					ElementName: field1.Name,
-					ElementType: fieldType,
+					ElementType: fieldElement,
 				},
 				From: field1,
 				To:   nil,
@@ -155,6 +153,7 @@ func compareFields(t1, t2 core.Table, cl *schemaUpdates) {
 		for _, schema1Field := range t1.Fields {
 			if schema2Field.Name == schema1Field.Name {
 				found = true
+				break
 			}
 		}
 		if !found {
@@ -163,7 +162,7 @@ func compareFields(t1, t2 core.Table, cl *schemaUpdates) {
 				TableInfo: tableInfo{
 					TableName:   t2.Name,
 					ElementName: schema2Field.Name,
-					ElementType: fieldType,
+					ElementType: fieldElement,
 				},
 				From: nil,
 				To:   schema2Field,
@@ -172,35 +171,50 @@ func compareFields(t1, t2 core.Table, cl *schemaUpdates) {
 	}
 }
 
+// compareJoins takes two tables and adds any differences in the joins to schemaUpdates
 func compareJoins(t1, t2 core.Table, cl *schemaUpdates) {
 	for _, join1 := range t1.Joins {
 		found := false
-	joinLoop:
 		for _, join2 := range t2.Joins {
-			if join1.Table == join2.Table && join1.Single != join2.Single {
+			// Check whether the join's match by name. If not, continue to the
+			// next join
+			if join1.Table != join2.Table {
+				continue
+			}
+			found = true
+			if join1.Single != join2.Single {
 				*cl = append(*cl, changeEntry{
 					Action: update,
 					TableInfo: tableInfo{
 						TableName:   t2.Name,
 						ElementName: join2.Table,
-						ElementType: joinType,
+						ElementType: joinSingleAttr,
 					},
 					From: join1.Single,
 					To:   join2.Single,
 				})
-				found = true
-				break joinLoop
-			} else if join1.Table == join2.Table && join1.Single == join2.Single {
-				found = true
+			}
+			if join1.Unique != join2.Unique {
+				*cl = append(*cl, changeEntry{
+					Action: update,
+					TableInfo: tableInfo{
+						TableName:   t2.Name,
+						ElementName: join2.Table,
+						ElementType: joinUniqueAttr,
+					},
+					From: join1.Unique,
+					To:   join2.Unique,
+				})
 			}
 		}
+		// If not found, the join in t1 has been REMOVED
 		if !found {
 			*cl = append(*cl, changeEntry{
 				Action: remove,
 				TableInfo: tableInfo{
 					TableName:   t1.Name,
 					ElementName: join1.Table,
-					ElementType: joinType,
+					ElementType: joinElement,
 				},
 				From: join1,
 				To:   nil,
@@ -208,13 +222,13 @@ func compareJoins(t1, t2 core.Table, cl *schemaUpdates) {
 		}
 	}
 
+	// Find the joins from t2 that have been CREATED
 	for _, join2 := range t2.Joins {
 		found := false
-	join2Loop:
 		for _, join1 := range t1.Joins {
 			if join2.Table == join1.Table {
 				found = true
-				break join2Loop
+				break
 			}
 		}
 		if !found {
@@ -223,7 +237,7 @@ func compareJoins(t1, t2 core.Table, cl *schemaUpdates) {
 				TableInfo: tableInfo{
 					TableName:   t2.Name,
 					ElementName: join2.Table,
-					ElementType: joinType,
+					ElementType: joinElement,
 				},
 				From: nil,
 				To:   join2,

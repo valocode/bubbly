@@ -16,25 +16,34 @@ import (
 type migration []string
 
 // generateMigration creates a list of sql statements to be executed based on a schemaUpdates
-func psqlGenerateMigration(provider config.StoreProviderType, tenant string, ch schemaUpdates) (migration, error) {
-	var m migration
+func psqlGenerateMigration(provider config.StoreProviderType, tenant string, schema *bubblySchema, ch schemaUpdates) (migration, error) {
+	var (
+		m migration
+		// Nearly all of the schema changes can be made incrementally (i.e. one by one
+		// as different SQL commands).
+		// HOWEVER, the table constraints need to be performed as a single command
+		// and therefore we need some extra logic to the migration to handle this.
+		// Store the tables whose unique constraints have changed, so that we can
+		// handle these as a single command
+		tableUniqueChanges = make(map[string]struct{})
+	)
 	for _, change := range ch {
 		tableName := change.TableInfo.TableName
 		switch change.Action {
 		case remove:
 			switch change.TableInfo.ElementType {
-			case tableType:
+			case tableElement:
 				m = append(m, "DROP TABLE IF EXISTS "+psqlAbsTableName(tenant, tableName))
-			case fieldType:
+			case fieldElement:
 				m = append(m, "ALTER TABLE IF EXISTS "+psqlAbsTableName(tenant, tableName)+" DROP COLUMN IF EXISTS "+change.TableInfo.ElementName)
-			case joinType, uniqueType:
+			case joinElement:
 				stmt, err := removeJoinStatement(tenant, change.TableInfo, change.From)
 				if err != nil {
 					return nil, err
 				}
 				m = append(m, stmt)
 			default:
-				return nil, fmt.Errorf("unsupported element type: %s", change.TableInfo.ElementType)
+				return nil, fmt.Errorf("unsupported element type for remove on table %s: %s", change.TableInfo.TableName, change.TableInfo.ElementType)
 			}
 		case update:
 			switch change.TableInfo.ElementType {
@@ -44,18 +53,21 @@ func psqlGenerateMigration(provider config.StoreProviderType, tenant string, ch 
 					return nil, err
 				}
 				m = append(m, stmts...)
-			case joinType:
-				// If a join has been changed, it means it's Single attribute
-				// has changed, and this does not affect anything in Postgres
-				// but only affects the GraphQL resolvers
-			case uniqueType:
-				// TODO: we should update the column to add a unique constraint...
+			case joinSingleAttr:
+				// The single attribute on a join does not affect the schema in
+				// postgres, as we cannot truly model a one-to-one relationship.
+				// It DOES affect the GraphQL schema, but that means we do
+				// nothing here
+			case fieldUniqueAttr, joinUniqueAttr:
+				// Just mark that this table should have it's unique constraints
+				// modified - which needs to happen in one go
+				tableUniqueChanges[change.TableInfo.TableName] = struct{}{}
 			default:
-				return nil, fmt.Errorf("unsupported element type: %s", change.TableInfo.ElementType)
+				return nil, fmt.Errorf("unsupported element type for update on table %s: %s", change.TableInfo.TableName, change.TableInfo.ElementType)
 			}
 		case create:
 			switch change.TableInfo.ElementType {
-			case tableType:
+			case tableElement:
 				table, ok := (change.To).(core.Table)
 				if !ok {
 					return nil, fmt.Errorf("tableInterface not assignable to core.Table: %s", change.TableInfo.TableName)
@@ -65,24 +77,30 @@ func psqlGenerateMigration(provider config.StoreProviderType, tenant string, ch 
 					return nil, fmt.Errorf("failed to create SQL statement to create table %s: %w", table.Name, err)
 				}
 				m = append(m, stmt)
-			case fieldType:
+				stmt = psqlTableUniqueConstraints(tenant, table)
+				m = append(m, stmt)
+			case fieldElement:
 				stmts, err := createFieldStatement(tenant, change.TableInfo, change.To)
 				if err != nil {
 					return nil, err
 				}
 				m = append(m, stmts...)
-			case joinType:
+			case joinElement:
 				stmt, err := createJoinStatement(tenant, change.TableInfo, change.To)
 				if err != nil {
 					return nil, err
 				}
 				m = append(m, stmt)
-			case uniqueType:
-				m = append(m, "ALTER TABLE IF EXISTS "+psqlAbsTableName(tenant, tableName)+
-					" ADD CONSTRAINT IF NOT EXISTS "+change.TableInfo.TableName+"_"+change.TableInfo.ElementName+"_key"+
-					" UNIQUE("+change.TableInfo.ElementName+");")
+			default:
+				return nil, fmt.Errorf("unsupported element type for create on table %s: %s", change.TableInfo.TableName, change.TableInfo.ElementType)
 			}
 		}
+	}
+
+	// Check the unique constraints on tables and apply those
+	for tableName := range tableUniqueChanges {
+		table := schema.Tables[tableName]
+		m = append(m, psqlTableUniqueConstraints(tenant, table))
 	}
 
 	return m, nil
@@ -165,13 +183,13 @@ func createFieldStatement(tenant string, info tableInfo, fieldInterface interfac
 	if !ok {
 		return nil, fmt.Errorf("cannot assign type to core.TableField: %s", reflect.TypeOf(fieldInterface).String())
 	}
-	fieldType, err := psqlType(field.Type)
+	fieldElement, err := psqlType(field.Type)
 	if err != nil {
 		return nil, fmt.Errorf("could not get postgres type for field %s: %w", field.Name, err)
 	}
 
 	var statements = make([]string, 0, 1)
-	statements = append(statements, "ALTER TABLE IF EXISTS "+psqlAbsTableName(tenant, info.TableName)+" ADD COLUMN IF NOT EXISTS "+info.ElementName+" "+fieldType)
+	statements = append(statements, "ALTER TABLE IF EXISTS "+psqlAbsTableName(tenant, info.TableName)+" ADD COLUMN IF NOT EXISTS "+info.ElementName+" "+fieldElement)
 	if field.Unique {
 		statements = append(statements,
 			"ALTER TABLE IF EXISTS "+psqlAbsTableName(tenant, info.TableName)+" ADD CONSTRAINT "+info.TableName+"_"+info.ElementName+"_key UNIQUE ("+info.ElementName+");",

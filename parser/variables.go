@@ -46,12 +46,12 @@ func walkVariables(bCtx *env.BubblyContext, node dynblock.WalkVariablesNode, ty 
 
 	vars, children := node.Visit(schema)
 	for _, child := range children {
-		fieldType, exists := fieldByTagName[child.BlockTypeName]
+		fieldElement, exists := fieldByTagName[child.BlockTypeName]
 		if !exists {
 			bCtx.Logger.Panic().Msgf("HCL block name not found inside the go type: %s in %s", child.BlockTypeName, ty.String())
 		}
 
-		vars = append(vars, walkVariables(bCtx, child.Node, fieldType)...)
+		vars = append(vars, walkVariables(bCtx, child.Node, fieldElement)...)
 	}
 	return vars
 }
