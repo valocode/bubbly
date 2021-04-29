@@ -827,6 +827,32 @@ var sqlGenTests = []struct {
 			},
 		},
 	},
+	{
+		name:   "graphql limit on root",
+		schema: "tables8.hcl",
+		data:   "data8.hcl",
+		query: `
+		{
+			events(
+				order_by: [
+					{table: "events", field: "timestamp", order: "DESC"}
+				],
+				limit: 2
+			) {
+				timestamp
+			}
+		}`,
+		want: map[string]interface{}{
+			"events": []interface{}{
+				map[string]interface{}{
+					"timestamp": 1010,
+				},
+				map[string]interface{}{
+					"timestamp": 30,
+				},
+			},
+		},
+	},
 }
 
 func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile string) {
