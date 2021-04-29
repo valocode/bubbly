@@ -160,6 +160,10 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		// The `distinct_on` GraphQL argument can only be processed after `order_by`
 		// argument had been processed. It requires `order_by` argument to be present.
 		distinctOnArg *ast.Argument
+
+		// The `limit` GraphQL argument can only be used if no `order_by` is specified.
+		// TODO remove this limitation by building order-aware subqueries for tables being JOINed
+		limitArg *ast.Argument
 	)
 
 	// FIXME: Why is the depth being increased here?
@@ -219,6 +223,14 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		// for SQL auto-generation from the GraphQL schema.
 		if arg.Name.Value == distinctOnID {
 			distinctOnArg = arg
+			argIsResolved = true
+		}
+
+		if arg.Name.Value == limitID {
+			if qb.depth != 1 {
+				return fmt.Errorf("the `limit` argument is supported only for the root types")
+			}
+			limitArg = arg
 			argIsResolved = true
 		}
 
@@ -404,6 +416,23 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		// after SELECT key word in SQL.
 		// FIXME is this... SQL injection vulnerability?
 		qb.sql = qb.sql.Options(fmt.Sprintf("DISTINCT ON (%s)", strings.Join(distinctOnAliases, ", ")))
+	}
+
+	if limitArg != nil {
+
+		arg := limitArg
+
+		limitStr, ok := arg.Value.GetValue().(string)
+		if !ok {
+			return fmt.Errorf("could not convert the value of the argument `limit`: %#v", arg.Value.GetValue())
+		}
+
+		n, err := strconv.ParseUint(limitStr, 10, 64)
+		if err != nil {
+			return fmt.Errorf("could not convert the value to unsigned integer: %s", limitStr)
+		}
+
+		qb.sql = qb.sql.Limit(n)
 	}
 
 	return nil
