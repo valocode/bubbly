@@ -266,35 +266,3 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 
 	return dataNodes, nil
 }
-
-// func validateDataNode(graph *schemaGraph, node *dataNode) error {
-// 	// Check the table exists
-// 	tNode, ok := graph.NodeIndex[node.Data.TableName]
-// 	if !ok {
-// 		return fmt.Errorf("data block refers to unknown schema table %s", node.Data.TableName)
-// 	}
-
-// 	// Check that the data block has fields, because otherwise this is just
-// 	// an empty record which we don't want to save...
-// 	if len(node.Data.Fields) == 0 {
-// 		return fmt.Errorf("no fields or joins to store for data block: %s", node.Data.TableName)
-// 	}
-
-// 	// Check the fields in the data block exist in the schema table
-// 	// TODO: check field names, but handle also the "foreign key" fields that
-// 	// create joins
-// 	// for name := range node.Data.Fields {
-// 	// 	var fieldExists bool
-// 	// 	for _, tField := range tNode.table.Fields {
-// 	// 		if name == tField.Name {
-// 	// 			fieldExists = true
-// 	// 			break
-// 	// 		}
-// 	// 	}
-// 	// 	if !fieldExists {
-// 	// 		return fmt.Errorf("data block refers to unknown schema field %s.%s", node.Data.TableName, name)
-// 	// 	}
-// 	// }
-
-// 	return nil
-// }
