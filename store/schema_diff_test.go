@@ -30,7 +30,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
 		want: schemaUpdates{
-			changeEntry{Action: create, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: "table"}, From: nil, To: core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
+			changeEntry{Action: create, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: tableElement}, From: nil, To: core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
 		},
 		wantErr: false,
 	},
@@ -39,7 +39,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
 		s2:   core.Tables{},
 		want: schemaUpdates{
-			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: "table"}, From: core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}, To: nil},
+			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: tableElement}, From: core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}, To: nil},
 		},
 		wantErr: false,
 	},
@@ -48,7 +48,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}, {Name: "b", Type: cty.String}}}},
 		want: schemaUpdates{
-			changeEntry{Action: create, TableInfo: tableInfo{TableName: "a", ElementName: "b", ElementType: "field"}, From: nil, To: core.TableField{Name: "b", Type: cty.String}},
+			changeEntry{Action: create, TableInfo: tableInfo{TableName: "a", ElementName: "b", ElementType: fieldElement}, From: nil, To: core.TableField{Name: "b", Type: cty.String}},
 		},
 		wantErr: false,
 	},
@@ -57,7 +57,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.Number}}}},
 		want: schemaUpdates{
-			changeEntry{Action: update, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: "field"}, From: cty.String, To: cty.Number},
+			changeEntry{Action: update, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: fieldType}, From: cty.String, To: cty.Number},
 		},
 		wantErr: false,
 	},
@@ -66,7 +66,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String, Unique: true}}}},
 		want: schemaUpdates{
-			changeEntry{Action: update, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: "unique"}, From: false, To: true},
+			changeEntry{Action: update, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: fieldUniqueAttr}, From: false, To: true},
 		},
 		wantErr: false,
 	},
@@ -75,7 +75,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String, Unique: true}}}},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
 		want: schemaUpdates{
-			changeEntry{Action: update, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: "unique"}, From: true, To: false},
+			changeEntry{Action: update, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: fieldUniqueAttr}, From: true, To: false},
 		},
 		wantErr: false,
 	},
@@ -84,7 +84,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}, {Name: "b", Type: cty.String}}}},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
 		want: schemaUpdates{
-			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "a", ElementName: "b", ElementType: "field"}, From: core.TableField{Name: "b", Type: cty.String}, To: nil},
+			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "a", ElementName: "b", ElementType: fieldElement}, From: core.TableField{Name: "b", Type: cty.String}, To: nil},
 		},
 		wantErr: false,
 	},
@@ -93,7 +93,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}}}},
 		want: schemaUpdates{
-			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "b", ElementType: "table"}, From: nil, To: core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}, Joins: []core.TableJoin{{Table: "a"}}}},
+			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "b", ElementType: tableElement}, From: nil, To: core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}, Joins: []core.TableJoin{{Table: "a"}}}},
 		},
 		wantErr: false,
 	},
@@ -102,7 +102,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}, core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}}}},
 		want: schemaUpdates{
-			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: "join"}, From: nil, To: core.TableJoin{Table: "a"}},
+			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinElement}, From: nil, To: core.TableJoin{Table: "a"}},
 		},
 		wantErr: false,
 	},
@@ -111,7 +111,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}, core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}, Single: true}}}},
 		want: schemaUpdates{
-			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: "join"}, From: nil, To: core.TableJoin{Table: "a", Single: true}},
+			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinElement}, From: nil, To: core.TableJoin{Table: "a", Single: true}},
 		},
 		wantErr: false,
 	},
@@ -120,7 +120,7 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}}}},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}, core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}},
 		want: schemaUpdates{
-			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: "join"}, From: core.TableJoin{Table: "a"}, To: nil},
+			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinElement}, From: core.TableJoin{Table: "a"}, To: nil},
 		},
 		wantErr: false,
 	},
@@ -129,7 +129,43 @@ var schemaDiffTests = []struct {
 		s1:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}}}},
 		s2:   core.Tables{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
 		want: schemaUpdates{
-			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "b", ElementName: "b", ElementType: "table"}, From: core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}, Joins: []core.TableJoin{{Table: "a"}}}, To: nil},
+			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "b", ElementName: "b", ElementType: tableElement}, From: core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}, Joins: []core.TableJoin{{Table: "a"}}}, To: nil},
+		},
+		wantErr: false,
+	},
+	{
+		name: "Add unique constraint on join",
+		s1:   core.Tables{core.Table{Name: "a", Tables: []core.Table{{Name: "b"}}}},
+		s2:   core.Tables{core.Table{Name: "a", Tables: []core.Table{{Name: "b", Unique: true}}}},
+		want: schemaUpdates{
+			changeEntry{Action: update, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinUniqueAttr}, From: false, To: true},
+		},
+		wantErr: false,
+	},
+	{
+		name: "Remove unique constraint on join",
+		s1:   core.Tables{core.Table{Name: "a", Tables: []core.Table{{Name: "b", Unique: true}}}},
+		s2:   core.Tables{core.Table{Name: "a", Tables: []core.Table{{Name: "b"}}}},
+		want: schemaUpdates{
+			changeEntry{Action: update, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinUniqueAttr}, From: true, To: false},
+		},
+		wantErr: false,
+	},
+	{
+		name: "Add single attribute on join",
+		s1:   core.Tables{core.Table{Name: "a", Tables: []core.Table{{Name: "b"}}}},
+		s2:   core.Tables{core.Table{Name: "a", Tables: []core.Table{{Name: "b", Single: true}}}},
+		want: schemaUpdates{
+			changeEntry{Action: update, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinSingleAttr}, From: false, To: true},
+		},
+		wantErr: false,
+	},
+	{
+		name: "Remove single attribute on join",
+		s1:   core.Tables{core.Table{Name: "a", Tables: []core.Table{{Name: "b", Single: true}}}},
+		s2:   core.Tables{core.Table{Name: "a", Tables: []core.Table{{Name: "b"}}}},
+		want: schemaUpdates{
+			changeEntry{Action: update, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinSingleAttr}, From: true, To: false},
 		},
 		wantErr: false,
 	},

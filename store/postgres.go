@@ -25,6 +25,7 @@ var (
 
 const (
 	psqlBubblySchemaPrefix        = "bb_"
+	psqlTableUniqueSuffix         = "_key"
 	defaultStoreConnRetryAttempts = 10
 	defaultStoreConnRetryTimeout  = "200ms"
 )
@@ -76,7 +77,7 @@ func (p *postgres) Apply(tenant string, schema *bubblySchema) error {
 }
 
 func (p *postgres) Migrate(tenant string, schema *bubblySchema, cl schemaUpdates) error {
-	migration, err := psqlGenerateMigration(config.PostgresStore, tenant, cl)
+	migration, err := psqlGenerateMigration(config.PostgresStore, tenant, schema, cl)
 	if err != nil {
 		return fmt.Errorf("failed to generate migration list: %w", err)
 	}
@@ -242,9 +243,16 @@ func psqlApplyTable(tx pgx.Tx, tenant string, table core.Table) error {
 	if err != nil {
 		return fmt.Errorf("failed to prepare SQL statement: %w", err)
 	}
+	// Create the table
 	_, err = tx.Exec(context.Background(), sql)
 	if err != nil {
 		return fmt.Errorf("failed to create table: %s: %w", table.Name, err)
+	}
+	// Apply the unique constraints
+	sql = psqlTableUniqueConstraints(tenant, table)
+	_, err = tx.Exec(context.Background(), sql)
+	if err != nil {
+		return fmt.Errorf("failed to add constraints on table: %s: %w", table.Name, err)
 	}
 	return nil
 }
@@ -350,11 +358,39 @@ func psqlRowValues(row pgx.Row, tableName string, fields []string) (map[string]i
 	return retVal, nil
 }
 
+func psqlTableUniqueConstraints(tenant string, table core.Table) string {
+	var (
+		uniqueFields = make([]string, 0)
+	)
+	for _, field := range table.Fields {
+		if field.Unique {
+			uniqueFields = append(uniqueFields, field.Name)
+		}
+	}
+	// Add the joins as fields to the SQL table
+	for _, join := range table.Joins {
+		fieldName := join.Table + "_id"
+		if join.Unique {
+			uniqueFields = append(uniqueFields, fieldName)
+		}
+	}
+
+	// First drop the existing constraint (IF EXISTS)
+	sql := "ALTER TABLE " + psqlAbsTableName(tenant, table.Name) +
+		" DROP CONSTRAINT IF EXISTS " + table.Name + psqlTableUniqueSuffix
+	// If we have some unique fields on which to add a constraint, then add it
+	if len(uniqueFields) > 0 {
+		sql += ", ADD CONSTRAINT " + table.Name + psqlTableUniqueSuffix +
+			" UNIQUE (" + strings.Join(uniqueFields, ",") + ")"
+	}
+	return sql + ";"
+}
+
 func psqlTableCreate(tenant string, table core.Table) (string, error) {
 	var (
-		fieldLen     = len(table.Fields) + len(table.Joins)
-		tableFields  = make([]string, 0, fieldLen)
-		uniqueFields = make([]string, 0)
+		fieldLen    = len(table.Fields) + len(table.Joins)
+		tableFields = make([]string, 0, fieldLen)
+		// uniqueFields = make([]string, 0)
 	)
 
 	tableFields = append(tableFields, tableIDField+" SERIAL PRIMARY KEY")
@@ -366,22 +402,22 @@ func psqlTableCreate(tenant string, table core.Table) (string, error) {
 		}
 		tableFields = append(tableFields, field.Name+" "+sqlType)
 
-		if field.Unique {
-			uniqueFields = append(uniqueFields, field.Name)
-		}
+		// if field.Unique {
+		// 	uniqueFields = append(uniqueFields, field.Name)
+		// }
 	}
 	// Add the joins as fields to the SQL table
 	for _, join := range table.Joins {
 		fieldName := join.Table + "_id"
 		tableFields = append(tableFields, fieldName+" INT8")
-		if join.Unique {
-			uniqueFields = append(uniqueFields, fieldName)
-		}
+		// if join.Unique {
+		// 	uniqueFields = append(uniqueFields, fieldName)
+		// }
 	}
 
-	if len(uniqueFields) > 0 {
-		tableFields = append(tableFields, "UNIQUE ("+strings.Join(uniqueFields, ",")+")")
-	}
+	// if len(uniqueFields) > 0 {
+	// 	tableFields = append(tableFields, "UNIQUE ("+strings.Join(uniqueFields, ",")+")")
+	// }
 
 	return "CREATE TABLE IF NOT EXISTS " + psqlAbsTableName(tenant, table.Name) + " ( " + strings.Join(tableFields, ",") + " );", nil
 }
@@ -416,8 +452,8 @@ func psqlDataCreateUpdate(tenant string, node *dataNode, table core.Table) (stri
 	// Create the UPSERT / ON CONFLICT part of the SQL statement, if any.
 	if len(uniqueFields) > 0 {
 		sqlOnConflict = fmt.Sprintf(
-			"ON CONFLICT (%s) DO UPDATE SET %s",
-			strings.Join(uniqueFields, ","),
+			"ON CONFLICT ON CONSTRAINT %s DO UPDATE SET %s",
+			table.Name+psqlTableUniqueSuffix,
 			strings.Join(conflictValues, ","),
 		)
 	}

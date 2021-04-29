@@ -57,8 +57,7 @@ func (c *cockroachdb) Apply(tenant string, schema *bubblySchema) error {
 }
 
 func (c *cockroachdb) Migrate(tenant string, schema *bubblySchema, cl schemaUpdates) error {
-	pgSchema := psqlBubblySchemaPrefix + tenant
-	migration, err := psqlGenerateMigration(config.CockroachDBStore, pgSchema, cl)
+	migration, err := psqlGenerateMigration(config.CockroachDBStore, tenant, schema, cl)
 	if err != nil {
 		return fmt.Errorf("failed to generate migration list: %w", err)
 	}
