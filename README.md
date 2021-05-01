@@ -1,19 +1,18 @@
 
-# Bubbly
-
 ![bubbly-logo](/docs/static/img/bubbly-blue-wide.png)
 
-Bubbly - Release Readiness in a Bubble
+> Release Readiness in a Bubble.
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/valocode/bubbly)](https://goreportcard.com/report/github.com/valocode/bubbly)
+[![Mozilla Public License Version 2.0](https://img.shields.io/github/license/valocode/bubbly?color=brightgreen&label=License)](https://opensource.org/licenses/MPL-2.0)
+[![Bubbly on Twitter](https://img.shields.io/badge/Follow-bubblydotdev-blue.svg?style=flat&logo=twitter)](https://twitter.com/intent/follow?screen_name=bubblydotdev)
+
 
 Bubbly emerged from a need that many lean software teams practicing Continuous Integration and Delivery have: the need to be better performers. The idea is quite simple: build a model that can capture all the metrics that you care about, extract data from any tool in your process, and use those metrics to drive better and more automated decisions.
 
 **Release Readiness** is a term that we use to define the state of being ready to release software. What is interesting to consider is how different teams define their release readiness. Often teams have planned to implement some features and run automated quality and security checks throughout the process (static analysis, automated tests, CVE checks, etc.). Ultimately the decision of being release ready comes down to a measure of confidence. So how best to inform this measure of confidence in an efficient and reliable way?
 
-## Bubbly Status
-
-[![Go Report Card](https://goreportcard.com/badge/github.com/valocode/bubbly)](https://goreportcard.com/report/github.com/valocode/bubbly)
-
-### Problem
+## Problem Statement
 
 The problem around Release Readiness is one of data. All the tools used in the software process produce data, and that data should be used to measure attributes such as feature-completeness, quality and security of your product.
 
@@ -24,7 +23,7 @@ The real problem is that this data gets scattered all over the place which resul
 3. Massive overhead maintaining multiple data stores and data bases, ensuring that the data is up to date and accurate
 4. Lack of understanding of the data's hierarchy
 
-### Proposed Solution
+## Proposed Solution
 
 Bubbly has been built to address the core problems mentioned above. This has been achieved by implementing a very lightweight data platform using a user-defined schema and data pipelines, with everything defined as code using a DSL built on top of HashiCorp's Configuration Language (HCL).
 
@@ -38,7 +37,7 @@ The data in Bubbly can now be used to make automated decisions in pipelines (e.g
 
 Check out the [Core Concepts](https://docs.bubbly.dev/introduction/core-concepts) for more information on things like the schema, HCL and data pipelines.
 
-#### Goals
+### Goals
 
 The goal of Bubbly was to be a "bridge" between data, and make connecting and accessing data as simple, reliable and fun as possible! Writing data pipelines feels awesome!
 
@@ -52,7 +51,7 @@ Some ways in which Bubbly could be used are:
 
 If you want to see some use cases that we are currently solving with Bubbly, check out the Use Cases.
 
-#### Non-Goals
+### Non-Goals
 
 The things that Bubbly is not aiming to be:
 
@@ -64,7 +63,7 @@ The things that Bubbly is not aiming to be:
 
 ## Architecture
 
-TODO: this is in progress... Check back soon!
+**TODO** this is in progress... check back soon!
 
 ## Why Open Source?
 
@@ -93,15 +92,15 @@ And as it is open source we really welcome contributions!
 
 ## Install
 
-See our [Installation Guide](https://docs.bubbly.dev/getting-started/getting-started#installation)
+See our [Installation Guide](https://docs.bubbly.dev/getting-started/getting-started#installation).
 
 ## Getting Started
 
-See our [Getting Started Guide](https://docs.bubbly.dev/getting-started/getting-started)
+See our [Getting Started Guide](https://docs.bubbly.dev/getting-started/getting-started).
 
 ## Contributing
 
-See our [Contributing Guide](./docs/docs/contributing/contributing.md)
+See our [Contributing Guide](./docs/docs/contributing/contributing.md).
 
 ## License
 
