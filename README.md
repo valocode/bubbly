@@ -68,7 +68,7 @@ TODO: this is in progress... Check back soon!
 
 ## Why Open Source?
 
-Bubbly is open source, licensed under the [Mozilla Public License v2](https://www.mozilla.org/en-US/MPL/2.0/).
+Bubbly is open source, licensed under the [Mozilla Public License v2](LICENSE).
 
 We have a few reasons for being open source:
 
@@ -105,4 +105,4 @@ See our [Contributing Guide](./docs/docs/contributing/contributing.md)
 
 ## License
 
-[Mozilla Public License Version 2.0](https://www.mozilla.org/en-US/MPL/)
+[Mozilla Public License Version 2.0](LICENSE)
