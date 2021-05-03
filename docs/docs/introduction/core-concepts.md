@@ -51,8 +51,6 @@ For example, an extraction of Github repository data from its GraphQL API:
 
 ```hcl
 resource "extract" "github_extract" {
-    api_version = "v1"
-    
     spec { 
         type = "graphql"
         source { 

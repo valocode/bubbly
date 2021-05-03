@@ -75,7 +75,6 @@ Here, we will simply extract just the severity from the issues.
 
 ```hcl
 resource "extract" "gosec" {
-  api_version = "v1"
   spec {
     input "file" {}
     type = "json"
@@ -97,7 +96,6 @@ Now that we have the severity, it is time to transform it into a format that `Bu
 
 ```hcl
 resource "transform" "gosec" {
-  api_version = "v1"
   spec {
     input "data" {}
     dynamic "data" {
@@ -120,7 +118,6 @@ The next step is to load the data!
 
 ```hcl
 resource "load" "gosec" {
-  api_version = "v1"
   spec {
     input "data" {}
     data = self.input.data
@@ -134,7 +131,6 @@ In this step, we will stitch all the data together in a single pipeline.
 
 ```hcl
 resource "pipeline" "gosec" {
-  api_version = "v1"
   spec {
     input "gosec_results" {
       default = "./testdata/gosec/results.json"
@@ -167,7 +163,6 @@ Next, we will add a simple `run` resource for the pipeline.
 
 ```hcl
 resource "run" "gosec" {
-  api_version = "v1"
   spec {
     resource = "pipeline/gosec"
   }
@@ -181,7 +176,6 @@ reflect the location of the file you are looking to upload.
 
 ```hcl
 resource "run" "gosec/extract" {
-  api_version = "v1"
   spec {
     resource = "extract/gosec"
     input "file" {
@@ -198,7 +192,6 @@ issue.
 
 ```hcl
 resource "query" "gosec_data" {
-  api_version = "v1"
   spec {
     query = <<EOT
       {
@@ -217,7 +210,6 @@ Here, we will write a quick criteria, that will pass on the condition that there
 
 ```hcl
 resource "criteria" "gosec_status" {
-  api_version = "v1"
   spec {
     query "gosec_data" {}
     condition "no_high" {
@@ -237,7 +229,6 @@ The final step is to just write a `run` resource for the criteria as follows.
 
 ```hcl
 resource "run" "gosec_criteria" {
-  api_version = "v1"
   spec {
     resource = "criteria/gosec_status"
   }
