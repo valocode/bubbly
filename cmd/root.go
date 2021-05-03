@@ -6,6 +6,8 @@ import (
 	agentCmd "github.com/valocode/bubbly/cmd/agent"
 	applyCmd "github.com/valocode/bubbly/cmd/apply"
 	getCmd "github.com/valocode/bubbly/cmd/get"
+	queryCmd "github.com/valocode/bubbly/cmd/query"
+	releaseCmd "github.com/valocode/bubbly/cmd/release"
 	schemaCmd "github.com/valocode/bubbly/cmd/schema"
 	"github.com/valocode/bubbly/cmd/topics"
 	"github.com/valocode/bubbly/config"
@@ -54,6 +56,8 @@ func initCommands(bCtx *env.BubblyContext, cmd *cobra.Command) {
 	getCmd, _ := getCmd.NewCmdGet(bCtx)
 	cmd.AddCommand(getCmd)
 
+	cmd.AddCommand(releaseCmd.New(bCtx))
+	cmd.AddCommand(queryCmd.NewCmdQuery(bCtx))
 	cmd.AddCommand(schemaCmd.NewCmdSchema(bCtx))
 }
 

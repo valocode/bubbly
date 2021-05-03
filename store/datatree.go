@@ -21,7 +21,7 @@ func (t dataTree) traverse(bCtx *env.BubblyContext, fn visitFn) (core.DataBlocks
 	blocks := core.DataBlocks{}
 	for _, d := range t {
 		if err := visitNode(bCtx, d, fn, &blocks); err != nil {
-			return nil, fmt.Errorf("received an error when visiting data node: %s: %w", d.Data.TableName, err)
+			return nil, fmt.Errorf("error occurred when traversing data tree: %w", err)
 		}
 	}
 
@@ -60,13 +60,13 @@ func visitNode(bCtx *env.BubblyContext, node *dataNode, fn visitFn, blocks *core
 	if parentsVisited && !node.Visited {
 		// Visit the node with the callback method
 		if err := fn(bCtx, node, blocks); err != nil {
-			return err
+			return fmt.Errorf("error visiting data node %s: %w", node.Data.TableName, err)
 		}
 		// If no error, mark the node as visited
 		node.Visited = true
 		for _, child := range node.Children {
 			if err := visitNode(bCtx, child, fn, blocks); err != nil {
-				return err
+				return fmt.Errorf("error visiting data node %s: %w", child.Data.TableName, err)
 			}
 		}
 	}
@@ -129,8 +129,8 @@ func (d *dataNode) orderedFields() []string {
 // orderedRefFields returns the node's RefFields in order
 func (d *dataNode) orderedRefFields() []string {
 	// At the minimum return the id field to return
-	if len(d.RefFields) == 0 {
-		return []string{tableIDField}
+	if _, ok := d.RefFields[tableIDField]; !ok {
+		d.RefFields[tableIDField] = struct{}{}
 	}
 
 	var fields = make([]string, 0, len(d.RefFields))

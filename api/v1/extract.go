@@ -930,7 +930,8 @@ var _ source = (*jsonSource)(nil)
 
 // jsonSource represents the extract type for using a JSON file as the input
 type jsonSource struct {
-	File string `hcl:"file,attr"`
+	File     string `hcl:"file,optional"`
+	Contents string `hcl:"contents,optional"`
 	// the format of the raw input data defined as a cty.Type
 	Format cty.Type `hcl:"format,attr"`
 }
@@ -942,7 +943,6 @@ func readJSON(r io.Reader, ty cty.Type) (cty.Value, error) {
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
 		return cty.NilVal, fmt.Errorf("failed to decode JSON: %w", err)
 	}
-
 	val, err := gocty.ToCtyValue(data, ty)
 	if err != nil {
 		return cty.NilVal, err
@@ -954,13 +954,25 @@ func readJSON(r io.Reader, ty cty.Type) (cty.Value, error) {
 // Resolve returns a cty.Value representation of the parsed JSON file
 func (s *jsonSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 
-	f, err := os.Open(s.File)
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("failed to open file %s: %w", s.File, err)
+	if s.File != "" && s.Contents != "" {
+		return cty.NilVal, errors.New("cannot provide both file and contents")
 	}
-	defer f.Close()
+	if s.File == "" && s.Contents == "" {
+		return cty.NilVal, errors.New("must provide one of file and contents")
+	}
 
-	return readJSON(f, s.Format)
+	var r io.Reader
+	if s.File != "" {
+		var err error
+		r, err = os.Open(s.File)
+		if err != nil {
+			return cty.NilVal, fmt.Errorf("error opening file %s: %w", s.File, err)
+		}
+	} else {
+		r = strings.NewReader(s.Contents)
+	}
+
+	return readJSON(r, s.Format)
 }
 
 // Compiler check to see that v1.XMLSource implements the Source interface

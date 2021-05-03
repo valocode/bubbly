@@ -69,13 +69,18 @@ resource "transform" "sonarqube" {
             }
         }
 
-        data "repo_version" {
-            // get the repo_id by referencing the above data block
-            joins = ["repo"]
+        data "branch" {
             fields = {
-                "commit": self.input.repository.commit_id
+                "name": self.input.repository.active_branch
+            }
+            joins = ["repo"]
+        }
+        data "commit" {
+            // get the repo_id by referencing the above data block
+            joins = ["repo", "branch"]
+            fields = {
+                "id": self.input.repository.commit_id
                 "tag": self.input.repository.tag
-                "branch": self.input.repository.active_branch
             }
         }
 
@@ -86,7 +91,7 @@ resource "transform" "sonarqube" {
             // map the data to the code_issue table in the interim database
             labels = ["code_issue"]
             content {
-                joins = ["repo_version"]
+                joins = ["commit"]
                 fields = {
                     "name": issue.value.primaryLocation.message
                     "severity": issue.value.severity

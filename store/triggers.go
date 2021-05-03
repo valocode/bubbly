@@ -171,16 +171,13 @@ func remoteRunTrigger(tenant string) *trigger {
 
 					// make sure the resource is of kind run
 					if resKind == core.RunResourceKind {
-						// make sure that the run resource is of type remote
-						resJSON, _ := node.Data.ToResourceBlockJSON()
 
-						resBlock, err := resJSON.ResourceBlock()
-
+						resBlock, err := core.ResourceFromData(*node.Data)
 						if err != nil {
 							return fmt.Errorf("failed to form resource from block: %w", err)
 						}
 
-						res, err := api.NewResource(&resBlock)
+						res, err := api.NewResource(resBlock)
 						if err != nil {
 							return fmt.Errorf("failed to create resource from block: %w", err)
 						}

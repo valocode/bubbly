@@ -15,6 +15,7 @@ import (
 )
 
 const DefaultTenantName = "default"
+
 //
 // The Bubbly Store is an abstraction for structured data stored in Bubbly,
 // as well as the metadata describing it.
@@ -260,13 +261,14 @@ func (s *Store) currentBubblySchema(tenant string) (*bubblySchema, error) {
 	if !isValidValue(result.Data) {
 		return newBubblySchema(), nil
 	}
-	val := result.Data.(map[string]interface{})[core.SchemaTableName].([]interface{})
-	if len(val) == 0 {
+	val := result.Data.(map[string]interface{})[core.SchemaTableName]
+	if val == nil || len(val.([]interface{})) == 0 {
 		return newBubblySchema(), nil
 	}
+	sVal := val.([]interface{})
 
 	var bSchema bubblySchema
-	b, err := json.Marshal(val[len(val)-1])
+	b, err := json.Marshal(sVal[len(sVal)-1])
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal graphql response: %w", err)
 	}
@@ -304,7 +306,7 @@ const (
 // TODO: add "limit" arg to this query
 var schemaQuery = fmt.Sprintf(`
 {
-	%s {
+	%s(limit:1) {
 		tables
 	}
 }

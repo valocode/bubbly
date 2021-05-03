@@ -2,7 +2,6 @@
 //  defines a data source and a format for the data, and returns a cty.Value
 // representation of the external data.
 resource "extract" "sonarqube" {
-    api_version = "v1"
     spec {
         input "file" {}
         type = "json"

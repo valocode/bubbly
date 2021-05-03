@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/valocode/bubbly/client"
@@ -40,8 +41,52 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 			Value:  cty.NilVal,
 		}
 	}
+	var data core.DataBlocks
+	if err := json.Unmarshal([]byte(l.Spec.Data), &data); err != nil {
+		return core.ResourceOutput{
+			ID:     l.String(),
+			Status: events.ResourceRunFailure,
+			Error:  fmt.Errorf("error unmarshalling data to data blocks: %w", err),
+			Value:  cty.NilVal,
+		}
+	}
 
-	if err := l.load(bCtx, ctx); err != nil {
+	// var releaseData core.DataBlocks
+	// releaseData = append(releaseData, core.Data{
+	// 	TableName: "project",
+	// 	Fields: core.DataFields{
+	// 		"id": cty.StringVal("bubbly"),
+	// 	},
+	// 	Policy: core.ReferencePolicy,
+	// })
+	// gitData, err := l.Spec.GitItem.Data()
+	// if err != nil {
+	// 	return core.ResourceOutput{
+	// 		ID:     l.String(),
+	// 		Status: events.ResourceRunFailure,
+	// 		Error:  err,
+	// 		Value:  cty.NilVal,
+	// 	}
+	// }
+	// releaseData = append(releaseData, gitData...)
+	// releaseData = append(releaseData, core.Data{
+	// 	TableName: "release_item",
+	// 	Joins:     []string{"commit"},
+	// 	Policy:    core.ReferencePolicy,
+	// })
+	// releaseData = append(releaseData, core.Data{
+	// 	TableName: "release",
+	// 	Fields: core.DataFields{
+	// 		"_id": cty.CapsuleVal(parser.DataRefType, &parser.DataRef{
+	// 			TableName: "release_item",
+	// 			Field:     "release_id",
+	// 		}),
+	// 	},
+	// 	Policy: core.ReferencePolicy,
+	// })
+	// data = append(releaseData, data...)
+
+	if err := l.load(bCtx, ctx, data); err != nil {
 		return core.ResourceOutput{
 			ID:     l.String(),
 			Status: events.ResourceApplyFailure,
@@ -64,7 +109,7 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 // to the bubbly server.
 // load outputs an error if any part of this process fails, nil if
 // the data is successfully POSTed to the bubbly server.
-func (l *Load) load(bCtx *env.BubblyContext, ctx *core.ResourceContext) error {
+func (l *Load) load(bCtx *env.BubblyContext, ctx *core.ResourceContext, data core.DataBlocks) error {
 	bCtx.Logger.Debug().Interface("server", bCtx.ServerConfig).Msg("loading to server with configuration")
 
 	c, err := client.New(bCtx)
@@ -73,7 +118,12 @@ func (l *Load) load(bCtx *env.BubblyContext, ctx *core.ResourceContext) error {
 	}
 	defer c.Close()
 
-	err = c.Load(bCtx, ctx.Auth, []byte(l.Spec.Data))
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("error marshalling data blocks: %w", err)
+	}
+
+	err = c.Load(bCtx, ctx.Auth, bytes)
 	if err != nil {
 		return fmt.Errorf("failed to load spec data: %w", err)
 	}
@@ -84,4 +134,5 @@ func (l *Load) load(bCtx *env.BubblyContext, ctx *core.ResourceContext) error {
 type loadSpec struct {
 	Inputs core.InputDeclarations `hcl:"input,block"`
 	Data   string                 `hcl:"data,attr"`
+	// GitItem gitItem                `hcl:"git,block"`
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/valocode/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/gocty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
@@ -47,6 +46,9 @@ const (
 	// ReferencePolicy means do not create or update, but only retrieve a reference
 	// to an already saved data block, with the matching field values
 	ReferencePolicy DataBlockPolicy = "reference"
+	// ReferenceIfExistsPolicy is the same as ReferencePolicy but it does not
+	// error in case a reference does not exist
+	ReferenceIfExistsPolicy DataBlockPolicy = "reference_if_exists"
 )
 
 // DataFields is a slice of DataField
@@ -58,10 +60,11 @@ type DataFields map[string]cty.Value
 // but for now this works and is not that ugly.
 func (d *Data) UnmarshalJSON(data []byte) error {
 	v := struct {
-		TableName string     `json:"data"`
-		Fields    DataFields `json:"fields"`
-		Joins     []string   `json:"joins"`
-		Data      DataBlocks `json:"nested_data"`
+		TableName string          `json:"data"`
+		Fields    DataFields      `json:"fields"`
+		Joins     []string        `json:"joins"`
+		Policy    DataBlockPolicy `json:"policy"`
+		Data      DataBlocks      `json:"nested_data"`
 	}{
 		Fields: make(DataFields),
 	}
@@ -71,6 +74,7 @@ func (d *Data) UnmarshalJSON(data []byte) error {
 	d.TableName = v.TableName
 	d.Fields = v.Fields
 	d.Joins = v.Joins
+	d.Policy = v.Policy
 	d.Data = v.Data
 	return nil
 }
@@ -87,27 +91,6 @@ func (d *Data) IsValidResource() bool {
 		}
 	}
 	return true
-}
-
-// UnmarshalJSON unmarshals json into DataFields
-func (d *Data) ToResourceBlockJSON() (ResourceBlockJSON, error) {
-	rb := ResourceBlockJSON{}
-	for k, v := range d.Fields {
-		switch k {
-		case "kind":
-			_ = gocty.FromCtyValue(v, &rb.ResourceKind)
-		case "name":
-			_ = gocty.FromCtyValue(v, &rb.ResourceName)
-		case "api_version":
-			_ = gocty.FromCtyValue(v, &rb.ResourceAPIVersion)
-		case "spec":
-			_ = gocty.FromCtyValue(v, &rb.SpecRaw)
-		case "metadata":
-			_ = gocty.FromCtyValue(v, &rb.Metadata)
-		}
-	}
-
-	return rb, nil
 }
 
 // MarshalJSON marshals DataFields into json

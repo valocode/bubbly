@@ -16,7 +16,7 @@ import (
 // @Description ATM this will only accept one resource per request
 // @ID Post-resource
 // @Tags resource
-// @Param resource body core.ResourceBlockJSON true "Resource Body"
+// @Param resource body core.ResourceBlock true "Resource Body"
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} apiResponse
@@ -25,9 +25,9 @@ import (
 func (s *Server) PostResource(c echo.Context) error {
 	// read the resource into a ResourceBlockJSON which keeps the spec{} block
 	// as bytes
-	var resJSON core.ResourceBlockJSON
+	var res core.ResourceBlock
 	binder := &echo.DefaultBinder{}
-	if err := binder.BindBody(c, &resJSON); err != nil {
+	if err := binder.BindBody(c, &res); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -35,12 +35,12 @@ func (s *Server) PostResource(c echo.Context) error {
 	// need the ResourceBlock right now but this is just to validate that the
 	// received resource is correctly formatted and to get the resource ID
 	// If it fails, return an error code to show it
-	_, err := resJSON.ResourceBlock()
+	d, err := res.Data()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("invalid resource: %w", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error converting resource to data: %w", err))
 	}
 
-	dBytes, err := json.Marshal(core.DataBlocks{resJSON.Data()})
+	dBytes, err := json.Marshal(core.DataBlocks{d})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("failed to marshal: %w", err))
 	}

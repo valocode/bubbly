@@ -138,6 +138,11 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 	gqlField.Args[filterID] = &graphql.ArgumentConfig{
 		Type: graphQLFilterType(t.Name, gqlField.Args),
 	}
+	// filterOnID works like an INNER JOIN in SQL, that it filters the parent
+	// based on the child
+	gqlField.Args[filterOnID] = &graphql.ArgumentConfig{
+		Type: graphql.Boolean,
+	}
 	gqlField.Args[limitID] = &graphql.ArgumentConfig{
 		Type: graphql.Int,
 	}
@@ -200,6 +205,7 @@ func graphQLFieldType(f core.TableField) *graphql.Scalar {
 
 const (
 	filterID     = "filter"
+	filterOnID   = "filter_on"
 	limitID      = "limit"
 	orderByID    = "order_by"
 	distinctOnID = "distinct_on"

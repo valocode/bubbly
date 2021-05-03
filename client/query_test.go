@@ -55,17 +55,13 @@ func TestQuery(t *testing.T) {
 				JSON(tc.response)
 
 			c, err := newHTTP(bCtx)
-
-			if err != nil {
-				t.Errorf(err.Error())
-			}
+			assert.NoError(t, err)
 
 			byteRes, err := c.Query(bCtx, nil, tc.query)
 			assert.NoError(t, err)
 
 			t.Log(string(byteRes))
 			assert.Equal(t, tc.response, string(byteRes))
-
 		})
 	}
 }

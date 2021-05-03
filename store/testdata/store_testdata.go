@@ -21,7 +21,7 @@ func Tables(t *testing.T, bCtx *env.BubblyContext, fromFile string) core.Tables 
 	body, err := parser.MergedHCLBodies(bCtx, fromFile)
 	require.NoErrorf(t, err, "failed to parse tables")
 
-	err = parser.DecodeExpandBody(bCtx, body, &tableWrapper, cty.NilVal)
+	err = parser.DecodeBody(bCtx, body, &tableWrapper, cty.NilVal)
 	require.NoErrorf(t, err, "failed to decode tables")
 
 	return tableWrapper.Tables

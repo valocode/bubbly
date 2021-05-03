@@ -8,6 +8,7 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/valocode/bubbly/api/core"
@@ -73,23 +74,23 @@ func TestEventTrigger(t *testing.T) {
 	bCtx.StoreConfig.PostgresPassword = postgresPassword
 
 	// Test a simple resource
-	resJSON := core.ResourceBlockJSON{
-		ResourceBlockAlias: core.ResourceBlockAlias{
-			ResourceKind:       "kind",
-			ResourceName:       "name",
-			ResourceAPIVersion: "some version",
-			Metadata: &core.Metadata{
-				Labels: map[string]string{"label": "is a label"},
-			},
+	res := core.ResourceBlock{
+		ResourceKind:       "kind",
+		ResourceName:       "name",
+		ResourceAPIVersion: "some version",
+		Metadata: &core.Metadata{
+			Labels: map[string]string{"label": "is a label"},
 		},
-		SpecRaw: "data {}",
+		SpecRaw: []byte("data {}"),
 	}
 
 	s, err := New(bCtx)
 	require.NoError(t, err)
 
 	// save the blocks to the store
-	err = s.Save(DefaultTenantName, core.DataBlocks{resJSON.Data()})
+	d, err := res.Data()
+	assert.NoError(t, err)
+	err = s.Save(DefaultTenantName, core.DataBlocks{d})
 	require.NoError(t, err)
 
 	resQuery := fmt.Sprintf(`

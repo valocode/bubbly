@@ -4,6 +4,7 @@ package integration
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -13,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/graphql-go/graphql"
 	"github.com/rs/zerolog"
 
 	"github.com/stretchr/testify/assert"
@@ -20,6 +22,7 @@ import (
 
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/events"
 	integration "github.com/valocode/bubbly/integration/testdata"
@@ -106,6 +109,42 @@ func TestApply(t *testing.T) {
 
 func TestApplyRun(t *testing.T) {
 	// Subtest
+	t.Run("release", func(t *testing.T) {
+		bCtx := env.NewBubblyContext()
+		bCtx.UpdateLogLevel(zerolog.DebugLevel)
+
+		err := bubbly.Apply(bCtx, "./testdata/resources/v1/release/release-git.bubbly")
+		assert.NoError(t, err, "failed to apply resource")
+
+		client, err := client.New(bCtx)
+		require.NoError(t, err)
+
+		releaseQuery := `
+{
+	release {
+		name
+		version
+		project {
+			name
+		}
+		release_item {
+			type
+		}
+		release_stage {
+			release_criteria {
+				entry_name
+			}
+		}
+	}
+}
+		`
+		bytes, err := client.Query(bCtx, nil, releaseQuery)
+		var result graphql.Result
+		err = json.Unmarshal(bytes, &result)
+		assert.NoError(t, err)
+		assert.Empty(t, result.Errors)
+		t.Logf("Result: %v", result.Data)
+	})
 	t.Run("sonarqube_run", func(t *testing.T) {
 		bCtx := env.NewBubblyContext()
 		bCtx.UpdateLogLevel(zerolog.DebugLevel)

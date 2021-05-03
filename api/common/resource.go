@@ -70,8 +70,6 @@ func DecodeBodyWithInputs(bCtx *env.BubblyContext, body hcl.Body, val interface{
 	// override the current resource context inputs
 	ctx.Inputs = retInputs
 
-	// scope := parser.NewScope()
-	// scope.InsertValue(bCtx, retInputs, []string{"self"})
 	if err := parser.DecodeExpandBody(bCtx, body, val, ctx.Inputs); err != nil {
 		return fmt.Errorf("failed to decode resource: %w", err)
 	}
