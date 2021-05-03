@@ -1,5 +1,4 @@
 resource "extract" "gosec" {
-  api_version = "v1"
   spec {
     input "file" {}
     type = "json"
@@ -21,7 +20,6 @@ resource "extract" "gosec" {
 }
 
 resource "transform" "gosec" {
-  api_version = "v1"
   spec {
     input "data" {}
     dynamic "data" {
@@ -44,7 +42,6 @@ resource "transform" "gosec" {
 }
 
 resource "load" "gosec" {
-  api_version = "v1"
   spec {
     input "data" {}
     data = self.input.data
@@ -52,7 +49,6 @@ resource "load" "gosec" {
 }
 
 resource "pipeline" "gosec" {
-  api_version = "v1"
   spec {
     input "gosec_results" {
       default = "./testdata/gosec/results.json"
@@ -80,7 +76,6 @@ resource "pipeline" "gosec" {
 
 
 resource "run" "gosec" {
-  api_version = "v1"
   spec {
     resource = "pipeline/gosec"
   }
@@ -88,7 +83,6 @@ resource "run" "gosec" {
 
 
 resource "run" "gosec/extract" {
-  api_version = "v1"
   spec {
     resource = "extract/gosec"
     input "file" {
@@ -98,7 +92,6 @@ resource "run" "gosec/extract" {
 }
 
 resource "query" "gosec_data" {
-  api_version = "v1"
   spec {
     query = <<EOT
       {
@@ -111,7 +104,6 @@ resource "query" "gosec_data" {
 }
 
 resource "criteria" "gosec_status" {
-  api_version = "v1"
   spec {
     query "gosec_data" {}
     condition "no_high" {
@@ -125,7 +117,6 @@ resource "criteria" "gosec_status" {
 }
 
 resource "run" "gosec_criteria" {
-  api_version = "v1"
   spec {
     resource = "criteria/gosec_status"
   }

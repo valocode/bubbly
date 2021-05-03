@@ -1,5 +1,4 @@
 resource "query" "go" {
-  api_version = "v1"
   spec {
     query = <<EOT
       {
@@ -13,7 +12,6 @@ resource "query" "go" {
 }
 
 resource "run" "go_query" {
-  api_version = "v1"
   spec {
     resource = "query/go"
   }

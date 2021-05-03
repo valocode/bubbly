@@ -1,5 +1,4 @@
 resource "extract" "spdx_list" {
-  api_version = "v1"
 
   spec {
     input url {}
@@ -32,8 +31,7 @@ resource "extract" "spdx_list" {
 }
 
 resource "pipeline" "licenses" {
-  api_version = "v1"
-
+  
   spec {
 
     task "extract_spdx_list" {
@@ -47,7 +45,7 @@ resource "pipeline" "licenses" {
 }
 
 resource "run" "licenses_remote" {
-  api_version = "v1"
+
   spec {
     resource = "pipeline/licenses"
 
