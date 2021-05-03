@@ -26,8 +26,6 @@ incomplete and is liable to change at any time.
 
 ```hcl
 resource "extract" "github_fork_count_extract" {
-	api_version = "v1"
-
 	spec {
 		type = "graphql"
 
@@ -175,8 +173,6 @@ Using the Bubbly Language this is as simple as:
 
 ```hcl
 resource "transform" "github_fork_count_transform" {
-	api_version = "v1"
-
 	spec {
 		input "data" {}
 
@@ -252,7 +248,6 @@ we define a `load` resource to _load_ this data to Bubbly like so:
 
 ```hcl
 resource "load" "github_fork_count_load" {
-	api_version = "v1"
 	spec {
 		input "data" {}
 		data = self.input.data
@@ -285,7 +280,6 @@ Bubbly Store for all repositories and their respective fork counts:
 
 ```hcl
 resource "query" "github_fork_count_query" {
-  api_version = "v1"
   spec {
     query = <<EOT
       {
@@ -358,7 +352,6 @@ to define the process of `extract -> transform -> load` as follows:
 
 ```hcl
 resource "pipeline" "github_fork_count_pipeline" {
-	api_version = "v1"
 	spec {
 		task "extract" {
 			resource = "extract/`github_fork_count_extract`"
@@ -429,7 +422,6 @@ repository fork count data, we define a `run` resource to run the `pipeline` res
 
 ```hcl
 resource "run" "github_fork_count_run" {
-	api_version = "v1"
 	spec {
 		resource = "pipeline/github_fork_count_pipeline"
 	}
@@ -475,7 +467,6 @@ the `bubbly` executable.
 
 ```hcl
 resource "run" "github_fork_count_run" {
-	api_version = "v1"
 	spec {
 		resource = "pipeline/github_fork_count_pipeline"
 	}
@@ -501,7 +492,6 @@ load the results of the run to the Bubbly Store, then end.
 
 ```hcl
 resource "run" "github_fork_count_run" {
-	api_version = "v1"
 	spec {
 		resource = "pipeline/github_fork_count_pipeline"
 	}
@@ -525,7 +515,6 @@ interval, loading the results of each interval run to the Bubbly Store
 
 ```hcl
 resource "run" "github_fork_count_run" {
-	api_version = "v1"
 	spec {
 		resource = "pipeline/github_fork_count_pipeline"
 	}
@@ -578,7 +567,6 @@ resource "extract" "sonarqube" {
       "environment": "prod"
     }
   }
-  api_version = "v1"
   spec {
     input "file" {}
     type = "json"
@@ -590,7 +578,6 @@ resource "extract" "sonarqube" {
 }
 
 resource "run" "sonarqube_remote" {
-  api_version = "v1"
   spec {
     remote {}
 

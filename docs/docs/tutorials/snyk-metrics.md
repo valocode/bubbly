@@ -146,7 +146,6 @@ file
 
 ```hcl
 resource "extract" "snyk" {
-  api_version = "v1"
   spec {
     input "file" {}
     type = "json"
@@ -181,7 +180,6 @@ json) to a format that matches the `Bubbly Schema`.
 
 ```hcl
 resource "transform" "snyk" {
-  api_version = "v1"
   spec {
     input "data" {}
 
@@ -213,7 +211,6 @@ Now that our data has been transformed, the next step, is to `load` the data int
 
 ```hcl
 resource "load" "snyk" {
-  api_version = "v1"
   spec {
     input "data" {}
     data = self.input.data
@@ -229,7 +226,6 @@ together the earlier phases into one coherent place.
 
 ```hcl
 resource "pipeline" "snyk" {
-  api_version = "v1"
   spec {
     input "snyk_file" {
       default = "./testdata/snyk/snyk.json"
@@ -262,7 +258,6 @@ Now that the pipeline is in place, we need to inform the `API` that we want to r
 
 ```hcl
 resource "run" "snyk" {
-  api_version = "v1"
   spec {
     resource = "pipeline/snyk"
   }
@@ -273,7 +268,6 @@ resource "run" "snyk" {
 
 ```hcl
 resource "run" "sonarqube/extract" {
-  api_version = "v1"
   spec {
     resource = "extract/snyk"
     input "file" {
@@ -291,7 +285,6 @@ quick query using `Graphql` to fetch the severity of the vulnerabilities.
 
 ```hcl
 resource "query" "snyk_data" {
-  api_version = "v1"
   spec {
     query = <<EOT
             {
@@ -311,7 +304,6 @@ ensure this.
 
 ```hcl
 resource "criteria" "snyk_status" {
-  api_version = "v1"
   spec {
     query "snyk_data" {}
     condition "no_high" {
@@ -331,7 +323,6 @@ The final step, is simply to provide a `run resource` to inform `Bubbly` that it
 
 ```hcl
 resource "run" "snyk_criteria" {
-  api_version = "v1"
   spec {
     resource = "criteria/snyk_status"
   }

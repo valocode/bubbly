@@ -102,8 +102,6 @@ Armed with this knowledge, you write your first definition of a Bubbly resource,
 #
 
 resource "extract" "repo_stats" {
-	api_version = "v1"
-
 	spec {
 		type = "graphql"
 
@@ -163,7 +161,7 @@ This Bubbly file is written in standard HCL, using the notation understood by th
 
 :::caution TODO
 
-This is standard HCL, api_version, spec block for different types of extract, each extract type has different options , bearer token in env variable, graphql query as HCL heredoc, format is HCL type expression (link to detailed guide), mention objects and strings, numbers, {} is map syntax because even format = ... is valid HCL.
+This is standard HCL, spec block for different types of extract, each extract type has different options , bearer token in env variable, graphql query as HCL heredoc, format is HCL type expression (link to detailed guide), mention objects and strings, numbers, {} is map syntax because even format = ... is valid HCL.
 
 ../resources/kinds.md#extract provides the spec for the different source types. We definitely need to provide a detailed guide for the format attribute. I suggest adding an admonition stating this is under construction and a full explanation for the format attribute used in extract/repo_stats for this tutorial is coming soon.
 
@@ -248,8 +246,6 @@ A `transform` is just another kind of resource, so you add the following definit
 # ...
 
 resource "transform" "repo_stats" {
-	api_version = "v1"
-
 	spec {
 		input "data" {}
 
@@ -293,7 +289,6 @@ After the data has been extracted from Github via the `extract/repo_stats` resou
 # ...
 
 resource "load" "repo_stats" {
-	api_version = "v1"
 	spec {
 		input "data" {}
 		data = self.input.data
@@ -341,8 +336,6 @@ The various parts of the pipeline that you have already defined all come togethe
 # ... extract/transform/load definitions first ...
 
 resource "pipeline" "repo_stats" {
-	api_version = "v1"
-
 	spec {
 
 		task "extract" {
@@ -381,7 +374,6 @@ To tie it all together, you add a `run` resource, whose purpose (as its resource
 # ... pipeline definitions next ...
 
 resource "run" "repo_stats" {
-	api_version = "v1"
 	spec {
 		resource = "pipeline/repo_stats"
 	}
