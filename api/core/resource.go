@@ -31,7 +31,7 @@ type ResourceBlockHCLWrapper struct {
 type ResourceBlock struct {
 	ResourceKind       string            `hcl:",label" json:"kind" mapstructure:"kind"`
 	ResourceName       string            `hcl:",label" json:"name" mapstructure:"name"`
-	ResourceAPIVersion APIVersion        `hcl:"api_version,attr" json:"api_version" mapstructure:"api_version"`
+	ResourceAPIVersion APIVersion        `hcl:"api_version,optional" json:"api_version" mapstructure:"api_version"`
 	Metadata           *Metadata         `hcl:"metadata,block" json:"metadata" mapstructure:"metadata"`
 	SpecHCL            ResourceBlockSpec `hcl:"spec,block" json:"-"`
 }
