@@ -876,19 +876,18 @@ func loadTestDataOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile
 func createResJSONOrDie(t *testing.T) core.Data {
 	t.Helper()
 
-	resJSON := core.ResourceBlockJSON{
-		ResourceBlockAlias: core.ResourceBlockAlias{
-			ResourceKind:       "kind",
-			ResourceName:       "name",
-			ResourceAPIVersion: "some version",
-			Metadata: &core.Metadata{
-				Labels: map[string]string{"label": "is a label"},
-			},
+	res := core.ResourceBlock{
+		ResourceKind:       "kind",
+		ResourceName:       "name",
+		ResourceAPIVersion: "some version",
+		Metadata: &core.Metadata{
+			Labels: map[string]string{"label": "is a label"},
 		},
-		SpecRaw: "data {}",
+		SpecRaw: []byte("data {}"),
 	}
-
-	return resJSON.Data()
+	d, err := res.Data()
+	require.NoError(t, err)
+	return d
 }
 
 // runQueryTestsOrDie runs all basic query tests, or fails hard on error.

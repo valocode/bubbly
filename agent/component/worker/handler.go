@@ -116,15 +116,15 @@ func (w *Worker) getRunResource(bCtx *env.BubblyContext, auth *component.Message
 		return nil, fmt.Errorf("failed to marshal graphql query response: %w", err)
 	}
 
-	var resJSON core.ResourceBlockJSON
-	if err := json.Unmarshal(resourceBytes, &resJSON); err != nil {
+	var resBlock core.ResourceBlock
+	if err := json.Unmarshal(resourceBytes, &resBlock); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal resource: %w", err)
 	}
 
-	resBlock, err := resJSON.ResourceBlock()
-	if err != nil {
-		return nil, fmt.Errorf("failed to form resource block from JSON: %w", err)
-	}
+	// resBlock, err := resJSON.ResourceBlock()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to form resource block from JSON: %w", err)
+	// }
 
 	res, err := api.NewResource(&resBlock)
 	if err != nil {

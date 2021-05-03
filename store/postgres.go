@@ -257,107 +257,6 @@ func psqlApplyTable(tx pgx.Tx, tenant string, table core.Table) error {
 	return nil
 }
 
-func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) error {
-	var (
-		sqlStr  string
-		sqlArgs []interface{}
-		err     error
-	)
-
-	// Before generating the SQL query, we want to make sure we have default
-	// values for all the unique fields (and joins) in a data block.
-	// Postgres treats null as a unique value, so the unique constraint would be
-	// violated (according to the bubbly schema) as we can have multiple records
-	// with the same values (if any of those values is null)
-	if node.Data.Policy != core.ReferencePolicy {
-		err = psqlAddUniqueDataFields(table, node.Data)
-		if err != nil {
-			return fmt.Errorf("failed to add default unique values to data block %s: %w", node.Data.TableName, err)
-		}
-	}
-
-	switch node.Data.Policy {
-	case core.CreateUpdatePolicy, core.EmptyPolicy:
-		// We should perform an Upsert (Insert/Update)
-		sqlStr, sqlArgs, err = psqlDataCreateUpdate(tenant, node, table)
-	case core.CreatePolicy:
-		// We should perform an Insert
-		sqlStr, sqlArgs, err = psqlDataCreate(tenant, node, table)
-	case core.ReferencePolicy:
-		// We should perform a Select
-		sqlStr, sqlArgs, err = psqlDataReference(tenant, node, table)
-	default:
-		return fmt.Errorf("data block refers to unsupported policy %s: %s", node.Data.TableName, node.Data.Policy)
-	}
-	if err != nil {
-		return fmt.Errorf("failed to create SQL statement for data block %s with policy %s: %w", node.Data.TableName, node.Data.Policy, err)
-	}
-
-	rows, err := tx.Query(context.Background(), sqlStr, sqlArgs...)
-	// Execute the query
-	if err != nil {
-		return fmt.Errorf("failed to execute query for data block %s: %w", node.Data.TableName, err)
-	}
-	defer rows.Close()
-
-	var (
-		retValues = make(map[string]interface{})
-		numRows   = 0
-	)
-	for rows.Next() {
-		if numRows > 0 {
-			return fmt.Errorf("received more than one row data block %s: %#v", node.Data.TableName, node.Data)
-		}
-		numRows += 1
-		retValues, err = psqlRowValues(rows, table.Name, node.orderedRefFields())
-		if err != nil {
-			return fmt.Errorf("failed to insert data block: %s: %w", table.Name, err)
-		}
-		if rows.Err() != nil {
-			return fmt.Errorf("error while reading SQL row for data block %s: %w", node.Data.TableName, rows.Err())
-		}
-	}
-	if numRows == 0 {
-		return fmt.Errorf("received no rows for data block %s: %#v", node.Data.TableName, node.Data)
-	}
-	// Asign the returned values so that if the child nodes need to resolve
-	// their data references they have values to do so
-	node.Return = retValues
-
-	return nil
-}
-
-// psqlRowValues takes a row and returns the fields/values from the query in a map.
-// To return the list of fields, they are added to a slice of pointers to
-// interface{} in order to get the returned values from a pgx.Row.
-// The fields are returned in a map with the field name as the key and returned
-// value as the value.
-func psqlRowValues(row pgx.Row, tableName string, fields []string) (map[string]interface{}, error) {
-	var (
-		retVal        = make(map[string]interface{}, len(fields)+1)
-		scanValues    = make([]interface{}, len(fields))
-		scanValuePtrs = make([]interface{}, len(fields))
-	)
-	for i := 0; i < len(fields); i++ {
-		scanValuePtrs[i] = &scanValues[i]
-	}
-
-	if err := row.Scan(scanValuePtrs...); err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("failed to scan fields: %s: %w", strings.Join(fields, ","), err)
-		}
-		return nil, nil
-	}
-
-	for i, field := range fields {
-		// Get value from pointer to interface{} by casting to pointer of
-		// interface{} and then dereference
-		retVal[field] = scanValues[i]
-	}
-
-	return retVal, nil
-}
-
 func psqlTableUniqueConstraints(tenant string, table core.Table) string {
 	var (
 		uniqueFields = make([]string, 0)
@@ -410,59 +309,107 @@ func psqlTableCreate(tenant string, table core.Table) (string, error) {
 	return "CREATE TABLE IF NOT EXISTS " + psqlAbsTableName(tenant, table.Name) + " ( " + strings.Join(tableFields, ",") + " );", nil
 }
 
-// psqlDataCreateUpdate generates a sql query for performing an insert/update
-// (i.e. "upsert") query for a given data node
-func psqlDataCreateUpdate(tenant string, node *dataNode, table core.Table) (string, []interface{}, error) {
+func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) error {
 	var (
-		data           = node.Data
-		fieldNames     = node.orderedFields()
-		conflictValues = make([]string, 0, len(data.Fields))
-		uniqueFields   = make([]string, 0)
-		sqlOnConflict  = ""
-		sqlReturning   = ""
+		retValues    map[string]interface{}
+		uniqueFields map[string]struct{}
+		err          error
 	)
-
-	for _, field := range table.Fields {
-		if field.Unique {
-			uniqueFields = append(uniqueFields, field.Name)
+	switch node.Data.Policy {
+	case core.CreateUpdatePolicy, core.EmptyPolicy:
+		uniqueFields, err = psqlAddUniqueDataFields(table, node.Data)
+		if err != nil {
+			return fmt.Errorf("error setting default unique values for data %s: %w", node.Data.TableName, err)
 		}
-	}
-	for _, join := range table.Joins {
-		if join.Unique {
-			uniqueFields = append(uniqueFields, join.Table+tableJoinSuffix)
+		// If there are no unique fields, just perform an INSERT and be done
+		if len(uniqueFields) == 0 {
+			retValues, err = psqlDataInsert(tx, tenant, node, table)
+			break
 		}
+		// If there are unique fields, delete all the non-unique fields so that
+		// we can perform a SELECT on the unique fields and figure out if we
+		// should perform an INSERT or UPDATE.
+		// First, make a copy of data before we start deleting fields
+		var origFields = make(core.DataFields)
+		for field, val := range node.Data.Fields {
+			origFields[field] = val
+			if _, ok := uniqueFields[field]; !ok {
+				delete(node.Data.Fields, field)
+			}
+		}
+		retValues, err = psqlDataSelect(tx, tenant, node, table)
+		if err != nil {
+			return fmt.Errorf("error checking uniqueness of data %s: %w", node.Data.TableName, err)
+		}
+		// Reassign the original data without deleted fields
+		node.Data.Fields = origFields
+		// If there are no values returned, we have a unique data block so
+		// INSERT, otherwise UPDATE
+		if len(retValues) == 0 {
+			retValues, err = psqlDataInsert(tx, tenant, node, table)
+		} else {
+			retValues, err = psqlDataUpdate(tx, tenant, node, table, retValues[tableIDField])
+		}
+
+	case core.CreatePolicy:
+		_, err = psqlAddUniqueDataFields(table, node.Data)
+		if err != nil {
+			return fmt.Errorf("error setting default unique values for data %s: %w", node.Data.TableName, err)
+		}
+		// We should perform an INSERT
+		retValues, err = psqlDataInsert(tx, tenant, node, table)
+	case core.ReferencePolicy:
+		retValues, err = psqlDataSelect(tx, tenant, node, table)
+	default:
+		return fmt.Errorf("data block refers to unsupported policy %s: %s", node.Data.TableName, node.Data.Policy)
 	}
 
-	for _, name := range fieldNames {
-		conflictValues = append(conflictValues, name+"=EXCLUDED."+name)
+	if err != nil {
+		return fmt.Errorf("error performing SQL query on data %s: %w", node.Data.TableName, err)
 	}
+	if len(retValues) == 0 {
+		return fmt.Errorf("no rows returned from SQL query on data %s", node.Data.TableName)
+	}
+	// Asign the returned values so that if the child nodes need to resolve
+	// their data references they have values to do so
+	node.Return = retValues
 
-	// Create the UPSERT / ON CONFLICT part of the SQL statement, if any.
-	if len(uniqueFields) > 0 {
-		sqlOnConflict = fmt.Sprintf(
-			"ON CONFLICT ON CONSTRAINT %s DO UPDATE SET %s",
-			table.Name+psqlTableUniqueSuffix,
-			strings.Join(conflictValues, ","),
-		)
-	}
+	return nil
+
+}
+
+// psqlDataUpdate generates a sql query for performing an insert/update.
+// It requires that we first perform a SELECT to check if there are any conflicts
+// and then either UPDATE (on conflicts) or INSERT otherwise
+func psqlDataUpdate(tx pgx.Tx, tenant string, node *dataNode, table core.Table, id interface{}) (map[string]interface{}, error) {
+	var (
+		data         = node.Data
+		sqlReturning = ""
+	)
 
 	// Create the RETURNING part of the SQL statement, if any.
 	sqlReturning = "RETURNING " + strings.Join(node.orderedRefFields(), ",")
-	values, err := psqlArgValues(node)
-	if err != nil {
-		return "", nil, fmt.Errorf("failed to get SQL arguments: %w", err)
-	}
-	sql := psql.Insert(psqlAbsTableName(tenant, data.TableName)).
-		Columns(fieldNames...).
-		Values(values...).
-		Suffix(sqlOnConflict).
+	sql := psql.Update(psqlAbsTableName(tenant, data.TableName)).
+		Where(sq.Eq{tableIDField: id}).
 		Suffix(sqlReturning)
-	return sql.ToSql()
+	for name, value := range node.Data.Fields {
+		v, err := psqlValue(node, value)
+		if err != nil {
+			return nil, fmt.Errorf("error getting SQL value for field %s: %w", name, err)
+		}
+		sql = sql.Set(name, v)
+	}
+	sqlStr, sqlArgs, err := sql.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	return psqlQuery(tx, node, table, sqlStr, sqlArgs)
 }
 
-// psqlDataCreate generates a sql query for performing an insert, which will
+// psqlDataInsert generates a sql query for performing an insert, which will
 // error if any uniqueness constraints are violated
-func psqlDataCreate(tenant string, node *dataNode, table core.Table) (string, []interface{}, error) {
+func psqlDataInsert(tx pgx.Tx, tenant string, node *dataNode, table core.Table) (map[string]interface{}, error) {
 	var (
 		data         = node.Data
 		fieldNames   = node.orderedFields()
@@ -473,38 +420,107 @@ func psqlDataCreate(tenant string, node *dataNode, table core.Table) (string, []
 	sqlReturning = "RETURNING " + strings.Join(node.orderedRefFields(), ",")
 	values, err := psqlArgValues(node)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to get SQL arguments: %w", err)
+		return nil, fmt.Errorf("failed to get SQL arguments: %w", err)
 	}
 	sql := psql.Insert(psqlAbsTableName(tenant, data.TableName)).
 		Columns(fieldNames...).
 		Values(values...).
 		Suffix(sqlReturning)
-	return sql.ToSql()
+
+	sqlStr, sqlArgs, err := sql.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	return psqlQuery(tx, node, table, sqlStr, sqlArgs)
 }
 
-// psqlDataReference generates a sql query for performing an select, returning
+// psqlDataSelect generates a sql query for performing an select, returning
 // the row which the given data node refers to. This is used so that joins can
 // be made to a piece of data
-func psqlDataReference(tenant string, node *dataNode, table core.Table) (string, []interface{}, error) {
-	var (
-		data      = node.Data
-		refFields = node.orderedRefFields()
-	)
+func psqlDataSelect(tx pgx.Tx, tenant string, node *dataNode, table core.Table) (map[string]interface{}, error) {
+	var refFields = node.orderedRefFields()
 
 	// Return the fields which are being referenced by this data node
 	sql := psql.Select(refFields...).
-		From(psqlAbsTableName(tenant, data.TableName))
+		From(psqlAbsTableName(tenant, node.Data.TableName))
 
 	// Iterate over the field values that have been provided and create the SQL
 	// WHERE clause so that we get the correct record back
 	for name, value := range node.Data.Fields {
 		v, err := psqlValue(node, value)
 		if err != nil {
-			return "", nil, fmt.Errorf("failed to get SQL value from data block field %s.%s: %w", node.Data.TableName, name, err)
+			return nil, fmt.Errorf("failed to get SQL value from data block field %s.%s: %w", node.Data.TableName, name, err)
 		}
 		sql = sql.Where(sq.Eq{name: v})
 	}
-	return sql.ToSql()
+
+	sqlStr, sqlArgs, err := sql.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	return psqlQuery(tx, node, table, sqlStr, sqlArgs)
+}
+
+func psqlQuery(tx pgx.Tx, node *dataNode, table core.Table, sqlStr string, sqlArgs []interface{}) (map[string]interface{}, error) {
+	var (
+		retValues = make(map[string]interface{})
+		hasRow    bool
+		err       error
+	)
+	rows, err := tx.Query(context.Background(), sqlStr, sqlArgs...)
+	// Execute the query
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query for data block %s: %w", node.Data.TableName, err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if hasRow {
+			return nil, fmt.Errorf("received more than one row data block %s: %#v", node.Data.TableName, node.Data)
+		}
+		hasRow = true
+		retValues, err = psqlRowValues(rows, table.Name, node.orderedRefFields())
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert data block: %s: %w", table.Name, err)
+		}
+		if rows.Err() != nil {
+			return nil, fmt.Errorf("error while reading SQL row for data block %s: %w", node.Data.TableName, rows.Err())
+		}
+	}
+	return retValues, nil
+}
+
+// psqlRowValues takes a row and returns the fields/values from the query in a map.
+// To return the list of fields, they are added to a slice of pointers to
+// interface{} in order to get the returned values from a pgx.Row.
+// The fields are returned in a map with the field name as the key and returned
+// value as the value.
+func psqlRowValues(row pgx.Row, tableName string, fields []string) (map[string]interface{}, error) {
+	var (
+		retVal        = make(map[string]interface{}, len(fields)+1)
+		scanValues    = make([]interface{}, len(fields))
+		scanValuePtrs = make([]interface{}, len(fields))
+	)
+	for i := 0; i < len(fields); i++ {
+		scanValuePtrs[i] = &scanValues[i]
+	}
+
+	if err := row.Scan(scanValuePtrs...); err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("failed to scan fields: %s: %w", strings.Join(fields, ","), err)
+		}
+		return nil, nil
+	}
+
+	for i, field := range fields {
+		// Get value from pointer to interface{} by casting to pointer of
+		// interface{} and then dereference
+		retVal[field] = scanValues[i]
+	}
+
+	return retVal, nil
 }
 
 // psqlArgValues takes a data node and returns the values of for the fields
@@ -599,13 +615,15 @@ func psqlAbsTableName(tenant string, table string) string {
 	return psqlBubblySchemaPrefix + tenant + "." + table
 }
 
-func psqlAddUniqueDataFields(table core.Table, data *core.Data) error {
+func psqlAddUniqueDataFields(table core.Table, data *core.Data) (map[string]struct{}, error) {
+	var uniqueFields = make(map[string]struct{})
 	for _, field := range table.Fields {
 		if field.Unique {
+			uniqueFields[field.Name] = struct{}{}
 			if _, ok := data.Fields[field.Name]; !ok {
 				val, err := psqlDefaultFieldValue(field.Type)
 				if err != nil {
-					return fmt.Errorf("failed to get default value for unique table field %s.%s: %w", table.Name, field.Name, err)
+					return nil, fmt.Errorf("failed to get default value for unique table field %s.%s: %w", table.Name, field.Name, err)
 				}
 				data.Fields[field.Name] = val
 			}
@@ -614,6 +632,7 @@ func psqlAddUniqueDataFields(table core.Table, data *core.Data) error {
 	for _, join := range table.Joins {
 		if join.Unique {
 			fieldName := join.Table + tableJoinSuffix
+			uniqueFields[fieldName] = struct{}{}
 			if _, ok := data.Fields[fieldName]; !ok {
 				// The forgeign key can never be -1, and so if we are generating
 				// a default value we want to make sure this will not actually
@@ -624,7 +643,7 @@ func psqlAddUniqueDataFields(table core.Table, data *core.Data) error {
 			}
 		}
 	}
-	return nil
+	return uniqueFields, nil
 }
 
 func psqlDefaultFieldValue(ty cty.Type) (cty.Value, error) {

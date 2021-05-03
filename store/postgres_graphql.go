@@ -150,6 +150,7 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		node      = qb.node
 		subFields = make([]*ast.Field, 0)
 
+		filterOn bool
 		// The `order_by` GraphQL argument can only be processed after all table aliases
 		// are known. That includes the tables referenced by the GraphQL subfields.
 		// Therefore, upon encountering the `order_by` argument in one of the root
@@ -207,6 +208,11 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		// Process the arguments that are not GraphQL/DB field/column names...
 
 		// FIXME: maybe use a switch for what follows, instead of a set of ifs?
+
+		if arg.Name.Value == filterOnID {
+			filterOn = arg.Value.GetValue().(bool)
+			argIsResolved = true
+		}
 
 		// The order_by argument is allowed only at the top level. Futhermore, it cannot be processed until
 		// all subfields had been processed, because at the top level the alias names of tables are not known.
@@ -313,6 +319,7 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		}
 
 		var (
+			joinStr         string
 			leftTable       = tc.table
 			leftTableAlias  = tc.alias
 			rightTable      = edgeToRelatedNode.node.table.Name
@@ -320,16 +327,20 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		)
 		switch edgeToRelatedNode.rel {
 		case oneToOne, oneToMany:
-			qb.sql = qb.sql.LeftJoin(joinOn(
+			joinStr = joinOn(
 				tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
 				tableColumn(leftTableAlias, tableIDField),
-				tableColumn(rightTableAlias, foreignKeyField(leftTable))))
+				tableColumn(rightTableAlias, foreignKeyField(leftTable)))
 		case belongsTo:
-			qb.sql = qb.sql.LeftJoin(
-				joinOn(
-					tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
-					tableColumn(rightTableAlias, tableIDField),
-					tableColumn(leftTableAlias, foreignKeyField(rightTable))))
+			joinStr = joinOn(
+				tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
+				tableColumn(rightTableAlias, tableIDField),
+				tableColumn(leftTableAlias, foreignKeyField(rightTable)))
+		}
+		if filterOn {
+			qb.sql = qb.sql.InnerJoin(joinStr)
+		} else {
+			qb.sql = qb.sql.LeftJoin(joinStr)
 		}
 
 		// Recursively resolve for the subField `B`, which may contain further nested fields.
@@ -343,6 +354,11 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 			return err
 		}
 		tc.children = append(tc.children, subColumns)
+	}
+
+	// By default if no order_by specified, order by the primary key in DESC order
+	if orderByArg == nil && qb.depth == 1 {
+		qb.sql = qb.sql.OrderBy(tableColumn(tc.alias, tableIDField) + " DESC")
 	}
 
 	// Process order_by, if available. At this point all table aliases are known.

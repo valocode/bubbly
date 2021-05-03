@@ -13,7 +13,7 @@ import (
 
 func DecodeBody(bCtx *env.BubblyContext, body hcl.Body, val interface{}, inputs cty.Value) error {
 	if diags := gohcl.DecodeBody(body, newEvalContext(inputs), val); diags.HasErrors() {
-		return fmt.Errorf(`failed to decode body using type "%s": %s`, reflect.TypeOf(val).String(), diags.Error())
+		return NewParserError(val, diags)
 	}
 	return nil
 }
@@ -26,41 +26,60 @@ func DecodeExpandBody(bCtx *env.BubblyContext, body hcl.Body, val interface{}, i
 	// get the list of variables/traversals that exist
 	traversals := walkVariables(bCtx, node, reflect.TypeOf(val))
 
-	inputs, err := processVariables(bCtx, inputs, traversals)
-	if err != nil {
-		return fmt.Errorf("failed to process variables: %w", err)
+	inputs, diags := processVariables(bCtx, inputs, traversals)
+	if diags.HasErrors() {
+		return NewParserError(val, diags)
 	}
 
 	eCtx := newEvalContext(inputs)
 	expBody := dynblock.Expand(body, eCtx)
 	if diags := gohcl.DecodeBody(expBody, eCtx, val); diags.HasErrors() {
-		return fmt.Errorf(`failed to decode body using type "%s": %s`, reflect.TypeOf(val).String(), diags.Error())
+		return NewParserError(val, diags)
 	}
 
 	return nil
 }
 
-func processVariables(bCtx *env.BubblyContext, inputs cty.Value, traversals []hcl.Traversal) (cty.Value, error) {
-	dataRefs := cty.EmptyObjectVal
+func processVariables(bCtx *env.BubblyContext, inputs cty.Value, traversals []hcl.Traversal) (cty.Value, hcl.Diagnostics) {
+	var (
+		diags    hcl.Diagnostics
+		dataRefs = cty.EmptyObjectVal
+	)
 	for _, tr := range traversals {
 		switch tr.RootName() {
 		case "self":
 			if len(tr) == 1 {
 				// TODO: do we want to be strict here and just error if we have
 				// unknown traversals?
-				return cty.NilVal, fmt.Errorf("unknown variable %s", traversalString(bCtx, tr))
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "unknown variable " + traversalString(bCtx, tr),
+					Detail:   "unknown variable found while traversing HCL: " + traversalString(bCtx, tr),
+					Subject:  tr.SourceRange().Ptr(),
+				})
 			}
 			switch traverserName(bCtx, tr[1]) {
 			case "data":
 				dataRef, err := newDataRef(bCtx, tr)
 				if err != nil {
-					return cty.NilVal, fmt.Errorf("could not create DataRef from variable %s", traversalString(bCtx, tr))
+					diags = append(diags, &hcl.Diagnostic{
+						Severity: hcl.DiagError,
+						Summary:  "reference to data cannot be created for variable " + traversalString(bCtx, tr),
+						Detail:   "reference to data cannot be created for variable " + traversalString(bCtx, tr),
+						Subject:  tr.SourceRange().Ptr(),
+					})
+					break
 				}
 				dataRefs = appendDataRef(dataRefs, dataRef, traverserName(bCtx, tr[2]), traverserName(bCtx, tr[3]))
 			}
 
 		default:
-			return cty.NilVal, fmt.Errorf(`unknown variable reference "%s". Only references to self are supported`, traversalString(bCtx, tr))
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "unknown variable reference " + traversalString(bCtx, tr),
+				Detail:   "only references to self are supported, unknown variable reference " + traversalString(bCtx, tr),
+				Subject:  tr.SourceRange().Ptr(),
+			})
 		}
 	}
 
@@ -75,7 +94,7 @@ func processVariables(bCtx *env.BubblyContext, inputs cty.Value, traversals []hc
 	}
 
 	inputsMap["data"] = dataRefs
-	return cty.ObjectVal(inputsMap), nil
+	return cty.ObjectVal(inputsMap), diags
 }
 
 func newEvalContext(inputs cty.Value) *hcl.EvalContext {
@@ -159,6 +178,8 @@ func traverserName(bCtx *env.BubblyContext, tr hcl.Traverser) string {
 		return tt.Name
 	case hcl.TraverseAttr:
 		return tt.Name
+	case hcl.TraverseIndex:
+		return tt.Key.AsString()
 	default:
 		bCtx.Logger.Panic().Msgf("Unknown type of traverser: %s", reflect.TypeOf(tt).String())
 	}

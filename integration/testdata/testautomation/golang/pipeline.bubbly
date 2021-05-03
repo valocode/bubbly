@@ -23,24 +23,15 @@ resource "transform" "gotest" {
     spec {
         input "data" {}
 
-        data "repo_version" {
+        data "commit" {
             fields = {
-                "commit": "madeupcommit54321"
+                "id": "madeupcommit54321"
             }
         }
 
         data "test_run" {
-            joins = ["repo_version"]
             fields = {
                 "name": "testrun123"
-                "description": "Golang unit tests in CI"
-            }
-        }
-
-        data "test_set" {
-            joins = ["test_run"]
-            fields = {
-                "name": "golang_unit_tests"
             }
         }
 
@@ -49,10 +40,9 @@ resource "transform" "gotest" {
             iterator = it
             labels = ["test_case"]
             content {
-                joins = ["test_set"]
                 fields = {
                     "name": "${it.value.Package}/${it.value.Test}"
-                    "status": it.value.Action
+                    "result": lower(it.value.Action) == "pass"
                 }
             }
         }

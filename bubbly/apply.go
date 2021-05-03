@@ -36,7 +36,7 @@ func Apply(bCtx *env.BubblyContext, filename string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create bubbly client: %w", err)
 	}
-	client.Close()
+	defer client.Close()
 
 	for _, res := range resParser.Resources {
 		bCtx.Logger.Debug().Msgf(`Applying resource "%s"`, res.String())

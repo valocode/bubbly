@@ -1,0 +1,17 @@
+resource "query" "gosec" {
+    spec {
+        query = <<EOT
+            {
+                code_issue {
+                    severity
+                }
+            }
+        EOT
+    }
+}
+
+resource "run" "gosec" {
+    spec {
+        resource = "query/gosec"
+    }
+}

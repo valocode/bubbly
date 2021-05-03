@@ -1,0 +1,39 @@
+
+resource "release" "git" {
+    spec {
+        project = "bubbly"
+        // do not set a version, this should come from git by default
+        // version = ""
+
+        git {
+            name = "test-repo"
+            // repo = "./testdata/git/repo1.git"
+        }
+
+        // Can have either git or artifact, but not both
+        // artifact { 
+        //     name = "bubbly"
+        //     location = "docker://bubbly_bubbly"
+        // }
+
+        stage "Artifact" {
+            criteria "artifact" {
+                
+            }
+        }
+        stage "Linting" {
+            criteria "gosec" {}
+        }
+        stage "Testing" {
+            criteria "unit_test" {}
+            criteria "integration_test" {}
+        }
+
+    }
+}
+
+resource "run" "release-git" {
+    spec {
+        resource = "release/git"
+    }
+}

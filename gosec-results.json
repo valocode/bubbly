@@ -1,0 +1,375 @@
+{
+	"Golang errors": {},
+	"Issues": [
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "22",
+				"URL": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/interval/zip.go",
+			"code": "62: \n63: \t\ttargetFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())\n64: \t\tif err != nil {\n",
+			"line": "63",
+			"column": "22"
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "22",
+				"URL": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/api/v1/release.go",
+			"code": "398: \tloc := strings.TrimPrefix(a.Location, artifactFilePrefix)\n399: \tf, err := os.Open(loc)\n400: \tif err != nil {\n",
+			"line": "399",
+			"column": "12"
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"ID": "409",
+				"URL": "https://cwe.mitre.org/data/definitions/409.html"
+			},
+			"rule_id": "G110",
+			"details": "Potential DoS vulnerability via decompression bomb",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/interval/zip.go",
+			"code": "68: \n69: \t\tif _, err := io.Copy(targetFile, fileReader); err != nil {\n70: \t\t\treturn err\n",
+			"line": "69",
+			"column": "16"
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"ID": "118",
+				"URL": "https://cwe.mitre.org/data/definitions/118.html"
+			},
+			"rule_id": "G601",
+			"details": "Implicit memory aliasing in for loop.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/store/schema.go",
+			"code": "93: \n94: \t\taddImplicitJoins(schema, t.Tables, \u0026t)\n95: \t\t// Clear the child tables\n",
+			"line": "94",
+			"column": "38"
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "22",
+				"URL": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G305",
+			"details": "File traversal when extracting zip/tar archive",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/interval/zip.go",
+			"code": "45: \tfor _, file := range reader.File {\n46: \t\tpath := filepath.Join(target, file.Name)\n47: \t\tif file.FileInfo().IsDir() {\n",
+			"line": "46",
+			"column": "11"
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "276",
+				"URL": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/interval/zip.go",
+			"code": "40: func unzipFromReader(reader zip.Reader, target string) error {\n41: \tif err := os.MkdirAll(target, 0755); err != nil {\n42: \t\treturn err\n",
+			"line": "41",
+			"column": "12"
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "276",
+				"URL": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/interval/json.go",
+			"code": "25: \t// if the file is nested, create necessary parent directories\n26: \tif err := os.MkdirAll(filepath.Dir(tmpFile), 0755); err != nil {\n27: \t\treturn \"\", err\n",
+			"line": "26",
+			"column": "12"
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G307",
+			"details": "Deferring unsafe method \"Close\" on type \"*os.File\"",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/interval/zip.go",
+			"code": "66: \t\t}\n67: \t\tdefer targetFile.Close()\n68: \n",
+			"line": "67",
+			"column": "3"
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G307",
+			"details": "Deferring unsafe method \"Close\" on type \"*os.File\"",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/api/v1/release.go",
+			"code": "402: \t}\n403: \tdefer f.Close()\n404: \n",
+			"line": "403",
+			"column": "2"
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G307",
+			"details": "Deferring unsafe method \"Close\" on type \"*os.File\"",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/api/v1/extract.go",
+			"code": "1006: \t}\n1007: \tdefer f.Close()\n1008: \n",
+			"line": "1007",
+			"column": "2"
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G307",
+			"details": "Deferring unsafe method \"Close\" on type \"*os.File\"",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/api/v1/extract.go",
+			"code": "961: \t}\n962: \tdefer f.Close()\n963: \n",
+			"line": "962",
+			"column": "2"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/store/store.go",
+			"code": "224: \t}\n225: \ts.updateSchema(tenant, bubblySchema)\n226: \treturn nil\n",
+			"line": "225",
+			"column": "2"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/store/schemagraph.go",
+			"code": "201: \t\t// Recurse\n202: \t\tnodes.connectFrom(table.Tables, node)\n203: \n",
+			"line": "202",
+			"column": "3"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/store/graphql.go",
+			"code": "49: \t// Create the relationships among the adjacent nodes\n50: \tgraph.traverse(func(node *schemaNode) error {\n51: \t\taddGraphEdges(node, fields)\n52: \t\treturn nil\n53: \t})\n54: \n",
+			"line": "50-53",
+			"column": "2"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/store/graphql.go",
+			"code": "43: \t// Traverse the schema graph and add each node/table to the graphql fields\n44: \tgraph.traverse(func(node *schemaNode) error {\n45: \t\taddGraphFields(*node.table, fields)\n46: \t\treturn nil\n47: \t})\n48: \n",
+			"line": "44-47",
+			"column": "2"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/server/auth.go",
+			"code": "43: \t// Have to close the body immediately so that we can re-write to it\n44: \tc.Request().Body.Close()\n45: \tc.Request().Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))\n",
+			"line": "44",
+			"column": "2"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/parser/parser.go",
+			"code": "76: \t\tfiles := []string{}\n77: \t\tfilepath.Walk(filename, func(path string, file os.FileInfo, err error) error {\n78: \t\t\tif filepath.Ext(path) == \".bubbly\" {\n79: \t\t\t\tfiles = append(files, path)\n80: \t\t\t}\n81: \t\t\treturn nil\n82: \t\t})\n83: \t\treturn files, nil\n",
+			"line": "77-82",
+			"column": "3"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/interval/zip.go",
+			"code": "47: \t\tif file.FileInfo().IsDir() {\n48: \t\t\tos.MkdirAll(path, file.Mode())\n49: \t\t\tcontinue\n",
+			"line": "48",
+			"column": "4"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/integration/testdata/test_helper.go",
+			"code": "24: \tbCtx := env.NewBubblyContext()\n25: \tbCtx.UpdateLogLevel(zerolog.DebugLevel)\n26: \n",
+			"line": "25",
+			"column": "2"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/cmd/schema/apply/apply.go",
+			"code": "90: \n91: \tcmd.MarkFlagRequired(\"filename\")\n92: \n",
+			"line": "91",
+			"column": "2"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/cmd/apply/apply.go",
+			"code": "90: \n91: \tcmd.MarkFlagRequired(\"filename\")\n92: \n",
+			"line": "91",
+			"column": "2"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/client/http.go",
+			"code": "65: \t\tvar httpError echo.HTTPError\n66: \t\tjson.Unmarshal(body, \u0026httpError)\n67: \t\treturn nil, fmt.Errorf(`%s: %s`, resp.Status, httpError.Message)\n",
+			"line": "66",
+			"column": "3"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/api/v1/release.go",
+			"code": "337: \t// Ignore the returned error, as it shouldn't be triggered\n338: \ttagrefs.ForEach(func(t *plumbing.Reference) error {\n339: \t\t// If the tag ref is for the same commit, we have a match and so add the\n340: \t\t// tag to the commit data\n341: \t\tif ref.Hash() == t.Hash() {\n342: \t\t\ttag = t.Name().Short()\n343: \t\t}\n344: \t\treturn nil\n345: \t})\n346: \treturn tag, commit, nil\n",
+			"line": "338-345",
+			"column": "2"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/api/v1/extract.go",
+			"code": "1046: \n1047: \t\t\t\tf(data, ty.AttributeType(x), path, 0)\n1048: \t\t\t\tpath = path[0:pathIdx]\n",
+			"line": "1047",
+			"column": "5"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/agent/component/core.go",
+			"code": "182: \t\t\t\t\t\tMsg(\"failed to marshal reply into raw bytes\")\n183: \t\t\t\t\tc.EConn.Publish(reply, Reply{Data: nil, Error: fmt.Errorf(\"failed to marshal reply into raw bytes: %w\", err).Error()})\n184: \t\t\t\t\treturn\n",
+			"line": "183",
+			"column": "6"
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"ID": "703",
+				"URL": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled.",
+			"file": "/Users/jacoblarfors/work/bubbly/bubbly/agent/component/core.go",
+			"code": "165: \t\t\t\tif sub.Reply {\n166: \t\t\t\t\tc.EConn.Publish(reply, Reply{Data: nil, Error: fmt.Errorf(\"failed to handle suscription: %w\", err).Error()})\n167: \t\t\t\t\treturn\n",
+			"line": "166",
+			"column": "6"
+		}
+	],
+	"Stats": {
+		"files": 102,
+		"lines": 12703,
+		"nosec": 0,
+		"found": 26
+	}
+}

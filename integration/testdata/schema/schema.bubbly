@@ -8,32 +8,188 @@
 # to have to manage a multitude of individual schema files.
 #
 
-#
-# For integration/testdata/testautomation/golang/*.bubbly
-# and various Go tests.
-#
+table "project" {
+    field "id" {
+        type = string
+        unique = true
+    }
+    field "name" {
+        type = string
+    }
+}
+
 table "repo" {
     field "name" {
         type = string
         unique = true
     }
-    table "repo_version" {
-        field "commit" {
+
+    table "branch" {
+        // A branch is unique by the repo that it belongs to
+        unique = true
+
+        field "name" {
+            type = string
+            unique = true
+        }
+    }
+    // A specific commit/version in a git repository
+    table "commit" {
+        // A commit is unique by the branch that it belongs to
+        unique = true
+
+        field "id" {
             type = string
             unique = true
         }
         field "tag" {
             type = string
         }
-        field "branch" {
+        // Would be really cool to store the time of a commit, and then we can
+        // track how long it takes to do things, e.g. time to deploy
+        field "time" {
             type = string
         }
+
+        join "branch" {}
+    }
+
+    join "project" { unique = true }
+}
+
+table "artifact" {
+    // The name of the artifact
+    field "name" {
+        type = string
+    }
+    // The sha256 of an artifact shall uniquely identify it
+    field "sha256" {
+        type = string
+        unique = true
+    }
+    // A url, or path to a docker image. Should always start with a type, e.g.
+    // https:// or docker:// or file://
+    field "location" {
+        type = string
     }
 }
 
-table "code_issue" {
-    join "repo_version" {}
+// #############################
+// RELEASE
+// #############################
+
+// release has no unique constraints but can be identified through it's release items
+table "release" {
+    // TODO: what other fields should a release have?
     field "name" {
+        type = string
+        unique = true 
+    }
+    field "version" {
+        type = string
+        unique = true 
+    }
+
+    join "project" { unique = true }
+}
+
+// release_item is used to represent what we are releasing in a single release
+// and can be of different types: git, artifact or release.
+// Based on the type it should have a join to one of those tables
+table "release_item" {
+
+    // type should be one of git (commit), artifact or release
+    field "type" {
+        type = string
+    }
+
+    // Join to release. A release can have one or more release_items.
+    // A release_item can belong to only one release, because it can have
+    // crtieria associated with it, which are specific to a release
+    join "release" { }
+
+    // Join to the different item tables with a one-to-one relationship.
+    // Only at most and at least one of these joins should exist, based on the
+    // "type" field
+    join "commit" {
+        single = true
+        unique = true
+    }
+    join "artifact" {
+        single = true
+        unique = true
+    }
+    // TODO: this is a problem because this creates a second join from release_item
+    // to release... It could be solved by adding an alias
+    // join "release" {
+    //     alias = "item_release"
+    //     single = true
+    //     unique = true
+    // }
+}
+
+// release_entry is used to record/log an event performed on a release,
+// such as running of unit tests, or the creation of an artifact.
+// release_entry is created by running a criteria and should contain the output
+// from the running of that event
+table "release_entry" {
+    field "name" {
+        type = string
+        unique = true
+    }
+    field "result" {
+        type = bool
+    }
+
+    // TODO: what other fields do we want to store? Probably something saying
+    // *why* the criteria failed (a reason) and also perhaps the GraphQL
+    // query used so that we could fetch the data? E.g.
+    // field "query" { type = string}
+    // field "reason" { type = string}
+
+    // A release_entry is unique by it's join to a release
+    join "release" { unique = true }
+    // A release does not always have a release_criteria for each release_entry
+    join "release_criteria" { }
+    // Join on the _resource criteria that created this entry release_entry
+    join "_resource" { }
+}
+
+table "release_stage" {
+    field "name" {
+        type = string
+        unique = true
+    }
+
+    join "release" { 
+        unique = true
+    }
+}
+
+table "release_criteria" {
+    field "entry_name" {
+        type = string
+        unique = true
+    }
+    join "release_stage" { unique = true }
+}
+
+// #############################
+// CODE_ISSUE
+// #############################
+
+table "code_scan" {
+    field "tool" {
+        type = string
+    }
+    join "release" {}
+}
+
+table "code_issue" {
+    field "id" {
+        type = string
+    }
+    field "message" {
         type = string
     }
     field "severity" {
@@ -41,54 +197,50 @@ table "code_issue" {
     }
     field "type" {
         type = string
+        // security, quality,
     }
+    join "code_scan" {}
 }
 
+// #############################
+// TEST_RUN
+// #############################
+
 table "test_run" {
-    field "repo_version_id" {
-        type = number
+    field "tool" {
+        type = string
+    }
+    field "type" {
+        type = string
     }
     field "name" {
         type = string
         unique = true
     }
-    field "description" {
-        type = string
-    }
     field "elapsed" {
         type = number
     }
-    table "test_set" {
+    field "result" {
+        type = bool
+    }
+    table "test_case" {
         field "name" {
             type = string
         }
-        field "description" {
+        field "result" {
+            type = bool
+        }
+        field "message" {
             type = string
         }
-        table "test_case" {
-            field "name" {
-                type = string
-            }
-            field "status" {
-                type = string
-            }
-            table "step" {
-                field "name" {
-                    type = string
-                }
-                join "step" {}
-            }
-            table "failure" {
-                field "type" {
-                    type = string
-                }
-                field "message" {
-                    type = string
-                }
-            }
-        }
     }
+
+    join "release" { }
 }
+
+// #############################
+// OSS
+// #############################
 
 #
 # For integration/testdata/resources/v1/extract/licenses/licenses.bubbly
@@ -106,6 +258,10 @@ table "spdx_license" {
     }
 }
 
+
+// #############################
+// GITHUB METRICS
+// #############################
 #
 # For integration/testdata/resources/v1/extract/graphql/github.bubbly
 #

@@ -173,7 +173,7 @@ func DefaultNATSServerConfig() *NATSServerConfig {
 func DefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
 		ClientType: HTTPClientType,
-		AuthToken:  defaultEnv("BUBBLY_AUTH_TOKEN", DefaultClientAuthToken),
+		AuthToken:  defaultEnv("BUBBLY_TOKEN", DefaultClientAuthToken),
 		BubblyAddr: defaultEnv("BUBBLY_ADDR", DefaultBubblyAddr),
 		NATSAddr:   defaultEnv("BUBBLY_NATS_ADDR", DefaultNATSAddr),
 	}

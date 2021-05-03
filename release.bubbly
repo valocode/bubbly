@@ -1,0 +1,18 @@
+
+// release {
+//     git {}
+
+//     stage "Artifact" {
+//         criteria "artifact" {}
+//     }
+//     stage "Code Analysis" {
+//         criteria "gofmt" {}
+//     }
+//     stage "Testing" {
+//         criteria "unit_test" {}
+//         criteria "integration_test" {}
+//     }
+//     stage "Security" {
+//         criteria "gosec" {}
+//     }
+// }
