@@ -1,7 +1,6 @@
 //  defines a data source and a format for the data, and returns a cty.Value
 // representation of the external data.
 resource "query" "golang_unit" {
-  api_version = "v1"
   spec {
     query = <<EOT
       {
@@ -31,7 +30,6 @@ resource "query" "golang_unit" {
 }
 
 resource "run" "golang_query" {
-  api_version = "v1"
   spec {
     resource = "query/golang_unit"
   }

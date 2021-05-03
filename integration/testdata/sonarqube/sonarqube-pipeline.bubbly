@@ -7,7 +7,6 @@ resource "extract" "sonarqube" {
             "environment": "prod"
         }
     }
-    api_version = "v1"
     spec {
         input "file" {}
         type = "json"
@@ -36,7 +35,6 @@ resource "extract" "sonarqube" {
 }
 
 resource "extract" "git" {
-    api_version = "v1"
     metadata {
         labels = {
             "environment": "prod"
@@ -56,7 +54,6 @@ resource "extract" "git" {
 // defines a transformation or conversion of data from an Extract and outputs
 // a mapping of the extracted data to the defined data schema.
 resource "transform" "sonarqube" {
-    api_version = "v1"
     metadata {
         labels = {
             "environment": "prod"
@@ -107,7 +104,6 @@ resource "load" "sonarqube" {
             "environment": "prod"
         }
     }
-    api_version = "v1"
     spec {
         input "data" {}
         // what do we need here?!
@@ -124,7 +120,6 @@ resource "pipeline" "sonarqube" {
             "environment": "prod"
         }
     }
-    api_version = "v1"
     spec {
         input "file" {}
         input "repo" {}
@@ -174,7 +169,6 @@ resource "pipeline" "sonarqube" {
 
 // A run resource runs a resource.
 resource "run" "sonarqube_pipeline" {
-    api_version = "v1"
     metadata {
         labels = {
             "environment": "prod"
@@ -196,7 +190,6 @@ resource "run" "sonarqube_pipeline" {
 
 // Run the extract resource
 resource "run" "sonarqube_extract" {
-    api_version = "v1"
     metadata {
         labels = {}
     }

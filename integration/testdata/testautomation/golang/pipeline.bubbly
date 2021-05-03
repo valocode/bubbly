@@ -1,6 +1,5 @@
 
 resource "extract" "gotest" {
-    api_version = "v1"
     // this is an input to the extract to make it reusable
     spec {
         input "file" {}
@@ -21,7 +20,6 @@ resource "extract" "gotest" {
 }
 
 resource "transform" "gotest" {
-    api_version = "v1"
     spec {
         input "data" {}
 
@@ -62,7 +60,6 @@ resource "transform" "gotest" {
 }
 
 resource "load" "gotest" {
-    api_version = "v1"
     spec {
         input "data" {}
         data = self.input.data
@@ -70,7 +67,6 @@ resource "load" "gotest" {
 }
 
 resource "pipeline" "gotest" {
-    api_version = "v1"
     spec {
         input "file" {}
         // Each task in a pipeline has an output, similar to resources,
@@ -97,7 +93,6 @@ resource "pipeline" "gotest" {
 }
 
 resource "run" "gotest" {
-    api_version = "v1"
     spec {
         // specify the name of the pipeline resource to execute
         resource = "pipeline/gotest"

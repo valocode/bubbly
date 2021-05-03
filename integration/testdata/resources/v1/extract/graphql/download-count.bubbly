@@ -15,7 +15,6 @@
 #
 
 resource "extract" "e1" {
-	api_version = "v1"
 
 	spec {
 		type = "graphql"
@@ -139,7 +138,6 @@ resource "extract" "e1" {
 }
 
 resource "transform" "t1" {
-	api_version = "v1"
 
 	spec {
 		input "data" {}
@@ -207,7 +205,6 @@ resource "transform" "t1" {
 }
 
 resource "load" "l1" {
-	api_version = "v1"
 	spec {
 		input "data" {}
 		data = self.input.data
@@ -215,7 +212,6 @@ resource "load" "l1" {
 }
 
 resource "pipeline" "p1" {
-	api_version = "v1"
 	spec {
 		task "extract" {
 			resource = "extract/e1"
@@ -236,7 +232,6 @@ resource "pipeline" "p1" {
 }
 
 resource "run" "pr1" {
-	api_version = "v1"
 	spec {
 		resource = "pipeline/p1"
 	}

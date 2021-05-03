@@ -12,7 +12,6 @@
 #
 
 resource "extract" "bubbly_repo" {
-	api_version = "v1"
 
 	spec {
 		type = "graphql"
@@ -100,7 +99,6 @@ resource "extract" "bubbly_repo" {
 }
 
 resource "transform" "bubbly_repo" {
-	api_version = "v1"
 
 	spec {
 		input "data" {}
@@ -155,7 +153,6 @@ resource "transform" "bubbly_repo" {
 }
 
 resource "load" "bubbly_repo" {
-	api_version = "v1"
 	spec {
 		input "data" {}
 		data = self.input.data
@@ -163,7 +160,6 @@ resource "load" "bubbly_repo" {
 }
 
 resource "pipeline" "bubbly_repo" {
-	api_version = "v1"
 
 	spec {
 		task "extract" {
@@ -185,7 +181,6 @@ resource "pipeline" "bubbly_repo" {
 }
 
 resource "run" "bubbly_repo" {
-	api_version = "v1"
 	spec {
 		resource = "pipeline/bubbly_repo"
 	}

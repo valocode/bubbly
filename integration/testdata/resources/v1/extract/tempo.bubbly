@@ -36,7 +36,6 @@
 #
 
 resource "extract" "account_id" {
-    api_version = "v1"
 
     spec {
         type = "rest"
@@ -76,7 +75,6 @@ resource "extract" "account_id" {
 # Retrieve from Tempo the list of exact start/end dates for each period,
 # defined by the environmental variables TEMPO_FROM and TEMPO_TO
 resource "extract" "periods" {
-    api_version = "v1"
 
     spec {
         type = "rest"
@@ -108,7 +106,6 @@ resource "extract" "periods" {
 # we already come knowing `accountId` value which we had acquired in `extract/account_id`
 # using a different API (using Jira API, not Tempo's).
 resource "extract" "timesheet_approvals" {
-    api_version = "v1"
     
     spec {
         input account {}
@@ -145,7 +142,6 @@ resource "extract" "timesheet_approvals" {
 }
 
 resource "transform" "compute" {
-    api_version = "v1"
     spec {
         input "timesheet_approvals" {}
         dynamic "data" {
@@ -165,7 +161,6 @@ resource "transform" "compute" {
 }
 
 resource "load" "l1" {
-    api_version = "v1"
     spec {
         input "data" {}
         data = self.input.data
@@ -173,7 +168,6 @@ resource "load" "l1" {
 }
 
 resource "pipeline" "tempo_timesheet" {
-    api_version = "v1"
 
     spec {
         task "extract_account_id" {
@@ -207,7 +201,6 @@ resource "pipeline" "tempo_timesheet" {
 }
 
 resource "pipeline_run" "tempo_timesheet" {
-    api_version = "v1"
     spec {
         #interval = "6h"
         pipeline = "pipeline/tempo_timesheet"

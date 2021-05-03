@@ -1,5 +1,4 @@
 resource "query" "shakespeare_quote" {
-  api_version = "v1"
   spec {
     query = <<EOT
       {
@@ -16,7 +15,6 @@ resource "query" "shakespeare_quote" {
 // Evaluation of these operations yields a boolean return value representing
 // success or failure of the criteria.
 resource "criteria" "shakespeare" {
-  api_version = "v1"
   spec {
     query "shakespeare_quote" {}
     condition "a" {
@@ -44,7 +42,6 @@ resource "criteria" "shakespeare" {
 }
 
 resource "run" "shakespeare_criteria" {
-  api_version = "v1"
   spec {
     resource = "criteria/shakespeare"
   }

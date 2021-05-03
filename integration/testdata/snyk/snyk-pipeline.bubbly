@@ -1,5 +1,4 @@
 resource "extract" "snyk" {
-    api_version = "v1"
     spec {
         input "file" { }
         type = "json"
@@ -54,7 +53,6 @@ resource "extract" "snyk" {
 }
 
 resource "transform" "snyk" {
-    api_version = "v1"
     spec {
         input "data" {}
 
@@ -79,7 +77,6 @@ resource "transform" "snyk" {
 }
 
 resource "load" "snyk" {
-    api_version = "v1"
     spec {
         input "data" {}
         data = self.input.data
@@ -87,7 +84,6 @@ resource "load" "snyk" {
 }
 
 resource "pipeline" "snyk" {
-    api_version = "v1"
     spec {
         input "whatever" {
             default = "./testdata/snyk/test.json"
@@ -114,14 +110,12 @@ resource "pipeline" "snyk" {
 }
 
 resource "run" "snyk" {
-    api_version = "v1"
     spec {
         resource = "pipeline/snyk"
     }
 }
 
 resource "run" "snyk_extract" {
-    api_version = "v1"
     spec {
         resource = "extract/snyk"
         input "file" {
@@ -131,7 +125,6 @@ resource "run" "snyk_extract" {
 }
 
 resource "query" "snyk_data" {
-    api_version = "v1"
     spec {
         query = <<EOT
             {
@@ -145,7 +138,6 @@ resource "query" "snyk_data" {
 
 
 resource "criteria" "snyk_status" {
-    api_version = "v1"
     spec {
         query "snyk_data" {}
         condition "no_high" {
@@ -159,7 +151,6 @@ resource "criteria" "snyk_status" {
 }
 
 resource "run" "snyk_criteria" {
-    api_version = "v1"
     spec {
         resource = "criteria/snyk_status"
     }

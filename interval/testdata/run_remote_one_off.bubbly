@@ -1,6 +1,5 @@
 // Run the extract resource
 resource "run" "sonarqube_extract" {
-  api_version = "v1"
   metadata {
     labels = {}
   }
