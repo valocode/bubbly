@@ -6,6 +6,8 @@ builds:
       - -s -w -X main.VERSION={{ .Version }}
     env:
       - CGO_ENABLED=0
+    hooks:
+      pre: swag init
     id: linux
     goos:
       - linux
@@ -48,6 +50,20 @@ brews:
     description: "Bubbly CLI"
     test: |
       system "#{bin}/bubbly --version"
+dockers:
+  -
+    goos: linux
+    goarch: amd64
+    skip_push: auto
+    use_buildx: true
+    dockerfile: Dockerfile.goreleaser
+    image_templates:
+    - "valocode/{{ .ProjectName }}:latest"
+    - "valocode/{{ .ProjectName }}:{{ .Tag }}"
+    - "valocode/{{ .ProjectName }}:{{ .Major }}"
+    - "valocode/{{ .ProjectName }}:{{ .Major }}{{ .Minor }}"
+    build_flag_templates:
+    - "--pull"
 checksum:
   name_template: "checksums.txt"
 snapshot:

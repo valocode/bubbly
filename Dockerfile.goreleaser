@@ -1,0 +1,16 @@
+# This Dockerfile is written for use with goreleaser
+FROM gcr.io/distroless/base-debian10
+
+# Copy the static executable built by goreleaser
+COPY bubbly /bubbly
+
+# Bubbly makes use of these TCP ports:
+#   4223 NATS service
+#   8111 bubbly agent
+#   8222 NATS HTTP
+EXPOSE 4223 8111 8222
+
+# Run as unprivileged user
+USER nonroot:nonroot
+
+ENTRYPOINT ["/bubbly"]
