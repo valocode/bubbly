@@ -5,8 +5,9 @@
 *.so
 *.dylib
 
-# Build directory
+# Build directories
 build/
+dist/
 
 # Test binary, built with `go test -c`
 *.test
@@ -34,4 +35,7 @@ dataaccess/*.db
 node_modules
 
 .idea
-dist/
+
+# Swagger auto-generated
+docs/swagger.json
+docs/swagger.yaml
