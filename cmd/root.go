@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	globalConfigFile string
-	rootShort        = normalise.LongDesc(`
+	rootShort = normalise.LongDesc(`
 		bubbly: release readiness in a bubble
 		
 		Find more information: https://bubbly.dev`)

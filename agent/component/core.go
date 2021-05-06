@@ -267,10 +267,6 @@ func (c ComponentCore) BulkSubscribe(bCtx *env.BubblyContext) ([]*nats.Subscript
 
 // Listen takes a context and listens for its closure.
 func (c ComponentCore) Listen(ctx context.Context) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
+	<- ctx.Done()
+	return ctx.Err()
 }

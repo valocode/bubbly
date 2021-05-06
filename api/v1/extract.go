@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -299,10 +298,10 @@ type extractType string
 
 const (
 	jsonExtractType    extractType = "json"
-	xmlExtractType                 = "xml"
-	gitExtractType                 = "git"
-	restExtractType                = "rest"
-	graphQLExtractType             = "graphql"
+	xmlExtractType     extractType = "xml"
+	gitExtractType     extractType = "git"
+	restExtractType    extractType = "rest"
+	graphQLExtractType extractType = "graphql"
 )
 
 // Source is an interface for the different data sources that an Extract can have
@@ -420,7 +419,7 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 			password = *s.BasicAuth.Password
 
 		case *s.BasicAuth.PasswordFile != "":
-			byteArr, err := ioutil.ReadFile(filepath.FromSlash(*s.BasicAuth.PasswordFile))
+			byteArr, err := os.ReadFile(filepath.FromSlash(*s.BasicAuth.PasswordFile))
 			if err != nil {
 				return cty.NilVal, fmt.Errorf("failed to read the password for http basic authentication from a file: %w", err)
 			}
@@ -464,7 +463,7 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	case s.BearerToken != nil:
 		bearerToken = *s.BearerToken
 	case s.BearerTokenFile != nil:
-		bt, err := ioutil.ReadFile(filepath.FromSlash(*s.BearerTokenFile))
+		bt, err := os.ReadFile(filepath.FromSlash(*s.BearerTokenFile))
 		if err != nil {
 			return cty.NilVal, fmt.Errorf("failed to read bearer token file: %w", err)
 		}
@@ -690,7 +689,7 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 			password = *s.BasicAuth.Password
 
 		case *s.BasicAuth.PasswordFile != "":
-			byteArr, err := ioutil.ReadFile(filepath.FromSlash(*s.BasicAuth.PasswordFile))
+			byteArr, err := os.ReadFile(filepath.FromSlash(*s.BasicAuth.PasswordFile))
 			if err != nil {
 				return cty.NilVal, fmt.Errorf("failed to read the password for http basic authentication from a file: %w", err)
 			}
@@ -734,7 +733,7 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	case s.BearerToken != nil:
 		bearerToken = *s.BearerToken
 	case s.BearerTokenFile != nil:
-		bt, err := ioutil.ReadFile(filepath.FromSlash(*s.BearerTokenFile))
+		bt, err := os.ReadFile(filepath.FromSlash(*s.BearerTokenFile))
 		if err != nil {
 			return cty.NilVal, fmt.Errorf("failed to read bearer token file: %w", err)
 		}

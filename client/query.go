@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/valocode/bubbly/agent/component"
@@ -36,7 +36,7 @@ func (c *httpClient) Query(bCtx *env.BubblyContext, _ *component.MessageAuth, qu
 
 	defer resp.Body.Close()
 
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }
 
 func (n *natsClient) Query(bCtx *env.BubblyContext, auth *component.MessageAuth, query string) ([]byte, error) {

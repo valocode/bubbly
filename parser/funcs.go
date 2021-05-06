@@ -12,12 +12,6 @@ import (
 	"github.com/hashicorp/terraform/lang/funcs"
 )
 
-var impureFunctions = []string{
-	"bcrypt",
-	"timestamp",
-	"uuid",
-}
-
 // stdfunctions returns functions for the SymbolTable's EvalContext
 func stdfunctions() map[string]function.Function {
 	return map[string]function.Function{

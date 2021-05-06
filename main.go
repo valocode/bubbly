@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/valocode/bubbly/docs"
-	_ "github.com/valocode/bubbly/docs"
 
 	"github.com/imdario/mergo"
 
@@ -27,8 +26,6 @@ import (
 // @termsOfService https://bubbly.dev/terms/
 func main() {
 	setSwaggerInfo()
-	// TODO: remove once migrated fully to bCtx.Logger
-	// bCtx.Logger.Logger = bCtx.Logger.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	// 1. set up the initial BubblyContext with config.Config defaults
 	// (we mergo.Merge later) and a default logger
