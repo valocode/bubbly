@@ -3,7 +3,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 
 	"github.com/hashicorp/hcl/v2"
@@ -126,7 +126,7 @@ func (r ResourceBlock) specBytes() ([]byte, error) {
 		return nil, fmt.Errorf("cannot get src range for unknown hcl.Body type %s", reflect.TypeOf(body).String())
 	}
 	// read the bubbly file containing the HCL
-	fileBytes, err := ioutil.ReadFile(srcRange.Filename)
+	fileBytes, err := os.ReadFile(srcRange.Filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read resource file: %w", err)
 	}

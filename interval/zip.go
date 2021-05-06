@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,7 +17,12 @@ import (
 // That is, the path to the root of the .zip file's contents is:
 // `os.TempDir()+"worker.<random-string>/filepath.Dir(<fPath>)`
 func unzipFromBytes(fPath string, b []byte) (string, error) {
-	tmpDir, err := ioutil.TempDir(os.TempDir(), defaultWorkerDirPattern)
+
+	tmpDir, err := os.MkdirTemp(os.TempDir(), defaultWorkerDirPattern)
+
+	if err != nil {
+		return "", err
+	}
 
 	fullTmpDir := filepath.Join(tmpDir, fPath)
 
@@ -30,14 +34,14 @@ func unzipFromBytes(fPath string, b []byte) (string, error) {
 		return "", err
 	}
 
-	if err := unzipFromReader(*zipReader, filepath.Dir(fullTmpDir)); err != nil {
+	if err := unzipFromReader(zipReader, filepath.Dir(fullTmpDir)); err != nil {
 		return "", err
 	}
 
 	return tmpDir, nil
 }
 
-func unzipFromReader(reader zip.Reader, target string) error {
+func unzipFromReader(reader *zip.Reader, target string) error {
 	if err := os.MkdirAll(target, 0755); err != nil {
 		return err
 	}

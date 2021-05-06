@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/graphql-go/graphql"
@@ -30,7 +30,7 @@ func (c *httpClient) GetResource(bCtx *env.BubblyContext, _ *component.MessageAu
 	}
 
 	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }
 
 // PostResource uses the bubbly api endpoint to post a resource

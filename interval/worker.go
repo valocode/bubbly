@@ -24,9 +24,10 @@ import (
 	"github.com/valocode/bubbly/server"
 )
 
-const (
-	defaultRunInterval = "300s"
-)
+// TODO: disabling interval runs until dedicated time can be invested
+//  to support them in a stable manner.
+
+// const defaultRunInterval string = "300s"
 
 type RunKind int
 
@@ -97,16 +98,6 @@ type RemoteInput struct {
 	Dir string
 }
 
-type RunPool struct {
-	runLoops []RunLoop
-}
-
-type RunLoop struct {
-	id       string
-	interval time.Duration
-	resource core.Resource
-}
-
 type ActionType string
 type RunAction struct {
 	Action        ActionType
@@ -121,8 +112,8 @@ const (
 // RunIntervalRuns establishes the channels and will run runs of type IntervalRun
 // TODO: how to handle additions to the Pool during runtime?
 func (w *ResourceWorker) RunIntervalRuns(bCtx *env.BubblyContext, auth *component.MessageAuth) error {
-	iPool := w.Pools.Interval
-	for _, run := range iPool.Pool.Runs {
+
+	for _, run := range w.Pools.Interval.Pool.Runs {
 		eg := new(errgroup.Group)
 		var ctx, cancel = context.WithCancel(context.Background())
 		w.Context = ChannelContext{
@@ -137,9 +128,13 @@ func (w *ResourceWorker) RunIntervalRuns(bCtx *env.BubblyContext, auth *componen
 		//  worker redesign. Somewhere here we probably want to notify NATS on
 		//  run failure, retry/purge the run from the worker pool and then move
 		//  on
-		eg.Go(func() error {
-			return run.ApplyWithInterval(bCtx, w.WorkerChannels[run.Resource.String()], ctx, auth)
-		})
+		eg.Go(
+			func(r Run) func() error {
+				return func() error {
+					return run.ApplyWithInterval(bCtx, w.WorkerChannels[run.Resource.String()], ctx, auth)
+				}
+			}(run),
+		)
 	}
 
 	return nil
@@ -223,23 +218,22 @@ func (w *ResourceWorker) ParseResource(bCtx *env.BubblyContext, r core.Resource,
 		}
 	}
 
-	switch r.(type) {
+	switch r := r.(type) {
 	case *v1.Run:
-		runV1 := r.(*v1.Run)
-		err := common.DecodeBody(bCtx, runV1.SpecHCL.Body, &runV1.Spec, core.NewResourceContext(cty.NilVal, api.NewResource, nil))
+		err := common.DecodeBody(bCtx, r.SpecHCL.Body, &r.Spec, core.NewResourceContext(cty.NilVal, api.NewResource, nil))
 		if err != nil {
-			bCtx.Logger.Error().Str("resource", runV1.String()).Msg("worker failed to decode resource")
+			bCtx.Logger.Error().Str("resource", r.String()).Msg("worker failed to decode resource")
 			return fmt.Errorf("worker failed to decode resource: %w", err)
 		}
 
 		// if true, then the run resource should not be run remotely
-		if runV1.Spec.Remote == nil {
-			bCtx.Logger.Debug().Str("resource", runV1.String()).Msg("run is of type local and therefore will be ignored by the worker")
+		if r.Spec.Remote == nil {
+			bCtx.Logger.Debug().Str("resource", r.String()).Msg("run is of type local and therefore will be ignored by the worker")
 			return nil
 		}
 
 		run := Run{
-			Resource:    *runV1,
+			Resource:    *r,
 			Kind:        IntervalRun,
 			RemoteInput: i,
 		}
@@ -252,8 +246,8 @@ func (w *ResourceWorker) ParseResource(bCtx *env.BubblyContext, r core.Resource,
 		// intervalDuration, err = durafmt.ParseString(defaultRunInterval)
 
 		// if an interval has been specified, we should try to use that
-		if runV1.Spec.Remote.Interval != "" {
-			bCtx.Logger.Info().Str("run", runV1.String()).Msg("resource worker does not currently support remote runs of type interval; treating it as one-off run instead")
+		if r.Spec.Remote.Interval != "" {
+			bCtx.Logger.Info().Str("run", r.String()).Msg("resource worker does not currently support remote runs of type interval; treating it as one-off run instead")
 			// intervalDuration, err = durafmt.ParseString(runV1.Spec.Remote.Interval)
 			//
 			// // if the interval has been specified incorrectly, log this
@@ -264,7 +258,7 @@ func (w *ResourceWorker) ParseResource(bCtx *env.BubblyContext, r core.Resource,
 			// run.interval = intervalDuration.Duration()
 			// w.Pools.Interval.Pool.Append(run)
 		} else {
-			bCtx.Logger.Debug().Str("run", runV1.String()).Msg("run has no interval specified; treating it as a one-off run")
+			bCtx.Logger.Debug().Str("run", r.String()).Msg("run has no interval specified; treating it as a one-off run")
 		}
 		run.Kind = OneOffRun
 
@@ -294,6 +288,10 @@ func (w *ResourceWorker) parseInputData(input server.RemoteInput) (string, error
 		// write the bytes to a json file
 		dir, err = createJSONFromBytes(input.Filename, input.Data)
 
+		if err != nil {
+			return "", fmt.Errorf("failed to unzip from json: %w", err)
+		}
+
 		return dir, nil
 	case "zip":
 		// write the bytes as an unzipped collection of files
@@ -303,6 +301,7 @@ func (w *ResourceWorker) parseInputData(input server.RemoteInput) (string, error
 			return "", fmt.Errorf("failed to unzip from bytes: %w", err)
 		}
 	}
+
 	if err != nil {
 		return "", fmt.Errorf("failed to process bytes: %w", err)
 	}

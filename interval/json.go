@@ -2,7 +2,6 @@ package interval
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -14,7 +13,8 @@ const (
 // write to a temporary JSON file from received bytes
 // the path to the resulting file is `os.TempDir()+"worker.<random-string>/<fPath>`
 func createJSONFromBytes(fPath string, b []byte) (string, error) {
-	tmpDir, err := ioutil.TempDir(os.TempDir(), defaultWorkerDirPattern)
+
+	tmpDir, err := os.MkdirTemp(os.TempDir(), defaultWorkerDirPattern)
 
 	if err != nil {
 		return "", fmt.Errorf("failed to create temporary worker directory: %w", err)

@@ -3,7 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -36,13 +36,13 @@ func (s *Server) createOrganization(c echo.Context) error {
 	)
 	// We cannot read the body from the request io.Reader twice, so let's read
 	// it once and then copy it back for the auth service handler to also read it
-	bodyBytes, err := ioutil.ReadAll(c.Request().Body)
+	bodyBytes, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "failed to read body of request")
 	}
 	// Have to close the body immediately so that we can re-write to it
 	c.Request().Body.Close()
-	c.Request().Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	c.Request().Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	if err := json.Unmarshal(bodyBytes, &org); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "error decoding organisation: "+err.Error())
 	}
@@ -137,7 +137,7 @@ func doOrganizationQuery(client *http.Client, req *http.Request) ([]byte, error)
 	}
 
 	// Read and forward the bytes
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "failed to read response from auth service: "+err.Error())
 	}

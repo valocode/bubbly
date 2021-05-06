@@ -3,7 +3,6 @@ package parser
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/dynblock"
@@ -139,15 +138,6 @@ var DataRefType = cty.CapsuleWithOps(
 type DataRef struct {
 	TableName string `json:"table"`
 	Field     string `json:"field"`
-}
-
-// traversalsString is a helper to return a string representation of traversals
-func traversalsString(bCtx *env.BubblyContext, traversals []hcl.Traversal) string {
-	strTraversals := []string{}
-	for _, traversal := range traversals {
-		strTraversals = append(strTraversals, traversalString(bCtx, traversal))
-	}
-	return strings.Join(strTraversals, ", ")
 }
 
 // traversalString is a helper to return a string representation of a traversal

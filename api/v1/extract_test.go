@@ -2,7 +2,6 @@ package v1
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"net/http"
@@ -490,7 +489,7 @@ func TestExtractRestBasicAuth(t *testing.T) {
 		)
 
 		// Read password value from a test fixture file
-		password, err := ioutil.ReadFile(*s.BasicAuth.PasswordFile)
+		password, err := os.ReadFile(*s.BasicAuth.PasswordFile)
 		require.Nil(t, err, "test fixture: password containing file")
 
 		gockResponse := gock.New(s.URL).
@@ -587,7 +586,7 @@ func TestExtractRestBearerToken(t *testing.T) {
 		s.BearerTokenFile = &bearerTokenFile
 
 		// Read bearer token value from a test fixture file
-		bearerToken, err := ioutil.ReadFile(*s.BearerTokenFile)
+		bearerToken, err := os.ReadFile(*s.BearerTokenFile)
 		require.Nil(t, err, "test fixture: bearer token file")
 
 		gockResponse := gock.New(s.URL).

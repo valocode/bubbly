@@ -54,19 +54,15 @@ func MergedHCLBodies(bCtx *env.BubblyContext, filename string) (hcl.Body, error)
 		}
 		hclFiles = append(hclFiles, hclFile)
 	}
-
 	mergedBody := hcl.MergeFiles(hclFiles)
 
-	if mergedBody == nil {
-		return nil, fmt.Errorf("provided filename produced nil HCL body: %s", filename)
-	}
 	return mergedBody, nil
 }
 
 func bubblyFiles(filename string) ([]string, error) {
 	fi, err := os.Stat(filename)
 	if err != nil {
-		return nil, fmt.Errorf(`Cannot read from filename "%s"`, filename)
+		return nil, fmt.Errorf(`cannot read from filename "%s"`, filename)
 	}
 	switch mode := fi.Mode(); {
 	case mode.IsRegular():
@@ -82,6 +78,6 @@ func bubblyFiles(filename string) ([]string, error) {
 		})
 		return files, nil
 	default:
-		return nil, fmt.Errorf(`Unknown filename mode %s`, mode.String())
+		return nil, fmt.Errorf(`unknown filename mode %s`, mode.String())
 	}
 }

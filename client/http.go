@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -56,7 +55,7 @@ func (h *httpClient) handleResponse(resp *http.Response, err error) (*http.Respo
 	// check the status code
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 
 		if err != nil {
 			return nil, fmt.Errorf(`failed to read body of respose with status "%s": %w`, resp.Status, err)
