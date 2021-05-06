@@ -1,4 +1,7 @@
 project_name: bubbly
+before:
+  hooks:
+  - go get -u github.com/swaggo/swag/cmd/swag
 builds:
   - binary: bubbly
     main: main.go
