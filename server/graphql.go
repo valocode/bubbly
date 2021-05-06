@@ -11,11 +11,10 @@ type queryReq struct {
 }
 
 // TODO: fix Swagger return types!
-
-// type apiResponse struct {
-// 	Code    int    `json:"code" example:"200"`
-// 	Message string `json:"message" example:"data"`
-// }
+type apiResponse struct {
+	Code    int    `json:"code" example:"200"`
+	Message string `json:"message" example:"data"`
+}
 
 // Query godoc
 // @Summary Query performs graphql related tasks
