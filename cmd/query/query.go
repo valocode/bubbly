@@ -43,9 +43,9 @@ var (
 // Flag values received to the command are loaded into this struct
 type QueryOptions struct {
 	cmdutil.Options
-	BubblyContext *env.BubblyContext
-	Command       string
-	Args          []string
+	bCtx    *env.BubblyContext
+	Command string
+	Args    []string
 }
 
 // NewCmdQuery creates a new cobra.Command representing "bubbly get"

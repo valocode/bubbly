@@ -33,9 +33,9 @@ var (
 // Flag values received to the command are loaded into this struct
 type ApplyOptions struct {
 	cmdutil.Options
-	BubblyContext *env.BubblyContext
-	Command       string
-	Args          []string
+	bCtx    *env.BubblyContext
+	Command string
+	Args    []string
 
 	// flags
 	filename string
@@ -44,8 +44,8 @@ type ApplyOptions struct {
 // NewCmdApply creates a new cobra.Command representing "bubbly apply"
 func NewCmdApply(bCtx *env.BubblyContext) (*cobra.Command, *ApplyOptions) {
 	o := &ApplyOptions{
-		Command:       "apply",
-		BubblyContext: bCtx,
+		Command: "apply",
+		bCtx:    bCtx,
 	}
 
 	// cmd represents the apply command
@@ -119,7 +119,7 @@ func (o *ApplyOptions) Resolve() error {
 
 // Run runs the apply command over the validated ApplyOptions configuration
 func (o *ApplyOptions) Run() error {
-	if err := bubbly.Apply(o.BubblyContext, o.filename); err != nil {
+	if err := bubbly.Apply(o.bCtx, o.filename); err != nil {
 		return fmt.Errorf("failed to apply configuration: %w", err)
 	}
 	return nil
@@ -131,7 +131,7 @@ func (o *ApplyOptions) Print() {
 		`resource(s) at path/directory "%s" applied successfully`,
 		filepath.FromSlash(o.filename))
 
-	if o.BubblyContext.CLIConfig.Color {
+	if o.bCtx.CLIConfig.Color {
 		color.Green(successString)
 	} else {
 		fmt.Println(successString)

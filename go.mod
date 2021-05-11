@@ -12,6 +12,7 @@ require (
 	github.com/cockroachdb/cockroach-go/v2 v2.1.0
 	github.com/containerd/containerd v1.5.0 // indirect
 	github.com/cornelk/hashmap v1.0.1
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/siphash v1.2.2 // indirect
 	github.com/docker/docker v20.10.6+incompatible
 	github.com/fatih/color v1.10.0
