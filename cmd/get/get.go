@@ -45,9 +45,9 @@ var (
 // Flag values received to the command are loaded into this struct
 type GetOptions struct {
 	cmdutil.Options
-	BubblyContext *env.BubblyContext
-	Command       string
-	Args          []string
+	bCtx    *env.BubblyContext
+	Command string
+	Args    []string
 
 	// flags
 	events bool
@@ -60,8 +60,8 @@ type GetOptions struct {
 // NewCmdGet creates a new cobra.Command representing "bubbly get"
 func NewCmdGet(bCtx *env.BubblyContext) (*cobra.Command, *GetOptions) {
 	o := &GetOptions{
-		Command:       "get",
-		BubblyContext: bCtx,
+		Command: "get",
+		bCtx:    bCtx,
 	}
 
 	// cmd represents the get command
@@ -133,7 +133,7 @@ func (o *GetOptions) Resolve() error {
 
 // Run runs the get command over the validated GetOptions configuration
 func (o *GetOptions) Run() error {
-	resources, err := bubbly.QueryResources(o.BubblyContext, o.query)
+	resources, err := bubbly.QueryResources(o.bCtx, o.query)
 
 	if err != nil {
 		switch err {
@@ -151,7 +151,7 @@ func (o *GetOptions) Run() error {
 func (o *GetOptions) Print() {
 	var resourceLines []string
 
-	if o.BubblyContext.CLIConfig.Color {
+	if o.bCtx.CLIConfig.Color {
 		color.Blue("Resources")
 	} else {
 		fmt.Println("Resources")
@@ -165,7 +165,7 @@ func (o *GetOptions) Print() {
 	var eventLines []string
 
 	if o.events {
-		if o.BubblyContext.CLIConfig.Color {
+		if o.bCtx.CLIConfig.Color {
 			color.Blue("\nEvents")
 		} else {
 			fmt.Println("\nEvents")

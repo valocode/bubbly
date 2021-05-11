@@ -1,10 +1,12 @@
 package view
 
 import (
-	"github.com/fatih/color"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/bubbly/builtin"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/util/normalise"
@@ -29,10 +31,10 @@ var (
 // Flag values received to the command are loaded into this struct
 type options struct {
 	cmdutil.Options
-	BubblyContext *env.BubblyContext
-	Command       string
-	Args          []string
-	Release       *bubbly.ReleaseSpec
+	bCtx    *env.BubblyContext
+	Command string
+	Args    []string
+	Release *builtin.Release
 
 	// flags
 }
@@ -40,8 +42,8 @@ type options struct {
 // New creates a new cobra command
 func New(bCtx *env.BubblyContext) *cobra.Command {
 	o := &options{
-		Command:       "view",
-		BubblyContext: bCtx,
+		Command: "view",
+		bCtx:    bCtx,
 	}
 
 	// cmd represents the apply command
@@ -85,17 +87,24 @@ func (o *options) resolve() error {
 
 // run runs the command over the validated options
 func (o *options) run() error {
-	// release, err := bubbly.ListReleases(o.BubblyContext)
+	// release, err := bubbly.ListReleases(o.bCtx)
 	// if err != nil {
 	// 	return err
 	// }
 	// // o.Release = release
+	release, err := bubbly.GetRelease(o.bCtx)
+	if err != nil {
+		return err
+	}
+	o.Release = release
 	return nil
 }
 
 // Print prints the successful outcome of the cmd
 func (o *options) Print() {
-	color.Green("Release entry successfully logged!")
-
-	// fmt.Println("\n" + o.Release.String())
+	fmt.Println("Project: " + o.Release.Project.Id)
+	fmt.Println("Name: " + o.Release.Name)
+	fmt.Println("Version: " + o.Release.Version)
+	fmt.Println("Type: " + o.Release.ReleaseItem[0].Type)
+	fmt.Println("Status: " + builtin.ReleaseStatusByStages(*o.Release))
 }

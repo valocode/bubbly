@@ -93,7 +93,7 @@ func TestBubblyContextLogLevel(t *testing.T) {
 
 			bCtx.UpdateLogLevel(tc.inputLogLevel)
 
-			// Verify that the argument(s) bind to the BubblyContext
+			// Verify that the argument(s) bind to the bCtx
 			// correctly
 			assert.Equal(t, tc.expected.Logger, bCtx.Logger)
 		})

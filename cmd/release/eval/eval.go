@@ -29,10 +29,10 @@ var (
 // Flag values received to the command are loaded into this struct
 type options struct {
 	cmdutil.Options
-	BubblyContext *env.BubblyContext
-	Command       string
-	Args          []string
-	Release       *bubbly.ReleaseSpec
+	bCtx    *env.BubblyContext
+	Command string
+	Args    []string
+	Release *bubbly.ReleaseSpec
 
 	// flags
 	Criteria string
@@ -41,8 +41,8 @@ type options struct {
 // New creates a new cobra command
 func New(bCtx *env.BubblyContext) *cobra.Command {
 	o := &options{
-		Command:       "eval",
-		BubblyContext: bCtx,
+		Command: "eval",
+		bCtx:    bCtx,
 	}
 
 	// cmd represents the apply command
@@ -87,7 +87,7 @@ func (o *options) resolve() error {
 
 // run runs the command over the validated options
 func (o *options) run() error {
-	release, err := bubbly.EvalReleaseCriteria(o.BubblyContext, o.Criteria)
+	release, err := bubbly.EvalReleaseCriteria(o.bCtx, o.Criteria)
 	if err != nil {
 		return err
 	}
