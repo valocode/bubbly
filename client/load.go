@@ -9,14 +9,12 @@ import (
 	"github.com/valocode/bubbly/env"
 )
 
-// Load takes the output from a load resource and POSTs it to the Bubbly
-// server.
-// Returns an error if loading was unsuccessful
+// Load takes data blocks and saves them to the bubbly server
 func (c *httpClient) Load(bCtx *env.BubblyContext, _ *component.MessageAuth, data []byte) error {
 
 	_, err := c.handleRequest(http.MethodPost, "/upload", bytes.NewBuffer(data))
 	if err != nil {
-		return fmt.Errorf(`failed to post resource: %w`, err)
+		return fmt.Errorf("failed to save data: %w", err)
 	}
 
 	return nil

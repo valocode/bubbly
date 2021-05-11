@@ -2,7 +2,6 @@ package store
 
 import (
 	"github.com/graphql-go/graphql"
-	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/env"
 )
 
@@ -13,7 +12,7 @@ type provider interface {
 	Close()
 	Apply(string, *bubblySchema) error
 	Migrate(string, *bubblySchema, schemaUpdates) error
-	Save(*env.BubblyContext, string, *schemaGraph, dataTree) error
-	ResolveQuery(string, *schemaGraph, graphql.ResolveParams) (interface{}, error)
-	HasTable(string, core.Table) (bool, error)
+	Save(*env.BubblyContext, string, *SchemaGraph, dataTree) error
+	ResolveQuery(string, *SchemaGraph, graphql.ResolveParams) (interface{}, error)
+	HasTable(string, string) (bool, error)
 }

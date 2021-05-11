@@ -28,7 +28,7 @@ type gqlField struct {
 
 // newGraphQLSchema creates a new GraphQL schema wrapping the given provider
 // with a schema that corresponds to the given set of tables.
-func newGraphQLSchema(graph *schemaGraph, resolveFn graphql.FieldResolveFn) (graphql.Schema, error) {
+func newGraphQLSchema(graph *SchemaGraph, resolveFn graphql.FieldResolveFn) (graphql.Schema, error) {
 	var (
 		fields = make(map[string]gqlField)
 		// These are the top-level query fields. Each of these fields
@@ -41,13 +41,13 @@ func newGraphQLSchema(graph *schemaGraph, resolveFn graphql.FieldResolveFn) (gra
 	}
 
 	// Traverse the schema graph and add each node/table to the graphql fields
-	graph.traverse(func(node *schemaNode) error {
-		addGraphFields(*node.table, fields)
+	graph.Traverse(func(node *SchemaNode) error {
+		addGraphFields(*node.Table, fields)
 		return nil
 	})
 
 	// Create the relationships among the adjacent nodes
-	graph.traverse(func(node *schemaNode) error {
+	graph.Traverse(func(node *SchemaNode) error {
 		addGraphEdges(node, fields)
 		return nil
 	})
@@ -169,18 +169,18 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 }
 
 // addGraphEdges ???
-func addGraphEdges(n *schemaNode, fields map[string]gqlField) {
-	var field = fields[n.table.Name]
+func addGraphEdges(n *SchemaNode, fields map[string]gqlField) {
+	var field = fields[n.Table.Name]
 
-	for _, edge := range n.edges {
+	for _, edge := range n.Edges {
 		var (
-			dstField                    = fields[edge.node.table.Name]
+			dstField                    = fields[edge.Node.Table.Name]
 			dstFieldType graphql.Output = dstField.Type
 		)
 		if !edge.isScalar() {
 			dstFieldType = graphql.NewList(dstFieldType)
 		}
-		field.Type.AddFieldConfig(edge.node.table.Name, &graphql.Field{
+		field.Type.AddFieldConfig(edge.Node.Table.Name, &graphql.Field{
 			Type: dstFieldType,
 			Args: dstField.Args,
 		})
@@ -197,6 +197,8 @@ func graphQLFieldType(f core.TableField) *graphql.Scalar {
 	case ty == cty.String:
 		return graphql.String
 	case ty.IsObjectType():
+		return mapScalar
+	case ty.IsMapType():
 		return mapScalar
 	default:
 		panic(fmt.Sprintf("Unsupported GraphQL conversion from cty.Type: %s", f.Type.GoString()))

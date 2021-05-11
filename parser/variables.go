@@ -7,11 +7,10 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/dynblock"
 	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/valocode/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
-func walkVariables(bCtx *env.BubblyContext, node dynblock.WalkVariablesNode, ty reflect.Type) []hcl.Traversal {
+func walkVariables(node dynblock.WalkVariablesNode, ty reflect.Type) []hcl.Traversal {
 
 	zeroVal := reflect.Zero(ty)
 	schema, _ := gohcl.ImpliedBodySchema(zeroVal.Interface())
@@ -46,12 +45,8 @@ func walkVariables(bCtx *env.BubblyContext, node dynblock.WalkVariablesNode, ty 
 
 	vars, children := node.Visit(schema)
 	for _, child := range children {
-		fieldElement, exists := fieldByTagName[child.BlockTypeName]
-		if !exists {
-			bCtx.Logger.Panic().Msgf("HCL block name not found inside the go type: %s in %s", child.BlockTypeName, ty.String())
-		}
-
-		vars = append(vars, walkVariables(bCtx, child.Node, fieldElement)...)
+		fieldElement := fieldByTagName[child.BlockTypeName]
+		vars = append(vars, walkVariables(child.Node, fieldElement)...)
 	}
 	return vars
 }

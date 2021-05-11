@@ -1,3 +1,4 @@
+
 #
 # This file describes a data model to load into bubbly,
 # also known as the bubbly schema. A database schema is 
@@ -7,6 +8,47 @@
 # It's more convenient to have everything in one place than
 # to have to manage a multitude of individual schema files.
 #
+
+// #############################
+// INTERNAL TABLES
+// #############################
+
+table "_schema" {
+    // TODO: this should really be another table
+    field "tables" {
+        type = map(any)
+    }
+}
+
+table "_resource" {
+    // TODO: we should remove this and use a unique constraint on name & kind
+    field "id" {
+        type = string
+        unique = true
+    }
+    field "name" { type = string }
+    field "kind" { type = string }
+    field "api_version" { type = string }
+    field "spec" { type = string }
+    // TODO: should the metadata be changed to something more meaningful?
+    field "metadata" {
+        type = object({
+            labels: map(string),
+        })
+    }
+}
+
+table "_event" {
+    field "status" { type = string }
+    field "error" { type = string }
+    field "time" { type = string }
+
+    join "_resource" {}
+}
+
+// #############################
+// BASE TYPES (project, repo, etc)
+// #############################
 
 table "project" {
     field "id" {
@@ -133,7 +175,6 @@ table "release_item" {
     // to release... It could be solved by adding an alias
     // join "release" {
     //     alias = "item_release"
-    //     single = true
     //     unique = true
     // }
 }
@@ -251,165 +292,4 @@ table "test_run" {
     }
 
     join "release" { }
-}
-
-// #############################
-// OSS
-// #############################
-
-#
-# For integration/testdata/resources/v1/extract/licenses/licenses.bubbly
-#
-table "spdx_license" {
-    field "id" {
-        type = string
-        unique = true
-    }
-    field "name" {
-        type = string
-    }
-    field "crossref_count" {
-        type = number
-    }
-}
-
-
-// #############################
-// GITHUB METRICS
-// #############################
-#
-# For integration/testdata/resources/v1/extract/graphql/github.bubbly
-#
-table "repo_stats" {
-
-    # TODO: would introducing multi-column `unique` constraints add value?
-    # The value of tuple (owner, repo) is unique
-    field "owner" {
-        type = string
-    }
-    field "repo" {
-        type = string
-    }
-
-    field "fork_count" {
-        type = number
-    }
-    field "stargazer_count" {
-        type = number
-    }
-    field "watcher_count" {
-        type = number
-    }
-    field "open_issues_count" {
-        type = number
-    }
-    field "closed_issues_count" {
-        type = number
-    }
-    field "releases_count" {
-        type = number
-    }
-    field "download_count" {
-        type = number
-    }
-
-    table "issues" {
-        field "title" {
-            type = string
-        }
-        field "url" {
-            type   = string
-            unique = true
-        }
-        field "state" {
-            type = string
-        }
-    }
-}
-
-#
-# For integration/testdata/resources/v1/extract/graphql/tempo.bubbly
-#
-table "tempo_periods" {
-    field "from_date" {
-        type = string
-        unique = true
-    }
-    field "to_date" {
-        type = string
-        unique = true
-    }
-
-    table "tempo_timesheet_approvals" {
-        field "url" {
-            type = string
-            unique = true
-        }
-        field "required_seconds" {
-            type = number
-        }
-        field "spent_seconds" {
-            type = number
-        }
-        field "spent_less_required_seconds" {
-            type = number
-        }
-    }
-}
-
-#
-# For integration/testdata/snyk/snyk-pipeline.bubbly
-#
-table "snyk_vulnerabilities" {
-    field "id" {
-        type = string
-    }
-    field "name" {
-        type = string
-    }
-    field "creationTime" {
-        type = string
-    }
-    field "cvssScore" {
-        type = string
-    }
-    field "language" {
-        type = string
-    }
-    field "severity" {
-        type = string
-    }
-    field "version" {
-        type = string
-    }
-    field "cve" {
-        type = string
-    }
-}
-
-#
-# For integration/testdata/gosec/gosec.bubbly
-#
-table "gosec_issues" {
-    field "details" {
-        type = string
-    }
-    field "rule_id" {
-        type = string
-    }
-    field "severity" {
-        type = string
-    }
-    field "line" {
-        type = string
-    }
-    field "code_column" {
-        type = string
-    }
-    field "file" {
-        type = string
-    }
-    field "code" {
-        type = string
-    }
 }

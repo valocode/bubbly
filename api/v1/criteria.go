@@ -65,7 +65,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		bCtx.Logger.Debug().Str("query", resource.String()).Str("output_status", output.Status.String()).Str("output_value", output.Value.GoString()).Msg("query successfully processed")
 		c.Queries[resource.Name()] = resource
 	}
-	// we loop through the condition blocks, and apply the condition.
+	// Loop through the condition blocks, and apply the condition.
 	// The apply uses the previously calculated query values
 	// that we inserted into the EvalContext to decode the condition HCL block.
 	// The core.ResourceOutput of a condition is then inserted into the

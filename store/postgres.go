@@ -21,6 +21,8 @@ import (
 
 var (
 	psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
+	ErrDataCreateExists = errors.New("data already exists")
 )
 
 const (
@@ -84,7 +86,7 @@ func (p *postgres) Migrate(tenant string, schema *bubblySchema, cl schemaUpdates
 	return psqlMigrate(p.pool, tenant, schema, migration)
 }
 
-func (p *postgres) Save(bCtx *env.BubblyContext, tenant string, graph *schemaGraph, tree dataTree) error {
+func (p *postgres) Save(bCtx *env.BubblyContext, tenant string, graph *SchemaGraph, tree dataTree) error {
 
 	tx, err := p.pool.Begin(context.Background())
 	if err != nil {
@@ -101,7 +103,7 @@ func (p *postgres) Save(bCtx *env.BubblyContext, tenant string, graph *schemaGra
 		if !ok {
 			return fmt.Errorf("data block refers to non-existing table: %s", node.Data.TableName)
 		}
-		return psqlSaveNode(tx, tenant, node, *tNode.table)
+		return psqlSaveNode(tx, tenant, node, *tNode.Table)
 	}
 
 	_, err = tree.traverse(bCtx, saveNode)
@@ -113,7 +115,7 @@ func (p *postgres) Save(bCtx *env.BubblyContext, tenant string, graph *schemaGra
 	return tx.Commit(context.Background())
 }
 
-func (p *postgres) ResolveQuery(tenant string, graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
+func (p *postgres) ResolveQuery(tenant string, graph *SchemaGraph, params graphql.ResolveParams) (interface{}, error) {
 	return psqlResolveRootQueries(p.pool, tenant, graph, params)
 }
 
@@ -125,7 +127,7 @@ func (p *postgres) CreateTenant(name string) error {
 	return psqlCreateSchema(p.pool, name)
 }
 
-func (p *postgres) HasTable(tenant string, table core.Table) (bool, error) {
+func (p *postgres) HasTable(tenant string, table string) (bool, error) {
 	return psqlHasTable(p.pool, tenant, table)
 }
 
@@ -193,13 +195,13 @@ func psqlCreateSchema(pool *pgxpool.Pool, name string) error {
 	return nil
 }
 
-func psqlHasTable(pool *pgxpool.Pool, tenant string, table core.Table) (bool, error) {
+func psqlHasTable(pool *pgxpool.Pool, tenant string, table string) (bool, error) {
 	var (
 		sql = psql.Select("1").
 			Prefix("SELECT EXISTS (").
 			From("information_schema.tables").
 			Where(sq.Eq{"table_schema": psqlSchemaName(tenant)}).
-			Where(sq.Eq{"table_name": table.Name}).
+			Where(sq.Eq{"table_name": table}).
 			Suffix(");")
 		exists bool
 	)
@@ -210,7 +212,7 @@ func psqlHasTable(pool *pgxpool.Pool, tenant string, table core.Table) (bool, er
 
 	row := pool.QueryRow(context.Background(), sqlStr, sqlArgs...)
 	if err := row.Scan(&exists); err != nil {
-		return false, fmt.Errorf("failed to get table status: %s: %w", table.Name, err)
+		return false, fmt.Errorf("failed to get table status: %s: %w", table, err)
 	}
 
 	return exists, nil
@@ -230,6 +232,7 @@ func psqlApplySchema(tx pgx.Tx, tenant string, schema *bubblySchema) error {
 		return fmt.Errorf("failed to create data block from schema: %w", err)
 	}
 	node := newDataNode(&d)
+	schemaTable := schema.Tables[core.SchemaTableName]
 	// Save the data block node to the schemaTable
 	if err := psqlSaveNode(tx, tenant, node, schemaTable); err != nil {
 		return fmt.Errorf("failed to save schema data block: %w", err)
@@ -311,12 +314,14 @@ func psqlTableCreate(tenant string, table core.Table) (string, error) {
 
 func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) error {
 	var (
-		retValues    map[string]interface{}
+		retValues    []map[string]interface{}
 		uniqueFields map[string]struct{}
 		err          error
 	)
 	switch node.Data.Policy {
-	case core.CreateUpdatePolicy, core.EmptyPolicy:
+	// Create vs CreateUpdate are very similar, except for with Create (only)
+	// we don't want to update, instead return a nice error
+	case core.CreatePolicy, core.CreateUpdatePolicy, core.EmptyPolicy:
 		uniqueFields, err = psqlAddUniqueDataFields(table, node.Data)
 		if err != nil {
 			return fmt.Errorf("error setting default unique values for data %s: %w", node.Data.TableName, err)
@@ -347,18 +352,16 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 		// INSERT, otherwise UPDATE
 		if len(retValues) == 0 {
 			retValues, err = psqlDataInsert(tx, tenant, node, table)
-		} else {
-			retValues, err = psqlDataUpdate(tx, tenant, node, table, retValues[tableIDField])
+			break
 		}
-
-	case core.CreatePolicy:
-		_, err = psqlAddUniqueDataFields(table, node.Data)
-		if err != nil {
-			return fmt.Errorf("error setting default unique values for data %s: %w", node.Data.TableName, err)
+		// If we should Create, then we cannot because the data block is not unique
+		if node.Data.Policy == core.CreatePolicy {
+			return ErrDataCreateExists
 		}
-		// We should perform an INSERT
-		retValues, err = psqlDataInsert(tx, tenant, node, table)
-	case core.ReferencePolicy:
+		// Else, perform an update of the data block.
+		// The tableIdField should ALWAYS be returned, so we can skip any check here
+		retValues, err = psqlDataUpdate(tx, tenant, node, table, retValues[0][tableIDField])
+	case core.ReferencePolicy, core.ReferenceIfExistsPolicy:
 		retValues, err = psqlDataSelect(tx, tenant, node, table)
 	default:
 		return fmt.Errorf("data block refers to unsupported policy %s: %s", node.Data.TableName, node.Data.Policy)
@@ -367,12 +370,18 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 	if err != nil {
 		return fmt.Errorf("error performing SQL query on data %s: %w", node.Data.TableName, err)
 	}
+	// If no rows were returned, and therefore no values, handle gracefully
 	if len(retValues) == 0 {
-		return fmt.Errorf("no rows returned from SQL query on data %s", node.Data.TableName)
+		// If the reference_if_exists policy was set, then this is acceptable.
+		// Otherwise it is an error
+		if node.Data.Policy != core.ReferenceIfExistsPolicy {
+			return fmt.Errorf("no rows returned from SQL query on data %s", node.Data.TableName)
+		}
+		return nil
 	}
 	// Asign the returned values so that if the child nodes need to resolve
 	// their data references they have values to do so
-	node.Return = retValues
+	node.Return = retValues[0]
 
 	return nil
 
@@ -381,7 +390,7 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 // psqlDataUpdate generates a sql query for performing an insert/update.
 // It requires that we first perform a SELECT to check if there are any conflicts
 // and then either UPDATE (on conflicts) or INSERT otherwise
-func psqlDataUpdate(tx pgx.Tx, tenant string, node *dataNode, table core.Table, id interface{}) (map[string]interface{}, error) {
+func psqlDataUpdate(tx pgx.Tx, tenant string, node *dataNode, table core.Table, id interface{}) ([]map[string]interface{}, error) {
 	var (
 		data         = node.Data
 		sqlReturning = ""
@@ -409,7 +418,7 @@ func psqlDataUpdate(tx pgx.Tx, tenant string, node *dataNode, table core.Table, 
 
 // psqlDataInsert generates a sql query for performing an insert, which will
 // error if any uniqueness constraints are violated
-func psqlDataInsert(tx pgx.Tx, tenant string, node *dataNode, table core.Table) (map[string]interface{}, error) {
+func psqlDataInsert(tx pgx.Tx, tenant string, node *dataNode, table core.Table) ([]map[string]interface{}, error) {
 	var (
 		data         = node.Data
 		fieldNames   = node.orderedFields()
@@ -438,7 +447,7 @@ func psqlDataInsert(tx pgx.Tx, tenant string, node *dataNode, table core.Table) 
 // psqlDataSelect generates a sql query for performing an select, returning
 // the row which the given data node refers to. This is used so that joins can
 // be made to a piece of data
-func psqlDataSelect(tx pgx.Tx, tenant string, node *dataNode, table core.Table) (map[string]interface{}, error) {
+func psqlDataSelect(tx pgx.Tx, tenant string, node *dataNode, table core.Table) ([]map[string]interface{}, error) {
 	var refFields = node.orderedRefFields()
 
 	// Return the fields which are being referenced by this data node
@@ -463,11 +472,11 @@ func psqlDataSelect(tx pgx.Tx, tenant string, node *dataNode, table core.Table) 
 	return psqlQuery(tx, node, table, sqlStr, sqlArgs)
 }
 
-func psqlQuery(tx pgx.Tx, node *dataNode, table core.Table, sqlStr string, sqlArgs []interface{}) (map[string]interface{}, error) {
+func psqlQuery(tx pgx.Tx, node *dataNode, table core.Table, sqlStr string, sqlArgs []interface{}) ([]map[string]interface{}, error) {
 	var (
-		retValues = make(map[string]interface{})
-		hasRow    bool
-		err       error
+		retValues = make([]map[string]interface{}, 0)
+		// hasRow    bool
+		err error
 	)
 	rows, err := tx.Query(context.Background(), sqlStr, sqlArgs...)
 	// Execute the query
@@ -477,17 +486,18 @@ func psqlQuery(tx pgx.Tx, node *dataNode, table core.Table, sqlStr string, sqlAr
 	defer rows.Close()
 
 	for rows.Next() {
-		if hasRow {
-			return nil, fmt.Errorf("received more than one row data block %s: %#v", node.Data.TableName, node.Data)
-		}
-		hasRow = true
-		retValues, err = psqlRowValues(rows, table.Name, node.orderedRefFields())
+		// if hasRow {
+		// 	return nil, fmt.Errorf("received more than one row data block %s: %#v", node.Data.TableName, node.Data)
+		// }
+		// hasRow = true
+		retValue, err := psqlRowValues(rows, table.Name, node.orderedRefFields())
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert data block: %s: %w", table.Name, err)
 		}
 		if rows.Err() != nil {
 			return nil, fmt.Errorf("error while reading SQL row for data block %s: %w", node.Data.TableName, rows.Err())
 		}
+		retValues = append(retValues, retValue)
 	}
 	return retValues, nil
 }
@@ -542,6 +552,8 @@ func psqlArgValues(node *dataNode) ([]interface{}, error) {
 	return values, nil
 }
 
+var psqlDefaultMissingJoinValue = -1
+
 func psqlValue(node *dataNode, val cty.Value) (interface{}, error) {
 	// Check if the value is a capsule value, in which case it needs special
 	// treatment
@@ -551,6 +563,17 @@ func psqlValue(node *dataNode, val cty.Value) (interface{}, error) {
 		if parent, ok := node.Parents[ref.TableName]; ok {
 			if ret, ok := parent.Return[ref.Field]; ok {
 				return ret, nil
+			}
+			// If the ref.Field is not found, check if this is acceptable
+			if parent.Data.Policy == core.ReferenceIfExistsPolicy {
+				if ref.Field == tableIDField {
+					return psqlDefaultMissingJoinValue, nil
+				}
+				// TODO: support other fields... this requires the core.Table
+				// for the parent node.
+				// Suggest adding the table to the node value to avoid passing
+				// all these values around
+				return nil, errors.New("referece_if_exists for field which is not a join is unsupported")
 			}
 		}
 		return nil, fmt.Errorf("could not find data ref: %s.%s", ref.TableName, ref.Field)
@@ -602,6 +625,8 @@ func psqlType(ty cty.Type) (string, error) {
 		return "TEXT", nil
 	case ty.IsObjectType():
 		return "JSONB", nil
+	case ty.IsMapType():
+		return "JSONB", nil
 	default:
 		return "", fmt.Errorf("unsupported SQL type: %s", ty.GoString())
 	}
@@ -639,7 +664,7 @@ func psqlAddUniqueDataFields(table core.Table, data *core.Data) (map[string]stru
 				// create an unintential join!
 				// We need this default value because null is a unique value in
 				// postgres... which screws with our unique constraints
-				data.Fields[fieldName] = cty.NumberIntVal(-1)
+				data.Fields[fieldName] = cty.NumberIntVal(int64(psqlDefaultMissingJoinValue))
 			}
 		}
 	}
@@ -656,6 +681,9 @@ func psqlDefaultFieldValue(ty cty.Type) (cty.Value, error) {
 		return cty.StringVal(""), nil
 	case ty.IsObjectType():
 		return cty.EmptyObjectVal, nil
+	case ty.IsMapType():
+		elType := ty.MapElementType()
+		return cty.MapValEmpty(*elType), nil
 	default:
 		return cty.NilVal, fmt.Errorf("unsupported cty.Type: %s", ty.GoString())
 	}

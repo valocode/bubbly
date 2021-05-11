@@ -8,6 +8,12 @@ import (
 	"github.com/valocode/bubbly/events"
 )
 
+const (
+	ResourceTableName = "_resource"
+	SchemaTableName   = "_schema"
+	EventTableName    = "_event"
+)
+
 // Tasks stores a map of Task by name
 type Tasks map[string]Task
 

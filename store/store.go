@@ -7,7 +7,6 @@ import (
 
 	"github.com/cornelk/hashmap"
 	"github.com/graphql-go/graphql"
-	"github.com/zclconf/go-cty/cty"
 
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/config"
@@ -81,7 +80,7 @@ func (s *Store) CreateTenant(tenant string) error {
 	}
 	// We should check that a schema already exists, and if not, we should
 	// initialize one
-	ok, err := s.p.HasTable(tenant, schemaTable)
+	ok, err := s.p.HasTable(tenant, core.SchemaTableName)
 	if err != nil {
 		return fmt.Errorf("error checking if provider has schema for tenant %s: %w", tenant, err)
 	}
@@ -136,7 +135,7 @@ func (s *Store) Apply(tenant string, tables core.Tables) error {
 
 // Save saves data into the store.
 func (s *Store) Save(tenant string, data core.DataBlocks) error {
-	var graph *schemaGraph
+	var graph *SchemaGraph
 
 	dataTree, err := createDataTree(data)
 	if err != nil {
@@ -146,7 +145,7 @@ func (s *Store) Save(tenant string, data core.DataBlocks) error {
 	if !ok {
 		return fmt.Errorf("no schema exists for tenant %s", tenant)
 	}
-	graph = graphVal.(*schemaGraph)
+	graph = graphVal.(*SchemaGraph)
 	if err := s.p.Save(s.bCtx, tenant, graph, dataTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}
@@ -197,7 +196,7 @@ func (s *Store) initStoreSchemas() error {
 	for _, tenant := range tenants {
 		// Check if the provider database has the schema table.
 		// If not, it indicates a fresh database that should be initialized
-		schemaExists, err := s.p.HasTable(tenant, schemaTable)
+		schemaExists, err := s.p.HasTable(tenant, core.SchemaTableName)
 		if err != nil {
 			return fmt.Errorf("failed to check existing schema table: %w", err)
 		}
@@ -252,23 +251,16 @@ func (s *Store) currentBubblySchema(tenant string) (*bubblySchema, error) {
 		Schema:        schema,
 		RequestString: schemaQuery,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current schema: %w", err)
-	}
 	if result.HasErrors() {
 		return nil, fmt.Errorf("failed to get current tables: %v", result.Errors)
-	}
-	if !isValidValue(result.Data) {
-		return newBubblySchema(), nil
 	}
 	val := result.Data.(map[string]interface{})[core.SchemaTableName]
 	if val == nil || len(val.([]interface{})) == 0 {
 		return newBubblySchema(), nil
 	}
-	sVal := val.([]interface{})
 
 	var bSchema bubblySchema
-	b, err := json.Marshal(sVal[len(sVal)-1])
+	b, err := json.Marshal(val.([]interface{})[0])
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal graphql response: %w", err)
 	}
@@ -286,6 +278,7 @@ func (s *Store) updateSchema(tenant string, bubblySchema *bubblySchema) error {
 	if err != nil {
 		return fmt.Errorf("failed to build schema graph: %w", err)
 	}
+
 	schema, err := newGraphQLSchema(graph, func(p graphql.ResolveParams) (interface{}, error) {
 		return s.p.ResolveQuery(tenant, graph, p)
 	})
@@ -311,72 +304,3 @@ var schemaQuery = fmt.Sprintf(`
 	}
 }
 `, core.SchemaTableName)
-
-// internalTables is the minimum set of tables in a valid Bubbly Schema.
-// This set of tables is created when a new Bubbly Schema is created.
-var internalTables = core.Tables{resourceTable, schemaTable, eventTable}
-
-var resourceTable = core.Table{
-	Name: core.ResourceTableName,
-	Fields: []core.TableField{
-		{
-			Name:   "id",
-			Type:   cty.String,
-			Unique: true,
-		},
-		{
-			Name: "name",
-			Type: cty.String,
-		},
-		{
-			Name: "kind",
-			Type: cty.String,
-		},
-		{
-			Name: "metadata",
-			Type: cty.Object(map[string]cty.Type{}),
-		},
-		{
-			Name: "api_version",
-			Type: cty.String,
-		},
-		{
-			Name: "spec",
-			Type: cty.String,
-		},
-	},
-}
-
-var eventTable = core.Table{
-	Name: core.EventTableName,
-	Fields: []core.TableField{
-		{
-			Name: "status",
-			Type: cty.String,
-		},
-		{
-			Name: "error",
-			Type: cty.String,
-		},
-		{
-			Name: "time",
-			Type: cty.String,
-		},
-	},
-	Joins: []core.TableJoin{
-		{
-			Table: core.ResourceTableName,
-		},
-	},
-}
-
-var schemaTable = core.Table{
-	Name: core.SchemaTableName,
-	Fields: []core.TableField{
-		{
-			Name:   "tables",
-			Type:   cty.Object(map[string]cty.Type{}),
-			Unique: false,
-		},
-	},
-}

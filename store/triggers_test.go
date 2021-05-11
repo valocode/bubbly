@@ -81,7 +81,7 @@ func TestEventTrigger(t *testing.T) {
 		Metadata: &core.Metadata{
 			Labels: map[string]string{"label": "is a label"},
 		},
-		SpecRaw: []byte("data {}"),
+		SpecRaw: "data {}",
 	}
 
 	s, err := New(bCtx)

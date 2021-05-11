@@ -1,13 +1,10 @@
 package list
 
 import (
-	"fmt"
-
-	"github.com/ryanuber/columnize"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	"github.com/valocode/bubbly/bubbly"
-	"github.com/valocode/bubbly/bubbly/builtin"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/util/normalise"
@@ -16,15 +13,15 @@ import (
 var (
 	_       cmdutil.Options = (*options)(nil)
 	cmdLong                 = normalise.LongDesc(`
-		List bubbly releases
+		Evaluate a release criteria and log a release entry with the result
 
-		    $ bubbly release list
+		    $ bubbly release eval (criteria)
 
 		`)
 
 	cmdExample = normalise.Examples(`
-		# List bubbly releases
-		bubbly release list
+		# Evaluate a release criteria
+		bubbly release log
 		`)
 )
 
@@ -35,25 +32,26 @@ type options struct {
 	BubblyContext *env.BubblyContext
 	Command       string
 	Args          []string
+	Release       *bubbly.ReleaseSpec
 
 	// flags
-	releases *builtin.Release_Wrap
+	Criteria string
 }
 
 // New creates a new cobra command
 func New(bCtx *env.BubblyContext) *cobra.Command {
 	o := &options{
-		Command:       "list",
+		Command:       "eval",
 		BubblyContext: bCtx,
 	}
 
 	// cmd represents the apply command
 	cmd := &cobra.Command{
-		Use:     "list",
-		Short:   "list bubbly releases",
+		Use:     "eval",
+		Short:   "evaluate a release entry",
 		Long:    cmdLong + "\n\n",
 		Example: cmdExample,
-		Args:    cobra.NoArgs,
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.Args = args
 
@@ -83,61 +81,23 @@ func (o *options) validate(cmd *cobra.Command) error {
 
 // resolve resolves args for the command
 func (o *options) resolve() error {
+	o.Criteria = o.Args[0]
 	return nil
 }
 
 // run runs the command over the validated options
 func (o *options) run() error {
-
-	releases, err := bubbly.ListReleases(o.BubblyContext)
+	release, err := bubbly.EvalReleaseCriteria(o.BubblyContext, o.Criteria)
 	if err != nil {
 		return err
 	}
-	o.releases = releases
+	o.Release = release
 	return nil
 }
 
 // Print prints the successful outcome of the cmd
 func (o *options) Print() {
+	color.Green("Release entry successfully logged!")
 
-	var releaseLines []string
-	releaseLines = append(releaseLines, "Name | Version | Type | Status")
-	for _, rel := range o.releases.Release {
-		var (
-			relType   string
-			relStatus bool
-
-			criterion []string
-		)
-		for _, item := range rel.ReleaseItem {
-			relType = item.Type
-		}
-		for _, stage := range rel.ReleaseStage {
-			for _, criteria := range stage.ReleaseCriteria {
-				criterion = append(criterion, criteria.EntryName)
-			}
-		}
-		relStatus = true
-		for _, entry := range rel.ReleaseEntry {
-			var entryOK bool
-			for _, criteria := range criterion {
-				if criteria == entry.Name {
-					entryOK = true
-				}
-			}
-			if !entryOK {
-				relStatus = false
-				break
-			}
-		}
-		relStatusStr := "READY"
-		if relStatus {
-			relStatusStr = "BLOCKED"
-		}
-		releaseLines = append(releaseLines, fmt.Sprintf(
-			"%s | %s | %s | %s ", rel.Name, rel.Version, relType, relStatusStr,
-		))
-	}
-	fmt.Println("Releases")
-	fmt.Println(columnize.SimpleFormat(releaseLines))
+	// fmt.Println("\n" + o.Release.String())
 }

@@ -127,6 +127,7 @@ func psqlMigrate(conn *pgxpool.Pool, tenant string, schema *bubblySchema, migr m
 		return fmt.Errorf("failed to create data block from schema: %w", err)
 	}
 	node := newDataNode(&d)
+	schemaTable := schema.Tables[core.SchemaTableName]
 	// Save the data block node to the schemaTable
 	if err := psqlSaveNode(tx, tenant, node, schemaTable); err != nil {
 		return fmt.Errorf("failed to save schema data block: %w", err)

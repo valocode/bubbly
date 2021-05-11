@@ -21,6 +21,7 @@ import (
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/events"
 	testData "github.com/valocode/bubbly/store/testdata"
+	"github.com/valocode/bubbly/test"
 )
 
 const (
@@ -883,7 +884,7 @@ func createResJSONOrDie(t *testing.T) core.Data {
 		Metadata: &core.Metadata{
 			Labels: map[string]string{"label": "is a label"},
 		},
-		SpecRaw: []byte("data {}"),
+		SpecRaw: "data {}",
 	}
 	d, err := res.Data()
 	require.NoError(t, err)
@@ -1159,6 +1160,16 @@ func TestPostgresSQLGen(t *testing.T) {
 			require.Equal(t, tt.want, have.Data, "query response is equal")
 		})
 	}
+}
+
+func TestSchemaSync(t *testing.T) {
+	bCtx := env.NewBubblyContext()
+	resource := test.RunPostgresDocker(bCtx, t)
+	bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
+
+	_, err := New(bCtx)
+	assert.NoError(t, err)
+
 }
 
 func TestPostgres(t *testing.T) {

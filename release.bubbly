@@ -1,18 +1,42 @@
 
-// release {
-//     git {}
+release {
+    project = "bubbly"
+    git {}
 
-//     stage "Artifact" {
-//         criteria "artifact" {}
-//     }
-//     stage "Code Analysis" {
-//         criteria "gofmt" {}
-//     }
-//     stage "Testing" {
-//         criteria "unit_test" {}
-//         criteria "integration_test" {}
-//     }
-//     stage "Security" {
-//         criteria "gosec" {}
-//     }
-// }
+    stage "Artifact" {
+        criteria "artifact" {
+            artifact {
+                name = "bubbly"
+                location = "docker://europe-north1-docker.pkg.dev/bubbly-saas-3276866d/bubbly/bubbly:0.0.1-beta"
+            }
+        }
+    }
+    stage "Code Analysis" {
+        // criteria "gofmt" {
+        //     run "pipeline/gofmt" {
+
+        //     }
+        // }
+        criteria "gosec" {
+            run "pipeline/gosec" {
+                input "file" {
+                    value = "./gosec-results.json"
+                }
+            }
+            // run "criteria/gosec" {
+            // }
+        }
+    }
+    stage "Testing" {
+        criteria "unit_test" {
+            run "pipeline/gotest" {
+                input "file" {
+                    value = "./gotest.json"
+                }
+            }
+        }
+        criteria "integration_test" {}
+    }
+    // stage "Security" {
+    // }
+}

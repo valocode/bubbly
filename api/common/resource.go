@@ -27,6 +27,8 @@ func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, 
 		}
 	}
 	runCtx := core.NewResourceContext(inputs, ctx.NewResource, ctx.Auth)
+	// TODO: handle this better... it get's copied around in multiple places...
+	runCtx.DataCtx = ctx.DataCtx
 	return resource, resource.Apply(bCtx, runCtx)
 }
 
@@ -70,7 +72,7 @@ func DecodeBodyWithInputs(bCtx *env.BubblyContext, body hcl.Body, val interface{
 	// override the current resource context inputs
 	ctx.Inputs = retInputs
 
-	if err := parser.DecodeExpandBody(bCtx, body, val, ctx.Inputs); err != nil {
+	if err := parser.DecodeExpandBody(body, val, ctx.Inputs); err != nil {
 		return fmt.Errorf("failed to decode resource: %w", err)
 	}
 	return nil
@@ -80,7 +82,7 @@ func DecodeBodyWithInputs(bCtx *env.BubblyContext, body hcl.Body, val interface{
 // inputs before decoding, which means it is simply a wrapper around the parser
 // but is here for readability... Could also be removed.
 func DecodeBody(bCtx *env.BubblyContext, body hcl.Body, val interface{}, ctx *core.ResourceContext) error {
-	if err := parser.DecodeExpandBody(bCtx, body, val, ctx.Inputs); err != nil {
+	if err := parser.DecodeExpandBody(body, val, ctx.Inputs); err != nil {
 		return fmt.Errorf("failed to decode resource: %w", err)
 	}
 	return nil

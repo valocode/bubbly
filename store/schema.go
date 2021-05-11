@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/bubbly/builtin"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -19,14 +20,14 @@ import (
 // set of tables necessary for Bubbly to work.
 func newBubblySchema() *bubblySchema {
 
+	tables := FlattenTables(builtin.BuiltinTables, nil)
 	schema := &bubblySchema{
-		Tables: make(map[string]core.Table, len(internalTables)),
+		Tables: make(map[string]core.Table, len(tables)),
 	}
 
-	for _, t := range internalTables {
+	for _, t := range tables {
 		schema.Tables[t.Name] = t
 	}
-
 	return schema
 }
 
@@ -34,14 +35,14 @@ func newBubblySchemaFromTables(tables core.Tables) *bubblySchema {
 	schemaTables := make(map[string]core.Table)
 	// Append the internal tables containing definition of the schema and
 	// resource tables.
-	tables = append(tables, internalTables...)
+	tables = append(tables, builtin.BuiltinTables...)
+	tables = FlattenTables(tables, nil)
 	for _, table := range tables {
 		schemaTables[table.Name] = table
 	}
 	schema := &bubblySchema{
 		Tables: schemaTables,
 	}
-	addImplicitJoins(schema, tables, nil)
 	return schema
 }
 
@@ -66,19 +67,23 @@ func (b *bubblySchema) Data() (core.Data, error) {
 
 	return core.Data{
 		TableName: core.SchemaTableName,
-		Fields: map[string]cty.Value{
+		Fields: core.DataFields{
 			"tables": cty.StringVal(string(bTables)), // "Smuggle" the JSON as a string
 		},
 	}, nil
 }
 
-func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Table) {
+// FlattenTables takes a list of tables flattens any nested tables, making sure
+// the joins implied by the nesting are added.
+// The table is already a flat list, this should return an identical list
+func FlattenTables(tables core.Tables, parent *core.Table) core.Tables {
+	var curTables core.Tables
 	for _, t := range tables {
 		if parent != nil {
 			var hasParentID bool
-			// Check if the parent was already added to the schema
-			for _, f := range t.Joins {
-				if f.Table == parent.Name {
+			// Check if the join already exists, so that we don't add it twice
+			for _, join := range t.Joins {
+				if join.Table == parent.Name {
 					hasParentID = true
 				}
 			}
@@ -90,10 +95,11 @@ func addImplicitJoins(schema *bubblySchema, tables core.Tables, parent *core.Tab
 				})
 			}
 		}
-
-		addImplicitJoins(schema, t.Tables, &t)
+		childTables := FlattenTables(t.Tables, &t)
 		// Clear the child tables
 		t.Tables = nil
-		schema.Tables[t.Name] = t
+		curTables = append(curTables, t)
+		curTables = append(curTables, childTables...)
 	}
+	return curTables
 }

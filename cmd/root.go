@@ -29,6 +29,10 @@ func NewCmdRoot(bCtx *env.BubblyContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bubbly",
 		Short: rootShort,
+		// Do not print usage on error
+		SilenceUsage: true,
+		// Do not print errors on error (we will do that ourselves)
+		SilenceErrors: true,
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
 			// Allow unknown flags for parsing to proceed in cases
 			// where flags for child commands are provided.
