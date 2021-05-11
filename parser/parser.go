@@ -13,11 +13,30 @@ import (
 )
 
 func ParseFilename(bCtx *env.BubblyContext, filename string, val interface{}) error {
-	mergedBody, err := MergedHCLBodies(bCtx, filename)
+	files, err := bubblyFilesByFilename(filename)
+	if err != nil {
+		return fmt.Errorf("failed to get bubbly files: %s", err.Error())
+	}
+	mergedBody, err := MergedHCLBodies(bCtx, files)
 	if err != nil {
 		return err
 	}
-	if err := DecodeBody(bCtx, mergedBody, val, cty.NilVal); err != nil {
+	if err := DecodeBody(mergedBody, val, cty.NilVal); err != nil {
+		return fmt.Errorf(`failed to decode body: %s`, err.Error())
+	}
+	return nil
+}
+
+func ParseConfig(bCtx *env.BubblyContext, val interface{}) error {
+	files, err := bubblyFilesWithConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get bubbly files: %s", err.Error())
+	}
+	mergedBody, err := MergedHCLBodies(bCtx, files)
+	if err != nil {
+		return err
+	}
+	if err := DecodeBody(mergedBody, val, cty.NilVal); err != nil {
 		return fmt.Errorf(`failed to decode body: %s`, err.Error())
 	}
 	return nil
@@ -29,20 +48,16 @@ func ParseResource(bCtx *env.BubblyContext, id string, src []byte, value interfa
 	if diags.HasErrors() {
 		return fmt.Errorf("failed to parse resource: %s", diags.Error())
 	}
-	if err := DecodeBody(bCtx, file.Body, value, cty.NilVal); err != nil {
+	if err := DecodeBody(file.Body, value, cty.NilVal); err != nil {
 		return fmt.Errorf("failed to decode resource: %w", err)
 	}
 	return nil
 }
 
-func MergedHCLBodies(bCtx *env.BubblyContext, filename string) (hcl.Body, error) {
-	files, err := bubblyFiles(filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get bubbly files: %s", err.Error())
-	}
+func MergedHCLBodies(bCtx *env.BubblyContext, files []string) (hcl.Body, error) {
 
 	if len(files) == 0 {
-		return nil, errors.New("no bubbly files found to parse")
+		return nil, errors.New("no bubbly files found")
 	}
 
 	parser := hclparse.NewParser()
@@ -59,7 +74,7 @@ func MergedHCLBodies(bCtx *env.BubblyContext, filename string) (hcl.Body, error)
 	return mergedBody, nil
 }
 
-func bubblyFiles(filename string) ([]string, error) {
+func bubblyFilesByFilename(filename string) ([]string, error) {
 	var (
 		files []string
 	)
@@ -71,45 +86,64 @@ func bubblyFiles(filename string) ([]string, error) {
 	switch mode := fi.Mode(); {
 	case mode.IsRegular():
 		files = append(files, filename)
-		// Get the directory that the file is in
-		filename = filepath.Dir(filename)
 	case mode.IsDir():
-		dirFiles, err := bubblyFilesInDir(filename)
+		// walk the directory and get .bubbly files
+		entries, err := os.ReadDir(filename)
 		if err != nil {
-			return nil, fmt.Errorf("error getting bubbly files in directory %s: %w", filename, err)
+			return nil, fmt.Errorf("error opening directory %s: %w", filename, err)
 		}
-		files = append(files, dirFiles...)
+		for _, e := range entries {
+			if filepath.Ext(e.Name()) == ".bubbly" && !e.IsDir() {
+				files = append(files, filepath.Join(filename, e.Name()))
+			}
+		}
 	default:
 		return nil, fmt.Errorf("unknown filename mode %s", mode.String())
 	}
 
-	dir, err := filepath.Abs(filepath.Dir(filename))
+	return files, nil
+}
+
+func bubblyFilesWithConfig() ([]string, error) {
+	var files []string
+	cwd, err := os.Getwd()
 	if err != nil {
-		return nil, fmt.Errorf("error getting absolute path of %s: %w", filename, err)
+		return nil, fmt.Errorf("error getting working directory: %w", err)
 	}
-	// TODO: this will only work when the root filesystem is "/"
-	for dir != "/" {
-		dirFiles, err := bubblyFilesInDir(dir)
+
+	dir, err := filepath.Abs(filepath.Join(cwd, ".bubbly"))
+	if err != nil {
+		return nil, fmt.Errorf("error gettings absolute path: %w", err)
+	}
+
+	for {
+		bfs, err := bubblyFilesByFilename(dir)
 		if err != nil {
-			return nil, fmt.Errorf("error getting bubbly files in directory %s: %w", filename, err)
+			return nil, fmt.Errorf("error getting bubbly files with %s: %w", dir, err)
 		}
-		files = append(files, dirFiles...)
-		dir = filepath.Dir(dir)
+		files = append(files, bfs...)
+		// Get the parent directory
+		pDir := filepath.Dir(dir)
+		if pDir == dir {
+			// Then we are at the root directory so exit
+			break
+		}
+		dir = pDir
 	}
 	return files, nil
 }
 
-func bubblyFilesInDir(dir string) ([]string, error) {
-	var files []string
-	// walk the directory and get .bubbly files
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, fmt.Errorf("error opening directory %s: %w", dir, err)
-	}
-	for _, e := range entries {
-		if filepath.Ext(e.Name()) == ".bubbly" && !e.IsDir() {
-			files = append(files, filepath.Join(dir, e.Name()))
-		}
-	}
-	return files, err
-}
+// func bubblyFilesInDir(dir string) ([]string, error) {
+// 	var files []string
+// 	// walk the directory and get .bubbly files
+// 	entries, err := os.ReadDir(dir)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("error opening directory %s: %w", dir, err)
+// 	}
+// 	for _, e := range entries {
+// 		if filepath.Ext(e.Name()) == ".bubbly" && !e.IsDir() {
+// 			files = append(files, filepath.Join(dir, e.Name()))
+// 		}
+// 	}
+// 	return files, err
+// }

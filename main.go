@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/valocode/bubbly/docs"
@@ -87,8 +88,8 @@ func main() {
 		Msg("final bubbly context")
 
 	if err := rootCmd.Execute(); err != nil {
-		bCtx.Logger.Fatal().Err(err).Msg(
-			"error occurred while executing the command")
+		fmt.Println("Error: " + err.Error())
+		os.Exit(1)
 	}
 }
 

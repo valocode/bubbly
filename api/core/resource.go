@@ -16,10 +16,6 @@ import (
 	"github.com/valocode/bubbly/parser"
 )
 
-const ResourceTableName = "_resource"
-const SchemaTableName = "_schema"
-const EventTableName = "_event"
-
 // ResourceBlocks is a wrapper for a slice of type ResourceBlock
 type ResourceBlocks []*ResourceBlock
 

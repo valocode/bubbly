@@ -64,7 +64,7 @@ func (c *cockroachdb) Migrate(tenant string, schema *bubblySchema, cl schemaUpda
 	return psqlMigrate(c.pool, tenant, schema, migration)
 }
 
-func (c *cockroachdb) Save(bCtx *env.BubblyContext, tenant string, graph *schemaGraph, tree dataTree) error {
+func (c *cockroachdb) Save(bCtx *env.BubblyContext, tenant string, graph *SchemaGraph, tree dataTree) error {
 
 	err := crdbpgx.ExecuteTx(context.Background(), c.pool, pgx.TxOptions{}, func(tx pgx.Tx) error {
 		saveNode := func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
@@ -74,7 +74,7 @@ func (c *cockroachdb) Save(bCtx *env.BubblyContext, tenant string, graph *schema
 			if !ok {
 				return fmt.Errorf("data block refers to non-existing table: %s", node.Data.TableName)
 			}
-			return psqlSaveNode(tx, tenant, node, *tNode.table)
+			return psqlSaveNode(tx, tenant, node, *tNode.Table)
 		}
 
 		_, err := tree.traverse(bCtx, saveNode)
@@ -88,7 +88,7 @@ func (c *cockroachdb) Save(bCtx *env.BubblyContext, tenant string, graph *schema
 	return nil
 }
 
-func (c *cockroachdb) ResolveQuery(tenant string, graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
+func (c *cockroachdb) ResolveQuery(tenant string, graph *SchemaGraph, params graphql.ResolveParams) (interface{}, error) {
 	return psqlResolveRootQueries(c.pool, tenant, graph, params)
 }
 
@@ -100,6 +100,6 @@ func (c *cockroachdb) CreateTenant(name string) error {
 	return psqlCreateSchema(c.pool, name)
 }
 
-func (c *cockroachdb) HasTable(tenant string, table core.Table) (bool, error) {
+func (c *cockroachdb) HasTable(tenant string, table string) (bool, error) {
 	return psqlHasTable(c.pool, tenant, table)
 }

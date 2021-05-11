@@ -1,6 +1,9 @@
 package list
 
 import (
+	"fmt"
+
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	"github.com/valocode/bubbly/bubbly"
@@ -12,14 +15,14 @@ import (
 var (
 	_       cmdutil.Options = (*options)(nil)
 	cmdLong                 = normalise.LongDesc(`
-		Create a bubbly release
+		Create a release
 
 		    $ bubbly release create
 
 		`)
 
 	cmdExample = normalise.Examples(`
-		# Create a bubbly release
+		# Create a release
 		bubbly release create
 		`)
 )
@@ -31,7 +34,7 @@ type options struct {
 	BubblyContext *env.BubblyContext
 	Command       string
 	Args          []string
-
+	Release       *bubbly.ReleaseSpec
 	// flags
 }
 
@@ -45,7 +48,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 	// cmd represents the apply command
 	cmd := &cobra.Command{
 		Use:     "create",
-		Short:   "create a bubbly release",
+		Short:   "create a release",
 		Long:    cmdLong + "\n\n",
 		Example: cmdExample,
 		Args:    cobra.NoArgs,
@@ -83,10 +86,17 @@ func (o *options) resolve() error {
 
 // run runs the command over the validated options
 func (o *options) run() error {
-	return bubbly.CreateRelease(o.BubblyContext)
+	release, err := bubbly.CreateRelease(o.BubblyContext)
+	if err != nil {
+		return err
+	}
+	o.Release = release
+	return nil
 }
 
 // Print prints the successful outcome of the cmd
 func (o *options) Print() {
+	color.Green("Release successfully created!")
 
+	fmt.Println("\n" + o.Release.String())
 }

@@ -29,7 +29,7 @@ func newSQLQueryBuilder() *sqlQueryBuilder {
 // statement that reflects a graphql query
 type sqlQueryBuilder struct {
 	sql   sq.SelectBuilder
-	node  *schemaNode
+	node  *SchemaNode
 	depth int
 }
 
@@ -67,7 +67,7 @@ func (t *tableColumns) length() int {
 
 // psqlResolveRootQueries is called for each top-level query and iterates
 // through the fields in that root query and resolves them.
-func psqlResolveRootQueries(pool *pgxpool.Pool, tenant string, graph *schemaGraph, params graphql.ResolveParams) (interface{}, error) {
+func psqlResolveRootQueries(pool *pgxpool.Pool, tenant string, graph *SchemaGraph, params graphql.ResolveParams) (interface{}, error) {
 	var (
 		result interface{}
 		err    error
@@ -82,7 +82,7 @@ func psqlResolveRootQueries(pool *pgxpool.Pool, tenant string, graph *schemaGrap
 }
 
 // psqlResolveRootQuery resolves a single root graphql query
-func psqlResolveRootQuery(pool *pgxpool.Pool, tenant string, graph *schemaGraph, field *ast.Field) (interface{}, error) {
+func psqlResolveRootQuery(pool *pgxpool.Pool, tenant string, graph *SchemaGraph, field *ast.Field) (interface{}, error) {
 	var (
 		result      = make(map[string]interface{})
 		qb          = newSQLQueryBuilder()
@@ -129,7 +129,7 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, tenant string, graph *schemaGraph,
 	return result[rootTable], nil
 }
 
-func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *tableColumns, tc *tableColumns, field *ast.Field, path schemaPath) error {
+func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *tableColumns, tc *tableColumns, field *ast.Field, path SchemaPath) error {
 
 	// GraphQL fields are conceptually functions which return values,
 	// and occasionally accept arguments which alter their behaviour.
@@ -186,7 +186,7 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		// Argument name equal to one of the column names for the current node (table)
 		// adds an equality predicate in the WHERE clause.
 		// Multiple expressions are `AND`ed together in the generated SQL.
-		for _, tf := range node.table.Fields {
+		for _, tf := range node.Table.Fields {
 			if arg.Name.Value == tf.Name {
 				qb.sql = qb.sql.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
 				argIsResolved = true
@@ -307,31 +307,31 @@ func psqlSubQuery(tenant string, graph *schemaGraph, qb *sqlQueryBuilder, root *
 		// Are the parent field and the subfield connected in the graph at all?
 		var (
 			fieldName         = subField.Name.Value
-			edgeToRelatedNode *schemaEdge
+			edgeToRelatedNode *SchemaEdge
 		)
-		for _, p := range node.edges {
-			if p.node.table.Name == fieldName {
+		for _, p := range node.Edges {
+			if p.Node.Table.Name == fieldName {
 				edgeToRelatedNode = p
 			}
 		}
 		if edgeToRelatedNode == nil {
-			return fmt.Errorf("no relationship found between tables: '%s', '%s'", node.table.Name, fieldName)
+			return fmt.Errorf("no relationship found between tables: '%s', '%s'", node.Table.Name, fieldName)
 		}
 
 		var (
 			joinStr         string
 			leftTable       = tc.table
 			leftTableAlias  = tc.alias
-			rightTable      = edgeToRelatedNode.node.table.Name
+			rightTable      = edgeToRelatedNode.Node.Table.Name
 			rightTableAlias = tableAlias(rightTable, qb.depth)
 		)
-		switch edgeToRelatedNode.rel {
-		case oneToOne, oneToMany:
+		switch edgeToRelatedNode.Rel {
+		case OneToOne, OneToMany:
 			joinStr = joinOn(
 				tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
 				tableColumn(leftTableAlias, tableIDField),
 				tableColumn(rightTableAlias, foreignKeyField(leftTable)))
-		case belongsTo:
+		case BelongsTo:
 			joinStr = joinOn(
 				tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
 				tableColumn(rightTableAlias, tableIDField),

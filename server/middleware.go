@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/valocode/bubbly/agent/component"
@@ -16,6 +17,10 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		)
 		// Make an exception that /healthz does not require authentication
 		if c.Path() == "/healthz" {
+			return next(c)
+		}
+		// Ignore requests to swagger documentation
+		if strings.HasPrefix(c.Path(), "/swagger") {
 			return next(c)
 		}
 		if authHeader == "" {

@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/stretchr/testify/assert"
-	"github.com/valocode/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -14,10 +13,10 @@ type testHCLValue struct {
 }
 
 func TestDecode(t *testing.T) {
-	bCtx := env.NewBubblyContext()
+	// bCtx := env.NewBubblyContext()
 	file, diags := hclparse.NewParser().ParseHCL([]byte("value = self.data.my_table.my_field"), "testing")
 	assert.Equalf(t, diags.HasErrors(), false, diags.Error())
 	var val testHCLValue
-	err := DecodeExpandBody(bCtx, file.Body, &val, cty.EmptyObjectVal)
+	err := DecodeExpandBody(file.Body, &val, cty.EmptyObjectVal)
 	assert.NoErrorf(t, err, "failed to decode body")
 }

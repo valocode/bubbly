@@ -414,10 +414,10 @@ func (a *artifactItem) sha256SumDocker() (string, error) {
 }
 
 type releaseStage struct {
-	Name     string            `hcl:",label"`
-	Crterion []releaseCriteria `hcl:"criteria,block"`
+	Name     string         `hcl:",label"`
+	Crterion []releaseCheck `hcl:"criteria,block"`
 }
 
-type releaseCriteria struct {
+type releaseCheck struct {
 	Name string `hcl:",label"`
 }

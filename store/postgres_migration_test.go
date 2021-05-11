@@ -27,7 +27,7 @@ func TestApplyMigrationSchemaPostgres(t *testing.T) {
 			// Start postgres in docker
 			resource := test.RunPostgresDocker(bCtx, t)
 			bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
-			// // Create the bubbly schemas
+			// Create the bubbly schemas
 			s1 := newBubblySchemaFromTables(tt.s1)
 			s2 := newBubblySchemaFromTables(tt.s2)
 

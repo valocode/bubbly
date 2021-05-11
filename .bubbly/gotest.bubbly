@@ -6,13 +6,13 @@ resource "extract" "gotest" {
         source {
             // file = self.input.file
             contents = "[${join(",", split("\n", trimspace(file(self.input.file))))}]"
-            // format = object({
-            //     Issues: list(object({
-            //       rule_id: string,
-            //       severity: string,
-            //       details: string,
-            //     }))
-            // })
+            format = list(object({
+                Issues: list(object({
+                  rule_id: string,
+                  severity: string,
+                  details: string,
+                }))
+            }))
         }
     }
 }
@@ -50,22 +50,19 @@ resource "load" "gotest" {
     spec {
         input "data" {}
 
-        git {
-          name = "test-repo"
-        }
         data = self.input.data
     }
 }
 
 resource "pipeline" "gotest" {
   spec {
-    input "results" {
+    input "file" {
       default = "./gotest.json"
     }
     task "extract" {
       resource = "extract/gotest"
       input "file" {
-        value = self.input.results
+        value = self.input.file
       }
     }
     task "transform" {
@@ -83,8 +80,8 @@ resource "pipeline" "gotest" {
   }
 }
 
-resource "run" "gotest" {
-    spec {
-        resource = "pipeline/gotest"
-    }
-}
+// resource "run" "gotest" {
+//     spec {
+//         resource = "pipeline/gotest"
+//     }
+// }

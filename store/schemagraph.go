@@ -4,59 +4,61 @@ import (
 	"fmt"
 
 	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/bubbly/builtin"
 )
 
 //
 // The Schema Graph is a graph representation of the Bubbly Schema.
 //
 
-// relType describes the relationship type of a directed edge from a --> b
-type relType int
+// RelType describes the relationship type of a directed edge from a --> b
+type RelType int
 
-// The difference between `oneToOne` and `belongsTo` is in the order.
+// The difference between `OneToOne` and `BelongsTo` is in the order.
 // table "A" {
-//   table "B" { unique = true }
+//   table "B" { single = true }
+//   table "C" {}
 // }
-// Table B belongs to A. And Table A has a oneToOne to B.
+// Table B belongs to A. And Table A has a OneToOne to B.
+// Table C belongs to A. And Table A has a OneToMany to C.
 // So the relationships describe the direction of the edge.
-
 const (
-	oneToOne relType = iota
-	oneToMany
-	belongsTo
+	OneToOne RelType = iota
+	OneToMany
+	BelongsTo
 )
 
-// schemaNode represents a node in the schema graph.
+// SchemaNode represents a node in the schema graph.
 // A node is a wrapper around core.Table with the edges for explicit
 // relationships to other nodes (and therefore tables)
-type schemaNode struct {
-	table *core.Table
-	edges schemaPath
+type SchemaNode struct {
+	Table *core.Table
+	Edges SchemaPath
 }
 
 // nodeRefMap maps node names to the corresponding structures of type node
-type nodeRefMap map[string]*schemaNode
+type nodeRefMap map[string]*SchemaNode
 
 // schemaNodes is a list of graph nodes
-type schemaNodes []*schemaNode
+type schemaNodes []*SchemaNode
 
-// schemaEdge represents an edge in the graph
-type schemaEdge struct {
-	node *schemaNode
-	rel  relType
+// SchemaEdge represents an edge in the graph
+type SchemaEdge struct {
+	Node *SchemaNode
+	Rel  RelType
 }
 
 // isScalar returns true if the return type from the node which this edge points
-// to should be scalar. This is true, unless the edge relationship is oneToMany
-func (e *schemaEdge) isScalar() bool {
-	return e.rel != oneToMany
+// to should be scalar. This is true, unless the edge relationship is OneToMany
+func (e *SchemaEdge) isScalar() bool {
+	return e.Rel != OneToMany
 }
 
-// schemaPath is a list graph edges
-type schemaPath []*schemaEdge
+// SchemaPath is a list graph edges
+type SchemaPath []*SchemaEdge
 
-// schemaGraph represents a graph created from the bubbly schema.
-type schemaGraph struct {
+// SchemaGraph represents a graph created from the bubbly schema.
+type SchemaGraph struct {
 	Nodes schemaNodes
 	// NodeIndex stores an index to the nodes using the schema table name.
 	// This is probably not the best for performance, but our schemas probably
@@ -65,10 +67,14 @@ type schemaGraph struct {
 	NodeIndex nodeRefMap
 }
 
-// traverse applies the callback function to every node of the schemaGraph.
-func (g *schemaGraph) traverse(fnVisit func(node *schemaNode) error) error {
+// traverse applies the callback function to every node of the SchemaGraph.
+func (g *SchemaGraph) Traverse(fnVisit func(node *SchemaNode) error) error {
 	var visited = make(map[string]struct{})
 	for _, n := range g.Nodes {
+		// If we have already visited the node, then continue the loop
+		if _, ok := visited[n.Table.Name]; ok {
+			continue
+		}
 		if err := visitSchemaNode(n, visited, fnVisit); err != nil {
 			return fmt.Errorf("failed to traverse schema graph: %w", err)
 		}
@@ -78,18 +84,18 @@ func (g *schemaGraph) traverse(fnVisit func(node *schemaNode) error) error {
 
 // visitSchemaNode is used by traverse function to make sure a node is "visited" only once,
 // that is to make sure that the callback function is applied to the node only once.
-func visitSchemaNode(node *schemaNode, visited map[string]struct{}, fnVisit func(node *schemaNode) error) error {
+func visitSchemaNode(node *SchemaNode, visited map[string]struct{}, fnVisit func(node *SchemaNode) error) error {
 	if err := fnVisit(node); err != nil {
 		return err
 	}
-	visited[node.table.Name] = struct{}{}
+	visited[node.Table.Name] = struct{}{}
 
-	for _, e := range node.edges {
+	for _, e := range node.Edges {
 		// If we have already visited the node, then continue the loop
-		if _, ok := visited[e.node.table.Name]; ok {
+		if _, ok := visited[e.Node.Table.Name]; ok {
 			continue
 		}
-		if err := visitSchemaNode(e.node, visited, fnVisit); err != nil {
+		if err := visitSchemaNode(e.Node, visited, fnVisit); err != nil {
 			return err
 		}
 	}
@@ -98,26 +104,27 @@ func visitSchemaNode(node *schemaNode, visited map[string]struct{}, fnVisit func
 
 // addEdgeFromJoin takes a node and creates bi-directional edges between the
 // nodes. Noteworthy is the relationship that the edges describe
-func (n *schemaNode) addEdgeFromJoin(child *schemaNode, unique bool) {
+func (n *SchemaNode) addEdgeFromJoin(child *SchemaNode, unique bool) {
 	var (
-		// This node has a oneToMany or oneToOne relationship with the child node
-		edgeToChild = &schemaEdge{node: child, rel: oneToMany}
-		// The child "belongsTo" the parent (this nodes)
-		edgeToParent = &schemaEdge{node: n, rel: belongsTo}
+		// This node has a OneToMany or OneToOne relationship with the child node
+		edgeToChild = &SchemaEdge{Node: child, Rel: OneToMany}
+		// The child "BelongsTo" the parent (this nodes)
+		edgeToParent = &SchemaEdge{Node: n, Rel: BelongsTo}
 	)
 	if unique {
-		// If unique, then it's a oneToOne relationship, not oneToMany
-		edgeToChild.rel = oneToOne
+		// If unique, then it's a OneToOne relationship, not OneToMany
+		edgeToChild.Rel = OneToOne
 	}
 	// Add the edge to the child to this node
-	n.edges = append(n.edges, edgeToChild)
+	n.Edges = append(n.Edges, edgeToChild)
 	// Also add the reverse relationship
-	child.edges = append(child.edges, edgeToParent)
+	child.Edges = append(child.Edges, edgeToParent)
 }
 
 // internalSchemaGraph returns a schema graph based on the internal tables
-func internalSchemaGraph() *schemaGraph {
-	graph, err := newSchemaGraph(internalTables)
+func internalSchemaGraph() *SchemaGraph {
+	flatTables := FlattenTables(builtin.BuiltinTables, nil)
+	graph, err := NewSchemaGraph(flatTables)
 	if err != nil {
 		// This is controlled entirely by development so no input can affect this
 		// so panic as a developer has done something wrong
@@ -133,21 +140,21 @@ func internalSchemaGraph() *schemaGraph {
 // compatibility with the current way the schema is stored in the provider.
 //
 // FIXME: This project is too young to have "backwards compatibility" layer!
-func newSchemaGraphFromMap(tables map[string]core.Table) (*schemaGraph, error) {
+func newSchemaGraphFromMap(tables map[string]core.Table) (*SchemaGraph, error) {
 	var ts = make(core.Tables, 0, len(tables))
 	for _, t := range tables {
 		ts = append(ts, t)
 	}
-	return newSchemaGraph(ts)
+	return NewSchemaGraph(ts)
 }
 
-// newSchemaGraph returns a new Schema Graph,
+// NewSchemaGraph returns a new Schema Graph,
 // created from the tables coming from the Bubbly Schema.
-func newSchemaGraph(tables core.Tables) (*schemaGraph, error) {
+func NewSchemaGraph(tables core.Tables) (*SchemaGraph, error) {
 
 	var (
 		nodes = make(nodeRefMap)
-		graph = &schemaGraph{NodeIndex: nodes}
+		graph = &SchemaGraph{NodeIndex: nodes}
 	)
 
 	// Pull all the nodes from the definitions of tables.
@@ -173,13 +180,13 @@ func newSchemaGraph(tables core.Tables) (*schemaGraph, error) {
 // createFrom creates a node for every table in the given list.
 func (nodes *nodeRefMap) createFrom(tables core.Tables) {
 	for index, t := range tables {
-		(*nodes)[t.Name] = &schemaNode{table: &tables[index]}
+		(*nodes)[t.Name] = &SchemaNode{Table: &tables[index]}
 		nodes.createFrom(t.Tables)
 	}
 }
 
 // connectFrom connects related nodes based on join information stored in the given list of tables
-func (nodes *nodeRefMap) connectFrom(tables core.Tables, parent *schemaNode) error {
+func (nodes *nodeRefMap) connectFrom(tables core.Tables, parent *SchemaNode) error {
 
 	for _, table := range tables {
 		var node = (*nodes)[table.Name]

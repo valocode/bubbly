@@ -51,40 +51,11 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 		}
 	}
 
-	// var releaseData core.DataBlocks
-	// releaseData = append(releaseData, core.Data{
-	// 	TableName: "project",
-	// 	Fields: core.DataFields{
-	// 		"id": cty.StringVal("bubbly"),
-	// 	},
-	// 	Policy: core.ReferencePolicy,
-	// })
-	// gitData, err := l.Spec.GitItem.Data()
-	// if err != nil {
-	// 	return core.ResourceOutput{
-	// 		ID:     l.String(),
-	// 		Status: events.ResourceRunFailure,
-	// 		Error:  err,
-	// 		Value:  cty.NilVal,
-	// 	}
-	// }
-	// releaseData = append(releaseData, gitData...)
-	// releaseData = append(releaseData, core.Data{
-	// 	TableName: "release_item",
-	// 	Joins:     []string{"commit"},
-	// 	Policy:    core.ReferencePolicy,
-	// })
-	// releaseData = append(releaseData, core.Data{
-	// 	TableName: "release",
-	// 	Fields: core.DataFields{
-	// 		"_id": cty.CapsuleVal(parser.DataRefType, &parser.DataRef{
-	// 			TableName: "release_item",
-	// 			Field:     "release_id",
-	// 		}),
-	// 	},
-	// 	Policy: core.ReferencePolicy,
-	// })
-	// data = append(releaseData, data...)
+	// If there is contextual data that should be loaded, prefix this to the data
+	// so that any joins to this data will succeed
+	if ctx.DataCtx != nil {
+		data = append(ctx.DataCtx, data...)
+	}
 
 	if err := l.load(bCtx, ctx, data); err != nil {
 		return core.ResourceOutput{

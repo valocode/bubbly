@@ -19,7 +19,11 @@ func NewResourceContext(inputs cty.Value, newRes NewResourceFn, auth *component.
 // independently.
 type ResourceContext struct {
 	// Inputs contains any cty.Values that should be input to a resource
-	Inputs      cty.Value
+	Inputs cty.Value
+	// DataCtx contains Data blocks that provide contextual information, such
+	// as when looging a release_entry, the DataCtx will contain data about the
+	// release that is being logged
+	DataCtx     DataBlocks
 	State       ResourceState
 	NewResource NewResourceFn
 	Auth        *component.MessageAuth

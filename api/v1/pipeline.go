@@ -50,9 +50,10 @@ func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		runCtx := core.NewResourceContext(
 			ctx.State.Value([]string{"task"}, ctx.Inputs), ctx.NewResource, ctx.Auth,
 		)
+		// TODO: how to handle this better?!
+		runCtx.DataCtx = ctx.DataCtx
 
 		output := t.Apply(bCtx, runCtx)
-
 		if output.Error != nil {
 			return core.ResourceOutput{
 				ID:     p.String(),

@@ -136,7 +136,7 @@ func eventStoreTrigger(tenant string) *trigger {
 			case core.SchemaTableName:
 				// TODO
 			default:
-				// fmt.Printf("trigger has no action for table: %s\n", node.Data.TableName)
+				// TODO: what's the default action?
 			}
 			return nil
 		},

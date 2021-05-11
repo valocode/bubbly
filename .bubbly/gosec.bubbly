@@ -24,6 +24,9 @@ resource "transform" "gosec" {
             fields = {
                 "tool": "gosec"
             }
+            // TODO: we need to join this here!!! But how to make this "implicit"?
+            // We could do some magic in the "load" resource code, or just keep
+            // it explicit here for now...
             joins = ["release"]
         }
 
@@ -47,23 +50,19 @@ resource "transform" "gosec" {
 resource "load" "gosec" {
     spec {
         input "data" {}
-
-        git {
-          name = "test-repo"
-        }
         data = self.input.data
     }
 }
 
 resource "pipeline" "gosec" {
   spec {
-    input "results" {
+    input "file" {
       default = "./gosec-results.json"
     }
     task "extract" {
       resource = "extract/gosec"
       input "file" {
-        value = self.input.results
+        value = self.input.file
       }
     }
     task "transform" {
@@ -81,8 +80,8 @@ resource "pipeline" "gosec" {
   }
 }
 
-resource "run" "gosec" {
-    spec {
-        resource = "pipeline/gosec"
-    }
-}
+// resource "run" "gosec" {
+//     spec {
+//         resource = "pipeline/gosec"
+//     }
+// }

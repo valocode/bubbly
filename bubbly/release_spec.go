@@ -4,19 +4,24 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	dockerclient "github.com/docker/docker/client"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/valocode/bubbly/api"
+	"github.com/valocode/bubbly/api/common"
 	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 )
 
-type releaseSpec struct {
+type ReleaseSpec struct {
 	Inputs       core.InputDeclarations `hcl:"input,block"`
 	Name         string                 `hcl:"name,optional"`
 	Version      string                 `hcl:"version,optional"`
@@ -32,11 +37,21 @@ const (
 	releaseItemReleaseType  = "release"
 )
 
-func (r *releaseSpec) Data() (core.DataBlocks, error) {
+func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 	var data core.DataBlocks
 	// Project is required
 	if r.Project == "" {
 		return nil, fmt.Errorf("project is required")
+	}
+	// If Name was not provided, try to get a default value
+	if r.Name == "" {
+		if r.GitItem != nil {
+			gitId, err := r.GitItem.idFromRemote()
+			if err != nil {
+				return nil, fmt.Errorf("error getting git repo id: %w", err)
+			}
+			r.Name = gitId
+		}
 	}
 	// If Version was not provided, we can set a default based on git data
 	if r.Version == "" {
@@ -70,6 +85,10 @@ func (r *releaseSpec) Data() (core.DataBlocks, error) {
 			"version": cty.StringVal(r.Version),
 		},
 		Joins: []string{"project"},
+		// Do not allow update, as that causes all kinds of complications with
+		// releases. If you want to change a specific release, first delete it
+		// and recreate it
+		Policy: core.CreatePolicy,
 	})
 	//
 	// Create the release_stage and release_criteria data blocks
@@ -82,13 +101,20 @@ func (r *releaseSpec) Data() (core.DataBlocks, error) {
 			},
 			Joins: []string{"release"},
 		})
-		for _, criteria := range stage.Crterion {
+		for _, criteria := range stage.Criterion {
+			// data = append(data, core.Data{
+			// 	TableName: "release_entry",
+			// 	Fields: core.DataFields{
+			// 		"name": cty.StringVal(criteria.Name),
+			// 	},
+			// 	Policy: core.ReferenceIfExistsPolicy,
+			// })
 			data = append(data, core.Data{
 				TableName: "release_criteria",
 				Fields: core.DataFields{
 					"entry_name": cty.StringVal(criteria.Name),
 				},
-				Joins: []string{"release_stage"},
+				Joins: []string{"release_stage", "release"},
 			})
 		}
 	}
@@ -102,7 +128,7 @@ func (r *releaseSpec) Data() (core.DataBlocks, error) {
 	if r.GitItem != nil {
 		gitData, err := r.GitItem.Data()
 		if err != nil {
-			return nil, fmt.Errorf("error getting git data for repo %s: %w", r.GitItem.Name, err)
+			return nil, fmt.Errorf("error getting git data for repo %s: %w", r.GitItem.Repo, err)
 		}
 		data = append(data, gitData...)
 		data = append(data, core.Data{
@@ -133,17 +159,36 @@ func (r *releaseSpec) Data() (core.DataBlocks, error) {
 	return data, nil
 }
 
+func (r *ReleaseSpec) String() string {
+	var rType string
+	switch {
+	case r.ArtifactItem != nil:
+		rType = "artifact"
+	case r.GitItem != nil:
+		rType = "git"
+	default:
+		rType = "unknown"
+	}
+	return "Project: " + r.Project + "\nName: " + r.Name + "\nVersion: " + r.Version +
+		"\nType: " + rType
+}
+
+const (
+	gitRemoteGitPrefix   = "git@"
+	gitRemoteHTTPSPrefix = "https://"
+
+	gitRemoteSuffix = ".git"
+)
+
 type gitItem struct {
-	Name string `hcl:"name,attr"`
-	Repo string `hcl:"repo,optional"`
+	ID     string `hcl:"id,optional"`
+	Repo   string `hcl:"repo,optional"`
+	Remote string `hcl:"remote,optional"`
 }
 
 func (g *gitItem) Data() (core.DataBlocks, error) {
-	// Make sure there is a default Repo set
-	if g.Repo == "" {
-		g.Repo = "."
-	}
-	repo, err := git.PlainOpen(g.Repo)
+
+	repo, err := g.openRepo()
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repository %s: %w", g.Repo, err)
 	}
@@ -156,10 +201,20 @@ func (g *gitItem) Data() (core.DataBlocks, error) {
 		return nil, fmt.Errorf("failed to get commit from HEAD %s: %w", ref.Hash().String(), err)
 	}
 
+	// If the ID is not given, or empty, then automatically fetch it from the
+	// remote
+	if g.ID == "" {
+		var err error
+		g.ID, err = g.idFromRemote()
+		if err != nil {
+			return nil, fmt.Errorf("error getting git repo ID from remotes: %w", err)
+		}
+	}
+
 	repoData := core.Data{
 		TableName: "repo",
 		Fields: core.DataFields{
-			"name": cty.StringVal(g.Name),
+			"id": cty.StringVal(g.ID),
 		},
 		Joins: []string{"project"},
 	}
@@ -202,8 +257,67 @@ func (g *gitItem) Data() (core.DataBlocks, error) {
 	}, nil
 }
 
+func (g *gitItem) openRepo() (*git.Repository, error) {
+	// Make sure there is a default Repo set
+	if g.Repo == "" {
+		g.Repo = "."
+	}
+	var err error
+	g.Repo, err = filepath.Abs(g.Repo)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get path to git repo %s: %w", g.Repo, err)
+	}
+	return git.PlainOpen(g.Repo)
+}
+
+// idFromRemote creates the git repo ID from the remote.
+// Default remote is origin, unless specified otherwise, and ID should be the
+// URL "normalized": no https:// or git@ prefix, no .git suffix, and only
+// forward slashes (no colons)
+func (g *gitItem) idFromRemote() (string, error) {
+	repo, err := g.openRepo()
+	if err != nil {
+		return "", fmt.Errorf("failed to open git repository %s: %w", g.Repo, err)
+	}
+	if g.Remote == "" {
+		g.Remote = "origin"
+	}
+	remote, err := repo.Remote(g.Remote)
+	if err != nil {
+		return "", fmt.Errorf("git repo does not have a remote called %s: %w", g.Remote, err)
+	}
+	if len(remote.Config().URLs) == 0 {
+		return "", fmt.Errorf("git repo at %s does not have any URLs for remote %s", g.Repo, g.Remote)
+	}
+	// TODO: maybe a warning if there are multiple URLs, but stil select the first?
+	// if len(remote.Config().URLs) > 1 {
+	// }
+	var (
+		id  string
+		url = remote.Config().URLs[0]
+	)
+	switch {
+	case strings.HasPrefix(url, gitRemoteGitPrefix):
+		// Example: git@github.com:valocode/bubbly
+		// Want: github.com/valocode/bubbly
+		id = strings.TrimPrefix(url, gitRemoteGitPrefix)
+		id = strings.ReplaceAll(id, ":", "/")
+	case strings.HasPrefix(url, gitRemoteHTTPSPrefix):
+		// Example: https://github.com/valocode/bubbly
+		// Want: github.com/valocode/bubbly
+		id = strings.TrimPrefix(url, gitRemoteHTTPSPrefix)
+	default:
+		return "", fmt.Errorf("supported git remote protocol for remote %s: %s", g.Remote, url)
+	}
+
+	// Remove unwanted .git suffix (if exists)
+	id = strings.TrimSuffix(id, gitRemoteSuffix)
+
+	return id, nil
+}
+
 func (g *gitItem) version() (string, string, error) {
-	repo, err := git.PlainOpen(g.Repo)
+	repo, err := g.openRepo()
 	if err != nil {
 		return "", "", fmt.Errorf("failed to open git repository %s: %w", g.Repo, err)
 	}
@@ -311,10 +425,74 @@ func (a *artifactItem) sha256SumDocker() (string, error) {
 }
 
 type releaseStage struct {
-	Name     string            `hcl:",label"`
-	Crterion []releaseCriteria `hcl:"criteria,block"`
+	Name      string            `hcl:",label"`
+	Criterion []releaseCriteria `hcl:"criteria,block"`
 }
 
 type releaseCriteria struct {
-	Name string `hcl:",label"`
+	Name     string        `hcl:",label"`
+	Artifact *artifactItem `hcl:"artifact,block"`
+	Run      []resourceRun `hcl:"run,block"`
+}
+
+// EntryLog produces data blocks for the release criteria when it should be
+// logged as a release entry
+func (c *releaseCriteria) EntryLog(bCtx *env.BubblyContext, releaseData core.Data) (core.DataBlocks, error) {
+	// Validation of the release criteria
+	if c.Artifact != nil && len(c.Run) > 0 {
+		return nil, errors.New("release criteria cannot specify both artifact and resource runs")
+	}
+	if c.Artifact == nil && len(c.Run) == 0 {
+		return nil, errors.New("release criteria has no criteria")
+	}
+
+	var data core.DataBlocks
+	if c.Artifact != nil {
+		// Get the data block for the artifact
+		aData, err := c.Artifact.Data()
+		if err != nil {
+			return nil, fmt.Errorf("error with artifact %s: %w", c.Artifact.Name, err)
+		}
+		data = append(data, aData...)
+	}
+	for _, run := range c.Run {
+		output := run.Run(bCtx, releaseData)
+		if output.Error != nil {
+			return nil, fmt.Errorf("resource run failed for %s: %w", run.Resource, output.Error)
+		}
+
+	}
+	// Create the data block for the release entry
+	data = append(data, core.Data{
+		TableName: "release_criteria",
+		Fields: core.DataFields{
+			"entry_name": cty.StringVal(c.Name),
+		},
+		Joins:  []string{"release"},
+		Policy: core.ReferencePolicy,
+	})
+
+	data = append(data, core.Data{
+		TableName: "release_entry",
+		Fields: core.DataFields{
+			"name": cty.StringVal(c.Name),
+		},
+		Joins:  []string{"release_criteria"},
+		Policy: core.CreatePolicy,
+	})
+	return data, nil
+}
+
+type resourceRun struct {
+	Resource string                `hcl:",label"`
+	Inputs   core.InputDefinitions `hcl:"input,block"`
+}
+
+func (r *resourceRun) Run(bCtx *env.BubblyContext, releaseData core.Data) *core.ResourceOutput {
+	ctx := core.NewResourceContext(r.Inputs.Value(), api.NewResource, nil)
+	// Add the data block containing the release into the context
+	ctx.DataCtx = core.DataBlocks{releaseData}
+	// TODO: why do we have to pass r.Inputs.Value() here as well??
+	_, output := common.RunResource(bCtx, ctx, r.Resource, r.Inputs.Value())
+	return &output
 }
