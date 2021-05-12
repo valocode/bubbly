@@ -1,7 +1,7 @@
 #
 # Multi-row example with sibling fields.
 #
-table "test_run" {
+table "testrun" {
 
 	join "location" {}
 	join "configuration" {}

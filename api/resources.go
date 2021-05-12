@@ -63,8 +63,6 @@ func NewResource(resBlock *core.ResourceBlock) (core.Resource, error) {
 		resource = v1.NewQuery(resBlock)
 	case core.CriteriaResourceKind:
 		resource = v1.NewCriteria(resBlock)
-	case core.ReleaseResourceKind:
-		resource = v1.NewRelease(resBlock)
 	default:
 		return nil, fmt.Errorf(`resource not supported: "%s"`, resBlock.Kind())
 	}

@@ -19,7 +19,7 @@ func compareSchema(s1 *bubblySchema, s2 *bubblySchema) (schemaUpdates, error) {
 		// The key exists in both tables, and will be checked for updates
 		if ok {
 			// ALTER
-			calculateDiff(table1, s2.Tables[table1.Name], &changelog)
+			compareTables(table1, s2.Tables[table1.Name], &changelog)
 		} else {
 			// DELETE
 			// The key does not exist in the second table and will be removed
@@ -88,14 +88,14 @@ type changeEntry struct {
 	To        interface{}
 }
 
-// calculateDiff will calculate the difference between two schemas.
+// compareTables will calculate the difference between two schemas.
 // In this case, all elements will be matched on id, if 2 ids are different, they will
 // be treated as separate elements. For example:
 // field1: "hello world" -> field1: "lizards"
 // will be views as an update on field1, but if field1 has its name changed:
 // field1: "hello world" -> field2: "hello world"
 // These will be treated as 2 separate entities, field1 will be seen as deleted, and field2 will be added
-func calculateDiff(t1 core.Table, t2 core.Table, cl *schemaUpdates) {
+func compareTables(t1 core.Table, t2 core.Table, cl *schemaUpdates) {
 	compareFields(t1, t2, cl)
 	compareJoins(t1, t2, cl)
 }

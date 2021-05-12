@@ -7,21 +7,21 @@ import (
 
 	"github.com/valocode/bubbly/bubbly"
 	"github.com/valocode/bubbly/bubbly/builtin"
+	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (
 	_       cmdutil.Options = (*options)(nil)
-	cmdLong                 = normalise.LongDesc(`
+	cmdLong                 = util.LongDesc(`
 		View a release
 
 		    $ bubbly release view
 
 		`)
 
-	cmdExample = normalise.Examples(`
+	cmdExample = util.Examples(`
 		# View a release
 		bubbly release view
 		`)

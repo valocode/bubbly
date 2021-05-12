@@ -7,21 +7,21 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (
 	_       cmdutil.Options = (*options)(nil)
-	cmdLong                 = normalise.LongDesc(`
+	cmdLong                 = util.LongDesc(`
 		Create a release
 
 		    $ bubbly release create
 
 		`)
 
-	cmdExample = normalise.Examples(`
+	cmdExample = util.Examples(`
 		# Create a release
 		bubbly release create
 		`)

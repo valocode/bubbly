@@ -17,7 +17,7 @@ import (
 // ApplySchema parses a .bubbly schema file into a Schema, then posts
 // the core.Tables of the Schema to the bubbly store
 func ApplySchema(bCtx *env.BubblyContext, file string) error {
-	var schema builtin.Schema
+	var schema builtin.SchemaWrapper
 
 	err := parser.ParseFilename(bCtx, file, &schema)
 	if err != nil {
@@ -44,15 +44,3 @@ func ApplySchema(bCtx *env.BubblyContext, file string) error {
 
 	return nil
 }
-
-// parseSchemaFile reads and parses a .bubbly schema file
-// and decodes the schema into the provided interface,
-// which is typically of type Schema
-// func parseSchemaFile(bCtx *env.BubblyContext, file string, val interface{}) error {
-// 	hclFile, diags := hclparse.NewParser().ParseHCLFile(file)
-// 	if diags != nil {
-// 		return errors.New(diags.Error())
-// 	}
-
-// 	return parser.DecodeExpandBody(bCtx, hclFile.Body, val, cty.NilVal)
-// }

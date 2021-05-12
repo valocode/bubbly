@@ -5,16 +5,17 @@ resource "extract" "gotest" {
         input "file" {}
         type = "json"
         source {
-            file = self.input.file
-            format = list(
-                object({
-                    Time = string,
-                    Action = string,
-                    Package = string,
-                    Test = string,
-                    Elapsed = number,
-                })
-            )
+            // The output from go test -json is not valid json, it's just a flat
+            // list of json objects { }.
+            // We can convert that into valid JSON which we can parse as a list
+            contents = "[${join(",", split("\n", trimspace(file(self.input.file))))}]"
+            format = list(object({
+                Issues: list(object({
+                  rule_id: string,
+                  severity: string,
+                  details: string,
+                }))
+            }))
         }
     }
 }
@@ -88,7 +89,7 @@ resource "run" "gotest" {
         resource = "pipeline/gotest"
         // specify the pipeline input(s) required
         input "file" {
-            value = "./testdata/testautomation/golang/test-report.json"
+            value = "./testdata/testautomation/golang/gotest.json"
         }
     }
 }

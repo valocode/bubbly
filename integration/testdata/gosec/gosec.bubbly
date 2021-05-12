@@ -1,68 +1,70 @@
 resource "extract" "gosec" {
-  spec {
-    input "file" {}
-    type = "json"
-    source {
-      file = self.input.file
-      format = object({
-        Issues: list(object({
-          severity: string,
-          rule_id: string,
-          details: string,
-          file: string,
-          code: string,
-          line: string,
-          column: string,
-        }))
-      })
+    spec {
+        input "file" { type = string }
+
+        type = "json"
+        source {
+            file = self.input.file
+            format = object({
+                Issues: list(object({
+                  rule_id: string,
+                  severity: string,
+                  details: string,
+                }))
+            })
+        }
     }
-  }
 }
 
 resource "transform" "gosec" {
-  spec {
-    input "data" {}
-    dynamic "data" {
-      for_each = self.input.data.Issues
-      iterator = it
-      labels = ["gosec_issues"]
-      content {
-        fields = {
-          "details": it.value.details
-          "rule_id": it.value.rule_id
-          "severity": it.value.severity
-          "line": it.value.line
-          "code_column": it.value.column
-          "file": it.value.file
-          "code": it.value.code
+    spec {
+        input "results" { }
+
+        data "code_scan" {
+            fields = {
+                "tool": "gosec"
+            }
         }
-      }
+
+        dynamic "data" {
+            for_each = self.input.results["Issues"]
+            labels = ["code_issue"]
+            iterator = it
+            content {
+                fields = {
+                    "id": it.value["rule_id"],
+                    "message": it.value["details"],
+                    "severity": lower(it.value["severity"]),
+                    "type": "security",
+                }
+                joins = ["code_scan"]
+            }
+        }
     }
-  }
 }
 
 resource "load" "gosec" {
-  spec {
-    input "data" {}
-    data = self.input.data
-  }
+    spec {
+        input "data" {}
+        data = self.input.data
+    }
 }
 
 resource "pipeline" "gosec" {
   spec {
-    input "gosec_results" {
+    input "file" {
       default = "./testdata/gosec/results.json"
     }
-    task "extract_gosec" {
+    task "extract" {
       resource = "extract/gosec"
       input "file" {
-        value = self.input.gosec_results
+        value = self.input.file
       }
     }
     task "transform" {
       resource = "transform/gosec"
-      input "data" {
-        value = self.task.extract_gosec.value
+      input "results" {
+        value = self.task.extract.value
       }
     }
     task "load" {
@@ -74,50 +76,8 @@ resource "pipeline" "gosec" {
   }
 }
 
-
 resource "run" "gosec" {
-  spec {
-    resource = "pipeline/gosec"
-  }
-}
-
-
-resource "run" "gosec/extract" {
-  spec {
-    resource = "extract/gosec"
-    input "file" {
-      value = "./testdata/gosec/results.json"
+    spec {
+        resource = "pipeline/gosec"
     }
-  }
-}
-
-resource "query" "gosec_data" {
-  spec {
-    query = <<EOT
-      {
-        gosec_issues {
-          severity
-        }
-      }
-    EOT
-  }
-}
-
-resource "criteria" "gosec_status" {
-  spec {
-    query "gosec_data" {}
-    condition "no_high" {
-      value = length(regexall("HIGH", self.query.gosec_data.value)) == 0
-    }
-
-    operation "release" {
-      value = self.condition.no_high.value
-    }
-  }
-}
-
-resource "run" "gosec_criteria" {
-  spec {
-    resource = "criteria/gosec_status"
-  }
 }

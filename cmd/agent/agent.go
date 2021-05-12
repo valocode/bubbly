@@ -14,13 +14,13 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
 
+	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
-	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (
 	_         cmdutil.Options = (*AgentOptions)(nil)
-	agentLong                 = normalise.LongDesc(
+	agentLong                 = util.LongDesc(
 		`
 		Starts a bubbly agent. The agent can be configured to run all components, or only some subset, 
 		depending on the flags provided.
@@ -31,7 +31,7 @@ var (
 		`,
 	)
 
-	agentExample = normalise.Examples(
+	agentExample = util.Examples(
 		`
 		# Starts the bubbly agent with all components (API Server, NATS Server, Store and Worker) 
 		using application defaults

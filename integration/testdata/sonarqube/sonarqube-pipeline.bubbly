@@ -2,11 +2,6 @@
 // defines a data source and a format for the data, and returns a cty.Value
 // representation of the external data.
 resource "extract" "sonarqube" {
-    metadata {
-        labels = {
-            "environment": "prod"
-        }
-    }
     spec {
         input "file" {}
         type = "json"
@@ -35,11 +30,6 @@ resource "extract" "sonarqube" {
 }
 
 resource "extract" "git" {
-    metadata {
-        labels = {
-            "environment": "prod"
-        }
-    }
     spec {
         input "repo" {}
         type = "git"
@@ -54,11 +44,6 @@ resource "extract" "git" {
 // defines a transformation or conversion of data from an Extract and outputs
 // a mapping of the extracted data to the defined data schema.
 resource "transform" "sonarqube" {
-    metadata {
-        labels = {
-            "environment": "prod"
-        }
-    }
     spec {
         input "data" {}
         input "repository" {}
@@ -91,9 +76,8 @@ resource "transform" "sonarqube" {
             // map the data to the code_issue table in the interim database
             labels = ["code_issue"]
             content {
-                joins = ["commit"]
                 fields = {
-                    "name": issue.value.primaryLocation.message
+                    "id": issue.value.primaryLocation.message
                     "severity": issue.value.severity
                     "type": issue.value.type
                 }
@@ -104,11 +88,6 @@ resource "transform" "sonarqube" {
 
 // defines the loading of transform output data to a bubbly server
 resource "load" "sonarqube" {
-    metadata {
-        labels = {
-            "environment": "prod"
-        }
-    }
     spec {
         input "data" {}
         // what do we need here?!
@@ -120,11 +99,6 @@ resource "load" "sonarqube" {
 // A pipeline is just another reusable resource
 // NOTE: only a pipeline_run actually triggers a pipeline to run
 resource "pipeline" "sonarqube" {
-    metadata {
-        labels = {
-            "environment": "prod"
-        }
-    }
     spec {
         input "file" {}
         input "repo" {}
@@ -174,11 +148,6 @@ resource "pipeline" "sonarqube" {
 
 // A run resource runs a resource.
 resource "run" "sonarqube_pipeline" {
-    metadata {
-        labels = {
-            "environment": "prod"
-        }
-    }
     spec {
         // specify the name of the resource to run
         resource = "pipeline/sonarqube"
@@ -189,19 +158,6 @@ resource "run" "sonarqube_pipeline" {
         }
         input "repo" {
             value = "./testdata/git/repo1.git"
-        }
-    }
-}
-
-// Run the extract resource
-resource "run" "sonarqube_extract" {
-    metadata {
-        labels = {}
-    }
-    spec {
-        resource = "extract/sonarqube"
-        input "file" {
-            value = "./testdata/sonarqube/sonarqube-example.json"
         }
     }
 }

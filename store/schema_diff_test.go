@@ -174,8 +174,10 @@ var schemaDiffTests = []struct {
 func TestCompareSchema(t *testing.T) {
 	for _, tt := range schemaDiffTests {
 		t.Run(tt.name, func(t *testing.T) {
-			s1 := newBubblySchemaFromTables(tt.s1)
-			s2 := newBubblySchemaFromTables(tt.s2)
+			s1, err := newBubblySchemaFromTables(tt.s1)
+			require.NoError(t, err)
+			s2, err := newBubblySchemaFromTables(tt.s2)
+			require.NoError(t, err)
 			changes, err := compareSchema(s1, s2)
 			require.NoError(t, err)
 			assert.ElementsMatch(t, tt.want, changes)

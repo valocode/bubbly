@@ -620,7 +620,7 @@
 		<testcase classname="server" name="TestHealth" time="0.000"></testcase>
 		<testcase classname="server" name="TestUploadFailing" time="0.000"></testcase>
 	</testsuite>
-	<testsuite tests="35" failures="0" time="0.190" name="github.com/valocode/bubbly/util/normalise">
+	<testsuite tests="35" failures="0" time="0.190" name="github.com/valocode/bubbly/cmd/util">
 		<properties>
 			<property name="go.version" value="go1.15.5"></property>
 		</properties>

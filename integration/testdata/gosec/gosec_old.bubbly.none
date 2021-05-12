@@ -1,0 +1,123 @@
+resource "extract" "gosec" {
+  spec {
+    input "file" {}
+    type = "json"
+    source {
+      file = self.input.file
+      format = object({
+        Issues: list(object({
+          severity: string,
+          rule_id: string,
+          details: string,
+          file: string,
+          code: string,
+          line: string,
+          column: string,
+        }))
+      })
+    }
+  }
+}
+
+resource "transform" "gosec" {
+  spec {
+    input "data" {}
+    dynamic "data" {
+      for_each = self.input.data.Issues
+      iterator = it
+      labels = ["gosec_issues"]
+      content {
+        fields = {
+          "details": it.value.details
+          "rule_id": it.value.rule_id
+          "severity": it.value.severity
+          "line": it.value.line
+          "code_column": it.value.column
+          "file": it.value.file
+          "code": it.value.code
+        }
+      }
+    }
+  }
+}
+
+resource "load" "gosec" {
+  spec {
+    input "data" {}
+    data = self.input.data
+  }
+}
+
+resource "pipeline" "gosec" {
+  spec {
+    input "gosec_results" {
+      default = "./testdata/gosec/results.json"
+    }
+    task "extract_gosec" {
+      resource = "extract/gosec"
+      input "file" {
+        value = self.input.gosec_results
+      }
+    }
+    task "transform" {
+      resource = "transform/gosec"
+      input "data" {
+        value = self.task.extract_gosec.value
+      }
+    }
+    task "load" {
+      resource = "load/gosec"
+      input "data" {
+        value = self.task.transform.value
+      }
+    }
+  }
+}
+
+
+resource "run" "gosec" {
+  spec {
+    resource = "pipeline/gosec"
+  }
+}
+
+
+resource "run" "gosec/extract" {
+  spec {
+    resource = "extract/gosec"
+    input "file" {
+      value = "./testdata/gosec/results.json"
+    }
+  }
+}
+
+resource "query" "gosec_data" {
+  spec {
+    query = <<EOT
+      {
+        gosec_issues {
+          severity
+        }
+      }
+    EOT
+  }
+}
+
+resource "criteria" "gosec_status" {
+  spec {
+    query "gosec_data" {}
+    condition "no_high" {
+      value = length(regexall("HIGH", self.query.gosec_data.value)) == 0
+    }
+
+    operation "release" {
+      value = self.condition.no_high.value
+    }
+  }
+}
+
+resource "run" "gosec_criteria" {
+  spec {
+    resource = "criteria/gosec_status"
+  }
+}

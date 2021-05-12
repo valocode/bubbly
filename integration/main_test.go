@@ -24,7 +24,6 @@ func TestMain(m *testing.M) {
 	schemaApplyCmd.SilenceUsage = true
 
 	err := schemaApplyCmd.Execute()
-
 	if err != nil {
 		bCtx.Logger.Fatal().Err(err).Msg("failed to apply schema")
 	}
