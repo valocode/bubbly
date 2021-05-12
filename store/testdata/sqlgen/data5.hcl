@@ -22,7 +22,7 @@ data "version" {
 	}
 }
 
-data "test_run" {
+data "testrun" {
 	joins = [
 		"location",
 		"configuration",
@@ -54,7 +54,7 @@ data "version" {
 }
 
 
-data "test_run" {
+data "testrun" {
 	joins = [
 		"version",
 		"configuration",
@@ -85,7 +85,7 @@ data "version" {
 	}
 }
 
-data "test_run" {
+data "testrun" {
 	joins = [
 		"location",
 		"version",

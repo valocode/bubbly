@@ -112,7 +112,10 @@ func (s *Store) Apply(tenant string, tables core.Tables) error {
 		return fmt.Errorf("failed to get current schema: %w", err)
 	}
 
-	newSchema := newBubblySchemaFromTables(tables)
+	newSchema, err := newBubblySchemaFromTables(tables)
+	if err != nil {
+		return err
+	}
 	// Calculate the schema diff
 	cl, err := compareSchema(currentSchema, newSchema)
 	if err != nil {

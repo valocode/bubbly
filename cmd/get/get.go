@@ -10,22 +10,22 @@ import (
 
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/events"
-	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (
 	_       cmdutil.Options = (*GetOptions)(nil)
-	getLong                 = normalise.LongDesc(`
+	getLong                 = util.LongDesc(`
 		Display one or many bubbly resources
 
 		    $ bubbly get (KIND | ID | all) [flags]
 
 		`)
 
-	getExample = normalise.Examples(`
+	getExample = util.Examples(`
 		# Display all bubbly resources stored on the bubbly server
 		bubbly get all
 

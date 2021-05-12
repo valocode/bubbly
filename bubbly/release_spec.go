@@ -39,32 +39,9 @@ const (
 
 func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 	var data core.DataBlocks
-	// Project is required
-	if r.Project == "" {
-		return nil, fmt.Errorf("project is required")
-	}
-	// If Name was not provided, try to get a default value
-	if r.Name == "" {
-		if r.GitItem != nil {
-			gitId, err := r.GitItem.idFromRemote()
-			if err != nil {
-				return nil, fmt.Errorf("error getting git repo id: %w", err)
-			}
-			r.Name = gitId
-		}
-	}
-	// If Version was not provided, we can set a default based on git data
-	if r.Version == "" {
-		if r.GitItem != nil {
-			tag, commit, err := r.GitItem.version()
-			if err != nil {
-				return nil, fmt.Errorf("error getting git tag: %w", err)
-			}
-			r.Version = commit
-			if tag != "" {
-				r.Version = tag
-			}
-		}
+	err := r.Validate()
+	if err != nil {
+		return nil, err
 	}
 
 	projectData := core.Data{
@@ -102,13 +79,6 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 			Joins: []string{"release"},
 		})
 		for _, criteria := range stage.Criterion {
-			// data = append(data, core.Data{
-			// 	TableName: "release_entry",
-			// 	Fields: core.DataFields{
-			// 		"name": cty.StringVal(criteria.Name),
-			// 	},
-			// 	Policy: core.ReferenceIfExistsPolicy,
-			// })
 			data = append(data, core.Data{
 				TableName: "release_criteria",
 				Fields: core.DataFields{
@@ -159,6 +129,37 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 	return data, nil
 }
 
+func (r *ReleaseSpec) DataRef() (core.DataBlocks, error) {
+	var data core.DataBlocks
+	err := r.Validate()
+	if err != nil {
+		return nil, err
+	}
+	projectData := core.Data{
+		TableName: "project",
+		Fields: core.DataFields{
+			"id": cty.StringVal(r.Project),
+		},
+		Policy: core.ReferencePolicy,
+	}
+	data = append(data, projectData)
+
+	//
+	// Create the release and release items data blocks
+	//
+	data = append(data, core.Data{
+		TableName: "release",
+		Fields: core.DataFields{
+			"name":    cty.StringVal(r.Name),
+			"version": cty.StringVal(r.Version),
+		},
+		Joins:  []string{"project"},
+		Policy: core.ReferencePolicy,
+	})
+
+	return data, nil
+}
+
 func (r *ReleaseSpec) String() string {
 	var rType string
 	switch {
@@ -171,6 +172,37 @@ func (r *ReleaseSpec) String() string {
 	}
 	return "Project: " + r.Project + "\nName: " + r.Name + "\nVersion: " + r.Version +
 		"\nType: " + rType
+}
+
+func (r *ReleaseSpec) Validate() error {
+	// Project is required
+	if r.Project == "" {
+		return fmt.Errorf("project is required")
+	}
+	// If Name was not provided, try to get a default value
+	if r.Name == "" {
+		if r.GitItem != nil {
+			gitId, err := r.GitItem.idFromRemote()
+			if err != nil {
+				return fmt.Errorf("error getting git repo id: %w", err)
+			}
+			r.Name = gitId
+		}
+	}
+	// If Version was not provided, we can set a default based on git data
+	if r.Version == "" {
+		if r.GitItem != nil {
+			tag, commit, err := r.GitItem.version()
+			if err != nil {
+				return fmt.Errorf("error getting git tag: %w", err)
+			}
+			r.Version = commit
+			if tag != "" {
+				r.Version = tag
+			}
+		}
+	}
+	return nil
 }
 
 const (
@@ -437,7 +469,7 @@ type releaseCriteria struct {
 
 // EntryLog produces data blocks for the release criteria when it should be
 // logged as a release entry
-func (c *releaseCriteria) EntryLog(bCtx *env.BubblyContext, releaseData core.Data) (core.DataBlocks, error) {
+func (c *releaseCriteria) EntryLog(bCtx *env.BubblyContext, releaseRef core.DataBlocks) (core.DataBlocks, error) {
 	// Validation of the release criteria
 	if c.Artifact != nil && len(c.Run) > 0 {
 		return nil, errors.New("release criteria cannot specify both artifact and resource runs")
@@ -456,7 +488,7 @@ func (c *releaseCriteria) EntryLog(bCtx *env.BubblyContext, releaseData core.Dat
 		data = append(data, aData...)
 	}
 	for _, run := range c.Run {
-		output := run.Run(bCtx, releaseData)
+		output := run.Run(bCtx, releaseRef)
 		if output.Error != nil {
 			return nil, fmt.Errorf("resource run failed for %s: %w", run.Resource, output.Error)
 		}
@@ -488,10 +520,10 @@ type resourceRun struct {
 	Inputs   core.InputDefinitions `hcl:"input,block"`
 }
 
-func (r *resourceRun) Run(bCtx *env.BubblyContext, releaseData core.Data) *core.ResourceOutput {
+func (r *resourceRun) Run(bCtx *env.BubblyContext, releaseRef core.DataBlocks) *core.ResourceOutput {
 	ctx := core.NewResourceContext(r.Inputs.Value(), api.NewResource, nil)
 	// Add the data block containing the release into the context
-	ctx.DataCtx = core.DataBlocks{releaseData}
+	ctx.DataCtx = releaseRef
 	// TODO: why do we have to pass r.Inputs.Value() here as well??
 	_, output := common.RunResource(bCtx, ctx, r.Resource, r.Inputs.Value())
 	return &output

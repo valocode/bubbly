@@ -1,4 +1,4 @@
-package normalise
+package util
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/likexian/gokit/assert"
 )
 
-// tests normalise.LongDesc
+// tests util.LongDesc
 func TestLongDesc(t *testing.T) {
 	tcs := []struct {
 		desc     string
@@ -43,7 +43,7 @@ For example:
 
 }
 
-// tests normalise.Examples
+// tests util.Examples
 func TestExamples(t *testing.T) {
 	tcs := []struct {
 		desc     string

@@ -8,21 +8,21 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (
 	_         cmdutil.Options = (*ApplyOptions)(nil)
-	applyLong                 = normalise.LongDesc(`
+	applyLong                 = util.LongDesc(`
 		Apply a bubbly schema
 
 		    $ bubbly schema apply -f FILENAME
 
 		`)
 
-	applyExample = normalise.Examples(`
+	applyExample = util.Examples(`
 		# Apply a bubbly schema located in a specific file
 		bubbly schema apply -f ./schema.bubbly
 		`)

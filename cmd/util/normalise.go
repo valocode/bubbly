@@ -4,7 +4,7 @@ Heavily inspired by (and a simplification of) <https://pkg.go.dev/k8s.io/kuberne
 // TODO: I do not know enough about Apache License, Version 2.0 to know what is sufficient to credit. Investigate.
 */
 
-package normalise
+package util
 
 import (
 	"strings"

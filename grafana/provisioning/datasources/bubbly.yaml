@@ -1,6 +1,0 @@
-apiVersion: 1
-datasources:
-  - name: "Bubbly GraphQL"
-    type: fifemon-graphql-datasource
-    url: "http://bubbly:8111/api/graphql"
-    isDefault: true

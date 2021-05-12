@@ -5,23 +5,25 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (
 	_       cmdutil.Options = (*options)(nil)
-	cmdLong                 = normalise.LongDesc(`
-		Evaluate a release criteria and log a release entry with the result
+	cmdLong                 = util.LongDesc(`
+		Evaluate a release criteria and log a release entry with the result.
+		The criteria needs to exist in the release and the result will be attached to a release entry which is created as part of this command.
 
-		    $ bubbly release eval (criteria)
+		    $ bubbly release eval CRITERIA
 
 		`)
 
-	cmdExample = normalise.Examples(`
-		# Evaluate a release criteria
-		bubbly release log
+	cmdExample = util.Examples(`
+		# Evaluate the release criteria called unit_test which is defined in the release.
+		# A release entry with the name unit_test will be created.
+		bubbly release eval unit_test
 		`)
 )
 
@@ -48,7 +50,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 	// cmd represents the apply command
 	cmd := &cobra.Command{
 		Use:     "eval",
-		Short:   "evaluate a release entry",
+		Short:   "evaluate a release criteria",
 		Long:    cmdLong + "\n\n",
 		Example: cmdExample,
 		Args:    cobra.ExactArgs(1),

@@ -121,11 +121,6 @@ func (w *Worker) getRunResource(bCtx *env.BubblyContext, auth *component.Message
 		return nil, fmt.Errorf("failed to unmarshal resource: %w", err)
 	}
 
-	// resBlock, err := resJSON.ResourceBlock()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to form resource block from JSON: %w", err)
-	// }
-
 	res, err := api.NewResource(&resBlock)
 	if err != nil {
 		return nil, fmt.Errorf("failed to form resource from block: %w", err)

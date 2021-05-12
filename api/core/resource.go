@@ -72,26 +72,6 @@ func (r ResourceBlock) String() string {
 	)
 }
 
-// Data returns a Data block representation of the resource which can be
-// sent to the bubbly store.
-// func (r ResourceBlock) Data() (Data, error) {
-// 	resJSON, err := r.ResourceBlockJSON()
-// 	if err != nil {
-// 		return Data{}, fmt.Errorf("failed to create ResourceBlockJSON for resource: %s: %w", r.String(), err)
-// 	}
-// 	return resJSON.Data(), nil
-// }
-
-// ResourceBlockJSON returns a ResourceBlockJSON representation of this
-// ResourceBlock
-// func (r ResourceBlock) ResourceBlockJSON() (*ResourceBlockJSON, error) {
-// 	specBytes, err := r.specBytes()
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to get raw spec for resource: %s: %w", r.String(), err)
-// 	}
-// 	return NewResourceBlockJSON(r, string(specBytes)), nil
-// }
-
 // MarshalJSON is customized to marshal a ResourceBlock, and thereby a resource
 func (r ResourceBlock) MarshalJSON() ([]byte, error) {
 	if r.SpecRaw == "" {
@@ -102,10 +82,7 @@ func (r ResourceBlock) MarshalJSON() ([]byte, error) {
 		r.SpecRaw = string(specBytes)
 	}
 	alias := ResourceBlockAlias(r)
-	// resJSON, err := r.ResourceBlockJSON()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to create ResourceBlockJSON for resource: %s: %w", r.String(), err)
-	// }
+
 	b, err := json.Marshal(alias)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal resource %s: %w", r.ID(), err)
@@ -151,25 +128,6 @@ func (r ResourceBlock) specBytes() ([]byte, error) {
 	return specBytes[1 : len(specBytes)-1], nil
 
 }
-
-// func NewResourceBlockJSON(resBlock ResourceBlock, specRaw string) *ResourceBlockJSON {
-// 	return &ResourceBlockJSON{
-// 		ResourceBlockAlias: ResourceBlockAlias(resBlock),
-// 		SpecRaw:            specRaw,
-// 	}
-// }
-
-// type ResourceBlockAlias ResourceBlock
-// type ResourceBlockJSON struct {
-// 	ResourceBlockAlias
-// 	SpecRaw string `json:"spec"`
-// }
-
-// func (r *ResourceBlockJSON) ResourceBlock() (ResourceBlock, error) {
-// 	resBlock := ResourceBlock(r.ResourceBlockAlias)
-// 	err := parser.ParseResource(env.NewBubblyContext(), resBlock.ID(), []byte(r.SpecRaw), &resBlock.SpecHCL)
-// 	return resBlock, err
-// }
 
 // Data produces a core.Data type of this resource.
 // The Data type is produced so that it can be sent to the store as any other
@@ -222,12 +180,14 @@ func ResourceFromData(d Data) (*ResourceBlock, error) {
 		case "api_version":
 			err = gocty.FromCtyValue(v, &r.ResourceAPIVersion)
 		case "spec":
-			r.SpecRaw = v.AsString()
-			// err = gocty.FromCtyValue(v, &r.SpecRaw)
+			// TODO: does this work without AsString??
+			// r.SpecRaw = v.AsString()
+			err = gocty.FromCtyValue(v, &r.SpecRaw)
 		case "metadata":
 			err = gocty.FromCtyValue(v, &r.Metadata)
 		case "id":
-			// This is a combination of other fields, so not neede
+			// This is a combination of other fields and the field does not exist
+			// in the ResourceBlock, so ignore
 		default:
 			err = fmt.Errorf("unknown resource data field: %s", k)
 		}
@@ -245,14 +205,6 @@ func ResourceFromData(d Data) (*ResourceBlock, error) {
 
 	return &r, nil
 }
-
-// String returns a human-friendly string ID for the resource
-// func (r *ResourceBlockJSON) String() string {
-// 	return fmt.Sprintf(
-// 		"%s/%s",
-// 		r.ResourceKind, r.ResourceName,
-// 	)
-// }
 
 // ResourceKind represents the different kinds of resources
 type ResourceKind string
@@ -272,8 +224,6 @@ const (
 	QueryResourceKind = "query"
 	// CriteriaResourceKind represents the resource kind criteria
 	CriteriaResourceKind = "criteria"
-	// ReleaseResourceKind is used to create releases in bubbly
-	ReleaseResourceKind = "release"
 )
 
 // ResourceKindPriority returns a list of the resource kinds by their priority
@@ -283,7 +233,6 @@ func ResourceKindPriority() []ResourceKind {
 		TransformResourceKind,
 		LoadResourceKind,
 		QueryResourceKind,
-		ReleaseResourceKind,
 		// Pipeline and Criteria both reference other resources
 		PipelineResourceKind,
 		CriteriaResourceKind,

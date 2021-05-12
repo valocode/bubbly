@@ -31,19 +31,29 @@ func newBubblySchema() *bubblySchema {
 	return schema
 }
 
-func newBubblySchemaFromTables(tables core.Tables) *bubblySchema {
+func newBubblySchemaFromTables(tables core.Tables) (*bubblySchema, error) {
 	schemaTables := make(map[string]core.Table)
-	// Append the internal tables containing definition of the schema and
-	// resource tables.
-	tables = append(tables, builtin.BuiltinTables...)
+	// Create the base schema with the builtin tables.
+	// First flatten them, so that we get implicit joins and can easily loop
+	// through them
+	builtinTables := FlattenTables(builtin.BuiltinTables, nil)
+	for _, table := range builtinTables {
+		schemaTables[table.Name] = table
+	}
+	// Compare the given tables with the builtin tables.
+	// If a builtin table is trying to be changed, product an error
 	tables = FlattenTables(tables, nil)
 	for _, table := range tables {
+		_, ok := schemaTables[table.Name]
+		if ok {
+			return nil, fmt.Errorf("cannot modify builtin table %s", table.Name)
+		}
 		schemaTables[table.Name] = table
 	}
 	schema := &bubblySchema{
 		Tables: schemaTables,
 	}
-	return schema
+	return schema, nil
 }
 
 // bubblySchema contains the bubblySchema in a useable form, which is currently

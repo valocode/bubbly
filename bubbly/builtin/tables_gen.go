@@ -1,25 +1,24 @@
 package builtin
 
-
 import (
 	"github.com/valocode/bubbly/api/core"
 	"github.com/zclconf/go-cty/cty"
-)	
+)
+
 var BuiltinTables = core.Tables{
 
-// #######################################
-// _SCHEMA
-// #######################################
+	// #######################################
+	// _SCHEMA
+	// #######################################
 	table("_schema",
 		fields(
 			field("tables", cty.Map(cty.DynamicPseudoType), false),
 		),
-		joins(
-		),
+		joins(),
 	),
-// #######################################
-// _RESOURCE
-// #######################################
+	// #######################################
+	// _RESOURCE
+	// #######################################
 	table("_resource",
 		fields(
 			field("id", cty.String, true),
@@ -27,14 +26,13 @@ var BuiltinTables = core.Tables{
 			field("kind", cty.String, false),
 			field("api_version", cty.String, false),
 			field("spec", cty.String, false),
-			field("metadata", cty.Object(map[string]cty.Type{"labels":cty.Map(cty.String)}), false),
+			field("metadata", cty.Object(map[string]cty.Type{"labels": cty.Map(cty.String)}), false),
 		),
-		joins(
-		),
+		joins(),
 	),
-// #######################################
-// _EVENT
-// #######################################
+	// #######################################
+	// _EVENT
+	// #######################################
 	table("_event",
 		fields(
 			field("status", cty.String, false),
@@ -45,9 +43,9 @@ var BuiltinTables = core.Tables{
 			join("_resource", false, false),
 		),
 	),
-// #######################################
-// RELEASE_ENTRY
-// #######################################
+	// #######################################
+	// RELEASE_ENTRY
+	// #######################################
 	table("release_entry",
 		fields(
 			field("name", cty.String, false),
@@ -59,9 +57,9 @@ var BuiltinTables = core.Tables{
 			join("_resource", false, false),
 		),
 	),
-// #######################################
-// RELEASE
-// #######################################
+	// #######################################
+	// RELEASE
+	// #######################################
 	table("release",
 		fields(
 			field("name", cty.String, true),
@@ -71,20 +69,19 @@ var BuiltinTables = core.Tables{
 			join("project", false, true),
 		),
 	),
-// #######################################
-// PROJECT
-// #######################################
+	// #######################################
+	// PROJECT
+	// #######################################
 	table("project",
 		fields(
 			field("id", cty.String, true),
 			field("name", cty.String, false),
 		),
-		joins(
-		),
+		joins(),
 	),
-// #######################################
-// REPO
-// #######################################
+	// #######################################
+	// REPO
+	// #######################################
 	table("repo",
 		fields(
 			field("id", cty.String, true),
@@ -94,9 +91,9 @@ var BuiltinTables = core.Tables{
 			join("project", false, false),
 		),
 	),
-// #######################################
-// BRANCH
-// #######################################
+	// #######################################
+	// BRANCH
+	// #######################################
 	table("branch",
 		fields(
 			field("name", cty.String, true),
@@ -105,9 +102,9 @@ var BuiltinTables = core.Tables{
 			join("repo", false, true),
 		),
 	),
-// #######################################
-// COMMIT
-// #######################################
+	// #######################################
+	// COMMIT
+	// #######################################
 	table("commit",
 		fields(
 			field("id", cty.String, true),
@@ -119,9 +116,9 @@ var BuiltinTables = core.Tables{
 			join("repo", false, true),
 		),
 	),
-// #######################################
-// RELEASE_ITEM
-// #######################################
+	// #######################################
+	// RELEASE_ITEM
+	// #######################################
 	table("release_item",
 		fields(
 			field("type", cty.String, false),
@@ -132,21 +129,20 @@ var BuiltinTables = core.Tables{
 			join("artifact", true, true),
 		),
 	),
-// #######################################
-// ARTIFACT
-// #######################################
+	// #######################################
+	// ARTIFACT
+	// #######################################
 	table("artifact",
 		fields(
 			field("name", cty.String, false),
 			field("sha256", cty.String, true),
 			field("location", cty.String, false),
 		),
-		joins(
-		),
+		joins(),
 	),
-// #######################################
-// RELEASE_STAGE
-// #######################################
+	// #######################################
+	// RELEASE_STAGE
+	// #######################################
 	table("release_stage",
 		fields(
 			field("name", cty.String, true),
@@ -155,9 +151,9 @@ var BuiltinTables = core.Tables{
 			join("release", false, true),
 		),
 	),
-// #######################################
-// RELEASE_CRITERIA
-// #######################################
+	// #######################################
+	// RELEASE_CRITERIA
+	// #######################################
 	table("release_criteria",
 		fields(
 			field("entry_name", cty.String, true),
@@ -167,9 +163,9 @@ var BuiltinTables = core.Tables{
 			join("release", false, true),
 		),
 	),
-// #######################################
-// CODE_SCAN
-// #######################################
+	// #######################################
+	// CODE_SCAN
+	// #######################################
 	table("code_scan",
 		fields(
 			field("tool", cty.String, false),
@@ -178,9 +174,9 @@ var BuiltinTables = core.Tables{
 			join("release", false, false),
 		),
 	),
-// #######################################
-// CODE_ISSUE
-// #######################################
+	// #######################################
+	// CODE_ISSUE
+	// #######################################
 	table("code_issue",
 		fields(
 			field("id", cty.String, false),
@@ -192,9 +188,9 @@ var BuiltinTables = core.Tables{
 			join("code_scan", false, false),
 		),
 	),
-// #######################################
-// TEST_RUN
-// #######################################
+	// #######################################
+	// TEST_RUN
+	// #######################################
 	table("test_run",
 		fields(
 			field("tool", cty.String, false),
@@ -207,9 +203,9 @@ var BuiltinTables = core.Tables{
 			join("release", false, false),
 		),
 	),
-// #######################################
-// TEST_CASE
-// #######################################
+	// #######################################
+	// TEST_CASE
+	// #######################################
 	table("test_case",
 		fields(
 			field("name", cty.String, false),
@@ -221,4 +217,3 @@ var BuiltinTables = core.Tables{
 		),
 	),
 }
-

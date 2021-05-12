@@ -10,14 +10,13 @@ import (
 	releaseCmd "github.com/valocode/bubbly/cmd/release"
 	schemaCmd "github.com/valocode/bubbly/cmd/schema"
 	"github.com/valocode/bubbly/cmd/topics"
+	"github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/env"
-
-	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (
-	rootShort = normalise.LongDesc(`
+	rootShort = util.LongDesc(`
 		bubbly: release readiness in a bubble
 		
 		Find more information: https://bubbly.dev`)
@@ -61,7 +60,7 @@ func initCommands(bCtx *env.BubblyContext, cmd *cobra.Command) {
 	cmd.AddCommand(getCmd)
 
 	cmd.AddCommand(releaseCmd.New(bCtx))
-	cmd.AddCommand(queryCmd.NewCmdQuery(bCtx))
+	cmd.AddCommand(queryCmd.New(bCtx))
 	cmd.AddCommand(schemaCmd.NewCmdSchema(bCtx))
 }
 

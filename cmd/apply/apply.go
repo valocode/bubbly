@@ -9,18 +9,18 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/util/normalise"
 )
 
 var (
 	_         cmdutil.Options = (*ApplyOptions)(nil)
-	applyLong                 = normalise.LongDesc(`
+	applyLong                 = util.LongDesc(`
 		Apply bubbly resources to a bubbly API server 
 	`)
 
-	applyExample = normalise.Examples(`
+	applyExample = util.Examples(`
 		# Apply the bubbly resources in the file ./main.bubbly
 		bubbly apply -f ./main.bubbly
 

@@ -24,7 +24,7 @@ func parseHCLFile(file string, val interface{}) error {
 	bCtx := env.NewBubblyContext()
 	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 
-	return parser.DecodeExpandBody(bCtx, hclFile.Body, val, cty.NilVal)
+	return parser.DecodeExpandBody(hclFile.Body, val, cty.NilVal)
 }
 
 // readTestAutomationData reads and parses the data to be loaded into Bubbly Store

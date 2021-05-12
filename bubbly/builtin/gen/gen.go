@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"go/format"
 	"os"
 	"strings"
 
@@ -57,7 +58,12 @@ func genTablesFromSchema(graph *store.SchemaGraph) error {
 	})
 	// Close the BuiltinTables var
 	fmt.Fprintf(&b, "}\n\n")
-	err := os.WriteFile(goTablesFile, b.Bytes(), 0644)
+
+	formatted, err := format.Source(b.Bytes())
+	if err != nil {
+		return fmt.Errorf("error formatting generated code: %w", err)
+	}
+	err = os.WriteFile(goTablesFile, formatted, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing to file %s: %w", goTablesFile, err)
 	}
@@ -100,7 +106,11 @@ func genStructsFromSchema(graph *store.SchemaGraph) error {
 		return nil
 	})
 
-	err := os.WriteFile(goSchemaFile, b.Bytes(), 0644)
+	formatted, err := format.Source(b.Bytes())
+	if err != nil {
+		return fmt.Errorf("error formatting generated code: %w", err)
+	}
+	err = os.WriteFile(goSchemaFile, formatted, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing to file %s: %w", goSchemaFile, err)
 	}
