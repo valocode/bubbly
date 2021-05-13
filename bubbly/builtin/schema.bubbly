@@ -157,7 +157,7 @@ table "release_item" {
 
     // Join to release. A release can have one or more release_items.
     // A release_item can belong to only one release, because it can have
-    // crtieria associated with it, which are specific to a release
+    // criteria associated with it, which are specific to a release
     join "release" { }
 
     // Join to the different item tables with a one-to-one relationship.

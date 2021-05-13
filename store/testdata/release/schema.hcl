@@ -166,7 +166,7 @@ table "artifact" {
     }
 }
 
-table "test_run" {
+table "testrun" {
     field "name" {
         type = string
     }

@@ -25,8 +25,8 @@ data "version" {
 	}
 }
 
-# Latest `test_run` in this set
-data "test_run" {
+# Latest `testrun` in this set
+data "testrun" {
 	joins = [
 		"location",
 		"configuration",
@@ -38,7 +38,7 @@ data "test_run" {
 	}
 }
 
-data "test_run" {
+data "testrun" {
 	joins = [
 		"location",
 		"configuration",
@@ -50,7 +50,7 @@ data "test_run" {
 	}
 }
 
-data "test_run" {
+data "testrun" {
 	joins = [
 		"location",
 		"configuration",

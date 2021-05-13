@@ -165,7 +165,8 @@ func (r *ResourceBlock) Data() (Data, error) {
 	return d, nil
 }
 
-// UnmarshalJSON unmarshals json into DataFields
+// ResourceFromData takes a data block representing a ResourceBlock and returns
+// a ResourceBlock, or an error if it fails
 func ResourceFromData(d Data) (*ResourceBlock, error) {
 	var (
 		r   ResourceBlock
