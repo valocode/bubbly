@@ -26,9 +26,7 @@ func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, 
 			Error:  err,
 		}
 	}
-	runCtx := core.NewResourceContext(inputs, ctx.NewResource, ctx.Auth)
-	// TODO: handle this better... it get's copied around in multiple places...
-	runCtx.DataCtx = ctx.DataCtx
+	runCtx := core.SubResourceContext(inputs, ctx)
 	return resource, resource.Apply(bCtx, runCtx)
 }
 

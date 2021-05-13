@@ -521,10 +521,9 @@ type resourceRun struct {
 }
 
 func (r *resourceRun) Run(bCtx *env.BubblyContext, releaseRef core.DataBlocks) *core.ResourceOutput {
-	ctx := core.NewResourceContext(r.Inputs.Value(), api.NewResource, nil)
+	ctx := core.NewResourceContext(cty.NilVal, api.NewResource, nil)
 	// Add the data block containing the release into the context
-	ctx.DataCtx = releaseRef
-	// TODO: why do we have to pass r.Inputs.Value() here as well??
+	ctx.DataBlocks = releaseRef
 	_, output := common.RunResource(bCtx, ctx, r.Resource, r.Inputs.Value())
 	return &output
 }

@@ -53,8 +53,8 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 
 	// If there is contextual data that should be loaded, prefix this to the data
 	// so that any joins to this data will succeed
-	if ctx.DataCtx != nil {
-		data = append(ctx.DataCtx, data...)
+	if ctx.DataBlocks != nil {
+		data = append(ctx.DataBlocks, data...)
 	}
 
 	if err := l.load(bCtx, ctx, data); err != nil {
