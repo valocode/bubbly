@@ -2,7 +2,7 @@
 # Multi-row example for testing `order_by` 
 # and `distinct_on` arguments working together.
 #
-table "test_run" {
+table "testrun" {
 
 	join "location" {}
 	join "configuration" {}
@@ -14,7 +14,7 @@ table "test_run" {
 
 	# UNIX epoch: https://www.epochconverter.com/
 	# This indicates when the test run finished.
-	# For the test_run records tied at (location, configuration, version),
+	# For the testrun records tied at (location, configuration, version),
 	# the most recent one is the one with the greatest finish_epoch value.
 	field "finish_epoch" {
 		type = string

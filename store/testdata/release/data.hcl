@@ -116,7 +116,7 @@ data "release_entry" {
 
 
 // #############################
-// Let's load a test_run
+// Let's load a testrun
 // #############################
 
 data "project" {
@@ -134,7 +134,7 @@ data "release" {
     policy = "reference"
 }
 
-data "test_run" {
+data "testrun" {
     fields = {
         "name": "unit tests",
         "result": true
