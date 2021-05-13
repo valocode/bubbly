@@ -76,14 +76,6 @@ func TestRelease(t *testing.T) {
 		for _, criteria := range criterion {
 			criteriaMap := criteria.(map[string]interface{})
 			entryName := criteriaMap["entry_name"].(string)
-			// item := criteriaMap["release_item"]
-			// for _, entry := range item.(map[string]interface{})["release_entry"].([]interface{}) {
-			// 	entryMap := entry.(map[string]interface{})
-			// 	if entryMap["name"] == entryName && entryMap["result"].(bool) {
-			// 		entryOK = true
-			// 		break
-			// 	}
-			// }
 			result, ok := releaseEntries[entryName]
 			assert.Truef(t, ok && result, "entry is not satisfied")
 			t.Logf("criteria: %#v", criteria)

@@ -132,18 +132,3 @@ func bubblyFilesWithConfig() ([]string, error) {
 	}
 	return files, nil
 }
-
-// func bubblyFilesInDir(dir string) ([]string, error) {
-// 	var files []string
-// 	// walk the directory and get .bubbly files
-// 	entries, err := os.ReadDir(dir)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("error opening directory %s: %w", dir, err)
-// 	}
-// 	for _, e := range entries {
-// 		if filepath.Ext(e.Name()) == ".bubbly" && !e.IsDir() {
-// 			files = append(files, filepath.Join(dir, e.Name()))
-// 		}
-// 	}
-// 	return files, err
-// }

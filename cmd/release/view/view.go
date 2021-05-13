@@ -87,11 +87,6 @@ func (o *options) resolve() error {
 
 // run runs the command over the validated options
 func (o *options) run() error {
-	// release, err := bubbly.ListReleases(o.bCtx)
-	// if err != nil {
-	// 	return err
-	// }
-	// // o.Release = release
 	release, err := bubbly.GetRelease(o.bCtx)
 	if err != nil {
 		return err
