@@ -20,8 +20,10 @@ type ParserError struct {
 
 func (e *ParserError) Error() string {
 	var msgs []string
-	for _, diag := range e.Diags.Errs() {
-		msgs = append(msgs, diag.Error())
+	for _, err := range e.Diags.Errs() {
+		// This is actually a *hcl.Diagnostic, we just need to cast it, e.g.
+		// if diag, ok := err.(*hcl.Diagnostic); ok { ... }
+		msgs = append(msgs, err.Error())
 	}
 	return "\n" + strings.Join(msgs, "\n")
 }

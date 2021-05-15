@@ -27,21 +27,6 @@ func ParseFilename(bCtx *env.BubblyContext, filename string, val interface{}) er
 	return nil
 }
 
-func ParseConfig(bCtx *env.BubblyContext, val interface{}) error {
-	files, err := bubblyFilesWithConfig()
-	if err != nil {
-		return fmt.Errorf("failed to get bubbly files: %s", err.Error())
-	}
-	mergedBody, err := MergedHCLBodies(bCtx, files)
-	if err != nil {
-		return err
-	}
-	if err := DecodeBody(mergedBody, val, cty.NilVal); err != nil {
-		return fmt.Errorf(`failed to decode body: %s`, err.Error())
-	}
-	return nil
-}
-
 func ParseResource(bCtx *env.BubblyContext, id string, src []byte, value interface{}) error {
 	hclParser := hclparse.NewParser()
 	file, diags := hclParser.ParseHCL(src, id)
@@ -101,34 +86,5 @@ func bubblyFilesByFilename(filename string) ([]string, error) {
 		return nil, fmt.Errorf("unknown filename mode %s", mode.String())
 	}
 
-	return files, nil
-}
-
-func bubblyFilesWithConfig() ([]string, error) {
-	var files []string
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("error getting working directory: %w", err)
-	}
-
-	dir, err := filepath.Abs(filepath.Join(cwd, ".bubbly"))
-	if err != nil {
-		return nil, fmt.Errorf("error gettings absolute path: %w", err)
-	}
-
-	for {
-		bfs, err := bubblyFilesByFilename(dir)
-		if err != nil {
-			return nil, fmt.Errorf("error getting bubbly files with %s: %w", dir, err)
-		}
-		files = append(files, bfs...)
-		// Get the parent directory
-		pDir := filepath.Dir(dir)
-		if pDir == dir {
-			// Then we are at the root directory so exit
-			break
-		}
-		dir = pDir
-	}
 	return files, nil
 }

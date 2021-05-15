@@ -8,7 +8,6 @@ import (
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/parser"
 	"github.com/valocode/bubbly/store"
 )
 
@@ -17,16 +16,15 @@ type BubblyFileParser struct {
 	ResourceBlocks core.ResourceBlocks `hcl:"resource,block"`
 }
 
-func CreateRelease(bCtx *env.BubblyContext) (*ReleaseSpec, error) {
-	var fileParser BubblyFileParser
-	err := parser.ParseConfig(bCtx, &fileParser)
+func CreateRelease(bCtx *env.BubblyContext, filename string) (*ReleaseSpec, error) {
+	release, err := createReleaseSpec(bCtx, filename)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing bubbly configs: %w", err)
+		return nil, fmt.Errorf("error creating release spec: %w", err)
 	}
 
-	d, err := fileParser.Release.Data()
+	d, err := release.Data()
 	if err != nil {
-		return nil, fmt.Errorf("error creating data blocks for release: %w", err)
+		return nil, err
 	}
 
 	client, err := client.New(bCtx)
@@ -47,5 +45,5 @@ func CreateRelease(bCtx *env.BubblyContext) (*ReleaseSpec, error) {
 		}
 		return nil, fmt.Errorf("error saving release data block: %w", err)
 	}
-	return fileParser.Release, nil
+	return release, nil
 }

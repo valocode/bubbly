@@ -2,6 +2,7 @@ package bubbly
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -9,13 +10,21 @@ import (
 	"github.com/valocode/bubbly/bubbly/builtin"
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/parser"
 )
 
-func GetRelease(bCtx *env.BubblyContext) (*builtin.Release, error) {
+var ErrReleaseNotExist = errors.New("release does not exist")
+
+func GetRelease(bCtx *env.BubblyContext, filename string) (*builtin.Release, error) {
+	// A query for a specific release (by name and version).
+	// The only tricky part is the order_by the release_entry to only get the
+	// latest for the release_criteria... as there may be multiple
+	// release_entry for one release_criteria
 	releaseQuery := `
 {
-	release(name: "%s", version: "%s") {
+	release(
+		name: "%s", version: "%s",
+		order_by:[{table: "release_entry", field: "_id", order: "DESC"}],
+		) {
 		name
 		version
 		project(id: "%s") {
@@ -34,23 +43,20 @@ func GetRelease(bCtx *env.BubblyContext) (*builtin.Release, error) {
 			name
 			release_criteria(filter_on: true) {
 				entry_name
+				release_entry {
+					result
+					reason
+				}
 			}
 		}
 	}
 }
 	`
 
-	// Get the release in the current directory
-	var fileParser BubblyFileParser
-	err := parser.ParseConfig(bCtx, &fileParser)
+	release, err := createReleaseSpec(bCtx, filename)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing bubbly configs: %w", err)
+		return nil, fmt.Errorf("error creating release spec: %w", err)
 	}
-
-	if fileParser.Release == nil {
-		return nil, fmt.Errorf("no release definition found")
-	}
-	release := fileParser.Release
 
 	// Ignore the output of Data, but this validates the release and makes sure
 	// the default values are set
@@ -86,7 +92,7 @@ func GetRelease(bCtx *env.BubblyContext) (*builtin.Release, error) {
 	}
 
 	if len(releases.Release) == 0 {
-		return nil, fmt.Errorf("release does not exist")
+		return nil, ErrReleaseNotExist
 	}
 
 	return &releases.Release[0], nil

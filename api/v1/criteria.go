@@ -1,147 +1,179 @@
 package v1
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 
+	"github.com/graphql-go/graphql"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/valocode/bubbly/api/common"
 	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/events"
+	"github.com/valocode/bubbly/parser"
 
 	"github.com/zclconf/go-cty/cty"
+	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
 var _ core.Criteria = (*Criteria)(nil)
 
 type Criteria struct {
 	*core.ResourceBlock
-	Spec       criteriaSpec
-	Queries    core.Queries
-	Conditions core.Conditions
-	Operation  core.Operation
+	Spec criteriaSpec
 }
 
 func NewCriteria(resBlock *core.ResourceBlock) *Criteria {
 	return &Criteria{
 		ResourceBlock: resBlock,
-		Queries:       core.Queries{},
-		Conditions:    core.Conditions{},
 	}
 }
 
-// Apply returns a core.ResourceOutput, whose Value is a cty.BoolVal indicating
-// success of failure of the criteria's operation
+// Apply returns a core.ResourceOutput, whose Value is a cty.Object created from
+// core.CriteriaOutput, which specifies the result (pass/fail) and a possible
+// reason for the failure
 func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
-	if err := common.DecodeBody(bCtx, c.SpecHCL.Body, &c.Spec, ctx); err != nil {
+	if err := common.DecodeBodyWithInputs(bCtx, c.SpecHCL.Body, &c.Spec, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: events.ResourceApplyFailure,
+			ID:     c.ID(),
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, c.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
-	// We first process the queries and then add their outputs to the
-	// EvalContext
-	// loop through the query blocks, apply the referenced query resources
-	// to obtain their cty.Value outputs, and insert this into the EvalContext
-	// This allows us to later resolve condition blocks which reference these
-	// values (self.query.<name>.value)
-	for idx, querySpec := range c.Spec.Queries {
-		bCtx.Logger.Debug().Msgf("Applying query: %s", querySpec.Name)
-		// use this resourceID to get the underlying Resource
-		resID := fmt.Sprintf("%s/%s", string(core.QueryResourceKind), querySpec.Name)
-		resource, output := common.RunResource(bCtx, ctx, resID, cty.NilVal)
-		if output.Error != nil {
-			return core.ResourceOutput{
-				Status: events.ResourceApplyFailure,
-				Error:  fmt.Errorf(`failed to apply query "%s" with index %d in criteria "%s": %w"`, querySpec.Name, idx, c.String(), output.Error),
-				Value:  cty.NilVal,
-			}
-		}
-		// add the output of the task to the parser
-		ctx.State.Insert(resource.Name(), output.Value)
-		// insert the output into the EvalContext
-		// TODO
-		// p.Scope.InsertValue(bCtx, output.Output(), []string{"self", string(core.QueryResourceKind), resource.Name()})
-		bCtx.Logger.Debug().Str("query", resource.String()).Str("output_status", output.Status.String()).Str("output_value", output.Value.GoString()).Msg("query successfully processed")
-		c.Queries[resource.Name()] = resource
-	}
-	// Loop through the condition blocks, and apply the condition.
-	// The apply uses the previously calculated query values
-	// that we inserted into the EvalContext to decode the condition HCL block.
-	// The core.ResourceOutput of a condition is then inserted into the
-	// EvalContext for later use when decoding the operation block
-	for idx, conditionSpec := range c.Spec.Conditions {
-		bCtx.Logger.Debug().Msgf("Evaluating condition: %s", conditionSpec.Name)
-		condition := NewCondition(conditionSpec)
-		inputs := core.AppendInputObjects(ctx.State.ValueWithPath([]string{"query"}), ctx.Inputs)
-		output := condition.Apply(
-			bCtx,
-			core.SubResourceContext(inputs, ctx),
-		)
-		if output.Error != nil {
-			return core.ResourceOutput{
-				Status: events.ResourceApplyFailure,
-				Error:  fmt.Errorf(`failed to apply condition "%s" with index %d in criteria "%s": %w"`, conditionSpec.Name, idx, c.String(), output.Error),
-				Value:  cty.NilVal,
-			}
-		}
-		// insert the output into the EvalContext. This allows us to use
-		// the result when decoding the operation
-		// p.Scope.InsertValue(bCtx, output.Output(), []string{"self", "condition", condition.Name})
-		// add the output of the task to the parser
-		ctx.State.Insert(condition.Name, output.Value)
-		bCtx.Logger.Debug().
-			Str("condition", condition.Name).
-			Str("output_status", output.Status.String()).
-			Str("output_value", output.Value.GoString()).
-			Msg("condition successfully processed")
-		c.Conditions[condition.Name] = condition
-	}
-	// finally, decode the operation block to produce the final output of the
-	// criteria resource
-	operationSpec := c.Spec.Operation
-	operation := NewOperation(operationSpec)
-	inputs := core.AppendInputObjects(ctx.State.ValueWithPath([]string{"query"}), ctx.Inputs)
-	output := operation.Apply(
-		bCtx,
-		core.SubResourceContext(inputs, ctx),
-	)
-	if output.Error != nil {
+
+	queryVal, err := c.queryToCtyValue(bCtx, ctx)
+	if err != nil {
 		return core.ResourceOutput{
-			Status: events.ResourceApplyFailure,
-			Error:  fmt.Errorf(`failed to apply operation "%s" in criteria "%s": %w"`, operationSpec.Name, c.String(), output.Error),
-			Value:  cty.NilVal,
+			ID:     c.ID(),
+			Status: events.ResourceRunFailure,
+			// The returned error should contain enough context about what went wrong
+			Error: err,
+			Value: cty.NilVal,
 		}
 	}
-	if output.Value == cty.BoolVal(false) {
+	fmt.Printf("queryVal: %s\n", queryVal.GoString())
+
+	ctx.State.Insert("query", queryVal)
+	queryOutput := ctx.State.ValueWithPath(nil)
+	condInputs := core.AppendInputObjects(queryOutput, ctx.Inputs)
+	fmt.Printf("condInputs: %s\n", condInputs.GoString())
+	if len(c.Spec.Conditions) == 0 {
 		return core.ResourceOutput{
-			Status: events.ResourceApplyFailure,
-			Error:  fmt.Errorf(`condition failed to apply with value: %s`, output.Value),
+			ID:     c.ID(),
+			Status: events.ResourceRunFailure,
+			Error:  errors.New("criteria must have at least one condition"),
 			Value:  cty.NilVal,
 		}
 	}
 
-	bCtx.Logger.Debug().
-		Str("operation", operation.Name()).
-		Str("output_status", output.Status.String()).
-		Str("output_value", output.Value.GoString()).
-		Msg("operation successfully processed")
-	c.Operation = operation
+	// Create the result and set it to true/success by default
+	var result = core.CriteriaResult{Result: true}
+	for _, condition := range c.Spec.Conditions {
+		resultVal, err := parser.ExpressionValue(condition.Value, condInputs)
+		if err != nil {
+			return core.ResourceOutput{
+				ID:     c.ID(),
+				Status: events.ResourceRunFailure,
+				Error:  fmt.Errorf("error evaluating condition: %w", err),
+				Value:  cty.NilVal,
+			}
+		}
+		// If the result is not a boolean, we have an issue
+		if !resultVal.Type().Equals(cty.Bool) {
+			return core.ResourceOutput{
+				ID:     c.ID(),
+				Status: events.ResourceRunFailure,
+				Error:  fmt.Errorf("condition is not boolean type: %s", resultVal.Type().FriendlyName()),
+				Value:  cty.NilVal,
+			}
+		}
+
+		// If the condition was not met, then we can stop here and return the reason
+		if resultVal.False() {
+			result.Result = false
+			result.Reason = condition.Message
+			break
+		}
+	}
+	// If all conditions have been evaluated return the criteria result
+	ctyResult, err := result.Value()
+	if err != nil {
+		return core.ResourceOutput{
+			ID:     c.ID(),
+			Status: events.ResourceRunFailure,
+			Error:  err,
+			Value:  cty.NilVal,
+		}
+	}
 	return core.ResourceOutput{
-		Status: events.ResourceApplySuccess,
-		Error:  nil,
-		Value:  operation.Value,
+		ID:     c.ID(),
+		Status: events.ResourceRunSuccess,
+		Value:  ctyResult,
 	}
 }
 func (c *Criteria) SpecValue() core.ResourceSpec {
 	return &c.Spec
 }
 
+// queryToCtyValue executes the criteria query and creates a cty.Value containing
+// the results, which can then be used to evaluate the criteria conditions
+func (c *Criteria) queryToCtyValue(bCtx *env.BubblyContext, ctx *core.ResourceContext) (cty.Value, error) {
+	client, err := client.New(bCtx)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("error creating bubbly client: %w", err)
+	}
+	defer client.Close()
+
+	bytes, err := client.Query(bCtx, ctx.Auth, c.Spec.Query)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("error executing query: %w", err)
+	}
+
+	var result graphql.Result
+	if err := json.Unmarshal(bytes, &result); err != nil {
+		return cty.NilVal, fmt.Errorf("error unmarshalling query result: %w", err)
+	}
+	if result.HasErrors() {
+		return cty.NilVal, fmt.Errorf("received errors from query: %v", result.Errors)
+	}
+
+	// Operation: we are given a result from the GraphQL query, which comes as
+	// an interface{} but is a map[string]interface{}. The structure of the map
+	// and slices therein, depends on the GraphQL query and also the bubbly
+	// schema that has been applied.
+	// This data needs to be converted into a cty.Value so that the conditions
+	// for this criteria can be evaluated.
+	// Right now the easiest way seems to be to get the implied type using JSON,
+	// but this has limitations/implications... such as missing values in JSON
+	// may lead to the wrong type. Probably we need to write some of our own
+	// logic here in the future, or have the ability to create a cty.Type from
+	// the GraphQL query and Bubbly schema. Anyway, until such an issue arises...
+	dBytes, err := json.Marshal(result.Data)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("error marshalling query result data: %w", err)
+	}
+	dType, err := ctyjson.ImpliedType(dBytes)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("could not imply type from query result: %w", err)
+	}
+	queryVal, err := ctyjson.Unmarshal(dBytes, dType)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("could not unmarshal result data into cty value: %w", err)
+	}
+	return queryVal, nil
+}
+
 type criteriaSpec struct {
-	Queries    QueryDeclarations     `hcl:"query,block"`
-	Conditions []*conditionBlockSpec `hcl:"condition,block"`
-	// TODO: Consider whether we want > 1 operation (their outputs
-	// could be used to reference each other as a way of splitting longer/
-	// complex operations)
-	Operation *operationBlockSpec `hcl:"operation,block"`
+	Inputs     core.InputDeclarations `hcl:"input,block"`
+	Query      string                 `hcl:"query,attr"`
+	Conditions []conditionSpec        `hcl:"condition,block"`
+}
+
+type conditionSpec struct {
+	Name    string         `hcl:",label"`
+	Message string         `hcl:"message,optional"`
+	Value   hcl.Expression `hcl:"value,attr"`
 }

@@ -19,16 +19,18 @@ import (
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 )
 
 type ReleaseSpec struct {
-	Inputs       core.InputDeclarations `hcl:"input,block"`
-	Name         string                 `hcl:"name,optional"`
-	Version      string                 `hcl:"version,optional"`
-	Project      string                 `hcl:"project,optional"`
-	GitItem      *gitItem               `hcl:"git,block"`
-	ArtifactItem *artifactItem          `hcl:"artifact,block"`
-	Stages       []releaseStage         `hcl:"stage,block"`
+	Name         string         `hcl:"name,optional"`
+	Version      string         `hcl:"version,optional"`
+	Project      string         `hcl:"project,optional"`
+	GitItem      *gitItem       `hcl:"git,block"`
+	ArtifactItem *artifactItem  `hcl:"artifact,block"`
+	Stages       []releaseStage `hcl:"stage,block"`
+	// BaseDir is set at runtime so that relative paths can be resolved
+	BaseDir string
 }
 
 const (
@@ -96,7 +98,7 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 	// E.g. for git we create the commit and also the release_item that joins
 	// to that specific commit.
 	if r.GitItem != nil {
-		gitData, err := r.GitItem.Data()
+		gitData, err := r.GitItem.Data(r.BaseDir)
 		if err != nil {
 			return nil, fmt.Errorf("error getting git data for repo %s: %w", r.GitItem.Repo, err)
 		}
@@ -111,7 +113,7 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 		})
 	}
 	if r.ArtifactItem != nil {
-		artifactData, err := r.ArtifactItem.Data()
+		artifactData, err := r.ArtifactItem.Data(r.BaseDir)
 		if err != nil {
 			return nil, fmt.Errorf("error getting artifact data for %s: %w", r.ArtifactItem.Name, err)
 		}
@@ -182,7 +184,7 @@ func (r *ReleaseSpec) Validate() error {
 	// If Name was not provided, try to get a default value
 	if r.Name == "" {
 		if r.GitItem != nil {
-			gitId, err := r.GitItem.idFromRemote()
+			gitId, err := r.GitItem.idFromRemote(r.BaseDir)
 			if err != nil {
 				return fmt.Errorf("error getting git repo id: %w", err)
 			}
@@ -192,7 +194,7 @@ func (r *ReleaseSpec) Validate() error {
 	// If Version was not provided, we can set a default based on git data
 	if r.Version == "" {
 		if r.GitItem != nil {
-			tag, commit, err := r.GitItem.version()
+			tag, commit, err := r.GitItem.version(r.BaseDir)
 			if err != nil {
 				return fmt.Errorf("error getting git tag: %w", err)
 			}
@@ -218,9 +220,9 @@ type gitItem struct {
 	Remote string `hcl:"remote,optional"`
 }
 
-func (g *gitItem) Data() (core.DataBlocks, error) {
+func (g *gitItem) Data(baseDir string) (core.DataBlocks, error) {
 
-	repo, err := g.openRepo()
+	repo, err := g.openRepo(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repository %s: %w", g.Repo, err)
 	}
@@ -237,7 +239,7 @@ func (g *gitItem) Data() (core.DataBlocks, error) {
 	// remote
 	if g.ID == "" {
 		var err error
-		g.ID, err = g.idFromRemote()
+		g.ID, err = g.idFromRemote(baseDir)
 		if err != nil {
 			return nil, fmt.Errorf("error getting git repo ID from remotes: %w", err)
 		}
@@ -270,7 +272,7 @@ func (g *gitItem) Data() (core.DataBlocks, error) {
 		Joins: []string{"repo"},
 	}
 
-	tag, _, err := g.version()
+	tag, _, err := g.version(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("error getting git tag: %w", err)
 	}
@@ -289,25 +291,30 @@ func (g *gitItem) Data() (core.DataBlocks, error) {
 	}, nil
 }
 
-func (g *gitItem) openRepo() (*git.Repository, error) {
+func (g *gitItem) openRepo(baseDir string) (*git.Repository, error) {
 	// Make sure there is a default Repo set
 	if g.Repo == "" {
 		g.Repo = "."
 	}
-	var err error
-	g.Repo, err = filepath.Abs(g.Repo)
+	repoPath, err := filepath.Abs(filepath.Join(baseDir, g.Repo))
 	if err != nil {
-		return nil, fmt.Errorf("cannot get path to git repo %s: %w", g.Repo, err)
+		return nil, fmt.Errorf("cannot get path to git repo %s: %w", repoPath, err)
 	}
-	return git.PlainOpen(g.Repo)
+	if _, err = os.Stat(repoPath); err != nil {
+		if errors.Is(os.ErrNotExist, err) {
+			return nil, errors.New("git repository does not exist")
+		}
+		return nil, err
+	}
+	return git.PlainOpen(repoPath)
 }
 
 // idFromRemote creates the git repo ID from the remote.
 // Default remote is origin, unless specified otherwise, and ID should be the
 // URL "normalized": no https:// or git@ prefix, no .git suffix, and only
 // forward slashes (no colons)
-func (g *gitItem) idFromRemote() (string, error) {
-	repo, err := g.openRepo()
+func (g *gitItem) idFromRemote(baseDir string) (string, error) {
+	repo, err := g.openRepo(baseDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to open git repository %s: %w", g.Repo, err)
 	}
@@ -348,8 +355,8 @@ func (g *gitItem) idFromRemote() (string, error) {
 	return id, nil
 }
 
-func (g *gitItem) version() (string, string, error) {
-	repo, err := g.openRepo()
+func (g *gitItem) version(baseDir string) (string, string, error) {
+	repo, err := g.openRepo(baseDir)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to open git repository %s: %w", g.Repo, err)
 	}
@@ -389,14 +396,14 @@ type artifactItem struct {
 	Location string `hcl:"location,attr"`
 }
 
-func (a *artifactItem) Data() (core.DataBlocks, error) {
+func (a *artifactItem) Data(baseDir string) (core.DataBlocks, error) {
 	var (
 		sha256 string
 		err    error
 	)
 	switch {
 	case strings.HasPrefix(a.Location, artifactFilePrefix):
-		sha256, err = a.sha256SumFile()
+		sha256, err = a.sha256SumFile(baseDir)
 	case strings.HasPrefix(a.Location, artifactDockerPrefix):
 		sha256, err = a.sha256SumDocker()
 	default:
@@ -408,7 +415,7 @@ func (a *artifactItem) Data() (core.DataBlocks, error) {
 			return nil, fmt.Errorf("unkown artifact type: %s", typeStr)
 		}
 		// Treat as a file by default
-		sha256, err = a.sha256SumFile()
+		sha256, err = a.sha256SumFile(baseDir)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("error calculating sha256 sum of %s: %w", a.Location, err)
@@ -426,8 +433,9 @@ func (a *artifactItem) Data() (core.DataBlocks, error) {
 	}, nil
 }
 
-func (a *artifactItem) sha256SumFile() (string, error) {
+func (a *artifactItem) sha256SumFile(baseDir string) (string, error) {
 	loc := strings.TrimPrefix(a.Location, artifactFilePrefix)
+	loc = filepath.Join(baseDir, loc)
 	f, err := os.Open(loc)
 	if err != nil {
 		return "", fmt.Errorf("error opening artifact file %s: %w", loc, err)
@@ -467,9 +475,8 @@ type releaseCriteria struct {
 	Run      []resourceRun `hcl:"run,block"`
 }
 
-// EntryLog produces data blocks for the release criteria when it should be
-// logged as a release entry
-func (c *releaseCriteria) EntryLog(bCtx *env.BubblyContext, releaseRef core.DataBlocks) (core.DataBlocks, error) {
+// Evaluate evaluates a release criteria and produces data blocks to log a release entry
+func (c *releaseCriteria) Evaluate(bCtx *env.BubblyContext, releaseRef core.DataBlocks, baseDir string) (core.DataBlocks, error) {
 	// Validation of the release criteria
 	if c.Artifact != nil && len(c.Run) > 0 {
 		return nil, errors.New("release criteria cannot specify both artifact and resource runs")
@@ -478,21 +485,40 @@ func (c *releaseCriteria) EntryLog(bCtx *env.BubblyContext, releaseRef core.Data
 		return nil, errors.New("release criteria has no criteria")
 	}
 
-	var data core.DataBlocks
+	var (
+		data        core.DataBlocks
+		entryReason string
+		entryResult = true
+	)
+
 	if c.Artifact != nil {
 		// Get the data block for the artifact
-		aData, err := c.Artifact.Data()
+		// TODO: handle if the artifact doesn't exist. We do not want to error,
+		// but it should mark the release_entry as false, e.g.
+		// entry.Result = <ARTIFACT_RESULT>
+		aData, err := c.Artifact.Data(baseDir)
 		if err != nil {
 			return nil, fmt.Errorf("error with artifact %s: %w", c.Artifact.Name, err)
 		}
 		data = append(data, aData...)
 	}
+	// Iterate through the run blocks. As soon as one fails, or one is a criteria
+	// kind with a failing result, break the loop
 	for _, run := range c.Run {
-		output := run.Run(bCtx, releaseRef)
+		resource, output := run.Run(bCtx, releaseRef)
 		if output.Error != nil {
 			return nil, fmt.Errorf("resource run failed for %s: %w", run.Resource, output.Error)
 		}
-
+		// If the resource was of criteria kind, then we care about the resource
+		// output value
+		if resource.Kind() == core.CriteriaResourceKind {
+			var result core.CriteriaResult
+			if err := gocty.FromCtyValue(output.Value, &result); err != nil {
+				return nil, fmt.Errorf("error getting criteria result from resource output: %w", err)
+			}
+			entryResult = result.Result
+			entryReason = result.Reason
+		}
 	}
 	// Create the data block for the release entry
 	data = append(data, core.Data{
@@ -507,7 +533,9 @@ func (c *releaseCriteria) EntryLog(bCtx *env.BubblyContext, releaseRef core.Data
 	data = append(data, core.Data{
 		TableName: "release_entry",
 		Fields: core.DataFields{
-			"name": cty.StringVal(c.Name),
+			"name":   cty.StringVal(c.Name),
+			"result": cty.BoolVal(entryResult),
+			"reason": cty.StringVal(entryReason),
 		},
 		Joins:  []string{"release_criteria"},
 		Policy: core.CreatePolicy,
@@ -520,10 +548,9 @@ type resourceRun struct {
 	Inputs   core.InputDefinitions `hcl:"input,block"`
 }
 
-func (r *resourceRun) Run(bCtx *env.BubblyContext, releaseRef core.DataBlocks) *core.ResourceOutput {
+func (r *resourceRun) Run(bCtx *env.BubblyContext, releaseRef core.DataBlocks) (core.Resource, core.ResourceOutput) {
 	ctx := core.NewResourceContext(cty.NilVal, api.NewResource, nil)
 	// Add the data block containing the release into the context
 	ctx.DataBlocks = releaseRef
-	_, output := common.RunResource(bCtx, ctx, r.Resource, r.Inputs.Value())
-	return &output
+	return common.RunResource(bCtx, ctx, r.Resource, r.Inputs.Value())
 }

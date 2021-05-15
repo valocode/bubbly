@@ -21,11 +21,11 @@ type conditionBlockSpec struct {
 }
 
 type Condition struct {
-	*conditionBlockSpec
+	conditionBlockSpec
 	Value cty.Value `hcl:"value,attr"`
 }
 
-func NewCondition(conditionBlock *conditionBlockSpec) *Condition {
+func NewCondition(conditionBlock conditionBlockSpec) *Condition {
 	return &Condition{
 		conditionBlockSpec: conditionBlock,
 	}

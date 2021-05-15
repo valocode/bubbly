@@ -26,7 +26,7 @@ func (c *httpClient) GetResource(bCtx *env.BubblyContext, _ *component.MessageAu
 
 	resp, err := c.handleRequest(http.MethodGet, "/resource/"+id, nil)
 	if err != nil {
-		return nil, fmt.Errorf(`failed to get resource "%s": %w`, id, err)
+		return nil, fmt.Errorf("error getting resource %s: %w", id, err)
 	}
 
 	defer resp.Body.Close()
@@ -85,7 +85,11 @@ func (n *natsClient) GetResource(bCtx *env.BubblyContext, auth *component.Messag
 		return nil, fmt.Errorf("failed to get resource from query: %w", err)
 	}
 
-	var result graphql.Result
+	var (
+		result    graphql.Result
+		resources core.ResourceBlockJSONWrapper
+	)
+	result.Data = &resources
 	if err := json.Unmarshal(req.Reply.Data, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response from query to store: %w", err)
 	}
@@ -97,18 +101,13 @@ func (n *natsClient) GetResource(bCtx *env.BubblyContext, auth *component.Messag
 		return nil, fmt.Errorf("failed to get resource: %w", graphqlErrors)
 	}
 
-	if result.Data == nil || result.Data.(map[string]interface{})[core.ResourceTableName] == nil {
-		return nil, fmt.Errorf(`no resource found matching ID "%s"`, resID)
+	if len(resources.ResourceBlocks) == 0 {
+		return nil, fmt.Errorf("no resource with ID: %s", resID)
 	}
-
-	// the result is always []interface{} because this is what the graphql
-	// resolver will return
-	resourceJSONSlice := result.Data.(map[string]interface{})[core.ResourceTableName].([]interface{})
-
 	// ...which we presume to be of length 1, since resources with identical
 	// IDs are upserted. Here we extract the first valid core.ResourceBlockJSON
 	// from the slice
-	return json.Marshal(resourceJSONSlice[0])
+	return json.Marshal(resources.ResourceBlocks[0])
 }
 
 // PostResource uses the bubbly natsClient client to publish a resource to the data

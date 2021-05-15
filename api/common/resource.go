@@ -22,7 +22,7 @@ func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, 
 	if err != nil {
 		return nil, core.ResourceOutput{
 			ID:     id,
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  err,
 		}
 	}
