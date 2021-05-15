@@ -35,7 +35,9 @@ type options struct {
 	Command string
 	Args    []string
 	Release *bubbly.ReleaseSpec
+
 	// flags
+	filename string
 }
 
 // New creates a new cobra command
@@ -70,6 +72,13 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		},
 	}
 
+	f := cmd.Flags()
+	f.StringVarP(&o.filename,
+		"filename",
+		"f",
+		".",
+		"filename or directory that contains the bubbly release definition")
+
 	return cmd
 }
 
@@ -86,7 +95,7 @@ func (o *options) resolve() error {
 
 // run runs the command over the validated options
 func (o *options) run() error {
-	release, err := bubbly.CreateRelease(o.bCtx)
+	release, err := bubbly.CreateRelease(o.bCtx, o.filename)
 	if err != nil {
 		return err
 	}

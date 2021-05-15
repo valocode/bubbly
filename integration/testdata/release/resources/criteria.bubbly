@@ -1,0 +1,38 @@
+
+resource "criteria" "gotest" {
+    spec {
+        input "release_id" {
+            type = string
+            default = "1"
+        }
+
+        // TODO: how to get test_run
+        query = <<EOT
+            {
+                test_run(limit: 1) {
+                    release(filter_on: true, name: "github.com/valocode/bubbly", version: "6c7e89dd0c6009141e0e18785709d5551faab661") {
+                        project(filter_on: true, name: "bubbly") {
+                            name
+                        }
+                    }
+                    result
+                }
+            }
+        EOT
+        condition "no_test_run" {
+            message = "no test run found"
+            value = length(self.query.value.test_run) == 1
+        }
+        
+        condition "test_run_pass" {
+            message = "test run failed"
+            value = self.query.value.test_run[0].result == true
+        }
+    }
+}
+
+// resource "run" "gotest-criteria" {
+//     spec {
+//         resource = "criteria/gotest"
+//     }
+// }

@@ -1,0 +1,28 @@
+
+release {
+    project = "bubbly"
+    git {
+        repo = "./repo-with-tag"
+    }
+
+    stage "Artifact" {
+        criteria "artifact" {
+            artifact {
+                name = "bubbly"
+                location = "file://./artifacts/artifact.txt"
+            }
+        }
+    }
+    stage "Testing" {
+        criteria "unit_test" {
+            run "pipeline/gotest" {
+                input "file" {
+                    value = "./testdata/release/results/gotest.json"
+                }
+            }
+            run "criteria/gotest" {
+                
+            }
+        }
+    }
+}

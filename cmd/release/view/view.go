@@ -7,21 +7,20 @@ import (
 
 	"github.com/valocode/bubbly/bubbly"
 	"github.com/valocode/bubbly/bubbly/builtin"
-	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
 )
 
 var (
 	_       cmdutil.Options = (*options)(nil)
-	cmdLong                 = util.LongDesc(`
+	cmdLong                 = cmdutil.LongDesc(`
 		View a release
 
 		    $ bubbly release view
 
 		`)
 
-	cmdExample = util.Examples(`
+	cmdExample = cmdutil.Examples(`
 		# View a release
 		bubbly release view
 		`)
@@ -37,6 +36,7 @@ type options struct {
 	Release *builtin.Release
 
 	// flags
+	filename string
 }
 
 // New creates a new cobra command
@@ -70,6 +70,12 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			return nil
 		},
 	}
+	f := cmd.Flags()
+	f.StringVarP(&o.filename,
+		"filename",
+		"f",
+		".",
+		"filename or directory that contains the bubbly release definition")
 
 	return cmd
 }
@@ -87,7 +93,7 @@ func (o *options) resolve() error {
 
 // run runs the command over the validated options
 func (o *options) run() error {
-	release, err := bubbly.GetRelease(o.bCtx)
+	release, err := bubbly.GetRelease(o.bCtx, o.filename)
 	if err != nil {
 		return err
 	}
@@ -97,9 +103,30 @@ func (o *options) run() error {
 
 // Print prints the successful outcome of the cmd
 func (o *options) Print() {
+	status := builtin.ReleaseStatusByStages(*o.Release)
+	status = cmdutil.ReleaseStatusColor(status)
+
 	fmt.Println("Project: " + o.Release.Project.Id)
 	fmt.Println("Name: " + o.Release.Name)
 	fmt.Println("Version: " + o.Release.Version)
-	fmt.Println("Type: " + o.Release.ReleaseItem[0].Type)
-	fmt.Println("Status: " + builtin.ReleaseStatusByStages(*o.Release))
+	fmt.Println("Status: " + status)
+	fmt.Println("")
+	fmt.Println("Items:")
+	for _, item := range o.Release.ReleaseItem {
+		fmt.Println("  - " + item.Type)
+	}
+	fmt.Println("")
+	fmt.Println("Stages:")
+	for _, stage := range o.Release.ReleaseStage {
+		stageStatus := builtin.ReleaseStageStatus(stage)
+		stageStatus = cmdutil.ReleaseStatusColor(stageStatus)
+
+		fmt.Println("")
+		fmt.Println(stage.Name + ": " + stageStatus)
+		for _, criteria := range stage.ReleaseCriteria {
+			criteriaStatus := builtin.ReleaseCriteriaStatus(criteria)
+			criteriaStatus = cmdutil.ReleaseStatusColor(criteriaStatus)
+			fmt.Println("    - Criteria: " + criteria.EntryName + " (" + criteriaStatus + ")")
+		}
+	}
 }

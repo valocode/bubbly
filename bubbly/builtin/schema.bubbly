@@ -175,6 +175,7 @@ table "release_item" {
     // to release... It could be solved by adding an alias
     // join "release" {
     //     alias = "item_release"
+    //     single = true
     //     unique = true
     // }
 }
@@ -193,6 +194,9 @@ table "release_entry" {
     field "result" {
         type = bool
     }
+    field "reason" {
+        type = string
+    }
 
     // TODO: what other fields do we want to store? Probably something saying
     // *why* the criteria failed (a reason) and also perhaps the GraphQL
@@ -203,7 +207,9 @@ table "release_entry" {
     // Join to a release so that we can get all the entries for a release
     // (entry log)
     join "release" { }
-    // A release does not always have a release_criteria for each release_entry
+    // A release does not always have a release_criteria for each release_entry,
+    // and may have multiple release_criteria in case multiple entries have been
+    // logged
     join "release_criteria" { }
     // Join on the _resource criteria that created this entry release_entry
     join "_resource" { }

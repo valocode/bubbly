@@ -7,21 +7,14 @@ import (
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/parser"
 )
 
-func EvalReleaseCriteria(bCtx *env.BubblyContext, criteriaName string) (*ReleaseSpec, error) {
-	// Get the release in the current directory
-	var fileParser BubblyFileParser
-	err := parser.ParseConfig(bCtx, &fileParser)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing bubbly configs: %w", err)
-	}
+func EvalReleaseCriteria(bCtx *env.BubblyContext, filename string, criteriaName string) (*ReleaseSpec, error) {
 
-	if fileParser.Release == nil {
-		return nil, fmt.Errorf("no release definition found")
+	release, err := createReleaseSpec(bCtx, filename)
+	if err != nil {
+		return nil, fmt.Errorf("error creating release spec: %w", err)
 	}
-	release := fileParser.Release
 
 	// Get the reference to the release data block
 	releaseRef, err := release.DataRef()
@@ -29,11 +22,12 @@ func EvalReleaseCriteria(bCtx *env.BubblyContext, criteriaName string) (*Release
 		return nil, fmt.Errorf("unable to process release definition: %w", err)
 	}
 
-	criteria, err := criteriaByName(fileParser.Release, criteriaName)
+	criteria, err := criteriaByName(release, criteriaName)
 	if err != nil {
 		return nil, err
 	}
-	dEntry, err := criteria.EntryLog(bCtx, releaseRef)
+	// Evaluate the release criteria and create the release entry data blocks
+	dEntry, err := criteria.Evaluate(bCtx, releaseRef, release.BaseDir)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +49,7 @@ func EvalReleaseCriteria(bCtx *env.BubblyContext, criteriaName string) (*Release
 	if err := client.Load(bCtx, nil, dBytes); err != nil {
 		return nil, fmt.Errorf("error saving release data block: %w", err)
 	}
-	return fileParser.Release, nil
+	return release, nil
 }
 
 func criteriaByName(release *ReleaseSpec, criteriaName string) (*releaseCriteria, error) {

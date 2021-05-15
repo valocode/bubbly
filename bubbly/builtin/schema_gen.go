@@ -46,6 +46,7 @@ type Event_Wrap struct {
 type ReleaseEntry struct {
 	Name            string           `json:"name"`
 	Result          bool             `json:"result"`
+	Reason          string           `json:"reason"`
 	Release         *Release         `json:"release"`
 	ReleaseCriteria *ReleaseCriteria `json:"release_criteria"`
 	Resource        *Resource        `json:"_resource"`

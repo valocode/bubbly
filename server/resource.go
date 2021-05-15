@@ -112,7 +112,7 @@ func (s *Server) GetResource(c echo.Context) error {
 	auth := s.getAuthFromContext(c)
 	resultBytes, err := s.Client.GetResource(s.bCtx, auth, resBlock.String())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error getting resource: %w", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("error getting resource: %s", err.Error()))
 	}
 
 	return c.JSONBlob(http.StatusOK, resultBytes)

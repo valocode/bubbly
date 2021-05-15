@@ -39,6 +39,15 @@ func DecodeExpandBody(body hcl.Body, val interface{}, inputs cty.Value) error {
 	return nil
 }
 
+func ExpressionValue(expr hcl.Expression, inputs cty.Value) (cty.Value, error) {
+	eCtx := newEvalContext(inputs)
+	value, diags := expr.Value(eCtx)
+	if diags.HasErrors() {
+		return cty.NilVal, NewParserError(nil, diags)
+	}
+	return value, nil
+}
+
 func processVariables(inputs cty.Value, traversals []hcl.Traversal) (cty.Value, hcl.Diagnostics) {
 	var (
 		diags    hcl.Diagnostics

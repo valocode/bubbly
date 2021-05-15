@@ -1,0 +1,42 @@
+
+release {
+    project = "bubbly"
+    git {
+        repo = "./repo-with-commit"
+    }
+
+    stage "Artifact" {
+        criteria "artifact" {
+            artifact {
+                name = "bubbly"
+                location = "file://./artifacts/artifact.txt"
+            }
+            // TODO: make a test for docker
+            // artifact {
+            //     name = "bubbly"
+            //     location = "docker://europe-north1-docker.pkg.dev/bubbly-saas-3276866d/bubbly/bubbly:0.0.1-beta"
+            // }
+        }
+    }
+    // TODO: cannot have empty stage
+    // stage "Code Analysis" {
+    //     // TODO: create pipeline and test file
+    //     criteria "gofmt" {
+    //         run "pipeline/gofmt" {}
+    //     }
+    //     // TODO: create pipeline and test for gosec
+    //     criteria "gosec" {
+    //         // run "pipeline/gosec" {}
+    //     }
+    // }
+    stage "Testing" {
+        criteria "unit_test" {
+            run "pipeline/gotest" {
+                input "file" {
+                    value = "./testdata/release/results/gotest.json"
+                }
+            }
+            run "criteria/gotest" { }
+        }
+    }
+}

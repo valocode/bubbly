@@ -5,42 +5,7 @@ import (
 
 	"github.com/valocode/bubbly/api/core"
 	v1 "github.com/valocode/bubbly/api/v1"
-	"github.com/valocode/bubbly/env"
 )
-
-func NewParserType() *ResourcesParserType {
-	return &ResourcesParserType{
-		Resources: []core.Resource{},
-	}
-}
-
-// ResourcesParserType is used with the parser to get blocks of resources and
-// convert those to actual resources.
-type ResourcesParserType struct {
-	Blocks    core.ResourceBlocks `hcl:"resource,block"`
-	Resources []core.Resource
-}
-
-func (r *ResourcesParserType) CreateResources(bCtx *env.BubblyContext) error {
-	for _, resBlock := range r.Blocks {
-		resource, err := NewResource(resBlock)
-		if err != nil {
-			return fmt.Errorf(`failed to create resource from resource block "%s": %w`, resBlock.String(), err)
-		}
-		r.Resources = append(r.Resources, resource)
-	}
-	return nil
-}
-
-func (r ResourcesParserType) ByKind(kind core.ResourceKind) []core.Resource {
-	resByKind := []core.Resource{}
-	for _, res := range r.Resources {
-		if res.Kind() == kind {
-			resByKind = append(resByKind, res)
-		}
-	}
-	return resByKind
-}
 
 // NewResource creates a new resource from the given ResourceBlock
 // If successful, returns a pointer to the new resource

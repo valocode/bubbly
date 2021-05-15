@@ -7,14 +7,13 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/valocode/bubbly/bubbly"
-	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
 )
 
 var (
 	_       cmdutil.Options = (*options)(nil)
-	cmdLong                 = util.LongDesc(`
+	cmdLong                 = cmdutil.LongDesc(`
 		Evaluate a release criteria and log a release entry with the result.
 		The criteria needs to exist in the release and the result will be attached to a release entry which is created as part of this command.
 
@@ -22,7 +21,7 @@ var (
 
 		`)
 
-	cmdExample = util.Examples(`
+	cmdExample = cmdutil.Examples(`
 		# Evaluate the release criteria called unit_test which is defined in the release.
 		# A release entry with the name unit_test will be created.
 		bubbly release eval unit_test
@@ -39,7 +38,8 @@ type options struct {
 	Release *bubbly.ReleaseSpec
 
 	// flags
-	Criteria string
+	filename string
+	criteria string
 }
 
 // New creates a new cobra command
@@ -74,6 +74,13 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		},
 	}
 
+	f := cmd.Flags()
+	f.StringVarP(&o.filename,
+		"filename",
+		"f",
+		".",
+		"filename or directory that contains the bubbly release definition")
+
 	return cmd
 }
 
@@ -85,13 +92,13 @@ func (o *options) validate(cmd *cobra.Command) error {
 
 // resolve resolves args for the command
 func (o *options) resolve() error {
-	o.Criteria = o.Args[0]
+	o.criteria = o.Args[0]
 	return nil
 }
 
 // run runs the command over the validated options
 func (o *options) run() error {
-	release, err := bubbly.EvalReleaseCriteria(o.bCtx, o.Criteria)
+	release, err := bubbly.EvalReleaseCriteria(o.bCtx, o.filename, o.criteria)
 	if err != nil {
 		return err
 	}

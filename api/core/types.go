@@ -2,8 +2,10 @@ package core
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/gocty"
 
 	"github.com/valocode/bubbly/events"
 )
@@ -79,4 +81,28 @@ func (r *ResourceOutput) DataBlocks() (DataBlocks, error) {
 	}
 
 	return DataBlocks{joinData, eventData}, nil
+}
+
+// CriteriaResult defines the output from a criteria.
+// There are some cty-->golang-->cty conversions needed, and by defining this
+// struct we get some tighter control over that, using tags and gocty.ImpliedType
+type CriteriaResult struct {
+	Result bool   `cty:"result"`
+	Reason string `cty:"reason"`
+}
+
+// Value returns a cty.Value for a CriteriaResult.
+// No errors should occur. If they do, something is wrong with the struct or
+// something really unexpected has happened
+func (c CriteriaResult) Value() (cty.Value, error) {
+	ty, err := gocty.ImpliedType(c)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("unable to get implied type for CriteriaResult: %w", err)
+	}
+	result, err := gocty.ToCtyValue(c, ty)
+	if err != nil {
+		return cty.NilVal, fmt.Errorf("error getting cty.Value for CriteriaResult: %w", err)
+	}
+
+	return result, nil
 }

@@ -62,8 +62,10 @@ func (h *httpClient) handleResponse(resp *http.Response, err error) (*http.Respo
 		}
 
 		var httpError echo.HTTPError
-		json.Unmarshal(body, &httpError)
-		return nil, fmt.Errorf(`%s: %s`, resp.Status, httpError.Message)
+		if err := json.Unmarshal(body, &httpError); err != nil {
+			return nil, fmt.Errorf("%s: error unmarshalling HTTP error message: %w", resp.Status, err)
+		}
+		return nil, fmt.Errorf(`%s: %s`, resp.Status, httpError.Error())
 	}
 
 	return resp, nil
