@@ -11,16 +11,14 @@ import (
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/env"
 
-	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
 
-	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 )
 
 var (
 	_         cmdutil.Options = (*AgentOptions)(nil)
-	agentLong                 = util.LongDesc(
+	agentLong                 = cmdutil.LongDesc(
 		`
 		Starts a bubbly agent. The agent can be configured to run all components, or only some subset, 
 		depending on the flags provided.
@@ -31,7 +29,7 @@ var (
 		`,
 	)
 
-	agentExample = util.Examples(
+	agentExample = cmdutil.Examples(
 		`
 		# Starts the bubbly agent with all components (API Server, NATS Server, Store and Worker) 
 		using application defaults
@@ -81,7 +79,7 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 			bCtx.Logger.Debug().
 				Interface(
 					"data_store",
-					o.bCtx.AgentConfig.StoreConfig,
+					bCtx.StoreConfig,
 				).
 				Interface(
 					"nats_server",
@@ -104,19 +102,6 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 			}
 
 			o.Print()
-			return nil
-		},
-		PreRunE: func(cmd *cobra.Command, _ []string) error {
-			// prior to running the agent, we merge defaults with the
-			// config provided by command flags to make sure
-			// we have a complete configuration
-			if err := mergo.Merge(
-				o.bCtx.AgentConfig,
-				config.DefaultAgentConfig(),
-			); err != nil {
-				return fmt.Errorf("error merging agent configuration with defaults: %w", err)
-			}
-
 			return nil
 		},
 	}
@@ -156,7 +141,7 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 		"whether to run a bubbly worker on this agent",
 	)
 	f.StringVar(
-		(*string)(&o.bCtx.AgentConfig.StoreConfig.Provider),
+		(*string)(&o.bCtx.StoreConfig.Provider),
 		"data-store-provider",
 		config.DefaultStoreProvider,
 		"provider of the bubbly data store",
@@ -176,28 +161,28 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 		"HTTP Port of the NATS Server",
 	)
 	f.StringVar(
-		&o.bCtx.AgentConfig.StoreConfig.PostgresAddr,
-		"data-store-addr",
+		&o.bCtx.StoreConfig.PostgresAddr,
+		"postgres-addr",
 		config.DefaultPostgresAddr,
-		"address of the data store",
+		"postgres address for the data store",
 	)
 	f.StringVar(
-		&o.bCtx.AgentConfig.StoreConfig.PostgresUser,
-		"data-store-username",
+		&o.bCtx.StoreConfig.PostgresUser,
+		"postgres-username",
 		config.DefaultPostgresUser,
-		"username of the data store",
+		"postgres username for the data store",
 	)
 	f.StringVar(
-		&o.bCtx.AgentConfig.StoreConfig.PostgresPassword,
-		"data-store-password",
+		&o.bCtx.StoreConfig.PostgresPassword,
+		"postgres-password",
 		config.DefaultPostgresPassword,
-		"password of the data store",
+		"postgres password for the data store",
 	)
 	f.StringVar(
-		&o.bCtx.AgentConfig.StoreConfig.PostgresDatabase,
-		"data-store-database",
+		&o.bCtx.StoreConfig.PostgresDatabase,
+		"postgres-database",
 		config.DefaultPostgresDatabase,
-		"database of the data store",
+		"postgres database for the data store",
 	)
 
 	return cmd, o

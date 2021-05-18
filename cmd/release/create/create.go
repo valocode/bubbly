@@ -96,7 +96,11 @@ func (o *options) run() error {
 
 // Print prints the successful outcome of the cmd
 func (o *options) Print() {
-	color.Green("Release successfully created!")
+	if o.bCtx.CLIConfig.Color {
+		color.Green("Release successfully created!")
+	} else {
+		fmt.Println("Release successfully created!")
+	}
 
 	fmt.Println("\n" + o.Release.String())
 }

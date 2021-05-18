@@ -111,7 +111,6 @@ func DefaultStoreConfig() *StoreConfig {
 // or, preferentially, from provided environment variables.
 func DefaultAgentConfig() *AgentConfig {
 	return &AgentConfig{
-		StoreConfig:       DefaultStoreConfig(),
 		NATSServerConfig:  DefaultNATSServerConfig(),
 		EnabledComponents: DefaultAgentComponentsEnabled(),
 		DeploymentType:    AgentDeploymentType(defaultEnv("AGENT_DEPLOYMENT_TYPE", DefaultDeploymentType.String())),

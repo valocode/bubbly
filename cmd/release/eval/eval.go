@@ -1,6 +1,8 @@
 package list
 
 import (
+	"fmt"
+
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
@@ -99,7 +101,9 @@ func (o *options) run() error {
 
 // Print prints the successful outcome of the cmd
 func (o *options) Print() {
-	color.Green("Release entry successfully logged!")
-
-	// fmt.Println("\n" + o.Release.String())
+	if o.bCtx.CLIConfig.Color {
+		color.Green("Release entry successfully logged!")
+	} else {
+		fmt.Println("Release entry successfully logged!")
+	}
 }

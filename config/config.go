@@ -69,7 +69,6 @@ func (a AgentDeploymentType) String() string {
 
 // AgentConfig stores the configuration of a bubbly agent
 type AgentConfig struct {
-	StoreConfig       *StoreConfig
 	NATSServerConfig  *NATSServerConfig
 	EnabledComponents *AgentComponentsToggle
 	DeploymentType    AgentDeploymentType

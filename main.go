@@ -6,8 +6,6 @@ import (
 
 	"github.com/valocode/bubbly/docs"
 
-	"github.com/imdario/mergo"
-
 	"github.com/rs/zerolog"
 	"github.com/valocode/bubbly/cmd"
 	"github.com/valocode/bubbly/config"
@@ -68,17 +66,6 @@ func main() {
 			).
 				Msg("updated log level")
 		}
-	}
-
-	// Because several of rootCmd's flags are mapped to BubblyContext.Config
-	// attributes (and therefore reset when calling NewCmdRoot),
-	// we need to merge the default configuration with any flags
-	// provided by CLI.
-	defaultConfig := config.DefaultServerConfig()
-
-	if err := mergo.Merge(bCtx.ServerConfig, defaultConfig); err != nil {
-		bCtx.Logger.Error().Err(err).Msg("error when merging configs")
-		os.Exit(1)
 	}
 
 	// finally, print the final configuration to be used by bubbly
