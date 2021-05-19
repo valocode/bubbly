@@ -101,7 +101,7 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, tenant string, graph *SchemaGraph,
 	// qb.columns = &rootColumns
 
 	// Recursively go through the graphql query and resolve the sub-fields
-	if err := psqlSubQuery(tenant, graph, qb, &rootColumns, &rootColumns, field, nil); err != nil {
+	if _, err := psqlSubQuery(tenant, graph, qb, &rootColumns, &rootColumns, field); err != nil {
 		return nil, fmt.Errorf("failed to process root query: %s: %w", rootTable, err)
 	}
 
@@ -116,20 +116,26 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, tenant string, graph *SchemaGraph,
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute SQL query: %s: %w", sqlStr, err)
 	}
-
 	defer rows.Close()
 
 	// Iterate through the result set and append each row of results to the
-	// result value we are returning
+	// result value we are returning. We should check if there are no rows
+	// in which case we want to return at least an empty slice
+	var hasRows bool
 	for rows.Next() {
+		hasRows = true
 		if err := psqlScanRowColumns(rows, result, rootColumns); err != nil {
 			return nil, fmt.Errorf("failed scanning row values: %w", err)
 		}
 	}
+	if !hasRows {
+		// Initialize with an empty slice to avoid returning just null
+		result[rootTable] = make([]interface{}, 0)
+	}
 	return result[rootTable], nil
 }
 
-func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *tableColumns, tc *tableColumns, field *ast.Field, path SchemaPath) error {
+func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *tableColumns, tc *tableColumns, field *ast.Field) (sq.SelectBuilder, error) {
 
 	// GraphQL fields are conceptually functions which return values,
 	// and occasionally accept arguments which alter their behaviour.
@@ -148,9 +154,9 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 	// Create the tableColumns for this type/table in the query
 	var (
 		node      = qb.node
+		subQuery  = psql.Select("*")
 		subFields = make([]*ast.Field, 0)
 
-		filterOn bool
 		// The `order_by` GraphQL argument can only be processed after all table aliases
 		// are known. That includes the tables referenced by the GraphQL subfields.
 		// Therefore, upon encountering the `order_by` argument in one of the root
@@ -188,14 +194,16 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 		// Multiple expressions are `AND`ed together in the generated SQL.
 		for _, tf := range node.Table.Fields {
 			if arg.Name.Value == tf.Name {
-				qb.sql = qb.sql.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
+				subQuery = subQuery.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
+				// qb.sql = qb.sql.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
 				argIsResolved = true
 				break
 			}
 		}
 		// Resolve the id field
 		if arg.Name.Value == tableIDField {
-			qb.sql = qb.sql.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
+			subQuery = subQuery.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
+			// qb.sql = qb.sql.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
 			argIsResolved = true
 		}
 
@@ -210,7 +218,14 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 		// FIXME: maybe use a switch for what follows, instead of a set of ifs?
 
 		if arg.Name.Value == filterOnID {
-			filterOn = arg.Value.GetValue().(bool)
+			// The filterOnID argument is used on sub-fields and should be
+			// processed by the parent. E.g.
+			// table_a {
+			// 	table_b(filter_on: true) {...}
+			// }
+			// In this example we should check table_b's filter_on argument when
+			// visiting table_a. So for now just resolve the arg to avoid unknown
+			// args
 			argIsResolved = true
 		}
 
@@ -219,7 +234,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 		// Therefore, defer the processing of this argument by saving a pointer to it for later processing.
 		if arg.Name.Value == orderByID {
 			if qb.depth != 1 {
-				return fmt.Errorf("the `order_by` argument is supported only for the root types")
+				return sq.SelectBuilder{}, fmt.Errorf("the `order_by` argument is supported only for the root types")
 			}
 			orderByArg = arg
 			argIsResolved = true
@@ -239,7 +254,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 
 		if arg.Name.Value == limitID {
 			if qb.depth != 1 {
-				return fmt.Errorf("the `limit` argument is supported only for the root types")
+				return sq.SelectBuilder{}, fmt.Errorf("the `limit` argument is supported only for the root types")
 			}
 			limitArg = arg
 			argIsResolved = true
@@ -247,7 +262,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 
 		// The argument name which is not a column name is a mistake, raise error.
 		if !argIsResolved {
-			return fmt.Errorf("unknown identifier %s.%s", tc.table, arg.Name.Value)
+			return sq.SelectBuilder{}, fmt.Errorf("unknown identifier %s.%s", tc.table, arg.Name.Value)
 		}
 	}
 
@@ -257,7 +272,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 		// The `Selection` interface is implemented by the `ast.Field` type in this supported case.
 		subField, ok := selection.(*ast.Field)
 		if !ok {
-			return fmt.Errorf("graphql query selection type not supported: %s", selection.GetSelectionSet().Kind)
+			return sq.SelectBuilder{}, fmt.Errorf("graphql query selection type not supported: %s", selection.GetSelectionSet().Kind)
 		}
 
 		fieldName := subField.Name.Value
@@ -285,8 +300,14 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 			// If subField did not have a selection set this it is just a column
 			// within the current table, so add it to the columns
 			tc.fields = append(tc.fields, fieldName)
+			// subQuery = subQuery.Column(tableColumn(tc.alias, fieldName))
 			qb.sql = qb.sql.Column(tableColumn(tc.alias, fieldName))
 		}
+	}
+
+	// By default if no order_by specified, order by the primary key in DESC order
+	if orderByArg == nil {
+		subQuery = subQuery.OrderBy(tableColumn(tc.alias, tableIDField) + " DESC")
 	}
 
 	// Once we have processed this fields columns, proceed to the subFields.
@@ -308,6 +329,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 		var (
 			fieldName         = subField.Name.Value
 			edgeToRelatedNode *SchemaEdge
+			filterOn          bool
 		)
 		for _, p := range node.Edges {
 			if p.Node.Table.Name == fieldName {
@@ -315,32 +337,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 			}
 		}
 		if edgeToRelatedNode == nil {
-			return fmt.Errorf("no relationship found between tables: '%s', '%s'", node.Table.Name, fieldName)
-		}
-
-		var (
-			joinStr         string
-			leftTable       = tc.table
-			leftTableAlias  = tc.alias
-			rightTable      = edgeToRelatedNode.Node.Table.Name
-			rightTableAlias = tableAlias(rightTable, qb.depth)
-		)
-		switch edgeToRelatedNode.Rel {
-		case OneToOne, OneToMany:
-			joinStr = joinOn(
-				tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
-				tableColumn(leftTableAlias, tableIDField),
-				tableColumn(rightTableAlias, foreignKeyField(leftTable)))
-		case BelongsTo:
-			joinStr = joinOn(
-				tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
-				tableColumn(rightTableAlias, tableIDField),
-				tableColumn(leftTableAlias, foreignKeyField(rightTable)))
-		}
-		if filterOn {
-			qb.sql = qb.sql.InnerJoin(joinStr)
-		} else {
-			qb.sql = qb.sql.LeftJoin(joinStr)
+			return sq.SelectBuilder{}, fmt.Errorf("no relationship found between tables: '%s', '%s'", node.Table.Name, fieldName)
 		}
 
 		// Recursively resolve for the subField `B`, which may contain further nested fields.
@@ -350,15 +347,65 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 			alias:  tableAlias(fieldName, qb.depth),
 			scalar: edgeToRelatedNode.isScalar(),
 		}
-		if err := psqlSubQuery(tenant, graph, qb, root, subColumns, subField, path); err != nil {
-			return err
+		subQuery, err := psqlSubQuery(tenant, graph, qb, root, subColumns, subField)
+		if err != nil {
+			return sq.SelectBuilder{}, err
 		}
 		tc.children = append(tc.children, subColumns)
-	}
 
-	// By default if no order_by specified, order by the primary key in DESC order
-	if orderByArg == nil && qb.depth == 1 {
-		qb.sql = qb.sql.OrderBy(tableColumn(tc.alias, tableIDField) + " DESC")
+		var (
+			joinStr         string
+			leftTable       = tc.table
+			leftTableAlias  = tc.alias
+			rightTable      = edgeToRelatedNode.Node.Table.Name
+			rightTableAlias = tableAlias(rightTable, qb.depth)
+		)
+		// subQuery = subQuery.From(psqlAbsTableName(tenant, rightTable))
+		subQuery = subQuery.From(tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias))
+		subQueryStr, subQueryArgs, err := subQuery.ToSql()
+		if err != nil {
+			return sq.SelectBuilder{}, fmt.Errorf("error creating sub query: %w", err)
+		}
+		// subQueryStr := tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias)
+		subQueryStr = " ( " + subQueryStr + " ) AS " + rightTableAlias
+		switch edgeToRelatedNode.Rel {
+		case OneToOne, OneToMany:
+			joinStr = subQueryStr + " ON ( " +
+				tableColumn(leftTableAlias, tableIDField) + " = " +
+				tableColumn(rightTableAlias, foreignKeyField(leftTable)) + " ) "
+			// joinStr = joinOn(
+			// 	subQueryStr,
+			// 	tableColumn(leftTableAlias, tableIDField),
+			// 	tableColumn(rightTableAlias, foreignKeyField(leftTable)))
+		case BelongsTo:
+			joinStr = subQueryStr + " ON ( " +
+				tableColumn(leftTableAlias, tableIDField) + " = " +
+				tableColumn(rightTableAlias, foreignKeyField(leftTable)) + " ) "
+			// joinStr = joinOn(
+			// 	tableAsAlias(psqlAbsTableName(tenant, rightTable), rightTableAlias),
+			// 	tableColumn(rightTableAlias, tableIDField),
+			// 	tableColumn(leftTableAlias, foreignKeyField(rightTable)))
+		}
+
+		// If the relationship is a one-to-one, there may be multiple records
+		// as there is no way to truly model one-to-one. Therefore we want to
+		// get the latest and limit the result
+		// TODO: need a SQL sub-query!!
+		// if edgeToRelatedNode.Rel == OneToOne {
+
+		// }
+		// Some args need to be checked by the parent. Let's do that here.
+		for _, arg := range subField.Arguments {
+			if arg.Name.Value == filterOnID {
+				filterOn = arg.Value.GetValue().(bool)
+			}
+		}
+		// The filterOnID argument controls the type of join for SQL queries
+		if filterOn {
+			qb.sql = qb.sql.InnerJoin(joinStr, subQueryArgs...)
+		} else {
+			qb.sql = qb.sql.LeftJoin(joinStr, subQueryArgs...)
+		}
 	}
 
 	// Process order_by, if available. At this point all table aliases are known.
@@ -369,7 +416,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 		// Decode the {table, field, order} entries in GraphQL argument value
 		orderByItems, err := decodeOrderByExpression(arg)
 		if err != nil {
-			return err
+			return sq.SelectBuilder{}, err
 		}
 
 		// Validate every entry, adding it to the ORDER BY clause on success.
@@ -381,13 +428,13 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 
 			// FIXME can this be validated in the GraphQL layer instead?s
 			if !isValidSortOrder(e.order) {
-				return fmt.Errorf("invalid sorting order for entry: %#v", e)
+				return sq.SelectBuilder{}, fmt.Errorf("invalid sorting order for entry: %#v", e)
 			}
 
 			// Find what alias had been assigned to the requested table.
 			ta := findAliasFor(e.table, root)
 			if ta == "" {
-				return fmt.Errorf("could not find the table alias for: %s", e.table)
+				return sq.SelectBuilder{}, fmt.Errorf("could not find the table alias for: %s", e.table)
 			}
 
 			// Augment the SQL query with the ORDER BY statement.
@@ -400,7 +447,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 
 		// This argument may only be used, if the `order_by` argument is also used.
 		if orderByArg == nil {
-			return fmt.Errorf("distinct_on argument cannot be used without matching order_by argument")
+			return sq.SelectBuilder{}, fmt.Errorf("distinct_on argument cannot be used without matching order_by argument")
 		}
 
 		arg := distinctOnArg
@@ -410,7 +457,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 		// Decode the {table, field} entries in GraphQL argument value
 		distinctOnItems, err := decodeOrderByExpression(arg)
 		if err != nil {
-			return err
+			return sq.SelectBuilder{}, err
 		}
 
 		// Squirrel does not support DISTINCT ON (...) clause directly, but its use was raised
@@ -427,7 +474,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 			// Find what alias had been assigned to the requested table.
 			tableAlias := findAliasFor(e.table, root)
 			if tableAlias == "" {
-				return fmt.Errorf("could not find the table alias for: %s", e.table)
+				return sq.SelectBuilder{}, fmt.Errorf("could not find the table alias for: %s", e.table)
 			}
 			distinctOnAliases = append(distinctOnAliases, tableColumn(tableAlias, e.field))
 		}
@@ -445,18 +492,21 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 
 		limitStr, ok := arg.Value.GetValue().(string)
 		if !ok {
-			return fmt.Errorf("could not convert the value of the argument `limit`: %#v", arg.Value.GetValue())
+			return sq.SelectBuilder{}, fmt.Errorf("could not convert the value of the argument `limit`: %#v", arg.Value.GetValue())
 		}
 
 		n, err := strconv.ParseUint(limitStr, 10, 64)
 		if err != nil {
-			return fmt.Errorf("could not convert the value to unsigned integer: %s", limitStr)
+			return sq.SelectBuilder{}, fmt.Errorf("could not convert the value to unsigned integer: %s", limitStr)
 		}
 
 		qb.sql = qb.sql.Limit(n)
 	}
 
-	return nil
+	// TODO: This is so horrible!!
+	qb.depth--
+
+	return subQuery, nil
 }
 
 // orderByExpression stores the information necessary for the `order_by` and `distinct_on` GraphQL
