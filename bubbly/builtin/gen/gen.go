@@ -17,6 +17,7 @@ import (
 const (
 	goSchemaFile    = "schema_gen.go"
 	goTablesFile    = "tables_gen.go"
+	tsSchemaFile    = "schema_gen.ts"
 	packageName     = "builtin"
 	importStatement = `
 import (
@@ -118,6 +119,45 @@ func genStructsFromSchema(graph *store.SchemaGraph) error {
 	return nil
 }
 
+func genTSInterfaceFromSchema(graph *store.SchemaGraph) error {
+
+	var b bytes.Buffer
+	graph.Traverse(func(node *store.SchemaNode) error {
+		var (
+			table = node.Table
+		)
+		fmt.Fprintf(&b, "// #######################################\n")
+		fmt.Fprintf(&b, "// %s\n", strings.ToUpper(table.Name))
+		fmt.Fprintf(&b, "// #######################################\n")
+		fmt.Fprintf(&b, "export interface %s {\n", table.Name)
+		for _, field := range table.Fields {
+			fmt.Fprintf(&b, "\t%s?: %s;\n", field.Name, ctyTypeToTSString(field.Type))
+		}
+		for _, edge := range node.Edges {
+			var (
+				eTable = edge.Node.Table
+				single = edge.Rel != store.OneToMany
+			)
+			fmt.Fprintf(&b, "\t%s?: %s;\n", eTable.Name, joinToTSType(eTable.Name, single))
+		}
+
+		fmt.Fprintf(&b, "}\n")
+
+		// Create some wrappers for JSON
+		fmt.Fprintf(&b, "export interface %s {\n", table.Name+"_wrap")
+		fmt.Fprintf(&b, "\t%s?: %s;\n", table.Name, table.Name+"[]")
+		fmt.Fprintf(&b, "}\n\n")
+		return nil
+	})
+
+	err := os.WriteFile(tsSchemaFile, b.Bytes(), 0644)
+	if err != nil {
+		return fmt.Errorf("error writing to file %s: %w", tsSchemaFile, err)
+	}
+
+	return nil
+}
+
 func main() {
 	tables, err := builtin.BuiltinSchema()
 	if err != nil {
@@ -143,6 +183,12 @@ func main() {
 		os.Exit(1)
 	}
 	color.Green("Go structs successfully written to %s", goSchemaFile)
+
+	if err := genTSInterfaceFromSchema(graph); err != nil {
+		color.Red(err.Error())
+		os.Exit(1)
+	}
+	color.Green("Typescript interfaces successfully written to %s", tsSchemaFile)
 }
 
 func ctyTypeToString(ty cty.Type) string {
@@ -161,6 +207,22 @@ func ctyTypeToString(ty cty.Type) string {
 	return "UNKNOWN_TYPE"
 }
 
+func ctyTypeToTSString(ty cty.Type) string {
+	switch {
+	case ty == cty.Bool:
+		return "boolean"
+	case ty == cty.Number:
+		return "number"
+	case ty == cty.String:
+		return "string"
+	case ty.IsObjectType():
+		return "object"
+	case ty.IsMapType():
+		return "object"
+	}
+	return "UNKNOWN_TYPE"
+}
+
 func joinToType(ty string, single bool) string {
 	result := camelToPascal(ty)
 	if single {
@@ -169,6 +231,14 @@ func joinToType(ty string, single bool) string {
 	}
 	// If not single, make it a slice
 	return "[]" + result
+}
+
+func joinToTSType(ty string, single bool) string {
+	if single {
+		return ty
+	}
+	// If not single, make it a slice
+	return ty + "[]"
 }
 
 func camelToPascal(value string) string {
