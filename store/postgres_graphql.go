@@ -622,18 +622,40 @@ func psqlScanTableColumns(parentVal map[string]interface{}, tc tableColumns, sca
 	if !ok {
 		// Initialize the value from the scanned results for the group of
 		// columns in this table
+		var isNilTable = true
 		tColVal = make(map[string]interface{}, len(tc.fields))
 		for _, field := range tc.fields {
-			tColVal[field] = scanValues[*index]
+			val := scanValues[*index]
+			tColVal[field] = val
 			*index++
+			// If isNilTable is false, or val is not nil, then set isNilTable to
+			// false indicating that there was a field with a value.
+			// If all field values were null, then we don't want to add this value
+			// to the result
+			isNilTable = isNilTable && val == nil
+		}
+
+		// If all values were nil and there are no children (hence no need for
+		// any values at all), then set the tColVal to nil as it's just a map
+		// of nil values with no children
+		if isNilTable && len(tc.children) == 0 {
+			tColVal = nil
 		}
 		// Check if we expect the result to be a scalar value or a list.
-		// It is scalar depending on the relationship between the tables
+		// It is scalar depending on the relationship between the tables in the
+		// schema.
+		// If scalar, simply assign the value
 		if tc.scalar {
 			tVal = tColVal
-		} else {
-			tVal = make([]map[string]interface{}, 0, 1)
-			tVal = append(tVal.([]map[string]interface{}), tColVal)
+		}
+		// If not scalar, we should create a list. Then it depends on whether
+		// the value is nil or not, and if there are children
+		if !tc.scalar {
+			tVal = make([]map[string]interface{}, 0)
+			// Only append tColVal if it's not nil
+			if tColVal != nil {
+				tVal = append(tVal.([]map[string]interface{}), tColVal)
+			}
 		}
 		// Set the value for this table back into parent after it has been
 		// initialized, and set the new parent value to this table column
@@ -665,12 +687,23 @@ func psqlScanTableColumns(parentVal map[string]interface{}, tc tableColumns, sca
 		}
 		// If the value did not yet exist, we need to initialize it and append
 		if tColVal == nil {
+			var isNilTable = true
 			tColVal = make(map[string]interface{})
 			for _, field := range tc.fields {
-				tColVal[field] = scanValues[*index]
+				val := scanValues[*index]
+				tColVal[field] = val
 				*index++
+				// If isNilTable is false, or val is not nil, then set isNilTable to
+				// false indicating that there was a field with a value.
+				// If all field values were null, then we don't want to add this value
+				// to the result
+				isNilTable = isNilTable && val == nil
 			}
-			tListVal = append(tListVal, tColVal)
+			// If all values were nil we want to ignore this entry.
+			// If not, then append to the list
+			if !isNilTable {
+				tListVal = append(tListVal, tColVal)
+			}
 
 		} else {
 			// Make sure we increment the index
@@ -678,6 +711,7 @@ func psqlScanTableColumns(parentVal map[string]interface{}, tc tableColumns, sca
 		}
 		parentVal[tc.table] = tListVal
 	}
+
 	// Iterate through the children and unpack the remaining scanValues (starting
 	// from the given index) into the given tColVal (which holds the value for
 	// this tableColumns)
