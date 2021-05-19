@@ -78,35 +78,6 @@ func newGraphQLSchema(graph *SchemaGraph, resolveFn graphql.FieldResolveFn) (gra
 	return graphql.NewSchema(cfg)
 }
 
-// Support for order_by argument
-var orderByType = graphql.NewInputObject(graphql.InputObjectConfig{
-	Name: "order_by",
-	Fields: graphql.InputObjectConfigFieldMap{
-		"table": &graphql.InputObjectFieldConfig{
-			Type: graphql.String,
-		},
-		"field": &graphql.InputObjectFieldConfig{
-			Type: graphql.String,
-		},
-		"order": &graphql.InputObjectFieldConfig{
-			Type: graphql.String,
-		},
-	},
-})
-
-// Support for distinct_on argument
-var distinctOnType = graphql.NewInputObject(graphql.InputObjectConfig{
-	Name: "distinct_on",
-	Fields: graphql.InputObjectConfigFieldMap{
-		"table": &graphql.InputObjectFieldConfig{
-			Type: graphql.String,
-		},
-		"field": &graphql.InputObjectFieldConfig{
-			Type: graphql.String,
-		},
-	},
-})
-
 // addGraphFields updates the `gqlField` map containing GraphQL Field definitions
 // with information for every field of the Table `t`, which is a table coming
 // from the Bubbly Schema.
@@ -138,6 +109,9 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 	gqlField.Args[filterID] = &graphql.ArgumentConfig{
 		Type: graphQLFilterType(t.Name, gqlField.Args),
 	}
+	gqlField.Args[orderByID] = &graphql.ArgumentConfig{
+		Type: graphQLOrderType(t.Name, typeFields),
+	}
 	// filterOnID works like an INNER JOIN in SQL, that it filters the parent
 	// based on the child
 	gqlField.Args[filterOnID] = &graphql.ArgumentConfig{
@@ -145,13 +119,6 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 	}
 	gqlField.Args[limitID] = &graphql.ArgumentConfig{
 		Type: graphql.Int,
-	}
-	gqlField.Args[orderByID] = &graphql.ArgumentConfig{
-		Type: graphql.NewList(orderByType),
-	}
-	// FIXME it would be great to define HERE that `distinct_on` requires `order_by`
-	gqlField.Args[distinctOnID] = &graphql.ArgumentConfig{
-		Type: graphql.NewList(distinctOnType),
 	}
 
 	// Create a GraphQL type for the current table so that we
@@ -210,6 +177,7 @@ const (
 	filterOnID   = "filter_on"
 	limitID      = "limit"
 	orderByID    = "order_by"
+	orderByType  = "_order"
 	distinctOnID = "distinct_on"
 )
 
@@ -232,6 +200,27 @@ var scalarFilters = []string{
 var listFilters = []string{
 	filterIn,
 	filterNotIn,
+}
+
+func graphQLOrderType(typeName string, args graphql.Fields) *graphql.InputObject {
+	var (
+		// Micro-opt: we know the size of the field map is the total number
+		// of filter ops times the number of args we are given.
+		numFields = (len(scalarFilters) + len(listFilters)) * len(args)
+		fields    = make(graphql.InputObjectConfigFieldMap, numFields)
+	)
+	for n := range args {
+		fields[n] = &graphql.InputObjectFieldConfig{
+			Type: graphql.String,
+		}
+	}
+
+	return graphql.NewInputObject(
+		graphql.InputObjectConfig{
+			Name:   typeName + orderByType,
+			Fields: fields,
+		},
+	)
 }
 
 // graphQLFilterType ???
@@ -261,23 +250,6 @@ func graphQLFilterType(typeName string, args graphql.FieldConfigArgument) *graph
 			Fields: fields,
 		},
 	)
-}
-
-// isValidValue ???
-func isValidValue(value interface{}) bool {
-
-	if value == nil {
-		return false
-	}
-
-	// graphql-go passes nil maps as empty values
-	if val, ok := value.(map[string]interface{}); ok {
-		if len(val) == 0 {
-			return false
-		}
-	}
-
-	return true
 }
 
 // parseValueToMap ???

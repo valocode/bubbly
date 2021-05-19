@@ -33,7 +33,16 @@ const (
 // relationships to other nodes (and therefore tables)
 type SchemaNode struct {
 	Table *core.Table
-	Edges SchemaPath
+	Edges SchemaEdges
+}
+
+func (n SchemaNode) Edge(node string) (*SchemaEdge, error) {
+	for _, edge := range n.Edges {
+		if edge.Node.Table.Name == node {
+			return edge, nil
+		}
+	}
+	return nil, fmt.Errorf("edge does not exist between nodes %s --> %s", n.Table.Name, node)
 }
 
 // nodeRefMap maps node names to the corresponding structures of type node
@@ -54,8 +63,8 @@ func (e *SchemaEdge) isScalar() bool {
 	return e.Rel != OneToMany
 }
 
-// SchemaPath is a list graph edges
-type SchemaPath []*SchemaEdge
+// SchemaEdges is a list graph edges
+type SchemaEdges []*SchemaEdge
 
 // SchemaGraph represents a graph created from the bubbly schema.
 type SchemaGraph struct {

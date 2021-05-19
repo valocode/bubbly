@@ -117,6 +117,40 @@ var queryTests = []struct {
 			},
 		},
 	},
+	{
+		name: "cyclic query from rhs join",
+		query: `
+			{
+				grandchild_a(name: "second_grandchild") {
+					name
+					child_a {
+						name
+						grandchild_a {
+							name
+						}
+					}
+				}
+			}
+			`,
+		expected: map[string]interface{}{
+			"grandchild_a": []interface{}{
+				map[string]interface{}{
+					"child_a": map[string]interface{}{
+						"name": "first_child",
+						"grandchild_a": []interface{}{
+							map[string]interface{}{
+								"name": "first_grandchild",
+							},
+							map[string]interface{}{
+								"name": "second_grandchild",
+							},
+						},
+					},
+					"name": "second_grandchild",
+				},
+			},
+		},
+	},
 	// TODO not jumping nodes anymore, move test to a new "must fail" test set
 	/*
 		{
@@ -388,7 +422,7 @@ var sqlGenTests = []struct {
 		data:   "data5.hcl",
 		query: `
 		{
-			testrun {
+			testrun(limit: 1) {
 				configuration {
 					name
 				}
@@ -424,7 +458,7 @@ var sqlGenTests = []struct {
 		data:   "data5.hcl",
 		query: `
 		{
-			testrun {
+			testrun(limit: 1) {
 				ok
 				location(name: "Deep Dark Wood") {
 					name
@@ -460,7 +494,7 @@ var sqlGenTests = []struct {
 		data:   "data5.hcl",
 		query: `
 		{
-			testrun {
+			testrun(limit: 1) {
 				configuration {
 					name
 				}
@@ -488,14 +522,11 @@ var sqlGenTests = []struct {
 		data:   "data5.hcl",
 		query: `
 		{
-			testrun(order_by: [
-				{table: "location", field: "name", order: "DESC"},
-				{table: "configuration", field: "name", order: "DESC"}
-				]) {
-				configuration {
+			testrun(order_by: {_id: "DESC"}) {
+				configuration(order_by: {name: "DESC"}) {
 					name
 				}
-				location {
+				location(order_by: {name: "DESC"}) {
 					name
 				}
 			}
@@ -535,16 +566,13 @@ var sqlGenTests = []struct {
 		data:   "data6.hcl",
 		query: `
 		{
-			hideaways(location: "Deep Dark Wood",
-				order_by: [
-					{table: "characters", field: "name", order: "ASC"}
-				]) {
+			hideaways(location: "Deep Dark Wood") {
 				location
 				ready
 				distance_from_x
 				crew {
 					count
-					characters {
+					characters(order_by: {name: "ASC"}) {
 						name
 					}
 				}
@@ -586,16 +614,13 @@ var sqlGenTests = []struct {
 		data:   "data6.hcl",
 		query: `
 		{
-			hideaways(location: "Deep Dark Wood",
-				order_by: [
-					{table: "characters", field: "name", order: "DESC"}
-				]) {
+			hideaways(location: "Deep Dark Wood") {
 				location
 				ready
 				distance_from_x
 				crew {
 					count
-					characters {
+					characters(order_by: {name: "DESC"}) {
 						name
 					}
 				}
@@ -637,18 +662,13 @@ var sqlGenTests = []struct {
 		data:   "data6.hcl",
 		query: `
 		{
-			hideaways(
-				order_by: [
-					{table: "hideaways", field: "location", order: "DESC"}
-					{table: "crew", field: "count", order: "DESC"}
-					{table: "characters", field: "name", order: "ASC"}
-				]) {
+			hideaways(order_by: {location: "DESC"}){
 				location
 				ready
 				distance_from_x
-				crew {
+				crew(order_by: {count: "DESC"}) {
 					count
-					characters {
+					characters(order_by: {name: "ASC"}) {
 						name
 					}
 				}
@@ -729,31 +749,19 @@ var sqlGenTests = []struct {
 		},
 	},
 	{
-		name:   "graphql distinct on latest",
+		name:   "graphql multiple order by levels",
 		schema: "tables7.hcl",
 		data:   "data7.hcl",
 		query: `
 		{
-			testrun(
-				order_by: [
-					{table: "location", field: "name", order: "ASC"},
-					{table: "configuration", field: "name", order: "ASC"},
-					{table: "version", field: "name", order: "ASC"},
-					{table: "testrun", field: "finish_epoch", order: "DESC"}
-				],
-				distinct_on: [
-					{table: "location", field: "name"},
-					{table: "configuration", field: "name"},
-					{table: "version", field: "name"},
-				]
-			) {
-				configuration {
+			testrun(order_by: {finish_epoch: "DESC"}) {
+				configuration(order_by: {name: "ASC"}) {
 					name
 				}
-				location(name: "Oliver's NEON workstation") {
+				location(name: "Oliver's NEON workstation", order_by: {name: "ASC"}) {
 					name
 				}
-				version {
+				version(order_by: {name: "ASC"}) {
 					name
 				}
 				ok
@@ -775,43 +783,19 @@ var sqlGenTests = []struct {
 						"name": "v1.0.1",
 					},
 				},
-			},
-		},
-	},
-	{
-		name:   "graphql distinct on first",
-		schema: "tables7.hcl",
-		data:   "data7.hcl",
-		query: `
-		{
-			testrun(
-				order_by: [
-					{table: "location", field: "name", order: "ASC"},
-					{table: "configuration", field: "name", order: "ASC"},
-					{table: "version", field: "name", order: "ASC"},
-					{table: "testrun", field: "finish_epoch", order: "ASC"}
-				],
-				distinct_on: [
-					{table: "location", field: "name"},
-					{table: "configuration", field: "name"},
-					{table: "version", field: "name"},
-				]
-			) {
-				configuration {
-					name
-				}
-				location(name: "Oliver's NEON workstation") {
-					name
-				}
-				version {
-					name
-				}
-				ok
-				finish_epoch
-			}
-		}`,
-		want: map[string]interface{}{
-			"testrun": []interface{}{
+				map[string]interface{}{
+					"ok":           true,
+					"finish_epoch": "1411111111",
+					"location": map[string]interface{}{
+						"name": "Oliver's NEON workstation",
+					},
+					"configuration": map[string]interface{}{
+						"name": "So-so",
+					},
+					"version": map[string]interface{}{
+						"name": "v1.0.1",
+					},
+				},
 				map[string]interface{}{
 					"ok":           false,
 					"finish_epoch": "1311111111",
@@ -835,9 +819,7 @@ var sqlGenTests = []struct {
 		query: `
 		{
 			events(
-				order_by: [
-					{table: "events", field: "timestamp", order: "DESC"}
-				],
+				order_by: {timestamp: "DESC"},
 				limit: 2
 			) {
 				timestamp
