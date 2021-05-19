@@ -24,12 +24,12 @@ func TestScanTableColumns(t *testing.T) {
 		{
 			name: "simple nested no scalar",
 			tc: tableColumns{
-				table:  "a",
-				fields: []string{"a1", "a2", "a3"},
+				table:   "a",
+				columns: []string{"a1", "a2", "a3"},
 				children: []*tableColumns{
 					{
-						table:  "b",
-						fields: []string{"b1", "b2"},
+						table:   "b",
+						columns: []string{"b1", "b2"},
 					},
 				},
 			},
@@ -54,13 +54,13 @@ func TestScanTableColumns(t *testing.T) {
 		{
 			name: "simple nested scalar",
 			tc: tableColumns{
-				table:  "a",
-				fields: []string{"a1", "a2", "a3"},
+				table:   "a",
+				columns: []string{"a1", "a2", "a3"},
 				children: []*tableColumns{
 					{
-						table:  "b",
-						fields: []string{"b1", "b2"},
-						scalar: true,
+						table:   "b",
+						columns: []string{"b1", "b2"},
+						scalar:  true,
 					},
 				},
 			},
@@ -83,16 +83,16 @@ func TestScanTableColumns(t *testing.T) {
 		{
 			name: "nil node with children",
 			tc: tableColumns{
-				table:  "a",
-				fields: []string{"a1", "a2", "a3"},
+				table:   "a",
+				columns: []string{"a1", "a2", "a3"},
 				children: []*tableColumns{
 					{
-						table:  "b",
-						fields: []string{"b1", "b2"},
+						table:   "b",
+						columns: []string{"b1", "b2"},
 						children: []*tableColumns{
 							{
-								table:  "c",
-								fields: []string{"c1", "c2"},
+								table:   "c",
+								columns: []string{"c1", "c2"},
 							},
 						},
 					},
@@ -143,17 +143,17 @@ func TestScanTableColumns(t *testing.T) {
 				table: "a",
 				// NOTE: a1 is now tableIDField so that two records with
 				// the same ID are the "same"
-				fields: []string{tableIDField, "a2", "a3"},
+				columns: []string{tableIDField, "a2", "a3"},
 				children: []*tableColumns{
 					{
 						table: "b",
 						// NOTE: b1 is now tableIDField so that two records with
 						// the same ID are the "same"
-						fields: []string{tableIDField, "b2"},
+						columns: []string{tableIDField, "b2"},
 						children: []*tableColumns{
 							{
-								table:  "c",
-								fields: []string{"c1", "c2"},
+								table:   "c",
+								columns: []string{"c1", "c2"},
 							},
 						},
 					},
@@ -191,43 +191,43 @@ func TestScanTableColumns(t *testing.T) {
 		{
 			name: "example release view",
 			tc: tableColumns{
-				table:  "release",
-				fields: []string{tableIDField, "name", "version"},
+				table:   "release",
+				columns: []string{tableIDField, "name", "version"},
 				children: []*tableColumns{
 					{
-						table:  "project",
-						fields: []string{tableIDField, "name"},
-						scalar: true,
+						table:   "project",
+						columns: []string{tableIDField, "name"},
+						scalar:  true,
 					},
 					{
-						table:  "release_item",
-						fields: []string{tableIDField, "type"},
+						table:   "release_item",
+						columns: []string{tableIDField, "type"},
 						children: []*tableColumns{
 							{
-								table:  "commit",
-								fields: []string{tableIDField},
-								scalar: true,
+								table:   "commit",
+								columns: []string{tableIDField},
+								scalar:  true,
 								children: []*tableColumns{
 									{
-										table:  "repo",
-										fields: []string{tableIDField, "name"},
-										scalar: true,
+										table:   "repo",
+										columns: []string{tableIDField, "name"},
+										scalar:  true,
 									},
 								},
 							},
 						},
 					},
 					{
-						table:  "release_stage",
-						fields: []string{tableIDField, "name"},
+						table:   "release_stage",
+						columns: []string{tableIDField, "name"},
 						children: []*tableColumns{
 							{
-								table:  "release_criteria",
-								fields: []string{tableIDField, "entry_name"},
+								table:   "release_criteria",
+								columns: []string{tableIDField, "entry_name"},
 								children: []*tableColumns{
 									{
-										table:  "release_entry",
-										fields: []string{tableIDField, "result", "reason"},
+										table:   "release_entry",
+										columns: []string{tableIDField, "result", "reason"},
 									},
 								},
 							},
