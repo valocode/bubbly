@@ -303,7 +303,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, qb *sqlQueryBuilder, root *
 
 	// By default if no order_by specified, order by the primary key in DESC order
 	if orderByArg == nil && qb.depth == 1 {
-		qb.sql = qb.sql.OrderBy(tableColumn(tc.alias, tableIDField) + " DESC")
+		qb.sql = qb.sql.OrderBy(tableColumn(tc.alias, tableIDField) + " " + orderDesc)
 	}
 
 	// Once we have processed this fields columns, proceed to the subFields.

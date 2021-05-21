@@ -130,9 +130,9 @@ func (o *options) Print() {
 				break
 			}
 		}
-		relStatusStr := "READY"
+		relStatusStr := builtin.ReadyReleaseStatus
 		if relStatus {
-			relStatusStr = "BLOCKED"
+			relStatusStr = builtin.BlockedReleaseStatus
 		}
 		releaseLines = append(releaseLines, fmt.Sprintf(
 			"%s | %s | %s | %s ", rel.Name, rel.Version, relType, relStatusStr,

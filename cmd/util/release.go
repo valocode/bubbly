@@ -1,8 +1,11 @@
 package util
 
-import "github.com/fatih/color"
+import (
+	"github.com/fatih/color"
+	"github.com/valocode/bubbly/bubbly/builtin"
+)
 
-func ReleaseStatusColor(status string) string {
+func ReleaseStatusColor(status builtin.ReleaseStatus) string {
 	// TODO: handle no color mode
 	var (
 		green  = color.New(color.FgYellow).SprintFunc()
@@ -11,13 +14,13 @@ func ReleaseStatusColor(status string) string {
 	)
 
 	switch status {
-	case "BLOCKED":
+	case builtin.BlockedReleaseStatus:
 		return red(status)
-	case "PENDING":
+	case builtin.PendingReleaseStatus:
 		return yellow(status)
-	case "READY":
+	case builtin.ReadyReleaseStatus:
 		return green(status)
 	default:
-		return status
+		return string(status)
 	}
 }
