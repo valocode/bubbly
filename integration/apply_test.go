@@ -196,7 +196,7 @@ func TestApplyRun(t *testing.T) {
 			// now send a POST request with invalid payload for the named run resource.
 			// That is, a request with content not matching the server-side run resource's
 			// input path
-			filePath := "./testdata/testautomation/golang/test-report.json"
+			filePath := "./testdata/testautomation/golang/gotest.json"
 
 			req, err := formRemoteInputRequest(
 				t,

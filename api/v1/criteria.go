@@ -54,12 +54,10 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 			Value: cty.NilVal,
 		}
 	}
-	fmt.Printf("queryVal: %s\n", queryVal.GoString())
 
 	ctx.State.Insert("query", queryVal)
 	queryOutput := ctx.State.ValueWithPath(nil)
 	condInputs := core.AppendInputObjects(queryOutput, ctx.Inputs)
-	fmt.Printf("condInputs: %s\n", condInputs.GoString())
 	if len(c.Spec.Conditions) == 0 {
 		return core.ResourceOutput{
 			ID:     c.ID(),

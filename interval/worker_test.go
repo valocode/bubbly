@@ -8,9 +8,9 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 
-	"github.com/valocode/bubbly/api"
 	"github.com/valocode/bubbly/api/core"
 	v1 "github.com/valocode/bubbly/api/v1"
+	"github.com/valocode/bubbly/bubbly"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/parser"
 	"github.com/valocode/bubbly/server"
@@ -34,12 +34,13 @@ func newTestWorker(t *testing.T) ResourceWorker {
 
 // parseBubblyFile parses a .bubbly file and returns a slice of core.Resource
 func parseBubblyFile(t *testing.T, bCtx *env.BubblyContext, filename string) []core.Resource {
-	resParser := api.NewParserType()
-	require.NoError(t, parser.ParseFilename(bCtx, filename, resParser))
+	var resParser bubbly.BubblyFileParser
+	require.NoError(t, parser.ParseFilename(bCtx, filename, &resParser))
 
-	require.NoError(t, resParser.CreateResources(bCtx))
+	resources, err := bubbly.CreateResources(bCtx, resParser)
+	require.NoError(t, err)
 
-	return resParser.Resources
+	return resources
 }
 
 // TestWorkerParseInvalidResource tests that the worker only appends correct

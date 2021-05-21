@@ -139,19 +139,25 @@ resource "query" "snyk_data" {
 
 resource "criteria" "snyk_status" {
     spec {
-        query "snyk_data" {}
-        condition "no_high" {
-            value = length(regexall("high", self.query.snyk_data.value)) != 0
-        }
-
-        operation "release" {
-            value = self.condition.no_high.value
-        }
+        query = <<EOT
+            {
+                snyk_vulnerabilities {
+                    severity
+                }
+            }
+        EOT
+        // TODO: fix this condition...
+        // condition "no_high" {
+        //     value = length(
+        //         [for i in self.query.snyk_vulnerabilities: i if lower(i.severity) == "high"]
+        //     ) != 0
+        // }
     }
 }
 
-resource "run" "snyk_criteria" {
-    spec {
-        resource = "criteria/snyk_status"
-    }
-}
+// TODO: once condition is fixed, re-enable this
+// resource "run" "snyk_criteria" {
+//     spec {
+//         resource = "criteria/snyk_status"
+//     }
+// }

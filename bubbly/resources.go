@@ -12,7 +12,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func createResources(bCtx *env.BubblyContext, fileParser BubblyFileParser) ([]core.Resource, error) {
+func CreateResources(bCtx *env.BubblyContext, fileParser BubblyFileParser) ([]core.Resource, error) {
 	var resources []core.Resource
 	for _, resBlock := range fileParser.ResourceBlocks {
 		resource, err := api.NewResource(resBlock)
