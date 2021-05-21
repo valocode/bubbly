@@ -48,7 +48,7 @@ func (d *DataStore) postSchemaHandler(bCtx *env.BubblyContext, subject string, r
 	if data.Auth != nil {
 		tenant = data.Auth.Organization
 	}
-	if err := d.Store.Apply(tenant, schema); err != nil {
+	if err := d.Store.Apply(tenant, schema, false); err != nil {
 		return nil, fmt.Errorf("failed to apply schema: %w", err)
 	}
 	return nil, nil

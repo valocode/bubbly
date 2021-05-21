@@ -28,9 +28,9 @@ func TestApplyMigrationSchemaPostgres(t *testing.T) {
 			resource := test.RunPostgresDocker(bCtx, t)
 			bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
 			// Create the bubbly schemas
-			s1, err := newBubblySchemaFromTables(tt.s1)
+			s1, err := newBubblySchemaFromTables(tt.s1, true)
 			require.NoError(t, err)
-			s2, err := newBubblySchemaFromTables(tt.s2)
+			s2, err := newBubblySchemaFromTables(tt.s2, true)
 			require.NoError(t, err)
 
 			// Get a handle to the bubbly store
@@ -38,7 +38,7 @@ func TestApplyMigrationSchemaPostgres(t *testing.T) {
 			assert.NoErrorf(t, err, "failed to initialize store")
 
 			// Apply the initial schema
-			err = s.Apply(DefaultTenantName, tt.s1)
+			err = s.Apply(DefaultTenantName, tt.s1, true)
 			assert.NoError(t, err)
 			curSchema, err := s.currentBubblySchema(DefaultTenantName)
 			assert.NoError(t, err)
@@ -48,7 +48,7 @@ func TestApplyMigrationSchemaPostgres(t *testing.T) {
 			assert.Empty(t, curChanges)
 
 			// Apply the second schema, which triggers a migration
-			err = s.Apply(DefaultTenantName, tt.s2)
+			err = s.Apply(DefaultTenantName, tt.s2, true)
 			assert.NoError(t, err)
 			newSchema, err := s.currentBubblySchema(DefaultTenantName)
 			assert.NoError(t, err)

@@ -861,7 +861,7 @@ func applySchemaOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store, fromFile 
 
 	tables := testData.Tables(t, bCtx, fromFile)
 
-	err := s.Apply(DefaultTenantName, tables)
+	err := s.Apply(DefaultTenantName, tables, true)
 	require.NoErrorf(t, err, "failed to apply schema")
 }
 
