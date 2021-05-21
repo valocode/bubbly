@@ -16,7 +16,7 @@ func Apply(bCtx *env.BubblyContext, filename string) error {
 	if err := parser.ParseFilename(bCtx, filename, &fileParser); err != nil {
 		return fmt.Errorf("failed to run parser: %w", err)
 	}
-	resources, err := createResources(bCtx, fileParser)
+	resources, err := CreateResources(bCtx, fileParser)
 	if err != nil {
 		return fmt.Errorf("failed to parse resources: %w", err)
 	}

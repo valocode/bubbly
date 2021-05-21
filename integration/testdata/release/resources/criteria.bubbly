@@ -6,15 +6,15 @@ resource "criteria" "gotest" {
             default = "1"
         }
 
-        // TODO: how to get test_run
+        // TODO: how to get specific test_run... e.g.:
+        // release(filter_on: true, _id: "${self.input.release_id}") {
+        //     project(filter_on: true, name: "bubbly") {
+        //         name
+        //     }
+        // }
         query = <<EOT
             {
                 test_run(limit: 1) {
-                    release(filter_on: true, name: "github.com/valocode/bubbly", version: "6c7e89dd0c6009141e0e18785709d5551faab661") {
-                        project(filter_on: true, name: "bubbly") {
-                            name
-                        }
-                    }
                     result
                 }
             }
