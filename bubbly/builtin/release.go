@@ -1,32 +1,40 @@
 package builtin
 
-func ReleaseStatusByStages(release Release) string {
+type ReleaseStatus string
+
+const (
+	ReadyReleaseStatus   ReleaseStatus = "READY"
+	PendingReleaseStatus ReleaseStatus = "PENDING"
+	BlockedReleaseStatus ReleaseStatus = "BLOCKED"
+)
+
+func ReleaseStatusByStages(release Release) ReleaseStatus {
 	for _, stage := range release.ReleaseStage {
 		status := ReleaseStageStatus(stage)
-		if status != "READY" {
+		if status != ReadyReleaseStatus {
 			return status
 		}
 	}
-	return "READY"
+	return ReadyReleaseStatus
 }
 
-func ReleaseStageStatus(stage ReleaseStage) string {
+func ReleaseStageStatus(stage ReleaseStage) ReleaseStatus {
 	for _, criteria := range stage.ReleaseCriteria {
 		status := ReleaseCriteriaStatus(criteria)
-		if status != "READY" {
+		if status != ReadyReleaseStatus {
 			return status
 		}
 	}
-	return "READY"
+	return ReadyReleaseStatus
 }
 
-func ReleaseCriteriaStatus(criteria ReleaseCriteria) string {
+func ReleaseCriteriaStatus(criteria ReleaseCriteria) ReleaseStatus {
 	if len(criteria.ReleaseEntry) == 0 {
-		return "PENDING"
+		return PendingReleaseStatus
 	}
 	// We only care about the first (or latest) release entry
 	if !criteria.ReleaseEntry[0].Result {
-		return "BLOCKED"
+		return BlockedReleaseStatus
 	}
-	return "READY"
+	return ReadyReleaseStatus
 }

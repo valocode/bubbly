@@ -49,9 +49,8 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		return core.ResourceOutput{
 			ID:     c.ID(),
 			Status: events.ResourceRunFailure,
-			// The returned error should contain enough context about what went wrong
-			Error: err,
-			Value: cty.NilVal,
+			Error:  err,
+			Value:  cty.NilVal,
 		}
 	}
 

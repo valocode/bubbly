@@ -20,13 +20,13 @@ import (
 type ResourceBlocks []*ResourceBlock
 
 // ResourceBlockHCLWrapper is a simple wrapper for a ResourceBlock which is
-// used when decoding a single resource block in HCL/JSON.
+// used when decoding a single resource block in HCL
 type ResourceBlockHCLWrapper struct {
 	ResourceBlock ResourceBlock `hcl:"resource,block"`
 }
 
-// ResourceBlockHCLWrapper is a simple wrapper for a ResourceBlock which is
-// used when decoding a single resource block in HCL/JSON.
+// ResourceBlockJSONWrapper is a simple wrapper for a ResourceBlock which is
+// used when decoding a resource blocks in JSON
 type ResourceBlockJSONWrapper struct {
 	ResourceBlocks []ResourceBlock `json:"_resource"`
 }

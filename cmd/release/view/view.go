@@ -103,8 +103,7 @@ func (o *options) run() error {
 
 // Print prints the successful outcome of the cmd
 func (o *options) Print() {
-	status := builtin.ReleaseStatusByStages(*o.Release)
-	status = cmdutil.ReleaseStatusColor(status)
+	status := cmdutil.ReleaseStatusColor(builtin.ReleaseStatusByStages(*o.Release))
 
 	fmt.Println("Project: " + o.Release.Project.Id)
 	fmt.Println("Name: " + o.Release.Name)
@@ -118,14 +117,12 @@ func (o *options) Print() {
 	fmt.Println("")
 	fmt.Println("Stages:")
 	for _, stage := range o.Release.ReleaseStage {
-		stageStatus := builtin.ReleaseStageStatus(stage)
-		stageStatus = cmdutil.ReleaseStatusColor(stageStatus)
+		stageStatus := cmdutil.ReleaseStatusColor(builtin.ReleaseStageStatus(stage))
 
 		fmt.Println("")
 		fmt.Println(stage.Name + ": " + stageStatus)
 		for _, criteria := range stage.ReleaseCriteria {
-			criteriaStatus := builtin.ReleaseCriteriaStatus(criteria)
-			criteriaStatus = cmdutil.ReleaseStatusColor(criteriaStatus)
+			criteriaStatus := cmdutil.ReleaseStatusColor(builtin.ReleaseCriteriaStatus(criteria))
 			fmt.Println("    - Criteria: " + criteria.EntryName + " (" + criteriaStatus + ")")
 		}
 	}
