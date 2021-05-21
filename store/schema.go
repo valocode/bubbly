@@ -31,7 +31,7 @@ func newBubblySchema() *bubblySchema {
 	return schema
 }
 
-func newBubblySchemaFromTables(tables core.Tables) (*bubblySchema, error) {
+func newBubblySchemaFromTables(tables core.Tables, internal bool) (*bubblySchema, error) {
 	schemaTables := make(map[string]core.Table)
 	// Create the base schema with the builtin tables.
 	// First flatten them, so that we get implicit joins and can easily loop
@@ -44,9 +44,13 @@ func newBubblySchemaFromTables(tables core.Tables) (*bubblySchema, error) {
 	// If a builtin table is trying to be changed, product an error
 	tables = FlattenTables(tables, nil)
 	for _, table := range tables {
-		_, ok := schemaTables[table.Name]
-		if ok {
-			return nil, fmt.Errorf("cannot modify builtin table %s", table.Name)
+		// If the request was not made internally, prevent end users from modifying
+		// internal/builtin tables
+		if !internal {
+			_, ok := schemaTables[table.Name]
+			if ok {
+				return nil, fmt.Errorf("cannot modify builtin table %s", table.Name)
+			}
 		}
 		schemaTables[table.Name] = table
 	}

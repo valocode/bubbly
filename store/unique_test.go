@@ -27,7 +27,7 @@ func TestUniqueConstraints(t *testing.T) {
 	// Initialize a new bubbly store (connection to postgres)
 	s, err := New(bCtx)
 	require.NoErrorf(t, err, "failed to initialize store")
-	err = s.Apply(DefaultTenantName, tables)
+	err = s.Apply(DefaultTenantName, tables, true)
 	require.NoErrorf(t, err, "failed to apply schema from tables")
 	// Save it more than once to test the unique constraints
 	for i := 0; i < 10; i++ {

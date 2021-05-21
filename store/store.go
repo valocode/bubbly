@@ -9,6 +9,7 @@ import (
 	"github.com/graphql-go/graphql"
 
 	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/bubbly/builtin"
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/env"
 )
@@ -85,8 +86,9 @@ func (s *Store) CreateTenant(tenant string) error {
 		return fmt.Errorf("error checking if provider has schema for tenant %s: %w", tenant, err)
 	}
 	if !ok {
+		builtinTables := FlattenTables(builtin.BuiltinTables, nil)
 		// Initialize the internal schema for the tenant
-		if err := s.p.Apply(tenant, newBubblySchema()); err != nil {
+		if err := s.Apply(tenant, builtinTables, true); err != nil {
 			return fmt.Errorf("failed to initialize schema with internal tables for tenant %s: %w", tenant, err)
 		}
 	}
@@ -106,18 +108,34 @@ func (s *Store) Query(tenant string, query string) (*graphql.Result, error) {
 }
 
 // Apply applies a schema corresponding to a set of tables.
-func (s *Store) Apply(tenant string, tables core.Tables) error {
-	currentSchema, err := s.currentBubblySchema(tenant)
+// The internal argument is used to indicate whether internal tables can be
+// modified or not. It is true when called internally, and false when an end
+// user has initiated the request
+func (s *Store) Apply(tenant string, tables core.Tables, internal bool) error {
+	var schema *bubblySchema
+	// We should check that a schema already exists, and if not, we should
+	// initialize one
+	ok, err := s.p.HasTable(tenant, core.SchemaTableName)
 	if err != nil {
-		return fmt.Errorf("failed to get current schema: %w", err)
+		return fmt.Errorf("error checking if provider has schema for tenant %s: %w", tenant, err)
+	}
+	if ok {
+		var err error
+		schema, err = s.currentBubblySchema(tenant)
+		if err != nil {
+			return fmt.Errorf("failed to get current schema: %w", err)
+		}
+	}
+	if schema == nil {
+		schema = &bubblySchema{}
 	}
 
-	newSchema, err := newBubblySchemaFromTables(tables)
+	newSchema, err := newBubblySchemaFromTables(tables, internal)
 	if err != nil {
 		return err
 	}
 	// Calculate the schema diff
-	cl, err := compareSchema(currentSchema, newSchema)
+	cl, err := compareSchema(schema, newSchema)
 	if err != nil {
 		return fmt.Errorf("failed to compare schemas: %w", err)
 	}
