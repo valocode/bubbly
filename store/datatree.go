@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/env"
@@ -113,6 +114,24 @@ type dataNode struct {
 	// Unlike the Parents field, a node can have multiple Children with the same
 	// table name, and thus, we store them as a slice and not a map.
 	Children []*dataNode
+}
+
+func (d *dataNode) Describe() string {
+	var str string
+	str += "data \"" + d.Data.TableName + "\" {\n"
+	str += "  fields = {\n"
+	for name, val := range d.Data.Fields {
+		v, err := psqlValue(d, val)
+		if err != nil {
+			str += "    " + name + " = " + err.Error() + "\n"
+			continue
+		}
+		str += "    " + name + " = " + fmt.Sprintf("%#v\n", v)
+	}
+	str += "  }\n"
+	str += "  joins = [ " + strings.Join(d.Data.Joins, ", ") + " ]\n"
+	str += "  policy = " + string(d.Data.Policy) + "\n"
+	return str
 }
 
 // orderedFields returns the node's Data field names in order

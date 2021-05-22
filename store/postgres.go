@@ -375,7 +375,7 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 		// If the reference_if_exists policy was set, then this is acceptable.
 		// Otherwise it is an error
 		if node.Data.Policy != core.ReferenceIfExistsPolicy {
-			return fmt.Errorf("no rows returned from SQL query on data %s", node.Data.TableName)
+			return fmt.Errorf("no rows returned from SQL query on data %s:\n\n%s", node.Data.TableName, node.Describe())
 		}
 		return nil
 	}
