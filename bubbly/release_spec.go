@@ -374,14 +374,31 @@ func (g *gitItem) version(baseDir string) (string, string, error) {
 		commit = ref.Hash().String()
 	)
 	// Ignore the returned error, as it shouldn't be triggered
-	tagrefs.ForEach(func(t *plumbing.Reference) error {
+	err = tagrefs.ForEach(func(t *plumbing.Reference) error {
+		// Noteworthy: annotated git tags are actually individual objects in git
+		// with their own Hash. Thus, we cannot just compare the tag hash with
+		// the commit hash. For lightweight tags, then yes we could simply do that.
+		// Solution: get the tag object for the tag hash, from which we can get
+		// the commit object, which we can compare to the commit we have from HEAD
+		tagObj, err := repo.TagObject(t.Hash())
+		if err != nil {
+			return fmt.Errorf("error getting tag object from list of tag refs: %w", err)
+		}
+		commitObj, err := tagObj.Commit()
+		if err != nil {
+			return fmt.Errorf("error getting commit from tag: %w", err)
+		}
+
 		// If the tag ref is for the same commit, we have a match and so add the
 		// tag to the commit data
-		if ref.Hash() == t.Hash() {
+		if ref.Hash() == commitObj.Hash {
 			tag = t.Name().Short()
 		}
 		return nil
 	})
+	if err != nil {
+		return "", "", err
+	}
 	return tag, commit, nil
 }
 
