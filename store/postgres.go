@@ -608,6 +608,15 @@ func valueFromCty(val cty.Value) (interface{}, error) {
 			}
 		}
 		return ret, nil
+	case ty == cty.DynamicPseudoType:
+		// The DyanmicPseudo value is used when the cty has a NilVal, and thus
+		// no cty.Type can be assigned. There may be other cases too, but this is
+		// the common one in bubbly.
+		// For now just return a nil golang value which converts to a NULL value
+		// in postgres
+		// TODO: should we set a default value here? What about unique constraints?
+		// They don't work with NULL values...
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("unsupported cty type: %s", ty.GoString())
 	}

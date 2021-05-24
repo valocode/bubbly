@@ -62,5 +62,6 @@ func (t *Transform) toJSON() ([]byte, error) {
 
 type transformSpec struct {
 	Inputs core.InputDeclarations `hcl:"input,block"`
+	Locals *core.LocalsDefinition `hcl:"locals,block"`
 	Data   core.DataBlocks        `hcl:"data,block"`
 }

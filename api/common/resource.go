@@ -88,6 +88,20 @@ func DecodeBodyWithInputs(bCtx *env.BubblyContext, body hcl.Body, val interface{
 	if err != nil {
 		return fmt.Errorf("resource input validation failed: %w", err)
 	}
+	retLocals, err := decodeLocals(bCtx, body)
+	if err != nil {
+		return fmt.Errorf("invalid local values: %w", err)
+	}
+	// TODO: the locals block just has one root element "local"...
+	// This can be improved/simplified instead of converting back and forth
+	// between go and cty values
+	inputs := retInputs.AsValueMap()
+	locals := retLocals.AsValueMap()
+	for name, val := range locals {
+		inputs[name] = val
+	}
+	retInputs = cty.ObjectVal(inputs)
+
 	// override the current resource context inputs
 	ctx.Inputs = retInputs
 
@@ -167,5 +181,22 @@ func compareInputsWithDecls(decls core.InputDeclarations, inputs cty.Value) (cty
 
 	return cty.ObjectVal(map[string]cty.Value{
 		"input": cty.ObjectVal(retInputs),
+	}), nil
+}
+
+func decodeLocals(bCtx *env.BubblyContext, body hcl.Body) (cty.Value, error) {
+	var localsWrap core.LocalsWrapper
+	if diags := gohcl.DecodeBody(body, nil, &localsWrap); diags.HasErrors() {
+		return cty.NilVal, fmt.Errorf("failed to get locals definitions: %v", diags.Errs())
+	}
+
+	locals := make(map[string]cty.Value)
+	if localsWrap.LocalsBlock != nil {
+		for name, value := range localsWrap.LocalsBlock.Locals {
+			locals[name] = value
+		}
+	}
+	return cty.ObjectVal(map[string]cty.Value{
+		"local": cty.ObjectVal(locals),
 	}), nil
 }
