@@ -27,7 +27,7 @@ func EvalReleaseCriteria(bCtx *env.BubblyContext, filename string, criteriaName 
 		return nil, err
 	}
 	// Evaluate the release criteria and create the release entry data blocks
-	dEntry, err := criteria.Evaluate(bCtx, releaseRef, release.BaseDir)
+	dEntry, err := criteria.Evaluate(bCtx, release, releaseRef, release.BaseDir)
 	if err != nil {
 		return nil, err
 	}
