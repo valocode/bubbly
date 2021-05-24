@@ -10,6 +10,10 @@ resource "extract" "gosec" {
                   rule_id: string,
                   severity: string,
                   details: string,
+                  cwe: object({
+                    ID: string,
+                    URL: string,
+                  })
                 }))
             })
         }
@@ -56,9 +60,7 @@ resource "load" "gosec" {
 
 resource "pipeline" "gosec" {
   spec {
-    input "file" {
-      default = "./gosec-results.json"
-    }
+    input "file" {}
     task "extract" {
       resource = "extract/gosec"
       input "file" {
@@ -83,5 +85,8 @@ resource "pipeline" "gosec" {
 // resource "run" "gosec" {
 //     spec {
 //         resource = "pipeline/gosec"
+//         input "file" {
+//           value = "./testdata/release/results/gosec.json"
+//         }
 //     }
 // }

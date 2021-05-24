@@ -493,7 +493,7 @@ type releaseCriteria struct {
 }
 
 // Evaluate evaluates a release criteria and produces data blocks to log a release entry
-func (c *releaseCriteria) Evaluate(bCtx *env.BubblyContext, releaseRef core.DataBlocks, baseDir string) (core.DataBlocks, error) {
+func (c *releaseCriteria) Evaluate(bCtx *env.BubblyContext, release *ReleaseSpec, dataCtx core.DataBlocks, baseDir string) (core.DataBlocks, error) {
 	// Validation of the release criteria
 	if c.Artifact != nil && len(c.Run) > 0 {
 		return nil, errors.New("release criteria cannot specify both artifact and resource runs")
@@ -522,7 +522,16 @@ func (c *releaseCriteria) Evaluate(bCtx *env.BubblyContext, releaseRef core.Data
 	// Iterate through the run blocks. As soon as one fails, or one is a criteria
 	// kind with a failing result, break the loop
 	for _, run := range c.Run {
-		resource, output := run.Run(bCtx, releaseRef)
+		// Add the release name and version as inputs to the run, in case the
+		// resources use them as input
+		run.Inputs = append(run.Inputs, &core.InputDefinition{
+			Name: "release",
+			Value: cty.MapVal(map[string]cty.Value{
+				"name":    cty.StringVal(release.Name),
+				"version": cty.StringVal(release.Version),
+			}),
+		})
+		resource, output := run.Run(bCtx, dataCtx)
 		if output.Error != nil {
 			return nil, fmt.Errorf("resource run failed for %s: %w", run.Resource, output.Error)
 		}
@@ -565,9 +574,9 @@ type resourceRun struct {
 	Inputs   core.InputDefinitions `hcl:"input,block"`
 }
 
-func (r *resourceRun) Run(bCtx *env.BubblyContext, releaseRef core.DataBlocks) (core.Resource, core.ResourceOutput) {
+func (r *resourceRun) Run(bCtx *env.BubblyContext, dataCtx core.DataBlocks) (core.Resource, core.ResourceOutput) {
 	ctx := core.NewResourceContext(cty.NilVal, api.NewResource, nil)
 	// Add the data block containing the release into the context
-	ctx.DataBlocks = releaseRef
+	ctx.DataBlocks = dataCtx
 	return common.RunResource(bCtx, ctx, r.Resource, r.Inputs.Value())
 }

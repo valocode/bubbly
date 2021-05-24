@@ -18,17 +18,21 @@ release {
             // }
         }
     }
-    // TODO: cannot have empty stage
-    // stage "Code Analysis" {
-    //     // TODO: create pipeline and test file
-    //     criteria "gofmt" {
-    //         run "pipeline/gofmt" {}
-    //     }
-    //     // TODO: create pipeline and test for gosec
-    //     criteria "gosec" {
-    //         // run "pipeline/gosec" {}
-    //     }
-    // }
+    stage "Code Analysis" {
+        // TODO: create pipeline and test file
+        // criteria "gofmt" {
+        //     run "pipeline/gofmt" {}
+        // }
+        // TODO: create pipeline and test for gosec
+        criteria "gosec" {
+            run "pipeline/gosec" {
+                input "file" {
+                    value = "./testdata/release/results/gosec.json"
+                }
+            }
+            run "criteria/gosec" {}
+        }
+    }
     stage "Testing" {
         criteria "unit_test" {
             run "pipeline/gotest" {

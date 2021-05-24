@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -122,31 +123,26 @@ func compareInputsWithDecls(decls core.InputDeclarations, inputs cty.Value) (cty
 		)
 	}
 
-	inputMap := inputVals.AsValueMap()
+	var (
+		undefinedInputs []string
+		inputMap        = inputVals.AsValueMap()
+	)
 	for _, decl := range decls {
 		val, exists := inputMap[decl.Name]
 		if exists {
-			// delete the key from the map so that we can check leftovers later
-			delete(inputMap, decl.Name)
 			retInputs[decl.Name] = val
 		} else {
-			// if the input was not provided and no default is given, then we
-			// have an error
+			// If the input was not provided and no default is given, add it to
+			// the list so that we can give a complete list at the end
 			if decl.Default.IsNull() {
-				return cty.NilVal, fmt.Errorf(`input "%s" not provided and does not have a default value`, decl.Name)
+				undefinedInputs = append(undefinedInputs, decl.Name)
 			}
 			// else, add the default value to the return input values
 			retInputs[decl.Name] = decl.Default
 		}
 	}
-
-	// check if there are any given inputs that should not be given
-	if len(inputMap) > 0 {
-		var errorInputs []string
-		for input := range inputMap {
-			errorInputs = append(errorInputs, input)
-		}
-		return cty.NilVal, fmt.Errorf("%d unexpected inputs provided to resource: %v", len(errorInputs), errorInputs)
+	if len(undefinedInputs) > 0 {
+		return cty.NilVal, fmt.Errorf("inputs do not have a default value and were not provided: %s", strings.Join(undefinedInputs, ", "))
 	}
 
 	return cty.ObjectVal(map[string]cty.Value{
