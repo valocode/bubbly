@@ -31,7 +31,7 @@ func GetRelease(bCtx *env.BubblyContext, filename string) (*builtin.Release, err
 			id
 			name
 		}
-		release_item(filter_on: true) {
+		release_item {
 			type
 			commit {
 				repo {
@@ -39,9 +39,9 @@ func GetRelease(bCtx *env.BubblyContext, filename string) (*builtin.Release, err
 				}
 			}
 		}
-		release_stage(filter_on: true) {
+		release_stage {
 			name
-			release_criteria(filter_on: true) {
+			release_criteria {
 				entry_name
 				release_entry {
 					result
@@ -58,9 +58,8 @@ func GetRelease(bCtx *env.BubblyContext, filename string) (*builtin.Release, err
 		return nil, fmt.Errorf("error creating release spec: %w", err)
 	}
 
-	// Ignore the output of Data, but this validates the release and makes sure
-	// the default values are set
-	if _, err := release.Data(); err != nil {
+	// Validate the release data and
+	if err := release.Validate(); err != nil {
 		return nil, fmt.Errorf("unable to process release definition: %w", err)
 	}
 	// Insert the necessary values into the GraphQL query
