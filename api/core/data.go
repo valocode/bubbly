@@ -18,11 +18,12 @@ type DataBlocks []Data
 // Data will reference a Table name, and assign the Field values into the
 // corresponding Field values in the Table
 type Data struct {
-	TableName string          `hcl:",label" json:"data"`
-	Fields    DataFields      `hcl:"fields,optional" json:"fields"`
-	Joins     []string        `hcl:"joins,optional" json:"joins"`
-	Policy    DataBlockPolicy `hcl:"policy,optional" json:"policy"`
-	Data      DataBlocks      `hcl:"data,block" json:"nested_data"`
+	TableName     string          `hcl:",label" json:"data"`
+	Fields        DataFields      `hcl:"fields,optional" json:"fields"`
+	Joins         []string        `hcl:"joins,optional" json:"joins"`
+	Policy        DataBlockPolicy `hcl:"policy,optional" json:"policy"`
+	IgnoreNesting bool            `hcl:"ignore_nesting,optional" json:"ignore_nesting"`
+	Data          DataBlocks      `hcl:"data,block" json:"nested_data"`
 }
 
 // DataBlockPolicy defines the policy for how the data block shall be handled.
@@ -60,11 +61,12 @@ type DataFields map[string]cty.Value
 // but for now this works and is not that ugly.
 func (d *Data) UnmarshalJSON(data []byte) error {
 	v := struct {
-		TableName string          `json:"data"`
-		Fields    DataFields      `json:"fields"`
-		Joins     []string        `json:"joins"`
-		Policy    DataBlockPolicy `json:"policy"`
-		Data      DataBlocks      `json:"nested_data"`
+		TableName     string          `json:"data"`
+		Fields        DataFields      `json:"fields"`
+		Joins         []string        `json:"joins"`
+		Policy        DataBlockPolicy `json:"policy"`
+		IgnoreNesting bool            `json:"ignore_nesting"`
+		Data          DataBlocks      `json:"nested_data"`
 	}{
 		Fields: make(DataFields),
 	}
@@ -75,6 +77,7 @@ func (d *Data) UnmarshalJSON(data []byte) error {
 	d.Fields = v.Fields
 	d.Joins = v.Joins
 	d.Policy = v.Policy
+	d.IgnoreNesting = v.IgnoreNesting
 	d.Data = v.Data
 	return nil
 }

@@ -739,9 +739,9 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 		httpRequest.Header.Add(k, v)
 	}
 
+	bCtx.Logger.Debug().Str("url", httpRequest.URL.String()).Str("timeout", timeout.String()).Msg("Making HTTP request")
 	// Initiate the HTTP client
 	c := http.Client{Timeout: timeout}
-
 	// Make REST API request
 	httpResponse, err := c.Do(httpRequest)
 	if err != nil {
@@ -749,7 +749,11 @@ func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	}
 
 	if httpResponse.StatusCode != http.StatusOK {
-		return cty.NilVal, fmt.Errorf("HTTP response status code: %d", httpResponse.StatusCode)
+		body, err := io.ReadAll(httpResponse.Body)
+		if err != nil {
+			return cty.NilVal, fmt.Errorf("error getting body of response: %w", err)
+		}
+		return cty.NilVal, fmt.Errorf("HTTP response status code: %d: %s", httpResponse.StatusCode, body)
 	}
 	defer httpResponse.Body.Close()
 

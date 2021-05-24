@@ -54,3 +54,14 @@ type InputDefinition struct {
 	Name  string    `hcl:",label"`
 	Value cty.Value `hcl:"value,attr"`
 }
+
+type LocalsWrapper struct {
+	LocalsBlock *LocalsDefinition `hcl:"locals,block"`
+	Leftovers   hcl.Body          `hcl:",remain"`
+}
+
+type LocalsDefinition struct {
+	Locals map[string]cty.Value `hcl:",remain"`
+	// Name  string    `hcl:",label"`
+	// Value cty.Value `hcl:"value,attr"`
+}
