@@ -196,7 +196,7 @@ var BuiltinTables = core.Tables{
 		fields(
 			field("tool", cty.String, false),
 			field("type", cty.String, false),
-			field("name", cty.String, true),
+			field("name", cty.String, false),
 			field("elapsed", cty.Number, false),
 			field("result", cty.Bool, false),
 		),

@@ -277,7 +277,6 @@ table "test_run" {
     }
     field "name" {
         type = string
-        unique = true
     }
     field "elapsed" {
         type = number

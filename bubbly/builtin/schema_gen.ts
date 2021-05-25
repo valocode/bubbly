@@ -44,6 +44,7 @@ export interface _event_wrap {
 export interface release_entry {
 	name?: string;
 	result?: boolean;
+	reason?: string;
 	release?: release;
 	release_criteria?: release_criteria;
 	_resource?: _resource;
