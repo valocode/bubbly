@@ -1,0 +1,63 @@
+## poc workflow for running bubbly
+
+on:
+  push:
+    branches:
+      - poc/bubbly-ci
+
+name: bubbly-poc
+jobs:
+  bubbly-poc:
+    strategy:
+      matrix:
+        go-version: [1.16.2]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      BUBBLY_ADDR: https://api.bubbly.dev/api/v1/o/valocode
+      BUBBLY_TOKEN: ${{ secrets.BUBBLY_TOKEN }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: cache go mod
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Install Bubbly
+        run: go install
+      - name: Create release
+        run: bubbly release create
+      - name: Build Docker
+        run: |
+          docker build -t valocode/bubbly:latest .
+          bubbly release eval docker
+      - name: Run unit tests
+        run: |
+          unset BUBBLY_ADDR
+          go test ./... -json | tee gotest-unit.json
+      - name: Bubbly eval unit tests
+        run: bubbly release eval unit_test
+      - name: Run integration tests
+        run: |
+          docker-compose up -d postgres bubbly
+
+          # just sleep a bit to wait for the containers to start
+          sleep 1
+          docker-compose logs
+          unset BUBBLY_ADDR
+          go test ./integration -tags=integration -count=1 -json | tee gotest-integration.json
+      - name: Bubbly eval integration tests
+        run: bubbly release eval integration_test
+      - name: Run Gosec Security Scanner
+        run: |
+          curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
+          gosec -fmt json -no-fail -out gosec.json ./...
+      - name: Bubbly eval gosec
+        run: bubbly release eval gosec
