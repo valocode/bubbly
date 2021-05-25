@@ -13,9 +13,6 @@ jobs:
         go-version: [1.16.2]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
-    env:
-      BUBBLY_ADDR: https://api.bubbly.dev/api/v1/o/valocode
-      BUBBLY_TOKEN: ${{ secrets.BUBBLY_TOKEN }}
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
@@ -34,15 +31,23 @@ jobs:
         run: go install
       - name: Create release
         run: bubbly release create
+        env:
+          BUBBLY_ADDR: https://api.bubbly.dev/api/v1/o/valocode
+          BUBBLY_TOKEN: ${{ secrets.BUBBLY_TOKEN }}
       - name: Build Docker
-        run: |
-          docker build -t valocode/bubbly:latest .
-          bubbly release eval docker
+        run: docker build -t valocode/bubbly:latest .
+      - name: Bubbly eval docker
+        run: bubbly release eval docker
+        env:
+          BUBBLY_ADDR: https://api.bubbly.dev/api/v1/o/valocode
+          BUBBLY_TOKEN: ${{ secrets.BUBBLY_TOKEN }}
       - name: Run unit tests
-        run: |
-          BUBBLY_ADDR=http://localhost:8111/api/v1 go test ./... -json | tee gotest-unit.json
+        run: go test ./... -json | tee gotest-unit.json
       - name: Bubbly eval unit tests
         run: bubbly release eval unit_test
+        env:
+          BUBBLY_ADDR: https://api.bubbly.dev/api/v1/o/valocode
+          BUBBLY_TOKEN: ${{ secrets.BUBBLY_TOKEN }}
       - name: Run integration tests
         run: |
           docker-compose up -d postgres bubbly
@@ -50,12 +55,18 @@ jobs:
           # just sleep a bit to wait for the containers to start
           sleep 1
           docker-compose logs
-          BUBBLY_ADDR=http://localhost:8111/api/v1 go test ./integration -tags=integration -count=1 -json | tee gotest-integration.json
+          go test ./integration -tags=integration -count=1 -json | tee gotest-integration.json
       - name: Bubbly eval integration tests
         run: bubbly release eval integration_test
+        env:
+          BUBBLY_ADDR: https://api.bubbly.dev/api/v1/o/valocode
+          BUBBLY_TOKEN: ${{ secrets.BUBBLY_TOKEN }}
       - name: Run Gosec Security Scanner
         run: |
           curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
           gosec -fmt json -no-fail -out gosec.json ./...
       - name: Bubbly eval gosec
         run: bubbly release eval gosec
+        env:
+          BUBBLY_ADDR: https://api.bubbly.dev/api/v1/o/valocode
+          BUBBLY_TOKEN: ${{ secrets.BUBBLY_TOKEN }}
