@@ -2,6 +2,7 @@ package list
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
@@ -104,38 +105,14 @@ func (o *options) Print() {
 	releaseLines = append(releaseLines, "Name | Version | Type | Status")
 	for _, rel := range o.releases.Release {
 		var (
-			relType   string
-			relStatus bool
-
-			criterion []string
+			relType []string
 		)
 		for _, item := range rel.ReleaseItem {
-			relType = item.Type
+			relType = append(relType, item.Type)
 		}
-		for _, stage := range rel.ReleaseStage {
-			for _, criteria := range stage.ReleaseCriteria {
-				criterion = append(criterion, criteria.EntryName)
-			}
-		}
-		relStatus = true
-		for _, entry := range rel.ReleaseEntry {
-			var entryOK bool
-			for _, criteria := range criterion {
-				if criteria == entry.Name {
-					entryOK = true
-				}
-			}
-			if !entryOK {
-				relStatus = false
-				break
-			}
-		}
-		relStatusStr := builtin.ReadyReleaseStatus
-		if relStatus {
-			relStatusStr = builtin.BlockedReleaseStatus
-		}
+		relStatusStr := cmdutil.ReleaseStatusColor(builtin.ReleaseStatusByStages(rel))
 		releaseLines = append(releaseLines, fmt.Sprintf(
-			"%s | %s | %s | %s ", rel.Name, rel.Version, relType, relStatusStr,
+			"%s | %s | %s | %s ", rel.Name, rel.Version, strings.Join(relType, ","), relStatusStr,
 		))
 	}
 	fmt.Println("Releases")

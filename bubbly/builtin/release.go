@@ -9,23 +9,31 @@ const (
 )
 
 func ReleaseStatusByStages(release Release) ReleaseStatus {
+	var status ReleaseStatus = ReadyReleaseStatus
 	for _, stage := range release.ReleaseStage {
-		status := ReleaseStageStatus(stage)
-		if status != ReadyReleaseStatus {
-			return status
+		stageStatus := ReleaseStageStatus(stage)
+		switch stageStatus {
+		case BlockedReleaseStatus:
+			return BlockedReleaseStatus
+		case PendingReleaseStatus:
+			status = PendingReleaseStatus
 		}
 	}
-	return ReadyReleaseStatus
+	return status
 }
 
 func ReleaseStageStatus(stage ReleaseStage) ReleaseStatus {
+	var status ReleaseStatus = ReadyReleaseStatus
 	for _, criteria := range stage.ReleaseCriteria {
-		status := ReleaseCriteriaStatus(criteria)
-		if status != ReadyReleaseStatus {
-			return status
+		criteriaStatus := ReleaseCriteriaStatus(criteria)
+		switch criteriaStatus {
+		case BlockedReleaseStatus:
+			return BlockedReleaseStatus
+		case PendingReleaseStatus:
+			status = PendingReleaseStatus
 		}
 	}
-	return ReadyReleaseStatus
+	return status
 }
 
 func ReleaseCriteriaStatus(criteria ReleaseCriteria) ReleaseStatus {
