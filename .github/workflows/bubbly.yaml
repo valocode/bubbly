@@ -40,8 +40,7 @@ jobs:
           bubbly release eval docker
       - name: Run unit tests
         run: |
-          unset BUBBLY_ADDR
-          go test ./... -json | tee gotest-unit.json
+          BUBBLY_ADDR=http://localhost:8111/api/v1 go test ./... -json | tee gotest-unit.json
       - name: Bubbly eval unit tests
         run: bubbly release eval unit_test
       - name: Run integration tests
@@ -51,8 +50,7 @@ jobs:
           # just sleep a bit to wait for the containers to start
           sleep 1
           docker-compose logs
-          unset BUBBLY_ADDR
-          go test ./integration -tags=integration -count=1 -json | tee gotest-integration.json
+          BUBBLY_ADDR=http://localhost:8111/api/v1 go test ./integration -tags=integration -count=1 -json | tee gotest-integration.json
       - name: Bubbly eval integration tests
         run: bubbly release eval integration_test
       - name: Run Gosec Security Scanner
