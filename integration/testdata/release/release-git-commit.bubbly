@@ -2,7 +2,7 @@
 release {
     project = "bubbly"
     git {
-        repo = "./repo-with-commit"
+        repo = "./git/repo-with-commit.git"
     }
 
     stage "Artifact" {
