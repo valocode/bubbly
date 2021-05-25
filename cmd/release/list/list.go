@@ -2,6 +2,7 @@ package list
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
@@ -104,14 +105,17 @@ func (o *options) Print() {
 	releaseLines = append(releaseLines, "Name | Version | Type | Status")
 	for _, rel := range o.releases.Release {
 		var (
+			relInputs []string
 			relType   string
 			relStatus bool
 
 			criterion []string
 		)
-		for _, item := range rel.ReleaseItem {
-			relType = item.Type
+
+		for _, input := range rel.ReleaseInput {
+			relInputs = append(relInputs, input.Type)
 		}
+		relType = strings.Join(relInputs, ", ")
 		for _, stage := range rel.ReleaseStage {
 			for _, criteria := range stage.ReleaseCriteria {
 				criterion = append(criterion, criteria.EntryName)

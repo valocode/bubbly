@@ -2,6 +2,7 @@
 // _SCHEMA
 // #######################################
 export interface _schema {
+	_id?: string;
 	tables?: object;
 }
 export interface _schema_wrap {
@@ -12,6 +13,7 @@ export interface _schema_wrap {
 // _RESOURCE
 // #######################################
 export interface _resource {
+	_id?: string;
 	id?: string;
 	name?: string;
 	kind?: string;
@@ -29,6 +31,7 @@ export interface _resource_wrap {
 // _EVENT
 // #######################################
 export interface _event {
+	_id?: string;
 	status?: string;
 	error?: string;
 	time?: string;
@@ -42,8 +45,10 @@ export interface _event_wrap {
 // RELEASE_ENTRY
 // #######################################
 export interface release_entry {
+	_id?: string;
 	name?: string;
 	result?: boolean;
+	reason?: string;
 	release?: release;
 	release_criteria?: release_criteria;
 	_resource?: _resource;
@@ -56,10 +61,11 @@ export interface release_entry_wrap {
 // RELEASE
 // #######################################
 export interface release {
+	_id?: string;
 	name?: string;
 	version?: string;
 	project?: project;
-	release_item?: release_item[];
+	release_input?: release_input[];
 	release_entry?: release_entry[];
 	release_stage?: release_stage[];
 	release_criteria?: release_criteria[];
@@ -74,6 +80,7 @@ export interface release_wrap {
 // PROJECT
 // #######################################
 export interface project {
+	_id?: string;
 	id?: string;
 	name?: string;
 	repo?: repo[];
@@ -87,6 +94,7 @@ export interface project_wrap {
 // REPO
 // #######################################
 export interface repo {
+	_id?: string;
 	id?: string;
 	name?: string;
 	project?: project;
@@ -101,6 +109,7 @@ export interface repo_wrap {
 // BRANCH
 // #######################################
 export interface branch {
+	_id?: string;
 	name?: string;
 	repo?: repo;
 	commit?: commit[];
@@ -113,47 +122,36 @@ export interface branch_wrap {
 // COMMIT
 // #######################################
 export interface commit {
+	_id?: string;
 	id?: string;
 	tag?: string;
 	time?: string;
 	branch?: branch;
 	repo?: repo;
-	release_item?: release_item;
+	release_input?: release_input;
 }
 export interface commit_wrap {
 	commit?: commit[];
 }
 
 // #######################################
-// RELEASE_ITEM
+// RELEASE_INPUT
 // #######################################
-export interface release_item {
+export interface release_input {
+	_id?: string;
 	type?: string;
 	release?: release;
 	commit?: commit;
-	artifact?: artifact;
 }
-export interface release_item_wrap {
-	release_item?: release_item[];
-}
-
-// #######################################
-// ARTIFACT
-// #######################################
-export interface artifact {
-	name?: string;
-	sha256?: string;
-	location?: string;
-	release_item?: release_item;
-}
-export interface artifact_wrap {
-	artifact?: artifact[];
+export interface release_input_wrap {
+	release_input?: release_input[];
 }
 
 // #######################################
 // RELEASE_STAGE
 // #######################################
 export interface release_stage {
+	_id?: string;
 	name?: string;
 	release?: release;
 	release_criteria?: release_criteria[];
@@ -166,6 +164,7 @@ export interface release_stage_wrap {
 // RELEASE_CRITERIA
 // #######################################
 export interface release_criteria {
+	_id?: string;
 	entry_name?: string;
 	release_entry?: release_entry[];
 	release_stage?: release_stage;
@@ -179,6 +178,7 @@ export interface release_criteria_wrap {
 // CODE_SCAN
 // #######################################
 export interface code_scan {
+	_id?: string;
 	tool?: string;
 	release?: release;
 	code_issue?: code_issue[];
@@ -191,6 +191,7 @@ export interface code_scan_wrap {
 // CODE_ISSUE
 // #######################################
 export interface code_issue {
+	_id?: string;
 	id?: string;
 	message?: string;
 	severity?: string;
@@ -205,6 +206,7 @@ export interface code_issue_wrap {
 // TEST_RUN
 // #######################################
 export interface test_run {
+	_id?: string;
 	tool?: string;
 	type?: string;
 	name?: string;
@@ -221,6 +223,7 @@ export interface test_run_wrap {
 // TEST_CASE
 // #######################################
 export interface test_case {
+	_id?: string;
 	name?: string;
 	result?: boolean;
 	message?: string;
@@ -228,5 +231,18 @@ export interface test_case {
 }
 export interface test_case_wrap {
 	test_case?: test_case[];
+}
+
+// #######################################
+// ARTIFACT
+// #######################################
+export interface artifact {
+	_id?: string;
+	name?: string;
+	sha256?: string;
+	location?: string;
+}
+export interface artifact_wrap {
+	artifact?: artifact[];
 }
 

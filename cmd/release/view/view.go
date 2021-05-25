@@ -110,9 +110,9 @@ func (o *options) Print() {
 	fmt.Println("Version: " + o.Release.Version)
 	fmt.Println("Status: " + status)
 	fmt.Println("")
-	fmt.Println("Items:")
-	for _, item := range o.Release.ReleaseItem {
-		fmt.Println("  - " + item.Type)
+	fmt.Println("Inputs:")
+	for _, input := range o.Release.ReleaseInput {
+		fmt.Println("  - " + input.Type)
 	}
 	fmt.Println("")
 	fmt.Println("Stages:")

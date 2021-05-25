@@ -23,12 +23,12 @@ import (
 )
 
 type ReleaseSpec struct {
-	Name         string         `hcl:"name,optional"`
-	Version      string         `hcl:"version,optional"`
-	Project      string         `hcl:"project,optional"`
-	GitItem      *gitItem       `hcl:"git,block"`
-	ArtifactItem *artifactItem  `hcl:"artifact,block"`
-	Stages       []releaseStage `hcl:"stage,block"`
+	Name    string            `hcl:"name,optional"`
+	Version string            `hcl:"version,optional"`
+	Project string            `hcl:"project,optional"`
+	Input   releaseInputSpec  `hcl:"input,block"`
+	Output  releaseOutputSpec `hcl:"output,block"`
+	Stages  []releaseStage    `hcl:"stage,block"`
 	// BaseDir is set at runtime so that relative paths can be resolved
 	BaseDir string
 }
@@ -92,19 +92,19 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 	}
 
 	//
-	// Create the release item and criteria data blocks
+	// Create the release inputs
 	//
-	// For each release item, create the item type and the release item.
-	// E.g. for git we create the commit and also the release_item that joins
+	// For each release input, create the item type and the release_input.
+	// E.g. for git we create the commit and also the release_input that joins
 	// to that specific commit.
-	if r.GitItem != nil {
-		gitData, err := r.GitItem.Data(r.BaseDir)
+	if r.Input.GitItem != nil {
+		gitData, err := r.Input.GitItem.Data(r.BaseDir)
 		if err != nil {
-			return nil, fmt.Errorf("error getting git data for repo %s: %w", r.GitItem.Repo, err)
+			return nil, fmt.Errorf("error getting git data for repo %s: %w", r.Input.GitItem.Repo, err)
 		}
 		data = append(data, gitData...)
 		data = append(data, core.Data{
-			TableName: "release_item",
+			TableName: "release_input",
 			Fields: core.DataFields{
 				"type": cty.StringVal(releaseItemGitType),
 			},
@@ -112,21 +112,26 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 			Joins: []string{"commit", "release"},
 		})
 	}
-	if r.ArtifactItem != nil {
-		artifactData, err := r.ArtifactItem.Data(r.BaseDir)
+	if r.Input.ArtifactItem != nil {
+		artifactData, err := r.Input.ArtifactItem.Data(r.BaseDir)
 		if err != nil {
-			return nil, fmt.Errorf("error getting artifact data for %s: %w", r.ArtifactItem.Name, err)
+			return nil, fmt.Errorf("error getting artifact data for %s: %w", r.Input.ArtifactItem.Name, err)
 		}
 		data = append(data, artifactData...)
 		data = append(data, core.Data{
-			TableName: "release_item",
+			TableName: "release_input",
 			Fields: core.DataFields{
 				"type": cty.StringVal(releaseItemArtifactType),
 			},
 			// Join to the git commit that is created above
-			Joins: []string{"artifact"},
+			Joins: []string{"artifact", "release"},
 		})
 	}
+
+	//
+	// Create the release outputs
+	//
+	// TODO:
 
 	return data, nil
 }
@@ -162,12 +167,30 @@ func (r *ReleaseSpec) DataRef() (core.DataBlocks, error) {
 	return data, nil
 }
 
+func (r *ReleaseSpec) Evaluate(bCtx *env.BubblyContext, dataCtx core.DataBlocks, evalName string) (core.DataBlocks, error) {
+	for _, stages := range r.Stages {
+		for _, criteria := range stages.Criterion {
+			if criteria.Name == evalName {
+				return criteria.Evaluate(bCtx, r, dataCtx, r.BaseDir)
+			}
+		}
+	}
+
+	for _, artifact := range r.Output.ArtifactItem {
+		if artifact.Name == evalName {
+			return artifact.Data(r.BaseDir)
+		}
+	}
+
+	return nil, fmt.Errorf("no criteria or output found with name: %s", evalName)
+}
+
 func (r *ReleaseSpec) String() string {
 	var rType string
 	switch {
-	case r.ArtifactItem != nil:
+	case r.Input.ArtifactItem != nil:
 		rType = "artifact"
-	case r.GitItem != nil:
+	case r.Input.GitItem != nil:
 		rType = "git"
 	default:
 		rType = "unknown"
@@ -181,20 +204,29 @@ func (r *ReleaseSpec) Validate() error {
 	if r.Project == "" {
 		return fmt.Errorf("project is required")
 	}
-	// If Name was not provided, try to get a default value
+
+	// TODO: input as artifact currently not supported
+	if r.Input.ArtifactItem != nil {
+		return errors.New("input artifact not supported")
+	}
+	// If Name was not provided, try to get a default value from the input
 	if r.Name == "" {
-		if r.GitItem != nil {
-			gitId, err := r.GitItem.idFromRemote(r.BaseDir)
+		if r.Input.GitItem != nil {
+			gitId, err := r.Input.GitItem.idFromRemote(r.BaseDir)
 			if err != nil {
 				return fmt.Errorf("error getting git repo id: %w", err)
 			}
 			r.Name = gitId
 		}
+
+		if r.Name == "" {
+			return errors.New("name is required")
+		}
 	}
 	// If Version was not provided, we can set a default based on git data
 	if r.Version == "" {
-		if r.GitItem != nil {
-			tag, commit, err := r.GitItem.version(r.BaseDir)
+		if r.Input.GitItem != nil {
+			tag, commit, err := r.Input.GitItem.version(r.BaseDir)
 			if err != nil {
 				return fmt.Errorf("error getting git tag: %w", err)
 			}
@@ -203,8 +235,26 @@ func (r *ReleaseSpec) Validate() error {
 				r.Version = tag
 			}
 		}
+		if r.Version == "" {
+			return errors.New("version is required")
+		}
+	}
+	if r.Input.GitItem != nil && r.Input.ArtifactItem != nil {
+		return errors.New("cannot provide both a git and artifact as input")
+	}
+	if r.Input.GitItem == nil && r.Input.ArtifactItem == nil {
+		return errors.New("must provide either a git or artifact as input")
 	}
 	return nil
+}
+
+type releaseInputSpec struct {
+	GitItem      *gitItem      `hcl:"git,block"`
+	ArtifactItem *artifactItem `hcl:"artifact,block"`
+}
+
+type releaseOutputSpec struct {
+	ArtifactItem []artifactItem `hcl:"artifact,block"`
 }
 
 const (
@@ -487,38 +537,29 @@ type releaseStage struct {
 }
 
 type releaseCriteria struct {
-	Name     string        `hcl:",label"`
-	Artifact *artifactItem `hcl:"artifact,block"`
-	Run      []resourceRun `hcl:"run,block"`
+	Name string        `hcl:",label"`
+	Run  []resourceRun `hcl:"run,block"`
 }
 
 // Evaluate evaluates a release criteria and produces data blocks to log a release entry
 func (c *releaseCriteria) Evaluate(bCtx *env.BubblyContext, release *ReleaseSpec, dataCtx core.DataBlocks, baseDir string) (core.DataBlocks, error) {
-	// Validation of the release criteria
-	if c.Artifact != nil && len(c.Run) > 0 {
-		return nil, errors.New("release criteria cannot specify both artifact and resource runs")
-	}
-	if c.Artifact == nil && len(c.Run) == 0 {
-		return nil, errors.New("release criteria has no criteria")
-	}
-
 	var (
 		data        core.DataBlocks
 		entryReason string
 		entryResult = true
 	)
 
-	if c.Artifact != nil {
-		// Get the data block for the artifact
-		// TODO: handle if the artifact doesn't exist. We do not want to error,
-		// but it should mark the release_entry as false, e.g.
-		// entry.Result = <ARTIFACT_RESULT>
-		aData, err := c.Artifact.Data(baseDir)
-		if err != nil {
-			return nil, fmt.Errorf("error with artifact %s: %w", c.Artifact.Name, err)
-		}
-		data = append(data, aData...)
-	}
+	// if c.Artifact != nil {
+	// 	// Get the data block for the artifact
+	// 	// TODO: handle if the artifact doesn't exist. We do not want to error,
+	// 	// but it should mark the release_entry as false, e.g.
+	// 	// entry.Result = <ARTIFACT_RESULT>
+	// 	aData, err := c.Artifact.Data(baseDir)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("error with artifact %s: %w", c.Artifact.Name, err)
+	// 	}
+	// 	data = append(data, aData...)
+	// }
 	// Iterate through the run blocks. As soon as one fails, or one is a criteria
 	// kind with a failing result, break the loop
 	for _, run := range c.Run {

@@ -87,6 +87,8 @@ func genStructsFromSchema(graph *store.SchemaGraph) error {
 		fmt.Fprintf(&b, "// %s\n", strings.ToUpper(table.Name))
 		fmt.Fprintf(&b, "// #######################################\n")
 		fmt.Fprintf(&b, "type %s struct {\n", tableName)
+		// Add the _id primary key field
+		fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s\"`\n", "TableID", "string", "_id")
 		for _, field := range table.Fields {
 			fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s\"`\n", camelToPascal(field.Name), ctyTypeToString(field.Type), field.Name)
 		}
@@ -130,6 +132,8 @@ func genTSInterfaceFromSchema(graph *store.SchemaGraph) error {
 		fmt.Fprintf(&b, "// %s\n", strings.ToUpper(table.Name))
 		fmt.Fprintf(&b, "// #######################################\n")
 		fmt.Fprintf(&b, "export interface %s {\n", table.Name)
+		// Add the _id field
+		fmt.Fprintf(&b, "\t%s?: %s;\n", "_id", "string")
 		for _, field := range table.Fields {
 			fmt.Fprintf(&b, "\t%s?: %s;\n", field.Name, ctyTypeToTSString(field.Type))
 		}

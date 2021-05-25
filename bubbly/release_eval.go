@@ -22,12 +22,8 @@ func EvalReleaseCriteria(bCtx *env.BubblyContext, filename string, criteriaName 
 		return nil, fmt.Errorf("unable to process release definition: %w", err)
 	}
 
-	criteria, err := criteriaByName(release, criteriaName)
-	if err != nil {
-		return nil, err
-	}
 	// Evaluate the release criteria and create the release entry data blocks
-	dEntry, err := criteria.Evaluate(bCtx, release, releaseRef, release.BaseDir)
+	dEntry, err := release.Evaluate(bCtx, releaseRef, criteriaName)
 	if err != nil {
 		return nil, err
 	}
@@ -50,15 +46,4 @@ func EvalReleaseCriteria(bCtx *env.BubblyContext, filename string, criteriaName 
 		return nil, fmt.Errorf("error saving release data block: %w", err)
 	}
 	return release, nil
-}
-
-func criteriaByName(release *ReleaseSpec, criteriaName string) (*releaseCriteria, error) {
-	for _, stages := range release.Stages {
-		for _, criteria := range stages.Criterion {
-			if criteria.Name == criteriaName {
-				return &criteria, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("no criteria found in release with name: %s", criteriaName)
 }

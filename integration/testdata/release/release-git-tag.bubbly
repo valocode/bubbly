@@ -1,16 +1,31 @@
 
 release {
     project = "bubbly"
-    git {
-        repo = "./repo-with-tag"
+    input {
+        git {
+            repo = "./repo-with-tag"
+        }
+    }
+    output {
+        artifact {
+            name = "bubbly"
+            location = "file://./artifacts/artifact.txt"
+        }
     }
 
-    stage "Artifact" {
-        criteria "artifact" {
-            artifact {
-                name = "bubbly"
-                location = "file://./artifacts/artifact.txt"
+    stage "Code Analysis" {
+        // TODO: create pipeline and test file
+        // criteria "gofmt" {
+        //     run "pipeline/gofmt" {}
+        // }
+        // TODO: create pipeline and test for gosec
+        criteria "gosec" {
+            run "pipeline/gosec" {
+                input "file" {
+                    value = "./testdata/release/results/gosec.json"
+                }
             }
+            run "criteria/gosec" {}
         }
     }
     stage "Testing" {
@@ -20,9 +35,7 @@ release {
                     value = "./testdata/release/results/gotest.json"
                 }
             }
-            run "criteria/gotest" {
-                
-            }
+            run "criteria/gotest" { }
         }
     }
 }

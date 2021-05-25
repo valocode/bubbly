@@ -200,7 +200,7 @@ func TestScanTableColumns(t *testing.T) {
 						scalar: true,
 					},
 					{
-						table:  "release_item",
+						table:  "release_input",
 						fields: []string{tableIDField, "type"},
 						children: []*tableColumns{
 							{
@@ -256,7 +256,7 @@ func TestScanTableColumns(t *testing.T) {
 						"project": map[string]interface{}{
 							tableIDField: 1, "name": "bubbly",
 						},
-						"release_item": []map[string]interface{}{
+						"release_input": []map[string]interface{}{
 							{
 								tableIDField: 1, "type": "git",
 								"commit": map[string]interface{}{

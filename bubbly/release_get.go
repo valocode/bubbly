@@ -31,7 +31,7 @@ func GetRelease(bCtx *env.BubblyContext, filename string) (*builtin.Release, err
 			id
 			name
 		}
-		release_item {
+		release_input {
 			type
 			commit {
 				repo {

@@ -1,24 +1,27 @@
 
 release {
     project = "bubbly"
-    git {
-        repo = "./repo-with-commit"
-    }
-
-    stage "Artifact" {
-        criteria "artifact" {
-            artifact {
-                name = "bubbly"
-                location = "file://./artifacts/artifact.txt"
-            }
-            // TODO: make a test for docker
-            // artifact {
-            //     name = "bubbly"
-            //     location = "docker://europe-north1-docker.pkg.dev/bubbly-saas-3276866d/bubbly/bubbly:0.0.1-beta"
-            // }
+    input {
+        git {
+            repo = "./repo-with-commit"
         }
     }
-    stage "Code Analysis" {
+    output {
+        artifact {
+            name = "bubbly"
+            location = "file://./artifacts/artifact.txt"
+        }
+    }
+
+    criteria "artifact" {
+        artifact {
+            name = "bubbly"
+            location = "file://./artifacts/artifact.txt"
+        }
+    }
+
+    stage "Unit Test" {
+        type = "unit_test"
         // TODO: create pipeline and test file
         // criteria "gofmt" {
         //     run "pipeline/gofmt" {}

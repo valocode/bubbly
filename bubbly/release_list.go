@@ -21,7 +21,7 @@ func ListReleases(bCtx *env.BubblyContext) (*builtin.Release_Wrap, error) {
 			id
 			name
 		}
-		release_item(filter_on: true) {
+		release_input(filter_on: true) {
 			type
 			commit {
 				repo {

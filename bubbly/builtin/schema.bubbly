@@ -130,7 +130,6 @@ table "artifact" {
 // RELEASE
 // #############################
 
-// release has no unique constraints but can be identified through it's release items
 table "release" {
     // TODO: what other fields should a release have?
     field "name" {
@@ -145,39 +144,53 @@ table "release" {
     join "project" { unique = true }
 }
 
-// release_item is used to represent what we are releasing in a single release
+// release_input is used to represent what we are releasing in a single release
 // and can be of different types: git, artifact or release.
 // Based on the type it should have a join to one of those tables
-table "release_item" {
+table "release_input" {
 
     // type should be one of git (commit), artifact or release
     field "type" {
         type = string
     }
 
-    // Join to release. A release can have one or more release_items.
-    // A release_item can belong to only one release, because it can have
+    // Join to release. A release can have one or more release_inputs.
+    // A release_input can belong to only one release, because it can have
     // criteria associated with it, which are specific to a release
     join "release" { }
 
-    // Join to the different item tables with a one-to-one relationship.
+    // Join to the different input tables with a one-to-one relationship.
     // Only at most and at least one of these joins should exist, based on the
     // "type" field
     join "commit" {
         single = true
         unique = true
+        // cannot be null... this is always required
     }
-    join "artifact" {
-        single = true
-        unique = true
-    }
-    // TODO: this is a problem because this creates a second join from release_item
+    // TODO: this is a problem because this creates a second join from release_input
     // to release... It could be solved by adding an alias
     // join "release" {
-    //     alias = "item_release"
-    //     single = true
+    //     alias = "subrelease"
     //     unique = true
     // }
+}
+
+table "release_output" {
+    // type should be an artifact type, like docker or file
+    field "type" {
+        type = string
+    }
+    
+    // name of the artifact
+    field "name" {
+        type = string
+    }
+
+    // the artifact (once it is created)
+    join "artifact" {}
+
+    // Join to the release to which this release_output belongs
+    join "release" { }
 }
 
 // release_entry is used to record/log an event performed on a release,

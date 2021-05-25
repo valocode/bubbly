@@ -118,28 +118,16 @@ var BuiltinTables = core.Tables{
 		),
 	),
 	// #######################################
-	// RELEASE_ITEM
+	// RELEASE_INPUT
 	// #######################################
-	table("release_item",
+	table("release_input",
 		fields(
 			field("type", cty.String, false),
 		),
 		joins(
 			join("release", false, false),
 			join("commit", true, true),
-			join("artifact", true, true),
 		),
-	),
-	// #######################################
-	// ARTIFACT
-	// #######################################
-	table("artifact",
-		fields(
-			field("name", cty.String, false),
-			field("sha256", cty.String, true),
-			field("location", cty.String, false),
-		),
-		joins(),
 	),
 	// #######################################
 	// RELEASE_STAGE
@@ -216,5 +204,16 @@ var BuiltinTables = core.Tables{
 		joins(
 			join("test_run", false, false),
 		),
+	),
+	// #######################################
+	// ARTIFACT
+	// #######################################
+	table("artifact",
+		fields(
+			field("name", cty.String, false),
+			field("sha256", cty.String, true),
+			field("location", cty.String, false),
+		),
+		joins(),
 	),
 }
