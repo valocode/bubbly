@@ -32,7 +32,9 @@ func ListReleases(bCtx *env.BubblyContext) (*builtin.Release_Wrap, error) {
 		release_stage(filter_on: true) {
 			name
 			release_criteria(filter_on: true) {
-				entry_name
+				release_entry {
+					result
+				}
 			}
 		}
 	}
