@@ -35,9 +35,11 @@ type options struct {
 	Command string
 	Args    []string
 	Release *bubbly.ReleaseSpec
+	success bool
 
 	// flags
 	filename string
+	noFail   bool
 }
 
 // New creates a new cobra command
@@ -63,8 +65,12 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			if err := o.resolve(); err != nil {
 				return err
 			}
+
 			if err := o.run(); err != nil {
-				return err
+				o.success = false
+				if !o.noFail {
+					return err
+				}
 			}
 
 			o.Print()
@@ -78,6 +84,11 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		"f",
 		".",
 		"filename or directory that contains the bubbly release definition")
+	f.BoolVar(&o.noFail,
+		"no-fail",
+		false,
+		"do not fail if create fails (e.g. if the release already exists)",
+	)
 
 	return cmd
 }
@@ -105,11 +116,19 @@ func (o *options) run() error {
 
 // Print prints the successful outcome of the cmd
 func (o *options) Print() {
-	if o.bCtx.CLIConfig.Color {
-		color.Green("Release successfully created!")
-	} else {
-		fmt.Println("Release successfully created!")
+	if o.success {
+		if o.bCtx.CLIConfig.Color {
+			color.Green("Release successfully created!")
+		} else {
+			fmt.Println("Release successfully created!")
+		}
+		fmt.Println("\n" + o.Release.String())
+		return
 	}
 
-	fmt.Println("\n" + o.Release.String())
+	if o.bCtx.CLIConfig.Color {
+		color.Yellow("Release creation failed.")
+	} else {
+		fmt.Println("Release creation failed.")
+	}
 }

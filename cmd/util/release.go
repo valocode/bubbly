@@ -8,7 +8,7 @@ import (
 func ReleaseStatusColor(status builtin.ReleaseStatus) string {
 	// TODO: handle no color mode
 	var (
-		green  = color.New(color.FgYellow).SprintFunc()
+		green  = color.New(color.FgGreen).SprintFunc()
 		yellow = color.New(color.FgYellow).SprintFunc()
 		red    = color.New(color.FgRed).SprintFunc()
 	)
