@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	orderAsc  string = "ASC"
-	orderDesc string = "DESC"
+	orderAsc     string = "ASC"
+	orderDesc    string = "DESC"
+	defaultLimit uint64 = 100
 )
 
 // tableColumns is used to store the columns that are SELECT'd in a SQl
@@ -329,6 +330,10 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 		}
 	}
 
+	// Set a default limit on each query
+	if limitArg == nil {
+		nodeQuery = nodeQuery.Limit(defaultLimit)
+	}
 	if limitArg != nil {
 		limitStr, ok := limitArg.Value.GetValue().(string)
 		if !ok {
