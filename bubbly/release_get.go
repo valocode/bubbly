@@ -40,7 +40,7 @@ func GetRelease(bCtx *env.BubblyContext, filename string) (*builtin.Release, err
 			name
 			release_criteria {
 				entry_name
-				release_entry(order_by:{_id: "DESC"}, limit: 1) {
+				release_entry(last: 1) {
 					result
 					reason
 				}

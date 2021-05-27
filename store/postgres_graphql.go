@@ -150,8 +150,10 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 		// aliases are known, that is after the rest of the GraphQL query had been processed.
 		orderByArg *ast.Argument
 
-		// The `limit` for a sub query
-		limitArg *ast.Argument
+		// The `first` arg is a limit on the results in ASC order
+		firstArg *ast.Argument
+		// The `last` arg is a limit on the results in DESC order
+		lastArg *ast.Argument
 	)
 
 	// Always return the ID field of a table as the first row as we need it when
@@ -204,9 +206,16 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 			// Therefore, defer the processing of this argument by saving a pointer to it for later processing.
 			orderByArg = arg
 			argIsResolved = true
-		case limitID:
-			limitArg = arg
+		case firstID:
+			firstArg = arg
 			argIsResolved = true
+		case lastID:
+			lastArg = arg
+			argIsResolved = true
+		}
+
+		if firstArg != nil && lastArg != nil {
+			return fmt.Errorf("cannot provide both 'first' and 'last' arguments for table %s", tc.table)
 		}
 
 		// The argument name which is not a column name is a mistake, raise error.
@@ -310,7 +319,12 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 		}
 	}
 
-	// Process order_by, if available. At this point all table aliases are known.
+	//
+	// Order
+	//
+	// By default we want to preserve the "natural" order, unless an order_by
+	// is specified
+	//
 	if orderByArg != nil {
 		orderByFields, ok := orderByArg.Value.GetValue().([]*ast.ObjectField)
 		if !ok {
@@ -319,7 +333,7 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 		for _, orderBy := range orderByFields {
 			var (
 				field = orderBy.Name.Value
-				order = orderBy.Value.GetValue().(string)
+				order = strings.ToUpper(orderBy.Value.GetValue().(string))
 			)
 			if !(order == orderAsc || order == orderDesc) {
 				return fmt.Errorf("unknown order for 'order_by': %s", order)
@@ -330,20 +344,48 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 		}
 	}
 
-	// Set a default limit on each query
-	if limitArg == nil {
-		nodeQuery = nodeQuery.Limit(defaultLimit)
-	}
-	if limitArg != nil {
-		limitStr, ok := limitArg.Value.GetValue().(string)
+	//
+	// Limit
+	//
+	// Limiting is handled by the `first` and `last` values. This is only
+	// added to the subquery for this node, and needs to come after the ordering
+	// of other fields to make sure we respect the wishes of the user and then
+	// get first/last based on the given order
+	//
+	if firstArg != nil {
+		limitStr, ok := firstArg.Value.GetValue().(string)
 		if !ok {
-			return fmt.Errorf("could not convert the value of the argument `limit`: %#v", limitArg.Value.GetValue())
+			return fmt.Errorf("could not convert the value of the argument `first`: %#v", firstArg.Value.GetValue())
 		}
 		n, err := strconv.ParseUint(limitStr, 10, 64)
 		if err != nil {
 			return fmt.Errorf("could not convert the value to unsigned integer: %s", limitStr)
 		}
-		nodeQuery = nodeQuery.Limit(n)
+		// Order by ASC and then limit
+		nodeQuery = nodeQuery.
+			OrderBy(tableColumn(tc.alias, tableIDField) + " " + orderAsc).
+			Limit(n)
+	}
+	if lastArg != nil {
+		limitStr, ok := lastArg.Value.GetValue().(string)
+		if !ok {
+			return fmt.Errorf("could not convert the value of the argument `last`: %#v", lastArg.Value.GetValue())
+		}
+		n, err := strconv.ParseUint(limitStr, 10, 64)
+		if err != nil {
+			return fmt.Errorf("could not convert the value to unsigned integer: %s", limitStr)
+		}
+		// Order by DESC and then limit
+		nodeQuery = nodeQuery.
+			OrderBy(tableColumn(tc.alias, tableIDField) + " " + orderDesc).
+			Limit(n)
+	}
+	// Add default orderBy and limit if there isn't one already
+	if lastArg == nil && firstArg == nil {
+		if orderByArg == nil {
+			nodeQuery = nodeQuery.OrderBy(tableColumn(tc.alias, tableIDField) + " " + orderDesc)
+		}
+		nodeQuery = nodeQuery.Limit(defaultLimit)
 	}
 
 	// Before processing any subFields (which are like "children" in GraphQL),
@@ -417,6 +459,14 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 		if err != nil {
 			return err
 		}
+	}
+
+	// After we have processed the sub fields, if there was not orderBy given
+	// for this field then add a default one to "preserve" the natural order.
+	// IMPORTANT: this has to come AFTER we handle sub fields, so that we honour
+	// the requests made by sub children
+	if orderByArg == nil {
+		*sql = sql.OrderBy(tableColumn(tc.alias, tableIDField) + " " + orderAsc)
 	}
 	return nil
 }

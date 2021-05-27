@@ -117,7 +117,10 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 	gqlField.Args[filterOnID] = &graphql.ArgumentConfig{
 		Type: graphql.Boolean,
 	}
-	gqlField.Args[limitID] = &graphql.ArgumentConfig{
+	gqlField.Args[firstID] = &graphql.ArgumentConfig{
+		Type: graphql.Int,
+	}
+	gqlField.Args[lastID] = &graphql.ArgumentConfig{
 		Type: graphql.Int,
 	}
 
@@ -175,7 +178,8 @@ func graphQLFieldType(f core.TableField) *graphql.Scalar {
 const (
 	filterID     = "filter"
 	filterOnID   = "filter_on"
-	limitID      = "limit"
+	firstID      = "first"
+	lastID       = "last"
 	orderByID    = "order_by"
 	orderByType  = "_order"
 	distinctOnID = "distinct_on"
@@ -211,7 +215,7 @@ func graphQLOrderType(typeName string, args graphql.Fields) *graphql.InputObject
 	)
 	for n := range args {
 		fields[n] = &graphql.InputObjectFieldConfig{
-			Type: graphql.String,
+			Type: enumOrderBy,
 		}
 	}
 
@@ -301,5 +305,17 @@ var mapScalar = graphql.NewScalar(graphql.ScalarConfig{
 			return nil
 		}
 		return parseValueToMap(astValue)
+	},
+})
+
+var enumOrderBy = graphql.NewEnum(graphql.EnumConfig{
+	Name: "Order",
+	Values: graphql.EnumValueConfigMap{
+		"asc": &graphql.EnumValueConfig{
+			Value: 0,
+		},
+		"desc": &graphql.EnumValueConfig{
+			Value: 1,
+		},
 	},
 })
