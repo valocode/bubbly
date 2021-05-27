@@ -27,16 +27,12 @@ func NewLoad(resBlock *core.ResourceBlock) *Load {
 	}
 }
 
-func (l *Load) SpecValue() core.ResourceSpec {
-	return &l.Spec
-}
-
-// Apply returns ...
-func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+// Run returns ...
+func (l *Load) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBodyWithInputs(bCtx, l.SpecHCL.Body, &l.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			ID:     l.String(),
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, l.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
@@ -60,7 +56,7 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 	if err := l.load(bCtx, ctx, data); err != nil {
 		return core.ResourceOutput{
 			ID:     l.String(),
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf(`failed to load data to bubbly server: %w`, err),
 			Value:  cty.NilVal,
 		}
@@ -70,7 +66,7 @@ func (l *Load) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Re
 
 	return core.ResourceOutput{
 		ID:     l.String(),
-		Status: events.ResourceApplySuccess,
+		Status: events.ResourceRunSuccess,
 		Error:  nil,
 		Value:  cty.NilVal,
 	}

@@ -10,10 +10,10 @@ import (
 
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/bubbly/builtin"
 	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/events"
 )
 
 var (
@@ -54,7 +54,7 @@ type GetOptions struct {
 
 	// resolved
 	query     string
-	resources []bubbly.Resource
+	resources []builtin.Resource
 }
 
 // NewCmdGet creates a new cobra.Command representing "bubbly get"
@@ -171,7 +171,7 @@ func (o *GetOptions) Print() {
 			fmt.Println("\nEvents")
 		}
 		for _, r := range o.resources {
-			for _, e := range r.Events {
+			for _, e := range r.Event {
 				eventLines = append(eventLines, eventPrintLine(r.Id, e))
 			}
 		}
@@ -235,13 +235,13 @@ func formGetQuery(input string) string {
 
 // resourcePrintLine returns a formatted string representing the printout of
 // a resource
-func resourcePrintLine(r bubbly.Resource) string {
-	latestEvent := r.Events[len(r.Events)-1]
+func resourcePrintLine(r builtin.Resource) string {
+	latestEvent := r.Event[len(r.Event)-1]
 	return fmt.Sprintf("%s | %s | %s\n", r.Id, latestEvent.Status, latestEvent.Time)
 }
 
 // eventPrintLine returns a formatted string representing the printout of
 // an event
-func eventPrintLine(resID string, e events.Event) string {
+func eventPrintLine(resID string, e builtin.Event) string {
 	return fmt.Sprintf("%s | %s | %s | %s\n", resID, e.Status, e.Time, e.Error)
 }

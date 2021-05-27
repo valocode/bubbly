@@ -20,7 +20,6 @@ import (
 	"github.com/valocode/bubbly/api/core"
 	v1 "github.com/valocode/bubbly/api/v1"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/events"
 	"github.com/valocode/bubbly/server"
 )
 
@@ -323,7 +322,7 @@ mainloop:
 		select {
 		case <-ticker.C:
 			resContext := core.NewResourceContext(cty.NilVal, api.NewResource, auth)
-			output := r.Resource.Apply(bCtx, resContext)
+			output := common.RunResource(bCtx, resContext, &r.Resource, cty.NilVal)
 			if output.Error != nil {
 				bCtx.Logger.Error().Err(output.Error).Msg("error applying run")
 			}
@@ -355,35 +354,9 @@ mainloop:
 // interval. The resource is applied only once.
 func (r *Run) ApplyOneOff(bCtx *env.BubblyContext, auth *component.MessageAuth) error {
 	bCtx.Logger.Debug().Str("id", r.Resource.String()).Msg("run resource of type OneOffRun identified")
-	resContext := core.NewResourceContext(cty.NilVal, api.NewResource, auth)
-	subResourceOutput := r.Resource.Apply(bCtx, resContext)
-
-	runResourceOutput := core.ResourceOutput{
-		ID:     r.Resource.String(),
-		Status: events.ResourceRunSuccess,
-		Error:  nil,
-	}
-
-	// if any child resource of the run resource has failed, then
-	// mark the run resource has failed and attach the error message
-	if subResourceOutput.Error != nil {
-		runResourceOutput.Status = events.ResourceRunFailure
-		runResourceOutput.Error = fmt.Errorf(`failed to run resource "%s": %w`, r.Resource.String(), subResourceOutput.Error)
-	}
-
-	// TODO: better consider what action to perform if the worker fails to
-	//  run the current run resource
-
-	// load the output of the run resource to the event store
-	if err := common.LoadResourceOutput(bCtx, &runResourceOutput, auth); err != nil {
-		return fmt.Errorf(
-			`failed to store the output of running resource "%s" to the store: %w`,
-			r.Resource.String(),
-			err,
-		)
-	}
-
-	return runResourceOutput.Error
+	ctx := core.NewResourceContext(cty.NilVal, api.NewResource, auth)
+	output := common.RunResource(bCtx, ctx, &r.Resource, cty.NilVal)
+	return output.Error
 }
 
 func (r *Run) update(resBlock core.ResourceBlock) error {

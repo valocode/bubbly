@@ -3,7 +3,6 @@ package v1
 import (
 	"fmt"
 
-	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/events"
 
 	"github.com/zclconf/go-cty/cty"
@@ -26,62 +25,34 @@ func NewQuery(resBlock *core.ResourceBlock) *Query {
 	}
 }
 
-// Apply returns a core.ResourceOutput, whose Value is a cty.Value
+// Run returns a core.ResourceOutput, whose Value is a cty.Value
 // representation of the bubbly server's response to the q.Spec.Query string
-func (q *Query) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+func (q *Query) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, q.SpecHCL.Body, &q.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			ID:     q.String(),
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, q.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
 
-	c, err := client.New(bCtx)
+	queryVal, err := common.QueryToCtyValue(bCtx, ctx, q.Spec.Query)
 	if err != nil {
 		return core.ResourceOutput{
-			ID:     q.String(),
-			Status: events.ResourceApplyFailure,
-			Error:  fmt.Errorf("failed to establish bubbly client: %w", err),
-
-			Value: cty.NilVal,
-		}
-	}
-	defer c.Close()
-
-	// run the query against the bubbly store
-	byteRes, err := c.Query(bCtx, ctx.Auth, q.Spec.Query)
-	if err != nil {
-		return core.ResourceOutput{
-			ID:     q.String(),
-			Status: events.ResourceApplyFailure,
-			Error:  fmt.Errorf(`failed while running query "%s": %w`, q.Spec.Query, err),
+			ID:     q.ID(),
+			Status: events.ResourceRunFailure,
+			Error:  err,
 			Value:  cty.NilVal,
 		}
 	}
 
-	// TODO: comment because produces SOOO MUCH NOISE...
-	// bCtx.Logger.Debug().RawJSON("response", byteRes).Msg("received query response from bubbly server")
-
-	// because the return from the bubbly server
-	// is simply a []byte representation of the graphql-go
-	// interface{} response, we can convert it directly to a
-	// cty.StringVal for use as core.ResourceOutput.Value
-	strNormalized := cty.NormalizeString(string(byteRes))
-
-	cVal := cty.StringVal(strNormalized)
-
 	return core.ResourceOutput{
 		ID:     q.String(),
-		Status: events.ResourceApplySuccess,
+		Status: events.ResourceRunSuccess,
 		Error:  nil,
-		Value:  cVal,
+		Value:  queryVal,
 	}
-}
-
-func (q *Query) SpecValue() core.ResourceSpec {
-	return &q.Spec
 }
 
 type querySpec struct {

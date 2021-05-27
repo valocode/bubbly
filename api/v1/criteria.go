@@ -1,21 +1,17 @@
 package v1
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/graphql-go/graphql"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/valocode/bubbly/api/common"
 	"github.com/valocode/bubbly/api/core"
-	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/events"
 	"github.com/valocode/bubbly/parser"
 
 	"github.com/zclconf/go-cty/cty"
-	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
 var _ core.Criteria = (*Criteria)(nil)
@@ -31,10 +27,10 @@ func NewCriteria(resBlock *core.ResourceBlock) *Criteria {
 	}
 }
 
-// Apply returns a core.ResourceOutput, whose Value is a cty.Object created from
+// Run returns a core.ResourceOutput, whose Value is a cty.Object created from
 // core.CriteriaOutput, which specifies the result (pass/fail) and a possible
 // reason for the failure
-func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+func (c *Criteria) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBodyWithInputs(bCtx, c.SpecHCL.Body, &c.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			ID:     c.ID(),
@@ -44,7 +40,7 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		}
 	}
 
-	queryVal, err := c.queryToCtyValue(bCtx, ctx)
+	queryVal, err := common.QueryToCtyValue(bCtx, ctx, c.Spec.Query)
 	if err != nil {
 		return core.ResourceOutput{
 			ID:     c.ID(),
@@ -110,57 +106,6 @@ func (c *Criteria) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		Status: events.ResourceRunSuccess,
 		Value:  ctyResult,
 	}
-}
-func (c *Criteria) SpecValue() core.ResourceSpec {
-	return &c.Spec
-}
-
-// queryToCtyValue executes the criteria query and creates a cty.Value containing
-// the results, which can then be used to evaluate the criteria conditions
-func (c *Criteria) queryToCtyValue(bCtx *env.BubblyContext, ctx *core.ResourceContext) (cty.Value, error) {
-	client, err := client.New(bCtx)
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("error creating bubbly client: %w", err)
-	}
-	defer client.Close()
-
-	bytes, err := client.Query(bCtx, ctx.Auth, c.Spec.Query)
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("error executing query: %w", err)
-	}
-
-	var result graphql.Result
-	if err := json.Unmarshal(bytes, &result); err != nil {
-		return cty.NilVal, fmt.Errorf("error unmarshalling query result: %w", err)
-	}
-	if result.HasErrors() {
-		return cty.NilVal, fmt.Errorf("received errors from query: %v", result.Errors)
-	}
-
-	// Operation: we are given a result from the GraphQL query, which comes as
-	// an interface{} but is a map[string]interface{}. The structure of the map
-	// and slices therein, depends on the GraphQL query and also the bubbly
-	// schema that has been applied.
-	// This data needs to be converted into a cty.Value so that the conditions
-	// for this criteria can be evaluated.
-	// Right now the easiest way seems to be to get the implied type using JSON,
-	// but this has limitations/implications... such as missing values in JSON
-	// may lead to the wrong type. Probably we need to write some of our own
-	// logic here in the future, or have the ability to create a cty.Type from
-	// the GraphQL query and Bubbly schema. Anyway, until such an issue arises...
-	dBytes, err := json.Marshal(result.Data)
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("error marshalling query result data: %w", err)
-	}
-	dType, err := ctyjson.ImpliedType(dBytes)
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("could not imply type from query result: %w", err)
-	}
-	queryVal, err := ctyjson.Unmarshal(dBytes, dType)
-	if err != nil {
-		return cty.NilVal, fmt.Errorf("could not unmarshal result data into cty value: %w", err)
-	}
-	return queryVal, nil
 }
 
 type criteriaSpec struct {

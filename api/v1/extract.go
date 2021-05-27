@@ -46,20 +46,20 @@ func NewExtract(resBlock *core.ResourceBlock) *Extract {
 	}
 }
 
-// Apply returns the output from applying a resource
-func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+// Run returns the output from applying a resource
+func (e *Extract) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 
 	if err := e.decode(bCtx, ctx); err != nil {
 		return core.ResourceOutput{
 			ID:     e.String(),
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf("failed to decode resource %s: %w", e.String(), err),
 		}
 	}
 
 	if e == nil {
 		return core.ResourceOutput{
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  errors.New("cannot get output of a null extract"),
 			Value:  cty.NilVal,
 		}
@@ -67,7 +67,7 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 
 	if e.Spec.Source == nil {
 		return core.ResourceOutput{
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  errors.New("cannot get output of an extract with null source"),
 			Value:  cty.NilVal,
 		}
@@ -75,7 +75,7 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 
 	if len(e.Spec.Source) == 0 {
 		return core.ResourceOutput{
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  errors.New("cannot get output of an extract with no source"),
 			Value:  cty.NilVal,
 		}
@@ -87,7 +87,7 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 		if err != nil {
 			return core.ResourceOutput{
 				ID:     e.String(),
-				Status: events.ResourceApplyFailure,
+				Status: events.ResourceRunFailure,
 				Error:  fmt.Errorf("failed to resolve extract source: %w", err),
 				Value:  cty.NilVal,
 			}
@@ -104,7 +104,7 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 	case 0:
 		return core.ResourceOutput{
 			ID:     e.String(),
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf("failed to resolve extract source: no sources defined"),
 			Value:  cty.NilVal,
 		}
@@ -116,15 +116,10 @@ func (e *Extract) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core
 
 	return core.ResourceOutput{
 		ID:     e.String(),
-		Status: events.ResourceApplySuccess,
+		Status: events.ResourceRunSuccess,
 		Error:  nil,
 		Value:  val,
 	}
-}
-
-// SpecValue method returns resource specification structure
-func (e *Extract) SpecValue() core.ResourceSpec {
-	return &e.Spec
 }
 
 // set{*}SourceDefaults are the initialisers for some types of Source(s),
@@ -273,10 +268,6 @@ func (e *Extract) decode(bCtx *env.BubblyContext, ctx *core.ResourceContext) err
 	}
 	return nil
 }
-
-var _ core.ResourceSpec = (*extractSpec)(nil)
-
-// FIXME source should be public because Data in Transform is public?!
 
 // SourceBlocks stores the HCL for the `source` block in `extract` type resource
 type SourceBlocks []source

@@ -10,17 +10,18 @@ import (
 	"github.com/valocode/bubbly/env"
 )
 
-// LoadResourceOutput sends a ResourceOutput to the store for saving
-func LoadResourceOutput(bCtx *env.BubblyContext, resourceOutput *core.ResourceOutput, auth *component.MessageAuth) error {
+// LogResourceRun sends an event to the bubbly store containing the
+// ResourceOuput from a resource that has been run. In short, log a resource run
+func LogResourceRun(bCtx *env.BubblyContext, resourceOutput core.ResourceOutput, auth *component.MessageAuth) error {
 	c, err := client.New(bCtx)
 	if err != nil {
 		return fmt.Errorf("failed to initialize the bubbly client: %w", err)
 	}
 	defer c.Close()
 
-	dataBlocks, err := resourceOutput.DataBlocks()
+	dataBlocks, err := resourceOutput.EventData()
 	if err != nil {
-		return fmt.Errorf("failed to construct datablocks from provided ResourceOutput: %w", err)
+		return fmt.Errorf("error creating event data for resource output: %w", err)
 	}
 	dBytes, err := json.Marshal(dataBlocks)
 	if err != nil {

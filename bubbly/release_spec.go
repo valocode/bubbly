@@ -578,5 +578,5 @@ func (r *resourceRun) Run(bCtx *env.BubblyContext, dataCtx core.DataBlocks) (cor
 	ctx := core.NewResourceContext(cty.NilVal, api.NewResource, nil)
 	// Add the data block containing the release into the context
 	ctx.DataBlocks = dataCtx
-	return common.RunResource(bCtx, ctx, r.Resource, r.Inputs.Value())
+	return common.RunResourceByID(bCtx, ctx, r.Resource, r.Inputs.Value())
 }

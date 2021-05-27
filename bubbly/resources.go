@@ -8,7 +8,6 @@ import (
 	"github.com/valocode/bubbly/api/core"
 	v1 "github.com/valocode/bubbly/api/v1"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/events"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -33,6 +32,8 @@ func runResources(bCtx *env.BubblyContext, allResources []core.Resource) error {
 		resources := resourcesByKind(allResources, kind)
 		for _, resource := range resources {
 
+			// TODO: there must be a nicer/easier place to check if the remote_run
+			// property is set for a resource run
 			if kind == core.RunResourceKind {
 				r := resource.(*v1.Run)
 
@@ -51,35 +52,10 @@ func runResources(bCtx *env.BubblyContext, allResources []core.Resource) error {
 			}
 
 			bCtx.Logger.Debug().Msgf("Running resource %s ...", resource.String())
-			subResourceOutput := resource.Apply(
-				bCtx,
-				core.NewResourceContext(cty.NilVal, api.NewResource, nil),
-			)
-
-			runResourceOutput := core.ResourceOutput{
-				ID:     resource.String(),
-				Status: events.ResourceRunSuccess,
-				Error:  nil,
-			}
-
-			// if any child resource of the run resource has failed, then
-			// mark the run resource has failed and attach the error message
-			if subResourceOutput.Error != nil {
-				runResourceOutput.Status = events.ResourceRunFailure
-				runResourceOutput.Error = fmt.Errorf(`failed to run resource "%s": %w`, resource.String(), subResourceOutput.Error)
-			}
-
-			// load the output of the run resource to the event store
-			if err := common.LoadResourceOutput(bCtx, &runResourceOutput, nil); err != nil {
-				return fmt.Errorf(
-					`failed to store the output of running resource "%s" to the store: %w`,
-					resource.String(),
-					err,
-				)
-			}
-
-			if runResourceOutput.Error != nil {
-				return runResourceOutput.Error
+			ctx := core.NewResourceContext(cty.NilVal, api.NewResource, nil)
+			output := common.RunResource(bCtx, ctx, resource, cty.NilVal)
+			if output.Error != nil {
+				return output.Error
 			}
 		}
 	}

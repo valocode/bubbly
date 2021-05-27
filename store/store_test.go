@@ -1035,13 +1035,12 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 	// check that we can load a resourceOutput to the store
 	resOutput := core.ResourceOutput{
 		ID:     "kind/name",
-		Status: events.ResourceApplyFailure,
+		Status: events.ResourceRunFailure,
 		Error:  errors.New("cannot get output of a null extract"),
 		Value:  cty.NilVal,
 	}
 
-	dataBlocks, err := resOutput.DataBlocks()
-
+	dataBlocks, err := resOutput.EventData()
 	require.NoError(t, err)
 
 	err = s.Save(DefaultTenantName, dataBlocks)
