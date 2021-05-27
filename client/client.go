@@ -27,6 +27,8 @@ type Client interface {
 	Load(*env.BubblyContext, *component.MessageAuth, []byte) error
 	// GraphQL Queries
 	Query(*env.BubblyContext, *component.MessageAuth, string) ([]byte, error)
+	// GraphQL Queries
+	QueryType(*env.BubblyContext, *component.MessageAuth, string, interface{}) error
 	// Applying a schema
 	PostSchema(*env.BubblyContext, *component.MessageAuth, []byte) error
 	// Creates a tenant in the store. Only applicable to NATS
