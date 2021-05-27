@@ -184,8 +184,8 @@ func TestApplyRun(t *testing.T) {
 
 			time.Sleep(2 * time.Second)
 			r := getResource(t, bCtx, id)
-
-			latestEvent := r.Events[len(r.Events)-1]
+			assert.NotEmpty(t, r.Events)
+			latestEvent := r.Events[0]
 
 			// if the Worker is enabled with remote running, then we expect it to have
 			// run the resource successfully
@@ -216,8 +216,8 @@ func TestApplyRun(t *testing.T) {
 
 			time.Sleep(2 * time.Second)
 			r := getResource(t, bCtx, id)
-
-			latestEvent := r.Events[len(r.Events)-1]
+			assert.NotEmpty(t, r.Events)
+			latestEvent := r.Events[0]
 
 			// the run should fail, because the file uploaded is not a valid input
 			// to the resource
@@ -247,8 +247,8 @@ func TestApplyRun(t *testing.T) {
 
 			time.Sleep(2 * time.Second)
 			r := getResource(t, bCtx, id)
-
-			latestEvent := r.Events[len(r.Events)-1]
+			assert.NotEmpty(t, r.Events)
+			latestEvent := r.Events[0]
 
 			// the run should succeed, because the .zip file uploaded contains the
 			// json file required by the run resource
@@ -264,7 +264,7 @@ func getResource(t *testing.T, bCtx *env.BubblyContext, id string) bubbly.Resour
 			{
 				%s(%s: "%s") {
 					id
-					%s {
+					%s(order_by:{_id: "DESC"}, limit: 1) {
 						status
 						time
 						error
