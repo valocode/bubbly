@@ -21,10 +21,7 @@ func GetRelease(bCtx *env.BubblyContext, filename string) (*builtin.Release, err
 	// release_entry for one release_criteria
 	releaseQuery := `
 {
-	release(
-		name: "%s", version: "%s",
-		order_by:[{table: "release_entry", field: "_id", order: "DESC"}],
-		) {
+	release(name: "%s", version: "%s") {
 		name
 		version
 		project(id: "%s") {
@@ -43,7 +40,7 @@ func GetRelease(bCtx *env.BubblyContext, filename string) (*builtin.Release, err
 			name
 			release_criteria {
 				entry_name
-				release_entry {
+				release_entry(order_by:{_id: "DESC"}, limit: 1) {
 					result
 					reason
 				}
