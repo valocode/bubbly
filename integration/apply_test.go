@@ -125,7 +125,7 @@ func TestApplyRun(t *testing.T) {
 			{
 				%s(%s: "%s") {
 					id
-					%s {
+					%s (last: 1){
 						status
 						time
 						error
@@ -263,7 +263,7 @@ func getResource(t *testing.T, bCtx *env.BubblyContext, id string) builtin.Resou
 			{
 				%s(%s: "%s") {
 					id
-					%s(order_by:{_id: "DESC"}, limit: 1) {
+					%s(last: 1) {
 						status
 						time
 						error
