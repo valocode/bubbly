@@ -16,9 +16,9 @@ import (
 	"github.com/valocode/bubbly/parser"
 )
 
-// RunResource takes a given resource id as string and ResourceContext, with
+// RunResourceByID takes a given resource ID as string and ResourceContext, with
 // the input values as cty.Value and runs the resource referenced by the id
-func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, inputs cty.Value) (core.Resource, core.ResourceOutput) {
+func RunResourceByID(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, inputs cty.Value) (core.Resource, core.ResourceOutput) {
 	resource, err := GetResource(bCtx, ctx, id)
 	if err != nil {
 		return nil, core.ResourceOutput{
@@ -27,8 +27,28 @@ func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, id string, 
 			Error:  err,
 		}
 	}
+	return resource, RunResource(bCtx, ctx, resource, inputs)
+}
+
+// RunResource takes a given resource and ResourceContext, with
+// the input values as cty.Value and runs the resource referenced by the id
+func RunResource(bCtx *env.BubblyContext, ctx *core.ResourceContext, resource core.SubResource, inputs cty.Value) core.ResourceOutput {
 	runCtx := core.SubResourceContext(inputs, ctx)
-	return resource, resource.Apply(bCtx, runCtx)
+	output := resource.Run(bCtx, runCtx)
+	// Log the resource run as an event.
+	// We don't want to fail the entire process if the logging of an event fails
+	// so we should just log the error to the console and continue
+	bCtx.Logger.Debug().
+		Str("resource_id", output.ID).
+		Str("status", output.Status.String()).
+		Msg("logging resource run event")
+	if err := LogResourceRun(bCtx, output, ctx.Auth); err != nil {
+		bCtx.Logger.Error().
+			Err(err).
+			Str("resource_id", output.ID).
+			Msg("error logging resource output event")
+	}
+	return output
 }
 
 // GetResource is used by resources that reference other resources (such as

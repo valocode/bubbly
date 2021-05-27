@@ -24,23 +24,31 @@ func NewRun(resBlock *core.ResourceBlock) *Run {
 	}
 }
 
-func (p *Run) SpecValue() core.ResourceSpec {
-	return &p.Spec
-}
-
-// Apply returns ...
-func (p *Run) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+// Run returns ...
+func (p *Run) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, p.SpecHCL.Body, &p.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			ID:     p.String(),
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, p.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
 
-	_, output := common.RunResource(bCtx, ctx, p.Spec.ResourceID, p.Spec.Inputs.Value())
-	return output
+	_, output := common.RunResourceByID(bCtx, ctx, p.Spec.ResourceID, p.Spec.Inputs.Value())
+	if output.Error != nil {
+		return core.ResourceOutput{
+			ID:     p.String(),
+			Status: events.ResourceRunFailure,
+			Error:  fmt.Errorf("run failed for resource %s: %w", p.Spec.ResourceID, output.Error),
+			Value:  cty.NilVal,
+		}
+	}
+	return core.ResourceOutput{
+		ID:     p.String(),
+		Status: events.ResourceRunSuccess,
+		Value:  cty.NilVal,
+	}
 }
 
 type runSpec struct {

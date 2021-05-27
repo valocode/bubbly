@@ -20,6 +20,7 @@ import (
 
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/bubbly"
+	"github.com/valocode/bubbly/bubbly/builtin"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/events"
 	integration "github.com/valocode/bubbly/integration/testdata"
@@ -139,16 +140,14 @@ func TestApplyRun(t *testing.T) {
 		time.Sleep(2 * time.Second)
 
 		resources, err := bubbly.QueryResources(bCtx, getQuery)
-
 		require.NoError(t, err)
 
 		r := resources[0]
-
-		latestEvent := r.Events[len(r.Events)-1]
+		latestEvent := r.Event[len(r.Event)-1]
 
 		// if the Worker is enabled with remote running, then we expect it to have
 		// run the resource successfully
-		require.Equal(t, events.ResourceRunSuccess.String(), latestEvent.Status, latestEvent.Error)
+		require.Equal(t, events.ResourceRunSuccess.String(), latestEvent.Status)
 	})
 	t.Run("remote_run_with_remote_input", func(t *testing.T) {
 		bCtx := env.NewBubblyContext()
@@ -184,8 +183,8 @@ func TestApplyRun(t *testing.T) {
 
 			time.Sleep(2 * time.Second)
 			r := getResource(t, bCtx, id)
-			assert.NotEmpty(t, r.Events)
-			latestEvent := r.Events[0]
+			assert.NotEmpty(t, r.Event)
+			latestEvent := r.Event[0]
 
 			// if the Worker is enabled with remote running, then we expect it to have
 			// run the resource successfully
@@ -216,8 +215,8 @@ func TestApplyRun(t *testing.T) {
 
 			time.Sleep(2 * time.Second)
 			r := getResource(t, bCtx, id)
-			assert.NotEmpty(t, r.Events)
-			latestEvent := r.Events[0]
+			assert.NotEmpty(t, r.Event)
+			latestEvent := r.Event[0]
 
 			// the run should fail, because the file uploaded is not a valid input
 			// to the resource
@@ -247,8 +246,8 @@ func TestApplyRun(t *testing.T) {
 
 			time.Sleep(2 * time.Second)
 			r := getResource(t, bCtx, id)
-			assert.NotEmpty(t, r.Events)
-			latestEvent := r.Events[0]
+			assert.NotEmpty(t, r.Event)
+			latestEvent := r.Event[0]
 
 			// the run should succeed, because the .zip file uploaded contains the
 			// json file required by the run resource
@@ -257,8 +256,8 @@ func TestApplyRun(t *testing.T) {
 	})
 }
 
-// helper function to get a bubbly.Resource, by id, from Bubbly via a graphQL query
-func getResource(t *testing.T, bCtx *env.BubblyContext, id string) bubbly.Resource {
+// helper function to get a builtin.Resource, by id, from Bubbly via a graphQL query
+func getResource(t *testing.T, bCtx *env.BubblyContext, id string) builtin.Resource {
 	t.Helper()
 	getQuery := fmt.Sprintf(`
 			{
@@ -275,9 +274,7 @@ func getResource(t *testing.T, bCtx *env.BubblyContext, id string) bubbly.Resour
 		core.EventTableName)
 
 	resources, err := bubbly.QueryResources(bCtx, getQuery)
-
 	require.NoError(t, err)
-	require.Len(t, resources, 1)
 
 	return resources[0]
 }

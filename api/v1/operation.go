@@ -31,13 +31,13 @@ func NewOperation(operationBlock *operationBlockSpec) *Operation {
 	}
 }
 
-// Apply returns the output from the decoding of the operation's hcl.Body into
+// Run returns the output from the decoding of the operation's hcl.Body into
 // an Operation struct. Namely, the o.Value, which represents the final
 // criteria's return value
-func (o *Operation) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+func (o *Operation) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, o.operationBlockSpec.Body, o, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf(`failed to decode operation "%s" body spec: %s`, o.Name(), err.Error()),
 			Value:  cty.NilVal,
 		}
@@ -45,14 +45,14 @@ func (o *Operation) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) co
 
 	if o.Value == cty.BoolVal(false) {
 		return core.ResourceOutput{
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  nil,
 			Value:  o.Value,
 		}
 	}
 
 	return core.ResourceOutput{
-		Status: events.ResourceApplySuccess,
+		Status: events.ResourceRunSuccess,
 		Error:  nil,
 		Value:  o.Value,
 	}

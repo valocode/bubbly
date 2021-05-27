@@ -32,17 +32,17 @@ func NewTask(taskBlock *taskBlockSpec) *Task {
 	}
 }
 
-// Apply returns the output from applying the task's underlying resource
-func (t *Task) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+// Run returns the output from applying the task's underlying resource
+func (t *Task) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, t.taskBlockSpec.Body, t, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf(`failed to decode task "%s" body spec: %s`, t.Name(), err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
 
-	_, output := common.RunResource(bCtx, ctx, t.ResourceID, t.Inputs.Value())
+	_, output := common.RunResourceByID(bCtx, ctx, t.ResourceID, t.Inputs.Value())
 	return output
 }
 

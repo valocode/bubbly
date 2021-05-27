@@ -20,11 +20,10 @@ type Resource interface {
 }
 
 type SubResource interface {
-	Apply(*env.BubblyContext, *ResourceContext) ResourceOutput
+	// Run is the method called when a Resource (or SubResource) is run.
+	// This can be considered the "main" function or entrypoint for a resource
+	Run(*env.BubblyContext, *ResourceContext) ResourceOutput
 }
-
-// ResourceSpec is the spec{} block inside a ResourceBlock
-type ResourceSpec interface{}
 
 // Extract interface is for any resources of type Extract
 type Extract interface {

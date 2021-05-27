@@ -31,19 +31,19 @@ func NewCondition(conditionBlock conditionBlockSpec) *Condition {
 	}
 }
 
-// Apply returns a core.ResourceOutput, whose Value is a cty.BoolVal indicating
+// Run returns a core.ResourceOutput, whose Value is a cty.BoolVal indicating
 // success of failure of the condition
-func (c *Condition) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+func (c *Condition) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBody(bCtx, c.conditionBlockSpec.Body, c, ctx); err != nil {
 		return core.ResourceOutput{
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf(`failed to decode condition "%s" body spec: %s`, c.Name, err.Error()),
 			Value:  cty.NilVal,
 		}
 	}
 
 	return core.ResourceOutput{
-		Status: events.ResourceApplySuccess,
+		Status: events.ResourceRunSuccess,
 		Error:  nil,
 		Value:  c.Value,
 	}

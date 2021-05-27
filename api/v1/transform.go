@@ -25,12 +25,12 @@ func NewTransform(resBlock *core.ResourceBlock) *Transform {
 	}
 }
 
-// Apply returns ...
-func (t *Transform) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+// Run returns ...
+func (t *Transform) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 	if err := common.DecodeBodyWithInputs(bCtx, t.SpecHCL.Body, &t.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			ID:     t.String(),
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, t.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
@@ -40,14 +40,14 @@ func (t *Transform) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) co
 	if err != nil {
 		return core.ResourceOutput{
 			ID:     t.String(),
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  err,
 			Value:  cty.NilVal,
 		}
 	}
 	return core.ResourceOutput{
 		ID:     t.String(),
-		Status: events.ResourceApplySuccess,
+		Status: events.ResourceRunSuccess,
 		Error:  nil,
 		Value:  cty.StringVal(string(json)),
 	}
@@ -58,10 +58,6 @@ func (t *Transform) toJSON() ([]byte, error) {
 		return nil, fmt.Errorf("transform %s has not output data", t.String())
 	}
 	return json.Marshal(t.Spec.Data)
-}
-
-func (t *Transform) SpecValue() core.ResourceSpec {
-	return &t.Spec
 }
 
 type transformSpec struct {

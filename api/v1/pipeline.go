@@ -26,17 +26,13 @@ func NewPipeline(resBlock *core.ResourceBlock) *Pipeline {
 	}
 }
 
-func (p *Pipeline) SpecValue() core.ResourceSpec {
-	return &p.Spec
-}
-
-// Apply returns ...
-func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
+// Run returns ...
+func (p *Pipeline) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.ResourceOutput {
 
 	if err := common.DecodeBodyWithInputs(bCtx, p.SpecHCL.Body, &p.Spec, ctx); err != nil {
 		return core.ResourceOutput{
 			ID:     p.String(),
-			Status: events.ResourceApplyFailure,
+			Status: events.ResourceRunFailure,
 			Error:  fmt.Errorf(`failed to decode "%s" body spec: %s`, p.String(), err.Error()),
 			Value:  cty.NilVal,
 		}
@@ -49,11 +45,11 @@ func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 		// create the run ResourceContext for the SubResource to apply
 		inputs := core.AppendInputObjects(ctx.State.ValueWithPath([]string{"task"}), ctx.Inputs)
 		runCtx := core.SubResourceContext(inputs, ctx)
-		output := t.Apply(bCtx, runCtx)
+		output := common.RunResource(bCtx, runCtx, t, inputs)
 		if output.Error != nil {
 			return core.ResourceOutput{
 				ID:     p.String(),
-				Status: events.ResourceApplyFailure,
+				Status: events.ResourceRunFailure,
 				Error:  fmt.Errorf(`failed to apply task "%s" with index %d in pipeline "%s": %w"`, taskSpec.Name, idx, p.String(), output.Error),
 				Value:  cty.NilVal,
 			}
@@ -67,7 +63,7 @@ func (p *Pipeline) Apply(bCtx *env.BubblyContext, ctx *core.ResourceContext) cor
 
 	return core.ResourceOutput{
 		ID:     p.String(),
-		Status: events.ResourceApplySuccess,
+		Status: events.ResourceRunSuccess,
 		Error:  nil,
 		Value:  cty.NilVal,
 	}

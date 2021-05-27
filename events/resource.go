@@ -12,8 +12,6 @@ type Status int
 const (
 	ResourceCreatedUpdated Status = iota // store V1 does not distinguish between these two lifecycle states
 	ResourceDestroyed
-	ResourceApplySuccess
-	ResourceApplyFailure
 	ResourceRunSuccess
 	ResourceRunFailure
 )
@@ -22,8 +20,6 @@ func (s Status) String() string {
 	return [...]string{
 		"Created/Updated",
 		"Destroyed",
-		"ApplySuccess",
-		"ApplyFailure",
 		"RunSuccess",
 		"RunFailure"}[s]
 }

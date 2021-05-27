@@ -45,10 +45,10 @@ func (r *ResourceOutput) Output() cty.Value {
 	)
 }
 
-// DataBlocks produces a core.DataBlocks type of this resource.
+// EventData produces a core.DataBlocks of an event for the ResourceOutput.
 // We use DataBlocks in place of Data as two Data objects are required to save
 // data to the _event table
-func (r *ResourceOutput) DataBlocks() (DataBlocks, error) {
+func (r *ResourceOutput) EventData() (DataBlocks, error) {
 
 	// The resourceID is needed in order to construct the join to the
 	// _resource table
@@ -56,31 +56,32 @@ func (r *ResourceOutput) DataBlocks() (DataBlocks, error) {
 		return nil, errors.New("unsafe to produce datablocks from ResourceOutput due to missing ID")
 	}
 
-	// this data represents the join; how we connect the
-	// ResourceOutput to a resource stored in the _resource table
-	joinData := Data{
-		TableName: ResourceTableName,
-		Fields: DataFields{
-			"id": cty.StringVal(r.ID),
-		},
+	var errorMsg string
+	if r.Error != nil {
+		errorMsg = r.Error.Error()
 	}
 
 	// this data represents the data saved to the _event store
-	eventData := Data{
-		TableName: EventTableName,
-		Fields: map[string]cty.Value{
-			"status": cty.StringVal(r.Status.String()),
-			"time":   cty.StringVal(events.TimeNow()),
-			"error":  cty.StringVal(""),
+	return DataBlocks{
+		Data{
+			// Reference the Resource data block so that we can join to it
+			TableName: ResourceTableName,
+			Fields: DataFields{
+				"id": cty.StringVal(r.ID),
+			},
+			Policy: ReferencePolicy,
 		},
-		Joins: []string{ResourceTableName},
-	}
-
-	if r.Error != nil {
-		eventData.Fields["error"] = cty.StringVal(r.Error.Error())
-	}
-
-	return DataBlocks{joinData, eventData}, nil
+		Data{
+			// Create the actual event
+			TableName: EventTableName,
+			Fields: map[string]cty.Value{
+				"status": cty.StringVal(r.Status.String()),
+				"time":   cty.StringVal(events.TimeNow()),
+				"error":  cty.StringVal(errorMsg),
+			},
+			Joins: []string{ResourceTableName},
+		},
+	}, nil
 }
 
 // CriteriaResult defines the output from a criteria.
