@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/graphql-go/graphql"
 	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/env"
 )
@@ -17,7 +18,34 @@ import (
 // request if successful
 // Returns an error if querying was unsuccessful
 func (c *httpClient) Query(bCtx *env.BubblyContext, _ *component.MessageAuth, query string) ([]byte, error) {
+	body, err := c.doQuery(bCtx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer body.Close()
 
+	return io.ReadAll(body)
+}
+
+func (c *httpClient) QueryType(bCtx *env.BubblyContext, _ *component.MessageAuth, query string, ptr interface{}) error {
+	body, err := c.doQuery(bCtx, query)
+	if err != nil {
+		return err
+	}
+	var result graphql.Result
+	// Assign the ptr to Data so that it gets unmarshalled automatically
+	result.Data = ptr
+	if err := json.NewDecoder(body).Decode(&result); err != nil {
+		return fmt.Errorf("error decoding GraphQL result: %w", err)
+	}
+	// TODO: make errors a bit nicer
+	if result.HasErrors() {
+		return fmt.Errorf("graphql returned errors: %v", result.Errors)
+	}
+	return nil
+}
+
+func (c *httpClient) doQuery(bCtx *env.BubblyContext, query string) (io.ReadCloser, error) {
 	// We must wrap the data with a "query" key such that it can be
 	// unmarshalled correctly by server.Query into a queryReq
 	queryData := map[string]string{
@@ -33,14 +61,33 @@ func (c *httpClient) Query(bCtx *env.BubblyContext, _ *component.MessageAuth, qu
 	if err != nil {
 		return nil, fmt.Errorf("failed to make %s request for query: %w", http.MethodPost, err)
 	}
-
-	defer resp.Body.Close()
-
-	return io.ReadAll(resp.Body)
+	return resp.Body, nil
 }
 
 func (n *natsClient) Query(bCtx *env.BubblyContext, auth *component.MessageAuth, query string) ([]byte, error) {
+	return n.doQuery(bCtx, auth, query)
+}
 
+func (n *natsClient) QueryType(bCtx *env.BubblyContext, auth *component.MessageAuth, query string, ptr interface{}) error {
+	body, err := n.doQuery(bCtx, auth, query)
+	if err != nil {
+		return err
+	}
+
+	var result graphql.Result
+	// Assign the ptr to Data so that it gets unmarshalled automatically
+	result.Data = ptr
+	if err := json.Unmarshal(body, &result); err != nil {
+		return fmt.Errorf("error decoding GraphQL result: %w", err)
+	}
+	// TODO: make errors a bit nicer
+	if result.HasErrors() {
+		return fmt.Errorf("graphql returned errors: %v", result.Errors)
+	}
+	return nil
+}
+
+func (n *natsClient) doQuery(bCtx *env.BubblyContext, auth *component.MessageAuth, query string) ([]byte, error) {
 	req := &component.Request{
 		Subject: component.StoreQuery,
 		Data: component.MessageData{
@@ -55,6 +102,5 @@ func (n *natsClient) Query(bCtx *env.BubblyContext, auth *component.MessageAuth,
 	if req.Reply.Error != "" {
 		return nil, fmt.Errorf("NATS client failed to query: %s", req.Reply.Error)
 	}
-
 	return req.Reply.Data, nil
 }

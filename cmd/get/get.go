@@ -8,9 +8,8 @@ import (
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 
-	"github.com/valocode/bubbly/api/core"
-	"github.com/valocode/bubbly/bubbly"
 	"github.com/valocode/bubbly/bubbly/builtin"
+	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/cmd/util"
 	cmdutil "github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/env"
@@ -48,13 +47,14 @@ type GetOptions struct {
 	bCtx    *env.BubblyContext
 	Command string
 	Args    []string
+	arg     string
 
 	// flags
-	events bool
+	showEvents bool
 
 	// resolved
-	query     string
 	resources []builtin.Resource
+	events    []builtin.Event
 }
 
 // NewCmdGet creates a new cobra.Command representing "bubbly get"
@@ -70,40 +70,30 @@ func NewCmdGet(bCtx *env.BubblyContext) (*cobra.Command, *GetOptions) {
 		Short:   "Display one or many bubbly resources",
 		Long:    getLong + "\n\n",
 		Example: getExample,
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.Args = args
+			o.arg = args[0]
 
-			validationError := o.Validate(cmd)
-
-			if validationError != nil {
-				return validationError
+			if err := o.Validate(cmd); err != nil {
+				return err
 			}
 
-			resolveError := o.Resolve()
-
-			if resolveError != nil {
-				return resolveError
+			if err := o.Resolve(); err != nil {
+				return err
 			}
 
-			bCtx.Logger.Debug().
-				Str("query", o.query).
-				Msg("getting resources matching query")
-
-			runError := o.Run()
-
-			if runError != nil {
+			if runError := o.Run(); runError != nil {
 				return runError
 			}
-
 			o.Print()
-
 			return nil
 		},
 	}
 
 	f := cmd.Flags()
 
-	f.BoolVarP(&o.events,
+	f.BoolVarP(&o.showEvents,
 		"events",
 		"e",
 		false,
@@ -114,36 +104,111 @@ func NewCmdGet(bCtx *env.BubblyContext) (*cobra.Command, *GetOptions) {
 
 // Validate checks the GetOptions to see if there is sufficient information run the command.
 func (o *GetOptions) Validate(cmd *cobra.Command) error {
-	// if no arguments are provided, error, as bubbly cannot reasonably conclude
-	// the desired collection of resources to query for
-	if len(o.Args) != 1 {
-		return cmdutil.UsageErrorf(cmd, "Unexpected args: %v", o.Args)
-	}
-
 	return nil
 }
 
 // Resolve resolves various GetOptions attributes from the provided arguments to cmd
 func (o *GetOptions) Resolve() error {
-
-	o.query = formGetQuery(o.Args[0])
-
 	return nil
 }
 
 // Run runs the get command over the validated GetOptions configuration
 func (o *GetOptions) Run() error {
-	resources, err := bubbly.QueryResources(o.bCtx, o.query)
 
+	var (
+		resourceFilter string
+		resourceQuery  string
+		eventQuery     string
+		resWrap        builtin.Resource_Wrap
+		eventWrap      builtin.Event_Wrap
+	)
+
+	client, err := client.New(o.bCtx)
 	if err != nil {
-		switch err {
-		case bubbly.ErrNoResourcesFound:
-			return fmt.Errorf("no resources found")
-		default:
-			return fmt.Errorf("failed to query for resources: %w", err)
+		return fmt.Errorf("error creating bubbly client: %w", err)
+	}
+
+	switch {
+	case o.arg == "all":
+		resourceFilter = "last: 20"
+	case strings.ContainsAny(o.arg, "/"):
+		resourceFilter = "(id: \"" + o.arg + "\")"
+	default:
+		resourceFilter = "(kind: \"" + o.arg + "\")"
+	}
+	resourceQuery = fmt.Sprintf(`
+	{
+		_resource(%s) {
+			id
+			_event(last: 1) {
+				status
+				time
+			}
 		}
 	}
-	o.resources = resources
+	`, resourceFilter)
+
+	o.bCtx.Logger.Debug().
+		Str("query", resourceQuery).
+		Msg("getting resources matching query")
+
+	if err := client.QueryType(o.bCtx, nil, resourceQuery, &resWrap); err != nil {
+		return fmt.Errorf("error executing query: %w", err)
+	}
+	o.resources = resWrap.Resource
+
+	// Handle events
+
+	eventQuery = `
+	{
+		_event(last: 20, order_by: {time: desc}) {
+			status
+			time
+			error
+			_resource {
+				id
+			}
+		}
+	}
+	`
+
+	if o.showEvents {
+		o.bCtx.Logger.Debug().
+			Str("query", eventQuery).
+			Msg("getting events matching query")
+		if err := client.QueryType(o.bCtx, nil, eventQuery, &eventWrap); err != nil {
+			return fmt.Errorf("error executing query: %w", err)
+		}
+	}
+	o.events = eventWrap.Event
+
+	// // If we should show events, make sure we get the events
+	// if o.events {
+	// 	eventFilter = "last: 20"
+	// }
+
+	// if o.arg == "all" {
+	// 	resourceFilter = ""
+	// } else {
+	// 	if strings.ContainsAny(o.arg, "/") {
+	// 		resourceFilter = "(id: \"" + o.arg + "\")"
+	// 	} else {
+	// 		resourceFilter = "(kind: \"" + o.arg + "\")"
+	// 	}
+	// }
+
+	// query = fmt.Sprintf(`
+	// {
+	// 	_event(%s) {
+	// 		status
+	// 		time
+	// 		error
+	// 		_resource%s {
+	// 			id
+	// 		}
+	// 	}
+	// }`, eventFilter, resourceFilter)
+
 	return nil
 }
 
@@ -164,73 +229,19 @@ func (o *GetOptions) Print() {
 
 	var eventLines []string
 
-	if o.events {
+	if o.showEvents {
 		if o.bCtx.CLIConfig.Color {
 			color.Blue("\nEvents")
 		} else {
 			fmt.Println("\nEvents")
 		}
-		for _, r := range o.resources {
-			for _, e := range r.Event {
-				eventLines = append(eventLines, eventPrintLine(r.Id, e))
-			}
+		for _, e := range o.events {
+			eventLines = append(eventLines, eventPrintLine(e.Resource.Id, e))
 		}
 	}
 
 	fmt.Println(columnize.SimpleFormat(eventLines))
 
-}
-
-// formGetQuery construct the graphql query string to be sent to the bubbly
-// store.
-// TODO: consider usage of a query builder library
-func formGetQuery(input string) string {
-	var (
-		getArgument struct {
-			name  string
-			value string
-		}
-
-		getQuery string
-	)
-
-	if input == "all" {
-		getQuery = fmt.Sprintf(`
-			{
-				%s {
-					id
-					%s {
-						status
-						time
-						error
-					}
-				}
-			}
-		`, core.ResourceTableName, core.EventTableName)
-	} else {
-		if strings.ContainsAny(input, "/") {
-			getArgument.name = "id"
-		} else {
-			getArgument.name = "kind"
-		}
-		getArgument.value = input
-
-		getQuery = fmt.Sprintf(`
-			{
-				%s(%s: "%s", last: 10) {
-					id
-					%s {
-						status
-						time
-						error
-					}
-				}
-			}
-		`, core.ResourceTableName, getArgument.name, getArgument.value,
-			core.EventTableName)
-	}
-
-	return getQuery
 }
 
 // resourcePrintLine returns a formatted string representing the printout of
