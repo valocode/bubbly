@@ -360,6 +360,20 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 			return err
 		}
 
+		//
+		// SQL JOIN
+		//
+		// The next part we need to add to the query is the SQL JOIN.
+		// This is rather complex, as the current node SQL query needs to filter
+		// on the parent, and we don't know what the parent _id field is until
+		// we resolve it, which happens in it's own subquery.
+		// Fortunately, Postgres has a killer feature called *LATERAL* subqueries.
+		// Essentially, they let you refer to table columns on the left hand side
+		// of the query.
+		// This means we can resolve parent (on the left hand side) and then
+		// use the value of the parent table to resolve this node's subquery
+		// with a WHERE on the foreign key... Pretty sweet! (but complex)
+		//
 		var (
 			joinStr         string
 			lhsJoinOn       string
@@ -380,12 +394,15 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 			rhsJoinOn = tableColumn(leftTableAlias, foreignKeyField(rightTable))
 		}
 
+		// Add the WHERE condition for this subquery
+		nodeQuery = nodeQuery.Where(lhsJoinOn + " = " + rhsJoinOn)
+		// Generate the SQL query for this node
 		sqlStr, sqlArgs, err := nodeQuery.ToSql()
 		if err != nil {
 			return fmt.Errorf("error creating SQL query for node %s: %w", node.Table.Name, err)
 		}
 		sqlStr = " ( " + sqlStr + " ) AS " + rightTableAlias
-		joinStr = sqlStr + " ON ( " + lhsJoinOn + " = " + rhsJoinOn + " ) "
+		joinStr = "LATERAL " + sqlStr + " ON true"
 
 		if filterOn {
 			*sql = sql.InnerJoin(joinStr, sqlArgs...)
