@@ -135,6 +135,7 @@ var queryTests = []struct {
 		expected: map[string]interface{}{
 			"grandchild_a": []interface{}{
 				map[string]interface{}{
+					"name": "second_grandchild",
 					"child_a": map[string]interface{}{
 						"name": "first_child",
 						"grandchild_a": []interface{}{
@@ -146,7 +147,6 @@ var queryTests = []struct {
 							},
 						},
 					},
-					"name": "second_grandchild",
 				},
 			},
 		},
@@ -422,7 +422,7 @@ var sqlGenTests = []struct {
 		data:   "data5.hcl",
 		query: `
 		{
-			testrun(limit: 1) {
+			testrun(first: 1) {
 				configuration {
 					name
 				}
@@ -458,7 +458,7 @@ var sqlGenTests = []struct {
 		data:   "data5.hcl",
 		query: `
 		{
-			testrun(limit: 1) {
+			testrun(first: 1) {
 				ok
 				location(name: "Deep Dark Wood") {
 					name
@@ -494,7 +494,7 @@ var sqlGenTests = []struct {
 		data:   "data5.hcl",
 		query: `
 		{
-			testrun(limit: 1) {
+			testrun(first: 1) {
 				configuration {
 					name
 				}
@@ -517,16 +517,44 @@ var sqlGenTests = []struct {
 		},
 	},
 	{
+		name:   "graphql field order 4",
+		schema: "tables5.hcl",
+		data:   "data5.hcl",
+		query: `
+		{
+			testrun(last: 1) {
+				configuration {
+					name
+				}
+				location {
+					name
+				}
+			}
+		}`,
+		want: map[string]interface{}{
+			"testrun": []interface{}{
+				map[string]interface{}{
+					"location": map[string]interface{}{
+						"name": "Secret Underground Facility on the Moon",
+					},
+					"configuration": map[string]interface{}{
+						"name": "Magic",
+					},
+				},
+			},
+		},
+	},
+	{
 		name:   "graphql order_by 1",
 		schema: "tables5.hcl",
 		data:   "data5.hcl",
 		query: `
 		{
-			testrun(order_by: {_id: "DESC"}) {
-				configuration(order_by: {name: "DESC"}) {
+			testrun(order_by: {_id: desc}) {
+				configuration(order_by: {name: desc}) {
 					name
 				}
-				location(order_by: {name: "DESC"}) {
+				location(order_by: {name: desc}) {
 					name
 				}
 			}
@@ -572,7 +600,7 @@ var sqlGenTests = []struct {
 				distance_from_x
 				crew {
 					count
-					characters(order_by: {name: "ASC"}) {
+					characters(order_by: {name: asc}) {
 						name
 					}
 				}
@@ -620,7 +648,7 @@ var sqlGenTests = []struct {
 				distance_from_x
 				crew {
 					count
-					characters(order_by: {name: "DESC"}) {
+					characters(order_by: {name: desc}) {
 						name
 					}
 				}
@@ -662,13 +690,13 @@ var sqlGenTests = []struct {
 		data:   "data6.hcl",
 		query: `
 		{
-			hideaways(order_by: {location: "DESC"}){
+			hideaways(order_by: {location: desc}){
 				location
 				ready
 				distance_from_x
-				crew(order_by: {count: "DESC"}) {
+				crew(order_by: {count: desc}) {
 					count
-					characters(order_by: {name: "ASC"}) {
+					characters(order_by: {name: asc}) {
 						name
 					}
 				}
@@ -754,14 +782,14 @@ var sqlGenTests = []struct {
 		data:   "data7.hcl",
 		query: `
 		{
-			testrun(order_by: {finish_epoch: "DESC"}) {
-				configuration(order_by: {name: "ASC"}) {
+			testrun(order_by: {finish_epoch: desc}) {
+				configuration(order_by: {name: asc}) {
 					name
 				}
-				location(name: "Oliver's NEON workstation", order_by: {name: "ASC"}) {
+				location(name: "Oliver's NEON workstation", order_by: {name: asc}) {
 					name
 				}
-				version(order_by: {name: "ASC"}) {
+				version(order_by: {name: asc}) {
 					name
 				}
 				ok
@@ -819,8 +847,8 @@ var sqlGenTests = []struct {
 		query: `
 		{
 			events(
-				order_by: {timestamp: "DESC"},
-				limit: 2
+				order_by: {timestamp: desc},
+				last: 2
 			) {
 				timestamp
 			}

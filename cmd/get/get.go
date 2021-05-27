@@ -217,7 +217,7 @@ func formGetQuery(input string) string {
 
 		getQuery = fmt.Sprintf(`
 			{
-				%s(%s: "%s", limit: 10) {
+				%s(%s: "%s", last: 10) {
 					id
 					%s {
 						status

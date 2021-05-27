@@ -320,8 +320,8 @@ const (
 // TODO: add "limit" arg to this query
 var schemaQuery = fmt.Sprintf(`
 {
-	%s(order_by: {%s: "DESC"}, limit:1) {
+	%s(last:1) {
 		tables
 	}
 }
-`, core.SchemaTableName, tableIDField)
+`, core.SchemaTableName)
