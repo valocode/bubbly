@@ -309,7 +309,8 @@ var mapScalar = graphql.NewScalar(graphql.ScalarConfig{
 })
 
 var enumOrderBy = graphql.NewEnum(graphql.EnumConfig{
-	Name: "Order",
+	Name:        "Order",
+	Description: "The `Order` type is either `asc` or `desc`",
 	Values: graphql.EnumValueConfigMap{
 		"asc": &graphql.EnumValueConfig{
 			Value: 0,
