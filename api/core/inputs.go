@@ -62,6 +62,4 @@ type LocalsWrapper struct {
 
 type LocalsDefinition struct {
 	Locals map[string]cty.Value `hcl:",remain"`
-	// Name  string    `hcl:",label"`
-	// Value cty.Value `hcl:"value,attr"`
 }

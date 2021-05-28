@@ -37,6 +37,8 @@ func Apply(bCtx *env.BubblyContext, filename string) error {
 		if err != nil {
 			return fmt.Errorf("failed to post resource: %w", err)
 		}
+		// Print the name of the resource that has just been applied to give
+		// user feedback
 		fmt.Println(res.ID())
 	}
 
