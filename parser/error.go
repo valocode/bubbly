@@ -34,9 +34,18 @@ func (e *ParserError) Error() string {
 				prevDiag = diag
 				continue
 			}
+			var errMsg string
+
+			errMsg = err.Error()
+			if diag.EvalContext != nil {
+				errMsg += "\nEvalContext:\n"
+				for name, val := range diag.EvalContext.Variables {
+					errMsg += name + ": " + val.GoString() + "\n"
+				}
+			}
 			// If it's not a duplicate, add it
-			msgs = append(msgs, err.Error())
-			// msgs = append(msgs, fmt.Sprintf("%#v\n", diag.EvalContext.Variables))
+			msgs = append(msgs, errMsg)
+			// msgs = append(msgs, err.Error())
 			prevDiag = diag
 			continue
 		}
