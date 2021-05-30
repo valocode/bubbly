@@ -115,6 +115,11 @@ func (e *Extract) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 		val = cty.ListVal(vals)
 	}
 
+	// There is the exception if multi source is set
+	if e.Spec.MultiSource {
+		val = cty.ListVal(vals)
+	}
+
 	return core.ResourceOutput{
 		ID:     e.String(),
 		Status: events.ResourceRunSuccess,
@@ -277,8 +282,9 @@ type SourceBlocks []source
 type extractSpec struct {
 	Inputs core.InputDeclarations `hcl:"input,block"`
 	// the type is either json, xml, rest, etc.
-	Type      extractType `hcl:"type,attr"`
-	SourceHCL []struct {
+	Type        extractType `hcl:"type,attr"`
+	MultiSource bool        `hcl:"multi_source,optional"`
+	SourceHCL   []struct {
 		Body hcl.Body `hcl:",remain"`
 	} `hcl:"source,block"`
 	// Source stores the actual value for SourceHCL

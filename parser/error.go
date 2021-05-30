@@ -37,12 +37,8 @@ func (e *ParserError) Error() string {
 			var errMsg string
 
 			errMsg = err.Error()
-			if diag.EvalContext != nil {
-				errMsg += "\nEvalContext:\n"
-				for name, val := range diag.EvalContext.Variables {
-					errMsg += name + ": " + val.GoString() + "\n"
-				}
-			}
+			errMsg += "\nEvalContext:\n"
+			errMsg += appendEvalContext(diag.EvalContext)
 			// If it's not a duplicate, add it
 			msgs = append(msgs, errMsg)
 			// msgs = append(msgs, err.Error())
@@ -53,4 +49,16 @@ func (e *ParserError) Error() string {
 		msgs = append(msgs, err.Error())
 	}
 	return "\n" + strings.Join(msgs, "\n")
+}
+
+func appendEvalContext(eCtx *hcl.EvalContext) string {
+	var errMsg string
+	if eCtx == nil {
+		return ""
+	}
+	errMsg += "\nNext EvalContext Scope:\n"
+	for name, val := range eCtx.Variables {
+		errMsg += name + ": " + val.GoString() + "\n"
+	}
+	return errMsg + appendEvalContext(eCtx.Parent())
 }
