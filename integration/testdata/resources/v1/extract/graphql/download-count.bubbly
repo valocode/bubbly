@@ -144,16 +144,16 @@ resource "transform" "t1" {
 
 		# Summary about how popular is the repo and the latest release
 		data "repo_stats" {
-			fields = {
-				"owner":               self.input.data.repository.owner.login
-				"repo":                self.input.data.repository.name
-				"fork_count":          self.input.data.repository.forkCount
-				"stargazer_count":     self.input.data.repository.stargazerCount
-				"watcher_count":       self.input.data.repository.watchers.totalCount
-				"open_issues_count":   self.input.data.repository.open_issues.totalCount
-				"closed_issues_count": self.input.data.repository.closed_issues.totalCount
-				"releases_count":      self.input.data.repository.releases.totalCount
-				"download_count":      sum([for k in self.input.data.repository.releases.edges[0].node.releaseAssets.nodes: (k.name == "run.sh") || (substr(k.name,-7,7) == ".sha256") ? 0 : k.downloadCount])
+			fields {
+				owner =               self.input.data.repository.owner.login
+				repo =                self.input.data.repository.name
+				fork_count =           self.input.data.repository.forkCount
+				stargazer_count =      self.input.data.repository.stargazerCount
+				watcher_count =        self.input.data.repository.watchers.totalCount
+				open_issues_count =    self.input.data.repository.open_issues.totalCount
+				closed_issues_count =  self.input.data.repository.closed_issues.totalCount
+				releases_count =       self.input.data.repository.releases.totalCount
+				download_count =       sum([for k in self.input.data.repository.releases.edges[0].node.releaseAssets.nodes: (k.name == "run.sh") || (substr(k.name,-7,7) == ".sha256") ? 0 : k.downloadCount])
 			}
 			# Because the `(last:1)` argument is supplied to `releases`, we are confident that `releases.edges` only has one element.
 			#
@@ -177,10 +177,10 @@ resource "transform" "t1" {
 			
 			content {
 				joins = ["repo_stats"]
-				fields = {
-					"url":    it.value.node.url
-					"title":  it.value.node.title
-					"state":  it.value.node.state
+				fields {
+					url =    it.value.node.url
+					title =  it.value.node.title
+					state =  it.value.node.state
 				}
 			}
 		}
@@ -194,10 +194,10 @@ resource "transform" "t1" {
 
 			content {
 				joins = ["repo_stats"]
-				fields = {
-					"url":    it.value.node.url
-					"title":  it.value.node.title
-					"state":  it.value.node.state
+				fields {
+					url =    it.value.node.url
+					title =  it.value.node.title
+					state =  it.value.node.state
 				}
 			}
 		}

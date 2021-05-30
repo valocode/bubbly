@@ -61,15 +61,15 @@ resource "transform" "snyk" {
             iterator = it
             labels = ["snyk_vulnerabilities"]
             content {
-                fields = {
-                    "id": it.value.id
-                    "name": it.value.name
-                    "creationTime": it.value.creationTime
-                    "cvssScore": it.value.cvssScore
-                    "language": it.value.language
-                    "severity": it.value.severity
-                    "version": it.value.version
-                    "cve": it.value.identifiers.CVE[0]
+                fields {
+                    id = it.value.id
+                    name = it.value.name
+                    creationTime = it.value.creationTime
+                    cvssScore = tostring(it.value.cvssScore)
+                    language = it.value.language
+                    severity = it.value.severity
+                    version = it.value.version
+                    cve = it.value.identifiers.CVE[0]
                 }
             }
         }

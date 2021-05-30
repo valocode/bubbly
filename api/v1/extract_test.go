@@ -23,6 +23,13 @@ import (
 	fixtureXML "github.com/valocode/bubbly/api/v1/testdata/extract/xml"
 )
 
+// newBasicAuth returns a basicAuth struct, with optional fields initialised
+// to "correct" values. They are "correct" in a sense that the code in this module
+// does not need to do unnecessary checks on empty fields which simplifies the logic.
+func newBasicAuth(username, password, passwordFile string) *basicAuth {
+	return &basicAuth{username, &password, &passwordFile}
+}
+
 func TestExtractJSON(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 
@@ -182,7 +189,7 @@ func TestExtractGraphQL(t *testing.T) {
 	source := graphqlSource{
 		URL:         url,
 		Query:       query,
-		BearerToken: &bearerToken,
+		BearerToken: bearerToken,
 		Format: cty.Object(map[string]cty.Type{
 			"repository": cty.Object(map[string]cty.Type{
 				"issues": cty.Object(map[string]cty.Type{

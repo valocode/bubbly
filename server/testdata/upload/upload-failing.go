@@ -9,10 +9,10 @@ import (
 func DataStructFailing() map[string]interface{} {
 	dataMap := gofight.D{
 		"badName": "test",
-		"nofields": core.DataFields{
+		"nofields": core.DataFields{Values: map[string]cty.Value{
 			"help": cty.ObjectVal(map[string]cty.Value{
 				"value": cty.StringVal("TestValue1"),
-			}),
+			})},
 		},
 	}
 	return dataMap

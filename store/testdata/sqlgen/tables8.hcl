@@ -23,6 +23,6 @@ table "location" {
 
 	# UNIX epoch: https://www.epochconverter.com/
 	field "created_at" {
-		type = string
+		type = number
 	}
 }

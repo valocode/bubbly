@@ -21,25 +21,25 @@ func TestDataTree(t *testing.T) {
 			in: core.DataBlocks{
 				{
 					TableName: "root",
-					Fields:    core.DataFields{"foo": cty.BoolVal(true)},
+					Fields:    &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}},
 					Data: core.DataBlocks{
 						{
 							TableName: "root_nested",
-							Fields:    core.DataFields{"foo": cty.BoolVal(true)},
+							Fields:    &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}},
 						},
 					},
 				},
 				{
 					TableName: "root_join",
-					Fields:    core.DataFields{},
+					Fields:    &core.DataFields{},
 					Joins:     []string{"root"},
 				},
 			},
 			out: dataTree{
 				&dataNode{
-					Data: &core.Data{TableName: "root", Fields: core.DataFields{"foo": cty.BoolVal(true)}},
+					Data: &core.Data{TableName: "root", Fields: &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}}},
 					Children: []*dataNode{
-						{Data: &core.Data{TableName: "root_nested", Fields: core.DataFields{"foo": cty.BoolVal(true)}}},
+						{Data: &core.Data{TableName: "root_nested", Fields: &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}}}},
 						{Data: &core.Data{TableName: "root_join"}},
 					},
 				},

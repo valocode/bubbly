@@ -13,7 +13,7 @@ func TestJSONData(t *testing.T) {
 	dBlocks := DataBlocks{
 		Data{
 			TableName: "TestTable",
-			Fields: DataFields{
+			Fields: &DataFields{Values: map[string]cty.Value{
 				"TestField": cty.ObjectVal(
 					map[string]cty.Value{
 						"attribute": cty.ObjectVal(
@@ -23,10 +23,11 @@ func TestJSONData(t *testing.T) {
 						),
 					},
 				),
+				"string_field": cty.StringVal("mystring"),
 				"DataRef": cty.CapsuleVal(parser.DataRefType, &parser.DataRef{
 					TableName: "my_table", Field: "my_field",
 				}),
-			},
+			}},
 			Joins: []string{"TestJoin", "DataRef"},
 		},
 	}

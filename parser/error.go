@@ -36,6 +36,7 @@ func (e *ParserError) Error() string {
 			}
 			// If it's not a duplicate, add it
 			msgs = append(msgs, err.Error())
+			// msgs = append(msgs, fmt.Sprintf("%#v\n", diag.EvalContext.Variables))
 			prevDiag = diag
 			continue
 		}

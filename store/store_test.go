@@ -952,18 +952,18 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 
 	dSource := core.Data{
 		TableName: core.ResourceTableName,
-		Fields: core.DataFields{
-			"id": d.Fields["id"],
-		},
+		Fields: &core.DataFields{Values: map[string]cty.Value{
+			"id": d.Fields.Values["id"],
+		}},
 	}
 	// add an event entry to the core.Event
 	d2 := core.DataBlocks{dSource,
 		{
 			TableName: core.EventTableName,
-			Fields: map[string]cty.Value{
+			Fields: &core.DataFields{Values: map[string]cty.Value{
 				"status": cty.StringVal(events.ResourceCreatedUpdated.String()),
 				"time":   cty.StringVal(events.TimeNow()),
-			},
+			}},
 			// the _id value of the resource's row entry in _resource will be
 			// mapped to the _resource_id column value in _event
 			Joins: []string{core.ResourceTableName},
@@ -1020,10 +1020,10 @@ func runEventTestsOrDie(t *testing.T, bCtx *env.BubblyContext, s *Store) {
 	d3 := core.DataBlocks{dSource,
 		{
 			TableName: core.EventTableName,
-			Fields: map[string]cty.Value{
+			Fields: &core.DataFields{Values: map[string]cty.Value{
 				"status": cty.StringVal(events.ResourceDestroyed.String()),
 				"time":   cty.StringVal(events.TimeNow()),
-			},
+			}},
 			// Join says "this is the table from which I want to JOIN to".
 			// As a result,
 			// the _id pulled from the above datablock will be mapped to the

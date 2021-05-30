@@ -8,7 +8,7 @@ resource "extract" "spdx_list" {
       url = self.input.url
 
       headers = {
-        "Accept": "application/vnd.github.v3+json"
+        Accept = "application/vnd.github.v3+json"
       }
       timeout = 5
 

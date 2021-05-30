@@ -119,8 +119,8 @@ type dataNode struct {
 func (d *dataNode) Describe() string {
 	var str string
 	str += "data \"" + d.Data.TableName + "\" {\n"
-	str += "  fields = {\n"
-	for name, val := range d.Data.Fields {
+	str += "  fields {\n"
+	for name, val := range d.Data.Fields.Values {
 		v, err := psqlValue(d, val)
 		if err != nil {
 			str += "    " + name + " = " + err.Error() + "\n"
@@ -137,9 +137,9 @@ func (d *dataNode) Describe() string {
 
 // orderedFields returns the node's Data field names in order
 func (d *dataNode) orderedFields() []string {
-	var fieldNames = make([]string, 0, len(d.Data.Fields))
+	var fieldNames = make([]string, 0, len(d.Data.Fields.Values))
 
-	for k := range d.Data.Fields {
+	for k := range d.Data.Fields.Values {
 		fieldNames = append(fieldNames, k)
 	}
 	sort.Strings(fieldNames)
@@ -199,7 +199,10 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 		// data block that only does joins, in which case we will add those joins
 		// as fields, which means this needs to be init'd
 		if d.Fields == nil {
-			d.Fields = make(core.DataFields)
+			d.Fields = &core.DataFields{}
+		}
+		if d.Fields.Values == nil {
+			d.Fields.Values = make(map[string]cty.Value)
 		}
 		// dataRefs stores a map of table references containing a map of fields
 		var dataRefs = make(map[string]map[string]struct{})
@@ -229,10 +232,10 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 				)
 			)
 			// Create a join for the field
-			d.Fields[fieldName] = fieldValue
+			d.Fields.Values[fieldName] = fieldValue
 		}
 
-		for _, fVal := range d.Fields {
+		for _, fVal := range d.Fields.Values {
 			// We are interested in DataRefs which are capsule types, so ignore
 			// other field types
 			if fVal.Type() != parser.DataRefType {

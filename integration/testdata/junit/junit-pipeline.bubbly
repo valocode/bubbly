@@ -42,8 +42,8 @@ resource "transform" "junit" {
             iterator = it
             labels = ["test_case"]
             content {
-                fields = {
-                    "name": "This field exists in table_${it.value}"
+                fields {
+                    name = "This field exists in table_${it.value}"
                 }
             }
         }

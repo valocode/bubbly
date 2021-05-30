@@ -8,7 +8,7 @@ resource "extract" "spdx_list" {
             decoder = "json"
             
             headers = {
-                "Accept": "application/vnd.github.v3+json"
+                Accept = "application/vnd.github.v3+json"
             }
             timeout = 5
 
@@ -53,7 +53,7 @@ resource "extract" "spdx_licenses" {
 
                 # The replacement URLs point to GitHub, so set the MIME type recommended for it.
                 headers = {
-                    "Accept": "application/vnd.github.v3+json"
+                    Accept = "application/vnd.github.v3+json"
                 }
 
                 # HTTP request timeout in seconds
@@ -88,10 +88,10 @@ resource "transform" "license_data" {
             # information for this license, and thus the `length` function
             # is provided an empty list to count instead.
             content {
-                fields = {
-                    "id": it.value.licenseId
-                    "name": it.value.name
-                    "crossref_count": length(lookup(it.value, "crossRef", []))
+                fields {
+                    id = it.value.licenseId
+                    name = it.value.name
+                    crossref_count =  length(lookup(it.value, "crossRef", []))
                 }
             }
         }

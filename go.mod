@@ -14,7 +14,6 @@ require (
 	github.com/cockroachdb/cockroach-go/v2 v2.1.0
 	github.com/containerd/containerd v1.5.0 // indirect
 	github.com/cornelk/hashmap v1.0.1
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/siphash v1.2.2 // indirect
 	github.com/docker/docker v20.10.6+incompatible
 	github.com/fatih/color v1.10.0
@@ -31,7 +30,6 @@ require (
 	github.com/lib/pq v1.9.0 // indirect
 	github.com/likexian/gokit v0.20.15
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
-	github.com/mitchellh/prefixedio v0.0.0-20190213213902-5733675afd51 // indirect
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nats-io/nats-server/v2 v2.1.9
@@ -41,7 +39,6 @@ require (
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.6.1
-	github.com/svanharmelen/jsonapi v0.0.0-20180618144545-0c0828c3f16d // indirect
 	github.com/swaggo/echo-swagger v1.1.0
 	github.com/swaggo/swag v1.7.0
 	github.com/zclconf/go-cty v1.8.3
@@ -55,4 +52,4 @@ require (
 	gopkg.in/h2non/gock.v1 v1.0.16
 )
 
-replace github.com/hashicorp/hcl/v2 => github.com/verifa/hcl/v2 v2.8.1-patch
+replace github.com/hashicorp/hcl/v2 => github.com/verifa/hcl/v2 v2.8.1-patch-1

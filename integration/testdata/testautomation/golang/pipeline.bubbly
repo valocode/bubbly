@@ -23,9 +23,9 @@ resource "transform" "gotest" {
         input "results" { }
 
         data "test_run" {
-            fields = {
-                "tool": "gotest",
-                "type": "unit_test"
+            fields {
+                tool = "gotest"
+                type = "unit_test"
             }
         }
 
@@ -35,10 +35,10 @@ resource "transform" "gotest" {
             labels = ["test_case"]
             iterator = it
             content {
-                fields = {
-                    "name": it.value["Test"],
-                    "message": join("\n", [for i in self.input.results: i["Output"] if i["Output"] !=null && i["Test"] !=null && try(i["Test"], "") == it.value["Test"]]),
-                    "result": lower(it.value["Action"]) == "pass",
+                fields {
+                    name = it.value["Test"]
+                    message = join("\n", [for i in self.input.results: i["Output"] if i["Output"] !=null && i["Test"] !=null && try(i["Test"], "") == it.value["Test"]])
+                    result = lower(it.value["Action"]) == "pass"
                 }
                 joins = ["test_run"]
             }

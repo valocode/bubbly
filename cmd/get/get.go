@@ -132,9 +132,9 @@ func (o *GetOptions) Run() error {
 	case o.arg == "all":
 		resourceFilter = "last: 20"
 	case strings.ContainsAny(o.arg, "/"):
-		resourceFilter = "(id: \"" + o.arg + "\")"
+		resourceFilter = "id: \"" + o.arg + "\""
 	default:
-		resourceFilter = "(kind: \"" + o.arg + "\")"
+		resourceFilter = "kind: \"" + o.arg + "\""
 	}
 	resourceQuery = fmt.Sprintf(`
 	{

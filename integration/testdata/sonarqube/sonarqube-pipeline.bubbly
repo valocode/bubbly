@@ -49,23 +49,23 @@ resource "transform" "sonarqube" {
         input "repository" {}
 
         data "repo" {
-            fields = {
-                "name": "sonarqube_test"
+            fields {
+                name = "sonarqube_test"
             }
         }
 
         data "branch" {
-            fields = {
-                "name": self.input.repository.active_branch
+            fields {
+                name = self.input.repository.active_branch
             }
             joins = ["repo"]
         }
         data "commit" {
             // get the repo_id by referencing the above data block
             joins = ["repo", "branch"]
-            fields = {
-                "id": self.input.repository.commit_id
-                "tag": self.input.repository.tag
+            fields {
+                id = self.input.repository.commit_id
+                tag = self.input.repository.tag
             }
         }
 
@@ -76,10 +76,10 @@ resource "transform" "sonarqube" {
             // map the data to the code_issue table in the interim database
             labels = ["code_issue"]
             content {
-                fields = {
-                    "id": issue.value.primaryLocation.message
-                    "severity": issue.value.severity
-                    "type": issue.value.type
+                fields {
+                    id = issue.value.primaryLocation.message
+                    severity = issue.value.severity
+                    type = issue.value.type
                 }
             }
         }

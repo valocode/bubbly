@@ -159,15 +159,19 @@ func (r *ResourceBlock) Data() (Data, error) {
 	}
 	d := Data{
 		TableName: ResourceTableName,
-		Fields: map[string]cty.Value{
+		Fields: &DataFields{Values: map[string]cty.Value{
 			"id":          cty.StringVal(r.String()),
 			"name":        cty.StringVal(r.ResourceName),
 			"kind":        cty.StringVal(r.ResourceKind),
 			"api_version": cty.StringVal(string(r.ResourceAPIVersion)),
 			"metadata":    cty.ObjectVal(metaMap),
 			"spec":        cty.StringVal(string(r.SpecRaw)),
-		},
+		}},
 	}
+	fmt.Printf("DATA BLOCK: %#v\n", d)
+	fmt.Printf("DATA BLOCK FIELDS: %#v\n", d.Fields)
+	fmt.Printf("DATA BLOCK FIELDS VALUES: %#v\n", d.Fields.Values)
+	fmt.Printf("FROM RESOURCE BLOCK: %#v\n", *r)
 	return d, nil
 }
 
@@ -178,7 +182,7 @@ func ResourceFromData(d Data) (*ResourceBlock, error) {
 		r   ResourceBlock
 		err error
 	)
-	for k, v := range d.Fields {
+	for k, v := range d.Fields.Values {
 		switch k {
 		case "kind":
 			err = gocty.FromCtyValue(v, &r.ResourceKind)

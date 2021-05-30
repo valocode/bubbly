@@ -5,20 +5,20 @@
 ### Entry 1
 
 data "location" {	
-	fields = {
-		"name": "Deep Dark Wood"
+	fields {
+		name = "Deep Dark Wood"
 	}
 }
 
 data "configuration" {
-	fields = {
-		"name": "Primitive"
+	fields {
+		name = "Primitive"
 	}
 }
 
 data "version" {
-	fields = {
-		"name": "v1.0.1"
+	fields {
+		name = "v1.0.1"
 	}
 }
 
@@ -28,28 +28,28 @@ data "testrun" {
 		"configuration",
 		"version",
 		]
-	fields = {
-		"ok": true
+	fields {
+		ok = true
 	}
 }
 
 ### Entry 2
 
 data "location" {
-	fields = {
-		"name": "Gold Coast City Skyline"
+	fields {
+		name = "Gold Coast City Skyline"
 	}
 }
 
 data "configuration" {
-	fields = {
-		"name": "Approved by Wombats"
+	fields {
+		name = "Approved by Wombats"
 	}
 }
 
 data "version" {
-	fields = {
-		"name": "v2.5"
+	fields {
+		name = "v2.5"
 	}
 }
 
@@ -60,28 +60,28 @@ data "testrun" {
 		"configuration",
 		"location",
 	]
-	fields = {
-		"ok": false
+	fields {
+		ok = false
 	}
 }
 
 ### Entry 3
 
 data "location" {
-	fields = {
-		"name": "Secret Underground Facility on the Moon"
+	fields {
+		name = "Secret Underground Facility on the Moon"
 	}
 }
 
 data "configuration" {
-	fields = {
-		"name": "Magic"
+	fields {
+		name = "Magic"
 	}
 }
 
 data "version" {
-	fields = {
-		"name": "X.Y.Z-1"
+	fields {
+		name = "X.Y.Z-1"
 	}
 }
 
@@ -91,7 +91,7 @@ data "testrun" {
 		"version",
 		"configuration",
 	]
-	fields = {
-		"ok": true
+	fields {
+		ok = true
 	}
 }
