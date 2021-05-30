@@ -103,11 +103,11 @@ func eventStoreTrigger(tenant string) *trigger {
 				// _event entry (and therefore the only field provided is the "id"),
 				// then we do not want to update the event store as that will take
 				// place _anyway_.
-				if len(node.Data.Fields) != 1 && node.Data.IsValidResource() {
+				if len(node.Data.Fields.Values) != 1 && node.Data.IsValidResource() {
 					fields := node.Data.Fields
 
 					// get the id of the resource
-					id := fields["id"]
+					id := fields.Values["id"]
 					if id.IsNull() {
 						return errors.New("DataBlock missing required field: id")
 					}
@@ -115,17 +115,17 @@ func eventStoreTrigger(tenant string) *trigger {
 					newEventBlocks := core.DataBlocks{
 						core.Data{
 							TableName: core.ResourceTableName,
-							Fields: core.DataFields{
+							Fields: &core.DataFields{Values: map[string]cty.Value{
 								"id": id,
-							},
+							}},
 						},
 						core.Data{
 							TableName: core.EventTableName,
-							Fields: map[string]cty.Value{
+							Fields: &core.DataFields{Values: map[string]cty.Value{
 								"status": cty.StringVal(events.ResourceCreatedUpdated.String()),
 								"time":   cty.StringVal(events.TimeNow()),
 								"error":  cty.StringVal(""),
-							},
+							}},
 							Joins: []string{core.ResourceTableName},
 						},
 					}
@@ -157,11 +157,11 @@ func remoteRunTrigger(tenant string) *trigger {
 				// then we do not want to update the event store as that will take
 				// place _anyway_.
 
-				if len(node.Data.Fields) != 1 && node.Data.IsValidResource() {
+				if len(node.Data.Fields.Values) != 1 && node.Data.IsValidResource() {
 					fields := node.Data.Fields
 
 					// get the kind of the resource
-					kind := fields["kind"]
+					kind := fields.Values["kind"]
 
 					var resKind core.ResourceKind
 

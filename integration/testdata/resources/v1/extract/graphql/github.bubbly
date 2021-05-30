@@ -105,14 +105,14 @@ resource "transform" "bubbly_repo" {
 
 		# Some latest stats about popularity of the Bubbly repo
 		data "repo_stats" {
-			fields = {
-				"owner":               self.input.data.repository.owner.login
-				"repo":                self.input.data.repository.name
-				"fork_count":          self.input.data.repository.forkCount
-				"stargazer_count":     self.input.data.repository.stargazerCount
-				"watcher_count":       self.input.data.repository.watchers.totalCount
-				"open_issues_count":   self.input.data.repository.open_issues.totalCount
-				"closed_issues_count": self.input.data.repository.closed_issues.totalCount
+			fields {
+				owner =               self.input.data.repository.owner.login
+				repo =                self.input.data.repository.name
+				fork_count =           self.input.data.repository.forkCount
+				stargazer_count =      self.input.data.repository.stargazerCount
+				watcher_count =        self.input.data.repository.watchers.totalCount
+				open_issues_count =    self.input.data.repository.open_issues.totalCount
+				closed_issues_count =  self.input.data.repository.closed_issues.totalCount
 			}
 		}
 
@@ -125,10 +125,10 @@ resource "transform" "bubbly_repo" {
 			
 			content {
 				joins = ["repo_stats"]
-				fields = {
-					"url":    it.value.node.url
-					"title":  it.value.node.title
-					"state":  it.value.node.state
+				fields {
+					url =    it.value.node.url
+					title =  it.value.node.title
+					state =  it.value.node.state
 				}
 			}
 		}
@@ -142,10 +142,10 @@ resource "transform" "bubbly_repo" {
 
 			content {
 				joins = ["repo_stats"]
-				fields = {
-					"url":    it.value.node.url
-					"title":  it.value.node.title
-					"state":  it.value.node.state
+				fields {
+					url =    it.value.node.url
+					title =  it.value.node.title
+					state =  it.value.node.state
 				}
 			}
 		}

@@ -335,11 +335,11 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 		// we can perform a SELECT on the unique fields and figure out if we
 		// should perform an INSERT or UPDATE.
 		// First, make a copy of data before we start deleting fields
-		var origFields = make(core.DataFields)
-		for field, val := range node.Data.Fields {
+		var origFields = make(map[string]cty.Value)
+		for field, val := range node.Data.Fields.Values {
 			origFields[field] = val
 			if _, ok := uniqueFields[field]; !ok {
-				delete(node.Data.Fields, field)
+				delete(node.Data.Fields.Values, field)
 			}
 		}
 		retValues, err = psqlDataSelect(tx, tenant, node, table)
@@ -347,7 +347,7 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 			return fmt.Errorf("error checking uniqueness of data %s: %w", node.Data.TableName, err)
 		}
 		// Reassign the original data without deleted fields
-		node.Data.Fields = origFields
+		node.Data.Fields.Values = origFields
 		// If there are no values returned, we have a unique data block so
 		// INSERT, otherwise UPDATE
 		if len(retValues) == 0 {
@@ -401,7 +401,7 @@ func psqlDataUpdate(tx pgx.Tx, tenant string, node *dataNode, table core.Table, 
 	sql := psql.Update(psqlAbsTableName(tenant, data.TableName)).
 		Where(sq.Eq{tableIDField: id}).
 		Suffix(sqlReturning)
-	for name, value := range node.Data.Fields {
+	for name, value := range node.Data.Fields.Values {
 		v, err := psqlValue(node, value)
 		if err != nil {
 			return nil, fmt.Errorf("error getting SQL value for field %s: %w", name, err)
@@ -456,7 +456,7 @@ func psqlDataSelect(tx pgx.Tx, tenant string, node *dataNode, table core.Table) 
 
 	// Iterate over the field values that have been provided and create the SQL
 	// WHERE clause so that we get the correct record back
-	for name, value := range node.Data.Fields {
+	for name, value := range node.Data.Fields.Values {
 		v, err := psqlValue(node, value)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get SQL value from data block field %s.%s: %w", node.Data.TableName, name, err)
@@ -538,12 +538,12 @@ func psqlRowValues(row pgx.Row, tableName string, fields []string) (map[string]i
 func psqlArgValues(node *dataNode) ([]interface{}, error) {
 	var (
 		data   = node.Data
-		values = make([]interface{}, 0, len(data.Fields))
+		values = make([]interface{}, 0, len(data.Fields.Values))
 	)
 	// We need to order the fields to make sure the list of values we give
 	// match up to the list of fields names
 	for _, f := range node.orderedFields() {
-		val, err := psqlValue(node, data.Fields[f])
+		val, err := psqlValue(node, data.Fields.Values[f])
 		if err != nil {
 			return nil, fmt.Errorf("failed to get SQL value from cty.Value for field: %s: %w", f, err)
 		}
@@ -654,12 +654,12 @@ func psqlAddUniqueDataFields(table core.Table, data *core.Data) (map[string]stru
 	for _, field := range table.Fields {
 		if field.Unique {
 			uniqueFields[field.Name] = struct{}{}
-			if _, ok := data.Fields[field.Name]; !ok {
+			if _, ok := data.Fields.Values[field.Name]; !ok {
 				val, err := psqlDefaultFieldValue(field.Type)
 				if err != nil {
 					return nil, fmt.Errorf("failed to get default value for unique table field %s.%s: %w", table.Name, field.Name, err)
 				}
-				data.Fields[field.Name] = val
+				data.Fields.Values[field.Name] = val
 			}
 		}
 	}
@@ -667,13 +667,13 @@ func psqlAddUniqueDataFields(table core.Table, data *core.Data) (map[string]stru
 		if join.Unique {
 			fieldName := join.Table + tableJoinSuffix
 			uniqueFields[fieldName] = struct{}{}
-			if _, ok := data.Fields[fieldName]; !ok {
+			if _, ok := data.Fields.Values[fieldName]; !ok {
 				// The forgeign key can never be -1, and so if we are generating
 				// a default value we want to make sure this will not actually
 				// create an unintential join!
 				// We need this default value because null is a unique value in
 				// postgres... which screws with our unique constraints
-				data.Fields[fieldName] = cty.NumberIntVal(int64(psqlDefaultMissingJoinValue))
+				data.Fields.Values[fieldName] = cty.NumberIntVal(int64(psqlDefaultMissingJoinValue))
 			}
 		}
 	}

@@ -3,7 +3,7 @@
 resource "extract" "sonarqube" {
   metadata {
     labels = {
-      "environment": "prod"
+      environment = "prod"
     }
   }
   spec {

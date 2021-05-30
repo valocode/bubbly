@@ -140,10 +140,10 @@ func setGraphQLSourceDefaults(bCtx *env.BubblyContext, dst *graphqlSource) error
 	timeout := uint(1)
 
 	defaults := &graphqlSource{
-		Method:  &method,
-		Params:  &map[string]string{},
-		Headers: &map[string]string{},
-		Timeout: &timeout,
+		Method:  method,
+		Params:  map[string]string{},
+		Headers: map[string]string{},
+		Timeout: timeout,
 	}
 
 	if err := mergo.Merge(dst, defaults); err != nil {
@@ -155,11 +155,11 @@ func setGraphQLSourceDefaults(bCtx *env.BubblyContext, dst *graphqlSource) error
 
 	// Params is optional in HCL, but it helps to have an empty map instead of nil.
 	if dst.Params == nil {
-		dst.Params = &map[string]string{}
+		dst.Params = map[string]string{}
 	}
 	// Headers is optional in HCL
 	if dst.Headers == nil {
-		dst.Headers = &map[string]string{}
+		dst.Headers = map[string]string{}
 	}
 
 	// If HTTP Basic Authentication is requested in HCL, the username is compulsory field,
@@ -316,15 +316,15 @@ type graphqlSource struct {
 	URL string `hcl:"url"`
 
 	// Method is "GET" or "POST" for protocols "http" and "https". The default is "POST".
-	Method *string `hcl:"method"`
+	Method string `hcl:"method,optional"`
 
 	// Params are URL query params which get prepended at the end of the url
 	// in the format ?key1=val1&key2=val2
-	Params *map[string]string `hcl:"params"`
+	Params map[string]string `hcl:"params,optional"`
 
 	// HTTP Headers to set, anything apart from Basic Authorization
 	// and Bearer Token for which there are custom fields.
-	Headers *map[string]string `hcl:"headers"`
+	Headers map[string]string `hcl:"headers,optional"`
 
 	// BasicAuth sets the `Authorization` header on every
 	// scrape request with the configured username and password.
@@ -336,16 +336,16 @@ type graphqlSource struct {
 	// scrape request with the configured bearer token.
 	// More information: https://swagger.io/docs/specification/authentication/bearer-authentication/
 	// If set, this option overrides `bearer_token_file`.
-	BearerToken *string `hcl:"bearer_token"`
+	BearerToken string `hcl:"bearer_token,optional"`
 
 	// BearerTokenFile sets the `Authorization` header on every
 	// scrape request with the bearer token read from the configured file.
 	// This option can be overridden by `bearer_token`.
-	BearerTokenFile *string `hcl:"bearer_token_file"`
+	BearerTokenFile string `hcl:"bearer_token_file,optional"`
 
 	// Timeout in seconds is how long the extractor can wait before giving up
 	// trying to extract the data from this resource.
-	Timeout *uint `hcl:"timeout"`
+	Timeout uint `hcl:"timeout,optional"`
 
 	// Format is is a dynamic type, usually built from an HCL type expression.
 	// It defines what is expected in response to the GraphQL API query.
@@ -369,7 +369,7 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	}
 
 	// HTTP method: "GET" or "POST", case-insensitive, default value "POST"
-	method := strings.ToUpper(*s.Method)
+	method := strings.ToUpper(s.Method)
 
 	if method != http.MethodPost && method != http.MethodGet {
 		return cty.NilVal, fmt.Errorf("unsupported method: %s", method)
@@ -382,10 +382,10 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	var timeout time.Duration
 
 	switch {
-	case *s.Timeout == 0:
-		return cty.NilVal, fmt.Errorf("invalid timeout value: %d", *s.Timeout)
+	case s.Timeout == 0:
+		return cty.NilVal, fmt.Errorf("invalid timeout value: %d", s.Timeout)
 	default:
-		timeout = time.Duration(*s.Timeout) * time.Second
+		timeout = time.Duration(s.Timeout) * time.Second
 	}
 
 	// The 'Basic' HTTP Authentication Scheme as defined in RFC 7617.
@@ -420,7 +420,7 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 
 	// URL query string
 	params := url.Values{}
-	for k, v := range *s.Params {
+	for k, v := range s.Params {
 		params.Add(k, v)
 	}
 
@@ -451,10 +451,10 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	// Add a bearer token, if requests. Adds a Header.
 	var bearerToken string
 	switch {
-	case s.BearerToken != nil:
-		bearerToken = *s.BearerToken
-	case s.BearerTokenFile != nil:
-		bt, err := os.ReadFile(filepath.FromSlash(*s.BearerTokenFile))
+	case s.BearerToken != "":
+		bearerToken = s.BearerToken
+	case s.BearerTokenFile != "":
+		bt, err := os.ReadFile(filepath.FromSlash(s.BearerTokenFile))
 		if err != nil {
 			return cty.NilVal, fmt.Errorf("failed to read bearer token file: %w", err)
 		}
@@ -465,7 +465,7 @@ func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 	}
 
 	// Any other headers, if reqested
-	for k, v := range *s.Headers {
+	for k, v := range s.Headers {
 		httpRequest.Header.Add(k, v)
 	}
 
@@ -554,13 +554,6 @@ type basicAuth struct {
 	Username     string  `hcl:"username"`
 	Password     *string `hcl:"password"`
 	PasswordFile *string `hcl:"password_file"`
-}
-
-// newBasicAuth returns a basicAuth struct, with optional fields initialised
-// to "correct" values. They are "correct" in a sense that the code in this module
-// does not need to do unnecessary checks on empty fields which simplifies the logic.
-func newBasicAuth(username, password, passwordFile string) *basicAuth {
-	return &basicAuth{username, &password, &passwordFile}
 }
 
 // restSource represents the extract type for a REST API query
@@ -862,8 +855,6 @@ func (s *gitSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
 
 		if ref.Type() == plumbing.HashReference && ref.Name().IsRemote() {
 			remoteBranchNames = append(remoteBranchNames, ref.Name().Short())
-		} else {
-			bCtx.Logger.Debug().Str("ref.String()", ref.String()).Msg(`Reference not a remote:`)
 		}
 		return nil
 	})

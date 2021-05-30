@@ -48,9 +48,9 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 
 	projectData := core.Data{
 		TableName: "project",
-		Fields: core.DataFields{
+		Fields: &core.DataFields{Values: map[string]cty.Value{
 			"id": cty.StringVal(r.Project),
-		},
+		}},
 	}
 	data = append(data, projectData)
 
@@ -59,10 +59,10 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 	//
 	data = append(data, core.Data{
 		TableName: "release",
-		Fields: core.DataFields{
+		Fields: &core.DataFields{Values: map[string]cty.Value{
 			"name":    cty.StringVal(r.Name),
 			"version": cty.StringVal(r.Version),
-		},
+		}},
 		Joins: []string{"project"},
 		// Do not allow update, as that causes all kinds of complications with
 		// releases. If you want to change a specific release, first delete it
@@ -75,17 +75,17 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 	for _, stage := range r.Stages {
 		data = append(data, core.Data{
 			TableName: "release_stage",
-			Fields: core.DataFields{
+			Fields: &core.DataFields{Values: map[string]cty.Value{
 				"name": cty.StringVal(stage.Name),
-			},
+			}},
 			Joins: []string{"release"},
 		})
 		for _, criteria := range stage.Criterion {
 			data = append(data, core.Data{
 				TableName: "release_criteria",
-				Fields: core.DataFields{
+				Fields: &core.DataFields{Values: map[string]cty.Value{
 					"entry_name": cty.StringVal(criteria.Name),
-				},
+				}},
 				Joins: []string{"release_stage", "release"},
 			})
 		}
@@ -105,9 +105,9 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 		data = append(data, gitData...)
 		data = append(data, core.Data{
 			TableName: "release_item",
-			Fields: core.DataFields{
+			Fields: &core.DataFields{Values: map[string]cty.Value{
 				"type": cty.StringVal(releaseItemGitType),
-			},
+			}},
 			// Join to the git commit that is created above
 			Joins: []string{"commit", "release"},
 		})
@@ -120,9 +120,9 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 		data = append(data, artifactData...)
 		data = append(data, core.Data{
 			TableName: "release_item",
-			Fields: core.DataFields{
+			Fields: &core.DataFields{Values: map[string]cty.Value{
 				"type": cty.StringVal(releaseItemArtifactType),
-			},
+			}},
 			// Join to the git commit that is created above
 			Joins: []string{"artifact"},
 		})
@@ -139,9 +139,9 @@ func (r *ReleaseSpec) DataRef() (core.DataBlocks, error) {
 	}
 	projectData := core.Data{
 		TableName: "project",
-		Fields: core.DataFields{
+		Fields: &core.DataFields{Values: map[string]cty.Value{
 			"id": cty.StringVal(r.Project),
-		},
+		}},
 		Policy: core.ReferencePolicy,
 	}
 	data = append(data, projectData)
@@ -151,10 +151,10 @@ func (r *ReleaseSpec) DataRef() (core.DataBlocks, error) {
 	//
 	data = append(data, core.Data{
 		TableName: "release",
-		Fields: core.DataFields{
+		Fields: &core.DataFields{Values: map[string]cty.Value{
 			"name":    cty.StringVal(r.Name),
 			"version": cty.StringVal(r.Version),
-		},
+		}},
 		Joins:  []string{"project"},
 		Policy: core.ReferencePolicy,
 	})
@@ -247,9 +247,9 @@ func (g *gitItem) Data(baseDir string) (core.DataBlocks, error) {
 
 	repoData := core.Data{
 		TableName: "repo",
-		Fields: core.DataFields{
+		Fields: &core.DataFields{Values: map[string]cty.Value{
 			"id": cty.StringVal(g.ID),
-		},
+		}},
 		Joins: []string{"project"},
 	}
 	// If HEAD is not detached, then we can add the branch name to the git data
@@ -257,18 +257,18 @@ func (g *gitItem) Data(baseDir string) (core.DataBlocks, error) {
 	if ref.Name().IsBranch() {
 		repoData.Data = append(repoData.Data, core.Data{
 			TableName: "branch",
-			Fields: core.DataFields{
+			Fields: &core.DataFields{Values: map[string]cty.Value{
 				"name": cty.StringVal(ref.Name().Short()),
-			},
+			}},
 		})
 	}
 
 	commitData := core.Data{
 		TableName: "commit",
-		Fields: core.DataFields{
+		Fields: &core.DataFields{Values: map[string]cty.Value{
 			"id":   cty.StringVal(ref.Hash().String()),
 			"time": cty.StringVal(commit.Author.When.String()),
-		},
+		}},
 		Joins: []string{"repo"},
 	}
 
@@ -277,7 +277,7 @@ func (g *gitItem) Data(baseDir string) (core.DataBlocks, error) {
 		return nil, fmt.Errorf("error getting git tag: %w", err)
 	}
 	if tag != "" {
-		commitData.Fields["tag"] = cty.StringVal(tag)
+		commitData.Fields.Values["tag"] = cty.StringVal(tag)
 	}
 
 	// commitData.Fields["tag"] = cty.StringVal("lala")
@@ -441,11 +441,11 @@ func (a *artifactItem) Data(baseDir string) (core.DataBlocks, error) {
 	return core.DataBlocks{
 		core.Data{
 			TableName: "artifact",
-			Fields: core.DataFields{
+			Fields: &core.DataFields{Values: map[string]cty.Value{
 				"name":     cty.StringVal(a.Name),
 				"location": cty.StringVal(a.Location),
 				"sha256":   cty.StringVal(sha256),
-			},
+			}},
 		},
 	}, nil
 }
@@ -549,20 +549,20 @@ func (c *releaseCriteria) Evaluate(bCtx *env.BubblyContext, release *ReleaseSpec
 	// Create the data block for the release entry
 	data = append(data, core.Data{
 		TableName: "release_criteria",
-		Fields: core.DataFields{
+		Fields: &core.DataFields{Values: map[string]cty.Value{
 			"entry_name": cty.StringVal(c.Name),
-		},
+		}},
 		Joins:  []string{"release"},
 		Policy: core.ReferencePolicy,
 	})
 
 	data = append(data, core.Data{
 		TableName: "release_entry",
-		Fields: core.DataFields{
+		Fields: &core.DataFields{Values: map[string]cty.Value{
 			"name":   cty.StringVal(c.Name),
 			"result": cty.BoolVal(entryResult),
 			"reason": cty.StringVal(entryReason),
-		},
+		}},
 		Joins:  []string{"release_criteria"},
 		Policy: core.CreatePolicy,
 	})

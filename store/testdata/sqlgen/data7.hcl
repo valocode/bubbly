@@ -8,20 +8,20 @@
 ###        of results for the previous entries.
 
 data "location" {	
-	fields = {
-		"name": "Oliver's NEON workstation"
+	fields {
+		name = "Oliver's NEON workstation"
 	}
 }
 
 data "configuration" {
-	fields = {
-		"name": "So-so"
+	fields {
+		name = "So-so"
 	}
 }
 
 data "version" {
-	fields = {
-		"name": "v1.0.1"
+	fields {
+		name = "v1.0.1"
 	}
 }
 
@@ -32,9 +32,9 @@ data "testrun" {
 		"configuration",
 		"version",
 		]
-	fields = {
-		"ok": true      
-		"finish_epoch": "1611111111"
+	fields {
+		ok = true      
+		finish_epoch = "1611111111"
 	}
 }
 
@@ -44,9 +44,9 @@ data "testrun" {
 		"configuration",
 		"version",
 		]
-	fields = {
-		"ok": false
-		"finish_epoch": "1311111111"
+	fields {
+		ok = false
+		finish_epoch = "1311111111"
 	}
 }
 
@@ -56,8 +56,8 @@ data "testrun" {
 		"configuration",
 		"version",
 		]
-	fields = {
-		"ok": true
-		"finish_epoch": "1411111111"
+	fields {
+		ok = true
+		finish_epoch = "1411111111"
 	}
 }

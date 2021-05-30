@@ -5,11 +5,11 @@
 ### Hideaway 1
 
 data "hideaways" {	
-	fields = {
-		"location":         "Deep Dark Wood",
-		"sophistication":   "simple",
-		"distance_from_x":  1500,
-		"ready":            true,
+	fields {
+		location =         "Deep Dark Wood"
+		sophistication =   "simple"
+		distance_from_x =  1500
+		ready =            true
 	}
 }
 
@@ -21,8 +21,8 @@ data "hideaways" {
 # that our order_by is working correctly.
 
 data "characters" {
-	fields = {
-		"name": "Oh-Totoro",
+	fields {
+		name = "Oh-Totoro"
 	}
 }
 
@@ -31,14 +31,14 @@ data "crew" {
 		"hideaways",
 		"characters",
 		]
-	fields = {
-		"count": 1,
+	fields {
+		count = 1
 	}
 }
 
 data "characters" {
-	fields = {
-		"name": "Chibi-Totoro",
+	fields {
+		name = "Chibi-Totoro"
 	}
 }
 
@@ -47,14 +47,14 @@ data "crew" {
 		"hideaways",
 		"characters",
 		]
-	fields = {
-		"count": 1,
+	fields {
+		count = 1
 	}
 }
 
 data "characters" {
-	fields = {
-		"name": "Chuu-Totoro",
+	fields {
+		name = "Chuu-Totoro"
 	}
 }
 
@@ -63,19 +63,19 @@ data "crew" {
 		"hideaways",
 		"characters",
 		]
-	fields = {
-		"count": 1,
+	fields {
+		count = 1
 	}
 }
 
 ### Hideaway 2
 
 data "hideaways" {	
-	fields = {
-		"location":         "Secret Underground Facility on the Moon",
-		"sophistication":   "incredible",
-		"distance_from_x":  384400,
-		"ready":            true,
+	fields {
+		location =         "Secret Underground Facility on the Moon"
+		sophistication =   "incredible"
+		distance_from_x =  384400
+		ready =            true
 	}
 }
 
@@ -88,8 +88,8 @@ data "hideaways" {
 # not just on string values, but also on numbers.
 
 data "characters" {
-	fields = {
-		"name": "Little Green Man",
+	fields {
+		name = "Little Green Man"
 	}
 }
 
@@ -98,14 +98,14 @@ data "crew" {
 		"hideaways",
 		"characters",
 		]
-	fields = {
-		"count": 42,
+	fields {
+		count = 42
 	}
 }
 
 data "characters" {
-	fields = {
-		"name": "Little Green Man Leader",
+	fields {
+		name = "Little Green Man Leader"
 	}
 }
 
@@ -114,25 +114,25 @@ data "crew" {
 		"hideaways",
 		"characters",
 		]
-	fields = {
-		"count": 1,
+	fields {
+		count = 1
 	}
 }
 
 ### Hideaway 3
 
 data "hideaways" {	
-	fields = {
-		"location":         "Gold Coast Villa",
-		"sophistication":   "average",
-		"distance_from_x":  12500,
-		"ready":            false,
+	fields {
+		location =         "Gold Coast Villa"
+		sophistication =   "average"
+		distance_from_x =  12500
+		ready =            false
 	}
 }
 
 data "characters" {
-	fields = {
-		"name": "Wombat",
+	fields {
+		name = "Wombat"
 	}
 }
 
@@ -141,14 +141,14 @@ data "crew" {
 		"hideaways",
 		"characters",
 		]
-	fields = {
-		"count": 1,
+	fields {
+		count = 1
 	}
 }
 
 data "characters" {
-	fields = {
-		"name": "Smol European Mouse",
+	fields {
+		name = "Smol European Mouse"
 	}
 }
 
@@ -157,14 +157,14 @@ data "crew" {
 		"hideaways",
 		"characters",
 		]
-	fields = {
-		"count": 2,
+	fields {
+		count = 2
 	}
 }
 
 data "characters" {
-	fields = {
-		"name": "Old Horse with Shady Past",
+	fields {
+		name = "Old Horse with Shady Past"
 	}
 }
 
@@ -173,7 +173,7 @@ data "crew" {
 		"hideaways",
 		"characters",
 		]
-	fields = {
-		"count": 1,
+	fields {
+		count = 1
 	}
 }

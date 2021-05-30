@@ -19,11 +19,11 @@ type DataBlocks []Data
 // corresponding Field values in the Table
 type Data struct {
 	TableName     string          `hcl:",label" json:"data"`
-	Fields        DataFields      `hcl:"fields,optional" json:"fields"`
-	Joins         []string        `hcl:"joins,optional" json:"joins"`
-	Policy        DataBlockPolicy `hcl:"policy,optional" json:"policy"`
-	IgnoreNesting bool            `hcl:"ignore_nesting,optional" json:"ignore_nesting"`
-	Data          DataBlocks      `hcl:"data,block" json:"nested_data"`
+	Fields        *DataFields     `hcl:"fields,block" json:"fields,omitempty"`
+	Joins         []string        `hcl:"joins,optional" json:"joins,omitempty"`
+	Policy        DataBlockPolicy `hcl:"policy,optional" json:"policy,omitempty"`
+	IgnoreNesting bool            `hcl:"ignore_nesting,optional" json:"ignore_nesting,omitempty"`
+	Data          DataBlocks      `hcl:"data,block" json:"nested_data,omitempty"`
 }
 
 // DataBlockPolicy defines the policy for how the data block shall be handled.
@@ -52,8 +52,14 @@ const (
 	ReferenceIfExistsPolicy DataBlockPolicy = "reference_if_exists"
 )
 
-// DataFields is a slice of DataField
-type DataFields map[string]cty.Value
+// DataFields contains a map of values that can be assigned to, e.g.
+// fields {
+// 	  my_val = "abc"
+// 	  other_val = 123
+// }
+type DataFields struct {
+	Values map[string]cty.Value `hcl:",remain"`
+}
 
 // UnmarshalJSON unmarshals json into a Data type.
 // This is a bit hacky, but the problem was making sure Fields (which is a map)
@@ -62,14 +68,12 @@ type DataFields map[string]cty.Value
 func (d *Data) UnmarshalJSON(data []byte) error {
 	v := struct {
 		TableName     string          `json:"data"`
-		Fields        DataFields      `json:"fields"`
+		Fields        *DataFields     `json:"fields"`
 		Joins         []string        `json:"joins"`
 		Policy        DataBlockPolicy `json:"policy"`
 		IgnoreNesting bool            `json:"ignore_nesting"`
 		Data          DataBlocks      `json:"nested_data"`
-	}{
-		Fields: make(DataFields),
-	}
+	}{}
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
@@ -85,7 +89,7 @@ func (d *Data) UnmarshalJSON(data []byte) error {
 // IsValidResource verifies that any of Data's fields that are mandatory for a
 // valid core.Resource are non-null
 func (d *Data) IsValidResource() bool {
-	for k, v := range d.Fields {
+	for k, v := range d.Fields.Values {
 		if k == "metadata" {
 			continue
 		}
@@ -98,8 +102,8 @@ func (d *Data) IsValidResource() bool {
 
 // MarshalJSON marshals DataFields into json
 func (d DataFields) MarshalJSON() ([]byte, error) {
-	var jsonFields = make([]DataFieldJSON, 0, len(d))
-	for name, val := range d {
+	var jsonFields = make([]DataFieldJSON, 0, len(d.Values))
+	for name, val := range d.Values {
 		jsonVal, dataRef := ctyToJSON(val)
 		jsonFields = append(jsonFields, DataFieldJSON{
 			Name:    name,
@@ -111,13 +115,16 @@ func (d DataFields) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON unmarshals json into DataFields
-func (d DataFields) UnmarshalJSON(data []byte) error {
+func (d *DataFields) UnmarshalJSON(data []byte) error {
 	var jsonFields []DataFieldJSON
 	if err := json.Unmarshal(data, &jsonFields); err != nil {
 		return fmt.Errorf("failed to unmarshal DataFields: %w", err)
 	}
+	if d.Values == nil {
+		d.Values = make(map[string]cty.Value)
+	}
 	for _, field := range jsonFields {
-		d[field.Name] = jsonToCty(field.DataRef, field.Value)
+		d.Values[field.Name] = jsonToCty(field.DataRef, field.Value)
 	}
 
 	return nil

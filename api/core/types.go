@@ -66,19 +66,19 @@ func (r *ResourceOutput) EventData() (DataBlocks, error) {
 		Data{
 			// Reference the Resource data block so that we can join to it
 			TableName: ResourceTableName,
-			Fields: DataFields{
+			Fields: &DataFields{Values: map[string]cty.Value{
 				"id": cty.StringVal(r.ID),
-			},
+			}},
 			Policy: ReferencePolicy,
 		},
 		Data{
 			// Create the actual event
 			TableName: EventTableName,
-			Fields: map[string]cty.Value{
+			Fields: &DataFields{Values: map[string]cty.Value{
 				"status": cty.StringVal(r.Status.String()),
 				"time":   cty.StringVal(events.TimeNow()),
 				"error":  cty.StringVal(errorMsg),
-			},
+			}},
 			Joins: []string{ResourceTableName},
 		},
 	}, nil

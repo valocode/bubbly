@@ -21,8 +21,8 @@ resource "transform" "gosec" {
         input "results" { }
 
         data "code_scan" {
-            fields = {
-                "tool": "gosec"
+            fields {
+                tool = "gosec"
             }
         }
 
@@ -31,11 +31,11 @@ resource "transform" "gosec" {
             labels = ["code_issue"]
             iterator = it
             content {
-                fields = {
-                    "id": it.value["rule_id"],
-                    "message": it.value["details"],
-                    "severity": lower(it.value["severity"]),
-                    "type": "security",
+                fields {
+                    id = it.value["rule_id"]
+                    message = it.value["details"]
+                    severity = lower(it.value["severity"])
+                    type = "security"
                 }
                 joins = ["code_scan"]
             }
