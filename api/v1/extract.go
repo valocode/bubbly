@@ -82,18 +82,39 @@ func (e *Extract) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 		}
 	}
 
-	vals := make([]cty.Value, 0, len(e.Spec.Source))
+	var (
+		vals = make([]cty.Value, 0, len(e.Spec.Source))
+		errs = make([]core.ResourceOutput, 0)
+	)
 	for _, src := range e.Spec.Source {
 		val, err := src.Resolve(bCtx)
 		if err != nil {
-			return core.ResourceOutput{
+			output := core.ResourceOutput{
 				ID:     e.String(),
 				Status: events.ResourceRunFailure,
-				Error:  fmt.Errorf("failed to resolve extract source: %w", err),
+				Error:  fmt.Errorf("error on extract: %w", err),
 				Value:  cty.NilVal,
 			}
+			if e.Spec.ContinueOnError {
+				errs = append(errs, output)
+				// Append a value anyway, in case indexes are used to access
+				// the results, this keeps the extract data "in sync"
+				vals = append(vals, cty.NilVal)
+				bCtx.Logger.Error().Err(err).Msg("error on extract but continue on error set")
+				continue
+			}
+			return output
 		}
 		vals = append(vals, val)
+	}
+
+	if len(errs) == len(e.Spec.Source) {
+		return core.ResourceOutput{
+			ID:     e.ID(),
+			Status: events.ResourceRunFailure,
+			Error:  errors.New("error on all extracts"),
+			Value:  cty.NilVal,
+		}
 	}
 
 	// We support dynamic blocks (HCL extension), so there may be more than one
@@ -112,12 +133,12 @@ func (e *Extract) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.R
 	case 1:
 		val = vals[0]
 	default:
-		val = cty.ListVal(vals)
+		val = cty.TupleVal(vals)
 	}
 
 	// There is the exception if multi source is set
 	if e.Spec.MultiSource {
-		val = cty.ListVal(vals)
+		val = cty.TupleVal(vals)
 	}
 
 	return core.ResourceOutput{
@@ -282,9 +303,10 @@ type SourceBlocks []source
 type extractSpec struct {
 	Inputs core.InputDeclarations `hcl:"input,block"`
 	// the type is either json, xml, rest, etc.
-	Type        extractType `hcl:"type,attr"`
-	MultiSource bool        `hcl:"multi_source,optional"`
-	SourceHCL   []struct {
+	Type            extractType `hcl:"type,attr"`
+	MultiSource     bool        `hcl:"multi_source,optional"`
+	ContinueOnError bool        `hcl:"continue_on_error,optional"`
+	SourceHCL       []struct {
 		Body hcl.Body `hcl:",remain"`
 	} `hcl:"source,block"`
 	// Source stores the actual value for SourceHCL
