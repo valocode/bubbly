@@ -8,21 +8,17 @@ import (
 	"github.com/valocode/bubbly/config"
 )
 
-// BubblyContext holds global bubbly state that is required to be injected into
-// functions throughout the codebase.
+// BubblyContext holds global bubbly state that is required
+// to be injected into functions throughout the codebase.
 type BubblyContext struct {
-	// Logger stores the global bubbly logger
-	Logger     *zerolog.Logger
-	AuthConfig *config.AuthConfig
-	// Config stores global bubbly configuration,
-	// such as bubbly server configuration
+	Logger       *zerolog.Logger
+	AuthConfig   *config.AuthConfig
 	ServerConfig *config.ServerConfig
-	// Store provider configuration
 	StoreConfig  *config.StoreConfig
 	AgentConfig  *config.AgentConfig
 	ClientConfig *config.ClientConfig
 	CLIConfig    *config.CLIConfig
-	// TODO: Could also contain a client.Client... consider.
+	Version      *Version
 }
 
 // NewBubblyContext sets up a default Bubbly Context
@@ -35,12 +31,43 @@ func NewBubblyContext() *BubblyContext {
 		AgentConfig:  config.DefaultAgentConfig(),
 		ClientConfig: config.DefaultClientConfig(),
 		CLIConfig:    config.DefaultCLIConfig(),
+		Version:      NewVersionInfo(),
+	}
+}
+
+// Version contains the SHA1 value for the commit
+// in the Bubbly Git repo from which the current running
+// binary was built. If the commit was tagged, the tag
+// is also included.
+type Version struct {
+	SHA1 string
+	Tag  string
+}
+
+// These will be set by the compiler using "-X env.sha1"
+// and "-X env.tag". They have to be simple variables in,
+// the current "env" package, because there is no way
+// to set the fields of a local struct. So, the compiler
+// will set these, and then the values are going to be
+// used to create an instance of struct, which can then
+// be included into the Bubbly context.
+var (
+	sha1 string
+	tag  string
+)
+
+// NewVersionInfo returns a reference to the Version structure,
+// populated with information provided at compile time.
+func NewVersionInfo() *Version {
+	return &Version{
+		SHA1: sha1,
+		Tag:  tag,
 	}
 }
 
 // NewDefaultLogger sets up a default logger
 func NewDefaultLogger() *zerolog.Logger {
-	// Initialize Logger
+
 	logger := zerolog.New(zerolog.ConsoleWriter{
 		Out:     os.Stderr,
 		NoColor: false,

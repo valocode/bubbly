@@ -10,6 +10,9 @@ services:
       - "${BUBBLY_STORE_PROVIDER:-postgres}"
     container_name: bubbly
     build:
+      args:
+        SHA: ${TAG:-undefined}
+        TAG: ${SHA:-undefined}
       context: .
       dockerfile: Dockerfile
     environment:
@@ -27,7 +30,7 @@ services:
       - "agent"
       - "--debug"
 
-      # One of the Store options for Bubbly
+  # Data Store for Bubbly
   postgres:
     image: postgres:13.0
     container_name: postgres

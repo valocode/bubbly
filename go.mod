@@ -18,6 +18,8 @@ require (
 	github.com/docker/docker v20.10.6+incompatible
 	github.com/fatih/color v1.10.0
 	github.com/go-git/go-git/v5 v5.2.0
+	github.com/go-openapi/spec v0.20.3 // indirect
+	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/graphql-go/graphql v0.7.9
 	github.com/hashicorp/go-multierror v1.1.1
@@ -29,6 +31,7 @@ require (
 	github.com/labstack/echo/v4 v4.2.1
 	github.com/lib/pq v1.9.0 // indirect
 	github.com/likexian/gokit v0.20.15
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
@@ -45,10 +48,10 @@ require (
 	github.com/zclconf/go-cty-yaml v1.0.2
 	github.com/ziflex/lecho/v2 v2.1.0
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
-	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
-	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015 // indirect
-	golang.org/x/text v0.3.6 // indirect
-	golang.org/x/tools v0.1.0 // indirect
+	golang.org/x/net v0.0.0-20210525063256-abc453219eb5 // indirect
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sys v0.0.0-20210603125802-9665404d3644 // indirect
+	golang.org/x/tools v0.1.2 // indirect
 	gopkg.in/h2non/gock.v1 v1.0.16
 )
 

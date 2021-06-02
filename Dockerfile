@@ -1,7 +1,6 @@
 # Stage 1 build
 FROM golang:1.16-buster AS builder
 
-
 WORKDIR $GOPATH/src/github.com/valocode/bubbly
 
 COPY go.sum .
@@ -16,18 +15,29 @@ COPY . .
 # generate swagger documentation
 RUN swag init
 
-RUN go build -o /go/bin/bubbly
+# Bubbly version information
+ARG SHA
+ENV SHA=${SHA:-undefined}
+ARG TAG
+ENV TAG=${TAG:-undefined}
+
+# Compile the static binary for Bubbly.
+ENV CGO_ENABLED=0
+ENV PRE=github.com/valocode/bubbly
+ENV LDFLAGS="-X '${PRE}/env.sha1=${SHA}' -X '${PRE}/env.tag=${TAG}'"
+
+RUN go build -o /go/bin/bubbly -ldflags "${LDFLAGS}"
 
 # step 2 deploy
-FROM gcr.io/distroless/base-debian10
+FROM gcr.io/distroless/static-debian10
 
 # Copy our static executable.
-COPY --from=builder /go/bin/bubbly go/bin/bubbly
+COPY --from=builder /go/bin/bubbly /bubbly
 
 # Use an unprivileged user.
 USER nonroot:nonroot
 
-ENTRYPOINT ["go/bin/bubbly"]
+ENTRYPOINT ["/bubbly"]
 # 4223 NATS service
 # 8111 bubbly agent
 # 8222 NATS HTTP
