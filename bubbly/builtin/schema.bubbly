@@ -51,11 +51,8 @@ table "_event" {
 // #############################
 
 table "project" {
-    field "id" {
-        type = string
-        unique = true
-    }
     field "name" {
+        unique = true
         type = string
     }
 }

@@ -18,7 +18,6 @@ func ListReleases(bCtx *env.BubblyContext) (*builtin.Release_Wrap, error) {
 		name
 		version
 		project {
-			id
 			name
 		}
 		release_item(filter_on: true) {

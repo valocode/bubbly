@@ -18,12 +18,12 @@ type DataBlocks []Data
 // Data will reference a Table name, and assign the Field values into the
 // corresponding Field values in the Table
 type Data struct {
-	TableName     string          `hcl:",label" json:"data"`
+	TableName     string          `hcl:",label" json:"table"`
 	Fields        *DataFields     `hcl:"fields,block" json:"fields,omitempty"`
 	Joins         []string        `hcl:"joins,optional" json:"joins,omitempty"`
 	Policy        DataBlockPolicy `hcl:"policy,optional" json:"policy,omitempty"`
 	IgnoreNesting bool            `hcl:"ignore_nesting,optional" json:"ignore_nesting,omitempty"`
-	Data          DataBlocks      `hcl:"data,block" json:"nested_data,omitempty"`
+	Data          DataBlocks      `hcl:"data,block" json:"data,omitempty"`
 }
 
 // DataBlockPolicy defines the policy for how the data block shall be handled.
@@ -67,12 +67,12 @@ type DataFields struct {
 // but for now this works and is not that ugly.
 func (d *Data) UnmarshalJSON(data []byte) error {
 	v := struct {
-		TableName     string          `json:"data"`
+		TableName     string          `json:"table"`
 		Fields        *DataFields     `json:"fields"`
 		Joins         []string        `json:"joins"`
 		Policy        DataBlockPolicy `json:"policy"`
 		IgnoreNesting bool            `json:"ignore_nesting"`
-		Data          DataBlocks      `json:"nested_data"`
+		Data          DataBlocks      `json:"data"`
 	}{}
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err

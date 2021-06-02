@@ -24,8 +24,7 @@ func GetRelease(bCtx *env.BubblyContext, filename string) (*builtin.Release, err
 	release(name: "%s", version: "%s") {
 		name
 		version
-		project(id: "%s") {
-			id
+		project(name: "%s") {
 			name
 		}
 		release_item {

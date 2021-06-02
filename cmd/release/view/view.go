@@ -105,7 +105,7 @@ func (o *options) run() error {
 func (o *options) Print() {
 	status := cmdutil.ReleaseStatusColor(builtin.ReleaseStatusByStages(*o.Release))
 
-	fmt.Println("Project: " + o.Release.Project.Id)
+	fmt.Println("Project: " + o.Release.Project.Name)
 	fmt.Println("Name: " + o.Release.Name)
 	fmt.Println("Version: " + o.Release.Version)
 	fmt.Println("Status: " + status)

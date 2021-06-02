@@ -17,6 +17,7 @@ import (
 	"github.com/valocode/bubbly/api"
 	"github.com/valocode/bubbly/api/common"
 	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/bubbly/builtin"
 	"github.com/valocode/bubbly/env"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
@@ -40,55 +41,41 @@ const (
 )
 
 func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
-	var data core.DataBlocks
 	err := r.Validate()
 	if err != nil {
 		return nil, err
 	}
 
-	projectData := core.Data{
-		TableName: "project",
-		Fields: &core.DataFields{Values: map[string]cty.Value{
-			"id": cty.StringVal(r.Project),
-		}},
-	}
-	data = append(data, projectData)
-
 	//
 	// Create the release and release items data blocks
 	//
-	data = append(data, core.Data{
-		TableName: "release",
-		Fields: &core.DataFields{Values: map[string]cty.Value{
-			"name":    cty.StringVal(r.Name),
-			"version": cty.StringVal(r.Version),
-		}},
-		Joins: []string{"project"},
+	release := builtin.Release{
+		Name:    r.Name,
+		Version: r.Version,
+		Project: &builtin.Project{
+			Name: r.Project,
+		},
 		// Do not allow update, as that causes all kinds of complications with
 		// releases. If you want to change a specific release, first delete it
 		// and recreate it
-		Policy: core.CreatePolicy,
-	})
+		DBlock_Policy: core.CreatePolicy,
+	}
+
 	//
 	// Create the release_stage and release_criteria data blocks
 	//
 	for _, stage := range r.Stages {
-		data = append(data, core.Data{
-			TableName: "release_stage",
-			Fields: &core.DataFields{Values: map[string]cty.Value{
-				"name": cty.StringVal(stage.Name),
-			}},
-			Joins: []string{"release"},
-		})
-		for _, criteria := range stage.Criterion {
-			data = append(data, core.Data{
-				TableName: "release_criteria",
-				Fields: &core.DataFields{Values: map[string]cty.Value{
-					"entry_name": cty.StringVal(criteria.Name),
-				}},
-				Joins: []string{"release_stage", "release"},
-			})
+		relStage := builtin.ReleaseStage{
+			Name: stage.Name,
 		}
+		for _, criteria := range stage.Criterion {
+			relCriteria := builtin.ReleaseCriteria{
+				EntryName:    criteria.Name,
+				DBlock_Joins: []string{"release"},
+			}
+			relStage.ReleaseCriteria = append(relStage.ReleaseCriteria, relCriteria)
+		}
+		release.ReleaseStage = append(release.ReleaseStage, relStage)
 	}
 
 	//
@@ -98,68 +85,42 @@ func (r *ReleaseSpec) Data() (core.DataBlocks, error) {
 	// E.g. for git we create the commit and also the release_item that joins
 	// to that specific commit.
 	if r.GitItem != nil {
-		gitData, err := r.GitItem.Data(r.BaseDir)
+		commit, err := r.GitItem.Commit(r.BaseDir)
 		if err != nil {
 			return nil, fmt.Errorf("error getting git data for repo %s: %w", r.GitItem.Repo, err)
 		}
-		data = append(data, gitData...)
-		data = append(data, core.Data{
-			TableName: "release_item",
-			Fields: &core.DataFields{Values: map[string]cty.Value{
-				"type": cty.StringVal(releaseItemGitType),
-			}},
-			// Join to the git commit that is created above
-			Joins: []string{"commit", "release"},
-		})
+		relItem := builtin.ReleaseItem{
+			Type:   releaseItemGitType,
+			Commit: commit,
+		}
+		release.ReleaseItem = append(release.ReleaseItem, relItem)
 	}
 	if r.ArtifactItem != nil {
-		artifactData, err := r.ArtifactItem.Data(r.BaseDir)
-		if err != nil {
-			return nil, fmt.Errorf("error getting artifact data for %s: %w", r.ArtifactItem.Name, err)
-		}
-		data = append(data, artifactData...)
-		data = append(data, core.Data{
-			TableName: "release_item",
-			Fields: &core.DataFields{Values: map[string]cty.Value{
-				"type": cty.StringVal(releaseItemArtifactType),
-			}},
-			// Join to the git commit that is created above
-			Joins: []string{"artifact"},
-		})
+		// TODO: Remove ReleaseItems...
 	}
 
-	return data, nil
+	return builtin.ToDataBlocks(release), nil
 }
 
 func (r *ReleaseSpec) DataRef() (core.DataBlocks, error) {
-	var data core.DataBlocks
 	err := r.Validate()
 	if err != nil {
 		return nil, err
 	}
-	projectData := core.Data{
-		TableName: "project",
-		Fields: &core.DataFields{Values: map[string]cty.Value{
-			"id": cty.StringVal(r.Project),
-		}},
-		Policy: core.ReferencePolicy,
-	}
-	data = append(data, projectData)
 
 	//
 	// Create the release and release items data blocks
 	//
-	data = append(data, core.Data{
-		TableName: "release",
-		Fields: &core.DataFields{Values: map[string]cty.Value{
-			"name":    cty.StringVal(r.Name),
-			"version": cty.StringVal(r.Version),
-		}},
-		Joins:  []string{"project"},
-		Policy: core.ReferencePolicy,
-	})
-
-	return data, nil
+	release := builtin.Release{
+		Name:    r.Name,
+		Version: r.Version,
+		Project: &builtin.Project{
+			Name:          r.Project,
+			DBlock_Policy: core.ReferencePolicy,
+		},
+		DBlock_Policy: core.ReferencePolicy,
+	}
+	return builtin.ToDataBlocks(release), nil
 }
 
 func (r *ReleaseSpec) String() string {
@@ -220,17 +181,16 @@ type gitItem struct {
 	Remote string `hcl:"remote,optional"`
 }
 
-func (g *gitItem) Data(baseDir string) (core.DataBlocks, error) {
-
-	repo, err := g.openRepo(baseDir)
+func (g *gitItem) Commit(baseDir string) (*builtin.Commit, error) {
+	gitRepo, err := g.openRepo(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open git repository %s: %w", g.Repo, err)
 	}
-	ref, err := repo.Head()
+	ref, err := gitRepo.Head()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get HEAD of repo %s: %w", g.Repo, err)
 	}
-	commit, err := repo.CommitObject(ref.Hash())
+	gitCommit, err := gitRepo.CommitObject(ref.Hash())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit from HEAD %s: %w", ref.Hash().String(), err)
 	}
@@ -245,31 +205,19 @@ func (g *gitItem) Data(baseDir string) (core.DataBlocks, error) {
 		}
 	}
 
-	repoData := core.Data{
-		TableName: "repo",
-		Fields: &core.DataFields{Values: map[string]cty.Value{
-			"id": cty.StringVal(g.ID),
-		}},
-		Joins: []string{"project"},
+	commit := builtin.Commit{
+		Id:   ref.Hash().String(),
+		Time: gitCommit.Author.When.String(),
+		Repo: &builtin.Repo{
+			Name: g.ID,
+		},
 	}
 	// If HEAD is not detached, then we can add the branch name to the git data
 	// block
 	if ref.Name().IsBranch() {
-		repoData.Data = append(repoData.Data, core.Data{
-			TableName: "branch",
-			Fields: &core.DataFields{Values: map[string]cty.Value{
-				"name": cty.StringVal(ref.Name().Short()),
-			}},
-		})
-	}
-
-	commitData := core.Data{
-		TableName: "commit",
-		Fields: &core.DataFields{Values: map[string]cty.Value{
-			"id":   cty.StringVal(ref.Hash().String()),
-			"time": cty.StringVal(commit.Author.When.String()),
-		}},
-		Joins: []string{"repo"},
+		branch := builtin.Branch{Name: ref.Name().Short()}
+		commit.Repo.Branch = append(commit.Repo.Branch, branch)
+		commit.Branch = &branch
 	}
 
 	tag, _, err := g.version(baseDir)
@@ -277,18 +225,10 @@ func (g *gitItem) Data(baseDir string) (core.DataBlocks, error) {
 		return nil, fmt.Errorf("error getting git tag: %w", err)
 	}
 	if tag != "" {
-		commitData.Fields.Values["tag"] = cty.StringVal(tag)
+		commit.Tag = tag
 	}
 
-	// commitData.Fields["tag"] = cty.StringVal("lala")
-	// If HEAD is not detached, also join the commit to the branch
-	if ref.Name().IsBranch() {
-		commitData.Joins = append(commitData.Joins, "branch")
-	}
-
-	return core.DataBlocks{
-		repoData, commitData,
-	}, nil
+	return &commit, nil
 }
 
 func (g *gitItem) openRepo(baseDir string) (*git.Repository, error) {
@@ -413,7 +353,7 @@ type artifactItem struct {
 	Location string `hcl:"location,attr"`
 }
 
-func (a *artifactItem) Data(baseDir string) (core.DataBlocks, error) {
+func (a *artifactItem) Artifact(baseDir string) (*builtin.Artifact, error) {
 	var (
 		sha256 string
 		err    error
@@ -437,16 +377,10 @@ func (a *artifactItem) Data(baseDir string) (core.DataBlocks, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error calculating sha256 sum of %s: %w", a.Location, err)
 	}
-
-	return core.DataBlocks{
-		core.Data{
-			TableName: "artifact",
-			Fields: &core.DataFields{Values: map[string]cty.Value{
-				"name":     cty.StringVal(a.Name),
-				"location": cty.StringVal(a.Location),
-				"sha256":   cty.StringVal(sha256),
-			}},
-		},
+	return &builtin.Artifact{
+		Name:     a.Name,
+		Sha256:   sha256,
+		Location: a.Location,
 	}, nil
 }
 
@@ -513,11 +447,11 @@ func (c *releaseCriteria) Evaluate(bCtx *env.BubblyContext, release *ReleaseSpec
 		// TODO: handle if the artifact doesn't exist. We do not want to error,
 		// but it should mark the release_entry as false, e.g.
 		// entry.Result = <ARTIFACT_RESULT>
-		aData, err := c.Artifact.Data(baseDir)
+		artifact, err := c.Artifact.Artifact(baseDir)
 		if err != nil {
 			return nil, fmt.Errorf("error with artifact %s: %w", c.Artifact.Name, err)
 		}
-		data = append(data, aData...)
+		data = append(data, builtin.ToDataBlocks(*artifact)...)
 	}
 	// Iterate through the run blocks. As soon as one fails, or one is a criteria
 	// kind with a failing result, break the loop
@@ -547,25 +481,20 @@ func (c *releaseCriteria) Evaluate(bCtx *env.BubblyContext, release *ReleaseSpec
 		}
 	}
 	// Create the data block for the release entry
-	data = append(data, core.Data{
-		TableName: "release_criteria",
-		Fields: &core.DataFields{Values: map[string]cty.Value{
-			"entry_name": cty.StringVal(c.Name),
-		}},
-		Joins:  []string{"release"},
-		Policy: core.ReferencePolicy,
-	})
+	relCriteria := builtin.ReleaseCriteria{
+		EntryName:     c.Name,
+		DBlock_Joins:  []string{"release"},
+		DBlock_Policy: core.ReferencePolicy,
+		ReleaseEntry: []builtin.ReleaseEntry{
+			{
+				Name:   c.Name,
+				Result: entryResult,
+				Reason: entryReason,
+			},
+		},
+	}
 
-	data = append(data, core.Data{
-		TableName: "release_entry",
-		Fields: &core.DataFields{Values: map[string]cty.Value{
-			"name":   cty.StringVal(c.Name),
-			"result": cty.BoolVal(entryResult),
-			"reason": cty.StringVal(entryReason),
-		}},
-		Joins:  []string{"release_criteria"},
-		Policy: core.CreatePolicy,
-	})
+	data = append(data, builtin.ToDataBlocks(relCriteria)...)
 	return data, nil
 }
 

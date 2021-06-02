@@ -78,6 +78,7 @@ func genStructsFromSchema(graph *store.SchemaGraph) error {
 	// Use this comment when testing to ignore compile errors...
 	// fmt.Fprintf(&b, "//+build ignore\n\n")
 	fmt.Fprintf(&b, "package %s\n\n", packageName)
+	fmt.Fprintf(&b, "import \"github.com/valocode/bubbly/api/core\"\n\n")
 	graph.Traverse(func(node *store.SchemaNode) error {
 		var (
 			table     = node.Table
@@ -87,22 +88,27 @@ func genStructsFromSchema(graph *store.SchemaGraph) error {
 		fmt.Fprintf(&b, "// %s\n", strings.ToUpper(table.Name))
 		fmt.Fprintf(&b, "// #######################################\n")
 		fmt.Fprintf(&b, "type %s struct {\n", tableName)
+		// Add the Data Block "metadata" fields, which indicate the table name
+		// and policy
+		fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s,omitempty\"`\n", builtin.DBlockTableName, "string", table.Name)
+		fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s\"`\n", builtin.DBlockPolicyName, "core.DataBlockPolicy", "-")
+		fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s\"`\n", builtin.DBlockJoins, "[]string", "-")
 		for _, field := range table.Fields {
-			fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s\"`\n", camelToPascal(field.Name), ctyTypeToString(field.Type), field.Name)
+			fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s,omitempty\"`\n", camelToPascal(field.Name), ctyTypeToString(field.Type), field.Name)
 		}
 		for _, edge := range node.Edges {
 			var (
 				eTable = edge.Node.Table
 				single = edge.Rel != store.OneToMany
 			)
-			fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s\"`\n", camelToPascal(eTable.Name), joinToType(eTable.Name, single), eTable.Name)
+			fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s,omitempty\"`\n", camelToPascal(eTable.Name), joinToType(eTable.Name, single), eTable.Name)
 		}
 
 		fmt.Fprintf(&b, "}\n")
 
 		// Create some wrappers for JSON
 		fmt.Fprintf(&b, "type %s struct {\n", tableName+"_Wrap")
-		fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s\"`\n", tableName, "[]"+tableName, table.Name)
+		fmt.Fprintf(&b, "\t%s\t%s\t`json:\"%s,omitempty\"`\n", tableName, "[]"+tableName, table.Name)
 		fmt.Fprintf(&b, "}\n\n")
 		return nil
 	})
