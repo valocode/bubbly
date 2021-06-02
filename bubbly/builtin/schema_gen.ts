@@ -75,7 +75,6 @@ export interface release_wrap {
 // PROJECT
 // #######################################
 export interface project {
-	id?: string;
 	name?: string;
 	repo?: repo[];
 	release?: release[];

@@ -75,8 +75,7 @@ var BuiltinTables = core.Tables{
 	// #######################################
 	table("project",
 		fields(
-			field("id", cty.String, true),
-			field("name", cty.String, false),
+			field("name", cty.String, true),
 		),
 		joins(),
 	),
