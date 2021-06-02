@@ -2,10 +2,8 @@ package agent
 
 import (
 	"fmt"
-	"reflect"
-	"strconv"
-
 	"github.com/fatih/color"
+	"reflect"
 
 	"github.com/valocode/bubbly/agent"
 	"github.com/valocode/bubbly/config"
@@ -113,75 +111,73 @@ func NewCmdAgent(bCtx *env.BubblyContext) (*cobra.Command, *AgentOptions) {
 	f.StringVar(
 		(*string)(&o.bCtx.AgentConfig.DeploymentType),
 		"deployment-type",
-		config.DefaultDeploymentType.String(),
+		o.bCtx.AgentConfig.DeploymentType.String(),
 		"the type of agent deployment. Options: single",
 	)
 	f.BoolVar(
 		&o.bCtx.AgentConfig.EnabledComponents.NATSServer,
 		"nats-server",
-		config.DefaultNATSServerToggle,
+		o.bCtx.AgentConfig.EnabledComponents.NATSServer,
 		"whether to run the NATS Server on this agent",
 	)
 	f.BoolVar(
 		&o.bCtx.AgentConfig.EnabledComponents.APIServer,
 		"api-server",
-		config.DefaultAPIServerToggle,
+		o.bCtx.AgentConfig.EnabledComponents.APIServer,
 		"whether to run the api server on this agent",
 	)
 	f.BoolVar(
 		&o.bCtx.AgentConfig.EnabledComponents.DataStore,
 		"data-store",
-		config.DefaultDataStoreToggle,
+		o.bCtx.AgentConfig.EnabledComponents.DataStore,
 		"whether to run the data store on this agent",
 	)
 	f.BoolVar(
 		&o.bCtx.AgentConfig.EnabledComponents.Worker,
 		"worker",
-		config.DefaultWorkerToggle,
+		o.bCtx.AgentConfig.EnabledComponents.Worker,
 		"whether to run a bubbly worker on this agent",
 	)
 	f.StringVar(
 		(*string)(&o.bCtx.StoreConfig.Provider),
 		"data-store-provider",
-		config.DefaultStoreProvider,
+		(string)(o.bCtx.StoreConfig.Provider),
 		"provider of the bubbly data store",
 	)
-	port, _ := strconv.Atoi(config.DefaultNATSServerPort)
 	f.IntVar(
 		&o.bCtx.AgentConfig.NATSServerConfig.Port,
 		"nats-server-port",
-		port,
+		o.bCtx.AgentConfig.NATSServerConfig.Port,
 		"port of the NATS Server",
 	)
-	httpPort, _ := strconv.Atoi(config.DefaultNATSServerHTTPPort)
 	f.IntVar(
 		&o.bCtx.AgentConfig.NATSServerConfig.HTTPPort,
 		"nats-server-http-port",
-		httpPort,
+		o.bCtx.AgentConfig.NATSServerConfig.HTTPPort,
 		"HTTP Port of the NATS Server",
 	)
 	f.StringVar(
 		&o.bCtx.StoreConfig.PostgresAddr,
 		"postgres-addr",
-		config.DefaultPostgresAddr,
+		o.bCtx.StoreConfig.PostgresAddr,
 		"postgres address for the data store",
 	)
 	f.StringVar(
 		&o.bCtx.StoreConfig.PostgresUser,
 		"postgres-username",
-		config.DefaultPostgresUser,
+		o.bCtx.StoreConfig.PostgresUser,
 		"postgres username for the data store",
 	)
 	f.StringVar(
 		&o.bCtx.StoreConfig.PostgresPassword,
 		"postgres-password",
-		config.DefaultPostgresPassword,
+		o.bCtx.StoreConfig.PostgresPassword,
 		"postgres password for the data store",
 	)
 	f.StringVar(
 		&o.bCtx.StoreConfig.PostgresDatabase,
 		"postgres-database",
-		config.DefaultPostgresDatabase,
+		o.bCtx.StoreConfig.PostgresDatabase,
 		"postgres database for the data store",
 	)
 
