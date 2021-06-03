@@ -1,0 +1,150 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="803px" height="232px" viewBox="-0.5 -0.5 803 232" content="&lt;mxfile&gt;&lt;diagram id=&quot;SBfSEjfhCL28hYsArl_U&quot; name=&quot;Page-1&quot;&gt;7VlNc5swEP01vnr4jPGxcez20M506kPSowZkUCNYRsg27q+vBCsDsZNJkw44LhwY9mn1tXp6WmDiLtLysyB58g0iyieOFZUT927iOIHtqbsGDjXgO7MaiAWLashugDX7TRG0EN2yiBYdRwnAJcu7YAhZRkPZwYgQsO+6bYB3e81JTE+AdUj4KXrPIpngtMwsNP6FsjgxPds387okJcYZZ1IkJIJ9C3KXE3chAGT9lJYLynXsTFzqeqtnSo8DEzSTr6mAIy7kwcyNRmqqaIKQCcSQEb5s0NtwK3ZU17eVIWCbRZVlKaup8BUgR5dfVMoDLiLZSlBQIlOOpbRk8qH1/FM3NfXRuiux5co4GCOT4vDQNlq1tNlUqyxTbwOZXJGUcQ3cg3hUU1+TrMCiNWxFqEeZSKmY5PjuJ3VTsdM37VBMY4CYU5KzYhpCWhWEReW62tQNq0ds2nduW40vgIOoQuxa1aXwQgp4pK0S37OCZaBK6mXRa/HswiJUmEEr08W9QERM0cs7kkptRgopVfFQLoJyItmu2zrBbREf/RrmqAckz3kiYdc7wrfY6A+qAlXQU4JxrvapJtI+YZKuc1INf6+UossMUuT15t2wUjPshXDVJWYvOjrkjPOW56q6LpACGDYqJC1fXurTRTQVUEtQTI207FvKhFDSEiWDvWfR5/+VejxPv8sk1d+qh3eqHkFP6mHbI5Oum0m21ROVvPEgGuogcvzBTqKbN+jHh5KMS6NLR3z/dR7rD5fH+qN8XEgea8/6kw/7LfoxfP5x7XnEe9NPrPodmOrkyLOZM5/OW1fQod2NNbX8IFCxdOaebQdGEUz7tShhk08Ydhzjq0gXjFIzlNR488EyFdv/kFIzvuqclyhzaHXedfpKVkzno4QMLyG9pivuqCHXpCHOGQ3p63uJ6XzUkOE/mPSqIeOHssHWfeb2lX4qs/mZXL+jNH/k3eUf&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <style type="text/css">
+            /* vietnamese */&#xa;@font-face {&#xa;  font-family: 'Work Sans';&#xa;  font-style: normal;&#xa;  font-weight: 400;&#xa;  src: url("https://fonts.gstatic.com/s/worksans/v9/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXBiAJoI3ZKyHaQfhf.woff") format('woff');&#xa;  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;&#xa;}&#xa;/* latin-ext */&#xa;@font-face {&#xa;  font-family: 'Work Sans';&#xa;  font-style: normal;&#xa;  font-weight: 400;&#xa;  src: url("https://fonts.gstatic.com/s/worksans/v9/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXBiEJoI3ZKyHaQfhf.woff") format('woff');&#xa;  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;&#xa;}&#xa;/* latin */&#xa;@font-face {&#xa;  font-family: 'Work Sans';&#xa;  font-style: normal;&#xa;  font-weight: 400;&#xa;  src: url("https://fonts.gstatic.com/s/worksans/v9/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXBi8JoI3ZKyHaQQ.woff") format('woff');&#xa;  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;&#xa;}&#xa;
+        </style>
+    </defs>
+    <g>
+        <path d="M 81 41 Q 81 41 234.63 41" fill="none" stroke="#5408e8" stroke-miterlimit="10" pointer-events="stroke"/>
+        <path d="M 239.88 41 L 232.88 44.5 L 234.63 41 L 232.88 37.5 Z" fill="#5408e8" stroke="#5408e8" stroke-miterlimit="10" pointer-events="all"/>
+        <ellipse cx="41" cy="41" rx="40" ry="40" fill="#ffffff" stroke="#5408e8" stroke-width="2" pointer-events="all"/>
+        <g transform="translate(-0.5 -0.5)">
+            <switch>
+                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 78px; height: 1px; padding-top: 41px; margin-left: 2px;">
+                        <div style="box-sizing: border-box; font-size: 0; text-align: center; ">
+                            <div style="display: inline-block; font-size: 12px; font-family: Work Sans; color: #000000; line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                Release
+                            </div>
+                        </div>
+                    </div>
+                </foreignObject>
+                <text x="41" y="45" fill="#000000" font-family="Work Sans" font-size="12px" text-anchor="middle">
+                    Release
+                </text>
+            </switch>
+        </g>
+        <path d="M 321 41 Q 321 41 474.63 41" fill="none" stroke="#5408e8" stroke-miterlimit="10" pointer-events="stroke"/>
+        <path d="M 479.88 41 L 472.88 44.5 L 474.63 41 L 472.88 37.5 Z" fill="#5408e8" stroke="#5408e8" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 321 41 Q 401 41.06 401 116 Q 401 190.94 474.63 191" fill="none" stroke="#5408e8" stroke-miterlimit="10" pointer-events="stroke"/>
+        <path d="M 479.88 191 L 472.88 194.49 L 474.63 191 L 472.88 187.49 Z" fill="#5408e8" stroke="#5408e8" stroke-miterlimit="10" pointer-events="all"/>
+        <ellipse cx="281" cy="41" rx="40" ry="40" fill="#ffffff" stroke="#5408e8" stroke-width="2" pointer-events="all"/>
+        <g transform="translate(-0.5 -0.5)">
+            <switch>
+                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 78px; height: 1px; padding-top: 41px; margin-left: 242px;">
+                        <div style="box-sizing: border-box; font-size: 0; text-align: center; ">
+                            <div style="display: inline-block; font-size: 12px; font-family: Work Sans; color: #000000; line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                Release
+                            </div>
+                        </div>
+                    </div>
+                </foreignObject>
+                <text x="281" y="45" fill="#000000" font-family="Work Sans" font-size="12px" text-anchor="middle">
+                    Release
+                </text>
+            </switch>
+        </g>
+        <path d="M 81 191 Q 161 190.94 161 116 Q 161 41.06 234.63 41" fill="none" stroke="#5408e8" stroke-miterlimit="10" pointer-events="stroke"/>
+        <path d="M 239.88 41 L 232.88 44.51 L 234.63 41 L 232.88 37.51 Z" fill="#5408e8" stroke="#5408e8" stroke-miterlimit="10" pointer-events="all"/>
+        <ellipse cx="41" cy="191" rx="40" ry="40" fill="#ffffff" stroke="#5408e8" stroke-width="2" pointer-events="all"/>
+        <g transform="translate(-0.5 -0.5)">
+            <switch>
+                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 78px; height: 1px; padding-top: 191px; margin-left: 2px;">
+                        <div style="box-sizing: border-box; font-size: 0; text-align: center; ">
+                            <div style="display: inline-block; font-size: 12px; font-family: Work Sans; color: #000000; line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                Release
+                            </div>
+                        </div>
+                    </div>
+                </foreignObject>
+                <text x="41" y="195" fill="#000000" font-family="Work Sans" font-size="12px" text-anchor="middle">
+                    Release
+                </text>
+            </switch>
+        </g>
+        <path d="M 561 41 Q 641 41.06 714.63 41.06" fill="none" stroke="#5408e8" stroke-miterlimit="10" pointer-events="stroke"/>
+        <path d="M 719.88 41.06 L 712.88 44.56 L 714.63 41.06 L 712.88 37.56 Z" fill="#5408e8" stroke="#5408e8" stroke-miterlimit="10" pointer-events="all"/>
+        <ellipse cx="521" cy="41" rx="40" ry="40" fill="#ffffff" stroke="#5408e8" stroke-width="2" pointer-events="all"/>
+        <g transform="translate(-0.5 -0.5)">
+            <switch>
+                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 78px; height: 1px; padding-top: 41px; margin-left: 482px;">
+                        <div style="box-sizing: border-box; font-size: 0; text-align: center; ">
+                            <div style="display: inline-block; font-size: 12px; font-family: Work Sans; color: #000000; line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                Release
+                            </div>
+                        </div>
+                    </div>
+                </foreignObject>
+                <text x="521" y="45" fill="#000000" font-family="Work Sans" font-size="12px" text-anchor="middle">
+                    Release
+                </text>
+            </switch>
+        </g>
+        <path d="M 561 191 Q 641 190.94 641 116 Q 641 41.06 714.63 41" fill="none" stroke="#5408e8" stroke-miterlimit="10" pointer-events="stroke"/>
+        <path d="M 719.88 41 L 712.88 44.51 L 714.63 41 L 712.88 37.51 Z" fill="#5408e8" stroke="#5408e8" stroke-miterlimit="10" pointer-events="all"/>
+        <ellipse cx="521" cy="191" rx="40" ry="40" fill="#ffffff" stroke="#5408e8" stroke-width="2" pointer-events="all"/>
+        <g transform="translate(-0.5 -0.5)">
+            <switch>
+                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 78px; height: 1px; padding-top: 191px; margin-left: 482px;">
+                        <div style="box-sizing: border-box; font-size: 0; text-align: center; ">
+                            <div style="display: inline-block; font-size: 12px; font-family: Work Sans; color: #000000; line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                Release
+                            </div>
+                        </div>
+                    </div>
+                </foreignObject>
+                <text x="521" y="195" fill="#000000" font-family="Work Sans" font-size="12px" text-anchor="middle">
+                    Release
+                </text>
+            </switch>
+        </g>
+        <path d="M 321 191 Q 321 191 474.63 191" fill="none" stroke="#5408e8" stroke-miterlimit="10" pointer-events="stroke"/>
+        <path d="M 479.88 191 L 472.88 194.5 L 474.63 191 L 472.88 187.5 Z" fill="#5408e8" stroke="#5408e8" stroke-miterlimit="10" pointer-events="all"/>
+        <ellipse cx="281" cy="191" rx="40" ry="40" fill="#ffffff" stroke="#5408e8" stroke-width="2" pointer-events="all"/>
+        <g transform="translate(-0.5 -0.5)">
+            <switch>
+                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 78px; height: 1px; padding-top: 191px; margin-left: 242px;">
+                        <div style="box-sizing: border-box; font-size: 0; text-align: center; ">
+                            <div style="display: inline-block; font-size: 12px; font-family: Work Sans; color: #000000; line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                Release
+                            </div>
+                        </div>
+                    </div>
+                </foreignObject>
+                <text x="281" y="195" fill="#000000" font-family="Work Sans" font-size="12px" text-anchor="middle">
+                    Release
+                </text>
+            </switch>
+        </g>
+        <ellipse cx="761" cy="41" rx="40" ry="40" fill="#ffffff" stroke="#5408e8" stroke-width="2" pointer-events="all"/>
+        <g transform="translate(-0.5 -0.5)">
+            <switch>
+                <foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 78px; height: 1px; padding-top: 41px; margin-left: 722px;">
+                        <div style="box-sizing: border-box; font-size: 0; text-align: center; ">
+                            <div style="display: inline-block; font-size: 12px; font-family: Work Sans; color: #000000; line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">
+                                Release
+                            </div>
+                        </div>
+                    </div>
+                </foreignObject>
+                <text x="761" y="45" fill="#000000" font-family="Work Sans" font-size="12px" text-anchor="middle">
+                    Release
+                </text>
+            </switch>
+        </g>
+    </g>
+    <switch>
+        <g requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"/>
+        <a transform="translate(0,-5)" xlink:href="https://www.diagrams.net/doc/faq/svg-export-text-problems" target="_blank">
+            <text text-anchor="middle" font-size="10px" x="50%" y="100%">
+                Viewer does not support full SVG 1.1
+            </text>
+        </a>
+    </switch>
+</svg>
