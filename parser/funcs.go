@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
@@ -16,7 +17,8 @@ import (
 func stdfunctions() map[string]function.Function {
 	return map[string]function.Function{
 		// Our own custom functions here
-		"env": EnvFunc,
+		"debug": DebugFunc,
+		"env":   EnvFunc,
 
 		// The following are from cty stdlib that we pull in
 		"and": stdlib.AndFunc,
@@ -140,6 +142,24 @@ func stdfunctions() map[string]function.Function {
 		"zipmap":           stdlib.ZipmapFunc,
 	}
 }
+
+var DebugFunc = function.New(&function.Spec{
+
+	Params: []function.Parameter{
+		{
+			Name:             "value",
+			Type:             cty.DynamicPseudoType,
+			AllowUnknown:     true,
+			AllowDynamicType: true,
+		},
+	},
+	Type: function.StaticReturnType(cty.DynamicPseudoType),
+	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
+		fmt.Println("DEBUG:: " + args[0].GoString())
+		return args[0], nil
+		// return cty.StringVal(os.Getenv(args[0].AsString())), nil
+	},
+})
 
 // EnvFunc is a function that looks up the value of an environment variable.
 // If the variable is undefined, an empty string is returned instead.

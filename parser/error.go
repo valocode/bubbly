@@ -37,8 +37,8 @@ func (e *ParserError) Error() string {
 			var errMsg string
 
 			errMsg = err.Error()
-			errMsg += "\nEvalContext:\n"
-			errMsg += appendEvalContext(diag.EvalContext)
+			// errMsg += "\nEvalContext:\n"
+			// errMsg += appendEvalContext(diag.EvalContext)
 			// If it's not a duplicate, add it
 			msgs = append(msgs, errMsg)
 			// msgs = append(msgs, err.Error())

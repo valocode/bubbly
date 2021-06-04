@@ -312,6 +312,49 @@ func TestScanTableColumns(t *testing.T) {
 		},
 	}
 
+	// TODO: this query produced an error:
+	// { release { component_release { component_version { component_cve { cve { id } } } } } }
+	// 	{
+	// 		"cve": {
+	// 		  "id": "CVE-2020-10029"
+	// 		}
+	// 	  },
+	// 	  {
+	// 		"cve": {
+	// 		  "id": "CVE-2019-19126"
+	// 		}
+	// 	  },
+	// 	  {
+	// 		"cve": {
+	// 		  "id": "CVE-2013-4412"
+	// 		}
+	// 	  }
+	// 	]
+	//   }
+	// },
+	// {
+	//   "component_version": {
+	// 	"component_cve": [
+	// 	  {
+	// 		"cve": {
+	// 		  "id": null
+	// 		}
+	// 	  }
+	// 	]
+	//   }
+	// },
+	// {
+	//   "component_version": {
+	// 	"component_cve": [
+	// 	  {
+	// 		"cve": {
+	// 		  "id": null
+	// 		}
+	// 	  }
+	// 	]
+	//   }
+	// },
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var (

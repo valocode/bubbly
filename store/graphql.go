@@ -43,7 +43,7 @@ func newGraphQLSchema(graph *SchemaGraph, resolveFn graphql.FieldResolveFn) (gra
 
 	// Traverse the schema graph and add each node/table to the graphql fields
 	graph.Traverse(func(node *SchemaNode) error {
-		addGraphFields(*node.Table, fields)
+		addGraphFields(node, fields)
 		return nil
 	})
 
@@ -82,11 +82,12 @@ func newGraphQLSchema(graph *SchemaGraph, resolveFn graphql.FieldResolveFn) (gra
 // addGraphFields updates the `gqlField` map containing GraphQL Field definitions
 // with information for every field of the Table `t`, which is a table coming
 // from the Bubbly Schema.
-func addGraphFields(t core.Table, fields map[string]gqlField) {
+func addGraphFields(node *SchemaNode, fields map[string]gqlField) {
 	// These are the fields for this specific table
 	// which will correspond to fields on the GraphQL
 	// type, created dynamically below.
 	var (
+		t = node.Table
 		// typeFields are the fields that will be nested inside this type that
 		// we are creating.
 		typeFields = make(graphql.Fields)
@@ -113,10 +114,19 @@ func addGraphFields(t core.Table, fields map[string]gqlField) {
 	gqlField.Args[orderByID] = &graphql.ArgumentConfig{
 		Type: graphQLOrderType(t.Name, typeFields),
 	}
-	// filterOnID works like an INNER JOIN in SQL, that it filters the parent
-	// based on the child
-	gqlField.Args[filterOnID] = &graphql.ArgumentConfig{
+	// notNullID specifies whether we should filter the result based on the
+	// value of the retrieved data. E.g. in the following example we only return
+	// records of `a` where `b` is not null
+	// {
+	// 	a {
+	// 		b(not_null: true) { ... }
+	// 	}
+	// }
+	gqlField.Args[notNullID] = &graphql.ArgumentConfig{
 		Type: graphql.Boolean,
+	}
+	gqlField.Args[filterIsNullID] = &graphql.ArgumentConfig{
+		Type: graphql.NewList(graphQLFilterIsNullType(node)),
 	}
 	gqlField.Args[firstID] = &graphql.ArgumentConfig{
 		Type: graphql.Int,
@@ -180,13 +190,14 @@ func graphQLFieldType(f core.TableField) *graphql.Scalar {
 }
 
 const (
-	filterID     = "filter"
-	filterOnID   = "filter_on"
-	firstID      = "first"
-	lastID       = "last"
-	orderByID    = "order_by"
-	orderByType  = "_order"
-	distinctOnID = "distinct_on"
+	filterID       = "filter"
+	notNullID      = "not_null"
+	filterIsNullID = "filter_is_null"
+	firstID        = "first"
+	lastID         = "last"
+	orderByID      = "order_by"
+	orderByType    = "_order"
+	distinctOnID   = "distinct_on"
 )
 
 const (
@@ -260,6 +271,24 @@ func graphQLFilterType(typeName string, args graphql.FieldConfigArgument) *graph
 	)
 }
 
+func graphQLFilterIsNullType(node *SchemaNode) *graphql.Enum {
+	var (
+		enumName = "IsNullEnum_" + node.Table.Name
+		values   = make(graphql.EnumValueConfigMap, len(node.Edges))
+	)
+
+	for _, e := range node.Edges {
+		values[e.Node.Table.Name] = &graphql.EnumValueConfig{
+			Value: e.Node.Table,
+		}
+	}
+	return graphql.NewEnum(graphql.EnumConfig{
+		Name:        enumName,
+		Description: "Enum for edges from this table to filter on if those edges point to a null value",
+		Values:      values,
+	})
+}
+
 // parseValueToMap ???
 func parseValueToMap(astValue ast.Value) interface{} {
 	switch astValue.GetKind() {
@@ -317,10 +346,10 @@ var enumOrderBy = graphql.NewEnum(graphql.EnumConfig{
 	Description: "The `Order` type is either `asc` or `desc`",
 	Values: graphql.EnumValueConfigMap{
 		"asc": &graphql.EnumValueConfig{
-			Value: 0,
+			Value: "asc",
 		},
 		"desc": &graphql.EnumValueConfig{
-			Value: 1,
+			Value: "desc",
 		},
 	},
 })
