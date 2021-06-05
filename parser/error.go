@@ -41,7 +41,6 @@ func (e *ParserError) Error() string {
 			// errMsg += appendEvalContext(diag.EvalContext)
 			// If it's not a duplicate, add it
 			msgs = append(msgs, errMsg)
-			// msgs = append(msgs, err.Error())
 			prevDiag = diag
 			continue
 		}

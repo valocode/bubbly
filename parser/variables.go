@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -9,13 +10,11 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 )
 
-func walkVariables(node dynblock.WalkVariablesNode, ty reflect.Type) []hcl.Traversal {
+func walkVariables(node dynblock.WalkVariablesNode, ty reflect.Type, nodeBlock *dynblock.WalkVariablesChild) []hcl.Traversal {
 
 	zeroVal := reflect.Zero(ty)
-	schema, _ := gohcl.ImpliedBodySchema(zeroVal.Interface())
-
+	schema, partial := gohcl.ImpliedBodySchema(zeroVal.Interface())
 	fieldByTagName := make(map[string]reflect.Type)
-
 	ty = nestedElem(ty)
 
 	for i := 0; i < ty.NumField(); i++ {
@@ -49,8 +48,33 @@ func walkVariables(node dynblock.WalkVariablesNode, ty reflect.Type) []hcl.Trave
 	vars, children := node.Visit(schema)
 	for _, child := range children {
 		fieldElement := fieldByTagName[child.BlockTypeName]
-		vars = append(vars, walkVariables(child.Node, fieldElement)...)
+		vars = append(vars, walkVariables(child.Node, fieldElement, &child)...)
 	}
+
+	// We have to handle the strange case of `fields { ... }` inside the data
+	// blocks because of the `"hcl:,remain"` tag, which means we get no attributes
+	// and no blocks...
+	// We know the ImpliedBodySchema method returns partial
+	if partial {
+		// This is VERY HACKY and we need a better way of dealing with this.
+		// Initially the approach for data blocks didn't look so troublesome,
+		// but turns out using ",remain" is a PITA!
+		if nodeBlock.BlockTypeName == "fields" {
+			attrs, diags := nodeBlock.Body().JustAttributes()
+			if diags.HasErrors() {
+				fmt.Printf("ERROR: %#v\n", diags.Errs())
+			}
+			for _, a := range attrs {
+				trs := a.Expr.Variables()
+				for _, tr := range trs {
+					if tr.RootName() == "self" {
+						vars = append(vars, tr)
+					}
+				}
+			}
+		}
+	}
+
 	return vars
 }
 

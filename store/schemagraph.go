@@ -37,10 +37,8 @@ type SchemaNode struct {
 }
 
 func (n SchemaNode) Edge(node string) (*SchemaEdge, error) {
-	for _, edge := range n.Edges {
-		if edge.Node.Table.Name == node {
-			return edge, nil
-		}
+	if edge, ok := n.Edges[node]; ok {
+		return edge, nil
 	}
 	return nil, fmt.Errorf("edge does not exist between nodes %s --> %s", n.Table.Name, node)
 }
@@ -64,7 +62,7 @@ func (e *SchemaEdge) isScalar() bool {
 }
 
 // SchemaEdges is a list graph edges
-type SchemaEdges []*SchemaEdge
+type SchemaEdges map[string]*SchemaEdge
 
 // SchemaGraph represents a graph created from the bubbly schema.
 type SchemaGraph struct {
@@ -125,9 +123,9 @@ func (n *SchemaNode) addEdgeFromJoin(child *SchemaNode, unique bool) {
 		edgeToChild.Rel = OneToOne
 	}
 	// Add the edge to the child to this node
-	n.Edges = append(n.Edges, edgeToChild)
+	n.Edges[child.Table.Name] = edgeToChild
 	// Also add the reverse relationship
-	child.Edges = append(child.Edges, edgeToParent)
+	child.Edges[n.Table.Name] = edgeToParent
 }
 
 // internalSchemaGraph returns a schema graph based on the internal tables
@@ -189,7 +187,10 @@ func NewSchemaGraph(tables []core.Table) (*SchemaGraph, error) {
 // createFrom creates a node for every table in the given list.
 func (nodes *nodeRefMap) createFrom(tables []core.Table) {
 	for index, t := range tables {
-		(*nodes)[t.Name] = &SchemaNode{Table: &tables[index]}
+		(*nodes)[t.Name] = &SchemaNode{
+			Table: &tables[index],
+			Edges: make(SchemaEdges),
+		}
 		nodes.createFrom(t.Tables)
 	}
 }

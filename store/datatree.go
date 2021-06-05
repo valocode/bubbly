@@ -40,7 +40,9 @@ func (t dataTree) reset() {
 func resetDataNode(node *dataNode) {
 	node.Visited = false
 	for _, c := range node.Children {
-		resetDataNode(c)
+		if c.Visited {
+			resetDataNode(c)
+		}
 	}
 }
 
@@ -140,6 +142,10 @@ func (d *dataNode) orderedFields() []string {
 	var fieldNames = make([]string, 0, len(d.Data.Fields.Values))
 
 	for k := range d.Data.Fields.Values {
+		// Skip the ID field because we never want to insert this ourselves
+		if k == tableIDField {
+			continue
+		}
 		fieldNames = append(fieldNames, k)
 	}
 	sort.Strings(fieldNames)
@@ -178,9 +184,9 @@ func (d *dataNode) addChild(child *dataNode, fields map[string]struct{}) {
 // createDataTree is the top-level function for creating a data tree.
 // It takes the data blocks, as received by the store, and returns the data tree
 func createDataTree(data core.DataBlocks) (dataTree, error) {
-	var nodes = make(map[string]*dataNode)
+	var nodeContext = make(map[string]*dataNode)
 
-	dataNodes, err := dataBlocksToNodes(data, nil, nodes)
+	dataNodes, err := dataBlocksToNodes(data, nil, nodeContext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create data node tree: %w", err)
 	}
@@ -189,7 +195,7 @@ func createDataTree(data core.DataBlocks) (dataTree, error) {
 }
 
 // dataBlocksToNodes is recursively called to convert all data blocks into nodes
-func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string]*dataNode) (dataTree, error) {
+func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodeContext map[string]*dataNode) (dataTree, error) {
 	var dataNodes = make(dataTree, 0)
 	for index := range data {
 		// Store reference to the data block so that we can update it
@@ -256,10 +262,8 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 			dataRefs[ref.TableName] = tableRefs
 		}
 
-		// Create a node for the current data block and add it to the map of nodes.
-
+		// Create a node for the current data block
 		node := newDataNode(d)
-		nodes[d.TableName] = node
 
 		// If there are no data refs, then it's easy, just add this data block
 		// to the root data nodes
@@ -270,15 +274,20 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 		// If there are data references then we need to add this node as a child
 		for tableName, fields := range dataRefs {
 			// Get the node which the data ref refers to
-			parentNode, ok := nodes[tableName]
+			parentNode, ok := nodeContext[tableName]
 			if !ok {
 				return nil, fmt.Errorf("join refers to data block that does not exist: %s", tableName)
 			}
 			// Add the child node to the parent
 			parentNode.addChild(node, fields)
 		}
+		// Add the node to the nodeContext so that it can be referenced by the
+		// next dataRef to this table, if one exists.
+		// It's important that we do this AFTER we handle the dataRefs for this
+		// node in case this node depends a table with the same name
+		nodeContext[d.TableName] = node
 
-		childNodes, err := dataBlocksToNodes(d.Data, d, nodes)
+		childNodes, err := dataBlocksToNodes(d.Data, d, nodeContext)
 		if err != nil {
 			return nil, err
 		}

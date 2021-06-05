@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -45,6 +46,52 @@ func TestDataTree(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "cyclic join",
+			in: core.DataBlocks{
+				{
+					TableName: "root",
+					Fields:    &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}},
+					Data: core.DataBlocks{
+						{
+							TableName: "root_nested",
+							Fields:    &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}},
+						},
+					},
+				},
+				{
+					TableName: "other",
+					Fields: &core.DataFields{Values: map[string]cty.Value{
+						"_id": cty.CapsuleVal(parser.DataRefType, &parser.DataRef{
+							TableName: "root",
+							Field:     "other_id",
+						}),
+					}},
+				},
+				{
+					TableName: "root",
+					Fields: &core.DataFields{Values: map[string]cty.Value{
+						"_id": cty.CapsuleVal(parser.DataRefType, &parser.DataRef{
+							TableName: "root",
+							Field:     "_id",
+						}),
+					}},
+					Joins:  []string{"other"},
+					Policy: core.UpdatePolicy,
+				},
+			},
+			out: dataTree{
+				&dataNode{
+					Data: &core.Data{TableName: "root", Fields: &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}}},
+					Children: []*dataNode{
+						{Data: &core.Data{TableName: "root_nested", Fields: &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}}}},
+						{Data: &core.Data{TableName: "other"}, Children: []*dataNode{
+							{Data: &core.Data{TableName: "root"}},
+						}},
+					},
+				},
+			},
+		},
 	}
 
 	bCtx := env.NewBubblyContext()
@@ -68,9 +115,11 @@ func TestDataTree(t *testing.T) {
 			// that's a bit of a PITA.
 			_, err = tree.traverse(bCtx, func(bCtx *env.BubblyContext, node *dataNode,
 				blocks *core.DataBlocks) error {
+				t.Logf("traversing: %s", node.Data.TableName)
 				nodeList = append(nodeList, node.Data.TableName)
 				return nil
 			})
+			tree.reset()
 			assert.NoErrorf(t, err, "failed traverse tree")
 			_, err = c.out.traverse(bCtx, func(bCtx *env.BubblyContext, node *dataNode,
 				blocks *core.DataBlocks) error {

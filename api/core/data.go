@@ -45,6 +45,9 @@ const (
 	// CreatePolicy means only create. If a conflict occurs on unique constraints
 	// on the corresponding schema table, then error
 	CreatePolicy DataBlockPolicy = "create"
+	// UpdatePolicy means only update. If the entity to update does not exist
+	// an error is returned
+	UpdatePolicy DataBlockPolicy = "update"
 	// ReferencePolicy means do not create or update, but only retrieve a reference
 	// to an already saved data block, with the matching field values
 	ReferencePolicy DataBlockPolicy = "reference"

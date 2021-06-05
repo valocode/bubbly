@@ -14,7 +14,7 @@ var (
 
 const (
 	defaultHTTPClientTimeout = 5
-	defaultNATSClientTimeout = 2
+	defaultNATSClientTimeout = 5
 )
 
 // Every Client must implement the Client interface's methods
