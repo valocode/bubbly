@@ -52,12 +52,6 @@ func TestDataTree(t *testing.T) {
 				{
 					TableName: "root",
 					Fields:    &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}},
-					Data: core.DataBlocks{
-						{
-							TableName: "root_nested",
-							Fields:    &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}},
-						},
-					},
 				},
 				{
 					TableName: "other",
@@ -84,7 +78,6 @@ func TestDataTree(t *testing.T) {
 				&dataNode{
 					Data: &core.Data{TableName: "root", Fields: &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}}},
 					Children: []*dataNode{
-						{Data: &core.Data{TableName: "root_nested", Fields: &core.DataFields{Values: map[string]cty.Value{"foo": cty.BoolVal(true)}}}},
 						{Data: &core.Data{TableName: "other"}, Children: []*dataNode{
 							{Data: &core.Data{TableName: "root"}},
 						}},

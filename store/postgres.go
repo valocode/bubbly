@@ -322,7 +322,7 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 	switch node.Data.Policy {
 	// Create vs CreateUpdate are very similar, except for with Create (only)
 	// we don't want to update, instead return a nice error
-	case core.CreatePolicy, core.CreateUpdatePolicy, core.EmptyPolicy:
+	case core.CreatePolicy, core.CreateUpdatePolicy, core.EmptyPolicy, core.UpdatePolicy:
 		uniqueFields, err = psqlAddUniqueDataFields(table, node.Data)
 		if err != nil {
 			return fmt.Errorf("error setting default unique values for data %s: %w", node.Data.TableName, err)
@@ -343,12 +343,22 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 				delete(node.Data.Fields.Values, field)
 			}
 		}
+		// Do the same for the joins
+		var origJoins = make([]string, len(node.Data.Joins))
+		for index, join := range node.Data.Joins {
+			origJoins[index] = join
+			if _, ok := uniqueFields[join+tableJoinSuffix]; !ok {
+				// Remove the join because it is not part of the unique constraint
+				node.Data.Joins = append(node.Data.Joins[:index], node.Data.Joins[index+1:]...)
+			}
+		}
 		retValues, err = psqlDataSelect(tx, tenant, node, table)
 		if err != nil {
 			return fmt.Errorf("error checking uniqueness of data %s: %w", node.Data.TableName, err)
 		}
 		// Reassign the original data without deleted fields
 		node.Data.Fields.Values = origFields
+		node.Data.Joins = origJoins
 		// If there are no values returned, we have a unique data block so
 		// INSERT, otherwise UPDATE
 		if len(retValues) == 0 {
@@ -361,16 +371,6 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 		}
 		// Else, perform an update of the data block.
 		// The tableIdField should ALWAYS be returned, so we can skip any check here
-		retValues, err = psqlDataUpdate(tx, tenant, node, table, retValues[0][tableIDField])
-	case core.UpdatePolicy:
-		retValues, err = psqlDataSelect(tx, tenant, node, table)
-		if err != nil {
-			return fmt.Errorf("error retrieving records for data %s: %w", node.Data.TableName, err)
-		}
-		// If the policy was specifically to UDPATE, then we have a problem
-		if len(retValues) == 0 {
-			return fmt.Errorf("cannot update data block that does not exist %s:\n\n%s", node.Data.TableName, node.Describe())
-		}
 		retValues, err = psqlDataUpdate(tx, tenant, node, table, retValues[0][tableIDField])
 	case core.ReferencePolicy, core.ReferenceIfExistsPolicy:
 		retValues, err = psqlDataSelect(tx, tenant, node, table)
@@ -670,8 +670,23 @@ func psqlAbsTableName(tenant string, table string) string {
 	return psqlBubblySchemaPrefix + tenant + "." + table
 }
 
+// psqlAddUniqueDataFields takes a table and a data block to save for that table
+// and adds any unique fields that are not already provided in the data block.
+// This is so that we know whether to insert or update based on unique constraints
+// because in postgres we cannot use NULL values (they are not unique and therefore
+// cannot be used with unique constraints).
+// For the unique fields that do not have a provided value in the data block, create
+// a default value based on the field type
 func psqlAddUniqueDataFields(table core.Table, data *core.Data) (map[string]struct{}, error) {
 	var uniqueFields = make(map[string]struct{})
+	// There is an exception to this. If the _id field has been provided, we don't
+	// care about other fields because the uniqueness of _id trumps everything else!
+	idVal, ok := data.Fields.Values[tableIDField]
+	if ok && !idVal.IsNull() {
+		uniqueFields[tableIDField] = struct{}{}
+		return uniqueFields, nil
+	}
+
 	for _, field := range table.Fields {
 		if field.Unique {
 			uniqueFields[field.Name] = struct{}{}

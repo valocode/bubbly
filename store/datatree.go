@@ -65,11 +65,19 @@ func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
 		// TODO: is it necessary to validate both parents and children for EVERY
 		// node? Or can we just do one of them?
 		for _, parent := range node.Parents {
+			// Check if it's the same, and refers to itself
+			if parent.Data.TableName == node.Data.TableName {
+				continue
+			}
 			if _, ok := n.Edges[parent.Data.TableName]; !ok {
 				return fmt.Errorf("data joins does not exist in the schema: %s --> %s", n.Table.Name, parent.Data.TableName)
 			}
 		}
 		for _, child := range node.Children {
+			// Check if it's the same, and refers to itself
+			if child.Data.TableName == node.Data.TableName {
+				continue
+			}
 			if _, ok := n.Edges[child.Data.TableName]; !ok {
 				return fmt.Errorf("data joins does not exist in the schema: %s --> %s", child.Data.TableName, n.Table.Name)
 			}
