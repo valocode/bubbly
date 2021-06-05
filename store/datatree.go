@@ -25,15 +25,60 @@ func (t dataTree) traverse(bCtx *env.BubblyContext, fn visitFn) (core.DataBlocks
 			return nil, fmt.Errorf("error occurred when traversing data tree: %w", err)
 		}
 	}
-
+	// Reset the tree afterwards (the visited boolean)
+	for _, d := range t {
+		resetDataNode(d)
+	}
 	return blocks, nil
 }
 
-// reset goes over the tree and resets the tree so that it can be traversed again
-func (t dataTree) reset() {
-	for _, n := range t {
-		resetDataNode(n)
-	}
+// prepare performs two main tasks over a dataTree:
+// 1. validates the fields and the joins that they exist in the schema
+// 2. add any "builtin" fields/data-joins that should exist (e.g. handling lifecycle)
+func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
+	_, err := t.traverse(bCtx, func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
+		// The
+		n, ok := schema.NodeIndex[node.Data.TableName]
+		if !ok {
+			return fmt.Errorf("data block refers to non-existent table %s", node.Data.TableName)
+		}
+		// Validate the fields fist
+		for field, value := range node.Data.Fields.Values {
+			var exists bool
+			if value.Type().IsCapsuleType() {
+				// TODO: do we need to check DataRefs or is it enough to check
+				// the joins? Probably enough to check the joins as the DataRefs
+				// are created via the joins... Just leaving this here in case!
+				continue
+			}
+			for _, tf := range n.Table.Fields {
+				if tf.Name == field {
+					exists = true
+					break
+				}
+			}
+			if !exists {
+				return fmt.Errorf("field does not exist for data block %s: %s", node.Data.TableName, field)
+			}
+		}
+		// Validate relationships/joins
+		// TODO: is it necessary to validate both parents and children for EVERY
+		// node? Or can we just do one of them?
+		for _, parent := range node.Parents {
+			if _, ok := n.Edges[parent.Data.TableName]; !ok {
+				return fmt.Errorf("data joins does not exist in the schema: %s --> %s", n.Table.Name, parent.Data.TableName)
+			}
+		}
+		for _, child := range node.Children {
+			if _, ok := n.Edges[child.Data.TableName]; !ok {
+				return fmt.Errorf("data joins does not exist in the schema: %s --> %s", child.Data.TableName, n.Table.Name)
+			}
+		}
+		// TODO: next add the automated fields... like for lifecycle!
+
+		return nil
+	})
+	return err
 }
 
 // resetDataNode takes a node, resets it, and then calls itself for the node's children
@@ -184,6 +229,11 @@ func (d *dataNode) addChild(child *dataNode, fields map[string]struct{}) {
 // createDataTree is the top-level function for creating a data tree.
 // It takes the data blocks, as received by the store, and returns the data tree
 func createDataTree(data core.DataBlocks) (dataTree, error) {
+	// nodeContext will store a map of the "most recent" nodes to be visited
+	// when traversing the data blocks.
+	// Joins across data blocks are resolved by pulling the most recent data block
+	// of that table, and creating a data reference to that field in that table.
+	// So nodeContext is very important
 	var nodeContext = make(map[string]*dataNode)
 
 	dataNodes, err := dataBlocksToNodes(data, nil, nodeContext)

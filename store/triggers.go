@@ -55,8 +55,6 @@ type trigger struct {
 // Once all triggers have been evaluated, the dataBlocks are converted
 // to a dataTree and returned to be saved to the store
 func HandleTriggers(bCtx *env.BubblyContext, tree dataTree, triggers []*trigger, kind Kind) (dataTree, error) {
-	// First make sure we reset the tree so that we can traverse it again
-	tree.reset()
 	triggerBlocks := core.DataBlocks{}
 	for _, t := range triggers {
 		if t.Kind != kind {

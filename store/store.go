@@ -167,6 +167,10 @@ func (s *Store) Save(tenant string, data core.DataBlocks) error {
 		return fmt.Errorf("no schema exists for tenant %s", tenant)
 	}
 	graph = graphVal.(*SchemaGraph)
+
+	if err := dataTree.prepare(s.bCtx, graph); err != nil {
+		return fmt.Errorf("preparing the data tree failed: %w", err)
+	}
 	if err := s.p.Save(s.bCtx, tenant, graph, dataTree); err != nil {
 		return fmt.Errorf("falied to save data in provider: %w", err)
 	}

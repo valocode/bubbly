@@ -322,18 +322,16 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 	switch node.Data.Policy {
 	// Create vs CreateUpdate are very similar, except for with Create (only)
 	// we don't want to update, instead return a nice error
-	case core.CreatePolicy, core.CreateUpdatePolicy, core.UpdatePolicy, core.EmptyPolicy:
+	case core.CreatePolicy, core.CreateUpdatePolicy, core.EmptyPolicy:
 		uniqueFields, err = psqlAddUniqueDataFields(table, node.Data)
 		if err != nil {
 			return fmt.Errorf("error setting default unique values for data %s: %w", node.Data.TableName, err)
 		}
-		// TODO: THIS IS BAD...
 		// If there are no unique fields, just perform an INSERT and be done
 		if len(uniqueFields) == 0 {
 			retValues, err = psqlDataInsert(tx, tenant, node, table)
 			break
 		}
-		// TODO: NEED TO REALLY THINK ABOUT LOGIC HERE...
 		// If there are unique fields, delete all the non-unique fields so that
 		// we can perform a SELECT on the unique fields and figure out if we
 		// should perform an INSERT or UPDATE.
@@ -354,10 +352,6 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 		// If there are no values returned, we have a unique data block so
 		// INSERT, otherwise UPDATE
 		if len(retValues) == 0 {
-			// If the policy was specifically to UDPATE, then we have a problem
-			if node.Data.Policy == core.UpdatePolicy {
-				return fmt.Errorf("cannot update data block that does not exist %s:\n\n%s", node.Data.TableName, node.Describe())
-			}
 			retValues, err = psqlDataInsert(tx, tenant, node, table)
 			break
 		}
@@ -367,6 +361,16 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 		}
 		// Else, perform an update of the data block.
 		// The tableIdField should ALWAYS be returned, so we can skip any check here
+		retValues, err = psqlDataUpdate(tx, tenant, node, table, retValues[0][tableIDField])
+	case core.UpdatePolicy:
+		retValues, err = psqlDataSelect(tx, tenant, node, table)
+		if err != nil {
+			return fmt.Errorf("error retrieving records for data %s: %w", node.Data.TableName, err)
+		}
+		// If the policy was specifically to UDPATE, then we have a problem
+		if len(retValues) == 0 {
+			return fmt.Errorf("cannot update data block that does not exist %s:\n\n%s", node.Data.TableName, node.Describe())
+		}
 		retValues, err = psqlDataUpdate(tx, tenant, node, table, retValues[0][tableIDField])
 	case core.ReferencePolicy, core.ReferenceIfExistsPolicy:
 		retValues, err = psqlDataSelect(tx, tenant, node, table)

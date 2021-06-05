@@ -119,7 +119,6 @@ func TestDataTree(t *testing.T) {
 				nodeList = append(nodeList, node.Data.TableName)
 				return nil
 			})
-			tree.reset()
 			assert.NoErrorf(t, err, "failed traverse tree")
 			_, err = c.out.traverse(bCtx, func(bCtx *env.BubblyContext, node *dataNode,
 				blocks *core.DataBlocks) error {
