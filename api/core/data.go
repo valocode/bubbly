@@ -21,6 +21,7 @@ type DataBlocks []Data
 type Data struct {
 	TableName     string          `hcl:",label" json:"table"`
 	Fields        *DataFields     `hcl:"fields,block" json:"fields,omitempty"`
+	Lifecycle     *Lifecycle      `hcl:"lifecycle,block" json:"lifecycle,omitempty"`
 	Joins         []string        `hcl:"joins,optional" json:"joins,omitempty"`
 	Policy        DataBlockPolicy `hcl:"policy,optional" json:"policy,omitempty"`
 	IgnoreNesting bool            `hcl:"ignore_nesting,optional" json:"ignore_nesting,omitempty"`
@@ -152,6 +153,15 @@ func (d *DataFields) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+type Lifecycle struct {
+	Status  string           `hcl:"status,optional" json:"status,omitempty"`
+	Entries []LifecycleEntry `hcl:"entry,block" json:"entries,omitempty"`
+}
+
+type LifecycleEntry struct {
+	Message string `hcl:"message" json:"message"`
 }
 
 // DataFieldJSON is a json friendly version of DataField

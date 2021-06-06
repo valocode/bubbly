@@ -14,11 +14,17 @@ import (
 // RelType describes the relationship type of a directed edge from a --> b
 type RelType int
 
-// The difference between `OneToOne` and `BelongsTo` is in the order.
+// The difference between `OneToOne` and `BelongsTo` is in the order. E.g.
+//
 // table "A" {
 //   table "B" { single = true }
 //   table "C" {}
 // }
+// (which is equivalent to)
+// table "A" {}
+// table "B" { join "A" { single = true } }
+// table "C" { join "A" { } }
+//
 // Table B belongs to A. And Table A has a OneToOne to B.
 // Table C belongs to A. And Table A has a OneToMany to C.
 // So the relationships describe the direction of the edge.

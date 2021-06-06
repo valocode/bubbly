@@ -22,7 +22,7 @@ func (t dataTree) traverse(bCtx *env.BubblyContext, fn visitFn) (core.DataBlocks
 	blocks := core.DataBlocks{}
 	for _, d := range t {
 		if err := visitNode(bCtx, d, fn, &blocks); err != nil {
-			return nil, fmt.Errorf("error occurred when traversing data tree: %w", err)
+			return nil, err
 		}
 	}
 	// Reset the tree afterwards (the visited boolean)
@@ -51,6 +51,12 @@ func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
 				// are created via the joins... Just leaving this here in case!
 				continue
 			}
+			// Check whether it's the ID field
+			if field == tableIDField {
+				continue
+			}
+			// Otherwise check all the fields for the table and make sure it's
+			// one of those
 			for _, tf := range n.Table.Fields {
 				if tf.Name == field {
 					exists = true
@@ -82,8 +88,50 @@ func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
 				return fmt.Errorf("data joins does not exist in the schema: %s --> %s", child.Data.TableName, n.Table.Name)
 			}
 		}
-		// TODO: next add the automated fields... like for lifecycle!
-
+		// Check whether an edge to lifecycle exists and that the relationship
+		// is what we expect - that this node "belongs to" lifecycle, meaning this
+		// node should have a lifecycle foreign key field
+		if edge, ok := n.Edges["lifecycle"]; ok && edge.Rel == BelongsTo {
+			// TODO: rewrite this creating data blocks and calling dataBlocksToNodes
+			nodeContext := map[string]*dataNode{
+				node.Data.TableName: node,
+			}
+			dataBlocks := core.DataBlocks{
+				core.Data{
+					TableName: "lifecycle",
+					Fields: &core.DataFields{Values: map[string]cty.Value{
+						tableIDField: cty.CapsuleVal(parser.DataRefType, &parser.DataRef{
+							TableName: n.Table.Name, Field: "lifecycle" + tableJoinSuffix,
+						}),
+						// TODO: initial value
+						"status": cty.StringVal("unresolved"),
+					}},
+				},
+				core.Data{
+					TableName: n.Table.Name,
+					Fields: &core.DataFields{Values: map[string]cty.Value{
+						// Reference it's own _id field so that we get the correct
+						// record to update
+						tableIDField: cty.CapsuleVal(parser.DataRefType, &parser.DataRef{
+							TableName: n.Table.Name, Field: tableIDField,
+						}),
+					}},
+					Joins: []string{"lifecycle"},
+					// Specify that we should update only
+					Policy: core.UpdatePolicy,
+				},
+			}
+			_, err := dataBlocksToNodes(dataBlocks, nil, nodeContext)
+			if err != nil {
+				return fmt.Errorf("error creating lifecycle sub-tree: %w", err)
+			}
+			// Set the nodes we just created to visited = true so that we don't
+			// visit them after this, and in doing so, create another lifecycle
+			// and end up in an infinite loop
+			for _, nc := range nodeContext {
+				nc.Visited = true
+			}
+		}
 		return nil
 	})
 	return err
@@ -116,13 +164,13 @@ func visitNode(bCtx *env.BubblyContext, node *dataNode, fn visitFn, blocks *core
 	if parentsVisited && !node.Visited {
 		// Visit the node with the callback method
 		if err := fn(bCtx, node, blocks); err != nil {
-			return fmt.Errorf("error visiting data node %s: %w", node.Data.TableName, err)
+			return fmt.Errorf("error traversing data tree at node %s: %w", node.Data.TableName, err)
 		}
 		// If no error, mark the node as visited
 		node.Visited = true
 		for _, child := range node.Children {
 			if err := visitNode(bCtx, child, fn, blocks); err != nil {
-				return fmt.Errorf("error visiting data node %s: %w", child.Data.TableName, err)
+				return err
 			}
 		}
 	}
