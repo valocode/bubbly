@@ -125,8 +125,13 @@ func addGraphFields(node *SchemaNode, fields map[string]gqlField) {
 	gqlField.Args[notNullID] = &graphql.ArgumentConfig{
 		Type: graphql.Boolean,
 	}
-	gqlField.Args[filterIsNullID] = &graphql.ArgumentConfig{
-		Type: graphql.NewList(graphQLFilterIsNullType(node)),
+	{
+		filterIsNull, valid := graphQLFilterIsNullType(node)
+		if valid {
+			gqlField.Args[filterIsNullID] = &graphql.ArgumentConfig{
+				Type: graphql.NewList(filterIsNull),
+			}
+		}
 	}
 	gqlField.Args[firstID] = &graphql.ArgumentConfig{
 		Type: graphql.Int,
@@ -271,11 +276,14 @@ func graphQLFilterType(typeName string, args graphql.FieldConfigArgument) *graph
 	)
 }
 
-func graphQLFilterIsNullType(node *SchemaNode) *graphql.Enum {
+func graphQLFilterIsNullType(node *SchemaNode) (*graphql.Enum, bool) {
 	var (
 		enumName = "IsNullEnum_" + node.Table.Name
 		values   = make(graphql.EnumValueConfigMap, len(node.Edges))
 	)
+	if len(node.Edges) == 0 {
+		return nil, false
+	}
 
 	for _, e := range node.Edges {
 		values[e.Node.Table.Name] = &graphql.EnumValueConfig{
@@ -286,7 +294,7 @@ func graphQLFilterIsNullType(node *SchemaNode) *graphql.Enum {
 		Name:        enumName,
 		Description: "Enum for edges from this table to filter on if those edges point to a null value",
 		Values:      values,
-	})
+	}), true
 }
 
 // parseValueToMap ???

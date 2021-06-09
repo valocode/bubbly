@@ -28,6 +28,8 @@ type Data struct {
 	Data          DataBlocks      `hcl:"data,block" json:"data,omitempty"`
 }
 
+type DataAlias Data
+
 // DataBlockPolicy defines the policy for how the data block shall be handled.
 // When the bubbly store goes to save a data block, it should consider whether
 // it should create and/or update the data block (default behaviour), only
@@ -71,23 +73,11 @@ type DataFields struct {
 // is initialized before it gets unmarshaled. Perhaps there is a cleaner way,
 // but for now this works and is not that ugly.
 func (d *Data) UnmarshalJSON(data []byte) error {
-	v := struct {
-		TableName     string          `json:"table"`
-		Fields        *DataFields     `json:"fields"`
-		Joins         []string        `json:"joins"`
-		Policy        DataBlockPolicy `json:"policy"`
-		IgnoreNesting bool            `json:"ignore_nesting"`
-		Data          DataBlocks      `json:"data"`
-	}{}
+	var v DataAlias
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
-	d.TableName = v.TableName
-	d.Fields = v.Fields
-	d.Joins = v.Joins
-	d.Policy = v.Policy
-	d.IgnoreNesting = v.IgnoreNesting
-	d.Data = v.Data
+	*d = Data(v)
 	return nil
 }
 

@@ -92,6 +92,13 @@ func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
 		// is what we expect - that this node "belongs to" lifecycle, meaning this
 		// node should have a lifecycle foreign key field
 		if edge, ok := n.Edges["lifecycle"]; ok && edge.Rel == BelongsTo {
+			var (
+				lifecycle = node.Data.Lifecycle
+				lcStatus  = "unresolved"
+			)
+			if lifecycle != nil {
+				lcStatus = lifecycle.Status
+			}
 			// TODO: rewrite this creating data blocks and calling dataBlocksToNodes
 			nodeContext := map[string]*dataNode{
 				node.Data.TableName: node,
@@ -104,7 +111,7 @@ func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
 							TableName: n.Table.Name, Field: "lifecycle" + tableJoinSuffix,
 						}),
 						// TODO: initial value
-						"status": cty.StringVal("unresolved"),
+						"status": cty.StringVal(lcStatus),
 					}},
 				},
 				core.Data{
@@ -121,6 +128,17 @@ func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
 					Policy: core.UpdatePolicy,
 				},
 			}
+			if lifecycle != nil {
+				for _, entry := range lifecycle.Entries {
+					dataBlocks = append(dataBlocks, core.Data{
+						TableName: "lifecycle_entry",
+						Fields: &core.DataFields{Values: map[string]cty.Value{
+							"message": cty.StringVal(entry.Message),
+						}},
+						Joins: []string{"lifecycle"},
+					})
+				}
+			}
 			_, err := dataBlocksToNodes(dataBlocks, nil, nodeContext)
 			if err != nil {
 				return fmt.Errorf("error creating lifecycle sub-tree: %w", err)
@@ -131,6 +149,8 @@ func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
 			for _, nc := range nodeContext {
 				nc.Visited = true
 			}
+		} else if node.Data.Lifecycle != nil {
+			return fmt.Errorf("data block has lifecycle but no relation to a lifecycle: %s", node.Data.TableName)
 		}
 		return nil
 	})

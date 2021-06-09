@@ -118,6 +118,36 @@ func TestDataTree(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "code scan add lifecycle with entry",
+			in: core.DataBlocks{
+				core.Data{
+					TableName: "code_scan",
+					Lifecycle: &core.Lifecycle{
+						Status: "mitigated",
+						Entries: []core.LifecycleEntry{
+							{
+								Message: "ignore",
+							},
+						},
+					},
+				},
+			},
+			out: dataTree{
+				&dataNode{
+					Data: &core.Data{TableName: "code_scan"},
+					Children: []*dataNode{
+						{Data: &core.Data{TableName: "lifecycle"}, Children: []*dataNode{
+							{Data: &core.Data{TableName: "code_scan"}},
+							{Data: &core.Data{TableName: "lifecycle_entry"}},
+						}},
+						// This data node should exist here but it's the same
+						// data (pointer) as the value above...
+						// {Data: &core.Data{TableName: "code_scan"}},
+					},
+				},
+			},
+		},
 	}
 
 	bCtx := env.NewBubblyContext()
