@@ -150,7 +150,7 @@ func internalSchemaGraph() *SchemaGraph {
 //
 // FIXME: This project is too young to have "backwards compatibility" layer!
 func newSchemaGraphFromMap(tables map[string]core.Table) (*SchemaGraph, error) {
-	var ts = make(core.Tables, 0, len(tables))
+	var ts = make([]core.Table, 0, len(tables))
 	for _, t := range tables {
 		ts = append(ts, t)
 	}
@@ -159,7 +159,7 @@ func newSchemaGraphFromMap(tables map[string]core.Table) (*SchemaGraph, error) {
 
 // NewSchemaGraph returns a new Schema Graph,
 // created from the tables coming from the Bubbly Schema.
-func NewSchemaGraph(tables core.Tables) (*SchemaGraph, error) {
+func NewSchemaGraph(tables []core.Table) (*SchemaGraph, error) {
 
 	var (
 		nodes = make(nodeRefMap)
@@ -187,7 +187,7 @@ func NewSchemaGraph(tables core.Tables) (*SchemaGraph, error) {
 }
 
 // createFrom creates a node for every table in the given list.
-func (nodes *nodeRefMap) createFrom(tables core.Tables) {
+func (nodes *nodeRefMap) createFrom(tables []core.Table) {
 	for index, t := range tables {
 		(*nodes)[t.Name] = &SchemaNode{Table: &tables[index]}
 		nodes.createFrom(t.Tables)
@@ -195,7 +195,7 @@ func (nodes *nodeRefMap) createFrom(tables core.Tables) {
 }
 
 // connectFrom connects related nodes based on join information stored in the given list of tables
-func (nodes *nodeRefMap) connectFrom(tables core.Tables, parent *SchemaNode) error {
+func (nodes *nodeRefMap) connectFrom(tables []core.Table, parent *SchemaNode) error {
 
 	for _, table := range tables {
 		var node = (*nodes)[table.Name]

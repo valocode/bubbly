@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/valocode/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
@@ -104,11 +105,24 @@ func (d *Data) IsValidResource() bool {
 func (d DataFields) MarshalJSON() ([]byte, error) {
 	var jsonFields = make([]DataFieldJSON, 0, len(d.Values))
 	for name, val := range d.Values {
-		jsonVal, dataRef := ctyToJSON(val)
+		if val.Type().IsCapsuleType() {
+			switch val.Type() {
+			case parser.DataRefType:
+				jsonFields = append(jsonFields, DataFieldJSON{
+					Name:    name,
+					DataRef: val.EncapsulatedValue().(*parser.DataRef),
+				})
+			case parser.TimeType:
+				jsonFields = append(jsonFields, DataFieldJSON{
+					Name: name,
+					Time: val.EncapsulatedValue().(*time.Time),
+				})
+			}
+			continue
+		}
 		jsonFields = append(jsonFields, DataFieldJSON{
-			Name:    name,
-			Value:   jsonVal,
-			DataRef: dataRef,
+			Name:  name,
+			Value: ctyjson.SimpleJSONValue{Value: val},
 		})
 	}
 	return json.Marshal(jsonFields)
@@ -124,7 +138,14 @@ func (d *DataFields) UnmarshalJSON(data []byte) error {
 		d.Values = make(map[string]cty.Value)
 	}
 	for _, field := range jsonFields {
-		d.Values[field.Name] = jsonToCty(field.DataRef, field.Value)
+		switch {
+		case !field.Value.IsNull():
+			d.Values[field.Name] = field.Value.Value
+		case field.DataRef != nil:
+			d.Values[field.Name] = cty.CapsuleVal(parser.DataRefType, field.DataRef)
+		case field.Time != nil:
+			d.Values[field.Name] = cty.CapsuleVal(parser.TimeType, field.Time)
+		}
 	}
 
 	return nil
@@ -135,24 +156,5 @@ type DataFieldJSON struct {
 	Name    string                  `json:"name"`
 	Value   ctyjson.SimpleJSONValue `json:"value,omitempty"`
 	DataRef *parser.DataRef         `json:"data_ref,omitempty"`
-}
-
-func ctyToJSON(value cty.Value) (ctyjson.SimpleJSONValue, *parser.DataRef) {
-	var dataRef parser.DataRef
-	switch {
-	case value.Type() == parser.DataRefType:
-		dataRef = *value.EncapsulatedValue().(*parser.DataRef)
-	default:
-		return ctyjson.SimpleJSONValue{Value: value}, nil
-	}
-	return ctyjson.SimpleJSONValue{Value: cty.NilVal}, &dataRef
-}
-
-func jsonToCty(dataRef *parser.DataRef, value ctyjson.SimpleJSONValue) cty.Value {
-	switch {
-	case dataRef != nil:
-		return cty.CapsuleVal(parser.DataRefType, dataRef)
-	default:
-		return value.Value
-	}
+	Time    *time.Time              `json:"time,omitempty"`
 }

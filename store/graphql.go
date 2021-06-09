@@ -7,6 +7,7 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/kinds"
 	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -170,9 +171,12 @@ func graphQLFieldType(f core.TableField) *graphql.Scalar {
 		return mapScalar
 	case ty.IsMapType():
 		return mapScalar
-	default:
-		panic(fmt.Sprintf("Unsupported GraphQL conversion from cty.Type: %s", f.Type.GoString()))
+	case ty.IsCapsuleType():
+		if ty == parser.TimeType {
+			return graphql.String
+		}
 	}
+	panic(fmt.Sprintf("Unsupported GraphQL conversion from cty.Type: %s", f.Type.GoString()))
 }
 
 const (

@@ -6,7 +6,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-var BuiltinTables = core.Tables{
+var BuiltinTables = []core.Table{
 
 	// #######################################
 	// _SCHEMA

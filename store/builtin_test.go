@@ -1,130 +1,66 @@
-//+build ignore
-
-// TODO: test the lifecycle feature properly...!!
-
 package store
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
-	"github.com/rs/zerolog"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/bubbly/builtin"
 	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/events"
 	"github.com/valocode/bubbly/test"
-
-	testData "github.com/valocode/bubbly/store/testdata"
+	"github.com/zclconf/go-cty/cty"
 )
 
-func TestRelease(t *testing.T) {
-	releaseQuery := `
-{
-	release(_id: "1") {
-		release_stage {
-			name
-			release_criteria {
-				entry_name
-			}
-		}
-		release_entry {
-			name
-			result
-		}
-	}
-}`
+func TestTime(t *testing.T) {
 	bCtx := env.NewBubblyContext()
-	bCtx.UpdateLogLevel(zerolog.DebugLevel)
 	resource := test.RunPostgresDocker(bCtx, t)
 	bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
-	// bCtx.StoreConfig.PostgresAddr = "localhost:5432"
 
-	// Parse the schema and data blocks
-	tables := testData.Tables(t, bCtx, "./testdata/release/schema.hcl")
-	data := testData.DataBlocks(t, bCtx, "./testdata/release/data.hcl")
-
-	// Initialize a new bubbly store (connection to postgres)
 	s, err := New(bCtx)
 	require.NoErrorf(t, err, "failed to initialize store")
-	err = s.Apply(DefaultTenantName, tables)
-	require.NoErrorf(t, err, "failed to apply schema from tables")
 
-	err = s.Save(DefaultTenantName, data)
-	require.NoErrorf(t, err, "failed to save data blocks")
-
-	// Query and get the result
-	result, err := s.Query(DefaultTenantName, releaseQuery)
-	assert.NoErrorf(t, err, "failed to run release query")
-	assert.Empty(t, result.Errors)
-	val, ok := result.Data.(map[string]interface{})
-	require.True(t, ok)
-	releases := val["release"].([]interface{})
-	require.Len(t, releases, 1)
-
-	// Quite hacky in golang, but traverse the received GraphQL response and verify
-	// that the release criteria has been satisfied (by checking that there is
-	// a release entry)
-	var releaseEntries = make(map[string]bool)
-	entries := releases[0].(map[string]interface{})["release_entry"].([]interface{})
-	for _, entry := range entries {
-		eMap := entry.(map[string]interface{})
-		releaseEntries[eMap["name"].(string)] = eMap["result"].(bool)
+	event := builtin.Event{
+		Status: events.ResourceCreatedUpdated.String(),
+		Time:   time.Now(),
 	}
-	stages := releases[0].(map[string]interface{})["release_stage"].([]interface{})
-	for _, stage := range stages {
-		stageMap := stage.(map[string]interface{})
-		criterion := stageMap["release_criteria"].([]interface{})
-		t.Logf("stage: %s", stageMap["name"])
-		for _, criteria := range criterion {
-			criteriaMap := criteria.(map[string]interface{})
-			entryName := criteriaMap["entry_name"].(string)
-			result, ok := releaseEntries[entryName]
-			assert.Truef(t, ok && result, "entry is not satisfied")
-			t.Logf("criteria: %#v", criteria)
-		}
+
+	tests := []struct {
+		desc string
+		dbs  core.DataBlocks
+	}{
+		{
+			desc: "time type",
+			dbs:  builtin.ToDataBlocks(event),
+		},
+		{
+			desc: "time string",
+			dbs: core.DataBlocks{core.Data{
+				TableName: "_event",
+				Fields: &core.DataFields{Values: map[string]cty.Value{
+					"time": cty.StringVal(time.Now().Format(time.RFC3339)),
+				}},
+			}},
+		},
 	}
-}
 
-func TestReleaseModel(t *testing.T) {
-	releaseQuery := `
-{
-	test_run {
-		release {
-			release_item {
-				commit {
-					id
-					branch {
-						name
-					}
-				}
-			}
-		}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err = s.Save(DefaultTenantName, tt.dbs)
+			require.NoError(t, err)
+
+			eventQuery := "{ _event(last:1) { time } }"
+			var events builtin.Event_Wrap
+			result, err := s.Query(DefaultTenantName, eventQuery)
+			require.NoError(t, err)
+			require.Empty(t, result.Errors)
+			b, err := json.Marshal(result.Data)
+			require.NoError(t, err)
+			err = json.Unmarshal(b, &events)
+			require.NoError(t, err)
+		})
 	}
-}`
-	bCtx := env.NewBubblyContext()
-	bCtx.UpdateLogLevel(zerolog.DebugLevel)
-	resource := test.RunPostgresDocker(bCtx, t)
-	bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
-	// bCtx.StoreConfig.PostgresAddr = "localhost:5432"
-
-	// Parse the schema and data blocks
-	tables := testData.Tables(t, bCtx, "./testdata/release/schema.hcl")
-	data := testData.DataBlocks(t, bCtx, "./testdata/release/data.hcl")
-
-	// Initialize a new bubbly store (connection to postgres)
-	s, err := New(bCtx)
-	require.NoErrorf(t, err, "failed to initialize store")
-	err = s.Apply(DefaultTenantName, tables)
-	require.NoErrorf(t, err, "failed to apply schema from tables")
-
-	err = s.Save(DefaultTenantName, data)
-	require.NoErrorf(t, err, "failed to save data blocks")
-
-	// Query and get the result
-	result, err := s.Query(DefaultTenantName, releaseQuery)
-	assert.NoErrorf(t, err, "failed to run release query")
-	assert.Empty(t, result.Errors)
-	val, ok := result.Data.(map[string]interface{})
-	require.True(t, ok)
-	t.Logf("%#v", val)
 }

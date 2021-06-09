@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/valocode/bubbly/api/core"
 	"github.com/valocode/bubbly/bubbly/builtin"
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
@@ -15,7 +16,7 @@ import (
 // schema file
 
 // ApplySchema parses a .bubbly schema file into a Schema, then posts
-// the core.Tables of the Schema to the bubbly store
+// the []core.Table of the Schema to the bubbly store
 func ApplySchema(bCtx *env.BubblyContext, file string) error {
 	var schema builtin.SchemaWrapper
 
@@ -26,8 +27,12 @@ func ApplySchema(bCtx *env.BubblyContext, file string) error {
 			filepath.ToSlash(file),
 			err)
 	}
+	tables, err := core.TablesFromHCL(schema.Tables)
+	if err != nil {
+		return fmt.Errorf("error creating schema tables: %w", err)
+	}
 
-	tableBytes, err := json.Marshal(schema.Tables)
+	tableBytes, err := json.Marshal(tables)
 	if err != nil {
 		return fmt.Errorf("failed to json marshal schema tables: %w", err)
 	}

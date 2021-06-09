@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/graphql-go/graphql"
+	"github.com/hashicorp/go-multierror"
 	"github.com/valocode/bubbly/agent/component"
 	"github.com/valocode/bubbly/env"
 )
@@ -82,7 +83,11 @@ func (n *natsClient) QueryType(bCtx *env.BubblyContext, auth *component.MessageA
 	}
 	// TODO: make errors a bit nicer
 	if result.HasErrors() {
-		return fmt.Errorf("graphql returned errors: %v", result.Errors)
+		var graphqlErrors error
+		for _, qlError := range result.Errors {
+			graphqlErrors = multierror.Append(graphqlErrors, qlError)
+		}
+		return fmt.Errorf("graphql returned errors: %w", graphqlErrors)
 	}
 	return nil
 }

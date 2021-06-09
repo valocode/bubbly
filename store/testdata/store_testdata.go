@@ -11,11 +11,11 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func Tables(t *testing.T, bCtx *env.BubblyContext, fromFile string) core.Tables {
+func Tables(t *testing.T, bCtx *env.BubblyContext, fromFile string) []core.Table {
 	t.Helper()
 
 	tableWrapper := struct {
-		Tables core.Tables `hcl:"table,block"`
+		Tables []core.TableHCL `hcl:"table,block"`
 	}{}
 
 	body, err := parser.MergedHCLBodies(bCtx, []string{fromFile})
@@ -23,8 +23,10 @@ func Tables(t *testing.T, bCtx *env.BubblyContext, fromFile string) core.Tables 
 
 	err = parser.DecodeBody(body, &tableWrapper, cty.NilVal)
 	require.NoErrorf(t, err, "failed to decode tables")
+	tables, err := core.TablesFromHCL(tableWrapper.Tables)
+	require.NoErrorf(t, err, "invalid field types")
 
-	return tableWrapper.Tables
+	return tables
 }
 
 func DataBlocks(t *testing.T, bCtx *env.BubblyContext, fromFile string) core.DataBlocks {
