@@ -23,7 +23,7 @@ Tests such as "User Acceptance Tests" can be a set of tests that cover a number 
 ### Problem
 
 The different levels of tests (unit, integration and system) produce different test results, and are usually performed by different test frameworks.
-Additionally, functional tests usually product simple pass/fail type results, where are non-functional tests can vary immensely (capturing network speed, memory usage, cpu usage, page refresh, etc).
+Additionally, functional tests usually produce simple pass/fail type results, where as non-functional tests can vary immensely (capturing network speed, memory usage, cpu usage, page refresh, etc).
 You might also want to capture other metrics, like code coverage, as well as tracing your test cases back to features or requirements.
 
 There are tools purpose built for test result management, e.g. [Allure](http://allure.qatools.ru/) and [TestRail](https://www.gurock.com/testrail/), and there are other tools that can be customized to do this, e.g. [Jira](https://www.atlassian.com/software/jira) or (please don't do this) [Jenkins](https://www.jenkins.io/).
