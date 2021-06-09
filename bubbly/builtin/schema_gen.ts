@@ -31,7 +31,7 @@ export interface _resource_wrap {
 export interface _event {
 	status?: string;
 	error?: string;
-	time?: string;
+	time?: Date;
 	_resource?: _resource;
 }
 export interface _event_wrap {

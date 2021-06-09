@@ -1,6 +1,9 @@
 package builtin
 
-import "github.com/valocode/bubbly/api/core"
+import (
+	"github.com/valocode/bubbly/api/core"
+	"time"
+)
 
 // #######################################
 // _SCHEMA
@@ -44,7 +47,7 @@ type Event struct {
 	DBlock_Joins  []string             `json:"-"`
 	Status        string               `json:"status,omitempty"`
 	Error         string               `json:"error,omitempty"`
-	Time          string               `json:"time,omitempty"`
+	Time          time.Time            `json:"time,omitempty"`
 	Resource      *Resource            `json:"_resource,omitempty"`
 }
 type Event_Wrap struct {

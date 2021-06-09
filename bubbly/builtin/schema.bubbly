@@ -41,7 +41,7 @@ table "_resource" {
 table "_event" {
     field "status" { type = string }
     field "error" { type = string }
-    field "time" { type = string }
+    field "time" { type = time }
 
     join "_resource" {}
 }

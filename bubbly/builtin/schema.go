@@ -21,7 +21,10 @@ func BuiltinSchema() (core.Tables, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error parsing bubbly schema: %w", err)
 	}
-
+	err = schema.Tables.Resolve()
+	if err != nil {
+		return nil, fmt.Errorf("error resolving bubbly schema: %w", err)
+	}
 	return schema.Tables, nil
 }
 
