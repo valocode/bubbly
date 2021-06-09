@@ -52,4 +52,4 @@ require (
 	gopkg.in/h2non/gock.v1 v1.0.16
 )
 
-// replace github.com/hashicorp/hcl/v2 => github.com/verifa/hcl/v2 v2.8.1-patch-1
+replace github.com/hashicorp/hcl/v2 => github.com/valocode/hcl/v2 v2.10.0-patch-1

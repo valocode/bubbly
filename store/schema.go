@@ -31,7 +31,7 @@ func newBubblySchema() *bubblySchema {
 	return schema
 }
 
-func newBubblySchemaFromTables(tables core.Tables, internal bool) (*bubblySchema, error) {
+func newBubblySchemaFromTables(tables []core.Table, internal bool) (*bubblySchema, error) {
 	schemaTables := make(map[string]core.Table)
 	// Create the base schema with the builtin tables.
 	// First flatten them, so that we get implicit joins and can easily loop
@@ -90,8 +90,8 @@ func (b *bubblySchema) Data() (core.Data, error) {
 // FlattenTables takes a list of tables flattens any nested tables, making sure
 // the joins implied by the nesting are added.
 // The table is already a flat list, this should return an identical list
-func FlattenTables(tables core.Tables, parent *core.Table) core.Tables {
-	var curTables core.Tables
+func FlattenTables(tables []core.Table, parent *core.Table) []core.Table {
+	var curTables []core.Table
 	for _, t := range tables {
 		if parent != nil {
 			var hasParentID bool

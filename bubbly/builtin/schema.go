@@ -13,7 +13,7 @@ import (
 
 const schemaFile = "schema.bubbly"
 
-func BuiltinSchema() (core.Tables, error) {
+func BuiltinSchema() ([]core.Table, error) {
 	var schema SchemaWrapper
 	bCtx := env.NewBubblyContext()
 
@@ -21,11 +21,11 @@ func BuiltinSchema() (core.Tables, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error parsing bubbly schema: %w", err)
 	}
-	err = schema.Tables.Resolve()
+	tables, err := core.TablesFromHCL(schema.Tables)
 	if err != nil {
 		return nil, fmt.Errorf("error resolving bubbly schema: %w", err)
 	}
-	return schema.Tables, nil
+	return tables, nil
 }
 
 func table(name string, fields []core.TableField, Joins []core.TableJoin) core.Table {

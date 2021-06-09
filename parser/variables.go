@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/dynblock"
 	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/zclconf/go-cty/cty"
 )
 
 func walkVariables(node dynblock.WalkVariablesNode, ty reflect.Type) []hcl.Traversal {
@@ -26,8 +25,12 @@ func walkVariables(node dynblock.WalkVariablesNode, ty reflect.Type) []hcl.Trave
 		if !exists {
 			continue
 		}
-		if field.Type == reflect.TypeOf(cty.NilType) {
-			// we don't care about these, they complicate things
+		// Hacky: we use the typeexpr package which HCL sees as variables, e.g.
+		// the literal `type = string` will see `string` as a variable.
+		// These are all decoded into hcl.Expression types, which we don't use
+		// for anything else (right now), so ignore them when finding all the
+		// variables
+		if field.Type.Implements(reflect.TypeOf((*hcl.Expression)(nil)).Elem()) {
 			continue
 		}
 		name := strings.Split(tag, ",")[0]

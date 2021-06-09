@@ -111,7 +111,7 @@ func (s *Store) Query(tenant string, query string) (*graphql.Result, error) {
 // The internal argument is used to indicate whether internal tables can be
 // modified or not. It is true when called internally, and false when an end
 // user has initiated the request
-func (s *Store) Apply(tenant string, tables core.Tables, internal bool) error {
+func (s *Store) Apply(tenant string, tables []core.Table, internal bool) error {
 	var schema *bubblySchema
 	// We should check that a schema already exists, and if not, we should
 	// initialize one

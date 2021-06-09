@@ -40,10 +40,10 @@ func (d *DataStore) postSchemaHandler(bCtx *env.BubblyContext, subject string, r
 
 	var (
 		tenant = store.DefaultTenantName
-		schema core.Tables
+		schema []core.Table
 	)
 	if err := json.Unmarshal(data.Data, &schema); err != nil {
-		return nil, fmt.Errorf("failed to decode schema into core.Tables: %w", err)
+		return nil, fmt.Errorf("failed to decode schema into []core.Table: %w", err)
 	}
 	if data.Auth != nil {
 		tenant = data.Auth.Organization

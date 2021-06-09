@@ -53,7 +53,7 @@ func TestNATS(t *testing.T) {
 	client, err := New(bCtx)
 	require.NoErrorf(t, err, "failed to create NATS server")
 
-	tables := core.Tables{
+	tables := []core.Table{
 		core.Table{
 			Name: "test_table",
 		},

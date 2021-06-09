@@ -15,6 +15,11 @@ var DataRefType = cty.CapsuleWithOps(
 	"DataRef", reflect.TypeOf(DataRef{}),
 	&cty.CapsuleOps{
 		GoString: func(val interface{}) string { return fmt.Sprintf("%#v", val) },
+		RawEquals: func(a, b interface{}) bool {
+			d1 := a.(*DataRef)
+			d2 := a.(*DataRef)
+			return d1.TableName == d2.TableName && d1.Field == d2.Field
+		},
 	},
 )
 
@@ -30,5 +35,10 @@ var TimeType = cty.CapsuleWithOps(
 	"Time", reflect.TypeOf(time.Time{}),
 	&cty.CapsuleOps{
 		GoString: func(val interface{}) string { return fmt.Sprintf("%#v", val) },
+		RawEquals: func(a, b interface{}) bool {
+			t1 := a.(*time.Time)
+			t2 := b.(*time.Time)
+			return t1.Equal(*t2)
+		},
 	},
 )

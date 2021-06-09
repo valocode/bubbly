@@ -11,69 +11,128 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// Tables holds a slice of table
-type Tables []Table
-
-func (t Tables) Resolve() error {
-	for _, tbl := range t {
-		if err := tbl.Resolve(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// Table is a schema table. It may
-// contain fields, tables, or any
-// combination of the two.
+// Table is a schema table and defines the relationships (joins), fields,
+// unique constraints, etc
 type Table struct {
-	Name   string       `hcl:",label" json:"name"`
-	Fields []TableField `hcl:"field,block" json:"fields"`
-	Joins  []TableJoin  `hcl:"join,block" json:"joins,omitempty"`
+	Name   string       `json:"name"`
+	Fields []TableField `json:"fields"`
+	Joins  []TableJoin  `json:"joins,omitempty"`
 	// Single describes a one-to-one relationship for an implicit join
 	// If a Table is nested within another table it is an implicit join from the
 	// nested Table to the parent Table. Just like joins have properties (like
 	// single & unique), these implicit joins also need to have them
-	Single bool `hcl:"single,optional" json:"single,omitempty"`
+	Single bool `json:"single,omitempty"`
 	// Unique makes an implicit join part of the unique constraint
-	Unique bool    `hcl:"unique,optional" json:"unique,omitempty"`
-	Tables []Table `hcl:"table,block" json:"tables,omitempty"`
+	Unique bool    `json:"unique,omitempty"`
+	Tables []Table `json:"tables,omitempty"`
 }
 
-func (t *Table) Resolve() error {
-	var diags hcl.Diagnostics
-	for idx := range t.Fields {
-		var (
-			typeDiags hcl.Diagnostics
-			// Get a pointer to the field so that it can be updated
-			field = &t.Fields[idx]
-		)
-		exprWord := hcl.ExprAsKeyword(field.TypeExpr)
-		if exprWord == "time" {
-			field.Type = parser.TimeType
-			continue
+// TableHCL is almost a replica of Table, but is used for parsing tables
+// from HCL files, and should be converted into a Table type which resolves
+// fields like the cty.Type.
+// The reason for separating the types is to encourage compile/parse errors,
+// rather than difficult/hard to catch errors by combining the two types
+type TableHCL struct {
+	Name   string          `hcl:",label"`
+	Fields []TableFieldHCL `hcl:"field,block"`
+	Joins  []TableJoin     `hcl:"join,block"`
+	Single bool            `hcl:"single,optional"`
+	Unique bool            `hcl:"unique,optional"`
+	Tables []TableHCL      `hcl:"table,block"`
+}
+
+// TablesFromHCL takes tables parsed from HCL and returns a slice of Table
+func TablesFromHCL(hclTables []TableHCL) ([]Table, error) {
+	var tables []Table
+	for _, ht := range hclTables {
+		table, err := TableFromHCL(ht)
+		if err != nil {
+			return nil, err
 		}
-		field.Type, typeDiags = typeexpr.TypeConstraint(field.TypeExpr)
-		diags = append(diags, typeDiags...)
+		tables = append(tables, table)
 	}
+
+	return tables, nil
+}
+
+// TableFromHCL takes a table parsed from HCL and returns a Table
+func TableFromHCL(hclTable TableHCL) (Table, error) {
+	var (
+		table Table
+		err   error
+	)
+	table.Name = hclTable.Name
+	table.Joins = hclTable.Joins
+	table.Single = hclTable.Single
+	table.Unique = hclTable.Unique
+	table.Fields, err = FieldsFromHCL(hclTable.Fields)
+	if err != nil {
+		return Table{}, err
+	}
+	table.Tables, err = TablesFromHCL(hclTable.Tables)
+	if err != nil {
+		return Table{}, err
+	}
+	return table, nil
+}
+
+// FieldsFromHCL takes fields parsed from HCL and returns a slice of TableField
+func FieldsFromHCL(hclFields []TableFieldHCL) ([]TableField, error) {
+	var fields []TableField
+	for _, f := range hclFields {
+		field, err := FieldFromHCL(f)
+		if err != nil {
+			return nil, err
+		}
+		fields = append(fields, field)
+	}
+	return fields, nil
+}
+
+// FieldFromHCL takes a field parsed from HCL and returns TableField
+func FieldFromHCL(hclField TableFieldHCL) (TableField, error) {
+	var (
+		field TableField
+		err   error
+	)
+
+	field.Name = hclField.Name
+	field.Unique = hclField.Unique
+	field.Type, err = typeFromTypeExpr(hclField.TypeExpr)
+	if err != nil {
+		return TableField{}, err
+	}
+	return field, nil
+}
+
+// typeFromTypeExpr takes an hcl.Expression which is expected to be a type expr
+// (i.e. representing a cty.Type), and returns the cty.Type or error if
+// the type was invalid
+func typeFromTypeExpr(expr hcl.Expression) (cty.Type, error) {
+	// Some special cases, like time, are handled internally to Bubbly
+	exprWord := hcl.ExprAsKeyword(expr)
+	if exprWord == "time" {
+		return parser.TimeType, nil
+	}
+	// If no special case, delegate to typeexpr
+	ty, diags := typeexpr.TypeConstraint(expr)
 	if diags.HasErrors() {
-		return parser.NewParserError(nil, diags)
+		return cty.NilType, fmt.Errorf("invalid type: %s", diags.Error())
 	}
-	// Recursively go through child tables
-	for _, tbl := range t.Tables {
-		if err := tbl.Resolve(); err != nil {
-			return err
-		}
-	}
-	return nil
+	return ty, nil
 }
 
 // TableField is a schema field.
 type TableField struct {
-	Name     string         `hcl:",label" json:"name"`
-	Unique   bool           `hcl:"unique,optional" json:"unique,omitempty"`
-	TypeExpr hcl.Expression `hcl:"type,attr" json:"-"`
-	Type     cty.Type       `json:"type"`
+	Name   string   `json:"name"`
+	Unique bool     `json:"unique,omitempty"`
+	Type   cty.Type `json:"type"`
+}
+
+type TableFieldHCL struct {
+	Name     string         `hcl:",label"`
+	Unique   bool           `hcl:"unique,optional"`
+	TypeExpr hcl.Expression `hcl:"type,attr"`
 }
 
 func (f TableField) MarshalJSON() ([]byte, error) {
@@ -104,6 +163,7 @@ func (f *TableField) UnmarshalJSON(data []byte) error {
 
 type TableFieldAlias TableField
 
+// An alias for cty.Type so that we can override JSON marshal/unmarshal
 type TypeJSON cty.Type
 
 func (t TypeJSON) MarshalJSON() ([]byte, error) {
@@ -141,6 +201,8 @@ type TableFieldJSON struct {
 	TypeJSON TypeJSON `json:"type"`
 }
 
+// TableJoin can be the same type used for HCL parsing because there are no
+// differences (yet)
 type TableJoin struct {
 	Table  string `hcl:",label" json:"name"`
 	Unique bool   `hcl:"unique,optional" json:"unique,omitempty"`

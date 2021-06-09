@@ -556,10 +556,12 @@ func psqlArgValues(node *dataNode) ([]interface{}, error) {
 var psqlDefaultMissingJoinValue = -1
 
 func psqlValue(node *dataNode, val cty.Value) (interface{}, error) {
+	var retVal interface{}
 	// Check if the value is a capsule value, in which case it needs special
 	// treatment
 	if val.Type().IsCapsuleType() {
-		if val.Type().Equals(parser.DataRefType) {
+		switch val.Type() {
+		case parser.DataRefType:
 			// Get the underlying DataRef type
 			ref := val.EncapsulatedValue().(*parser.DataRef)
 			parent, ok := node.Parents[ref.TableName]
@@ -570,16 +572,23 @@ func psqlValue(node *dataNode, val cty.Value) (interface{}, error) {
 			if !ok {
 				return nil, fmt.Errorf("data ref refers to unknown field: %s.%s", ref.TableName, ref.Field)
 			}
-			return ret, nil
+			retVal = ret
+		case parser.TimeType:
+			retVal = val.EncapsulatedValue().(*time.Time)
+		default:
+			return nil, fmt.Errorf("unknown capsule type %s", val.Type().FriendlyName())
 		}
-		if val.Type().Equals(parser.TimeType) {
-			return val.EncapsulatedValue().(*time.Time), nil
-
+	} else {
+		var err error
+		// If not a capsule type, it is a regular cty.Value
+		retVal, err = valueFromCty(val)
+		if err != nil {
+			return nil, err
 		}
 	}
-
-	// If not a capsule type, it is a regular cty.Value
-	return valueFromCty(val)
+	// TODO: Validate that retVal conforms to the expected type for the field
+	// For that we need the cty.Type
+	return retVal, nil
 }
 
 func valueFromCty(val cty.Value) (interface{}, error) {
@@ -637,7 +646,7 @@ func psqlType(ty cty.Type) (string, error) {
 		return "JSONB", nil
 	case ty.IsCapsuleType():
 		if ty.Equals(parser.TimeType) {
-			return "timestamp", nil
+			return "TIMESTAMPTZ", nil
 		}
 	}
 	return "", fmt.Errorf("unsupported SQL type: %s", ty.GoString())

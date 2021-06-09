@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -67,6 +69,17 @@ func toDataBlocks(value interface{}, ignoreNesting bool) core.DataBlocks {
 			// an actual value or a relationship to other structs
 			switch structField.Type.Kind() {
 			case reflect.Struct:
+				// Some structs we want to store as capsule types, like time.Time
+				if structField.Type == reflect.TypeOf(time.Time{}) {
+					dataFieldName := jsonTagName(structField)
+					// We cannot Addr the struct field value, so create a new value
+					// and copy the time.Time over into the new ptr
+					timePtr := reflect.New(fieldVal.Type())
+					timePtr.Elem().Set(fieldVal)
+					dataFieldValue := cty.CapsuleVal(parser.TimeType, timePtr.Interface())
+					data.Fields.Values[dataFieldName] = dataFieldValue
+					continue
+				}
 				data.Data = append(data.Data, toDataBlocks(fieldVal.Interface(), false)...)
 			case reflect.Slice:
 				// If a slice, we want to iterate through the slices and recursively

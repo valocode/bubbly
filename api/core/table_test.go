@@ -29,7 +29,7 @@ table "test" {
 `
 
 type tableWrapper struct {
-	Tables []Table `hcl:"table,block"`
+	Tables []TableHCL `hcl:"table,block"`
 }
 
 func TestTable(t *testing.T) {
@@ -40,21 +40,19 @@ func TestTable(t *testing.T) {
 	diags = gohcl.DecodeBody(file.Body, nil, &val)
 	assert.Empty(t, diags)
 
-	for _, tbl := range val.Tables {
-		err := tbl.Resolve()
-		assert.NoError(t, err)
-	}
+	tables1, err := TablesFromHCL(val.Tables)
+	require.NoError(t, err)
 
 	t.Run("json", func(t *testing.T) {
-		b, err := json.Marshal(val)
+		b, err := json.Marshal(tables1)
 		require.NoError(t, err)
 
-		var val2 tableWrapper
-		err = json.Unmarshal(b, &val2)
+		var tables2 []Table = make([]Table, 0)
+		err = json.Unmarshal(b, &tables2)
 		require.NoError(t, err)
-		require.Equal(t, len(val.Tables), len(val2.Tables))
-		for idx, t1 := range val.Tables {
-			t2 := val2.Tables[idx]
+		require.Equal(t, len(val.Tables), len(tables2))
+		for idx, t1 := range tables1 {
+			t2 := tables2[idx]
 			require.Equal(t, len(t1.Fields), len(t2.Fields))
 			for j, f1 := range t1.Fields {
 				f2 := t2.Fields[j]

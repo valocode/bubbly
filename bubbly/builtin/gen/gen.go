@@ -69,7 +69,7 @@ func genTablesFromSchema(graph *store.SchemaGraph) error {
 	// fmt.Fprintf(&b, "//+build ignore\n\n")
 	fmt.Fprintf(&b, "package %s\n\n", packageName)
 	fmt.Fprint(&b, importStatement)
-	fmt.Fprintf(&b, "var BuiltinTables = core.Tables{\n\n")
+	fmt.Fprintf(&b, "var BuiltinTables = []core.Table{\n\n")
 	graph.Traverse(func(node *store.SchemaNode) error {
 		var (
 			table = node.Table
