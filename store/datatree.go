@@ -42,14 +42,33 @@ func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
 		if !ok {
 			return fmt.Errorf("data block refers to non-existent table %s", node.Data.TableName)
 		}
+		// Assign the scema node to the data node
+		node.SchemaNode = n
 		// Validate the fields fist
 		for field, value := range node.Data.Fields.Values {
-			var exists bool
+			// Validate the value if it's a data reference
 			if value.Type().IsCapsuleType() {
-				// TODO: do we need to check DataRefs or is it enough to check
-				// the joins? Probably enough to check the joins as the DataRefs
-				// are created via the joins... Just leaving this here in case!
-				continue
+				if value.Type() == parser.DataRefType {
+					dref := value.EncapsulatedValue().(*parser.DataRef)
+					dEdge, ok := n.Edges[dref.TableName]
+					if !ok {
+						if n.Table.Name != dref.TableName {
+							return fmt.Errorf("data reference to relationship that does not exist: %s --> %s", n.Table.Name, dref.TableName)
+						}
+					}
+					// Check whether it's the ID field
+					if dref.Field != tableIDField {
+						// If not, check if it's a field in the table
+						if _, ok := dEdge.Node.Table.Fields[dref.Field]; !ok {
+							// As a last resort, the field name may have the join
+							// suffix _id, so remove that and try again
+							foreignField := strings.TrimSuffix(dref.Field, tableJoinSuffix)
+							if _, ok := dEdge.Node.Edges[foreignField]; !ok {
+								return fmt.Errorf("data reference to field that does not exist: %s.%s", dref.TableName, dref.Field)
+							}
+						}
+					}
+				}
 			}
 			// Check whether it's the ID field
 			if field == tableIDField {
@@ -57,13 +76,14 @@ func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
 			}
 			// Otherwise check all the fields for the table and make sure it's
 			// one of those
-			for _, tf := range n.Table.Fields {
-				if tf.Name == field {
-					exists = true
-					break
+			if _, ok := n.Table.Fields[field]; !ok {
+				if strings.HasSuffix(field, tableJoinSuffix) {
+					joinTable := strings.TrimSuffix(field, tableJoinSuffix)
+					if _, ok := n.Edges[joinTable]; !ok {
+						return fmt.Errorf("foreign key field to un-related table: %s", field)
+					}
+					continue
 				}
-			}
-			if !exists {
 				return fmt.Errorf("field does not exist for data block %s: %s", node.Data.TableName, field)
 			}
 		}
@@ -217,6 +237,8 @@ func newDataNode(d *core.Data) *dataNode {
 type dataNode struct {
 	// Data is the underlying data block
 	Data *core.Data
+	// SchemaNode points to the corresponding node in the schema graph
+	SchemaNode *SchemaNode
 	// Return stores the values that are returned when the Data is stored in the
 	// providers database. This is then used by any children to resolve the data
 	// references to this Data
@@ -237,7 +259,17 @@ type dataNode struct {
 	// Unlike the Parents field, a node can have multiple Children with the same
 	// table name, and thus, we store them as a slice and not a map.
 	Children []*dataNode
+	Action   dataAction
 }
+
+type dataAction int
+
+const (
+	dataCreated dataAction = iota
+	dataUpdated
+	dataSelected
+	dataNotExist
+)
 
 func (d *dataNode) Describe() string {
 	var str string

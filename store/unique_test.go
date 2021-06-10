@@ -50,7 +50,7 @@ func TestNotUniqueUpdate(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	resource := test.RunPostgresDocker(bCtx, t)
 	bCtx.StoreConfig.PostgresAddr = fmt.Sprintf("localhost:%s", resource.GetPort("5432/tcp"))
-	bCtx.StoreConfig.PostgresAddr = "localhost:5432"
+	// bCtx.StoreConfig.PostgresAddr = "localhost:5432"
 
 	// Parse the schema and data blocks
 	tables := testData.Tables(t, bCtx, "./testdata/unique/tables_update.hcl")

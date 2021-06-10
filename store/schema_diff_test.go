@@ -28,25 +28,25 @@ var schemaDiffTests = []struct {
 	{
 		name: "Test create table",
 		s1:   []core.Table{},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}},
 		want: schemaUpdates{
-			changeEntry{Action: create, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: tableElement}, From: nil, To: core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
+			changeEntry{Action: create, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: tableElement}, From: nil, To: core.Table{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}},
 		},
 		wantErr: false,
 	},
 	{
 		name: "Test delete table",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}},
 		s2:   []core.Table{},
 		want: schemaUpdates{
-			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: tableElement}, From: core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}, To: nil},
+			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: tableElement}, From: core.Table{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}, To: nil},
 		},
 		wantErr: false,
 	},
 	{
 		name: "Test add field",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}, {Name: "b", Type: cty.String}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}, "b": {Name: "b", Type: cty.String}}}},
 		want: schemaUpdates{
 			changeEntry{Action: create, TableInfo: tableInfo{TableName: "a", ElementName: "b", ElementType: fieldElement}, From: nil, To: core.TableField{Name: "b", Type: cty.String}},
 		},
@@ -54,8 +54,8 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Test update field type",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.Number}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.Number}}}},
 		want: schemaUpdates{
 			changeEntry{Action: update, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: fieldType}, From: cty.String, To: cty.Number},
 		},
@@ -63,8 +63,8 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Test update field set unique",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String, Unique: true}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String, Unique: true}}}},
 		want: schemaUpdates{
 			changeEntry{Action: update, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: fieldUniqueAttr}, From: false, To: true},
 		},
@@ -72,8 +72,8 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Test update field set not unique",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String, Unique: true}}}},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String, Unique: true}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}},
 		want: schemaUpdates{
 			changeEntry{Action: update, TableInfo: tableInfo{TableName: "a", ElementName: "a", ElementType: fieldUniqueAttr}, From: true, To: false},
 		},
@@ -81,8 +81,8 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Test delete field",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}, {Name: "b", Type: cty.String}}}},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}, "b": {Name: "b", Type: cty.String}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}},
 		want: schemaUpdates{
 			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "a", ElementName: "b", ElementType: fieldElement}, From: core.TableField{Name: "b", Type: cty.String}, To: nil},
 		},
@@ -90,17 +90,17 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Test create table with implicit join",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: map[string]core.TableField{"b": {Name: "b", Type: cty.String}}}}}},
 		want: schemaUpdates{
-			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "b", ElementType: tableElement}, From: nil, To: core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}, Joins: []core.TableJoin{{Table: "a"}}}},
+			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "b", ElementType: tableElement}, From: nil, To: core.Table{Name: "b", Fields: map[string]core.TableField{"b": {Name: "b", Type: cty.String}}, Joins: []core.TableJoin{{Table: "a"}}}},
 		},
 		wantErr: false,
 	},
 	{
 		name: "Test create implicit join",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}, core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}, {Name: "b", Fields: map[string]core.TableField{"b": {Name: "b", Type: cty.String}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: map[string]core.TableField{"b": {Name: "b", Type: cty.String}}}}}},
 		want: schemaUpdates{
 			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinElement}, From: nil, To: core.TableJoin{Table: "a"}},
 		},
@@ -108,8 +108,8 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Test create implicit single join",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}, core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}, Single: true}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}, {Name: "b", Fields: map[string]core.TableField{"b": {Name: "b", Type: cty.String}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: map[string]core.TableField{"b": {Name: "b", Type: cty.String}}, Single: true}}}},
 		want: schemaUpdates{
 			changeEntry{Action: create, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinElement}, From: nil, To: core.TableJoin{Table: "a", Single: true}},
 		},
@@ -117,8 +117,8 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Test remove join",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}}}},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}, core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: map[string]core.TableField{"b": {Name: "b", Type: cty.String}}}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}, {Name: "b", Fields: map[string]core.TableField{"b": {Name: "b", Type: cty.String}}}},
 		want: schemaUpdates{
 			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinElement}, From: core.TableJoin{Table: "a"}, To: nil},
 		},
@@ -126,17 +126,17 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Test remove table with join",
-		s1:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}}}}},
-		s2:   []core.Table{core.Table{Name: "a", Fields: []core.TableField{{Name: "a", Type: cty.String}}}},
+		s1:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}, Tables: []core.Table{{Name: "b", Fields: map[string]core.TableField{"b": {Name: "b", Type: cty.String}}}}}},
+		s2:   []core.Table{{Name: "a", Fields: map[string]core.TableField{"a": {Name: "a", Type: cty.String}}}},
 		want: schemaUpdates{
-			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "b", ElementName: "b", ElementType: tableElement}, From: core.Table{Name: "b", Fields: []core.TableField{{Name: "b", Type: cty.String}}, Joins: []core.TableJoin{{Table: "a"}}}, To: nil},
+			changeEntry{Action: remove, TableInfo: tableInfo{TableName: "b", ElementName: "b", ElementType: tableElement}, From: core.Table{Name: "b", Fields: map[string]core.TableField{"b": {Name: "b", Type: cty.String}}, Joins: []core.TableJoin{{Table: "a"}}}, To: nil},
 		},
 		wantErr: false,
 	},
 	{
 		name: "Add unique constraint on join",
-		s1:   []core.Table{core.Table{Name: "a", Tables: []core.Table{{Name: "b"}}}},
-		s2:   []core.Table{core.Table{Name: "a", Tables: []core.Table{{Name: "b", Unique: true}}}},
+		s1:   []core.Table{{Name: "a", Tables: []core.Table{{Name: "b"}}}},
+		s2:   []core.Table{{Name: "a", Tables: []core.Table{{Name: "b", Unique: true}}}},
 		want: schemaUpdates{
 			changeEntry{Action: update, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinUniqueAttr}, From: false, To: true},
 		},
@@ -144,8 +144,8 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Remove unique constraint on join",
-		s1:   []core.Table{core.Table{Name: "a", Tables: []core.Table{{Name: "b", Unique: true}}}},
-		s2:   []core.Table{core.Table{Name: "a", Tables: []core.Table{{Name: "b"}}}},
+		s1:   []core.Table{{Name: "a", Tables: []core.Table{{Name: "b", Unique: true}}}},
+		s2:   []core.Table{{Name: "a", Tables: []core.Table{{Name: "b"}}}},
 		want: schemaUpdates{
 			changeEntry{Action: update, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinUniqueAttr}, From: true, To: false},
 		},
@@ -153,8 +153,8 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Add single attribute on join",
-		s1:   []core.Table{core.Table{Name: "a", Tables: []core.Table{{Name: "b"}}}},
-		s2:   []core.Table{core.Table{Name: "a", Tables: []core.Table{{Name: "b", Single: true}}}},
+		s1:   []core.Table{{Name: "a", Tables: []core.Table{{Name: "b"}}}},
+		s2:   []core.Table{{Name: "a", Tables: []core.Table{{Name: "b", Single: true}}}},
 		want: schemaUpdates{
 			changeEntry{Action: update, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinSingleAttr}, From: false, To: true},
 		},
@@ -162,8 +162,8 @@ var schemaDiffTests = []struct {
 	},
 	{
 		name: "Remove single attribute on join",
-		s1:   []core.Table{core.Table{Name: "a", Tables: []core.Table{{Name: "b", Single: true}}}},
-		s2:   []core.Table{core.Table{Name: "a", Tables: []core.Table{{Name: "b"}}}},
+		s1:   []core.Table{{Name: "a", Tables: []core.Table{{Name: "b", Single: true}}}},
+		s2:   []core.Table{{Name: "a", Tables: []core.Table{{Name: "b"}}}},
 		want: schemaUpdates{
 			changeEntry{Action: update, TableInfo: tableInfo{TableName: "b", ElementName: "a", ElementType: joinSingleAttr}, From: true, To: false},
 		},
@@ -186,17 +186,11 @@ func TestCompareSchema(t *testing.T) {
 }
 
 var schema1 = []core.Table{
-	core.Table{
+	{
 		Name: "table1",
-		Fields: []core.TableField{
-			{
-				Name: "field1",
-				Type: cty.String,
-			},
-			{
-				Name: "field_delete",
-				Type: cty.Number,
-			},
+		Fields: map[string]core.TableField{
+			"field1":       {Name: "field1", Type: cty.String},
+			"field_delete": {Name: "field_delete", Type: cty.Number},
 		},
 		Joins: []core.TableJoin{
 			{
@@ -208,27 +202,15 @@ var schema1 = []core.Table{
 			{
 				Name:   "tables_1",
 				Single: false,
-				Fields: []core.TableField{
-					{
-						Name:   "field1",
-						Type:   cty.String,
-						Unique: true,
-					},
-					{
-						Name:   "field_delete",
-						Type:   cty.String,
-						Unique: false,
-					},
+				Fields: map[string]core.TableField{
+					"field1":       {Name: "field1", Type: cty.String, Unique: true},
+					"field_delete": {Name: "field_delete", Type: cty.String},
 				},
 				Tables: []core.Table{
 					{
 						Name: "sub_table_1",
-						Fields: []core.TableField{
-							{
-								Name:   "field1",
-								Type:   cty.String,
-								Unique: true,
-							},
+						Fields: map[string]core.TableField{
+							"field1": {Name: "field1", Type: cty.String, Unique: true},
 						},
 						Tables: nil,
 						Single: false,
@@ -237,12 +219,8 @@ var schema1 = []core.Table{
 			},
 			{
 				Name: "table_to_remove",
-				Fields: []core.TableField{
-					{
-						Name:   "field1",
-						Type:   cty.String,
-						Unique: true,
-					},
+				Fields: map[string]core.TableField{
+					"field1": {Name: "field1", Type: cty.String, Unique: true},
 				},
 				Tables: nil,
 				Single: false,
@@ -250,13 +228,10 @@ var schema1 = []core.Table{
 		},
 		Single: true,
 	},
-	core.Table{
+	{
 		Name: "table2",
-		Fields: []core.TableField{
-			{
-				Name: "field2",
-				Type: cty.String,
-			},
+		Fields: map[string]core.TableField{
+			"field2": {Name: "field2", Type: cty.String, Unique: true},
 		},
 		Single: false,
 	},

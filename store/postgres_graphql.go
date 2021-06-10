@@ -96,8 +96,6 @@ func psqlResolveRootQuery(pool *pgxpool.Pool, tenant string, graph *SchemaGraph,
 		return nil, fmt.Errorf("error replacing the SQL (squirrel) placeholders: %w", err)
 	}
 
-	fmt.Println("SQL: " + sqlStr)
-
 	// Execute the query
 	rows, err := pool.Query(context.Background(), sqlStr, sqlArgs...)
 	if err != nil {
@@ -179,12 +177,9 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 		// Argument name equal to one of the column names for the current node (table)
 		// adds an equality predicate in the WHERE clause.
 		// Multiple expressions are `AND`ed together in the generated SQL.
-		for _, tf := range node.Table.Fields {
-			if arg.Name.Value == tf.Name {
-				nodeQuery = nodeQuery.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
-				argIsResolved = true
-				break
-			}
+		if _, ok := node.Table.Fields[arg.Name.Value]; ok {
+			nodeQuery = nodeQuery.Where(sq.Eq{tc.alias + "." + arg.Name.Value: arg.Value.GetValue()})
+			argIsResolved = true
 		}
 		// Resolve the id field
 		if arg.Name.Value == tableIDField {

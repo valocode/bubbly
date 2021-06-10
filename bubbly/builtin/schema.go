@@ -28,7 +28,7 @@ func BuiltinSchema() ([]core.Table, error) {
 	return tables, nil
 }
 
-func table(name string, fields []core.TableField, Joins []core.TableJoin) core.Table {
+func table(name string, fields map[string]core.TableField, Joins []core.TableJoin) core.Table {
 	return core.Table{
 		Name:   name,
 		Fields: fields,
@@ -36,8 +36,12 @@ func table(name string, fields []core.TableField, Joins []core.TableJoin) core.T
 	}
 }
 
-func fields(fields ...core.TableField) []core.TableField {
-	return fields
+func fields(fields ...core.TableField) map[string]core.TableField {
+	var tFields = make(map[string]core.TableField)
+	for _, f := range fields {
+		tFields[f.Name] = f
+	}
+	return tFields
 }
 
 func field(name string, ty cty.Type, unique bool) core.TableField {

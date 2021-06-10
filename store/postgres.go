@@ -330,6 +330,7 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 		// If there are no unique fields, just perform an INSERT and be done
 		if len(uniqueFields) == 0 {
 			retValues, err = psqlDataInsert(tx, tenant, node, table)
+			node.Action = dataCreated
 			break
 		}
 		// If there are unique fields, delete all the non-unique fields so that
@@ -363,6 +364,7 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 		// INSERT, otherwise UPDATE
 		if len(retValues) == 0 {
 			retValues, err = psqlDataInsert(tx, tenant, node, table)
+			node.Action = dataCreated
 			break
 		}
 		// If we should Create, then we cannot because the data block is not unique
@@ -372,8 +374,10 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 		// Else, perform an update of the data block.
 		// The tableIdField should ALWAYS be returned, so we can skip any check here
 		retValues, err = psqlDataUpdate(tx, tenant, node, table, retValues[0][tableIDField])
+		node.Action = dataUpdated
 	case core.ReferencePolicy, core.ReferenceIfExistsPolicy:
 		retValues, err = psqlDataSelect(tx, tenant, node, table)
+		node.Action = dataSelected
 	default:
 		return fmt.Errorf("data block refers to unsupported policy %s: %s", node.Data.TableName, node.Data.Policy)
 	}
@@ -388,6 +392,7 @@ func psqlSaveNode(tx pgx.Tx, tenant string, node *dataNode, table core.Table) er
 		if node.Data.Policy != core.ReferenceIfExistsPolicy {
 			return fmt.Errorf("no rows returned from SQL query on data %s:\n\n%s", node.Data.TableName, node.Describe())
 		}
+		node.Action = dataNotExist
 		return nil
 	}
 	// Asign the returned values so that if the child nodes need to resolve
