@@ -20,6 +20,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/ext/typeexpr"
 
 	"github.com/valocode/bubbly/api/common"
 	"github.com/valocode/bubbly/api/core"
@@ -349,11 +350,24 @@ type graphqlSource struct {
 
 	// Format is is a dynamic type, usually built from an HCL type expression.
 	// It defines what is expected in response to the GraphQL API query.
-	Format cty.Type `hcl:"format"`
+	Format     cty.Type
+	FormatExpr hcl.Expression `hcl:"format,attr"`
 }
 
 // Resolve performs a GraphQL query, parses the response, and returns a corresponding cty.Value
 func (s *graphqlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
+	// Handle the format. First check if the current format is NilType (zero value)
+	// and if so, get the type from FormatExpr
+	if s.Format == cty.NilType {
+		if s.FormatExpr == nil {
+			return cty.NilVal, fmt.Errorf("no type available for format field")
+		}
+		var typeDiags hcl.Diagnostics
+		s.Format, typeDiags = typeexpr.TypeConstraint(s.FormatExpr)
+		if typeDiags.HasErrors() {
+			return cty.NilVal, fmt.Errorf("invalid type for format field: %s", typeDiags.Error())
+		}
+	}
 
 	// Wrap the query into proper JSON as this is what the GraphQL end-point expects
 	query, err := json.Marshal(
@@ -603,24 +617,32 @@ type restSource struct {
 
 	// Format is a dynamic type, usually built from an HCL type expression.
 	// It defines what is expected in response to the REST API query.
-	Format cty.Type `hcl:"format"`
+	Format     cty.Type
+	FormatExpr hcl.Expression `hcl:"format,attr"`
 }
 
 // Resolve performs a REST query, parses the response, and returns a corresponding dynamic value.
 func (s *restSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
+	// Handle the format. First check if the current format is NilType (zero value)
+	// and if so, get the type from FormatExpr
+	if s.Format == cty.NilType {
+		if s.FormatExpr == nil {
+			return cty.NilVal, fmt.Errorf("no type available for format field")
+		}
+		var typeDiags hcl.Diagnostics
+		s.Format, typeDiags = typeexpr.TypeConstraint(s.FormatExpr)
+		if typeDiags.HasErrors() {
+			return cty.NilVal, fmt.Errorf("invalid type for format field: %s", typeDiags.Error())
+		}
+	}
 
 	// Format of the response
 	kind := s.Decoder
 
-	switch kind {
-	case "":
+	if kind == "" {
 		kind = "json"
-	case "json":
-		break
-	case "xml":
-		break
-	default:
-		// TODO: figure out something clever to reuse const from ExtractType
+	}
+	if !(kind == "json" || kind == "xml") {
 		return cty.NilVal, fmt.Errorf("unsupported response kind: %s", kind)
 	}
 
@@ -918,8 +940,9 @@ var _ source = (*jsonSource)(nil)
 type jsonSource struct {
 	File     string `hcl:"file,optional"`
 	Contents string `hcl:"contents,optional"`
-	// the format of the raw input data defined as a cty.Type
-	Format cty.Type `hcl:"format,attr"`
+	// Format is the structure of the raw input data defined as a cty.Type
+	Format     cty.Type
+	FormatExpr hcl.Expression `hcl:"format,attr"`
 }
 
 // readJSON reads in, decodes, and validates the format of data
@@ -939,6 +962,18 @@ func readJSON(r io.Reader, ty cty.Type) (cty.Value, error) {
 
 // Resolve returns a cty.Value representation of the parsed JSON file
 func (s *jsonSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
+	// Handle the format. First check if the current format is NilType (zero value)
+	// and if so, get the type from FormatExpr
+	if s.Format == cty.NilType {
+		if s.FormatExpr == nil {
+			return cty.NilVal, fmt.Errorf("no type available for format field")
+		}
+		var typeDiags hcl.Diagnostics
+		s.Format, typeDiags = typeexpr.TypeConstraint(s.FormatExpr)
+		if typeDiags.HasErrors() {
+			return cty.NilVal, fmt.Errorf("invalid type for format field: %s", typeDiags.Error())
+		}
+	}
 
 	if s.File != "" && s.Contents != "" {
 		return cty.NilVal, errors.New("cannot provide both file and contents")
@@ -968,7 +1003,8 @@ var _ source = (*xmlSource)(nil)
 type xmlSource struct {
 	File string `hcl:"file,attr"`
 	// the format of the raw input data defined as a cty.Type
-	Format cty.Type `hcl:"format,attr"`
+	Format     cty.Type
+	FormatExpr hcl.Expression `hcl:"format,attr"`
 }
 
 // readXML reads in, decodes, and validates the format of data
@@ -993,6 +1029,18 @@ func readXML(r io.Reader, ty cty.Type) (cty.Value, error) {
 
 // Resolve returns a cty.Value representation of the XML file
 func (s *xmlSource) Resolve(bCtx *env.BubblyContext) (cty.Value, error) {
+	// Handle the format. First check if the current format is NilType (zero value)
+	// and if so, get the type from FormatExpr
+	if s.Format == cty.NilType {
+		if s.FormatExpr == nil {
+			return cty.NilVal, fmt.Errorf("no type available for format field")
+		}
+		var typeDiags hcl.Diagnostics
+		s.Format, typeDiags = typeexpr.TypeConstraint(s.FormatExpr)
+		if typeDiags.HasErrors() {
+			return cty.NilVal, fmt.Errorf("invalid type for format field: %s", typeDiags.Error())
+		}
+	}
 
 	mxj.PrependAttrWithHyphen(false) // no "-" prefix on attributes
 	mxj.CastNanInf(true)             // use float64, not string for extremes

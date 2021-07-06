@@ -11,6 +11,7 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/valocode/bubbly/parser"
 )
 
 const (
@@ -260,10 +261,24 @@ func psqlSubQuery(tenant string, graph *SchemaGraph, sql *sq.SelectBuilder, pare
 			subFields = append(subFields, subField)
 		} else {
 			// If subField did not have a selection set this it is just a column
-			// within the current table, so add it to the columns
+			// within the current table, so add it to the columns.
+			// There are exceptions to adding the column to the SQL query,
+			// e.g. time fields should be to_json(time)
+			var colVal string
+			for _, tf := range node.Table.Fields {
+				if tf.Name == fieldName {
+					switch tf.Type {
+					case parser.TimeType:
+						// colVal = tableColumn(tc.alias, fieldName)
+						colVal = "to_json(" + tableColumn(tc.alias, fieldName) + ") as " + fieldName
+					default:
+						colVal = tableColumn(tc.alias, fieldName)
+					}
+				}
+			}
 			tc.columns = append(tc.columns, fieldName)
-			nodeQuery = nodeQuery.Column(tableColumn(tc.alias, fieldName))
-			*sql = sql.Column(tableColumn(tc.alias, fieldName))
+			nodeQuery = nodeQuery.Column(colVal)
+			*sql = sql.Column(colVal)
 		}
 	}
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/graphql-go/graphql"
@@ -555,32 +556,39 @@ func psqlArgValues(node *dataNode) ([]interface{}, error) {
 var psqlDefaultMissingJoinValue = -1
 
 func psqlValue(node *dataNode, val cty.Value) (interface{}, error) {
+	var retVal interface{}
 	// Check if the value is a capsule value, in which case it needs special
 	// treatment
 	if val.Type().IsCapsuleType() {
-		// Get the underlying DataRef type
-		ref := val.EncapsulatedValue().(*parser.DataRef)
-		if parent, ok := node.Parents[ref.TableName]; ok {
-			if ret, ok := parent.Return[ref.Field]; ok {
-				return ret, nil
+		switch val.Type() {
+		case parser.DataRefType:
+			// Get the underlying DataRef type
+			ref := val.EncapsulatedValue().(*parser.DataRef)
+			parent, ok := node.Parents[ref.TableName]
+			if !ok {
+				return nil, fmt.Errorf("data ref refers to unknown table: %s", ref.TableName)
 			}
-			// If the ref.Field is not found, check if this is acceptable
-			if parent.Data.Policy == core.ReferenceIfExistsPolicy {
-				if ref.Field == tableIDField {
-					return psqlDefaultMissingJoinValue, nil
-				}
-				// TODO: support other fields... this requires the core.Table
-				// for the parent node.
-				// Suggest adding the table to the node value to avoid passing
-				// all these values around
-				return nil, errors.New("referece_if_exists for field which is not a join is unsupported")
+			ret, ok := parent.Return[ref.Field]
+			if !ok {
+				return nil, fmt.Errorf("data ref refers to unknown field: %s.%s", ref.TableName, ref.Field)
 			}
+			retVal = ret
+		case parser.TimeType:
+			retVal = val.EncapsulatedValue().(*time.Time)
+		default:
+			return nil, fmt.Errorf("unknown capsule type %s", val.Type().FriendlyName())
 		}
-		return nil, fmt.Errorf("could not find data ref: %s.%s", ref.TableName, ref.Field)
+	} else {
+		var err error
+		// If not a capsule type, it is a regular cty.Value
+		retVal, err = valueFromCty(val)
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	// If not a capsule type, it is a regular cty.Value
-	return valueFromCty(val)
+	// TODO: Validate that retVal conforms to the expected type for the field
+	// For that we need the cty.Type
+	return retVal, nil
 }
 
 func valueFromCty(val cty.Value) (interface{}, error) {
@@ -636,9 +644,12 @@ func psqlType(ty cty.Type) (string, error) {
 		return "JSONB", nil
 	case ty.IsMapType():
 		return "JSONB", nil
-	default:
-		return "", fmt.Errorf("unsupported SQL type: %s", ty.GoString())
+	case ty.IsCapsuleType():
+		if ty.Equals(parser.TimeType) {
+			return "TIMESTAMPTZ", nil
+		}
 	}
+	return "", fmt.Errorf("unsupported SQL type: %s", ty.GoString())
 }
 
 func psqlSchemaName(tenant string) string {

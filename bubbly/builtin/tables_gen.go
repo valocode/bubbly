@@ -2,10 +2,11 @@ package builtin
 
 import (
 	"github.com/valocode/bubbly/api/core"
+	"github.com/valocode/bubbly/parser"
 	"github.com/zclconf/go-cty/cty"
 )
 
-var BuiltinTables = core.Tables{
+var BuiltinTables = []core.Table{
 
 	// #######################################
 	// _SCHEMA
@@ -37,7 +38,7 @@ var BuiltinTables = core.Tables{
 		fields(
 			field("status", cty.String, false),
 			field("error", cty.String, false),
-			field("time", cty.String, false),
+			field("time", parser.TimeType, false),
 		),
 		joins(
 			join("_resource", false, false),
@@ -75,8 +76,7 @@ var BuiltinTables = core.Tables{
 	// #######################################
 	table("project",
 		fields(
-			field("id", cty.String, true),
-			field("name", cty.String, false),
+			field("name", cty.String, true),
 		),
 		joins(),
 	),

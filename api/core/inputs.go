@@ -25,10 +25,11 @@ type InputDeclarations []*InputDeclaration
 // InputDeclaration is the type representing any "input {...}" declaration
 // blocks in HCL
 type InputDeclaration struct {
-	Name        string    `hcl:",label"`
-	Description string    `hcl:"description,optional"`
-	Default     cty.Value `hcl:"default,optional"`
-	Type        cty.Type  `hcl:"type,optional"`
+	Name        string         `hcl:",label"`
+	Description string         `hcl:"description,optional"`
+	Default     cty.Value      `hcl:"default,optional"`
+	TypeExpr    hcl.Expression `hcl:"type,optional"`
+	Type        cty.Type
 }
 
 // InputDefinitions is a wrapper for a slice of InputDefinition

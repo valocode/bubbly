@@ -1,234 +1,289 @@
 package builtin
 
+import (
+	"github.com/valocode/bubbly/api/core"
+	"time"
+)
+
 // #######################################
 // _SCHEMA
 // #######################################
 type Schema struct {
-	Tables map[string]interface{} `json:"tables"`
+	DBlock_Table  string                 `json:"_schema,omitempty"`
+	DBlock_Policy core.DataBlockPolicy   `json:"-"`
+	DBlock_Joins  []string               `json:"-"`
+	Tables        map[string]interface{} `json:"tables,omitempty"`
 }
 type Schema_Wrap struct {
-	Schema []Schema `json:"_schema"`
+	Schema []Schema `json:"_schema,omitempty"`
 }
 
 // #######################################
 // _RESOURCE
 // #######################################
 type Resource struct {
-	Id           string                 `json:"id"`
-	Name         string                 `json:"name"`
-	Kind         string                 `json:"kind"`
-	ApiVersion   string                 `json:"api_version"`
-	Spec         string                 `json:"spec"`
-	Metadata     map[string]interface{} `json:"metadata"`
-	Event        []Event                `json:"_event"`
-	ReleaseEntry []ReleaseEntry         `json:"release_entry"`
+	DBlock_Table  string                 `json:"_resource,omitempty"`
+	DBlock_Policy core.DataBlockPolicy   `json:"-"`
+	DBlock_Joins  []string               `json:"-"`
+	Id            string                 `json:"id,omitempty"`
+	Name          string                 `json:"name,omitempty"`
+	Kind          string                 `json:"kind,omitempty"`
+	ApiVersion    string                 `json:"api_version,omitempty"`
+	Spec          string                 `json:"spec,omitempty"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	Event         []Event                `json:"_event,omitempty"`
+	ReleaseEntry  []ReleaseEntry         `json:"release_entry,omitempty"`
 }
 type Resource_Wrap struct {
-	Resource []Resource `json:"_resource"`
+	Resource []Resource `json:"_resource,omitempty"`
 }
 
 // #######################################
 // _EVENT
 // #######################################
 type Event struct {
-	Status   string    `json:"status"`
-	Error    string    `json:"error"`
-	Time     string    `json:"time"`
-	Resource *Resource `json:"_resource"`
+	DBlock_Table  string               `json:"_event,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Status        string               `json:"status,omitempty"`
+	Error         string               `json:"error,omitempty"`
+	Time          time.Time            `json:"time,omitempty"`
+	Resource      *Resource            `json:"_resource,omitempty"`
 }
 type Event_Wrap struct {
-	Event []Event `json:"_event"`
+	Event []Event `json:"_event,omitempty"`
 }
 
 // #######################################
 // RELEASE_ENTRY
 // #######################################
 type ReleaseEntry struct {
-	Name            string           `json:"name"`
-	Result          bool             `json:"result"`
-	Reason          string           `json:"reason"`
-	Release         *Release         `json:"release"`
-	ReleaseCriteria *ReleaseCriteria `json:"release_criteria"`
-	Resource        *Resource        `json:"_resource"`
+	DBlock_Table    string               `json:"release_entry,omitempty"`
+	DBlock_Policy   core.DataBlockPolicy `json:"-"`
+	DBlock_Joins    []string             `json:"-"`
+	Name            string               `json:"name,omitempty"`
+	Result          bool                 `json:"result,omitempty"`
+	Reason          string               `json:"reason,omitempty"`
+	Release         *Release             `json:"release,omitempty"`
+	ReleaseCriteria *ReleaseCriteria     `json:"release_criteria,omitempty"`
+	Resource        *Resource            `json:"_resource,omitempty"`
 }
 type ReleaseEntry_Wrap struct {
-	ReleaseEntry []ReleaseEntry `json:"release_entry"`
+	ReleaseEntry []ReleaseEntry `json:"release_entry,omitempty"`
 }
 
 // #######################################
 // RELEASE
 // #######################################
 type Release struct {
-	Name            string            `json:"name"`
-	Version         string            `json:"version"`
-	Project         *Project          `json:"project"`
-	ReleaseItem     []ReleaseItem     `json:"release_item"`
-	ReleaseEntry    []ReleaseEntry    `json:"release_entry"`
-	ReleaseStage    []ReleaseStage    `json:"release_stage"`
-	ReleaseCriteria []ReleaseCriteria `json:"release_criteria"`
-	CodeScan        []CodeScan        `json:"code_scan"`
-	TestRun         []TestRun         `json:"test_run"`
+	DBlock_Table    string               `json:"release,omitempty"`
+	DBlock_Policy   core.DataBlockPolicy `json:"-"`
+	DBlock_Joins    []string             `json:"-"`
+	Name            string               `json:"name,omitempty"`
+	Version         string               `json:"version,omitempty"`
+	Project         *Project             `json:"project,omitempty"`
+	ReleaseItem     []ReleaseItem        `json:"release_item,omitempty"`
+	ReleaseEntry    []ReleaseEntry       `json:"release_entry,omitempty"`
+	ReleaseStage    []ReleaseStage       `json:"release_stage,omitempty"`
+	ReleaseCriteria []ReleaseCriteria    `json:"release_criteria,omitempty"`
+	CodeScan        []CodeScan           `json:"code_scan,omitempty"`
+	TestRun         []TestRun            `json:"test_run,omitempty"`
 }
 type Release_Wrap struct {
-	Release []Release `json:"release"`
+	Release []Release `json:"release,omitempty"`
 }
 
 // #######################################
 // PROJECT
 // #######################################
 type Project struct {
-	Id      string    `json:"id"`
-	Name    string    `json:"name"`
-	Repo    []Repo    `json:"repo"`
-	Release []Release `json:"release"`
+	DBlock_Table  string               `json:"project,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Name          string               `json:"name,omitempty"`
+	Repo          []Repo               `json:"repo,omitempty"`
+	Release       []Release            `json:"release,omitempty"`
 }
 type Project_Wrap struct {
-	Project []Project `json:"project"`
+	Project []Project `json:"project,omitempty"`
 }
 
 // #######################################
 // REPO
 // #######################################
 type Repo struct {
-	Id      string   `json:"id"`
-	Name    string   `json:"name"`
-	Project *Project `json:"project"`
-	Branch  []Branch `json:"branch"`
-	Commit  []Commit `json:"commit"`
+	DBlock_Table  string               `json:"repo,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Id            string               `json:"id,omitempty"`
+	Name          string               `json:"name,omitempty"`
+	Project       *Project             `json:"project,omitempty"`
+	Branch        []Branch             `json:"branch,omitempty"`
+	Commit        []Commit             `json:"commit,omitempty"`
 }
 type Repo_Wrap struct {
-	Repo []Repo `json:"repo"`
+	Repo []Repo `json:"repo,omitempty"`
 }
 
 // #######################################
 // BRANCH
 // #######################################
 type Branch struct {
-	Name   string   `json:"name"`
-	Repo   *Repo    `json:"repo"`
-	Commit []Commit `json:"commit"`
+	DBlock_Table  string               `json:"branch,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Name          string               `json:"name,omitempty"`
+	Repo          *Repo                `json:"repo,omitempty"`
+	Commit        []Commit             `json:"commit,omitempty"`
 }
 type Branch_Wrap struct {
-	Branch []Branch `json:"branch"`
+	Branch []Branch `json:"branch,omitempty"`
 }
 
 // #######################################
 // COMMIT
 // #######################################
 type Commit struct {
-	Id          string       `json:"id"`
-	Tag         string       `json:"tag"`
-	Time        string       `json:"time"`
-	Branch      *Branch      `json:"branch"`
-	Repo        *Repo        `json:"repo"`
-	ReleaseItem *ReleaseItem `json:"release_item"`
+	DBlock_Table  string               `json:"commit,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Id            string               `json:"id,omitempty"`
+	Tag           string               `json:"tag,omitempty"`
+	Time          string               `json:"time,omitempty"`
+	Branch        *Branch              `json:"branch,omitempty"`
+	Repo          *Repo                `json:"repo,omitempty"`
+	ReleaseItem   *ReleaseItem         `json:"release_item,omitempty"`
 }
 type Commit_Wrap struct {
-	Commit []Commit `json:"commit"`
+	Commit []Commit `json:"commit,omitempty"`
 }
 
 // #######################################
 // RELEASE_ITEM
 // #######################################
 type ReleaseItem struct {
-	Type     string    `json:"type"`
-	Release  *Release  `json:"release"`
-	Commit   *Commit   `json:"commit"`
-	Artifact *Artifact `json:"artifact"`
+	DBlock_Table  string               `json:"release_item,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Type          string               `json:"type,omitempty"`
+	Release       *Release             `json:"release,omitempty"`
+	Commit        *Commit              `json:"commit,omitempty"`
+	Artifact      *Artifact            `json:"artifact,omitempty"`
 }
 type ReleaseItem_Wrap struct {
-	ReleaseItem []ReleaseItem `json:"release_item"`
+	ReleaseItem []ReleaseItem `json:"release_item,omitempty"`
 }
 
 // #######################################
 // ARTIFACT
 // #######################################
 type Artifact struct {
-	Name        string       `json:"name"`
-	Sha256      string       `json:"sha256"`
-	Location    string       `json:"location"`
-	ReleaseItem *ReleaseItem `json:"release_item"`
+	DBlock_Table  string               `json:"artifact,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Name          string               `json:"name,omitempty"`
+	Sha256        string               `json:"sha256,omitempty"`
+	Location      string               `json:"location,omitempty"`
+	ReleaseItem   *ReleaseItem         `json:"release_item,omitempty"`
 }
 type Artifact_Wrap struct {
-	Artifact []Artifact `json:"artifact"`
+	Artifact []Artifact `json:"artifact,omitempty"`
 }
 
 // #######################################
 // RELEASE_STAGE
 // #######################################
 type ReleaseStage struct {
-	Name            string            `json:"name"`
-	Release         *Release          `json:"release"`
-	ReleaseCriteria []ReleaseCriteria `json:"release_criteria"`
+	DBlock_Table    string               `json:"release_stage,omitempty"`
+	DBlock_Policy   core.DataBlockPolicy `json:"-"`
+	DBlock_Joins    []string             `json:"-"`
+	Name            string               `json:"name,omitempty"`
+	Release         *Release             `json:"release,omitempty"`
+	ReleaseCriteria []ReleaseCriteria    `json:"release_criteria,omitempty"`
 }
 type ReleaseStage_Wrap struct {
-	ReleaseStage []ReleaseStage `json:"release_stage"`
+	ReleaseStage []ReleaseStage `json:"release_stage,omitempty"`
 }
 
 // #######################################
 // RELEASE_CRITERIA
 // #######################################
 type ReleaseCriteria struct {
-	EntryName    string         `json:"entry_name"`
-	ReleaseEntry []ReleaseEntry `json:"release_entry"`
-	ReleaseStage *ReleaseStage  `json:"release_stage"`
-	Release      *Release       `json:"release"`
+	DBlock_Table  string               `json:"release_criteria,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	EntryName     string               `json:"entry_name,omitempty"`
+	ReleaseEntry  []ReleaseEntry       `json:"release_entry,omitempty"`
+	ReleaseStage  *ReleaseStage        `json:"release_stage,omitempty"`
+	Release       *Release             `json:"release,omitempty"`
 }
 type ReleaseCriteria_Wrap struct {
-	ReleaseCriteria []ReleaseCriteria `json:"release_criteria"`
+	ReleaseCriteria []ReleaseCriteria `json:"release_criteria,omitempty"`
 }
 
 // #######################################
 // CODE_SCAN
 // #######################################
 type CodeScan struct {
-	Tool      string      `json:"tool"`
-	Release   *Release    `json:"release"`
-	CodeIssue []CodeIssue `json:"code_issue"`
+	DBlock_Table  string               `json:"code_scan,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Tool          string               `json:"tool,omitempty"`
+	Release       *Release             `json:"release,omitempty"`
+	CodeIssue     []CodeIssue          `json:"code_issue,omitempty"`
 }
 type CodeScan_Wrap struct {
-	CodeScan []CodeScan `json:"code_scan"`
+	CodeScan []CodeScan `json:"code_scan,omitempty"`
 }
 
 // #######################################
 // CODE_ISSUE
 // #######################################
 type CodeIssue struct {
-	Id       string    `json:"id"`
-	Message  string    `json:"message"`
-	Severity string    `json:"severity"`
-	Type     string    `json:"type"`
-	CodeScan *CodeScan `json:"code_scan"`
+	DBlock_Table  string               `json:"code_issue,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Id            string               `json:"id,omitempty"`
+	Message       string               `json:"message,omitempty"`
+	Severity      string               `json:"severity,omitempty"`
+	Type          string               `json:"type,omitempty"`
+	CodeScan      *CodeScan            `json:"code_scan,omitempty"`
 }
 type CodeIssue_Wrap struct {
-	CodeIssue []CodeIssue `json:"code_issue"`
+	CodeIssue []CodeIssue `json:"code_issue,omitempty"`
 }
 
 // #######################################
 // TEST_RUN
 // #######################################
 type TestRun struct {
-	Tool     string     `json:"tool"`
-	Type     string     `json:"type"`
-	Name     string     `json:"name"`
-	Elapsed  int64      `json:"elapsed"`
-	Result   bool       `json:"result"`
-	Release  *Release   `json:"release"`
-	TestCase []TestCase `json:"test_case"`
+	DBlock_Table  string               `json:"test_run,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Tool          string               `json:"tool,omitempty"`
+	Type          string               `json:"type,omitempty"`
+	Name          string               `json:"name,omitempty"`
+	Elapsed       int64                `json:"elapsed,omitempty"`
+	Result        bool                 `json:"result,omitempty"`
+	Release       *Release             `json:"release,omitempty"`
+	TestCase      []TestCase           `json:"test_case,omitempty"`
 }
 type TestRun_Wrap struct {
-	TestRun []TestRun `json:"test_run"`
+	TestRun []TestRun `json:"test_run,omitempty"`
 }
 
 // #######################################
 // TEST_CASE
 // #######################################
 type TestCase struct {
-	Name    string   `json:"name"`
-	Result  bool     `json:"result"`
-	Message string   `json:"message"`
-	TestRun *TestRun `json:"test_run"`
+	DBlock_Table  string               `json:"test_case,omitempty"`
+	DBlock_Policy core.DataBlockPolicy `json:"-"`
+	DBlock_Joins  []string             `json:"-"`
+	Name          string               `json:"name,omitempty"`
+	Result        bool                 `json:"result,omitempty"`
+	Message       string               `json:"message,omitempty"`
+	TestRun       *TestRun             `json:"test_run,omitempty"`
 }
 type TestCase_Wrap struct {
-	TestCase []TestCase `json:"test_case"`
+	TestCase []TestCase `json:"test_case,omitempty"`
 }

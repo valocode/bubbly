@@ -91,13 +91,13 @@ func processVariables(inputs cty.Value, traversals []hcl.Traversal) (cty.Value, 
 		}
 	}
 
-	var inputsMap objMapVal
+	var inputsMap map[string]cty.Value
 	if inputs.IsNull() {
-		inputsMap = make(objMapVal)
+		inputsMap = make(map[string]cty.Value)
 	} else {
 		inputsMap = inputs.AsValueMap()
 		if inputsMap == nil {
-			inputsMap = make(objMapVal)
+			inputsMap = make(map[string]cty.Value)
 		}
 	}
 
@@ -127,7 +127,7 @@ func newDataRef(traversal hcl.Traversal) (cty.Value, error) {
 func appendDataRef(dataRefs cty.Value, dataRef cty.Value, table string, field string) cty.Value {
 	dataMap := dataRefs.AsValueMap()
 	if dataMap == nil {
-		dataMap = make(objMapVal)
+		dataMap = make(map[string]cty.Value)
 	}
 
 	fields, ok := dataMap[table]
@@ -144,27 +144,10 @@ func appendDataRef(dataRefs cty.Value, dataRef cty.Value, table string, field st
 func addObjectAttr(input cty.Value, attr string, val cty.Value) cty.Value {
 	inputMap := input.AsValueMap()
 	if inputMap == nil {
-		inputMap = make(objMapVal)
+		inputMap = make(map[string]cty.Value)
 	}
 	inputMap[attr] = val
 	return cty.ObjectVal(inputMap)
-}
-
-type objMapVal map[string]cty.Value
-
-var DataRefType = cty.CapsuleWithOps(
-	"DataRef", reflect.TypeOf(DataRef{}),
-	&cty.CapsuleOps{
-		GoString: func(val interface{}) string { return fmt.Sprintf("%#v", val) },
-	},
-)
-
-// DataRef is a data block that does not contain a
-// static value but references a value from another
-// data block.
-type DataRef struct {
-	TableName string `json:"table"`
-	Field     string `json:"field"`
 }
 
 // traversalString is a helper to return a string representation of a traversal
