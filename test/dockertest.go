@@ -7,14 +7,9 @@ import (
 
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/require"
-	"github.com/valocode/bubbly/env"
 )
 
-// RunPostgresDocker runs a docker container for postgres, using the provided
-// BubblyContext to set it up (user, password, database).
-// This is convenient because the same BubblyContext will be used by the test
-// that connects to the postgres database
-func RunPostgresDocker(bCtx *env.BubblyContext, t *testing.T) *dockertest.Resource {
+func RunPostgresDocker(t *testing.T) *dockertest.Resource {
 	pool, err := dockertest.NewPool("")
 	require.NoErrorf(t, err, "failed to create dockertest pool")
 
@@ -23,9 +18,9 @@ func RunPostgresDocker(bCtx *env.BubblyContext, t *testing.T) *dockertest.Resour
 			Repository: "postgres",
 			Tag:        "13.0",
 			Env: []string{
-				"POSTGRES_USER=" + bCtx.StoreConfig.PostgresUser,
-				"POSTGRES_PASSWORD=" + bCtx.StoreConfig.PostgresPassword,
-				"POSTGRES_DB=" + bCtx.StoreConfig.PostgresDatabase,
+				"POSTGRES_USER=postgres",
+				"POSTGRES_PASSWORD=postgres",
+				"POSTGRES_DB=bubbly",
 			},
 		},
 	)
@@ -37,16 +32,15 @@ func RunPostgresDocker(bCtx *env.BubblyContext, t *testing.T) *dockertest.Resour
 		}
 	})
 
-	err = waitUntilDatabaseIsReady(bCtx, t, pool, resource)
+	err = waitUntilDatabaseIsReady(t, pool, resource)
 	require.NoErrorf(t, err, "error waiting for database to be ready")
 
 	return resource
 }
 
-func waitUntilDatabaseIsReady(bCtx *env.BubblyContext, t *testing.T, pool *dockertest.Pool, resource *dockertest.Resource) error {
-	pgConnStr := fmt.Sprintf("postgresql://%s:%s@localhost:%s/%s?sslmode=disable",
-		bCtx.StoreConfig.PostgresUser, bCtx.StoreConfig.PostgresPassword,
-		resource.GetPort("5432/tcp"), bCtx.StoreConfig.PostgresDatabase)
+func waitUntilDatabaseIsReady(t *testing.T, pool *dockertest.Pool, resource *dockertest.Resource) error {
+	pgConnStr := fmt.Sprintf("postgresql://postgres:postgres@localhost:%s/bubbly?sslmode=disable",
+		resource.GetPort("5432/tcp"))
 
 	return pool.Retry(func() error {
 

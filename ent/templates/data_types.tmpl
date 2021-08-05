@@ -1,0 +1,78 @@
+{{/* The line below tells Intellij/GoLand to enable the autocompletion based on the *gen.Graph type. */}}
+{{/* gotype: entgo.io/ent/entc/gen.Graph */}}
+
+{{ define "data_types" }}
+
+{{/* Add the base header for the generated file */}}
+{{ $pkg := base $.Config.Package }}
+{{ template "header" $ }}
+
+{{- range $n := $.Nodes }}
+    {{ $nodename := printf "%sNode" $n.Name }}
+    {{ $receiver := $n.Receiver }}
+
+    func New{{ $n.Name }}Node() *{{ $nodename }} {
+        return &{{ $nodename }}{
+            DataNode: &DataNode{
+                Name: "{{ $n.Table }}",
+            },
+        }
+    }
+
+    type {{ $nodename }} struct {
+        *DataNode
+    }
+
+    func ({{ $receiver }} *{{ $nodename }}) Node() *DataNode {
+        return {{ $receiver }}.DataNode
+    }
+
+    {{- range $f := $n.Fields }}
+        func ({{ $receiver }} *{{ $nodename }}) {{ $f.MutationSet }}(v {{ $f.Type }}) *{{ $nodename }} {
+            {{ $receiver }}.AddField("{{ $f.Name }}", {{ entToCtyFunc $f.Type.Type "v" }})
+            return {{ $receiver }}
+        }
+    {{- end }}
+
+    {{- range $e := $n.Edges }}
+        {{ $edgenodename := printf "%sNode" $e.Type.Name }}
+        {{- if $e.Unique }}
+            func ({{ $receiver }} *{{ $nodename }}) Set{{ $e.StructField }}(input *{{ $edgenodename }}) *{{ $nodename }} {
+        {{- else }}
+            func ({{ $receiver }} *{{ $nodename }}) Add{{ $e.StructField }}(inputs ...*{{ $edgenodename }}) *{{ $nodename }} {
+        {{- end }}
+            {{- if not $e.Unique }}
+                for _, input := range inputs {
+            {{- end }}
+            node := input.Node()
+            {{/*
+                If the edge is optional, the edge order doesn't matter so much, but
+                if the edge is required, then we must create an inverse edge to solve the
+                edge node first
+            */}}
+            {{- if $e.Optional }}
+                // Add an edge to the input node
+                {{ $receiver }}.AddEdge("{{ $e.Name }}", node)
+                // Create the invse edge also
+                node.AddInverseEdge("{{ $e.Ref.Name }}", {{ $receiver }}.Node())
+            {{- else }}
+                // Add an edge to the input node
+                {{ $receiver }}.AddInverseEdge("{{ $e.Name }}", node)
+                // Create the invse edge also
+                node.AddEdge("{{ $e.Ref.Name }}", {{ $receiver }}.Node())
+            {{- end }}
+            {{- if not $e.Unique }}
+                }
+            {{- end }}
+            return {{ $receiver }}
+        }
+    {{- end }}
+
+    func ({{ $receiver }} *{{ $nodename }}) SetOperation(op NodeOperation) *{{ $nodename }} {
+        {{ $receiver }}.Operation = op
+        return {{ $receiver }}
+    }
+
+{{- end }}
+
+{{ end }}
