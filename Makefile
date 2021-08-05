@@ -3,10 +3,6 @@ BIN=./build/bubbly
 # env vars for running tests
 export BUBBLY_HOST=localhost
 export BUBBLY_PORT=8111
-export BUBBLY_STORE_PROVIDER=postgres
-export POSTGRES_ADDR=postgres:5432
-export POSTGRES_USER=postgres
-export POSTGRES_DATABASE=bubbly
 
 all: build
 
@@ -20,7 +16,7 @@ clean:
 
 ## testing
 
-test: test-unit test-integration
+test: test-unit
 
 test-unit:
 	go test ./...
