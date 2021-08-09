@@ -10,9 +10,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/componentuse"
+	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/vulnerability"
 )
 
 // ComponentCreate is the builder for creating a Component entity.
@@ -52,19 +52,19 @@ func (cc *ComponentCreate) SetURL(s string) *ComponentCreate {
 	return cc
 }
 
-// AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by IDs.
-func (cc *ComponentCreate) AddVulnerabilityIDs(ids ...int) *ComponentCreate {
-	cc.mutation.AddVulnerabilityIDs(ids...)
+// AddCfeIDs adds the "cves" edge to the CVE entity by IDs.
+func (cc *ComponentCreate) AddCfeIDs(ids ...int) *ComponentCreate {
+	cc.mutation.AddCfeIDs(ids...)
 	return cc
 }
 
-// AddVulnerabilities adds the "vulnerabilities" edges to the Vulnerability entity.
-func (cc *ComponentCreate) AddVulnerabilities(v ...*Vulnerability) *ComponentCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
+// AddCves adds the "cves" edges to the CVE entity.
+func (cc *ComponentCreate) AddCves(c ...*CVE) *ComponentCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return cc.AddVulnerabilityIDs(ids...)
+	return cc.AddCfeIDs(ids...)
 }
 
 // AddLicenseIDs adds the "licenses" edge to the License entity by IDs.
@@ -82,19 +82,19 @@ func (cc *ComponentCreate) AddLicenses(l ...*License) *ComponentCreate {
 	return cc.AddLicenseIDs(ids...)
 }
 
-// AddReleaseIDs adds the "release" edge to the Release entity by IDs.
-func (cc *ComponentCreate) AddReleaseIDs(ids ...int) *ComponentCreate {
-	cc.mutation.AddReleaseIDs(ids...)
+// AddUseIDs adds the "uses" edge to the ComponentUse entity by IDs.
+func (cc *ComponentCreate) AddUseIDs(ids ...int) *ComponentCreate {
+	cc.mutation.AddUseIDs(ids...)
 	return cc
 }
 
-// AddRelease adds the "release" edges to the Release entity.
-func (cc *ComponentCreate) AddRelease(r ...*Release) *ComponentCreate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddUses adds the "uses" edges to the ComponentUse entity.
+func (cc *ComponentCreate) AddUses(c ...*ComponentUse) *ComponentCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return cc.AddReleaseIDs(ids...)
+	return cc.AddUseIDs(ids...)
 }
 
 // Mutation returns the ComponentMutation object of the builder.
@@ -131,6 +131,9 @@ func (cc *ComponentCreate) Save(ctx context.Context) (*Component, error) {
 			return node, err
 		})
 		for i := len(cc.hooks) - 1; i >= 0; i-- {
+			if cc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = cc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, cc.mutation); err != nil {
@@ -149,46 +152,59 @@ func (cc *ComponentCreate) SaveX(ctx context.Context) *Component {
 	return v
 }
 
+// Exec executes the query.
+func (cc *ComponentCreate) Exec(ctx context.Context) error {
+	_, err := cc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (cc *ComponentCreate) ExecX(ctx context.Context) {
+	if err := cc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (cc *ComponentCreate) check() error {
 	if _, ok := cc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
 	}
 	if v, ok := cc.mutation.Name(); ok {
 		if err := component.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
 		}
 	}
 	if _, ok := cc.mutation.Vendor(); !ok {
-		return &ValidationError{Name: "vendor", err: errors.New("ent: missing required field \"vendor\"")}
+		return &ValidationError{Name: "vendor", err: errors.New(`ent: missing required field "vendor"`)}
 	}
 	if v, ok := cc.mutation.Vendor(); ok {
 		if err := component.VendorValidator(v); err != nil {
-			return &ValidationError{Name: "vendor", err: fmt.Errorf("ent: validator failed for field \"vendor\": %w", err)}
+			return &ValidationError{Name: "vendor", err: fmt.Errorf(`ent: validator failed for field "vendor": %w`, err)}
 		}
 	}
 	if _, ok := cc.mutation.Version(); !ok {
-		return &ValidationError{Name: "version", err: errors.New("ent: missing required field \"version\"")}
+		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "version"`)}
 	}
 	if v, ok := cc.mutation.Version(); ok {
 		if err := component.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf("ent: validator failed for field \"version\": %w", err)}
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "version": %w`, err)}
 		}
 	}
 	if _, ok := cc.mutation.Description(); !ok {
-		return &ValidationError{Name: "description", err: errors.New("ent: missing required field \"description\"")}
+		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "description"`)}
 	}
 	if v, ok := cc.mutation.Description(); ok {
 		if err := component.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf("ent: validator failed for field \"description\": %w", err)}
+			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "description": %w`, err)}
 		}
 	}
 	if _, ok := cc.mutation.URL(); !ok {
-		return &ValidationError{Name: "url", err: errors.New("ent: missing required field \"url\"")}
+		return &ValidationError{Name: "url", err: errors.New(`ent: missing required field "url"`)}
 	}
 	if v, ok := cc.mutation.URL(); ok {
 		if err := component.URLValidator(v); err != nil {
-			return &ValidationError{Name: "url", err: fmt.Errorf("ent: validator failed for field \"url\": %w", err)}
+			return &ValidationError{Name: "url", err: fmt.Errorf(`ent: validator failed for field "url": %w`, err)}
 		}
 	}
 	return nil
@@ -258,17 +274,17 @@ func (cc *ComponentCreate) createSpec() (*Component, *sqlgraph.CreateSpec) {
 		})
 		_node.URL = value
 	}
-	if nodes := cc.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
+	if nodes := cc.mutation.CvesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   component.VulnerabilitiesTable,
-			Columns: []string{component.VulnerabilitiesColumn},
+			Table:   component.CvesTable,
+			Columns: component.CvesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: vulnerability.FieldID,
+					Column: cve.FieldID,
 				},
 			},
 		}
@@ -296,17 +312,17 @@ func (cc *ComponentCreate) createSpec() (*Component, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := cc.mutation.ReleaseIDs(); len(nodes) > 0 {
+	if nodes := cc.mutation.UsesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   component.ReleaseTable,
-			Columns: component.ReleasePrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   component.UsesTable,
+			Columns: []string{component.UsesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: release.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
@@ -346,8 +362,9 @@ func (ccb *ComponentCreateBulk) Save(ctx context.Context) ([]*Component, error) 
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, ccb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, ccb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, ccb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -358,8 +375,10 @@ func (ccb *ComponentCreateBulk) Save(ctx context.Context) ([]*Component, error) 
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -383,4 +402,17 @@ func (ccb *ComponentCreateBulk) SaveX(ctx context.Context) []*Component {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (ccb *ComponentCreateBulk) Exec(ctx context.Context) error {
+	_, err := ccb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (ccb *ComponentCreateBulk) ExecX(ctx context.Context) {
+	if err := ccb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

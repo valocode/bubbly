@@ -8,35 +8,38 @@ adapter {
     tag = ""
     type = "json" // xml, http, regexp
     
-    // operation configuration based on the type of the adapter
-    operation {
+    // optional: operation configuration based on the type of the adapter
+    // operation {
         // optional: override the default file (otherwise gosec.bubbly.json)
         // file = ""
         // optional: returns a string that should be parsed in case of invalid json, for example
         // preprocess = "[${join(",", split("\n", trimspace(raw_data)))}]"
-        // optional for json/yaml, otherwise jsondecode or yamldecode is used.
-        structure = object({
-            Issues: list(object({
-                severity: string,
-                cwe: object({
-                    id: string,
-                    url: string,
-                }),
-                rule_id: string,
-                details: string,
-            })),
-        })
-    }
+        // optional for json/yaml, otherwise the type is implied
+        // structure = object({
+        //     Issues: list(object({
+        //         severity: string,
+        //         cwe: object({
+        //             id: string,
+        //             url: string,
+        //         }),
+        //         rule_id: string,
+        //         details: string,
+        //     })),
+        // })
+    // }
 
     mapping {
-        dynamic "code_issue" {
-            for_each = data.Issues
-            iterator = issue
-            content {
-                type = "security"
-                rule_id = issue.value.rule_id
-                message = issue.value.details
-                severity = lower(issue.value.severity)
+        code_scan {
+            tool = "gosec"
+            dynamic "issues" {
+                for_each = data.Issues
+                iterator = issue
+                content {
+                    type = "security"
+                    rule_id = issue.value.rule_id
+                    message = issue.value.details
+                    severity = lower(issue.value.severity)
+                }
             }
         }
     }

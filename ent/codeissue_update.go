@@ -23,9 +23,9 @@ type CodeIssueUpdate struct {
 	mutation *CodeIssueMutation
 }
 
-// Where adds a new predicate for the CodeIssueUpdate builder.
+// Where appends a list predicates to the CodeIssueUpdate builder.
 func (ciu *CodeIssueUpdate) Where(ps ...predicate.CodeIssue) *CodeIssueUpdate {
-	ciu.mutation.predicates = append(ciu.mutation.predicates, ps...)
+	ciu.mutation.Where(ps...)
 	return ciu
 }
 
@@ -113,6 +113,9 @@ func (ciu *CodeIssueUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(ciu.hooks) - 1; i >= 0; i-- {
+			if ciu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ciu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ciu.mutation); err != nil {
@@ -369,6 +372,9 @@ func (ciuo *CodeIssueUpdateOne) Save(ctx context.Context) (*CodeIssue, error) {
 			return node, err
 		})
 		for i := len(ciuo.hooks) - 1; i >= 0; i-- {
+			if ciuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ciuo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ciuo.mutation); err != nil {

@@ -361,8 +361,8 @@ func (aq *ArtifactQuery) GroupBy(field string, fields ...string) *ArtifactGroupB
 //		Select(artifact.FieldName).
 //		Scan(ctx, &v)
 //
-func (aq *ArtifactQuery) Select(field string, fields ...string) *ArtifactSelect {
-	aq.fields = append([]string{field}, fields...)
+func (aq *ArtifactQuery) Select(fields ...string) *ArtifactSelect {
+	aq.fields = append(aq.fields, fields...)
 	return &ArtifactSelect{ArtifactQuery: aq}
 }
 

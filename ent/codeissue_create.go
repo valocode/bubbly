@@ -105,6 +105,9 @@ func (cic *CodeIssueCreate) Save(ctx context.Context) (*CodeIssue, error) {
 			return node, err
 		})
 		for i := len(cic.hooks) - 1; i >= 0; i-- {
+			if cic.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = cic.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, cic.mutation); err != nil {
@@ -123,38 +126,51 @@ func (cic *CodeIssueCreate) SaveX(ctx context.Context) *CodeIssue {
 	return v
 }
 
+// Exec executes the query.
+func (cic *CodeIssueCreate) Exec(ctx context.Context) error {
+	_, err := cic.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (cic *CodeIssueCreate) ExecX(ctx context.Context) {
+	if err := cic.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (cic *CodeIssueCreate) check() error {
 	if _, ok := cic.mutation.RuleID(); !ok {
-		return &ValidationError{Name: "rule_id", err: errors.New("ent: missing required field \"rule_id\"")}
+		return &ValidationError{Name: "rule_id", err: errors.New(`ent: missing required field "rule_id"`)}
 	}
 	if v, ok := cic.mutation.RuleID(); ok {
 		if err := codeissue.RuleIDValidator(v); err != nil {
-			return &ValidationError{Name: "rule_id", err: fmt.Errorf("ent: validator failed for field \"rule_id\": %w", err)}
+			return &ValidationError{Name: "rule_id", err: fmt.Errorf(`ent: validator failed for field "rule_id": %w`, err)}
 		}
 	}
 	if _, ok := cic.mutation.Message(); !ok {
-		return &ValidationError{Name: "message", err: errors.New("ent: missing required field \"message\"")}
+		return &ValidationError{Name: "message", err: errors.New(`ent: missing required field "message"`)}
 	}
 	if v, ok := cic.mutation.Message(); ok {
 		if err := codeissue.MessageValidator(v); err != nil {
-			return &ValidationError{Name: "message", err: fmt.Errorf("ent: validator failed for field \"message\": %w", err)}
+			return &ValidationError{Name: "message", err: fmt.Errorf(`ent: validator failed for field "message": %w`, err)}
 		}
 	}
 	if _, ok := cic.mutation.Severity(); !ok {
-		return &ValidationError{Name: "severity", err: errors.New("ent: missing required field \"severity\"")}
+		return &ValidationError{Name: "severity", err: errors.New(`ent: missing required field "severity"`)}
 	}
 	if v, ok := cic.mutation.Severity(); ok {
 		if err := codeissue.SeverityValidator(v); err != nil {
-			return &ValidationError{Name: "severity", err: fmt.Errorf("ent: validator failed for field \"severity\": %w", err)}
+			return &ValidationError{Name: "severity", err: fmt.Errorf(`ent: validator failed for field "severity": %w`, err)}
 		}
 	}
 	if _, ok := cic.mutation.GetType(); !ok {
-		return &ValidationError{Name: "type", err: errors.New("ent: missing required field \"type\"")}
+		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "type"`)}
 	}
 	if v, ok := cic.mutation.GetType(); ok {
 		if err := codeissue.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "type": %w`, err)}
 		}
 	}
 	if _, ok := cic.mutation.ScanID(); !ok {
@@ -289,8 +305,9 @@ func (cicb *CodeIssueCreateBulk) Save(ctx context.Context) ([]*CodeIssue, error)
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, cicb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, cicb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, cicb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -301,8 +318,10 @@ func (cicb *CodeIssueCreateBulk) Save(ctx context.Context) ([]*CodeIssue, error)
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -326,4 +345,17 @@ func (cicb *CodeIssueCreateBulk) SaveX(ctx context.Context) []*CodeIssue {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (cicb *CodeIssueCreateBulk) Exec(ctx context.Context) error {
+	_, err := cicb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (cicb *CodeIssueCreateBulk) ExecX(ctx context.Context) {
+	if err := cicb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

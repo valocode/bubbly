@@ -35,18 +35,15 @@ func (Component) Fields() []ent.Field {
 				entgql.OrderField("version"),
 			),
 		field.Text("description").NotEmpty(),
-		field.Text("url").NotEmpty().
-			Annotations(
-				entgql.OrderField("url"),
-			),
+		field.Text("url").NotEmpty(),
 	}
 }
 
 func (Component) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("vulnerabilities", Vulnerability.Type),
+		edge.To("cves", CVE.Type),
 		edge.To("licenses", License.Type),
-		edge.To("release", Release.Type),
+		edge.From("uses", ComponentUse.Type).Ref("component"),
 	}
 }
 

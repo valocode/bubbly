@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
+	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
 )
@@ -39,21 +40,6 @@ func (csc *CodeScanCreate) SetRelease(r *Release) *CodeScanCreate {
 	return csc.SetReleaseID(r.ID)
 }
 
-// AddIssueIDs adds the "issues" edge to the CodeIssue entity by IDs.
-func (csc *CodeScanCreate) AddIssueIDs(ids ...int) *CodeScanCreate {
-	csc.mutation.AddIssueIDs(ids...)
-	return csc
-}
-
-// AddIssues adds the "issues" edges to the CodeIssue entity.
-func (csc *CodeScanCreate) AddIssues(c ...*CodeIssue) *CodeScanCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return csc.AddIssueIDs(ids...)
-}
-
 // SetEntryID sets the "entry" edge to the ReleaseEntry entity by ID.
 func (csc *CodeScanCreate) SetEntryID(id int) *CodeScanCreate {
 	csc.mutation.SetEntryID(id)
@@ -71,6 +57,36 @@ func (csc *CodeScanCreate) SetNillableEntryID(id *int) *CodeScanCreate {
 // SetEntry sets the "entry" edge to the ReleaseEntry entity.
 func (csc *CodeScanCreate) SetEntry(r *ReleaseEntry) *CodeScanCreate {
 	return csc.SetEntryID(r.ID)
+}
+
+// AddIssueIDs adds the "issues" edge to the CodeIssue entity by IDs.
+func (csc *CodeScanCreate) AddIssueIDs(ids ...int) *CodeScanCreate {
+	csc.mutation.AddIssueIDs(ids...)
+	return csc
+}
+
+// AddIssues adds the "issues" edges to the CodeIssue entity.
+func (csc *CodeScanCreate) AddIssues(c ...*CodeIssue) *CodeScanCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return csc.AddIssueIDs(ids...)
+}
+
+// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+func (csc *CodeScanCreate) AddComponentIDs(ids ...int) *CodeScanCreate {
+	csc.mutation.AddComponentIDs(ids...)
+	return csc
+}
+
+// AddComponents adds the "components" edges to the ComponentUse entity.
+func (csc *CodeScanCreate) AddComponents(c ...*ComponentUse) *CodeScanCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return csc.AddComponentIDs(ids...)
 }
 
 // Mutation returns the CodeScanMutation object of the builder.
@@ -107,6 +123,9 @@ func (csc *CodeScanCreate) Save(ctx context.Context) (*CodeScan, error) {
 			return node, err
 		})
 		for i := len(csc.hooks) - 1; i >= 0; i-- {
+			if csc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = csc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, csc.mutation); err != nil {
@@ -125,14 +144,27 @@ func (csc *CodeScanCreate) SaveX(ctx context.Context) *CodeScan {
 	return v
 }
 
+// Exec executes the query.
+func (csc *CodeScanCreate) Exec(ctx context.Context) error {
+	_, err := csc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (csc *CodeScanCreate) ExecX(ctx context.Context) {
+	if err := csc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (csc *CodeScanCreate) check() error {
 	if _, ok := csc.mutation.Tool(); !ok {
-		return &ValidationError{Name: "tool", err: errors.New("ent: missing required field \"tool\"")}
+		return &ValidationError{Name: "tool", err: errors.New(`ent: missing required field "tool"`)}
 	}
 	if v, ok := csc.mutation.Tool(); ok {
 		if err := codescan.ToolValidator(v); err != nil {
-			return &ValidationError{Name: "tool", err: fmt.Errorf("ent: validator failed for field \"tool\": %w", err)}
+			return &ValidationError{Name: "tool", err: fmt.Errorf(`ent: validator failed for field "tool": %w`, err)}
 		}
 	}
 	if _, ok := csc.mutation.ReleaseID(); !ok {
@@ -193,6 +225,26 @@ func (csc *CodeScanCreate) createSpec() (*CodeScan, *sqlgraph.CreateSpec) {
 		_node.code_scan_release = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := csc.mutation.EntryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   codescan.EntryTable,
+			Columns: []string{codescan.EntryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.release_entry_code_scan = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := csc.mutation.IssuesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -212,24 +264,23 @@ func (csc *CodeScanCreate) createSpec() (*CodeScan, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := csc.mutation.EntryIDs(); len(nodes) > 0 {
+	if nodes := csc.mutation.ComponentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   codescan.EntryTable,
-			Columns: []string{codescan.EntryColumn},
+			Table:   codescan.ComponentsTable,
+			Columns: codescan.ComponentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.release_entry_code_scan = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -263,8 +314,9 @@ func (cscb *CodeScanCreateBulk) Save(ctx context.Context) ([]*CodeScan, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, cscb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, cscb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, cscb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -275,8 +327,10 @@ func (cscb *CodeScanCreateBulk) Save(ctx context.Context) ([]*CodeScan, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -300,4 +354,17 @@ func (cscb *CodeScanCreateBulk) SaveX(ctx context.Context) []*CodeScan {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (cscb *CodeScanCreateBulk) Exec(ctx context.Context) error {
+	_, err := cscb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (cscb *CodeScanCreateBulk) ExecX(ctx context.Context) {
+	if err := cscb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

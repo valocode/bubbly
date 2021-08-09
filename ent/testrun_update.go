@@ -24,9 +24,9 @@ type TestRunUpdate struct {
 	mutation *TestRunMutation
 }
 
-// Where adds a new predicate for the TestRunUpdate builder.
+// Where appends a list predicates to the TestRunUpdate builder.
 func (tru *TestRunUpdate) Where(ps ...predicate.TestRun) *TestRunUpdate {
-	tru.mutation.predicates = append(tru.mutation.predicates, ps...)
+	tru.mutation.Where(ps...)
 	return tru
 }
 
@@ -139,6 +139,9 @@ func (tru *TestRunUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(tru.hooks) - 1; i >= 0; i-- {
+			if tru.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = tru.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, tru.mutation); err != nil {
@@ -455,6 +458,9 @@ func (truo *TestRunUpdateOne) Save(ctx context.Context) (*TestRun, error) {
 			return node, err
 		})
 		for i := len(truo.hooks) - 1; i >= 0; i-- {
+			if truo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = truo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, truo.mutation); err != nil {

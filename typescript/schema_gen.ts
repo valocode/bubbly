@@ -54,7 +54,8 @@ export interface CVE {
 	severity?: CVESeverity;
 	published_data?: Date;
 	modified_data?: Date;
-	found?: Vulnerability[];
+	components?: Component[];
+	vulnerabilities?: Vulnerability[];
 	rules?: CVERule[];
 }
 
@@ -107,35 +108,6 @@ export interface CVERule_Conn {
 
 export interface CVERule_Edge {
 	node?: CVERule;
-}
-
-// #######################################
-// CVEScan
-// #######################################
-export interface CVEScan_Json {
-	cve_scan?: CVEScan[];
-}
-
-export interface CVEScan {
-	id?: number;
-	tool?: string;
-	release?: Release;
-	entry?: ReleaseEntry;
-	vulnerabilities?: Vulnerability[];
-}
-
-export interface CVEScan_Relay {
-	cve_scan_connection?: CVEScan_Conn;
-}
-
-export interface CVEScan_Conn {
-	totalCount?: number;
-	pageInfo?: pageInfo;
-	edges?: CVEScan_Edge[];
-}
-
-export interface CVEScan_Edge {
-	node?: CVEScan;
 }
 
 // #######################################
@@ -221,8 +193,9 @@ export interface CodeScan {
 	id?: number;
 	tool?: string;
 	release?: Release;
-	issues?: CodeIssue[];
 	entry?: ReleaseEntry;
+	issues?: CodeIssue[];
+	components?: ComponentUse[];
 }
 
 export interface CodeScan_Relay {
@@ -253,9 +226,9 @@ export interface Component {
 	version?: string;
 	description?: string;
 	url?: string;
-	vulnerabilities?: Vulnerability[];
+	cves?: CVE[];
 	licenses?: License[];
-	release?: Release[];
+	uses?: ComponentUse[];
 }
 
 export interface Component_Relay {
@@ -270,6 +243,34 @@ export interface Component_Conn {
 
 export interface Component_Edge {
 	node?: Component;
+}
+
+// #######################################
+// ComponentUse
+// #######################################
+export interface ComponentUse_Json {
+	component_use?: ComponentUse[];
+}
+
+export interface ComponentUse {
+	id?: number;
+	release?: Release;
+	scans?: CodeScan[];
+	component?: Component;
+}
+
+export interface ComponentUse_Relay {
+	component_use_connection?: ComponentUse_Conn;
+}
+
+export interface ComponentUse_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: ComponentUse_Edge[];
+}
+
+export interface ComponentUse_Edge {
+	node?: ComponentUse;
 }
 
 // #######################################
@@ -318,7 +319,7 @@ export interface License {
 	details_url?: string;
 	is_osi_approved?: boolean;
 	components?: Component[];
-	usages?: LicenseUsage[];
+	uses?: LicenseUse[];
 }
 
 export interface License_Relay {
@@ -336,59 +337,29 @@ export interface License_Edge {
 }
 
 // #######################################
-// LicenseScan
+// LicenseUse
 // #######################################
-export interface LicenseScan_Json {
-	license_scan?: LicenseScan[];
+export interface LicenseUse_Json {
+	license_use?: LicenseUse[];
 }
 
-export interface LicenseScan {
-	id?: number;
-	tool?: string;
-	release?: Release;
-	entry?: ReleaseEntry;
-	licenses?: LicenseUsage[];
-}
-
-export interface LicenseScan_Relay {
-	license_scan_connection?: LicenseScan_Conn;
-}
-
-export interface LicenseScan_Conn {
-	totalCount?: number;
-	pageInfo?: pageInfo;
-	edges?: LicenseScan_Edge[];
-}
-
-export interface LicenseScan_Edge {
-	node?: LicenseScan;
-}
-
-// #######################################
-// LicenseUsage
-// #######################################
-export interface LicenseUsage_Json {
-	license_usage?: LicenseUsage[];
-}
-
-export interface LicenseUsage {
+export interface LicenseUse {
 	id?: number;
 	license?: License;
-	scan?: LicenseScan;
 }
 
-export interface LicenseUsage_Relay {
-	license_usage_connection?: LicenseUsage_Conn;
+export interface LicenseUse_Relay {
+	license_use_connection?: LicenseUse_Conn;
 }
 
-export interface LicenseUsage_Conn {
+export interface LicenseUse_Conn {
 	totalCount?: number;
 	pageInfo?: pageInfo;
-	edges?: LicenseUsage_Edge[];
+	edges?: LicenseUse_Edge[];
 }
 
-export interface LicenseUsage_Edge {
-	node?: LicenseUsage;
+export interface LicenseUse_Edge {
+	node?: LicenseUse;
 }
 
 // #######################################
@@ -436,14 +407,11 @@ export interface Release {
 	dependencies?: Release[];
 	project?: Project;
 	commit?: GitCommit;
-	artifacts?: Artifact[];
-	checks?: ReleaseCheck[];
 	log?: ReleaseEntry[];
+	artifacts?: Artifact[];
+	components?: ComponentUse[];
 	code_scans?: CodeScan[];
-	cve_scans?: CVEScan[];
-	license_scans?: LicenseScan[];
 	test_runs?: TestRun[];
-	components?: Component[];
 }
 
 export interface Release_Relay {
@@ -467,39 +435,6 @@ export enum ReleaseStatus {
 }
 
 // #######################################
-// ReleaseCheck
-// #######################################
-export interface ReleaseCheck_Json {
-	release_check?: ReleaseCheck[];
-}
-
-export interface ReleaseCheck {
-	id?: number;
-	type?: ReleaseCheckType;
-	release?: Release;
-}
-
-export interface ReleaseCheck_Relay {
-	release_check_connection?: ReleaseCheck_Conn;
-}
-
-export interface ReleaseCheck_Conn {
-	totalCount?: number;
-	pageInfo?: pageInfo;
-	edges?: ReleaseCheck_Edge[];
-}
-
-export interface ReleaseCheck_Edge {
-	node?: ReleaseCheck;
-}
-
-export enum ReleaseCheckType {
-	artifact = "artifact",
-	unit_test = "unit_test",
-	security = "security",
-}
-
-// #######################################
 // ReleaseEntry
 // #######################################
 export interface ReleaseEntry_Json {
@@ -513,8 +448,6 @@ export interface ReleaseEntry {
 	artifact?: Artifact;
 	code_scan?: CodeScan;
 	test_run?: TestRun;
-	cve_scan?: CVEScan;
-	license_scan?: LicenseScan;
 	release?: Release;
 }
 
@@ -536,8 +469,6 @@ export enum ReleaseEntryType {
 	artifact = "artifact",
 	deploy = "deploy",
 	code_scan = "code_scan",
-	license_scan = "license_scan",
-	cve_scan = "cve_scan",
 	test_run = "test_run",
 }
 
@@ -639,8 +570,6 @@ export interface Vulnerability_Json {
 export interface Vulnerability {
 	id?: number;
 	cve?: CVE;
-	scan?: CVEScan;
-	component?: Component;
 }
 
 export interface Vulnerability_Relay {

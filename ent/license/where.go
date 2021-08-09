@@ -640,25 +640,25 @@ func HasComponentsWith(preds ...predicate.Component) predicate.License {
 	})
 }
 
-// HasUsages applies the HasEdge predicate on the "usages" edge.
-func HasUsages() predicate.License {
+// HasUses applies the HasEdge predicate on the "uses" edge.
+func HasUses() predicate.License {
 	return predicate.License(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(UsagesTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, UsagesTable, UsagesColumn),
+			sqlgraph.To(UsesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, UsesTable, UsesColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasUsagesWith applies the HasEdge predicate on the "usages" edge with a given conditions (other predicates).
-func HasUsagesWith(preds ...predicate.LicenseUsage) predicate.License {
+// HasUsesWith applies the HasEdge predicate on the "uses" edge with a given conditions (other predicates).
+func HasUsesWith(preds ...predicate.LicenseUse) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(UsagesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, UsagesTable, UsagesColumn),
+			sqlgraph.To(UsesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, UsesTable, UsesColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

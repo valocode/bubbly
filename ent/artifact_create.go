@@ -111,6 +111,9 @@ func (ac *ArtifactCreate) Save(ctx context.Context) (*Artifact, error) {
 			return node, err
 		})
 		for i := len(ac.hooks) - 1; i >= 0; i-- {
+			if ac.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ac.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ac.mutation); err != nil {
@@ -129,30 +132,43 @@ func (ac *ArtifactCreate) SaveX(ctx context.Context) *Artifact {
 	return v
 }
 
+// Exec executes the query.
+func (ac *ArtifactCreate) Exec(ctx context.Context) error {
+	_, err := ac.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (ac *ArtifactCreate) ExecX(ctx context.Context) {
+	if err := ac.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (ac *ArtifactCreate) check() error {
 	if _, ok := ac.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
 	}
 	if v, ok := ac.mutation.Name(); ok {
 		if err := artifact.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
 		}
 	}
 	if _, ok := ac.mutation.Sha256(); !ok {
-		return &ValidationError{Name: "sha256", err: errors.New("ent: missing required field \"sha256\"")}
+		return &ValidationError{Name: "sha256", err: errors.New(`ent: missing required field "sha256"`)}
 	}
 	if v, ok := ac.mutation.Sha256(); ok {
 		if err := artifact.Sha256Validator(v); err != nil {
-			return &ValidationError{Name: "sha256", err: fmt.Errorf("ent: validator failed for field \"sha256\": %w", err)}
+			return &ValidationError{Name: "sha256", err: fmt.Errorf(`ent: validator failed for field "sha256": %w`, err)}
 		}
 	}
 	if _, ok := ac.mutation.GetType(); !ok {
-		return &ValidationError{Name: "type", err: errors.New("ent: missing required field \"type\"")}
+		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "type"`)}
 	}
 	if v, ok := ac.mutation.GetType(); ok {
 		if err := artifact.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "type": %w`, err)}
 		}
 	}
 	return nil
@@ -277,8 +293,9 @@ func (acb *ArtifactCreateBulk) Save(ctx context.Context) ([]*Artifact, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, acb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, acb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, acb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -289,8 +306,10 @@ func (acb *ArtifactCreateBulk) Save(ctx context.Context) ([]*Artifact, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -314,4 +333,17 @@ func (acb *ArtifactCreateBulk) SaveX(ctx context.Context) []*Artifact {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (acb *ArtifactCreateBulk) Exec(ctx context.Context) error {
+	_, err := acb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (acb *ArtifactCreateBulk) ExecX(ctx context.Context) {
+	if err := acb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

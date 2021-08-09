@@ -20,9 +20,9 @@ type LicenseDelete struct {
 	mutation *LicenseMutation
 }
 
-// Where adds a new predicate to the LicenseDelete builder.
+// Where appends a list predicates to the LicenseDelete builder.
 func (ld *LicenseDelete) Where(ps ...predicate.License) *LicenseDelete {
-	ld.mutation.predicates = append(ld.mutation.predicates, ps...)
+	ld.mutation.Where(ps...)
 	return ld
 }
 
@@ -46,6 +46,9 @@ func (ld *LicenseDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(ld.hooks) - 1; i >= 0; i-- {
+			if ld.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ld.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ld.mutation); err != nil {

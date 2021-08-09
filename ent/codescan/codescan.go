@@ -15,33 +15,40 @@ const (
 	FieldTool = "tool"
 	// EdgeRelease holds the string denoting the release edge name in mutations.
 	EdgeRelease = "release"
-	// EdgeIssues holds the string denoting the issues edge name in mutations.
-	EdgeIssues = "issues"
 	// EdgeEntry holds the string denoting the entry edge name in mutations.
 	EdgeEntry = "entry"
+	// EdgeIssues holds the string denoting the issues edge name in mutations.
+	EdgeIssues = "issues"
+	// EdgeComponents holds the string denoting the components edge name in mutations.
+	EdgeComponents = "components"
 	// Table holds the table name of the codescan in the database.
 	Table = "code_scan"
-	// ReleaseTable is the table the holds the release relation/edge.
+	// ReleaseTable is the table that holds the release relation/edge.
 	ReleaseTable = "code_scan"
 	// ReleaseInverseTable is the table name for the Release entity.
 	// It exists in this package in order to avoid circular dependency with the "release" package.
 	ReleaseInverseTable = "release"
 	// ReleaseColumn is the table column denoting the release relation/edge.
 	ReleaseColumn = "code_scan_release"
-	// IssuesTable is the table the holds the issues relation/edge.
-	IssuesTable = "code_issue"
-	// IssuesInverseTable is the table name for the CodeIssue entity.
-	// It exists in this package in order to avoid circular dependency with the "codeissue" package.
-	IssuesInverseTable = "code_issue"
-	// IssuesColumn is the table column denoting the issues relation/edge.
-	IssuesColumn = "code_issue_scan"
-	// EntryTable is the table the holds the entry relation/edge.
+	// EntryTable is the table that holds the entry relation/edge.
 	EntryTable = "code_scan"
 	// EntryInverseTable is the table name for the ReleaseEntry entity.
 	// It exists in this package in order to avoid circular dependency with the "releaseentry" package.
 	EntryInverseTable = "release_entry"
 	// EntryColumn is the table column denoting the entry relation/edge.
 	EntryColumn = "release_entry_code_scan"
+	// IssuesTable is the table that holds the issues relation/edge.
+	IssuesTable = "code_issue"
+	// IssuesInverseTable is the table name for the CodeIssue entity.
+	// It exists in this package in order to avoid circular dependency with the "codeissue" package.
+	IssuesInverseTable = "code_issue"
+	// IssuesColumn is the table column denoting the issues relation/edge.
+	IssuesColumn = "code_issue_scan"
+	// ComponentsTable is the table that holds the components relation/edge. The primary key declared below.
+	ComponentsTable = "component_use_scans"
+	// ComponentsInverseTable is the table name for the ComponentUse entity.
+	// It exists in this package in order to avoid circular dependency with the "componentuse" package.
+	ComponentsInverseTable = "component_use"
 )
 
 // Columns holds all SQL columns for codescan fields.
@@ -56,6 +63,12 @@ var ForeignKeys = []string{
 	"code_scan_release",
 	"release_entry_code_scan",
 }
+
+var (
+	// ComponentsPrimaryKey and ComponentsColumn2 are the table columns denoting the
+	// primary key for the components relation (M2M).
+	ComponentsPrimaryKey = []string{"component_use_id", "code_scan_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

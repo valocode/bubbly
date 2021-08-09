@@ -10,12 +10,9 @@ import (
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/cve"
-	"github.com/valocode/bubbly/ent/cverule"
-	"github.com/valocode/bubbly/ent/cvescan"
 	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licensescan"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
@@ -53,16 +50,6 @@ func init() {
 	cveDescSeverityScore := cveFields[2].Descriptor()
 	// cve.DefaultSeverityScore holds the default value on creation for the severity_score field.
 	cve.DefaultSeverityScore = cveDescSeverityScore.Default.(float64)
-	cveruleHooks := schema.CVERule{}.Hooks()
-	cverule.Hooks[0] = cveruleHooks[0]
-	cvescanHooks := schema.CVEScan{}.Hooks()
-	cvescan.Hooks[0] = cvescanHooks[0]
-	cvescanFields := schema.CVEScan{}.Fields()
-	_ = cvescanFields
-	// cvescanDescTool is the schema descriptor for tool field.
-	cvescanDescTool := cvescanFields[0].Descriptor()
-	// cvescan.ToolValidator is a validator for the "tool" field. It is called by the builders before save.
-	cvescan.ToolValidator = cvescanDescTool.Validators[0].(func(string) error)
 	cweFields := schema.CWE{}.Fields()
 	_ = cweFields
 	// cweDescCweID is the schema descriptor for cwe_id field.
@@ -133,14 +120,6 @@ func init() {
 	licenseDescIsOsiApproved := licenseFields[4].Descriptor()
 	// license.DefaultIsOsiApproved holds the default value on creation for the is_osi_approved field.
 	license.DefaultIsOsiApproved = licenseDescIsOsiApproved.Default.(bool)
-	licensescanHooks := schema.LicenseScan{}.Hooks()
-	licensescan.Hooks[0] = licensescanHooks[0]
-	licensescanFields := schema.LicenseScan{}.Fields()
-	_ = licensescanFields
-	// licensescanDescTool is the schema descriptor for tool field.
-	licensescanDescTool := licensescanFields[0].Descriptor()
-	// licensescan.ToolValidator is a validator for the "tool" field. It is called by the builders before save.
-	licensescan.ToolValidator = licensescanDescTool.Validators[0].(func(string) error)
 	projectFields := schema.Project{}.Fields()
 	_ = projectFields
 	// projectDescName is the schema descriptor for name field.
@@ -157,8 +136,6 @@ func init() {
 	releaseDescVersion := releaseFields[1].Descriptor()
 	// release.VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	release.VersionValidator = releaseDescVersion.Validators[0].(func(string) error)
-	releaseentryHooks := schema.ReleaseEntry{}.Hooks()
-	releaseentry.Hooks[0] = releaseentryHooks[0]
 	releaseentryFields := schema.ReleaseEntry{}.Fields()
 	_ = releaseentryFields
 	// releaseentryDescTime is the schema descriptor for time field.

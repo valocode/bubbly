@@ -1,16 +1,12 @@
 package schema
 
 import (
-	"context"
-
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	gen "github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/ent/hook"
 )
 
 type CVERule struct {
@@ -50,23 +46,23 @@ func (CVERule) Edges() []ent.Edge {
 
 func (CVERule) Hooks() []ent.Hook {
 	return []ent.Hook{
-		hook.On(
-			func(next ent.Mutator) ent.Mutator {
-				return hook.CVERuleFunc(func(ctx context.Context, m *gen.CVERuleMutation) (ent.Value, error) {
-					if n, ok := m.Name(); ok {
-						if n == "" {
-							if cveID, ok := m.CveID(); ok {
-								cve, err := m.Client().CVE.Get(ctx, cveID)
-								if err == nil {
-									m.SetName("Rule for " + cve.CveID)
-								}
-							}
-						}
-					}
-					return next.Mutate(ctx, m)
-				})
-			},
-			ent.OpCreate,
-		),
+		// hook.On(
+		// 	func(next ent.Mutator) ent.Mutator {
+		// 		return hook.CVERuleFunc(func(ctx context.Context, m *gen.CVERuleMutation) (ent.Value, error) {
+		// 			if n, ok := m.Name(); ok {
+		// 				if n == "" {
+		// 					if cveID, ok := m.CveID(); ok {
+		// 						cve, err := m.Client().CVE.Get(ctx, cveID)
+		// 						if err == nil {
+		// 							m.SetName("Rule for " + cve.CveID)
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 			return next.Mutate(ctx, m)
+		// 		})
+		// 	},
+		// 	ent.OpCreate,
+		// ),
 	}
 }

@@ -21,14 +21,14 @@ const (
 	EdgeRelease = "release"
 	// Table holds the table name of the gitcommit in the database.
 	Table = "commit"
-	// RepoTable is the table the holds the repo relation/edge.
+	// RepoTable is the table that holds the repo relation/edge.
 	RepoTable = "commit"
 	// RepoInverseTable is the table name for the Repo entity.
 	// It exists in this package in order to avoid circular dependency with the "repo" package.
 	RepoInverseTable = "repo"
 	// RepoColumn is the table column denoting the repo relation/edge.
 	RepoColumn = "git_commit_repo"
-	// ReleaseTable is the table the holds the release relation/edge.
+	// ReleaseTable is the table that holds the release relation/edge.
 	ReleaseTable = "release"
 	// ReleaseInverseTable is the table name for the Release entity.
 	// It exists in this package in order to avoid circular dependency with the "release" package.

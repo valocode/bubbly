@@ -32,24 +32,24 @@ type Component struct {
 
 // ComponentEdges holds the relations/edges for other nodes in the graph.
 type ComponentEdges struct {
-	// Vulnerabilities holds the value of the vulnerabilities edge.
-	Vulnerabilities []*Vulnerability `json:"vulnerabilities,omitempty"`
+	// Cves holds the value of the cves edge.
+	Cves []*CVE `json:"cves,omitempty"`
 	// Licenses holds the value of the licenses edge.
 	Licenses []*License `json:"licenses,omitempty"`
-	// Release holds the value of the release edge.
-	Release []*Release `json:"release,omitempty"`
+	// Uses holds the value of the uses edge.
+	Uses []*ComponentUse `json:"uses,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
 }
 
-// VulnerabilitiesOrErr returns the Vulnerabilities value or an error if the edge
+// CvesOrErr returns the Cves value or an error if the edge
 // was not loaded in eager-loading.
-func (e ComponentEdges) VulnerabilitiesOrErr() ([]*Vulnerability, error) {
+func (e ComponentEdges) CvesOrErr() ([]*CVE, error) {
 	if e.loadedTypes[0] {
-		return e.Vulnerabilities, nil
+		return e.Cves, nil
 	}
-	return nil, &NotLoadedError{edge: "vulnerabilities"}
+	return nil, &NotLoadedError{edge: "cves"}
 }
 
 // LicensesOrErr returns the Licenses value or an error if the edge
@@ -61,13 +61,13 @@ func (e ComponentEdges) LicensesOrErr() ([]*License, error) {
 	return nil, &NotLoadedError{edge: "licenses"}
 }
 
-// ReleaseOrErr returns the Release value or an error if the edge
+// UsesOrErr returns the Uses value or an error if the edge
 // was not loaded in eager-loading.
-func (e ComponentEdges) ReleaseOrErr() ([]*Release, error) {
+func (e ComponentEdges) UsesOrErr() ([]*ComponentUse, error) {
 	if e.loadedTypes[2] {
-		return e.Release, nil
+		return e.Uses, nil
 	}
-	return nil, &NotLoadedError{edge: "release"}
+	return nil, &NotLoadedError{edge: "uses"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -135,9 +135,9 @@ func (c *Component) assignValues(columns []string, values []interface{}) error {
 	return nil
 }
 
-// QueryVulnerabilities queries the "vulnerabilities" edge of the Component entity.
-func (c *Component) QueryVulnerabilities() *VulnerabilityQuery {
-	return (&ComponentClient{config: c.config}).QueryVulnerabilities(c)
+// QueryCves queries the "cves" edge of the Component entity.
+func (c *Component) QueryCves() *CVEQuery {
+	return (&ComponentClient{config: c.config}).QueryCves(c)
 }
 
 // QueryLicenses queries the "licenses" edge of the Component entity.
@@ -145,9 +145,9 @@ func (c *Component) QueryLicenses() *LicenseQuery {
 	return (&ComponentClient{config: c.config}).QueryLicenses(c)
 }
 
-// QueryRelease queries the "release" edge of the Component entity.
-func (c *Component) QueryRelease() *ReleaseQuery {
-	return (&ComponentClient{config: c.config}).QueryRelease(c)
+// QueryUses queries the "uses" edge of the Component entity.
+func (c *Component) QueryUses() *ComponentUseQuery {
+	return (&ComponentClient{config: c.config}).QueryUses(c)
 }
 
 // Update returns a builder for updating this Component.

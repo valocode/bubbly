@@ -1,0 +1,132 @@
+{{/* The line below tells Intellij/GoLand to enable the autocompletion based on the *gen.Graph type. */}}
+{{/* gotype: entgo.io/ent/entc/gen.Graph */}}
+
+{{ define "hcl/schema" }}
+
+{{/* Add the base header for the generated file */}}
+{{ $pkg := base $.Config.Package }}
+{{ template "header" $ }}
+
+const (
+	attributeNodeOperation = "_operation"
+	attributeNodeRef       = "ref"
+	blockNodeDisjoint      = "_disjoint"
+)
+
+type HCLBodySpec struct {
+	Attributes []hcl.AttributeSchema
+	Blocks     []HCLBlockSpec
+}
+
+func (b HCLBodySpec) Schema() *hcl.BodySchema {
+	var blocks = make([]hcl.BlockHeaderSchema, len(b.Blocks))
+	for i, block := range b.Blocks {
+		blocks[i] = block.BlockHeaderSchema
+	}
+	return &hcl.BodySchema{
+		Attributes: b.Attributes,
+		Blocks:     blocks,
+	}
+}
+
+type HCLBlockSpec struct {
+	hcl.BlockHeaderSchema
+	// MinItems and MaxItems define the lower and upper limits on the number of
+	// blocks allowed of the given type. If both are left at zero, no limit is applied.
+	MinItems, MaxItems int
+}
+
+var AllDataNodesSchema = HCLBodySpec{
+	Blocks: []HCLBlockSpec{
+        {{- range $n := $.Nodes }}
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "{{ $n.Table }}"},
+		},
+        {{- end }}
+	},
+}
+
+{{- range $n := $.Nodes }}
+var {{ $n.Name }}BodySpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: "_operation",
+		},
+        {{- range $f := $n.Fields }}
+		{
+			Name: "{{ $f.Name }}",
+		},
+        {{- end }}
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: blockNodeDisjoint},
+			MaxItems: 1,
+		},
+        {{- range $e := $n.Edges }}
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "{{ $e.Name }}"},
+			MaxItems: 1,
+		},
+        {{- end}}
+	},
+}
+
+{{- range $e := $n.Edges }}
+var {{ $n.Name }}{{ $e.StructField }}EdgeSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "{{ $e.Type.Table }}"},
+			{{ if $e.Unique }}MaxItems: 1,{{ end }}
+		},
+	},
+}
+{{- end }}
+
+{{- end }}
+
+var DataEdgeSchemas = map[string]map[string]*HCLBodySpec{
+    {{- range $n := $.Nodes }}
+	"{{ $n.Table }}": {
+        {{- range $e := $n.Edges }}
+		"{{ $e.Name }}": &{{ $n.Name}}{{ $e.StructField}}EdgeSpec,
+        {{- end }}
+	},
+    {{- end }}
+}
+
+var RequiredEdges = map[string]map[string]string{
+    {{- range $n := $.Nodes }}
+	"{{ $n.Table }}": {
+        {{- range $e := $n.Edges }}
+			{{- if not $e.Optional }}
+				"{{ $e.Name }}": "{{ $e.Ref.Name }}",
+			{{- end }}
+        {{- end }}
+	},
+    {{- end }}
+}
+
+var RefDataEdges = map[string]map[string]string{
+    {{- range $n := $.Nodes }}
+	"{{ $n.Table }}": {
+        {{- range $e := $n.Edges }}
+		"{{ $e.Name }}": "{{ $e.Ref.Name }}",
+        {{- end }}
+	},
+    {{- end }}
+}
+
+var DataNodeSchemas = map[string]*HCLBodySpec{
+	"_disjoint": &AllDataNodesSchema,
+    {{- range $n := $.Nodes }}
+	"{{ $n.Table }}":      &{{ $n.Name }}BodySpec,
+    {{- end }}
+}
+
+{{ end }}

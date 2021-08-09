@@ -398,8 +398,8 @@ func (crq *CVERuleQuery) GroupBy(field string, fields ...string) *CVERuleGroupBy
 //		Select(cverule.FieldName).
 //		Scan(ctx, &v)
 //
-func (crq *CVERuleQuery) Select(field string, fields ...string) *CVERuleSelect {
-	crq.fields = append([]string{field}, fields...)
+func (crq *CVERuleQuery) Select(fields ...string) *CVERuleSelect {
+	crq.fields = append(crq.fields, fields...)
 	return &CVERuleSelect{CVERuleQuery: crq}
 }
 

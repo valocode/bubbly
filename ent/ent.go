@@ -12,17 +12,15 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/cverule"
-	"github.com/valocode/bubbly/ent/cvescan"
 	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licensescan"
-	"github.com/valocode/bubbly/ent/licenseusage"
+	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasecheck"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testcase"
@@ -51,18 +49,16 @@ func columnChecker(table string) func(string) error {
 		artifact.Table:      artifact.ValidColumn,
 		cve.Table:           cve.ValidColumn,
 		cverule.Table:       cverule.ValidColumn,
-		cvescan.Table:       cvescan.ValidColumn,
 		cwe.Table:           cwe.ValidColumn,
 		codeissue.Table:     codeissue.ValidColumn,
 		codescan.Table:      codescan.ValidColumn,
 		component.Table:     component.ValidColumn,
+		componentuse.Table:  componentuse.ValidColumn,
 		gitcommit.Table:     gitcommit.ValidColumn,
 		license.Table:       license.ValidColumn,
-		licensescan.Table:   licensescan.ValidColumn,
-		licenseusage.Table:  licenseusage.ValidColumn,
+		licenseuse.Table:    licenseuse.ValidColumn,
 		project.Table:       project.ValidColumn,
 		release.Table:       release.ValidColumn,
-		releasecheck.Table:  releasecheck.ValidColumn,
 		releaseentry.Table:  releaseentry.ValidColumn,
 		repo.Table:          repo.ValidColumn,
 		testcase.Table:      testcase.ValidColumn,

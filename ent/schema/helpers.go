@@ -26,10 +26,6 @@ func createReleaseEntry(ctx context.Context, m entryTypeMutation) error {
 		entryType = releaseentry.TypeCodeScan
 	case ent.TypeTestRun:
 		entryType = releaseentry.TypeTestRun
-	case ent.TypeCVEScan:
-		entryType = releaseentry.TypeCveScan
-	case ent.TypeLicenseScan:
-		entryType = releaseentry.TypeLicenseScan
 	default:
 		return fmt.Errorf("unsupported release entry for type %s", m.Type())
 	}
@@ -40,7 +36,7 @@ func createReleaseEntry(ctx context.Context, m entryTypeMutation) error {
 		// Validator should already catch this as an artifact needs a release
 		return errors.New("no release for artifact")
 	}
-	release, err := client.Release.Query().Where(release.ID(rID)).WithChecks().Only(ctx)
+	release, err := client.Release.Query().Where(release.ID(rID)).Only(ctx)
 	if err != nil {
 		// Validator should already catch this as an artifact needs a release
 		return errors.New("no release for artifact")

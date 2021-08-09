@@ -397,8 +397,8 @@ func (pq *ProjectQuery) GroupBy(field string, fields ...string) *ProjectGroupBy 
 //		Select(project.FieldName).
 //		Scan(ctx, &v)
 //
-func (pq *ProjectQuery) Select(field string, fields ...string) *ProjectSelect {
-	pq.fields = append([]string{field}, fields...)
+func (pq *ProjectQuery) Select(fields ...string) *ProjectSelect {
+	pq.fields = append(pq.fields, fields...)
 	return &ProjectSelect{ProjectQuery: pq}
 }
 

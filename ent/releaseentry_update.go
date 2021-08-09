@@ -13,8 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/cvescan"
-	"github.com/valocode/bubbly/ent/licensescan"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
@@ -28,9 +26,9 @@ type ReleaseEntryUpdate struct {
 	mutation *ReleaseEntryMutation
 }
 
-// Where adds a new predicate for the ReleaseEntryUpdate builder.
+// Where appends a list predicates to the ReleaseEntryUpdate builder.
 func (reu *ReleaseEntryUpdate) Where(ps ...predicate.ReleaseEntry) *ReleaseEntryUpdate {
-	reu.mutation.predicates = append(reu.mutation.predicates, ps...)
+	reu.mutation.Where(ps...)
 	return reu
 }
 
@@ -105,44 +103,6 @@ func (reu *ReleaseEntryUpdate) SetTestRun(t *TestRun) *ReleaseEntryUpdate {
 	return reu.SetTestRunID(t.ID)
 }
 
-// SetCveScanID sets the "cve_scan" edge to the CVEScan entity by ID.
-func (reu *ReleaseEntryUpdate) SetCveScanID(id int) *ReleaseEntryUpdate {
-	reu.mutation.SetCveScanID(id)
-	return reu
-}
-
-// SetNillableCveScanID sets the "cve_scan" edge to the CVEScan entity by ID if the given value is not nil.
-func (reu *ReleaseEntryUpdate) SetNillableCveScanID(id *int) *ReleaseEntryUpdate {
-	if id != nil {
-		reu = reu.SetCveScanID(*id)
-	}
-	return reu
-}
-
-// SetCveScan sets the "cve_scan" edge to the CVEScan entity.
-func (reu *ReleaseEntryUpdate) SetCveScan(c *CVEScan) *ReleaseEntryUpdate {
-	return reu.SetCveScanID(c.ID)
-}
-
-// SetLicenseScanID sets the "license_scan" edge to the LicenseScan entity by ID.
-func (reu *ReleaseEntryUpdate) SetLicenseScanID(id int) *ReleaseEntryUpdate {
-	reu.mutation.SetLicenseScanID(id)
-	return reu
-}
-
-// SetNillableLicenseScanID sets the "license_scan" edge to the LicenseScan entity by ID if the given value is not nil.
-func (reu *ReleaseEntryUpdate) SetNillableLicenseScanID(id *int) *ReleaseEntryUpdate {
-	if id != nil {
-		reu = reu.SetLicenseScanID(*id)
-	}
-	return reu
-}
-
-// SetLicenseScan sets the "license_scan" edge to the LicenseScan entity.
-func (reu *ReleaseEntryUpdate) SetLicenseScan(l *LicenseScan) *ReleaseEntryUpdate {
-	return reu.SetLicenseScanID(l.ID)
-}
-
 // SetReleaseID sets the "release" edge to the Release entity by ID.
 func (reu *ReleaseEntryUpdate) SetReleaseID(id int) *ReleaseEntryUpdate {
 	reu.mutation.SetReleaseID(id)
@@ -174,18 +134,6 @@ func (reu *ReleaseEntryUpdate) ClearCodeScan() *ReleaseEntryUpdate {
 // ClearTestRun clears the "test_run" edge to the TestRun entity.
 func (reu *ReleaseEntryUpdate) ClearTestRun() *ReleaseEntryUpdate {
 	reu.mutation.ClearTestRun()
-	return reu
-}
-
-// ClearCveScan clears the "cve_scan" edge to the CVEScan entity.
-func (reu *ReleaseEntryUpdate) ClearCveScan() *ReleaseEntryUpdate {
-	reu.mutation.ClearCveScan()
-	return reu
-}
-
-// ClearLicenseScan clears the "license_scan" edge to the LicenseScan entity.
-func (reu *ReleaseEntryUpdate) ClearLicenseScan() *ReleaseEntryUpdate {
-	reu.mutation.ClearLicenseScan()
 	return reu
 }
 
@@ -221,6 +169,9 @@ func (reu *ReleaseEntryUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(reu.hooks) - 1; i >= 0; i-- {
+			if reu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = reu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, reu.mutation); err != nil {
@@ -390,76 +341,6 @@ func (reu *ReleaseEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if reu.mutation.CveScanCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   releaseentry.CveScanTable,
-			Columns: []string{releaseentry.CveScanColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := reu.mutation.CveScanIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   releaseentry.CveScanTable,
-			Columns: []string{releaseentry.CveScanColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if reu.mutation.LicenseScanCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   releaseentry.LicenseScanTable,
-			Columns: []string{releaseentry.LicenseScanColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := reu.mutation.LicenseScanIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   releaseentry.LicenseScanTable,
-			Columns: []string{releaseentry.LicenseScanColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if reu.mutation.ReleaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -585,44 +466,6 @@ func (reuo *ReleaseEntryUpdateOne) SetTestRun(t *TestRun) *ReleaseEntryUpdateOne
 	return reuo.SetTestRunID(t.ID)
 }
 
-// SetCveScanID sets the "cve_scan" edge to the CVEScan entity by ID.
-func (reuo *ReleaseEntryUpdateOne) SetCveScanID(id int) *ReleaseEntryUpdateOne {
-	reuo.mutation.SetCveScanID(id)
-	return reuo
-}
-
-// SetNillableCveScanID sets the "cve_scan" edge to the CVEScan entity by ID if the given value is not nil.
-func (reuo *ReleaseEntryUpdateOne) SetNillableCveScanID(id *int) *ReleaseEntryUpdateOne {
-	if id != nil {
-		reuo = reuo.SetCveScanID(*id)
-	}
-	return reuo
-}
-
-// SetCveScan sets the "cve_scan" edge to the CVEScan entity.
-func (reuo *ReleaseEntryUpdateOne) SetCveScan(c *CVEScan) *ReleaseEntryUpdateOne {
-	return reuo.SetCveScanID(c.ID)
-}
-
-// SetLicenseScanID sets the "license_scan" edge to the LicenseScan entity by ID.
-func (reuo *ReleaseEntryUpdateOne) SetLicenseScanID(id int) *ReleaseEntryUpdateOne {
-	reuo.mutation.SetLicenseScanID(id)
-	return reuo
-}
-
-// SetNillableLicenseScanID sets the "license_scan" edge to the LicenseScan entity by ID if the given value is not nil.
-func (reuo *ReleaseEntryUpdateOne) SetNillableLicenseScanID(id *int) *ReleaseEntryUpdateOne {
-	if id != nil {
-		reuo = reuo.SetLicenseScanID(*id)
-	}
-	return reuo
-}
-
-// SetLicenseScan sets the "license_scan" edge to the LicenseScan entity.
-func (reuo *ReleaseEntryUpdateOne) SetLicenseScan(l *LicenseScan) *ReleaseEntryUpdateOne {
-	return reuo.SetLicenseScanID(l.ID)
-}
-
 // SetReleaseID sets the "release" edge to the Release entity by ID.
 func (reuo *ReleaseEntryUpdateOne) SetReleaseID(id int) *ReleaseEntryUpdateOne {
 	reuo.mutation.SetReleaseID(id)
@@ -654,18 +497,6 @@ func (reuo *ReleaseEntryUpdateOne) ClearCodeScan() *ReleaseEntryUpdateOne {
 // ClearTestRun clears the "test_run" edge to the TestRun entity.
 func (reuo *ReleaseEntryUpdateOne) ClearTestRun() *ReleaseEntryUpdateOne {
 	reuo.mutation.ClearTestRun()
-	return reuo
-}
-
-// ClearCveScan clears the "cve_scan" edge to the CVEScan entity.
-func (reuo *ReleaseEntryUpdateOne) ClearCveScan() *ReleaseEntryUpdateOne {
-	reuo.mutation.ClearCveScan()
-	return reuo
-}
-
-// ClearLicenseScan clears the "license_scan" edge to the LicenseScan entity.
-func (reuo *ReleaseEntryUpdateOne) ClearLicenseScan() *ReleaseEntryUpdateOne {
-	reuo.mutation.ClearLicenseScan()
 	return reuo
 }
 
@@ -708,6 +539,9 @@ func (reuo *ReleaseEntryUpdateOne) Save(ctx context.Context) (*ReleaseEntry, err
 			return node, err
 		})
 		for i := len(reuo.hooks) - 1; i >= 0; i-- {
+			if reuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = reuo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, reuo.mutation); err != nil {
@@ -886,76 +720,6 @@ func (reuo *ReleaseEntryUpdateOne) sqlSave(ctx context.Context) (_node *ReleaseE
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: testrun.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if reuo.mutation.CveScanCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   releaseentry.CveScanTable,
-			Columns: []string{releaseentry.CveScanColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := reuo.mutation.CveScanIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   releaseentry.CveScanTable,
-			Columns: []string{releaseentry.CveScanColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if reuo.mutation.LicenseScanCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   releaseentry.LicenseScanTable,
-			Columns: []string{releaseentry.LicenseScanColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := reuo.mutation.LicenseScanIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   releaseentry.LicenseScanTable,
-			Columns: []string{releaseentry.LicenseScanColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
 				},
 			},
 		}

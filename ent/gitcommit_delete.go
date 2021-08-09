@@ -20,9 +20,9 @@ type GitCommitDelete struct {
 	mutation *GitCommitMutation
 }
 
-// Where adds a new predicate to the GitCommitDelete builder.
+// Where appends a list predicates to the GitCommitDelete builder.
 func (gcd *GitCommitDelete) Where(ps ...predicate.GitCommit) *GitCommitDelete {
-	gcd.mutation.predicates = append(gcd.mutation.predicates, ps...)
+	gcd.mutation.Where(ps...)
 	return gcd
 }
 
@@ -46,6 +46,9 @@ func (gcd *GitCommitDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(gcd.hooks) - 1; i >= 0; i-- {
+			if gcd.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = gcd.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, gcd.mutation); err != nil {

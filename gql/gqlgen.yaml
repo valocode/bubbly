@@ -28,9 +28,6 @@ models:
   ReleaseEntryType:
     model:
       - github.com/valocode/bubbly/ent/releaseentry.Type
-  ReleaseCheckType:
-    model:
-      - github.com/valocode/bubbly/ent/releasecheck.Type
   CodeIssueSeverity:
     model:
       - github.com/valocode/bubbly/ent/codeissue.Severity

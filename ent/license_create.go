@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licenseusage"
+	"github.com/valocode/bubbly/ent/licenseuse"
 )
 
 // LicenseCreate is the builder for creating a License entity.
@@ -90,19 +90,19 @@ func (lc *LicenseCreate) AddComponents(c ...*Component) *LicenseCreate {
 	return lc.AddComponentIDs(ids...)
 }
 
-// AddUsageIDs adds the "usages" edge to the LicenseUsage entity by IDs.
-func (lc *LicenseCreate) AddUsageIDs(ids ...int) *LicenseCreate {
-	lc.mutation.AddUsageIDs(ids...)
+// AddUseIDs adds the "uses" edge to the LicenseUse entity by IDs.
+func (lc *LicenseCreate) AddUseIDs(ids ...int) *LicenseCreate {
+	lc.mutation.AddUseIDs(ids...)
 	return lc
 }
 
-// AddUsages adds the "usages" edges to the LicenseUsage entity.
-func (lc *LicenseCreate) AddUsages(l ...*LicenseUsage) *LicenseCreate {
+// AddUses adds the "uses" edges to the LicenseUse entity.
+func (lc *LicenseCreate) AddUses(l ...*LicenseUse) *LicenseCreate {
 	ids := make([]int, len(l))
 	for i := range l {
 		ids[i] = l[i].ID
 	}
-	return lc.AddUsageIDs(ids...)
+	return lc.AddUseIDs(ids...)
 }
 
 // Mutation returns the LicenseMutation object of the builder.
@@ -140,6 +140,9 @@ func (lc *LicenseCreate) Save(ctx context.Context) (*License, error) {
 			return node, err
 		})
 		for i := len(lc.hooks) - 1; i >= 0; i-- {
+			if lc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = lc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, lc.mutation); err != nil {
@@ -158,6 +161,19 @@ func (lc *LicenseCreate) SaveX(ctx context.Context) *License {
 	return v
 }
 
+// Exec executes the query.
+func (lc *LicenseCreate) Exec(ctx context.Context) error {
+	_, err := lc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (lc *LicenseCreate) ExecX(ctx context.Context) {
+	if err := lc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // defaults sets the default values of the builder before save.
 func (lc *LicenseCreate) defaults() {
 	if _, ok := lc.mutation.IsOsiApproved(); !ok {
@@ -169,23 +185,23 @@ func (lc *LicenseCreate) defaults() {
 // check runs all checks and user-defined validators on the builder.
 func (lc *LicenseCreate) check() error {
 	if _, ok := lc.mutation.SpdxID(); !ok {
-		return &ValidationError{Name: "spdx_id", err: errors.New("ent: missing required field \"spdx_id\"")}
+		return &ValidationError{Name: "spdx_id", err: errors.New(`ent: missing required field "spdx_id"`)}
 	}
 	if v, ok := lc.mutation.SpdxID(); ok {
 		if err := license.SpdxIDValidator(v); err != nil {
-			return &ValidationError{Name: "spdx_id", err: fmt.Errorf("ent: validator failed for field \"spdx_id\": %w", err)}
+			return &ValidationError{Name: "spdx_id", err: fmt.Errorf(`ent: validator failed for field "spdx_id": %w`, err)}
 		}
 	}
 	if _, ok := lc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
 	}
 	if v, ok := lc.mutation.Name(); ok {
 		if err := license.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
 		}
 	}
 	if _, ok := lc.mutation.IsOsiApproved(); !ok {
-		return &ValidationError{Name: "is_osi_approved", err: errors.New("ent: missing required field \"is_osi_approved\"")}
+		return &ValidationError{Name: "is_osi_approved", err: errors.New(`ent: missing required field "is_osi_approved"`)}
 	}
 	return nil
 }
@@ -273,17 +289,17 @@ func (lc *LicenseCreate) createSpec() (*License, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := lc.mutation.UsagesIDs(); len(nodes) > 0 {
+	if nodes := lc.mutation.UsesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   license.UsagesTable,
-			Columns: []string{license.UsagesColumn},
+			Table:   license.UsesTable,
+			Columns: []string{license.UsesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: licenseusage.FieldID,
+					Column: licenseuse.FieldID,
 				},
 			},
 		}
@@ -324,8 +340,9 @@ func (lcb *LicenseCreateBulk) Save(ctx context.Context) ([]*License, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, lcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, lcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, lcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -336,8 +353,10 @@ func (lcb *LicenseCreateBulk) Save(ctx context.Context) ([]*License, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -361,4 +380,17 @@ func (lcb *LicenseCreateBulk) SaveX(ctx context.Context) []*License {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (lcb *LicenseCreateBulk) Exec(ctx context.Context) error {
+	_, err := lcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (lcb *LicenseCreateBulk) ExecX(ctx context.Context) {
+	if err := lcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

@@ -27,12 +27,12 @@ const (
 	EdgeScan = "scan"
 	// Table holds the table name of the codeissue in the database.
 	Table = "code_issue"
-	// CweTable is the table the holds the cwe relation/edge. The primary key declared below.
+	// CweTable is the table that holds the cwe relation/edge. The primary key declared below.
 	CweTable = "code_issue_cwe"
 	// CweInverseTable is the table name for the CWE entity.
 	// It exists in this package in order to avoid circular dependency with the "cwe" package.
 	CweInverseTable = "cwe"
-	// ScanTable is the table the holds the scan relation/edge.
+	// ScanTable is the table that holds the scan relation/edge.
 	ScanTable = "code_issue"
 	// ScanInverseTable is the table name for the CodeScan entity.
 	// It exists in this package in order to avoid circular dependency with the "codescan" package.

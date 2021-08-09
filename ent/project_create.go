@@ -107,6 +107,9 @@ func (pc *ProjectCreate) Save(ctx context.Context) (*Project, error) {
 			return node, err
 		})
 		for i := len(pc.hooks) - 1; i >= 0; i-- {
+			if pc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = pc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, pc.mutation); err != nil {
@@ -125,14 +128,27 @@ func (pc *ProjectCreate) SaveX(ctx context.Context) *Project {
 	return v
 }
 
+// Exec executes the query.
+func (pc *ProjectCreate) Exec(ctx context.Context) error {
+	_, err := pc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (pc *ProjectCreate) ExecX(ctx context.Context) {
+	if err := pc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (pc *ProjectCreate) check() error {
 	if _, ok := pc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
 	}
 	if v, ok := pc.mutation.Name(); ok {
 		if err := project.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
 		}
 	}
 	return nil
@@ -258,8 +274,9 @@ func (pcb *ProjectCreateBulk) Save(ctx context.Context) ([]*Project, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, pcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, pcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, pcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -270,8 +287,10 @@ func (pcb *ProjectCreateBulk) Save(ctx context.Context) ([]*Project, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -295,4 +314,17 @@ func (pcb *ProjectCreateBulk) SaveX(ctx context.Context) []*Project {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (pcb *ProjectCreateBulk) Exec(ctx context.Context) error {
+	_, err := pcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (pcb *ProjectCreateBulk) ExecX(ctx context.Context) {
+	if err := pcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

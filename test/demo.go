@@ -40,6 +40,26 @@ const (
 	cveTimeMax = 35
 )
 
+func SaveSPDXData(client *ent.Client) error {
+	list, err := integrations.FetchSPDXLicenses()
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	for _, lic := range list.Licenses {
+		l, err := client.License.Create().
+			SetSpdxID(lic.LicenseID).
+			SetName(lic.Name).
+			SetDetailsURL(lic.DetailsURL).
+			SetIsOsiApproved(lic.IsOSIApproved).SetReference(lic.Reference).
+			Save(ctx)
+		if err != nil {
+			return err
+		}
+		fmt.Println("Created license: " + l.String())
+	}
+	return nil
+}
 func SaveCVEData(client *ent.Client) error {
 	resp, err := integrations.FetchCVEs(integrations.DefaultCVEFetchOptions())
 	if err != nil {
@@ -247,13 +267,13 @@ func CreateDummyData(client *ent.Client) error {
 			cTime = cTime.Add(time.Minute * time.Duration(
 				rand.Intn(cveTimeMax-cveTimeMin+1)+cveTimeMin,
 			))
-			scan := ent.NewCVEScanNode().
+			scan := ent.NewCodeScanNode().
 				SetRelease(release).
 				SetTool("snyk").
 				SetEntry(
 					ent.NewReleaseEntryNode().
 						SetTime(cTime).
-						SetType(releaseentry.TypeCveScan),
+						SetType(releaseentry.TypeCodeScan),
 				)
 
 			for j := 0; j < 10; j++ {
@@ -262,25 +282,40 @@ func CreateDummyData(client *ent.Client) error {
 					SetDescription("TODO").
 					SetVendor("TODO").
 					SetURL("TODO").
-					SetVersion(fmt.Sprintf("0.0.%d", j)).
-					AddRelease(release)
+					SetVersion(fmt.Sprintf("0.0.%d", j))
+				compUse := ent.NewComponentUseNode().
+					// ent.NewComponentUseNode().
+					AddScans(scan).
+					SetComponent(comp)
+
+				release.AddComponents(compUse)
 
 				//
 				// Vulnerabilities
 				//
 				{
-					// Set a default CVE ID in case we don't have any CVEs
-					cveID := fmt.Sprintf("CVE-%d", j)
-					if len(cves) > 0 {
-						cveID = cves[j].CveID
+					// HACK: do this once only
+					if i == 1 {
+						// Set a default CVE ID in case we don't have any CVEs
+						cveID := fmt.Sprintf("CVE-%d", j)
+						if len(cves) > 0 {
+							cveID = cves[j].CveID
+						}
+						cve := ent.NewCVENode().
+							SetCveID(cveID).AddComponents(comp)
+
+						if j == 9 {
+							ent.NewCVERuleNode().SetCve(cve).SetName("ignore").AddProject(project)
+						}
+
 					}
-					ent.NewVulnerabilityNode().
-						SetScan(scan).
-						SetComponent(comp).
-						SetCve(
-							ent.NewCVENode().
-								SetCveID(cveID),
-						)
+					// ent.NewVulnerabilityNode().
+					// 	SetComponent(compUse).
+					// 	SetRelease(release).
+					// 	SetCve(
+					// 		ent.NewCVENode().
+					// 			SetCveID(cveID),
+					// 	).AddScans(scan)
 				}
 
 			}

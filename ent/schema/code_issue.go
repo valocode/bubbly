@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/extensions/entapt"
 )
 
 type CodeIssue struct {
@@ -16,6 +17,7 @@ type CodeIssue struct {
 func (CodeIssue) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "code_issue"},
+		entapt.Annotation{},
 	}
 }
 

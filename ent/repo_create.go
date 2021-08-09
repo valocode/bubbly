@@ -111,6 +111,9 @@ func (rc *RepoCreate) Save(ctx context.Context) (*Repo, error) {
 			return node, err
 		})
 		for i := len(rc.hooks) - 1; i >= 0; i-- {
+			if rc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, rc.mutation); err != nil {
@@ -129,14 +132,27 @@ func (rc *RepoCreate) SaveX(ctx context.Context) *Repo {
 	return v
 }
 
+// Exec executes the query.
+func (rc *RepoCreate) Exec(ctx context.Context) error {
+	_, err := rc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rc *RepoCreate) ExecX(ctx context.Context) {
+	if err := rc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (rc *RepoCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
 	}
 	if v, ok := rc.mutation.Name(); ok {
 		if err := repo.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
 		}
 	}
 	return nil
@@ -263,8 +279,9 @@ func (rcb *RepoCreateBulk) Save(ctx context.Context) ([]*Repo, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, rcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, rcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, rcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -275,8 +292,10 @@ func (rcb *RepoCreateBulk) Save(ctx context.Context) ([]*Repo, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -300,4 +319,17 @@ func (rcb *RepoCreateBulk) SaveX(ctx context.Context) []*Repo {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (rcb *RepoCreateBulk) Exec(ctx context.Context) error {
+	_, err := rcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rcb *RepoCreateBulk) ExecX(ctx context.Context) {
+	if err := rcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

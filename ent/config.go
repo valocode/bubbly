@@ -27,18 +27,16 @@ type hooks struct {
 	Artifact      []ent.Hook
 	CVE           []ent.Hook
 	CVERule       []ent.Hook
-	CVEScan       []ent.Hook
 	CWE           []ent.Hook
 	CodeIssue     []ent.Hook
 	CodeScan      []ent.Hook
 	Component     []ent.Hook
+	ComponentUse  []ent.Hook
 	GitCommit     []ent.Hook
 	License       []ent.Hook
-	LicenseScan   []ent.Hook
-	LicenseUsage  []ent.Hook
+	LicenseUse    []ent.Hook
 	Project       []ent.Hook
 	Release       []ent.Hook
-	ReleaseCheck  []ent.Hook
 	ReleaseEntry  []ent.Hook
 	Repo          []ent.Hook
 	TestCase      []ent.Hook

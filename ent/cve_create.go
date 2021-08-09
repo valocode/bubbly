@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/cverule"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -98,19 +99,34 @@ func (cc *CVECreate) SetNillableModifiedData(t *time.Time) *CVECreate {
 	return cc
 }
 
-// AddFoundIDs adds the "found" edge to the Vulnerability entity by IDs.
-func (cc *CVECreate) AddFoundIDs(ids ...int) *CVECreate {
-	cc.mutation.AddFoundIDs(ids...)
+// AddComponentIDs adds the "components" edge to the Component entity by IDs.
+func (cc *CVECreate) AddComponentIDs(ids ...int) *CVECreate {
+	cc.mutation.AddComponentIDs(ids...)
 	return cc
 }
 
-// AddFound adds the "found" edges to the Vulnerability entity.
-func (cc *CVECreate) AddFound(v ...*Vulnerability) *CVECreate {
+// AddComponents adds the "components" edges to the Component entity.
+func (cc *CVECreate) AddComponents(c ...*Component) *CVECreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cc.AddComponentIDs(ids...)
+}
+
+// AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by IDs.
+func (cc *CVECreate) AddVulnerabilityIDs(ids ...int) *CVECreate {
+	cc.mutation.AddVulnerabilityIDs(ids...)
+	return cc
+}
+
+// AddVulnerabilities adds the "vulnerabilities" edges to the Vulnerability entity.
+func (cc *CVECreate) AddVulnerabilities(v ...*Vulnerability) *CVECreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return cc.AddFoundIDs(ids...)
+	return cc.AddVulnerabilityIDs(ids...)
 }
 
 // AddRuleIDs adds the "rules" edge to the CVERule entity by IDs.
@@ -139,7 +155,9 @@ func (cc *CVECreate) Save(ctx context.Context) (*CVE, error) {
 		err  error
 		node *CVE
 	)
-	cc.defaults()
+	if err := cc.defaults(); err != nil {
+		return nil, err
+	}
 	if len(cc.hooks) == 0 {
 		if err = cc.check(); err != nil {
 			return nil, err
@@ -163,6 +181,9 @@ func (cc *CVECreate) Save(ctx context.Context) (*CVE, error) {
 			return node, err
 		})
 		for i := len(cc.hooks) - 1; i >= 0; i-- {
+			if cc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = cc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, cc.mutation); err != nil {
@@ -181,8 +202,21 @@ func (cc *CVECreate) SaveX(ctx context.Context) *CVE {
 	return v
 }
 
+// Exec executes the query.
+func (cc *CVECreate) Exec(ctx context.Context) error {
+	_, err := cc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (cc *CVECreate) ExecX(ctx context.Context) {
+	if err := cc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // defaults sets the default values of the builder before save.
-func (cc *CVECreate) defaults() {
+func (cc *CVECreate) defaults() error {
 	if _, ok := cc.mutation.SeverityScore(); !ok {
 		v := cve.DefaultSeverityScore
 		cc.mutation.SetSeverityScore(v)
@@ -191,27 +225,28 @@ func (cc *CVECreate) defaults() {
 		v := cve.DefaultSeverity
 		cc.mutation.SetSeverity(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (cc *CVECreate) check() error {
 	if _, ok := cc.mutation.CveID(); !ok {
-		return &ValidationError{Name: "cve_id", err: errors.New("ent: missing required field \"cve_id\"")}
+		return &ValidationError{Name: "cve_id", err: errors.New(`ent: missing required field "cve_id"`)}
 	}
 	if v, ok := cc.mutation.CveID(); ok {
 		if err := cve.CveIDValidator(v); err != nil {
-			return &ValidationError{Name: "cve_id", err: fmt.Errorf("ent: validator failed for field \"cve_id\": %w", err)}
+			return &ValidationError{Name: "cve_id", err: fmt.Errorf(`ent: validator failed for field "cve_id": %w`, err)}
 		}
 	}
 	if _, ok := cc.mutation.SeverityScore(); !ok {
-		return &ValidationError{Name: "severity_score", err: errors.New("ent: missing required field \"severity_score\"")}
+		return &ValidationError{Name: "severity_score", err: errors.New(`ent: missing required field "severity_score"`)}
 	}
 	if _, ok := cc.mutation.Severity(); !ok {
-		return &ValidationError{Name: "severity", err: errors.New("ent: missing required field \"severity\"")}
+		return &ValidationError{Name: "severity", err: errors.New(`ent: missing required field "severity"`)}
 	}
 	if v, ok := cc.mutation.Severity(); ok {
 		if err := cve.SeverityValidator(v); err != nil {
-			return &ValidationError{Name: "severity", err: fmt.Errorf("ent: validator failed for field \"severity\": %w", err)}
+			return &ValidationError{Name: "severity", err: fmt.Errorf(`ent: validator failed for field "severity": %w`, err)}
 		}
 	}
 	return nil
@@ -289,12 +324,31 @@ func (cc *CVECreate) createSpec() (*CVE, *sqlgraph.CreateSpec) {
 		})
 		_node.ModifiedData = value
 	}
-	if nodes := cc.mutation.FoundIDs(); len(nodes) > 0 {
+	if nodes := cc.mutation.ComponentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   cve.ComponentsTable,
+			Columns: cve.ComponentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: component.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cc.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   cve.FoundTable,
-			Columns: []string{cve.FoundColumn},
+			Table:   cve.VulnerabilitiesTable,
+			Columns: []string{cve.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -359,8 +413,9 @@ func (ccb *CVECreateBulk) Save(ctx context.Context) ([]*CVE, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, ccb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, ccb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, ccb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -371,8 +426,10 @@ func (ccb *CVECreateBulk) Save(ctx context.Context) ([]*CVE, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -396,4 +453,17 @@ func (ccb *CVECreateBulk) SaveX(ctx context.Context) []*CVE {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (ccb *CVECreateBulk) Exec(ctx context.Context) error {
+	_, err := ccb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (ccb *CVECreateBulk) ExecX(ctx context.Context) {
+	if err := ccb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

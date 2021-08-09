@@ -24,9 +24,9 @@ type CVERuleUpdate struct {
 	mutation *CVERuleMutation
 }
 
-// Where adds a new predicate for the CVERuleUpdate builder.
+// Where appends a list predicates to the CVERuleUpdate builder.
 func (cru *CVERuleUpdate) Where(ps ...predicate.CVERule) *CVERuleUpdate {
-	cru.mutation.predicates = append(cru.mutation.predicates, ps...)
+	cru.mutation.Where(ps...)
 	return cru
 }
 
@@ -170,6 +170,9 @@ func (cru *CVERuleUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(cru.hooks) - 1; i >= 0; i-- {
+			if cru.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = cru.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, cru.mutation); err != nil {
@@ -549,6 +552,9 @@ func (cruo *CVERuleUpdateOne) Save(ctx context.Context) (*CVERule, error) {
 			return node, err
 		})
 		for i := len(cruo.hooks) - 1; i >= 0; i-- {
+			if cruo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = cruo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, cruo.mutation); err != nil {

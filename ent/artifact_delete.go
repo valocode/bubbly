@@ -20,9 +20,9 @@ type ArtifactDelete struct {
 	mutation *ArtifactMutation
 }
 
-// Where adds a new predicate to the ArtifactDelete builder.
+// Where appends a list predicates to the ArtifactDelete builder.
 func (ad *ArtifactDelete) Where(ps ...predicate.Artifact) *ArtifactDelete {
-	ad.mutation.predicates = append(ad.mutation.predicates, ps...)
+	ad.mutation.Where(ps...)
 	return ad
 }
 
@@ -46,6 +46,9 @@ func (ad *ArtifactDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(ad.hooks) - 1; i >= 0; i-- {
+			if ad.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ad.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ad.mutation); err != nil {

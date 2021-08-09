@@ -17,31 +17,31 @@ const (
 	FieldDescription = "description"
 	// FieldURL holds the string denoting the url field in the database.
 	FieldURL = "url"
-	// EdgeVulnerabilities holds the string denoting the vulnerabilities edge name in mutations.
-	EdgeVulnerabilities = "vulnerabilities"
+	// EdgeCves holds the string denoting the cves edge name in mutations.
+	EdgeCves = "cves"
 	// EdgeLicenses holds the string denoting the licenses edge name in mutations.
 	EdgeLicenses = "licenses"
-	// EdgeRelease holds the string denoting the release edge name in mutations.
-	EdgeRelease = "release"
+	// EdgeUses holds the string denoting the uses edge name in mutations.
+	EdgeUses = "uses"
 	// Table holds the table name of the component in the database.
 	Table = "component"
-	// VulnerabilitiesTable is the table the holds the vulnerabilities relation/edge.
-	VulnerabilitiesTable = "vulnerability"
-	// VulnerabilitiesInverseTable is the table name for the Vulnerability entity.
-	// It exists in this package in order to avoid circular dependency with the "vulnerability" package.
-	VulnerabilitiesInverseTable = "vulnerability"
-	// VulnerabilitiesColumn is the table column denoting the vulnerabilities relation/edge.
-	VulnerabilitiesColumn = "component_vulnerabilities"
-	// LicensesTable is the table the holds the licenses relation/edge. The primary key declared below.
+	// CvesTable is the table that holds the cves relation/edge. The primary key declared below.
+	CvesTable = "component_cves"
+	// CvesInverseTable is the table name for the CVE entity.
+	// It exists in this package in order to avoid circular dependency with the "cve" package.
+	CvesInverseTable = "cve"
+	// LicensesTable is the table that holds the licenses relation/edge. The primary key declared below.
 	LicensesTable = "component_licenses"
 	// LicensesInverseTable is the table name for the License entity.
 	// It exists in this package in order to avoid circular dependency with the "license" package.
 	LicensesInverseTable = "license"
-	// ReleaseTable is the table the holds the release relation/edge. The primary key declared below.
-	ReleaseTable = "component_release"
-	// ReleaseInverseTable is the table name for the Release entity.
-	// It exists in this package in order to avoid circular dependency with the "release" package.
-	ReleaseInverseTable = "release"
+	// UsesTable is the table that holds the uses relation/edge.
+	UsesTable = "component_use"
+	// UsesInverseTable is the table name for the ComponentUse entity.
+	// It exists in this package in order to avoid circular dependency with the "componentuse" package.
+	UsesInverseTable = "component_use"
+	// UsesColumn is the table column denoting the uses relation/edge.
+	UsesColumn = "component_use_component"
 )
 
 // Columns holds all SQL columns for component fields.
@@ -55,12 +55,12 @@ var Columns = []string{
 }
 
 var (
+	// CvesPrimaryKey and CvesColumn2 are the table columns denoting the
+	// primary key for the cves relation (M2M).
+	CvesPrimaryKey = []string{"component_id", "cve_id"}
 	// LicensesPrimaryKey and LicensesColumn2 are the table columns denoting the
 	// primary key for the licenses relation (M2M).
 	LicensesPrimaryKey = []string{"component_id", "license_id"}
-	// ReleasePrimaryKey and ReleaseColumn2 are the table columns denoting the
-	// primary key for the release relation (M2M).
-	ReleasePrimaryKey = []string{"component_id", "release_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

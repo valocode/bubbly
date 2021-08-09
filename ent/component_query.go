@@ -13,10 +13,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/componentuse"
+	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/predicate"
-	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/vulnerability"
 )
 
 // ComponentQuery is the builder for querying Component entities.
@@ -29,9 +29,9 @@ type ComponentQuery struct {
 	fields     []string
 	predicates []predicate.Component
 	// eager-loading edges.
-	withVulnerabilities *VulnerabilityQuery
-	withLicenses        *LicenseQuery
-	withRelease         *ReleaseQuery
+	withCves     *CVEQuery
+	withLicenses *LicenseQuery
+	withUses     *ComponentUseQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -68,9 +68,9 @@ func (cq *ComponentQuery) Order(o ...OrderFunc) *ComponentQuery {
 	return cq
 }
 
-// QueryVulnerabilities chains the current query on the "vulnerabilities" edge.
-func (cq *ComponentQuery) QueryVulnerabilities() *VulnerabilityQuery {
-	query := &VulnerabilityQuery{config: cq.config}
+// QueryCves chains the current query on the "cves" edge.
+func (cq *ComponentQuery) QueryCves() *CVEQuery {
+	query := &CVEQuery{config: cq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := cq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -81,8 +81,8 @@ func (cq *ComponentQuery) QueryVulnerabilities() *VulnerabilityQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(component.Table, component.FieldID, selector),
-			sqlgraph.To(vulnerability.Table, vulnerability.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, component.VulnerabilitiesTable, component.VulnerabilitiesColumn),
+			sqlgraph.To(cve.Table, cve.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, component.CvesTable, component.CvesPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
 		return fromU, nil
@@ -112,9 +112,9 @@ func (cq *ComponentQuery) QueryLicenses() *LicenseQuery {
 	return query
 }
 
-// QueryRelease chains the current query on the "release" edge.
-func (cq *ComponentQuery) QueryRelease() *ReleaseQuery {
-	query := &ReleaseQuery{config: cq.config}
+// QueryUses chains the current query on the "uses" edge.
+func (cq *ComponentQuery) QueryUses() *ComponentUseQuery {
+	query := &ComponentUseQuery{config: cq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := cq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -125,8 +125,8 @@ func (cq *ComponentQuery) QueryRelease() *ReleaseQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(component.Table, component.FieldID, selector),
-			sqlgraph.To(release.Table, release.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, component.ReleaseTable, component.ReleasePrimaryKey...),
+			sqlgraph.To(componentuse.Table, componentuse.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, component.UsesTable, component.UsesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
 		return fromU, nil
@@ -310,28 +310,28 @@ func (cq *ComponentQuery) Clone() *ComponentQuery {
 		return nil
 	}
 	return &ComponentQuery{
-		config:              cq.config,
-		limit:               cq.limit,
-		offset:              cq.offset,
-		order:               append([]OrderFunc{}, cq.order...),
-		predicates:          append([]predicate.Component{}, cq.predicates...),
-		withVulnerabilities: cq.withVulnerabilities.Clone(),
-		withLicenses:        cq.withLicenses.Clone(),
-		withRelease:         cq.withRelease.Clone(),
+		config:       cq.config,
+		limit:        cq.limit,
+		offset:       cq.offset,
+		order:        append([]OrderFunc{}, cq.order...),
+		predicates:   append([]predicate.Component{}, cq.predicates...),
+		withCves:     cq.withCves.Clone(),
+		withLicenses: cq.withLicenses.Clone(),
+		withUses:     cq.withUses.Clone(),
 		// clone intermediate query.
 		sql:  cq.sql.Clone(),
 		path: cq.path,
 	}
 }
 
-// WithVulnerabilities tells the query-builder to eager-load the nodes that are connected to
-// the "vulnerabilities" edge. The optional arguments are used to configure the query builder of the edge.
-func (cq *ComponentQuery) WithVulnerabilities(opts ...func(*VulnerabilityQuery)) *ComponentQuery {
-	query := &VulnerabilityQuery{config: cq.config}
+// WithCves tells the query-builder to eager-load the nodes that are connected to
+// the "cves" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *ComponentQuery) WithCves(opts ...func(*CVEQuery)) *ComponentQuery {
+	query := &CVEQuery{config: cq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	cq.withVulnerabilities = query
+	cq.withCves = query
 	return cq
 }
 
@@ -346,14 +346,14 @@ func (cq *ComponentQuery) WithLicenses(opts ...func(*LicenseQuery)) *ComponentQu
 	return cq
 }
 
-// WithRelease tells the query-builder to eager-load the nodes that are connected to
-// the "release" edge. The optional arguments are used to configure the query builder of the edge.
-func (cq *ComponentQuery) WithRelease(opts ...func(*ReleaseQuery)) *ComponentQuery {
-	query := &ReleaseQuery{config: cq.config}
+// WithUses tells the query-builder to eager-load the nodes that are connected to
+// the "uses" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *ComponentQuery) WithUses(opts ...func(*ComponentUseQuery)) *ComponentQuery {
+	query := &ComponentUseQuery{config: cq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	cq.withRelease = query
+	cq.withUses = query
 	return cq
 }
 
@@ -397,8 +397,8 @@ func (cq *ComponentQuery) GroupBy(field string, fields ...string) *ComponentGrou
 //		Select(component.FieldName).
 //		Scan(ctx, &v)
 //
-func (cq *ComponentQuery) Select(field string, fields ...string) *ComponentSelect {
-	cq.fields = append([]string{field}, fields...)
+func (cq *ComponentQuery) Select(fields ...string) *ComponentSelect {
+	cq.fields = append(cq.fields, fields...)
 	return &ComponentSelect{ComponentQuery: cq}
 }
 
@@ -423,9 +423,9 @@ func (cq *ComponentQuery) sqlAll(ctx context.Context) ([]*Component, error) {
 		nodes       = []*Component{}
 		_spec       = cq.querySpec()
 		loadedTypes = [3]bool{
-			cq.withVulnerabilities != nil,
+			cq.withCves != nil,
 			cq.withLicenses != nil,
-			cq.withRelease != nil,
+			cq.withUses != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -448,32 +448,68 @@ func (cq *ComponentQuery) sqlAll(ctx context.Context) ([]*Component, error) {
 		return nodes, nil
 	}
 
-	if query := cq.withVulnerabilities; query != nil {
+	if query := cq.withCves; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*Component)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Vulnerabilities = []*Vulnerability{}
+		ids := make(map[int]*Component, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.Cves = []*CVE{}
 		}
-		query.withFKs = true
-		query.Where(predicate.Vulnerability(func(s *sql.Selector) {
-			s.Where(sql.InValues(component.VulnerabilitiesColumn, fks...))
-		}))
+		var (
+			edgeids []int
+			edges   = make(map[int][]*Component)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: false,
+				Table:   component.CvesTable,
+				Columns: component.CvesPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(component.CvesPrimaryKey[0], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, cq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "cves": %w`, err)
+		}
+		query.Where(cve.IDIn(edgeids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.component_vulnerabilities
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "component_vulnerabilities" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
+			nodes, ok := edges[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "component_vulnerabilities" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected "cves" node returned %v`, n.ID)
 			}
-			node.Edges.Vulnerabilities = append(node.Edges.Vulnerabilities, n)
+			for i := range nodes {
+				nodes[i].Edges.Cves = append(nodes[i].Edges.Cves, n)
+			}
 		}
 	}
 
@@ -542,68 +578,32 @@ func (cq *ComponentQuery) sqlAll(ctx context.Context) ([]*Component, error) {
 		}
 	}
 
-	if query := cq.withRelease; query != nil {
+	if query := cq.withUses; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*Component, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Release = []*Release{}
+		nodeids := make(map[int]*Component)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Uses = []*ComponentUse{}
 		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*Component)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: false,
-				Table:   component.ReleaseTable,
-				Columns: component.ReleasePrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(component.ReleasePrimaryKey[0], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, cq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "release": %w`, err)
-		}
-		query.Where(release.IDIn(edgeids...))
+		query.withFKs = true
+		query.Where(predicate.ComponentUse(func(s *sql.Selector) {
+			s.Where(sql.InValues(component.UsesColumn, fks...))
+		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
+			fk := n.component_use_component
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "component_use_component" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected "release" node returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "component_use_component" returned %v for node %v`, *fk, n.ID)
 			}
-			for i := range nodes {
-				nodes[i].Edges.Release = append(nodes[i].Edges.Release, n)
-			}
+			node.Edges.Uses = append(node.Edges.Uses, n)
 		}
 	}
 

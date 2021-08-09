@@ -98,6 +98,9 @@ func (tcc *TestCaseCreate) Save(ctx context.Context) (*TestCase, error) {
 			return node, err
 		})
 		for i := len(tcc.hooks) - 1; i >= 0; i-- {
+			if tcc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = tcc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, tcc.mutation); err != nil {
@@ -116,6 +119,19 @@ func (tcc *TestCaseCreate) SaveX(ctx context.Context) *TestCase {
 	return v
 }
 
+// Exec executes the query.
+func (tcc *TestCaseCreate) Exec(ctx context.Context) error {
+	_, err := tcc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (tcc *TestCaseCreate) ExecX(ctx context.Context) {
+	if err := tcc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // defaults sets the default values of the builder before save.
 func (tcc *TestCaseCreate) defaults() {
 	if _, ok := tcc.mutation.Elapsed(); !ok {
@@ -127,30 +143,30 @@ func (tcc *TestCaseCreate) defaults() {
 // check runs all checks and user-defined validators on the builder.
 func (tcc *TestCaseCreate) check() error {
 	if _, ok := tcc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
 	}
 	if v, ok := tcc.mutation.Name(); ok {
 		if err := testcase.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
 		}
 	}
 	if _, ok := tcc.mutation.Result(); !ok {
-		return &ValidationError{Name: "result", err: errors.New("ent: missing required field \"result\"")}
+		return &ValidationError{Name: "result", err: errors.New(`ent: missing required field "result"`)}
 	}
 	if _, ok := tcc.mutation.Message(); !ok {
-		return &ValidationError{Name: "message", err: errors.New("ent: missing required field \"message\"")}
+		return &ValidationError{Name: "message", err: errors.New(`ent: missing required field "message"`)}
 	}
 	if v, ok := tcc.mutation.Message(); ok {
 		if err := testcase.MessageValidator(v); err != nil {
-			return &ValidationError{Name: "message", err: fmt.Errorf("ent: validator failed for field \"message\": %w", err)}
+			return &ValidationError{Name: "message", err: fmt.Errorf(`ent: validator failed for field "message": %w`, err)}
 		}
 	}
 	if _, ok := tcc.mutation.Elapsed(); !ok {
-		return &ValidationError{Name: "elapsed", err: errors.New("ent: missing required field \"elapsed\"")}
+		return &ValidationError{Name: "elapsed", err: errors.New(`ent: missing required field "elapsed"`)}
 	}
 	if v, ok := tcc.mutation.Elapsed(); ok {
 		if err := testcase.ElapsedValidator(v); err != nil {
-			return &ValidationError{Name: "elapsed", err: fmt.Errorf("ent: validator failed for field \"elapsed\": %w", err)}
+			return &ValidationError{Name: "elapsed", err: fmt.Errorf(`ent: validator failed for field "elapsed": %w`, err)}
 		}
 	}
 	if _, ok := tcc.mutation.RunID(); !ok {
@@ -267,8 +283,9 @@ func (tccb *TestCaseCreateBulk) Save(ctx context.Context) ([]*TestCase, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, tccb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, tccb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, tccb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -279,8 +296,10 @@ func (tccb *TestCaseCreateBulk) Save(ctx context.Context) ([]*TestCase, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -304,4 +323,17 @@ func (tccb *TestCaseCreateBulk) SaveX(ctx context.Context) []*TestCase {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (tccb *TestCaseCreateBulk) Exec(ctx context.Context) error {
+	_, err := tccb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (tccb *TestCaseCreateBulk) ExecX(ctx context.Context) {
+	if err := tccb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

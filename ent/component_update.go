@@ -10,10 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/componentuse"
+	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/predicate"
-	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/vulnerability"
 )
 
 // ComponentUpdate is the builder for updating Component entities.
@@ -23,9 +23,9 @@ type ComponentUpdate struct {
 	mutation *ComponentMutation
 }
 
-// Where adds a new predicate for the ComponentUpdate builder.
+// Where appends a list predicates to the ComponentUpdate builder.
 func (cu *ComponentUpdate) Where(ps ...predicate.Component) *ComponentUpdate {
-	cu.mutation.predicates = append(cu.mutation.predicates, ps...)
+	cu.mutation.Where(ps...)
 	return cu
 }
 
@@ -59,19 +59,19 @@ func (cu *ComponentUpdate) SetURL(s string) *ComponentUpdate {
 	return cu
 }
 
-// AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by IDs.
-func (cu *ComponentUpdate) AddVulnerabilityIDs(ids ...int) *ComponentUpdate {
-	cu.mutation.AddVulnerabilityIDs(ids...)
+// AddCfeIDs adds the "cves" edge to the CVE entity by IDs.
+func (cu *ComponentUpdate) AddCfeIDs(ids ...int) *ComponentUpdate {
+	cu.mutation.AddCfeIDs(ids...)
 	return cu
 }
 
-// AddVulnerabilities adds the "vulnerabilities" edges to the Vulnerability entity.
-func (cu *ComponentUpdate) AddVulnerabilities(v ...*Vulnerability) *ComponentUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
+// AddCves adds the "cves" edges to the CVE entity.
+func (cu *ComponentUpdate) AddCves(c ...*CVE) *ComponentUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return cu.AddVulnerabilityIDs(ids...)
+	return cu.AddCfeIDs(ids...)
 }
 
 // AddLicenseIDs adds the "licenses" edge to the License entity by IDs.
@@ -89,19 +89,19 @@ func (cu *ComponentUpdate) AddLicenses(l ...*License) *ComponentUpdate {
 	return cu.AddLicenseIDs(ids...)
 }
 
-// AddReleaseIDs adds the "release" edge to the Release entity by IDs.
-func (cu *ComponentUpdate) AddReleaseIDs(ids ...int) *ComponentUpdate {
-	cu.mutation.AddReleaseIDs(ids...)
+// AddUseIDs adds the "uses" edge to the ComponentUse entity by IDs.
+func (cu *ComponentUpdate) AddUseIDs(ids ...int) *ComponentUpdate {
+	cu.mutation.AddUseIDs(ids...)
 	return cu
 }
 
-// AddRelease adds the "release" edges to the Release entity.
-func (cu *ComponentUpdate) AddRelease(r ...*Release) *ComponentUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddUses adds the "uses" edges to the ComponentUse entity.
+func (cu *ComponentUpdate) AddUses(c ...*ComponentUse) *ComponentUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return cu.AddReleaseIDs(ids...)
+	return cu.AddUseIDs(ids...)
 }
 
 // Mutation returns the ComponentMutation object of the builder.
@@ -109,25 +109,25 @@ func (cu *ComponentUpdate) Mutation() *ComponentMutation {
 	return cu.mutation
 }
 
-// ClearVulnerabilities clears all "vulnerabilities" edges to the Vulnerability entity.
-func (cu *ComponentUpdate) ClearVulnerabilities() *ComponentUpdate {
-	cu.mutation.ClearVulnerabilities()
+// ClearCves clears all "cves" edges to the CVE entity.
+func (cu *ComponentUpdate) ClearCves() *ComponentUpdate {
+	cu.mutation.ClearCves()
 	return cu
 }
 
-// RemoveVulnerabilityIDs removes the "vulnerabilities" edge to Vulnerability entities by IDs.
-func (cu *ComponentUpdate) RemoveVulnerabilityIDs(ids ...int) *ComponentUpdate {
-	cu.mutation.RemoveVulnerabilityIDs(ids...)
+// RemoveCfeIDs removes the "cves" edge to CVE entities by IDs.
+func (cu *ComponentUpdate) RemoveCfeIDs(ids ...int) *ComponentUpdate {
+	cu.mutation.RemoveCfeIDs(ids...)
 	return cu
 }
 
-// RemoveVulnerabilities removes "vulnerabilities" edges to Vulnerability entities.
-func (cu *ComponentUpdate) RemoveVulnerabilities(v ...*Vulnerability) *ComponentUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
+// RemoveCves removes "cves" edges to CVE entities.
+func (cu *ComponentUpdate) RemoveCves(c ...*CVE) *ComponentUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return cu.RemoveVulnerabilityIDs(ids...)
+	return cu.RemoveCfeIDs(ids...)
 }
 
 // ClearLicenses clears all "licenses" edges to the License entity.
@@ -151,25 +151,25 @@ func (cu *ComponentUpdate) RemoveLicenses(l ...*License) *ComponentUpdate {
 	return cu.RemoveLicenseIDs(ids...)
 }
 
-// ClearRelease clears all "release" edges to the Release entity.
-func (cu *ComponentUpdate) ClearRelease() *ComponentUpdate {
-	cu.mutation.ClearRelease()
+// ClearUses clears all "uses" edges to the ComponentUse entity.
+func (cu *ComponentUpdate) ClearUses() *ComponentUpdate {
+	cu.mutation.ClearUses()
 	return cu
 }
 
-// RemoveReleaseIDs removes the "release" edge to Release entities by IDs.
-func (cu *ComponentUpdate) RemoveReleaseIDs(ids ...int) *ComponentUpdate {
-	cu.mutation.RemoveReleaseIDs(ids...)
+// RemoveUseIDs removes the "uses" edge to ComponentUse entities by IDs.
+func (cu *ComponentUpdate) RemoveUseIDs(ids ...int) *ComponentUpdate {
+	cu.mutation.RemoveUseIDs(ids...)
 	return cu
 }
 
-// RemoveRelease removes "release" edges to Release entities.
-func (cu *ComponentUpdate) RemoveRelease(r ...*Release) *ComponentUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// RemoveUses removes "uses" edges to ComponentUse entities.
+func (cu *ComponentUpdate) RemoveUses(c ...*ComponentUse) *ComponentUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return cu.RemoveReleaseIDs(ids...)
+	return cu.RemoveUseIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -198,6 +198,9 @@ func (cu *ComponentUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(cu.hooks) - 1; i >= 0; i-- {
+			if cu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = cu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, cu.mutation); err != nil {
@@ -312,33 +315,33 @@ func (cu *ComponentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: component.FieldURL,
 		})
 	}
-	if cu.mutation.VulnerabilitiesCleared() {
+	if cu.mutation.CvesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   component.VulnerabilitiesTable,
-			Columns: []string{component.VulnerabilitiesColumn},
+			Table:   component.CvesTable,
+			Columns: component.CvesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: vulnerability.FieldID,
+					Column: cve.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cu.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !cu.mutation.VulnerabilitiesCleared() {
+	if nodes := cu.mutation.RemovedCvesIDs(); len(nodes) > 0 && !cu.mutation.CvesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   component.VulnerabilitiesTable,
-			Columns: []string{component.VulnerabilitiesColumn},
+			Table:   component.CvesTable,
+			Columns: component.CvesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: vulnerability.FieldID,
+					Column: cve.FieldID,
 				},
 			},
 		}
@@ -347,17 +350,17 @@ func (cu *ComponentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cu.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
+	if nodes := cu.mutation.CvesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   component.VulnerabilitiesTable,
-			Columns: []string{component.VulnerabilitiesColumn},
+			Table:   component.CvesTable,
+			Columns: component.CvesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: vulnerability.FieldID,
+					Column: cve.FieldID,
 				},
 			},
 		}
@@ -420,33 +423,33 @@ func (cu *ComponentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if cu.mutation.ReleaseCleared() {
+	if cu.mutation.UsesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   component.ReleaseTable,
-			Columns: component.ReleasePrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   component.UsesTable,
+			Columns: []string{component.UsesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: release.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cu.mutation.RemovedReleaseIDs(); len(nodes) > 0 && !cu.mutation.ReleaseCleared() {
+	if nodes := cu.mutation.RemovedUsesIDs(); len(nodes) > 0 && !cu.mutation.UsesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   component.ReleaseTable,
-			Columns: component.ReleasePrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   component.UsesTable,
+			Columns: []string{component.UsesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: release.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
@@ -455,17 +458,17 @@ func (cu *ComponentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cu.mutation.ReleaseIDs(); len(nodes) > 0 {
+	if nodes := cu.mutation.UsesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   component.ReleaseTable,
-			Columns: component.ReleasePrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   component.UsesTable,
+			Columns: []string{component.UsesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: release.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
@@ -523,19 +526,19 @@ func (cuo *ComponentUpdateOne) SetURL(s string) *ComponentUpdateOne {
 	return cuo
 }
 
-// AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by IDs.
-func (cuo *ComponentUpdateOne) AddVulnerabilityIDs(ids ...int) *ComponentUpdateOne {
-	cuo.mutation.AddVulnerabilityIDs(ids...)
+// AddCfeIDs adds the "cves" edge to the CVE entity by IDs.
+func (cuo *ComponentUpdateOne) AddCfeIDs(ids ...int) *ComponentUpdateOne {
+	cuo.mutation.AddCfeIDs(ids...)
 	return cuo
 }
 
-// AddVulnerabilities adds the "vulnerabilities" edges to the Vulnerability entity.
-func (cuo *ComponentUpdateOne) AddVulnerabilities(v ...*Vulnerability) *ComponentUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
+// AddCves adds the "cves" edges to the CVE entity.
+func (cuo *ComponentUpdateOne) AddCves(c ...*CVE) *ComponentUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return cuo.AddVulnerabilityIDs(ids...)
+	return cuo.AddCfeIDs(ids...)
 }
 
 // AddLicenseIDs adds the "licenses" edge to the License entity by IDs.
@@ -553,19 +556,19 @@ func (cuo *ComponentUpdateOne) AddLicenses(l ...*License) *ComponentUpdateOne {
 	return cuo.AddLicenseIDs(ids...)
 }
 
-// AddReleaseIDs adds the "release" edge to the Release entity by IDs.
-func (cuo *ComponentUpdateOne) AddReleaseIDs(ids ...int) *ComponentUpdateOne {
-	cuo.mutation.AddReleaseIDs(ids...)
+// AddUseIDs adds the "uses" edge to the ComponentUse entity by IDs.
+func (cuo *ComponentUpdateOne) AddUseIDs(ids ...int) *ComponentUpdateOne {
+	cuo.mutation.AddUseIDs(ids...)
 	return cuo
 }
 
-// AddRelease adds the "release" edges to the Release entity.
-func (cuo *ComponentUpdateOne) AddRelease(r ...*Release) *ComponentUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddUses adds the "uses" edges to the ComponentUse entity.
+func (cuo *ComponentUpdateOne) AddUses(c ...*ComponentUse) *ComponentUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return cuo.AddReleaseIDs(ids...)
+	return cuo.AddUseIDs(ids...)
 }
 
 // Mutation returns the ComponentMutation object of the builder.
@@ -573,25 +576,25 @@ func (cuo *ComponentUpdateOne) Mutation() *ComponentMutation {
 	return cuo.mutation
 }
 
-// ClearVulnerabilities clears all "vulnerabilities" edges to the Vulnerability entity.
-func (cuo *ComponentUpdateOne) ClearVulnerabilities() *ComponentUpdateOne {
-	cuo.mutation.ClearVulnerabilities()
+// ClearCves clears all "cves" edges to the CVE entity.
+func (cuo *ComponentUpdateOne) ClearCves() *ComponentUpdateOne {
+	cuo.mutation.ClearCves()
 	return cuo
 }
 
-// RemoveVulnerabilityIDs removes the "vulnerabilities" edge to Vulnerability entities by IDs.
-func (cuo *ComponentUpdateOne) RemoveVulnerabilityIDs(ids ...int) *ComponentUpdateOne {
-	cuo.mutation.RemoveVulnerabilityIDs(ids...)
+// RemoveCfeIDs removes the "cves" edge to CVE entities by IDs.
+func (cuo *ComponentUpdateOne) RemoveCfeIDs(ids ...int) *ComponentUpdateOne {
+	cuo.mutation.RemoveCfeIDs(ids...)
 	return cuo
 }
 
-// RemoveVulnerabilities removes "vulnerabilities" edges to Vulnerability entities.
-func (cuo *ComponentUpdateOne) RemoveVulnerabilities(v ...*Vulnerability) *ComponentUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
+// RemoveCves removes "cves" edges to CVE entities.
+func (cuo *ComponentUpdateOne) RemoveCves(c ...*CVE) *ComponentUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return cuo.RemoveVulnerabilityIDs(ids...)
+	return cuo.RemoveCfeIDs(ids...)
 }
 
 // ClearLicenses clears all "licenses" edges to the License entity.
@@ -615,25 +618,25 @@ func (cuo *ComponentUpdateOne) RemoveLicenses(l ...*License) *ComponentUpdateOne
 	return cuo.RemoveLicenseIDs(ids...)
 }
 
-// ClearRelease clears all "release" edges to the Release entity.
-func (cuo *ComponentUpdateOne) ClearRelease() *ComponentUpdateOne {
-	cuo.mutation.ClearRelease()
+// ClearUses clears all "uses" edges to the ComponentUse entity.
+func (cuo *ComponentUpdateOne) ClearUses() *ComponentUpdateOne {
+	cuo.mutation.ClearUses()
 	return cuo
 }
 
-// RemoveReleaseIDs removes the "release" edge to Release entities by IDs.
-func (cuo *ComponentUpdateOne) RemoveReleaseIDs(ids ...int) *ComponentUpdateOne {
-	cuo.mutation.RemoveReleaseIDs(ids...)
+// RemoveUseIDs removes the "uses" edge to ComponentUse entities by IDs.
+func (cuo *ComponentUpdateOne) RemoveUseIDs(ids ...int) *ComponentUpdateOne {
+	cuo.mutation.RemoveUseIDs(ids...)
 	return cuo
 }
 
-// RemoveRelease removes "release" edges to Release entities.
-func (cuo *ComponentUpdateOne) RemoveRelease(r ...*Release) *ComponentUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// RemoveUses removes "uses" edges to ComponentUse entities.
+func (cuo *ComponentUpdateOne) RemoveUses(c ...*ComponentUse) *ComponentUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return cuo.RemoveReleaseIDs(ids...)
+	return cuo.RemoveUseIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -669,6 +672,9 @@ func (cuo *ComponentUpdateOne) Save(ctx context.Context) (*Component, error) {
 			return node, err
 		})
 		for i := len(cuo.hooks) - 1; i >= 0; i-- {
+			if cuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = cuo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, cuo.mutation); err != nil {
@@ -800,33 +806,33 @@ func (cuo *ComponentUpdateOne) sqlSave(ctx context.Context) (_node *Component, e
 			Column: component.FieldURL,
 		})
 	}
-	if cuo.mutation.VulnerabilitiesCleared() {
+	if cuo.mutation.CvesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   component.VulnerabilitiesTable,
-			Columns: []string{component.VulnerabilitiesColumn},
+			Table:   component.CvesTable,
+			Columns: component.CvesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: vulnerability.FieldID,
+					Column: cve.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cuo.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !cuo.mutation.VulnerabilitiesCleared() {
+	if nodes := cuo.mutation.RemovedCvesIDs(); len(nodes) > 0 && !cuo.mutation.CvesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   component.VulnerabilitiesTable,
-			Columns: []string{component.VulnerabilitiesColumn},
+			Table:   component.CvesTable,
+			Columns: component.CvesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: vulnerability.FieldID,
+					Column: cve.FieldID,
 				},
 			},
 		}
@@ -835,17 +841,17 @@ func (cuo *ComponentUpdateOne) sqlSave(ctx context.Context) (_node *Component, e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cuo.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
+	if nodes := cuo.mutation.CvesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   component.VulnerabilitiesTable,
-			Columns: []string{component.VulnerabilitiesColumn},
+			Table:   component.CvesTable,
+			Columns: component.CvesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: vulnerability.FieldID,
+					Column: cve.FieldID,
 				},
 			},
 		}
@@ -908,33 +914,33 @@ func (cuo *ComponentUpdateOne) sqlSave(ctx context.Context) (_node *Component, e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if cuo.mutation.ReleaseCleared() {
+	if cuo.mutation.UsesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   component.ReleaseTable,
-			Columns: component.ReleasePrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   component.UsesTable,
+			Columns: []string{component.UsesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: release.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cuo.mutation.RemovedReleaseIDs(); len(nodes) > 0 && !cuo.mutation.ReleaseCleared() {
+	if nodes := cuo.mutation.RemovedUsesIDs(); len(nodes) > 0 && !cuo.mutation.UsesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   component.ReleaseTable,
-			Columns: component.ReleasePrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   component.UsesTable,
+			Columns: []string{component.UsesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: release.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
@@ -943,17 +949,17 @@ func (cuo *ComponentUpdateOne) sqlSave(ctx context.Context) (_node *Component, e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cuo.mutation.ReleaseIDs(); len(nodes) > 0 {
+	if nodes := cuo.mutation.UsesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   component.ReleaseTable,
-			Columns: component.ReleasePrimaryKey,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   component.UsesTable,
+			Columns: []string{component.UsesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: release.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}

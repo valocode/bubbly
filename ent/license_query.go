@@ -14,7 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licenseusage"
+	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/predicate"
 )
 
@@ -29,7 +29,7 @@ type LicenseQuery struct {
 	predicates []predicate.License
 	// eager-loading edges.
 	withComponents *ComponentQuery
-	withUsages     *LicenseUsageQuery
+	withUses       *LicenseUseQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -88,9 +88,9 @@ func (lq *LicenseQuery) QueryComponents() *ComponentQuery {
 	return query
 }
 
-// QueryUsages chains the current query on the "usages" edge.
-func (lq *LicenseQuery) QueryUsages() *LicenseUsageQuery {
-	query := &LicenseUsageQuery{config: lq.config}
+// QueryUses chains the current query on the "uses" edge.
+func (lq *LicenseQuery) QueryUses() *LicenseUseQuery {
+	query := &LicenseUseQuery{config: lq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := lq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -101,8 +101,8 @@ func (lq *LicenseQuery) QueryUsages() *LicenseUsageQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(license.Table, license.FieldID, selector),
-			sqlgraph.To(licenseusage.Table, licenseusage.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, license.UsagesTable, license.UsagesColumn),
+			sqlgraph.To(licenseuse.Table, licenseuse.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, license.UsesTable, license.UsesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(lq.driver.Dialect(), step)
 		return fromU, nil
@@ -292,7 +292,7 @@ func (lq *LicenseQuery) Clone() *LicenseQuery {
 		order:          append([]OrderFunc{}, lq.order...),
 		predicates:     append([]predicate.License{}, lq.predicates...),
 		withComponents: lq.withComponents.Clone(),
-		withUsages:     lq.withUsages.Clone(),
+		withUses:       lq.withUses.Clone(),
 		// clone intermediate query.
 		sql:  lq.sql.Clone(),
 		path: lq.path,
@@ -310,14 +310,14 @@ func (lq *LicenseQuery) WithComponents(opts ...func(*ComponentQuery)) *LicenseQu
 	return lq
 }
 
-// WithUsages tells the query-builder to eager-load the nodes that are connected to
-// the "usages" edge. The optional arguments are used to configure the query builder of the edge.
-func (lq *LicenseQuery) WithUsages(opts ...func(*LicenseUsageQuery)) *LicenseQuery {
-	query := &LicenseUsageQuery{config: lq.config}
+// WithUses tells the query-builder to eager-load the nodes that are connected to
+// the "uses" edge. The optional arguments are used to configure the query builder of the edge.
+func (lq *LicenseQuery) WithUses(opts ...func(*LicenseUseQuery)) *LicenseQuery {
+	query := &LicenseUseQuery{config: lq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	lq.withUsages = query
+	lq.withUses = query
 	return lq
 }
 
@@ -361,8 +361,8 @@ func (lq *LicenseQuery) GroupBy(field string, fields ...string) *LicenseGroupBy 
 //		Select(license.FieldSpdxID).
 //		Scan(ctx, &v)
 //
-func (lq *LicenseQuery) Select(field string, fields ...string) *LicenseSelect {
-	lq.fields = append([]string{field}, fields...)
+func (lq *LicenseQuery) Select(fields ...string) *LicenseSelect {
+	lq.fields = append(lq.fields, fields...)
 	return &LicenseSelect{LicenseQuery: lq}
 }
 
@@ -388,7 +388,7 @@ func (lq *LicenseQuery) sqlAll(ctx context.Context) ([]*License, error) {
 		_spec       = lq.querySpec()
 		loadedTypes = [2]bool{
 			lq.withComponents != nil,
-			lq.withUsages != nil,
+			lq.withUses != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -476,32 +476,32 @@ func (lq *LicenseQuery) sqlAll(ctx context.Context) ([]*License, error) {
 		}
 	}
 
-	if query := lq.withUsages; query != nil {
+	if query := lq.withUses; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[int]*License)
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Usages = []*LicenseUsage{}
+			nodes[i].Edges.Uses = []*LicenseUse{}
 		}
 		query.withFKs = true
-		query.Where(predicate.LicenseUsage(func(s *sql.Selector) {
-			s.Where(sql.InValues(license.UsagesColumn, fks...))
+		query.Where(predicate.LicenseUse(func(s *sql.Selector) {
+			s.Where(sql.InValues(license.UsesColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.license_usage_license
+			fk := n.license_use_license
 			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "license_usage_license" is nil for node %v`, n.ID)
+				return nil, fmt.Errorf(`foreign-key "license_use_license" is nil for node %v`, n.ID)
 			}
 			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "license_usage_license" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "license_use_license" returned %v for node %v`, *fk, n.ID)
 			}
-			node.Edges.Usages = append(node.Edges.Usages, n)
+			node.Edges.Uses = append(node.Edges.Uses, n)
 		}
 	}
 

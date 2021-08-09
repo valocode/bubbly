@@ -30,10 +30,14 @@ func main() {
 	var (
 		sqliteDB bool
 		skipAll  bool
+		skipCVE  bool
+		skipSPDX bool
 		client   *ent.Client
 		provider = store.ProviderPostgres
 	)
 	flag.BoolVar(&sqliteDB, "local", false, "Whether to use a local sqlite DB with no external dependencies. Default false, which uses an external postgres DB")
+	flag.BoolVar(&skipCVE, "skip-cve", false, "Skips cve data creation on startup")
+	flag.BoolVar(&skipSPDX, "skip-spdx", false, "Skips spdx data creation on startup")
 	flag.BoolVar(&skipAll, "skip-all", false, "Skips all data creation on startup")
 	flag.Parse()
 
@@ -49,12 +53,23 @@ func main() {
 	client = store.Client()
 
 	if !skipAll {
-		fmt.Println("Fetching CVEs from NVD... This will take a few seconds...")
-		if err := test.SaveCVEData(client); err != nil {
-			log.Fatal("loading CVEs: ", err)
+		if !skipCVE {
+			fmt.Println("Fetching CVEs from NVD... This will take a few seconds...")
+			if err := test.SaveCVEData(client); err != nil {
+				log.Fatal("loading CVEs: ", err)
+			}
+			fmt.Println("Done!")
+			fmt.Println("")
 		}
-		fmt.Println("Done!")
-		fmt.Println("")
+		if !skipSPDX {
+			fmt.Println("Fetching SPDX licenses from GitHub...")
+			if err := test.SaveSPDXData(client); err != nil {
+				log.Fatal("loading SPDX: ", err)
+			}
+			fmt.Println("Done!")
+			fmt.Println("")
+
+		}
 
 		fmt.Println("Creating dummy releases...")
 		if err := test.CreateDummyData(client); err != nil {

@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/ent/releasecheck"
 )
 
 type ReleaseSpec struct {
@@ -105,18 +104,6 @@ func (r *ReleaseSpec) Node(query bool) (*ent.ReleaseNode, error) {
 		SetOperation(ent.NodeOperationCreate)
 	if query {
 		release.SetOperation(ent.NodeOperationQuery)
-	}
-
-	if !query {
-		for checkType, check := range r.Checks {
-			for _, c := range check {
-				// tool
-				fmt.Println("tool check: " + c)
-			}
-			release.AddChecks(
-				ent.NewReleaseCheckNode().SetType(releasecheck.Type(checkType)),
-			)
-		}
 	}
 
 	//

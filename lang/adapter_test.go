@@ -13,10 +13,10 @@ func TestAdapter(t *testing.T) {
 	opts := AdapterOptions{
 		Filename: "testdata/adapters/gosec.json",
 	}
-	graph, err := adapt.Run(opts)
+	result, err := adapt.Run(opts)
 	require.NoError(t, err)
 
-	graph.Print()
+	t.Logf("result: %#v", result)
 }
 
 // func TestAdapter(t *testing.T) {

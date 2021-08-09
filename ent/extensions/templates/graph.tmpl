@@ -1,0 +1,32 @@
+{{/* gotype: entgo.io/ent/entc/gen.Graph */}}
+
+{{ define "graph/graph" }}
+{{- with extend $ "Package" "graph" -}}
+    {{ template "header" . }}
+{{ end }}
+{{ $pkg := base $.Config.Package }}
+
+type Graph struct {
+    {{- range $n := $.Nodes }}
+        {{ $n.Name }}Nodes []{{ $n.Name }}Node
+    {{- end }}
+}
+
+type Node struct {
+	Operation string
+	ID        *int
+}
+
+{{- range $n := $.Nodes }}
+    type  {{ $n.Name }}Node struct {
+        Node
+    {{- range $f := $n.Fields }}
+        {{ $f.StructField }} *{{ $f.Type }}
+    {{- end }}
+    {{- range $e := $n.Edges }}
+        {{ $e.StructField }} *{{ $e.Type.Name }}Node
+    {{- end }}
+    }
+{{- end }}
+
+{{ end }}

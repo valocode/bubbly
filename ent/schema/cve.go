@@ -59,7 +59,8 @@ func (CVE) Fields() []ent.Field {
 
 func (CVE) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("found", Vulnerability.Type).Ref("cve"),
+		edge.From("components", Component.Type).Ref("cves"),
+		edge.From("vulnerabilities", Vulnerability.Type).Ref("cve"),
 		edge.From("rules", CVERule.Type).Ref("cve"),
 	}
 }
