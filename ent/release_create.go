@@ -11,13 +11,10 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/cvescan"
+	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/gitcommit"
-	"github.com/valocode/bubbly/ent/licensescan"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasecheck"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/testrun"
 )
@@ -107,6 +104,21 @@ func (rc *ReleaseCreate) SetCommit(g *GitCommit) *ReleaseCreate {
 	return rc.SetCommitID(g.ID)
 }
 
+// AddLogIDs adds the "log" edge to the ReleaseEntry entity by IDs.
+func (rc *ReleaseCreate) AddLogIDs(ids ...int) *ReleaseCreate {
+	rc.mutation.AddLogIDs(ids...)
+	return rc
+}
+
+// AddLog adds the "log" edges to the ReleaseEntry entity.
+func (rc *ReleaseCreate) AddLog(r ...*ReleaseEntry) *ReleaseCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return rc.AddLogIDs(ids...)
+}
+
 // AddArtifactIDs adds the "artifacts" edge to the Artifact entity by IDs.
 func (rc *ReleaseCreate) AddArtifactIDs(ids ...int) *ReleaseCreate {
 	rc.mutation.AddArtifactIDs(ids...)
@@ -122,34 +134,19 @@ func (rc *ReleaseCreate) AddArtifacts(a ...*Artifact) *ReleaseCreate {
 	return rc.AddArtifactIDs(ids...)
 }
 
-// AddCheckIDs adds the "checks" edge to the ReleaseCheck entity by IDs.
-func (rc *ReleaseCreate) AddCheckIDs(ids ...int) *ReleaseCreate {
-	rc.mutation.AddCheckIDs(ids...)
+// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+func (rc *ReleaseCreate) AddComponentIDs(ids ...int) *ReleaseCreate {
+	rc.mutation.AddComponentIDs(ids...)
 	return rc
 }
 
-// AddChecks adds the "checks" edges to the ReleaseCheck entity.
-func (rc *ReleaseCreate) AddChecks(r ...*ReleaseCheck) *ReleaseCreate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddComponents adds the "components" edges to the ComponentUse entity.
+func (rc *ReleaseCreate) AddComponents(c ...*ComponentUse) *ReleaseCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return rc.AddCheckIDs(ids...)
-}
-
-// AddLogIDs adds the "log" edge to the ReleaseEntry entity by IDs.
-func (rc *ReleaseCreate) AddLogIDs(ids ...int) *ReleaseCreate {
-	rc.mutation.AddLogIDs(ids...)
-	return rc
-}
-
-// AddLog adds the "log" edges to the ReleaseEntry entity.
-func (rc *ReleaseCreate) AddLog(r ...*ReleaseEntry) *ReleaseCreate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return rc.AddLogIDs(ids...)
+	return rc.AddComponentIDs(ids...)
 }
 
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by IDs.
@@ -167,36 +164,6 @@ func (rc *ReleaseCreate) AddCodeScans(c ...*CodeScan) *ReleaseCreate {
 	return rc.AddCodeScanIDs(ids...)
 }
 
-// AddCveScanIDs adds the "cve_scans" edge to the CVEScan entity by IDs.
-func (rc *ReleaseCreate) AddCveScanIDs(ids ...int) *ReleaseCreate {
-	rc.mutation.AddCveScanIDs(ids...)
-	return rc
-}
-
-// AddCveScans adds the "cve_scans" edges to the CVEScan entity.
-func (rc *ReleaseCreate) AddCveScans(c ...*CVEScan) *ReleaseCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return rc.AddCveScanIDs(ids...)
-}
-
-// AddLicenseScanIDs adds the "license_scans" edge to the LicenseScan entity by IDs.
-func (rc *ReleaseCreate) AddLicenseScanIDs(ids ...int) *ReleaseCreate {
-	rc.mutation.AddLicenseScanIDs(ids...)
-	return rc
-}
-
-// AddLicenseScans adds the "license_scans" edges to the LicenseScan entity.
-func (rc *ReleaseCreate) AddLicenseScans(l ...*LicenseScan) *ReleaseCreate {
-	ids := make([]int, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
-	}
-	return rc.AddLicenseScanIDs(ids...)
-}
-
 // AddTestRunIDs adds the "test_runs" edge to the TestRun entity by IDs.
 func (rc *ReleaseCreate) AddTestRunIDs(ids ...int) *ReleaseCreate {
 	rc.mutation.AddTestRunIDs(ids...)
@@ -210,21 +177,6 @@ func (rc *ReleaseCreate) AddTestRuns(t ...*TestRun) *ReleaseCreate {
 		ids[i] = t[i].ID
 	}
 	return rc.AddTestRunIDs(ids...)
-}
-
-// AddComponentIDs adds the "components" edge to the Component entity by IDs.
-func (rc *ReleaseCreate) AddComponentIDs(ids ...int) *ReleaseCreate {
-	rc.mutation.AddComponentIDs(ids...)
-	return rc
-}
-
-// AddComponents adds the "components" edges to the Component entity.
-func (rc *ReleaseCreate) AddComponents(c ...*Component) *ReleaseCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return rc.AddComponentIDs(ids...)
 }
 
 // Mutation returns the ReleaseMutation object of the builder.
@@ -262,6 +214,9 @@ func (rc *ReleaseCreate) Save(ctx context.Context) (*Release, error) {
 			return node, err
 		})
 		for i := len(rc.hooks) - 1; i >= 0; i-- {
+			if rc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, rc.mutation); err != nil {
@@ -280,6 +235,19 @@ func (rc *ReleaseCreate) SaveX(ctx context.Context) *Release {
 	return v
 }
 
+// Exec executes the query.
+func (rc *ReleaseCreate) Exec(ctx context.Context) error {
+	_, err := rc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rc *ReleaseCreate) ExecX(ctx context.Context) {
+	if err := rc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // defaults sets the default values of the builder before save.
 func (rc *ReleaseCreate) defaults() {
 	if _, ok := rc.mutation.Status(); !ok {
@@ -291,27 +259,27 @@ func (rc *ReleaseCreate) defaults() {
 // check runs all checks and user-defined validators on the builder.
 func (rc *ReleaseCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New("ent: missing required field \"name\"")}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
 	}
 	if v, ok := rc.mutation.Name(); ok {
 		if err := release.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
 		}
 	}
 	if _, ok := rc.mutation.Version(); !ok {
-		return &ValidationError{Name: "version", err: errors.New("ent: missing required field \"version\"")}
+		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "version"`)}
 	}
 	if v, ok := rc.mutation.Version(); ok {
 		if err := release.VersionValidator(v); err != nil {
-			return &ValidationError{Name: "version", err: fmt.Errorf("ent: validator failed for field \"version\": %w", err)}
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "version": %w`, err)}
 		}
 	}
 	if _, ok := rc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New("ent: missing required field \"status\"")}
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "status"`)}
 	}
 	if v, ok := rc.mutation.Status(); ok {
 		if err := release.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "status": %w`, err)}
 		}
 	}
 	if _, ok := rc.mutation.ProjectID(); !ok {
@@ -449,6 +417,25 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 		_node.git_commit_release = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := rc.mutation.LogIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LogTable,
+			Columns: []string{release.LogColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := rc.mutation.ArtifactsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -468,36 +455,17 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.ChecksIDs(); len(nodes) > 0 {
+	if nodes := rc.mutation.ComponentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   release.ChecksTable,
-			Columns: []string{release.ChecksColumn},
+			Table:   release.ComponentsTable,
+			Columns: []string{release.ComponentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releasecheck.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rc.mutation.LogIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LogTable,
-			Columns: []string{release.LogColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
@@ -525,44 +493,6 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.CveScansIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.CveScansTable,
-			Columns: []string{release.CveScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rc.mutation.LicenseScansIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LicenseScansTable,
-			Columns: []string{release.LicenseScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := rc.mutation.TestRunsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -574,25 +504,6 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: testrun.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rc.mutation.ComponentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   release.ComponentsTable,
-			Columns: release.ComponentsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: component.FieldID,
 				},
 			},
 		}
@@ -633,8 +544,9 @@ func (rcb *ReleaseCreateBulk) Save(ctx context.Context) ([]*Release, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, rcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, rcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, rcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -645,8 +557,10 @@ func (rcb *ReleaseCreateBulk) Save(ctx context.Context) ([]*Release, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -670,4 +584,17 @@ func (rcb *ReleaseCreateBulk) SaveX(ctx context.Context) []*Release {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (rcb *ReleaseCreateBulk) Exec(ctx context.Context) error {
+	_, err := rcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rcb *ReleaseCreateBulk) ExecX(ctx context.Context) {
+	if err := rcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

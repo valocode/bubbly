@@ -40,25 +40,19 @@ type ReleaseEdges struct {
 	Project *Project `json:"project,omitempty"`
 	// Commit holds the value of the commit edge.
 	Commit *GitCommit `json:"commit,omitempty"`
-	// Artifacts holds the value of the artifacts edge.
-	Artifacts []*Artifact `json:"artifacts,omitempty"`
-	// Checks holds the value of the checks edge.
-	Checks []*ReleaseCheck `json:"checks,omitempty"`
 	// Log holds the value of the log edge.
 	Log []*ReleaseEntry `json:"log,omitempty"`
+	// Artifacts holds the value of the artifacts edge.
+	Artifacts []*Artifact `json:"artifacts,omitempty"`
+	// Components holds the value of the components edge.
+	Components []*ComponentUse `json:"components,omitempty"`
 	// CodeScans holds the value of the code_scans edge.
 	CodeScans []*CodeScan `json:"code_scans,omitempty"`
-	// CveScans holds the value of the cve_scans edge.
-	CveScans []*CVEScan `json:"cve_scans,omitempty"`
-	// LicenseScans holds the value of the license_scans edge.
-	LicenseScans []*LicenseScan `json:"license_scans,omitempty"`
 	// TestRuns holds the value of the test_runs edge.
 	TestRuns []*TestRun `json:"test_runs,omitempty"`
-	// Components holds the value of the components edge.
-	Components []*Component `json:"components,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [12]bool
+	loadedTypes [9]bool
 }
 
 // SubreleasesOrErr returns the Subreleases value or an error if the edge
@@ -107,31 +101,31 @@ func (e ReleaseEdges) CommitOrErr() (*GitCommit, error) {
 	return nil, &NotLoadedError{edge: "commit"}
 }
 
+// LogOrErr returns the Log value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReleaseEdges) LogOrErr() ([]*ReleaseEntry, error) {
+	if e.loadedTypes[4] {
+		return e.Log, nil
+	}
+	return nil, &NotLoadedError{edge: "log"}
+}
+
 // ArtifactsOrErr returns the Artifacts value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) ArtifactsOrErr() ([]*Artifact, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.Artifacts, nil
 	}
 	return nil, &NotLoadedError{edge: "artifacts"}
 }
 
-// ChecksOrErr returns the Checks value or an error if the edge
+// ComponentsOrErr returns the Components value or an error if the edge
 // was not loaded in eager-loading.
-func (e ReleaseEdges) ChecksOrErr() ([]*ReleaseCheck, error) {
-	if e.loadedTypes[5] {
-		return e.Checks, nil
-	}
-	return nil, &NotLoadedError{edge: "checks"}
-}
-
-// LogOrErr returns the Log value or an error if the edge
-// was not loaded in eager-loading.
-func (e ReleaseEdges) LogOrErr() ([]*ReleaseEntry, error) {
+func (e ReleaseEdges) ComponentsOrErr() ([]*ComponentUse, error) {
 	if e.loadedTypes[6] {
-		return e.Log, nil
+		return e.Components, nil
 	}
-	return nil, &NotLoadedError{edge: "log"}
+	return nil, &NotLoadedError{edge: "components"}
 }
 
 // CodeScansOrErr returns the CodeScans value or an error if the edge
@@ -143,40 +137,13 @@ func (e ReleaseEdges) CodeScansOrErr() ([]*CodeScan, error) {
 	return nil, &NotLoadedError{edge: "code_scans"}
 }
 
-// CveScansOrErr returns the CveScans value or an error if the edge
-// was not loaded in eager-loading.
-func (e ReleaseEdges) CveScansOrErr() ([]*CVEScan, error) {
-	if e.loadedTypes[8] {
-		return e.CveScans, nil
-	}
-	return nil, &NotLoadedError{edge: "cve_scans"}
-}
-
-// LicenseScansOrErr returns the LicenseScans value or an error if the edge
-// was not loaded in eager-loading.
-func (e ReleaseEdges) LicenseScansOrErr() ([]*LicenseScan, error) {
-	if e.loadedTypes[9] {
-		return e.LicenseScans, nil
-	}
-	return nil, &NotLoadedError{edge: "license_scans"}
-}
-
 // TestRunsOrErr returns the TestRuns value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) TestRunsOrErr() ([]*TestRun, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[8] {
 		return e.TestRuns, nil
 	}
 	return nil, &NotLoadedError{edge: "test_runs"}
-}
-
-// ComponentsOrErr returns the Components value or an error if the edge
-// was not loaded in eager-loading.
-func (e ReleaseEdges) ComponentsOrErr() ([]*Component, error) {
-	if e.loadedTypes[11] {
-		return e.Components, nil
-	}
-	return nil, &NotLoadedError{edge: "components"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -270,19 +237,19 @@ func (r *Release) QueryCommit() *GitCommitQuery {
 	return (&ReleaseClient{config: r.config}).QueryCommit(r)
 }
 
+// QueryLog queries the "log" edge of the Release entity.
+func (r *Release) QueryLog() *ReleaseEntryQuery {
+	return (&ReleaseClient{config: r.config}).QueryLog(r)
+}
+
 // QueryArtifacts queries the "artifacts" edge of the Release entity.
 func (r *Release) QueryArtifacts() *ArtifactQuery {
 	return (&ReleaseClient{config: r.config}).QueryArtifacts(r)
 }
 
-// QueryChecks queries the "checks" edge of the Release entity.
-func (r *Release) QueryChecks() *ReleaseCheckQuery {
-	return (&ReleaseClient{config: r.config}).QueryChecks(r)
-}
-
-// QueryLog queries the "log" edge of the Release entity.
-func (r *Release) QueryLog() *ReleaseEntryQuery {
-	return (&ReleaseClient{config: r.config}).QueryLog(r)
+// QueryComponents queries the "components" edge of the Release entity.
+func (r *Release) QueryComponents() *ComponentUseQuery {
+	return (&ReleaseClient{config: r.config}).QueryComponents(r)
 }
 
 // QueryCodeScans queries the "code_scans" edge of the Release entity.
@@ -290,24 +257,9 @@ func (r *Release) QueryCodeScans() *CodeScanQuery {
 	return (&ReleaseClient{config: r.config}).QueryCodeScans(r)
 }
 
-// QueryCveScans queries the "cve_scans" edge of the Release entity.
-func (r *Release) QueryCveScans() *CVEScanQuery {
-	return (&ReleaseClient{config: r.config}).QueryCveScans(r)
-}
-
-// QueryLicenseScans queries the "license_scans" edge of the Release entity.
-func (r *Release) QueryLicenseScans() *LicenseScanQuery {
-	return (&ReleaseClient{config: r.config}).QueryLicenseScans(r)
-}
-
 // QueryTestRuns queries the "test_runs" edge of the Release entity.
 func (r *Release) QueryTestRuns() *TestRunQuery {
 	return (&ReleaseClient{config: r.config}).QueryTestRuns(r)
-}
-
-// QueryComponents queries the "components" edge of the Release entity.
-func (r *Release) QueryComponents() *ComponentQuery {
-	return (&ReleaseClient{config: r.config}).QueryComponents(r)
 }
 
 // Update returns a builder for updating this Release.

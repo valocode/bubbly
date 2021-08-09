@@ -30,13 +30,15 @@ type CodeScan struct {
 type CodeScanEdges struct {
 	// Release holds the value of the release edge.
 	Release *Release `json:"release,omitempty"`
-	// Issues holds the value of the issues edge.
-	Issues []*CodeIssue `json:"issues,omitempty"`
 	// Entry holds the value of the entry edge.
 	Entry *ReleaseEntry `json:"entry,omitempty"`
+	// Issues holds the value of the issues edge.
+	Issues []*CodeIssue `json:"issues,omitempty"`
+	// Components holds the value of the components edge.
+	Components []*ComponentUse `json:"components,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // ReleaseOrErr returns the Release value or an error if the edge
@@ -53,19 +55,10 @@ func (e CodeScanEdges) ReleaseOrErr() (*Release, error) {
 	return nil, &NotLoadedError{edge: "release"}
 }
 
-// IssuesOrErr returns the Issues value or an error if the edge
-// was not loaded in eager-loading.
-func (e CodeScanEdges) IssuesOrErr() ([]*CodeIssue, error) {
-	if e.loadedTypes[1] {
-		return e.Issues, nil
-	}
-	return nil, &NotLoadedError{edge: "issues"}
-}
-
 // EntryOrErr returns the Entry value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e CodeScanEdges) EntryOrErr() (*ReleaseEntry, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		if e.Entry == nil {
 			// The edge entry was loaded in eager-loading,
 			// but was not found.
@@ -74,6 +67,24 @@ func (e CodeScanEdges) EntryOrErr() (*ReleaseEntry, error) {
 		return e.Entry, nil
 	}
 	return nil, &NotLoadedError{edge: "entry"}
+}
+
+// IssuesOrErr returns the Issues value or an error if the edge
+// was not loaded in eager-loading.
+func (e CodeScanEdges) IssuesOrErr() ([]*CodeIssue, error) {
+	if e.loadedTypes[2] {
+		return e.Issues, nil
+	}
+	return nil, &NotLoadedError{edge: "issues"}
+}
+
+// ComponentsOrErr returns the Components value or an error if the edge
+// was not loaded in eager-loading.
+func (e CodeScanEdges) ComponentsOrErr() ([]*ComponentUse, error) {
+	if e.loadedTypes[3] {
+		return e.Components, nil
+	}
+	return nil, &NotLoadedError{edge: "components"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -140,14 +151,19 @@ func (cs *CodeScan) QueryRelease() *ReleaseQuery {
 	return (&CodeScanClient{config: cs.config}).QueryRelease(cs)
 }
 
+// QueryEntry queries the "entry" edge of the CodeScan entity.
+func (cs *CodeScan) QueryEntry() *ReleaseEntryQuery {
+	return (&CodeScanClient{config: cs.config}).QueryEntry(cs)
+}
+
 // QueryIssues queries the "issues" edge of the CodeScan entity.
 func (cs *CodeScan) QueryIssues() *CodeIssueQuery {
 	return (&CodeScanClient{config: cs.config}).QueryIssues(cs)
 }
 
-// QueryEntry queries the "entry" edge of the CodeScan entity.
-func (cs *CodeScan) QueryEntry() *ReleaseEntryQuery {
-	return (&CodeScanClient{config: cs.config}).QueryEntry(cs)
+// QueryComponents queries the "components" edge of the CodeScan entity.
+func (cs *CodeScan) QueryComponents() *ComponentUseQuery {
+	return (&CodeScanClient{config: cs.config}).QueryComponents(cs)
 }
 
 // Update returns a builder for updating this CodeScan.

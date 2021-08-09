@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
+	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
@@ -24,9 +25,9 @@ type CodeScanUpdate struct {
 	mutation *CodeScanMutation
 }
 
-// Where adds a new predicate for the CodeScanUpdate builder.
+// Where appends a list predicates to the CodeScanUpdate builder.
 func (csu *CodeScanUpdate) Where(ps ...predicate.CodeScan) *CodeScanUpdate {
-	csu.mutation.predicates = append(csu.mutation.predicates, ps...)
+	csu.mutation.Where(ps...)
 	return csu
 }
 
@@ -39,21 +40,6 @@ func (csu *CodeScanUpdate) SetReleaseID(id int) *CodeScanUpdate {
 // SetRelease sets the "release" edge to the Release entity.
 func (csu *CodeScanUpdate) SetRelease(r *Release) *CodeScanUpdate {
 	return csu.SetReleaseID(r.ID)
-}
-
-// AddIssueIDs adds the "issues" edge to the CodeIssue entity by IDs.
-func (csu *CodeScanUpdate) AddIssueIDs(ids ...int) *CodeScanUpdate {
-	csu.mutation.AddIssueIDs(ids...)
-	return csu
-}
-
-// AddIssues adds the "issues" edges to the CodeIssue entity.
-func (csu *CodeScanUpdate) AddIssues(c ...*CodeIssue) *CodeScanUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return csu.AddIssueIDs(ids...)
 }
 
 // SetEntryID sets the "entry" edge to the ReleaseEntry entity by ID.
@@ -75,6 +61,36 @@ func (csu *CodeScanUpdate) SetEntry(r *ReleaseEntry) *CodeScanUpdate {
 	return csu.SetEntryID(r.ID)
 }
 
+// AddIssueIDs adds the "issues" edge to the CodeIssue entity by IDs.
+func (csu *CodeScanUpdate) AddIssueIDs(ids ...int) *CodeScanUpdate {
+	csu.mutation.AddIssueIDs(ids...)
+	return csu
+}
+
+// AddIssues adds the "issues" edges to the CodeIssue entity.
+func (csu *CodeScanUpdate) AddIssues(c ...*CodeIssue) *CodeScanUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return csu.AddIssueIDs(ids...)
+}
+
+// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+func (csu *CodeScanUpdate) AddComponentIDs(ids ...int) *CodeScanUpdate {
+	csu.mutation.AddComponentIDs(ids...)
+	return csu
+}
+
+// AddComponents adds the "components" edges to the ComponentUse entity.
+func (csu *CodeScanUpdate) AddComponents(c ...*ComponentUse) *CodeScanUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return csu.AddComponentIDs(ids...)
+}
+
 // Mutation returns the CodeScanMutation object of the builder.
 func (csu *CodeScanUpdate) Mutation() *CodeScanMutation {
 	return csu.mutation
@@ -83,6 +99,12 @@ func (csu *CodeScanUpdate) Mutation() *CodeScanMutation {
 // ClearRelease clears the "release" edge to the Release entity.
 func (csu *CodeScanUpdate) ClearRelease() *CodeScanUpdate {
 	csu.mutation.ClearRelease()
+	return csu
+}
+
+// ClearEntry clears the "entry" edge to the ReleaseEntry entity.
+func (csu *CodeScanUpdate) ClearEntry() *CodeScanUpdate {
+	csu.mutation.ClearEntry()
 	return csu
 }
 
@@ -107,10 +129,25 @@ func (csu *CodeScanUpdate) RemoveIssues(c ...*CodeIssue) *CodeScanUpdate {
 	return csu.RemoveIssueIDs(ids...)
 }
 
-// ClearEntry clears the "entry" edge to the ReleaseEntry entity.
-func (csu *CodeScanUpdate) ClearEntry() *CodeScanUpdate {
-	csu.mutation.ClearEntry()
+// ClearComponents clears all "components" edges to the ComponentUse entity.
+func (csu *CodeScanUpdate) ClearComponents() *CodeScanUpdate {
+	csu.mutation.ClearComponents()
 	return csu
+}
+
+// RemoveComponentIDs removes the "components" edge to ComponentUse entities by IDs.
+func (csu *CodeScanUpdate) RemoveComponentIDs(ids ...int) *CodeScanUpdate {
+	csu.mutation.RemoveComponentIDs(ids...)
+	return csu
+}
+
+// RemoveComponents removes "components" edges to ComponentUse entities.
+func (csu *CodeScanUpdate) RemoveComponents(c ...*ComponentUse) *CodeScanUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return csu.RemoveComponentIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -139,6 +176,9 @@ func (csu *CodeScanUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(csu.hooks) - 1; i >= 0; i-- {
+			if csu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = csu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, csu.mutation); err != nil {
@@ -231,6 +271,41 @@ func (csu *CodeScanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if csu.mutation.EntryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   codescan.EntryTable,
+			Columns: []string{codescan.EntryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := csu.mutation.EntryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   codescan.EntryTable,
+			Columns: []string{codescan.EntryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if csu.mutation.IssuesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -285,33 +360,52 @@ func (csu *CodeScanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if csu.mutation.EntryCleared() {
+	if csu.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   codescan.EntryTable,
-			Columns: []string{codescan.EntryColumn},
+			Table:   codescan.ComponentsTable,
+			Columns: codescan.ComponentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := csu.mutation.EntryIDs(); len(nodes) > 0 {
+	if nodes := csu.mutation.RemovedComponentsIDs(); len(nodes) > 0 && !csu.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   codescan.EntryTable,
-			Columns: []string{codescan.EntryColumn},
+			Table:   codescan.ComponentsTable,
+			Columns: codescan.ComponentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
+					Column: componentuse.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := csu.mutation.ComponentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   codescan.ComponentsTable,
+			Columns: codescan.ComponentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
@@ -350,21 +444,6 @@ func (csuo *CodeScanUpdateOne) SetRelease(r *Release) *CodeScanUpdateOne {
 	return csuo.SetReleaseID(r.ID)
 }
 
-// AddIssueIDs adds the "issues" edge to the CodeIssue entity by IDs.
-func (csuo *CodeScanUpdateOne) AddIssueIDs(ids ...int) *CodeScanUpdateOne {
-	csuo.mutation.AddIssueIDs(ids...)
-	return csuo
-}
-
-// AddIssues adds the "issues" edges to the CodeIssue entity.
-func (csuo *CodeScanUpdateOne) AddIssues(c ...*CodeIssue) *CodeScanUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return csuo.AddIssueIDs(ids...)
-}
-
 // SetEntryID sets the "entry" edge to the ReleaseEntry entity by ID.
 func (csuo *CodeScanUpdateOne) SetEntryID(id int) *CodeScanUpdateOne {
 	csuo.mutation.SetEntryID(id)
@@ -384,6 +463,36 @@ func (csuo *CodeScanUpdateOne) SetEntry(r *ReleaseEntry) *CodeScanUpdateOne {
 	return csuo.SetEntryID(r.ID)
 }
 
+// AddIssueIDs adds the "issues" edge to the CodeIssue entity by IDs.
+func (csuo *CodeScanUpdateOne) AddIssueIDs(ids ...int) *CodeScanUpdateOne {
+	csuo.mutation.AddIssueIDs(ids...)
+	return csuo
+}
+
+// AddIssues adds the "issues" edges to the CodeIssue entity.
+func (csuo *CodeScanUpdateOne) AddIssues(c ...*CodeIssue) *CodeScanUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return csuo.AddIssueIDs(ids...)
+}
+
+// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+func (csuo *CodeScanUpdateOne) AddComponentIDs(ids ...int) *CodeScanUpdateOne {
+	csuo.mutation.AddComponentIDs(ids...)
+	return csuo
+}
+
+// AddComponents adds the "components" edges to the ComponentUse entity.
+func (csuo *CodeScanUpdateOne) AddComponents(c ...*ComponentUse) *CodeScanUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return csuo.AddComponentIDs(ids...)
+}
+
 // Mutation returns the CodeScanMutation object of the builder.
 func (csuo *CodeScanUpdateOne) Mutation() *CodeScanMutation {
 	return csuo.mutation
@@ -392,6 +501,12 @@ func (csuo *CodeScanUpdateOne) Mutation() *CodeScanMutation {
 // ClearRelease clears the "release" edge to the Release entity.
 func (csuo *CodeScanUpdateOne) ClearRelease() *CodeScanUpdateOne {
 	csuo.mutation.ClearRelease()
+	return csuo
+}
+
+// ClearEntry clears the "entry" edge to the ReleaseEntry entity.
+func (csuo *CodeScanUpdateOne) ClearEntry() *CodeScanUpdateOne {
+	csuo.mutation.ClearEntry()
 	return csuo
 }
 
@@ -416,10 +531,25 @@ func (csuo *CodeScanUpdateOne) RemoveIssues(c ...*CodeIssue) *CodeScanUpdateOne 
 	return csuo.RemoveIssueIDs(ids...)
 }
 
-// ClearEntry clears the "entry" edge to the ReleaseEntry entity.
-func (csuo *CodeScanUpdateOne) ClearEntry() *CodeScanUpdateOne {
-	csuo.mutation.ClearEntry()
+// ClearComponents clears all "components" edges to the ComponentUse entity.
+func (csuo *CodeScanUpdateOne) ClearComponents() *CodeScanUpdateOne {
+	csuo.mutation.ClearComponents()
 	return csuo
+}
+
+// RemoveComponentIDs removes the "components" edge to ComponentUse entities by IDs.
+func (csuo *CodeScanUpdateOne) RemoveComponentIDs(ids ...int) *CodeScanUpdateOne {
+	csuo.mutation.RemoveComponentIDs(ids...)
+	return csuo
+}
+
+// RemoveComponents removes "components" edges to ComponentUse entities.
+func (csuo *CodeScanUpdateOne) RemoveComponents(c ...*ComponentUse) *CodeScanUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return csuo.RemoveComponentIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -455,6 +585,9 @@ func (csuo *CodeScanUpdateOne) Save(ctx context.Context) (*CodeScan, error) {
 			return node, err
 		})
 		for i := len(csuo.hooks) - 1; i >= 0; i-- {
+			if csuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = csuo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, csuo.mutation); err != nil {
@@ -564,6 +697,41 @@ func (csuo *CodeScanUpdateOne) sqlSave(ctx context.Context) (_node *CodeScan, er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if csuo.mutation.EntryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   codescan.EntryTable,
+			Columns: []string{codescan.EntryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := csuo.mutation.EntryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   codescan.EntryTable,
+			Columns: []string{codescan.EntryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if csuo.mutation.IssuesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -618,33 +786,52 @@ func (csuo *CodeScanUpdateOne) sqlSave(ctx context.Context) (_node *CodeScan, er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if csuo.mutation.EntryCleared() {
+	if csuo.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   codescan.EntryTable,
-			Columns: []string{codescan.EntryColumn},
+			Table:   codescan.ComponentsTable,
+			Columns: codescan.ComponentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := csuo.mutation.EntryIDs(); len(nodes) > 0 {
+	if nodes := csuo.mutation.RemovedComponentsIDs(); len(nodes) > 0 && !csuo.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   codescan.EntryTable,
-			Columns: []string{codescan.EntryColumn},
+			Table:   codescan.ComponentsTable,
+			Columns: codescan.ComponentsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
+					Column: componentuse.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := csuo.mutation.ComponentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   codescan.ComponentsTable,
+			Columns: codescan.ComponentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: componentuse.FieldID,
 				},
 			},
 		}

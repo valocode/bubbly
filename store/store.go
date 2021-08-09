@@ -144,6 +144,33 @@ func (s *Store) Query(query string) (json.RawMessage, error) {
 
 }
 
+// func (s *Store) SaveAdapterResult(result *adapter.Result) error {
+// 	if result.ReleaseID == nil {
+// 		return errors.New("must provide release id")
+// 	}
+// 	release, err := s.client.Release.Get(s.ctx, *result.ReleaseID)
+// 	if err != nil {
+// 		return fmt.Errorf("error getting release: %w", err)
+// 	}
+
+// 	if result.CodeScan != nil {
+// 		rScan := result.CodeScan
+// 		scan, err := s.client.CodeScan.Create().
+// 			SetTool(*rScan.Tool).
+// 			SetRelease(release).
+// 			Save(s.ctx)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		for _, rIssue := range rScan.Issues {
+// 			s.client.CodeIssue.Create().
+// 				SetScan(scan).
+// 				SetRuleID(*rIssue.RuleID)
+// 		}
+// 	}
+
+// }
+
 func (s *Store) Save(graph *ent.DataGraph) error {
 	for _, r := range graph.RootNodes {
 		fmt.Printf("root: %#v\n", r.Name)

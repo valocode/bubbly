@@ -362,8 +362,8 @@ func (gcq *GitCommitQuery) GroupBy(field string, fields ...string) *GitCommitGro
 //		Select(gitcommit.FieldHash).
 //		Scan(ctx, &v)
 //
-func (gcq *GitCommitQuery) Select(field string, fields ...string) *GitCommitSelect {
-	gcq.fields = append([]string{field}, fields...)
+func (gcq *GitCommitQuery) Select(fields ...string) *GitCommitSelect {
+	gcq.fields = append(gcq.fields, fields...)
 	return &GitCommitSelect{GitCommitQuery: gcq}
 }
 

@@ -107,6 +107,9 @@ func (trc *TestRunCreate) Save(ctx context.Context) (*TestRun, error) {
 			return node, err
 		})
 		for i := len(trc.hooks) - 1; i >= 0; i-- {
+			if trc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = trc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, trc.mutation); err != nil {
@@ -125,14 +128,27 @@ func (trc *TestRunCreate) SaveX(ctx context.Context) *TestRun {
 	return v
 }
 
+// Exec executes the query.
+func (trc *TestRunCreate) Exec(ctx context.Context) error {
+	_, err := trc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (trc *TestRunCreate) ExecX(ctx context.Context) {
+	if err := trc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (trc *TestRunCreate) check() error {
 	if _, ok := trc.mutation.Tool(); !ok {
-		return &ValidationError{Name: "tool", err: errors.New("ent: missing required field \"tool\"")}
+		return &ValidationError{Name: "tool", err: errors.New(`ent: missing required field "tool"`)}
 	}
 	if v, ok := trc.mutation.Tool(); ok {
 		if err := testrun.ToolValidator(v); err != nil {
-			return &ValidationError{Name: "tool", err: fmt.Errorf("ent: validator failed for field \"tool\": %w", err)}
+			return &ValidationError{Name: "tool", err: fmt.Errorf(`ent: validator failed for field "tool": %w`, err)}
 		}
 	}
 	if _, ok := trc.mutation.ReleaseID(); !ok {
@@ -263,8 +279,9 @@ func (trcb *TestRunCreateBulk) Save(ctx context.Context) ([]*TestRun, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, trcb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, trcb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, trcb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -275,8 +292,10 @@ func (trcb *TestRunCreateBulk) Save(ctx context.Context) ([]*TestRun, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -300,4 +319,17 @@ func (trcb *TestRunCreateBulk) SaveX(ctx context.Context) []*TestRun {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (trcb *TestRunCreateBulk) Exec(ctx context.Context) error {
+	_, err := trcb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (trcb *TestRunCreateBulk) ExecX(ctx context.Context) {
+	if err := trcb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

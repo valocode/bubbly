@@ -41,14 +41,19 @@ func (Release) Edges() []ent.Edge {
 		edge.To("dependencies", Release.Type).From("subreleases"),
 		edge.To("project", Project.Type).Unique().Required(),
 		edge.From("commit", GitCommit.Type).Ref("release").Unique().Required(),
-		edge.From("artifacts", Artifact.Type).Ref("release"),
-		edge.From("checks", ReleaseCheck.Type).Ref("release"),
 		edge.From("log", ReleaseEntry.Type).Ref("release"),
+		edge.From("artifacts", Artifact.Type).Ref("release"),
+		edge.From("components", ComponentUse.Type).Ref("release"),
+		// edge.From("vulnerabilities", Vulnerability.Type).Ref("release"),
+		// edge.From("licenses", LicenseUse.Type).Ref("release"),
 		edge.From("code_scans", CodeScan.Type).Ref("release"),
-		edge.From("cve_scans", CVEScan.Type).Ref("release"),
-		edge.From("license_scans", LicenseScan.Type).Ref("release"),
 		edge.From("test_runs", TestRun.Type).Ref("release"),
-		edge.From("components", Component.Type).Ref("release"),
+		// edge.From("license_scans", LicenseScan.Type).Ref("release"),
+		// edge.From("cve_scans", CVEScan.Type).Ref("release"),
+		// TODO: component_scan
+		// edge.From("checks", ReleaseCheck.Type).Ref("release"),
+		// edge.From("component_scan", ComponentScan.Type).Ref("release"),
+		// edge.From("components", Component.Type).Ref("release"),
 		// edge.From("licenses", LicenseUsage.Type).Ref("release"),
 		// edge.From("vulnerabilities", Vulnerability.Type).Ref("release"),
 	}
@@ -56,8 +61,7 @@ func (Release) Edges() []ent.Edge {
 
 func (Release) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("name", "version").
-			Edges("project", "commit").
+		index.Edges("commit").
 			Unique(),
 	}
 }

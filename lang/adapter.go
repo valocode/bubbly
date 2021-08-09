@@ -5,9 +5,10 @@ import (
 	"os"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/ext/dynblock"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsimple"
-	"github.com/valocode/bubbly/ent"
+	"github.com/valocode/bubbly/ent/adapter"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -47,6 +48,7 @@ type (
 	}
 	adapterOp interface {
 		Run(adapter *Adapter, opts AdapterOptions) (cty.Value, error)
+		Decode(body hcl.Body) error
 	}
 )
 
@@ -74,20 +76,14 @@ func DecodeAdapter(filename string, src []byte) (*Adapter, error) {
 	return &adapter, nil
 }
 
-func (a *Adapter) Run(opts AdapterOptions) (*ent.DataGraph, error) {
+func (a *Adapter) Run(opts AdapterOptions) (*adapter.Result, error) {
 	var (
 		eCtx = NewEvalContext(nil)
 		op   adapterOp
 	)
-	switch AdapterSource(a.Type) {
-	case JSONSource:
-		op = &jsonOp{}
-		diags := gohcl.DecodeBody(a.Operation.Body, eCtx, op)
-		if diags.HasErrors() {
-			return nil, fmt.Errorf("error decoding operation for adapter %s: %s", a.Name, diags.Error())
-		}
-	default:
-		return nil, fmt.Errorf("unsupported adapter type \"%s\"", a.Type)
+	op, err := decodeOperation(a.Type, a.Operation)
+	if err != nil {
+		return nil, fmt.Errorf("invalid adapter operation: %w", err)
 	}
 	opValue, err := op.Run(a, opts)
 	if err != nil {
@@ -96,30 +92,57 @@ func (a *Adapter) Run(opts AdapterOptions) (*ent.DataGraph, error) {
 
 	eCtx.Variables["data"] = opValue
 
-	graph, err := ent.DecodeDataGraph(a.Mapping.Body, eCtx)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding data graph: %w", err)
+	var (
+		result  adapter.Result
+		dynBody = dynblock.Expand(a.Mapping.Body, eCtx)
+	)
+	diags := gohcl.DecodeBody(dynBody, eCtx, &result)
+	if diags.HasErrors() {
+		return nil, fmt.Errorf("error decoding adapter mapping: %w", diags)
 	}
-	return graph, nil
+
+	// graph, err := ent.DecodeDataGraph(a.Mapping.Body, eCtx)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error decoding data graph: %w", err)
+	// }
+	return &result, nil
 }
 
 func (a *Adapter) Validate() error {
-	// TODO: options, preprocess, type, format, etc
-	// if err := a.SetFormat(); err != nil {
-	// 	return err
-	// }
+	_, err := decodeOperation(a.Type, a.Operation)
+	if err != nil {
+		return fmt.Errorf("invalid adapter operation: %w", err)
+	}
 	return nil
 }
 
-type AdapterSource string
+func decodeOperation(ty string, operation *AdapterOperation) (adapterOp, error) {
+	var op adapterOp
+	switch AdapterType(ty) {
+	case JSONSource:
+		op = &jsonOp{}
+	default:
+		return nil, fmt.Errorf("unsupported adapter type \"%s\"", ty)
+	}
+
+	if operation != nil {
+		if err := op.Decode(operation.Body); err != nil {
+			return nil, fmt.Errorf("error decoding operation: %w", err)
+		}
+	}
+
+	return op, nil
+}
+
+type AdapterType string
 
 const (
-	HTTPSource AdapterSource = "http"
-	JSONSource AdapterSource = "json"
-	XMLSource  AdapterSource = "xml"
+	HTTPSource AdapterType = "http"
+	JSONSource AdapterType = "json"
+	XMLSource  AdapterType = "xml"
 )
 
-func (a AdapterSource) String() string {
+func (a AdapterType) String() string {
 	return string(a)
 }
 

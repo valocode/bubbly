@@ -48,19 +48,6 @@ func (f CVERuleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return f(ctx, mv)
 }
 
-// The CVEScanFunc type is an adapter to allow the use of ordinary
-// function as CVEScan mutator.
-type CVEScanFunc func(context.Context, *ent.CVEScanMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f CVEScanFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.CVEScanMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CVEScanMutation", m)
-	}
-	return f(ctx, mv)
-}
-
 // The CWEFunc type is an adapter to allow the use of ordinary
 // function as CWE mutator.
 type CWEFunc func(context.Context, *ent.CWEMutation) (ent.Value, error)
@@ -113,6 +100,19 @@ func (f ComponentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	return f(ctx, mv)
 }
 
+// The ComponentUseFunc type is an adapter to allow the use of ordinary
+// function as ComponentUse mutator.
+type ComponentUseFunc func(context.Context, *ent.ComponentUseMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ComponentUseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ComponentUseMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ComponentUseMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The GitCommitFunc type is an adapter to allow the use of ordinary
 // function as GitCommit mutator.
 type GitCommitFunc func(context.Context, *ent.GitCommitMutation) (ent.Value, error)
@@ -139,28 +139,15 @@ func (f LicenseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return f(ctx, mv)
 }
 
-// The LicenseScanFunc type is an adapter to allow the use of ordinary
-// function as LicenseScan mutator.
-type LicenseScanFunc func(context.Context, *ent.LicenseScanMutation) (ent.Value, error)
+// The LicenseUseFunc type is an adapter to allow the use of ordinary
+// function as LicenseUse mutator.
+type LicenseUseFunc func(context.Context, *ent.LicenseUseMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f LicenseScanFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.LicenseScanMutation)
+func (f LicenseUseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.LicenseUseMutation)
 	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LicenseScanMutation", m)
-	}
-	return f(ctx, mv)
-}
-
-// The LicenseUsageFunc type is an adapter to allow the use of ordinary
-// function as LicenseUsage mutator.
-type LicenseUsageFunc func(context.Context, *ent.LicenseUsageMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f LicenseUsageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.LicenseUsageMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LicenseUsageMutation", m)
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LicenseUseMutation", m)
 	}
 	return f(ctx, mv)
 }
@@ -187,19 +174,6 @@ func (f ReleaseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	mv, ok := m.(*ent.ReleaseMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReleaseMutation", m)
-	}
-	return f(ctx, mv)
-}
-
-// The ReleaseCheckFunc type is an adapter to allow the use of ordinary
-// function as ReleaseCheck mutator.
-type ReleaseCheckFunc func(context.Context, *ent.ReleaseCheckMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f ReleaseCheckFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.ReleaseCheckMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReleaseCheckMutation", m)
 	}
 	return f(ctx, mv)
 }

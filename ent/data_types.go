@@ -9,7 +9,6 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasecheck"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -107,12 +106,24 @@ func (c *CVENode) SetModifiedData(v time.Time) *CVENode {
 	return c
 }
 
-func (c *CVENode) AddFound(inputs ...*VulnerabilityNode) *CVENode {
+func (c *CVENode) AddComponents(inputs ...*ComponentNode) *CVENode {
 	for _, input := range inputs {
 		node := input.Node()
 
 		// Add an edge to the input node
-		c.AddEdge("found", node)
+		c.AddEdge("components", node)
+		// Create the invse edge also
+		node.AddInverseEdge("cves", c.Node())
+	}
+	return c
+}
+
+func (c *CVENode) AddVulnerabilities(inputs ...*VulnerabilityNode) *CVENode {
+	for _, input := range inputs {
+		node := input.Node()
+
+		// Add an edge to the input node
+		c.AddEdge("vulnerabilities", node)
 		// Create the invse edge also
 		node.AddInverseEdge("cve", c.Node())
 	}
@@ -193,63 +204,6 @@ func (cr *CVERuleNode) AddRepo(inputs ...*RepoNode) *CVERuleNode {
 func (cr *CVERuleNode) SetOperation(op NodeOperation) *CVERuleNode {
 	cr.Operation = op
 	return cr
-}
-
-func NewCVEScanNode() *CVEScanNode {
-	return &CVEScanNode{
-		DataNode: &DataNode{
-			Name: "cve_scan",
-		},
-	}
-}
-
-type CVEScanNode struct {
-	*DataNode
-}
-
-func (cs *CVEScanNode) Node() *DataNode {
-	return cs.DataNode
-}
-func (cs *CVEScanNode) SetTool(v string) *CVEScanNode {
-	cs.AddField("tool", cty.StringVal(v))
-	return cs
-}
-
-func (cs *CVEScanNode) SetRelease(input *ReleaseNode) *CVEScanNode {
-	node := input.Node()
-
-	// Add an edge to the input node
-	cs.AddInverseEdge("release", node)
-	// Create the invse edge also
-	node.AddEdge("cve_scans", cs.Node())
-	return cs
-}
-
-func (cs *CVEScanNode) SetEntry(input *ReleaseEntryNode) *CVEScanNode {
-	node := input.Node()
-
-	// Add an edge to the input node
-	cs.AddEdge("entry", node)
-	// Create the invse edge also
-	node.AddInverseEdge("cve_scan", cs.Node())
-	return cs
-}
-
-func (cs *CVEScanNode) AddVulnerabilities(inputs ...*VulnerabilityNode) *CVEScanNode {
-	for _, input := range inputs {
-		node := input.Node()
-
-		// Add an edge to the input node
-		cs.AddEdge("vulnerabilities", node)
-		// Create the invse edge also
-		node.AddInverseEdge("scan", cs.Node())
-	}
-	return cs
-}
-
-func (cs *CVEScanNode) SetOperation(op NodeOperation) *CVEScanNode {
-	cs.Operation = op
-	return cs
 }
 
 func NewCWENode() *CWENode {
@@ -386,6 +340,16 @@ func (cs *CodeScanNode) SetRelease(input *ReleaseNode) *CodeScanNode {
 	return cs
 }
 
+func (cs *CodeScanNode) SetEntry(input *ReleaseEntryNode) *CodeScanNode {
+	node := input.Node()
+
+	// Add an edge to the input node
+	cs.AddEdge("entry", node)
+	// Create the invse edge also
+	node.AddInverseEdge("code_scan", cs.Node())
+	return cs
+}
+
 func (cs *CodeScanNode) AddIssues(inputs ...*CodeIssueNode) *CodeScanNode {
 	for _, input := range inputs {
 		node := input.Node()
@@ -398,13 +362,15 @@ func (cs *CodeScanNode) AddIssues(inputs ...*CodeIssueNode) *CodeScanNode {
 	return cs
 }
 
-func (cs *CodeScanNode) SetEntry(input *ReleaseEntryNode) *CodeScanNode {
-	node := input.Node()
+func (cs *CodeScanNode) AddComponents(inputs ...*ComponentUseNode) *CodeScanNode {
+	for _, input := range inputs {
+		node := input.Node()
 
-	// Add an edge to the input node
-	cs.AddEdge("entry", node)
-	// Create the invse edge also
-	node.AddInverseEdge("code_scan", cs.Node())
+		// Add an edge to the input node
+		cs.AddEdge("components", node)
+		// Create the invse edge also
+		node.AddInverseEdge("scans", cs.Node())
+	}
 	return cs
 }
 
@@ -449,14 +415,14 @@ func (c *ComponentNode) SetURL(v string) *ComponentNode {
 	return c
 }
 
-func (c *ComponentNode) AddVulnerabilities(inputs ...*VulnerabilityNode) *ComponentNode {
+func (c *ComponentNode) AddCves(inputs ...*CVENode) *ComponentNode {
 	for _, input := range inputs {
 		node := input.Node()
 
 		// Add an edge to the input node
-		c.AddEdge("vulnerabilities", node)
+		c.AddEdge("cves", node)
 		// Create the invse edge also
-		node.AddInverseEdge("component", c.Node())
+		node.AddInverseEdge("components", c.Node())
 	}
 	return c
 }
@@ -473,14 +439,14 @@ func (c *ComponentNode) AddLicenses(inputs ...*LicenseNode) *ComponentNode {
 	return c
 }
 
-func (c *ComponentNode) AddRelease(inputs ...*ReleaseNode) *ComponentNode {
+func (c *ComponentNode) AddUses(inputs ...*ComponentUseNode) *ComponentNode {
 	for _, input := range inputs {
 		node := input.Node()
 
 		// Add an edge to the input node
-		c.AddEdge("release", node)
+		c.AddEdge("uses", node)
 		// Create the invse edge also
-		node.AddInverseEdge("components", c.Node())
+		node.AddInverseEdge("component", c.Node())
 	}
 	return c
 }
@@ -488,6 +454,59 @@ func (c *ComponentNode) AddRelease(inputs ...*ReleaseNode) *ComponentNode {
 func (c *ComponentNode) SetOperation(op NodeOperation) *ComponentNode {
 	c.Operation = op
 	return c
+}
+
+func NewComponentUseNode() *ComponentUseNode {
+	return &ComponentUseNode{
+		DataNode: &DataNode{
+			Name: "component_use",
+		},
+	}
+}
+
+type ComponentUseNode struct {
+	*DataNode
+}
+
+func (cu *ComponentUseNode) Node() *DataNode {
+	return cu.DataNode
+}
+
+func (cu *ComponentUseNode) SetRelease(input *ReleaseNode) *ComponentUseNode {
+	node := input.Node()
+
+	// Add an edge to the input node
+	cu.AddInverseEdge("release", node)
+	// Create the invse edge also
+	node.AddEdge("components", cu.Node())
+	return cu
+}
+
+func (cu *ComponentUseNode) AddScans(inputs ...*CodeScanNode) *ComponentUseNode {
+	for _, input := range inputs {
+		node := input.Node()
+
+		// Add an edge to the input node
+		cu.AddInverseEdge("scans", node)
+		// Create the invse edge also
+		node.AddEdge("components", cu.Node())
+	}
+	return cu
+}
+
+func (cu *ComponentUseNode) SetComponent(input *ComponentNode) *ComponentUseNode {
+	node := input.Node()
+
+	// Add an edge to the input node
+	cu.AddInverseEdge("component", node)
+	// Create the invse edge also
+	node.AddEdge("uses", cu.Node())
+	return cu
+}
+
+func (cu *ComponentUseNode) SetOperation(op NodeOperation) *ComponentUseNode {
+	cu.Operation = op
+	return cu
 }
 
 func NewGitCommitNode() *GitCommitNode {
@@ -595,12 +614,12 @@ func (l *LicenseNode) AddComponents(inputs ...*ComponentNode) *LicenseNode {
 	return l
 }
 
-func (l *LicenseNode) AddUsages(inputs ...*LicenseUsageNode) *LicenseNode {
+func (l *LicenseNode) AddUses(inputs ...*LicenseUseNode) *LicenseNode {
 	for _, input := range inputs {
 		node := input.Node()
 
 		// Add an edge to the input node
-		l.AddEdge("usages", node)
+		l.AddEdge("uses", node)
 		// Create the invse edge also
 		node.AddInverseEdge("license", l.Node())
 	}
@@ -612,100 +631,33 @@ func (l *LicenseNode) SetOperation(op NodeOperation) *LicenseNode {
 	return l
 }
 
-func NewLicenseScanNode() *LicenseScanNode {
-	return &LicenseScanNode{
+func NewLicenseUseNode() *LicenseUseNode {
+	return &LicenseUseNode{
 		DataNode: &DataNode{
-			Name: "license_scan",
+			Name: "license_use",
 		},
 	}
 }
 
-type LicenseScanNode struct {
+type LicenseUseNode struct {
 	*DataNode
 }
 
-func (ls *LicenseScanNode) Node() *DataNode {
-	return ls.DataNode
-}
-func (ls *LicenseScanNode) SetTool(v string) *LicenseScanNode {
-	ls.AddField("tool", cty.StringVal(v))
-	return ls
-}
-
-func (ls *LicenseScanNode) SetRelease(input *ReleaseNode) *LicenseScanNode {
-	node := input.Node()
-
-	// Add an edge to the input node
-	ls.AddInverseEdge("release", node)
-	// Create the invse edge also
-	node.AddEdge("license_scans", ls.Node())
-	return ls
-}
-
-func (ls *LicenseScanNode) SetEntry(input *ReleaseEntryNode) *LicenseScanNode {
-	node := input.Node()
-
-	// Add an edge to the input node
-	ls.AddEdge("entry", node)
-	// Create the invse edge also
-	node.AddInverseEdge("license_scan", ls.Node())
-	return ls
-}
-
-func (ls *LicenseScanNode) AddLicenses(inputs ...*LicenseUsageNode) *LicenseScanNode {
-	for _, input := range inputs {
-		node := input.Node()
-
-		// Add an edge to the input node
-		ls.AddEdge("licenses", node)
-		// Create the invse edge also
-		node.AddInverseEdge("scan", ls.Node())
-	}
-	return ls
-}
-
-func (ls *LicenseScanNode) SetOperation(op NodeOperation) *LicenseScanNode {
-	ls.Operation = op
-	return ls
-}
-
-func NewLicenseUsageNode() *LicenseUsageNode {
-	return &LicenseUsageNode{
-		DataNode: &DataNode{
-			Name: "license_usage",
-		},
-	}
-}
-
-type LicenseUsageNode struct {
-	*DataNode
-}
-
-func (lu *LicenseUsageNode) Node() *DataNode {
+func (lu *LicenseUseNode) Node() *DataNode {
 	return lu.DataNode
 }
 
-func (lu *LicenseUsageNode) SetLicense(input *LicenseNode) *LicenseUsageNode {
+func (lu *LicenseUseNode) SetLicense(input *LicenseNode) *LicenseUseNode {
 	node := input.Node()
 
 	// Add an edge to the input node
 	lu.AddInverseEdge("license", node)
 	// Create the invse edge also
-	node.AddEdge("usages", lu.Node())
+	node.AddEdge("uses", lu.Node())
 	return lu
 }
 
-func (lu *LicenseUsageNode) SetScan(input *LicenseScanNode) *LicenseUsageNode {
-	node := input.Node()
-
-	// Add an edge to the input node
-	lu.AddInverseEdge("scan", node)
-	// Create the invse edge also
-	node.AddEdge("licenses", lu.Node())
-	return lu
-}
-
-func (lu *LicenseUsageNode) SetOperation(op NodeOperation) *LicenseUsageNode {
+func (lu *LicenseUseNode) SetOperation(op NodeOperation) *LicenseUseNode {
 	lu.Operation = op
 	return lu
 }
@@ -843,6 +795,18 @@ func (r *ReleaseNode) SetCommit(input *GitCommitNode) *ReleaseNode {
 	return r
 }
 
+func (r *ReleaseNode) AddLog(inputs ...*ReleaseEntryNode) *ReleaseNode {
+	for _, input := range inputs {
+		node := input.Node()
+
+		// Add an edge to the input node
+		r.AddEdge("log", node)
+		// Create the invse edge also
+		node.AddInverseEdge("release", r.Node())
+	}
+	return r
+}
+
 func (r *ReleaseNode) AddArtifacts(inputs ...*ArtifactNode) *ReleaseNode {
 	for _, input := range inputs {
 		node := input.Node()
@@ -855,24 +819,12 @@ func (r *ReleaseNode) AddArtifacts(inputs ...*ArtifactNode) *ReleaseNode {
 	return r
 }
 
-func (r *ReleaseNode) AddChecks(inputs ...*ReleaseCheckNode) *ReleaseNode {
+func (r *ReleaseNode) AddComponents(inputs ...*ComponentUseNode) *ReleaseNode {
 	for _, input := range inputs {
 		node := input.Node()
 
 		// Add an edge to the input node
-		r.AddEdge("checks", node)
-		// Create the invse edge also
-		node.AddInverseEdge("release", r.Node())
-	}
-	return r
-}
-
-func (r *ReleaseNode) AddLog(inputs ...*ReleaseEntryNode) *ReleaseNode {
-	for _, input := range inputs {
-		node := input.Node()
-
-		// Add an edge to the input node
-		r.AddEdge("log", node)
+		r.AddEdge("components", node)
 		// Create the invse edge also
 		node.AddInverseEdge("release", r.Node())
 	}
@@ -891,30 +843,6 @@ func (r *ReleaseNode) AddCodeScans(inputs ...*CodeScanNode) *ReleaseNode {
 	return r
 }
 
-func (r *ReleaseNode) AddCveScans(inputs ...*CVEScanNode) *ReleaseNode {
-	for _, input := range inputs {
-		node := input.Node()
-
-		// Add an edge to the input node
-		r.AddEdge("cve_scans", node)
-		// Create the invse edge also
-		node.AddInverseEdge("release", r.Node())
-	}
-	return r
-}
-
-func (r *ReleaseNode) AddLicenseScans(inputs ...*LicenseScanNode) *ReleaseNode {
-	for _, input := range inputs {
-		node := input.Node()
-
-		// Add an edge to the input node
-		r.AddEdge("license_scans", node)
-		// Create the invse edge also
-		node.AddInverseEdge("release", r.Node())
-	}
-	return r
-}
-
 func (r *ReleaseNode) AddTestRuns(inputs ...*TestRunNode) *ReleaseNode {
 	for _, input := range inputs {
 		node := input.Node()
@@ -927,56 +855,9 @@ func (r *ReleaseNode) AddTestRuns(inputs ...*TestRunNode) *ReleaseNode {
 	return r
 }
 
-func (r *ReleaseNode) AddComponents(inputs ...*ComponentNode) *ReleaseNode {
-	for _, input := range inputs {
-		node := input.Node()
-
-		// Add an edge to the input node
-		r.AddEdge("components", node)
-		// Create the invse edge also
-		node.AddInverseEdge("release", r.Node())
-	}
-	return r
-}
-
 func (r *ReleaseNode) SetOperation(op NodeOperation) *ReleaseNode {
 	r.Operation = op
 	return r
-}
-
-func NewReleaseCheckNode() *ReleaseCheckNode {
-	return &ReleaseCheckNode{
-		DataNode: &DataNode{
-			Name: "release_check",
-		},
-	}
-}
-
-type ReleaseCheckNode struct {
-	*DataNode
-}
-
-func (rc *ReleaseCheckNode) Node() *DataNode {
-	return rc.DataNode
-}
-func (rc *ReleaseCheckNode) SetType(v releasecheck.Type) *ReleaseCheckNode {
-	rc.AddField("type", cty.StringVal(v.String()))
-	return rc
-}
-
-func (rc *ReleaseCheckNode) SetRelease(input *ReleaseNode) *ReleaseCheckNode {
-	node := input.Node()
-
-	// Add an edge to the input node
-	rc.AddInverseEdge("release", node)
-	// Create the invse edge also
-	node.AddEdge("checks", rc.Node())
-	return rc
-}
-
-func (rc *ReleaseCheckNode) SetOperation(op NodeOperation) *ReleaseCheckNode {
-	rc.Operation = op
-	return rc
 }
 
 func NewReleaseEntryNode() *ReleaseEntryNode {
@@ -1028,26 +909,6 @@ func (re *ReleaseEntryNode) SetTestRun(input *TestRunNode) *ReleaseEntryNode {
 
 	// Add an edge to the input node
 	re.AddEdge("test_run", node)
-	// Create the invse edge also
-	node.AddInverseEdge("entry", re.Node())
-	return re
-}
-
-func (re *ReleaseEntryNode) SetCveScan(input *CVEScanNode) *ReleaseEntryNode {
-	node := input.Node()
-
-	// Add an edge to the input node
-	re.AddEdge("cve_scan", node)
-	// Create the invse edge also
-	node.AddInverseEdge("entry", re.Node())
-	return re
-}
-
-func (re *ReleaseEntryNode) SetLicenseScan(input *LicenseScanNode) *ReleaseEntryNode {
-	node := input.Node()
-
-	// Add an edge to the input node
-	re.AddEdge("license_scan", node)
 	// Create the invse edge also
 	node.AddInverseEdge("entry", re.Node())
 	return re
@@ -1252,26 +1113,6 @@ func (v *VulnerabilityNode) SetCve(input *CVENode) *VulnerabilityNode {
 
 	// Add an edge to the input node
 	v.AddInverseEdge("cve", node)
-	// Create the invse edge also
-	node.AddEdge("found", v.Node())
-	return v
-}
-
-func (v *VulnerabilityNode) SetScan(input *CVEScanNode) *VulnerabilityNode {
-	node := input.Node()
-
-	// Add an edge to the input node
-	v.AddInverseEdge("scan", node)
-	// Create the invse edge also
-	node.AddEdge("vulnerabilities", v.Node())
-	return v
-}
-
-func (v *VulnerabilityNode) SetComponent(input *ComponentNode) *VulnerabilityNode {
-	node := input.Node()
-
-	// Add an edge to the input node
-	v.AddInverseEdge("component", node)
 	// Create the invse edge also
 	node.AddEdge("vulnerabilities", v.Node())
 	return v

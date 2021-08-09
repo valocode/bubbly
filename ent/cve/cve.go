@@ -27,20 +27,27 @@ const (
 	FieldPublishedData = "published_data"
 	// FieldModifiedData holds the string denoting the modified_data field in the database.
 	FieldModifiedData = "modified_data"
-	// EdgeFound holds the string denoting the found edge name in mutations.
-	EdgeFound = "found"
+	// EdgeComponents holds the string denoting the components edge name in mutations.
+	EdgeComponents = "components"
+	// EdgeVulnerabilities holds the string denoting the vulnerabilities edge name in mutations.
+	EdgeVulnerabilities = "vulnerabilities"
 	// EdgeRules holds the string denoting the rules edge name in mutations.
 	EdgeRules = "rules"
 	// Table holds the table name of the cve in the database.
 	Table = "cve"
-	// FoundTable is the table the holds the found relation/edge.
-	FoundTable = "vulnerability"
-	// FoundInverseTable is the table name for the Vulnerability entity.
+	// ComponentsTable is the table that holds the components relation/edge. The primary key declared below.
+	ComponentsTable = "component_cves"
+	// ComponentsInverseTable is the table name for the Component entity.
+	// It exists in this package in order to avoid circular dependency with the "component" package.
+	ComponentsInverseTable = "component"
+	// VulnerabilitiesTable is the table that holds the vulnerabilities relation/edge.
+	VulnerabilitiesTable = "vulnerability"
+	// VulnerabilitiesInverseTable is the table name for the Vulnerability entity.
 	// It exists in this package in order to avoid circular dependency with the "vulnerability" package.
-	FoundInverseTable = "vulnerability"
-	// FoundColumn is the table column denoting the found relation/edge.
-	FoundColumn = "vulnerability_cve"
-	// RulesTable is the table the holds the rules relation/edge.
+	VulnerabilitiesInverseTable = "vulnerability"
+	// VulnerabilitiesColumn is the table column denoting the vulnerabilities relation/edge.
+	VulnerabilitiesColumn = "vulnerability_cve"
+	// RulesTable is the table that holds the rules relation/edge.
 	RulesTable = "cve_rule"
 	// RulesInverseTable is the table name for the CVERule entity.
 	// It exists in this package in order to avoid circular dependency with the "cverule" package.
@@ -59,6 +66,12 @@ var Columns = []string{
 	FieldPublishedData,
 	FieldModifiedData,
 }
+
+var (
+	// ComponentsPrimaryKey and ComponentsColumn2 are the table columns denoting the
+	// primary key for the components relation (M2M).
+	ComponentsPrimaryKey = []string{"component_id", "cve_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

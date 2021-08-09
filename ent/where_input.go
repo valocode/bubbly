@@ -10,18 +10,16 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/cverule"
-	"github.com/valocode/bubbly/ent/cvescan"
 	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licensescan"
-	"github.com/valocode/bubbly/ent/licenseusage"
+	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasecheck"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testcase"
@@ -398,9 +396,13 @@ type CVEWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
-	// "found" edge predicates.
-	HasFound     *bool                      `json:"hasFound,omitempty"`
-	HasFoundWith []*VulnerabilityWhereInput `json:"hasFoundWith,omitempty"`
+	// "components" edge predicates.
+	HasComponents     *bool                  `json:"hasComponents,omitempty"`
+	HasComponentsWith []*ComponentWhereInput `json:"hasComponentsWith,omitempty"`
+
+	// "vulnerabilities" edge predicates.
+	HasVulnerabilities     *bool                      `json:"hasVulnerabilities,omitempty"`
+	HasVulnerabilitiesWith []*VulnerabilityWhereInput `json:"hasVulnerabilitiesWith,omitempty"`
 
 	// "rules" edge predicates.
 	HasRules     *bool                `json:"hasRules,omitempty"`
@@ -671,23 +673,41 @@ func (i *CVEWhereInput) P() (predicate.CVE, error) {
 		predicates = append(predicates, cve.IDLTE(*i.IDLTE))
 	}
 
-	if i.HasFound != nil {
-		p := cve.HasFound()
-		if !*i.HasFound {
+	if i.HasComponents != nil {
+		p := cve.HasComponents()
+		if !*i.HasComponents {
 			p = cve.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasFoundWith) > 0 {
-		with := make([]predicate.Vulnerability, 0, len(i.HasFoundWith))
-		for _, w := range i.HasFoundWith {
+	if len(i.HasComponentsWith) > 0 {
+		with := make([]predicate.Component, 0, len(i.HasComponentsWith))
+		for _, w := range i.HasComponentsWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, cve.HasFoundWith(with...))
+		predicates = append(predicates, cve.HasComponentsWith(with...))
+	}
+	if i.HasVulnerabilities != nil {
+		p := cve.HasVulnerabilities()
+		if !*i.HasVulnerabilities {
+			p = cve.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasVulnerabilitiesWith) > 0 {
+		with := make([]predicate.Vulnerability, 0, len(i.HasVulnerabilitiesWith))
+		for _, w := range i.HasVulnerabilitiesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, cve.HasVulnerabilitiesWith(with...))
 	}
 	if i.HasRules != nil {
 		p := cve.HasRules()
@@ -953,237 +973,6 @@ func (i *CVERuleWhereInput) P() (predicate.CVERule, error) {
 		return predicates[0], nil
 	default:
 		return cverule.And(predicates...), nil
-	}
-}
-
-// CVEScanWhereInput represents a where input for filtering CVEScan queries.
-type CVEScanWhereInput struct {
-	Not *CVEScanWhereInput   `json:"not,omitempty"`
-	Or  []*CVEScanWhereInput `json:"or,omitempty"`
-	And []*CVEScanWhereInput `json:"and,omitempty"`
-
-	// "tool" field predicates.
-	Tool             *string  `json:"tool,omitempty"`
-	ToolNEQ          *string  `json:"toolNEQ,omitempty"`
-	ToolIn           []string `json:"toolIn,omitempty"`
-	ToolNotIn        []string `json:"toolNotIn,omitempty"`
-	ToolGT           *string  `json:"toolGT,omitempty"`
-	ToolGTE          *string  `json:"toolGTE,omitempty"`
-	ToolLT           *string  `json:"toolLT,omitempty"`
-	ToolLTE          *string  `json:"toolLTE,omitempty"`
-	ToolContains     *string  `json:"toolContains,omitempty"`
-	ToolHasPrefix    *string  `json:"toolHasPrefix,omitempty"`
-	ToolHasSuffix    *string  `json:"toolHasSuffix,omitempty"`
-	ToolEqualFold    *string  `json:"toolEqualFold,omitempty"`
-	ToolContainsFold *string  `json:"toolContainsFold,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-
-	// "release" edge predicates.
-	HasRelease     *bool                `json:"hasRelease,omitempty"`
-	HasReleaseWith []*ReleaseWhereInput `json:"hasReleaseWith,omitempty"`
-
-	// "entry" edge predicates.
-	HasEntry     *bool                     `json:"hasEntry,omitempty"`
-	HasEntryWith []*ReleaseEntryWhereInput `json:"hasEntryWith,omitempty"`
-
-	// "vulnerabilities" edge predicates.
-	HasVulnerabilities     *bool                      `json:"hasVulnerabilities,omitempty"`
-	HasVulnerabilitiesWith []*VulnerabilityWhereInput `json:"hasVulnerabilitiesWith,omitempty"`
-}
-
-// Filter applies the CVEScanWhereInput filter on the CVEScanQuery builder.
-func (i *CVEScanWhereInput) Filter(q *CVEScanQuery) (*CVEScanQuery, error) {
-	if i == nil {
-		return q, nil
-	}
-	p, err := i.P()
-	if err != nil {
-		return nil, err
-	}
-	return q.Where(p), nil
-}
-
-// P returns a predicate for filtering cvescans.
-// An error is returned if the input is empty or invalid.
-func (i *CVEScanWhereInput) P() (predicate.CVEScan, error) {
-	var predicates []predicate.CVEScan
-	if i.Not != nil {
-		p, err := i.Not.P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, cvescan.Not(p))
-	}
-	switch n := len(i.Or); {
-	case n == 1:
-		p, err := i.Or[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		or := make([]predicate.CVEScan, 0, n)
-		for _, w := range i.Or {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			or = append(or, p)
-		}
-		predicates = append(predicates, cvescan.Or(or...))
-	}
-	switch n := len(i.And); {
-	case n == 1:
-		p, err := i.And[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		and := make([]predicate.CVEScan, 0, n)
-		for _, w := range i.And {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			and = append(and, p)
-		}
-		predicates = append(predicates, cvescan.And(and...))
-	}
-	if i.Tool != nil {
-		predicates = append(predicates, cvescan.ToolEQ(*i.Tool))
-	}
-	if i.ToolNEQ != nil {
-		predicates = append(predicates, cvescan.ToolNEQ(*i.ToolNEQ))
-	}
-	if len(i.ToolIn) > 0 {
-		predicates = append(predicates, cvescan.ToolIn(i.ToolIn...))
-	}
-	if len(i.ToolNotIn) > 0 {
-		predicates = append(predicates, cvescan.ToolNotIn(i.ToolNotIn...))
-	}
-	if i.ToolGT != nil {
-		predicates = append(predicates, cvescan.ToolGT(*i.ToolGT))
-	}
-	if i.ToolGTE != nil {
-		predicates = append(predicates, cvescan.ToolGTE(*i.ToolGTE))
-	}
-	if i.ToolLT != nil {
-		predicates = append(predicates, cvescan.ToolLT(*i.ToolLT))
-	}
-	if i.ToolLTE != nil {
-		predicates = append(predicates, cvescan.ToolLTE(*i.ToolLTE))
-	}
-	if i.ToolContains != nil {
-		predicates = append(predicates, cvescan.ToolContains(*i.ToolContains))
-	}
-	if i.ToolHasPrefix != nil {
-		predicates = append(predicates, cvescan.ToolHasPrefix(*i.ToolHasPrefix))
-	}
-	if i.ToolHasSuffix != nil {
-		predicates = append(predicates, cvescan.ToolHasSuffix(*i.ToolHasSuffix))
-	}
-	if i.ToolEqualFold != nil {
-		predicates = append(predicates, cvescan.ToolEqualFold(*i.ToolEqualFold))
-	}
-	if i.ToolContainsFold != nil {
-		predicates = append(predicates, cvescan.ToolContainsFold(*i.ToolContainsFold))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, cvescan.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, cvescan.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, cvescan.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, cvescan.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, cvescan.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, cvescan.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, cvescan.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, cvescan.IDLTE(*i.IDLTE))
-	}
-
-	if i.HasRelease != nil {
-		p := cvescan.HasRelease()
-		if !*i.HasRelease {
-			p = cvescan.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasReleaseWith) > 0 {
-		with := make([]predicate.Release, 0, len(i.HasReleaseWith))
-		for _, w := range i.HasReleaseWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, cvescan.HasReleaseWith(with...))
-	}
-	if i.HasEntry != nil {
-		p := cvescan.HasEntry()
-		if !*i.HasEntry {
-			p = cvescan.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasEntryWith) > 0 {
-		with := make([]predicate.ReleaseEntry, 0, len(i.HasEntryWith))
-		for _, w := range i.HasEntryWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, cvescan.HasEntryWith(with...))
-	}
-	if i.HasVulnerabilities != nil {
-		p := cvescan.HasVulnerabilities()
-		if !*i.HasVulnerabilities {
-			p = cvescan.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasVulnerabilitiesWith) > 0 {
-		with := make([]predicate.Vulnerability, 0, len(i.HasVulnerabilitiesWith))
-		for _, w := range i.HasVulnerabilitiesWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, cvescan.HasVulnerabilitiesWith(with...))
-	}
-	switch len(predicates) {
-	case 0:
-		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate CVEScanWhereInput")
-	case 1:
-		return predicates[0], nil
-	default:
-		return cvescan.And(predicates...), nil
 	}
 }
 
@@ -1812,13 +1601,17 @@ type CodeScanWhereInput struct {
 	HasRelease     *bool                `json:"hasRelease,omitempty"`
 	HasReleaseWith []*ReleaseWhereInput `json:"hasReleaseWith,omitempty"`
 
+	// "entry" edge predicates.
+	HasEntry     *bool                     `json:"hasEntry,omitempty"`
+	HasEntryWith []*ReleaseEntryWhereInput `json:"hasEntryWith,omitempty"`
+
 	// "issues" edge predicates.
 	HasIssues     *bool                  `json:"hasIssues,omitempty"`
 	HasIssuesWith []*CodeIssueWhereInput `json:"hasIssuesWith,omitempty"`
 
-	// "entry" edge predicates.
-	HasEntry     *bool                     `json:"hasEntry,omitempty"`
-	HasEntryWith []*ReleaseEntryWhereInput `json:"hasEntryWith,omitempty"`
+	// "components" edge predicates.
+	HasComponents     *bool                     `json:"hasComponents,omitempty"`
+	HasComponentsWith []*ComponentUseWhereInput `json:"hasComponentsWith,omitempty"`
 }
 
 // Filter applies the CodeScanWhereInput filter on the CodeScanQuery builder.
@@ -1962,6 +1755,24 @@ func (i *CodeScanWhereInput) P() (predicate.CodeScan, error) {
 		}
 		predicates = append(predicates, codescan.HasReleaseWith(with...))
 	}
+	if i.HasEntry != nil {
+		p := codescan.HasEntry()
+		if !*i.HasEntry {
+			p = codescan.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasEntryWith) > 0 {
+		with := make([]predicate.ReleaseEntry, 0, len(i.HasEntryWith))
+		for _, w := range i.HasEntryWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, codescan.HasEntryWith(with...))
+	}
 	if i.HasIssues != nil {
 		p := codescan.HasIssues()
 		if !*i.HasIssues {
@@ -1980,23 +1791,23 @@ func (i *CodeScanWhereInput) P() (predicate.CodeScan, error) {
 		}
 		predicates = append(predicates, codescan.HasIssuesWith(with...))
 	}
-	if i.HasEntry != nil {
-		p := codescan.HasEntry()
-		if !*i.HasEntry {
+	if i.HasComponents != nil {
+		p := codescan.HasComponents()
+		if !*i.HasComponents {
 			p = codescan.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasEntryWith) > 0 {
-		with := make([]predicate.ReleaseEntry, 0, len(i.HasEntryWith))
-		for _, w := range i.HasEntryWith {
+	if len(i.HasComponentsWith) > 0 {
+		with := make([]predicate.ComponentUse, 0, len(i.HasComponentsWith))
+		for _, w := range i.HasComponentsWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, codescan.HasEntryWith(with...))
+		predicates = append(predicates, codescan.HasComponentsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -2099,17 +1910,17 @@ type ComponentWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
-	// "vulnerabilities" edge predicates.
-	HasVulnerabilities     *bool                      `json:"hasVulnerabilities,omitempty"`
-	HasVulnerabilitiesWith []*VulnerabilityWhereInput `json:"hasVulnerabilitiesWith,omitempty"`
+	// "cves" edge predicates.
+	HasCves     *bool            `json:"hasCves,omitempty"`
+	HasCvesWith []*CVEWhereInput `json:"hasCvesWith,omitempty"`
 
 	// "licenses" edge predicates.
 	HasLicenses     *bool                `json:"hasLicenses,omitempty"`
 	HasLicensesWith []*LicenseWhereInput `json:"hasLicensesWith,omitempty"`
 
-	// "release" edge predicates.
-	HasRelease     *bool                `json:"hasRelease,omitempty"`
-	HasReleaseWith []*ReleaseWhereInput `json:"hasReleaseWith,omitempty"`
+	// "uses" edge predicates.
+	HasUses     *bool                     `json:"hasUses,omitempty"`
+	HasUsesWith []*ComponentUseWhereInput `json:"hasUsesWith,omitempty"`
 }
 
 // Filter applies the ComponentWhereInput filter on the ComponentQuery builder.
@@ -2391,23 +2202,23 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 		predicates = append(predicates, component.IDLTE(*i.IDLTE))
 	}
 
-	if i.HasVulnerabilities != nil {
-		p := component.HasVulnerabilities()
-		if !*i.HasVulnerabilities {
+	if i.HasCves != nil {
+		p := component.HasCves()
+		if !*i.HasCves {
 			p = component.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasVulnerabilitiesWith) > 0 {
-		with := make([]predicate.Vulnerability, 0, len(i.HasVulnerabilitiesWith))
-		for _, w := range i.HasVulnerabilitiesWith {
+	if len(i.HasCvesWith) > 0 {
+		with := make([]predicate.CVE, 0, len(i.HasCvesWith))
+		for _, w := range i.HasCvesWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, component.HasVulnerabilitiesWith(with...))
+		predicates = append(predicates, component.HasCvesWith(with...))
 	}
 	if i.HasLicenses != nil {
 		p := component.HasLicenses()
@@ -2427,10 +2238,151 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 		}
 		predicates = append(predicates, component.HasLicensesWith(with...))
 	}
-	if i.HasRelease != nil {
-		p := component.HasRelease()
-		if !*i.HasRelease {
+	if i.HasUses != nil {
+		p := component.HasUses()
+		if !*i.HasUses {
 			p = component.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUsesWith) > 0 {
+		with := make([]predicate.ComponentUse, 0, len(i.HasUsesWith))
+		for _, w := range i.HasUsesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, component.HasUsesWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate ComponentWhereInput")
+	case 1:
+		return predicates[0], nil
+	default:
+		return component.And(predicates...), nil
+	}
+}
+
+// ComponentUseWhereInput represents a where input for filtering ComponentUse queries.
+type ComponentUseWhereInput struct {
+	Not *ComponentUseWhereInput   `json:"not,omitempty"`
+	Or  []*ComponentUseWhereInput `json:"or,omitempty"`
+	And []*ComponentUseWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "release" edge predicates.
+	HasRelease     *bool                `json:"hasRelease,omitempty"`
+	HasReleaseWith []*ReleaseWhereInput `json:"hasReleaseWith,omitempty"`
+
+	// "scans" edge predicates.
+	HasScans     *bool                 `json:"hasScans,omitempty"`
+	HasScansWith []*CodeScanWhereInput `json:"hasScansWith,omitempty"`
+
+	// "component" edge predicates.
+	HasComponent     *bool                  `json:"hasComponent,omitempty"`
+	HasComponentWith []*ComponentWhereInput `json:"hasComponentWith,omitempty"`
+}
+
+// Filter applies the ComponentUseWhereInput filter on the ComponentUseQuery builder.
+func (i *ComponentUseWhereInput) Filter(q *ComponentUseQuery) (*ComponentUseQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// P returns a predicate for filtering componentuses.
+// An error is returned if the input is empty or invalid.
+func (i *ComponentUseWhereInput) P() (predicate.ComponentUse, error) {
+	var predicates []predicate.ComponentUse
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, componentuse.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.ComponentUse, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, componentuse.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.ComponentUse, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, componentuse.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, componentuse.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, componentuse.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, componentuse.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, componentuse.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, componentuse.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, componentuse.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, componentuse.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, componentuse.IDLTE(*i.IDLTE))
+	}
+
+	if i.HasRelease != nil {
+		p := componentuse.HasRelease()
+		if !*i.HasRelease {
+			p = componentuse.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
@@ -2443,15 +2395,51 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, component.HasReleaseWith(with...))
+		predicates = append(predicates, componentuse.HasReleaseWith(with...))
+	}
+	if i.HasScans != nil {
+		p := componentuse.HasScans()
+		if !*i.HasScans {
+			p = componentuse.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasScansWith) > 0 {
+		with := make([]predicate.CodeScan, 0, len(i.HasScansWith))
+		for _, w := range i.HasScansWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, componentuse.HasScansWith(with...))
+	}
+	if i.HasComponent != nil {
+		p := componentuse.HasComponent()
+		if !*i.HasComponent {
+			p = componentuse.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasComponentWith) > 0 {
+		with := make([]predicate.Component, 0, len(i.HasComponentWith))
+		for _, w := range i.HasComponentWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, componentuse.HasComponentWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
-		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate ComponentWhereInput")
+		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate ComponentUseWhereInput")
 	case 1:
 		return predicates[0], nil
 	default:
-		return component.And(predicates...), nil
+		return componentuse.And(predicates...), nil
 	}
 }
 
@@ -2902,9 +2890,9 @@ type LicenseWhereInput struct {
 	HasComponents     *bool                  `json:"hasComponents,omitempty"`
 	HasComponentsWith []*ComponentWhereInput `json:"hasComponentsWith,omitempty"`
 
-	// "usages" edge predicates.
-	HasUsages     *bool                     `json:"hasUsages,omitempty"`
-	HasUsagesWith []*LicenseUsageWhereInput `json:"hasUsagesWith,omitempty"`
+	// "uses" edge predicates.
+	HasUses     *bool                   `json:"hasUses,omitempty"`
+	HasUsesWith []*LicenseUseWhereInput `json:"hasUsesWith,omitempty"`
 }
 
 // Filter applies the LicenseWhereInput filter on the LicenseQuery builder.
@@ -3183,23 +3171,23 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 		}
 		predicates = append(predicates, license.HasComponentsWith(with...))
 	}
-	if i.HasUsages != nil {
-		p := license.HasUsages()
-		if !*i.HasUsages {
+	if i.HasUses != nil {
+		p := license.HasUses()
+		if !*i.HasUses {
 			p = license.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasUsagesWith) > 0 {
-		with := make([]predicate.LicenseUsage, 0, len(i.HasUsagesWith))
-		for _, w := range i.HasUsagesWith {
+	if len(i.HasUsesWith) > 0 {
+		with := make([]predicate.LicenseUse, 0, len(i.HasUsesWith))
+		for _, w := range i.HasUsesWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, license.HasUsagesWith(with...))
+		predicates = append(predicates, license.HasUsesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -3211,242 +3199,11 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 	}
 }
 
-// LicenseScanWhereInput represents a where input for filtering LicenseScan queries.
-type LicenseScanWhereInput struct {
-	Not *LicenseScanWhereInput   `json:"not,omitempty"`
-	Or  []*LicenseScanWhereInput `json:"or,omitempty"`
-	And []*LicenseScanWhereInput `json:"and,omitempty"`
-
-	// "tool" field predicates.
-	Tool             *string  `json:"tool,omitempty"`
-	ToolNEQ          *string  `json:"toolNEQ,omitempty"`
-	ToolIn           []string `json:"toolIn,omitempty"`
-	ToolNotIn        []string `json:"toolNotIn,omitempty"`
-	ToolGT           *string  `json:"toolGT,omitempty"`
-	ToolGTE          *string  `json:"toolGTE,omitempty"`
-	ToolLT           *string  `json:"toolLT,omitempty"`
-	ToolLTE          *string  `json:"toolLTE,omitempty"`
-	ToolContains     *string  `json:"toolContains,omitempty"`
-	ToolHasPrefix    *string  `json:"toolHasPrefix,omitempty"`
-	ToolHasSuffix    *string  `json:"toolHasSuffix,omitempty"`
-	ToolEqualFold    *string  `json:"toolEqualFold,omitempty"`
-	ToolContainsFold *string  `json:"toolContainsFold,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-
-	// "release" edge predicates.
-	HasRelease     *bool                `json:"hasRelease,omitempty"`
-	HasReleaseWith []*ReleaseWhereInput `json:"hasReleaseWith,omitempty"`
-
-	// "entry" edge predicates.
-	HasEntry     *bool                     `json:"hasEntry,omitempty"`
-	HasEntryWith []*ReleaseEntryWhereInput `json:"hasEntryWith,omitempty"`
-
-	// "licenses" edge predicates.
-	HasLicenses     *bool                     `json:"hasLicenses,omitempty"`
-	HasLicensesWith []*LicenseUsageWhereInput `json:"hasLicensesWith,omitempty"`
-}
-
-// Filter applies the LicenseScanWhereInput filter on the LicenseScanQuery builder.
-func (i *LicenseScanWhereInput) Filter(q *LicenseScanQuery) (*LicenseScanQuery, error) {
-	if i == nil {
-		return q, nil
-	}
-	p, err := i.P()
-	if err != nil {
-		return nil, err
-	}
-	return q.Where(p), nil
-}
-
-// P returns a predicate for filtering licensescans.
-// An error is returned if the input is empty or invalid.
-func (i *LicenseScanWhereInput) P() (predicate.LicenseScan, error) {
-	var predicates []predicate.LicenseScan
-	if i.Not != nil {
-		p, err := i.Not.P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, licensescan.Not(p))
-	}
-	switch n := len(i.Or); {
-	case n == 1:
-		p, err := i.Or[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		or := make([]predicate.LicenseScan, 0, n)
-		for _, w := range i.Or {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			or = append(or, p)
-		}
-		predicates = append(predicates, licensescan.Or(or...))
-	}
-	switch n := len(i.And); {
-	case n == 1:
-		p, err := i.And[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		and := make([]predicate.LicenseScan, 0, n)
-		for _, w := range i.And {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			and = append(and, p)
-		}
-		predicates = append(predicates, licensescan.And(and...))
-	}
-	if i.Tool != nil {
-		predicates = append(predicates, licensescan.ToolEQ(*i.Tool))
-	}
-	if i.ToolNEQ != nil {
-		predicates = append(predicates, licensescan.ToolNEQ(*i.ToolNEQ))
-	}
-	if len(i.ToolIn) > 0 {
-		predicates = append(predicates, licensescan.ToolIn(i.ToolIn...))
-	}
-	if len(i.ToolNotIn) > 0 {
-		predicates = append(predicates, licensescan.ToolNotIn(i.ToolNotIn...))
-	}
-	if i.ToolGT != nil {
-		predicates = append(predicates, licensescan.ToolGT(*i.ToolGT))
-	}
-	if i.ToolGTE != nil {
-		predicates = append(predicates, licensescan.ToolGTE(*i.ToolGTE))
-	}
-	if i.ToolLT != nil {
-		predicates = append(predicates, licensescan.ToolLT(*i.ToolLT))
-	}
-	if i.ToolLTE != nil {
-		predicates = append(predicates, licensescan.ToolLTE(*i.ToolLTE))
-	}
-	if i.ToolContains != nil {
-		predicates = append(predicates, licensescan.ToolContains(*i.ToolContains))
-	}
-	if i.ToolHasPrefix != nil {
-		predicates = append(predicates, licensescan.ToolHasPrefix(*i.ToolHasPrefix))
-	}
-	if i.ToolHasSuffix != nil {
-		predicates = append(predicates, licensescan.ToolHasSuffix(*i.ToolHasSuffix))
-	}
-	if i.ToolEqualFold != nil {
-		predicates = append(predicates, licensescan.ToolEqualFold(*i.ToolEqualFold))
-	}
-	if i.ToolContainsFold != nil {
-		predicates = append(predicates, licensescan.ToolContainsFold(*i.ToolContainsFold))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, licensescan.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, licensescan.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, licensescan.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, licensescan.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, licensescan.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, licensescan.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, licensescan.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, licensescan.IDLTE(*i.IDLTE))
-	}
-
-	if i.HasRelease != nil {
-		p := licensescan.HasRelease()
-		if !*i.HasRelease {
-			p = licensescan.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasReleaseWith) > 0 {
-		with := make([]predicate.Release, 0, len(i.HasReleaseWith))
-		for _, w := range i.HasReleaseWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, licensescan.HasReleaseWith(with...))
-	}
-	if i.HasEntry != nil {
-		p := licensescan.HasEntry()
-		if !*i.HasEntry {
-			p = licensescan.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasEntryWith) > 0 {
-		with := make([]predicate.ReleaseEntry, 0, len(i.HasEntryWith))
-		for _, w := range i.HasEntryWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, licensescan.HasEntryWith(with...))
-	}
-	if i.HasLicenses != nil {
-		p := licensescan.HasLicenses()
-		if !*i.HasLicenses {
-			p = licensescan.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasLicensesWith) > 0 {
-		with := make([]predicate.LicenseUsage, 0, len(i.HasLicensesWith))
-		for _, w := range i.HasLicensesWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, licensescan.HasLicensesWith(with...))
-	}
-	switch len(predicates) {
-	case 0:
-		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate LicenseScanWhereInput")
-	case 1:
-		return predicates[0], nil
-	default:
-		return licensescan.And(predicates...), nil
-	}
-}
-
-// LicenseUsageWhereInput represents a where input for filtering LicenseUsage queries.
-type LicenseUsageWhereInput struct {
-	Not *LicenseUsageWhereInput   `json:"not,omitempty"`
-	Or  []*LicenseUsageWhereInput `json:"or,omitempty"`
-	And []*LicenseUsageWhereInput `json:"and,omitempty"`
+// LicenseUseWhereInput represents a where input for filtering LicenseUse queries.
+type LicenseUseWhereInput struct {
+	Not *LicenseUseWhereInput   `json:"not,omitempty"`
+	Or  []*LicenseUseWhereInput `json:"or,omitempty"`
+	And []*LicenseUseWhereInput `json:"and,omitempty"`
 
 	// "id" field predicates.
 	ID      *int  `json:"id,omitempty"`
@@ -3461,14 +3218,10 @@ type LicenseUsageWhereInput struct {
 	// "license" edge predicates.
 	HasLicense     *bool                `json:"hasLicense,omitempty"`
 	HasLicenseWith []*LicenseWhereInput `json:"hasLicenseWith,omitempty"`
-
-	// "scan" edge predicates.
-	HasScan     *bool                    `json:"hasScan,omitempty"`
-	HasScanWith []*LicenseScanWhereInput `json:"hasScanWith,omitempty"`
 }
 
-// Filter applies the LicenseUsageWhereInput filter on the LicenseUsageQuery builder.
-func (i *LicenseUsageWhereInput) Filter(q *LicenseUsageQuery) (*LicenseUsageQuery, error) {
+// Filter applies the LicenseUseWhereInput filter on the LicenseUseQuery builder.
+func (i *LicenseUseWhereInput) Filter(q *LicenseUseQuery) (*LicenseUseQuery, error) {
 	if i == nil {
 		return q, nil
 	}
@@ -3479,16 +3232,16 @@ func (i *LicenseUsageWhereInput) Filter(q *LicenseUsageQuery) (*LicenseUsageQuer
 	return q.Where(p), nil
 }
 
-// P returns a predicate for filtering licenseusages.
+// P returns a predicate for filtering licenseuses.
 // An error is returned if the input is empty or invalid.
-func (i *LicenseUsageWhereInput) P() (predicate.LicenseUsage, error) {
-	var predicates []predicate.LicenseUsage
+func (i *LicenseUseWhereInput) P() (predicate.LicenseUse, error) {
+	var predicates []predicate.LicenseUse
 	if i.Not != nil {
 		p, err := i.Not.P()
 		if err != nil {
 			return nil, err
 		}
-		predicates = append(predicates, licenseusage.Not(p))
+		predicates = append(predicates, licenseuse.Not(p))
 	}
 	switch n := len(i.Or); {
 	case n == 1:
@@ -3498,7 +3251,7 @@ func (i *LicenseUsageWhereInput) P() (predicate.LicenseUsage, error) {
 		}
 		predicates = append(predicates, p)
 	case n > 1:
-		or := make([]predicate.LicenseUsage, 0, n)
+		or := make([]predicate.LicenseUse, 0, n)
 		for _, w := range i.Or {
 			p, err := w.P()
 			if err != nil {
@@ -3506,7 +3259,7 @@ func (i *LicenseUsageWhereInput) P() (predicate.LicenseUsage, error) {
 			}
 			or = append(or, p)
 		}
-		predicates = append(predicates, licenseusage.Or(or...))
+		predicates = append(predicates, licenseuse.Or(or...))
 	}
 	switch n := len(i.And); {
 	case n == 1:
@@ -3516,7 +3269,7 @@ func (i *LicenseUsageWhereInput) P() (predicate.LicenseUsage, error) {
 		}
 		predicates = append(predicates, p)
 	case n > 1:
-		and := make([]predicate.LicenseUsage, 0, n)
+		and := make([]predicate.LicenseUse, 0, n)
 		for _, w := range i.And {
 			p, err := w.P()
 			if err != nil {
@@ -3524,37 +3277,37 @@ func (i *LicenseUsageWhereInput) P() (predicate.LicenseUsage, error) {
 			}
 			and = append(and, p)
 		}
-		predicates = append(predicates, licenseusage.And(and...))
+		predicates = append(predicates, licenseuse.And(and...))
 	}
 	if i.ID != nil {
-		predicates = append(predicates, licenseusage.IDEQ(*i.ID))
+		predicates = append(predicates, licenseuse.IDEQ(*i.ID))
 	}
 	if i.IDNEQ != nil {
-		predicates = append(predicates, licenseusage.IDNEQ(*i.IDNEQ))
+		predicates = append(predicates, licenseuse.IDNEQ(*i.IDNEQ))
 	}
 	if len(i.IDIn) > 0 {
-		predicates = append(predicates, licenseusage.IDIn(i.IDIn...))
+		predicates = append(predicates, licenseuse.IDIn(i.IDIn...))
 	}
 	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, licenseusage.IDNotIn(i.IDNotIn...))
+		predicates = append(predicates, licenseuse.IDNotIn(i.IDNotIn...))
 	}
 	if i.IDGT != nil {
-		predicates = append(predicates, licenseusage.IDGT(*i.IDGT))
+		predicates = append(predicates, licenseuse.IDGT(*i.IDGT))
 	}
 	if i.IDGTE != nil {
-		predicates = append(predicates, licenseusage.IDGTE(*i.IDGTE))
+		predicates = append(predicates, licenseuse.IDGTE(*i.IDGTE))
 	}
 	if i.IDLT != nil {
-		predicates = append(predicates, licenseusage.IDLT(*i.IDLT))
+		predicates = append(predicates, licenseuse.IDLT(*i.IDLT))
 	}
 	if i.IDLTE != nil {
-		predicates = append(predicates, licenseusage.IDLTE(*i.IDLTE))
+		predicates = append(predicates, licenseuse.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasLicense != nil {
-		p := licenseusage.HasLicense()
+		p := licenseuse.HasLicense()
 		if !*i.HasLicense {
-			p = licenseusage.Not(p)
+			p = licenseuse.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
@@ -3567,33 +3320,15 @@ func (i *LicenseUsageWhereInput) P() (predicate.LicenseUsage, error) {
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, licenseusage.HasLicenseWith(with...))
-	}
-	if i.HasScan != nil {
-		p := licenseusage.HasScan()
-		if !*i.HasScan {
-			p = licenseusage.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasScanWith) > 0 {
-		with := make([]predicate.LicenseScan, 0, len(i.HasScanWith))
-		for _, w := range i.HasScanWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, licenseusage.HasScanWith(with...))
+		predicates = append(predicates, licenseuse.HasLicenseWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
-		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate LicenseUsageWhereInput")
+		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate LicenseUseWhereInput")
 	case 1:
 		return predicates[0], nil
 	default:
-		return licenseusage.And(predicates...), nil
+		return licenseuse.And(predicates...), nil
 	}
 }
 
@@ -3896,37 +3631,25 @@ type ReleaseWhereInput struct {
 	HasCommit     *bool                  `json:"hasCommit,omitempty"`
 	HasCommitWith []*GitCommitWhereInput `json:"hasCommitWith,omitempty"`
 
+	// "log" edge predicates.
+	HasLog     *bool                     `json:"hasLog,omitempty"`
+	HasLogWith []*ReleaseEntryWhereInput `json:"hasLogWith,omitempty"`
+
 	// "artifacts" edge predicates.
 	HasArtifacts     *bool                 `json:"hasArtifacts,omitempty"`
 	HasArtifactsWith []*ArtifactWhereInput `json:"hasArtifactsWith,omitempty"`
 
-	// "checks" edge predicates.
-	HasChecks     *bool                     `json:"hasChecks,omitempty"`
-	HasChecksWith []*ReleaseCheckWhereInput `json:"hasChecksWith,omitempty"`
-
-	// "log" edge predicates.
-	HasLog     *bool                     `json:"hasLog,omitempty"`
-	HasLogWith []*ReleaseEntryWhereInput `json:"hasLogWith,omitempty"`
+	// "components" edge predicates.
+	HasComponents     *bool                     `json:"hasComponents,omitempty"`
+	HasComponentsWith []*ComponentUseWhereInput `json:"hasComponentsWith,omitempty"`
 
 	// "code_scans" edge predicates.
 	HasCodeScans     *bool                 `json:"hasCodeScans,omitempty"`
 	HasCodeScansWith []*CodeScanWhereInput `json:"hasCodeScansWith,omitempty"`
 
-	// "cve_scans" edge predicates.
-	HasCveScans     *bool                `json:"hasCveScans,omitempty"`
-	HasCveScansWith []*CVEScanWhereInput `json:"hasCveScansWith,omitempty"`
-
-	// "license_scans" edge predicates.
-	HasLicenseScans     *bool                    `json:"hasLicenseScans,omitempty"`
-	HasLicenseScansWith []*LicenseScanWhereInput `json:"hasLicenseScansWith,omitempty"`
-
 	// "test_runs" edge predicates.
 	HasTestRuns     *bool                `json:"hasTestRuns,omitempty"`
 	HasTestRunsWith []*TestRunWhereInput `json:"hasTestRunsWith,omitempty"`
-
-	// "components" edge predicates.
-	HasComponents     *bool                  `json:"hasComponents,omitempty"`
-	HasComponentsWith []*ComponentWhereInput `json:"hasComponentsWith,omitempty"`
 }
 
 // Filter applies the ReleaseWhereInput filter on the ReleaseQuery builder.
@@ -4175,6 +3898,24 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 		}
 		predicates = append(predicates, release.HasCommitWith(with...))
 	}
+	if i.HasLog != nil {
+		p := release.HasLog()
+		if !*i.HasLog {
+			p = release.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasLogWith) > 0 {
+		with := make([]predicate.ReleaseEntry, 0, len(i.HasLogWith))
+		for _, w := range i.HasLogWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, release.HasLogWith(with...))
+	}
 	if i.HasArtifacts != nil {
 		p := release.HasArtifacts()
 		if !*i.HasArtifacts {
@@ -4193,41 +3934,23 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 		}
 		predicates = append(predicates, release.HasArtifactsWith(with...))
 	}
-	if i.HasChecks != nil {
-		p := release.HasChecks()
-		if !*i.HasChecks {
+	if i.HasComponents != nil {
+		p := release.HasComponents()
+		if !*i.HasComponents {
 			p = release.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasChecksWith) > 0 {
-		with := make([]predicate.ReleaseCheck, 0, len(i.HasChecksWith))
-		for _, w := range i.HasChecksWith {
+	if len(i.HasComponentsWith) > 0 {
+		with := make([]predicate.ComponentUse, 0, len(i.HasComponentsWith))
+		for _, w := range i.HasComponentsWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, release.HasChecksWith(with...))
-	}
-	if i.HasLog != nil {
-		p := release.HasLog()
-		if !*i.HasLog {
-			p = release.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasLogWith) > 0 {
-		with := make([]predicate.ReleaseEntry, 0, len(i.HasLogWith))
-		for _, w := range i.HasLogWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, release.HasLogWith(with...))
+		predicates = append(predicates, release.HasComponentsWith(with...))
 	}
 	if i.HasCodeScans != nil {
 		p := release.HasCodeScans()
@@ -4247,42 +3970,6 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 		}
 		predicates = append(predicates, release.HasCodeScansWith(with...))
 	}
-	if i.HasCveScans != nil {
-		p := release.HasCveScans()
-		if !*i.HasCveScans {
-			p = release.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasCveScansWith) > 0 {
-		with := make([]predicate.CVEScan, 0, len(i.HasCveScansWith))
-		for _, w := range i.HasCveScansWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, release.HasCveScansWith(with...))
-	}
-	if i.HasLicenseScans != nil {
-		p := release.HasLicenseScans()
-		if !*i.HasLicenseScans {
-			p = release.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasLicenseScansWith) > 0 {
-		with := make([]predicate.LicenseScan, 0, len(i.HasLicenseScansWith))
-		for _, w := range i.HasLicenseScansWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, release.HasLicenseScansWith(with...))
-	}
 	if i.HasTestRuns != nil {
 		p := release.HasTestRuns()
 		if !*i.HasTestRuns {
@@ -4301,24 +3988,6 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 		}
 		predicates = append(predicates, release.HasTestRunsWith(with...))
 	}
-	if i.HasComponents != nil {
-		p := release.HasComponents()
-		if !*i.HasComponents {
-			p = release.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasComponentsWith) > 0 {
-		with := make([]predicate.Component, 0, len(i.HasComponentsWith))
-		for _, w := range i.HasComponentsWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, release.HasComponentsWith(with...))
-	}
 	switch len(predicates) {
 	case 0:
 		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate ReleaseWhereInput")
@@ -4326,157 +3995,6 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 		return predicates[0], nil
 	default:
 		return release.And(predicates...), nil
-	}
-}
-
-// ReleaseCheckWhereInput represents a where input for filtering ReleaseCheck queries.
-type ReleaseCheckWhereInput struct {
-	Not *ReleaseCheckWhereInput   `json:"not,omitempty"`
-	Or  []*ReleaseCheckWhereInput `json:"or,omitempty"`
-	And []*ReleaseCheckWhereInput `json:"and,omitempty"`
-
-	// "type" field predicates.
-	Type      *releasecheck.Type  `json:"type,omitempty"`
-	TypeNEQ   *releasecheck.Type  `json:"typeNEQ,omitempty"`
-	TypeIn    []releasecheck.Type `json:"typeIn,omitempty"`
-	TypeNotIn []releasecheck.Type `json:"typeNotIn,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-
-	// "release" edge predicates.
-	HasRelease     *bool                `json:"hasRelease,omitempty"`
-	HasReleaseWith []*ReleaseWhereInput `json:"hasReleaseWith,omitempty"`
-}
-
-// Filter applies the ReleaseCheckWhereInput filter on the ReleaseCheckQuery builder.
-func (i *ReleaseCheckWhereInput) Filter(q *ReleaseCheckQuery) (*ReleaseCheckQuery, error) {
-	if i == nil {
-		return q, nil
-	}
-	p, err := i.P()
-	if err != nil {
-		return nil, err
-	}
-	return q.Where(p), nil
-}
-
-// P returns a predicate for filtering releasechecks.
-// An error is returned if the input is empty or invalid.
-func (i *ReleaseCheckWhereInput) P() (predicate.ReleaseCheck, error) {
-	var predicates []predicate.ReleaseCheck
-	if i.Not != nil {
-		p, err := i.Not.P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, releasecheck.Not(p))
-	}
-	switch n := len(i.Or); {
-	case n == 1:
-		p, err := i.Or[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		or := make([]predicate.ReleaseCheck, 0, n)
-		for _, w := range i.Or {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			or = append(or, p)
-		}
-		predicates = append(predicates, releasecheck.Or(or...))
-	}
-	switch n := len(i.And); {
-	case n == 1:
-		p, err := i.And[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		and := make([]predicate.ReleaseCheck, 0, n)
-		for _, w := range i.And {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			and = append(and, p)
-		}
-		predicates = append(predicates, releasecheck.And(and...))
-	}
-	if i.Type != nil {
-		predicates = append(predicates, releasecheck.TypeEQ(*i.Type))
-	}
-	if i.TypeNEQ != nil {
-		predicates = append(predicates, releasecheck.TypeNEQ(*i.TypeNEQ))
-	}
-	if len(i.TypeIn) > 0 {
-		predicates = append(predicates, releasecheck.TypeIn(i.TypeIn...))
-	}
-	if len(i.TypeNotIn) > 0 {
-		predicates = append(predicates, releasecheck.TypeNotIn(i.TypeNotIn...))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, releasecheck.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, releasecheck.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, releasecheck.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, releasecheck.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, releasecheck.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, releasecheck.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, releasecheck.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, releasecheck.IDLTE(*i.IDLTE))
-	}
-
-	if i.HasRelease != nil {
-		p := releasecheck.HasRelease()
-		if !*i.HasRelease {
-			p = releasecheck.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasReleaseWith) > 0 {
-		with := make([]predicate.Release, 0, len(i.HasReleaseWith))
-		for _, w := range i.HasReleaseWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, releasecheck.HasReleaseWith(with...))
-	}
-	switch len(predicates) {
-	case 0:
-		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate ReleaseCheckWhereInput")
-	case 1:
-		return predicates[0], nil
-	default:
-		return releasecheck.And(predicates...), nil
 	}
 }
 
@@ -4523,14 +4041,6 @@ type ReleaseEntryWhereInput struct {
 	// "test_run" edge predicates.
 	HasTestRun     *bool                `json:"hasTestRun,omitempty"`
 	HasTestRunWith []*TestRunWhereInput `json:"hasTestRunWith,omitempty"`
-
-	// "cve_scan" edge predicates.
-	HasCveScan     *bool                `json:"hasCveScan,omitempty"`
-	HasCveScanWith []*CVEScanWhereInput `json:"hasCveScanWith,omitempty"`
-
-	// "license_scan" edge predicates.
-	HasLicenseScan     *bool                    `json:"hasLicenseScan,omitempty"`
-	HasLicenseScanWith []*LicenseScanWhereInput `json:"hasLicenseScanWith,omitempty"`
 
 	// "release" edge predicates.
 	HasRelease     *bool                `json:"hasRelease,omitempty"`
@@ -4710,42 +4220,6 @@ func (i *ReleaseEntryWhereInput) P() (predicate.ReleaseEntry, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, releaseentry.HasTestRunWith(with...))
-	}
-	if i.HasCveScan != nil {
-		p := releaseentry.HasCveScan()
-		if !*i.HasCveScan {
-			p = releaseentry.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasCveScanWith) > 0 {
-		with := make([]predicate.CVEScan, 0, len(i.HasCveScanWith))
-		for _, w := range i.HasCveScanWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, releaseentry.HasCveScanWith(with...))
-	}
-	if i.HasLicenseScan != nil {
-		p := releaseentry.HasLicenseScan()
-		if !*i.HasLicenseScan {
-			p = releaseentry.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasLicenseScanWith) > 0 {
-		with := make([]predicate.LicenseScan, 0, len(i.HasLicenseScanWith))
-		for _, w := range i.HasLicenseScanWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, releaseentry.HasLicenseScanWith(with...))
 	}
 	if i.HasRelease != nil {
 		p := releaseentry.HasRelease()
@@ -5541,14 +5015,6 @@ type VulnerabilityWhereInput struct {
 	// "cve" edge predicates.
 	HasCve     *bool            `json:"hasCve,omitempty"`
 	HasCveWith []*CVEWhereInput `json:"hasCveWith,omitempty"`
-
-	// "scan" edge predicates.
-	HasScan     *bool                `json:"hasScan,omitempty"`
-	HasScanWith []*CVEScanWhereInput `json:"hasScanWith,omitempty"`
-
-	// "component" edge predicates.
-	HasComponent     *bool                  `json:"hasComponent,omitempty"`
-	HasComponentWith []*ComponentWhereInput `json:"hasComponentWith,omitempty"`
 }
 
 // Filter applies the VulnerabilityWhereInput filter on the VulnerabilityQuery builder.
@@ -5652,42 +5118,6 @@ func (i *VulnerabilityWhereInput) P() (predicate.Vulnerability, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, vulnerability.HasCveWith(with...))
-	}
-	if i.HasScan != nil {
-		p := vulnerability.HasScan()
-		if !*i.HasScan {
-			p = vulnerability.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasScanWith) > 0 {
-		with := make([]predicate.CVEScan, 0, len(i.HasScanWith))
-		for _, w := range i.HasScanWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, vulnerability.HasScanWith(with...))
-	}
-	if i.HasComponent != nil {
-		p := vulnerability.HasComponent()
-		if !*i.HasComponent {
-			p = vulnerability.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasComponentWith) > 0 {
-		with := make([]predicate.Component, 0, len(i.HasComponentWith))
-		for _, w := range i.HasComponentWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, vulnerability.HasComponentWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

@@ -398,8 +398,8 @@ func (rq *RepoQuery) GroupBy(field string, fields ...string) *RepoGroupBy {
 //		Select(repo.FieldName).
 //		Scan(ctx, &v)
 //
-func (rq *RepoQuery) Select(field string, fields ...string) *RepoSelect {
-	rq.fields = append([]string{field}, fields...)
+func (rq *RepoQuery) Select(fields ...string) *RepoSelect {
+	rq.fields = append(rq.fields, fields...)
 	return &RepoSelect{RepoQuery: rq}
 }
 

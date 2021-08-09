@@ -161,29 +161,3 @@ func ctyToEntValue(value cty.Value, ty field.Type, v interface{}) error {
 		return fmt.Errorf("unsupported type conversion to type %s for cty type %s", ty.String(), value.Type().FriendlyName())
 	}
 }
-
-// func entToCtyValue(value ent.Value, ty field.Type) cty.Value {
-// 	// Handle all the numbers
-// 	if ty.Numeric() {
-// 		return gocty.ToCtyValue(value, cty.Number)
-// 	}
-// 	switch ty {
-// 	case field.TypeBool:
-// 		return gocty.ToCtyValue(value, cty.Bool)
-// 	case field.TypeString, field.TypeEnum:
-// 		return gocty.ToCtyValue(value, cty.String)
-// 	case field.TypeTime:
-// 		return cty.NilVal, errors.New("need to create capsule val for time...")
-// 		// return gocty.ToCtyValue(value, cty.Bool)
-// 	case field.TypeJSON:
-// 		return cty.NilVal, fmt.Errorf("unsupported type conversion from type %s to cty value", ty.String())
-// 	case field.TypeUUID:
-// 		return cty.NilVal, fmt.Errorf("unsupported type conversion from type %s to cty value", ty.String())
-// 	case field.TypeBytes:
-// 		return cty.NilVal, fmt.Errorf("unsupported type conversion from type %s to cty value", ty.String())
-// 	case field.TypeOther:
-// 		return cty.NilVal, fmt.Errorf("unsupported type conversion from type %s to cty value", ty.String())
-// 	default:
-// 		return cty.NilVal, fmt.Errorf("unsupported type conversion from type %s to cty value", ty.String())
-// 	}
-// }

@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/cverule"
 	"github.com/valocode/bubbly/ent/predicate"
@@ -23,9 +24,9 @@ type CVEUpdate struct {
 	mutation *CVEMutation
 }
 
-// Where adds a new predicate for the CVEUpdate builder.
+// Where appends a list predicates to the CVEUpdate builder.
 func (cu *CVEUpdate) Where(ps ...predicate.CVE) *CVEUpdate {
-	cu.mutation.predicates = append(cu.mutation.predicates, ps...)
+	cu.mutation.Where(ps...)
 	return cu
 }
 
@@ -130,19 +131,34 @@ func (cu *CVEUpdate) ClearModifiedData() *CVEUpdate {
 	return cu
 }
 
-// AddFoundIDs adds the "found" edge to the Vulnerability entity by IDs.
-func (cu *CVEUpdate) AddFoundIDs(ids ...int) *CVEUpdate {
-	cu.mutation.AddFoundIDs(ids...)
+// AddComponentIDs adds the "components" edge to the Component entity by IDs.
+func (cu *CVEUpdate) AddComponentIDs(ids ...int) *CVEUpdate {
+	cu.mutation.AddComponentIDs(ids...)
 	return cu
 }
 
-// AddFound adds the "found" edges to the Vulnerability entity.
-func (cu *CVEUpdate) AddFound(v ...*Vulnerability) *CVEUpdate {
+// AddComponents adds the "components" edges to the Component entity.
+func (cu *CVEUpdate) AddComponents(c ...*Component) *CVEUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cu.AddComponentIDs(ids...)
+}
+
+// AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by IDs.
+func (cu *CVEUpdate) AddVulnerabilityIDs(ids ...int) *CVEUpdate {
+	cu.mutation.AddVulnerabilityIDs(ids...)
+	return cu
+}
+
+// AddVulnerabilities adds the "vulnerabilities" edges to the Vulnerability entity.
+func (cu *CVEUpdate) AddVulnerabilities(v ...*Vulnerability) *CVEUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return cu.AddFoundIDs(ids...)
+	return cu.AddVulnerabilityIDs(ids...)
 }
 
 // AddRuleIDs adds the "rules" edge to the CVERule entity by IDs.
@@ -165,25 +181,46 @@ func (cu *CVEUpdate) Mutation() *CVEMutation {
 	return cu.mutation
 }
 
-// ClearFound clears all "found" edges to the Vulnerability entity.
-func (cu *CVEUpdate) ClearFound() *CVEUpdate {
-	cu.mutation.ClearFound()
+// ClearComponents clears all "components" edges to the Component entity.
+func (cu *CVEUpdate) ClearComponents() *CVEUpdate {
+	cu.mutation.ClearComponents()
 	return cu
 }
 
-// RemoveFoundIDs removes the "found" edge to Vulnerability entities by IDs.
-func (cu *CVEUpdate) RemoveFoundIDs(ids ...int) *CVEUpdate {
-	cu.mutation.RemoveFoundIDs(ids...)
+// RemoveComponentIDs removes the "components" edge to Component entities by IDs.
+func (cu *CVEUpdate) RemoveComponentIDs(ids ...int) *CVEUpdate {
+	cu.mutation.RemoveComponentIDs(ids...)
 	return cu
 }
 
-// RemoveFound removes "found" edges to Vulnerability entities.
-func (cu *CVEUpdate) RemoveFound(v ...*Vulnerability) *CVEUpdate {
+// RemoveComponents removes "components" edges to Component entities.
+func (cu *CVEUpdate) RemoveComponents(c ...*Component) *CVEUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cu.RemoveComponentIDs(ids...)
+}
+
+// ClearVulnerabilities clears all "vulnerabilities" edges to the Vulnerability entity.
+func (cu *CVEUpdate) ClearVulnerabilities() *CVEUpdate {
+	cu.mutation.ClearVulnerabilities()
+	return cu
+}
+
+// RemoveVulnerabilityIDs removes the "vulnerabilities" edge to Vulnerability entities by IDs.
+func (cu *CVEUpdate) RemoveVulnerabilityIDs(ids ...int) *CVEUpdate {
+	cu.mutation.RemoveVulnerabilityIDs(ids...)
+	return cu
+}
+
+// RemoveVulnerabilities removes "vulnerabilities" edges to Vulnerability entities.
+func (cu *CVEUpdate) RemoveVulnerabilities(v ...*Vulnerability) *CVEUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return cu.RemoveFoundIDs(ids...)
+	return cu.RemoveVulnerabilityIDs(ids...)
 }
 
 // ClearRules clears all "rules" edges to the CVERule entity.
@@ -233,6 +270,9 @@ func (cu *CVEUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(cu.hooks) - 1; i >= 0; i-- {
+			if cu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = cu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, cu.mutation); err != nil {
@@ -364,12 +404,66 @@ func (cu *CVEUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: cve.FieldModifiedData,
 		})
 	}
-	if cu.mutation.FoundCleared() {
+	if cu.mutation.ComponentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   cve.ComponentsTable,
+			Columns: cve.ComponentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: component.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.RemovedComponentsIDs(); len(nodes) > 0 && !cu.mutation.ComponentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   cve.ComponentsTable,
+			Columns: cve.ComponentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: component.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.ComponentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   cve.ComponentsTable,
+			Columns: cve.ComponentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: component.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cu.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   cve.FoundTable,
-			Columns: []string{cve.FoundColumn},
+			Table:   cve.VulnerabilitiesTable,
+			Columns: []string{cve.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -380,12 +474,12 @@ func (cu *CVEUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cu.mutation.RemovedFoundIDs(); len(nodes) > 0 && !cu.mutation.FoundCleared() {
+	if nodes := cu.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !cu.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   cve.FoundTable,
-			Columns: []string{cve.FoundColumn},
+			Table:   cve.VulnerabilitiesTable,
+			Columns: []string{cve.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -399,12 +493,12 @@ func (cu *CVEUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cu.mutation.FoundIDs(); len(nodes) > 0 {
+	if nodes := cu.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   cve.FoundTable,
-			Columns: []string{cve.FoundColumn},
+			Table:   cve.VulnerabilitiesTable,
+			Columns: []string{cve.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -592,19 +686,34 @@ func (cuo *CVEUpdateOne) ClearModifiedData() *CVEUpdateOne {
 	return cuo
 }
 
-// AddFoundIDs adds the "found" edge to the Vulnerability entity by IDs.
-func (cuo *CVEUpdateOne) AddFoundIDs(ids ...int) *CVEUpdateOne {
-	cuo.mutation.AddFoundIDs(ids...)
+// AddComponentIDs adds the "components" edge to the Component entity by IDs.
+func (cuo *CVEUpdateOne) AddComponentIDs(ids ...int) *CVEUpdateOne {
+	cuo.mutation.AddComponentIDs(ids...)
 	return cuo
 }
 
-// AddFound adds the "found" edges to the Vulnerability entity.
-func (cuo *CVEUpdateOne) AddFound(v ...*Vulnerability) *CVEUpdateOne {
+// AddComponents adds the "components" edges to the Component entity.
+func (cuo *CVEUpdateOne) AddComponents(c ...*Component) *CVEUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cuo.AddComponentIDs(ids...)
+}
+
+// AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by IDs.
+func (cuo *CVEUpdateOne) AddVulnerabilityIDs(ids ...int) *CVEUpdateOne {
+	cuo.mutation.AddVulnerabilityIDs(ids...)
+	return cuo
+}
+
+// AddVulnerabilities adds the "vulnerabilities" edges to the Vulnerability entity.
+func (cuo *CVEUpdateOne) AddVulnerabilities(v ...*Vulnerability) *CVEUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return cuo.AddFoundIDs(ids...)
+	return cuo.AddVulnerabilityIDs(ids...)
 }
 
 // AddRuleIDs adds the "rules" edge to the CVERule entity by IDs.
@@ -627,25 +736,46 @@ func (cuo *CVEUpdateOne) Mutation() *CVEMutation {
 	return cuo.mutation
 }
 
-// ClearFound clears all "found" edges to the Vulnerability entity.
-func (cuo *CVEUpdateOne) ClearFound() *CVEUpdateOne {
-	cuo.mutation.ClearFound()
+// ClearComponents clears all "components" edges to the Component entity.
+func (cuo *CVEUpdateOne) ClearComponents() *CVEUpdateOne {
+	cuo.mutation.ClearComponents()
 	return cuo
 }
 
-// RemoveFoundIDs removes the "found" edge to Vulnerability entities by IDs.
-func (cuo *CVEUpdateOne) RemoveFoundIDs(ids ...int) *CVEUpdateOne {
-	cuo.mutation.RemoveFoundIDs(ids...)
+// RemoveComponentIDs removes the "components" edge to Component entities by IDs.
+func (cuo *CVEUpdateOne) RemoveComponentIDs(ids ...int) *CVEUpdateOne {
+	cuo.mutation.RemoveComponentIDs(ids...)
 	return cuo
 }
 
-// RemoveFound removes "found" edges to Vulnerability entities.
-func (cuo *CVEUpdateOne) RemoveFound(v ...*Vulnerability) *CVEUpdateOne {
+// RemoveComponents removes "components" edges to Component entities.
+func (cuo *CVEUpdateOne) RemoveComponents(c ...*Component) *CVEUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cuo.RemoveComponentIDs(ids...)
+}
+
+// ClearVulnerabilities clears all "vulnerabilities" edges to the Vulnerability entity.
+func (cuo *CVEUpdateOne) ClearVulnerabilities() *CVEUpdateOne {
+	cuo.mutation.ClearVulnerabilities()
+	return cuo
+}
+
+// RemoveVulnerabilityIDs removes the "vulnerabilities" edge to Vulnerability entities by IDs.
+func (cuo *CVEUpdateOne) RemoveVulnerabilityIDs(ids ...int) *CVEUpdateOne {
+	cuo.mutation.RemoveVulnerabilityIDs(ids...)
+	return cuo
+}
+
+// RemoveVulnerabilities removes "vulnerabilities" edges to Vulnerability entities.
+func (cuo *CVEUpdateOne) RemoveVulnerabilities(v ...*Vulnerability) *CVEUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
-	return cuo.RemoveFoundIDs(ids...)
+	return cuo.RemoveVulnerabilityIDs(ids...)
 }
 
 // ClearRules clears all "rules" edges to the CVERule entity.
@@ -702,6 +832,9 @@ func (cuo *CVEUpdateOne) Save(ctx context.Context) (*CVE, error) {
 			return node, err
 		})
 		for i := len(cuo.hooks) - 1; i >= 0; i-- {
+			if cuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = cuo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, cuo.mutation); err != nil {
@@ -850,12 +983,66 @@ func (cuo *CVEUpdateOne) sqlSave(ctx context.Context) (_node *CVE, err error) {
 			Column: cve.FieldModifiedData,
 		})
 	}
-	if cuo.mutation.FoundCleared() {
+	if cuo.mutation.ComponentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   cve.ComponentsTable,
+			Columns: cve.ComponentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: component.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.RemovedComponentsIDs(); len(nodes) > 0 && !cuo.mutation.ComponentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   cve.ComponentsTable,
+			Columns: cve.ComponentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: component.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.ComponentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   cve.ComponentsTable,
+			Columns: cve.ComponentsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: component.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cuo.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   cve.FoundTable,
-			Columns: []string{cve.FoundColumn},
+			Table:   cve.VulnerabilitiesTable,
+			Columns: []string{cve.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -866,12 +1053,12 @@ func (cuo *CVEUpdateOne) sqlSave(ctx context.Context) (_node *CVE, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cuo.mutation.RemovedFoundIDs(); len(nodes) > 0 && !cuo.mutation.FoundCleared() {
+	if nodes := cuo.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !cuo.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   cve.FoundTable,
-			Columns: []string{cve.FoundColumn},
+			Table:   cve.VulnerabilitiesTable,
+			Columns: []string{cve.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -885,12 +1072,12 @@ func (cuo *CVEUpdateOne) sqlSave(ctx context.Context) (_node *CVE, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cuo.mutation.FoundIDs(); len(nodes) > 0 {
+	if nodes := cuo.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   cve.FoundTable,
-			Columns: []string{cve.FoundColumn},
+			Table:   cve.VulnerabilitiesTable,
+			Columns: []string{cve.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

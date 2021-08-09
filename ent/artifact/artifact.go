@@ -27,14 +27,14 @@ const (
 	EdgeEntry = "entry"
 	// Table holds the table name of the artifact in the database.
 	Table = "artifact"
-	// ReleaseTable is the table the holds the release relation/edge.
+	// ReleaseTable is the table that holds the release relation/edge.
 	ReleaseTable = "artifact"
 	// ReleaseInverseTable is the table name for the Release entity.
 	// It exists in this package in order to avoid circular dependency with the "release" package.
 	ReleaseInverseTable = "release"
 	// ReleaseColumn is the table column denoting the release relation/edge.
 	ReleaseColumn = "artifact_release"
-	// EntryTable is the table the holds the entry relation/edge.
+	// EntryTable is the table that holds the entry relation/edge.
 	EntryTable = "artifact"
 	// EntryInverseTable is the table name for the ReleaseEntry entity.
 	// It exists in this package in order to avoid circular dependency with the "releaseentry" package.

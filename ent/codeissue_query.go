@@ -362,8 +362,8 @@ func (ciq *CodeIssueQuery) GroupBy(field string, fields ...string) *CodeIssueGro
 //		Select(codeissue.FieldRuleID).
 //		Scan(ctx, &v)
 //
-func (ciq *CodeIssueQuery) Select(field string, fields ...string) *CodeIssueSelect {
-	ciq.fields = append([]string{field}, fields...)
+func (ciq *CodeIssueQuery) Select(fields ...string) *CodeIssueSelect {
+	ciq.fields = append(ciq.fields, fields...)
 	return &CodeIssueSelect{CodeIssueQuery: ciq}
 }
 

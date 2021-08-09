@@ -19,17 +19,15 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/cverule"
-	"github.com/valocode/bubbly/ent/cvescan"
 	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licensescan"
-	"github.com/valocode/bubbly/ent/licenseusage"
+	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasecheck"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testcase"
@@ -133,7 +131,7 @@ func (c *CVE) Node(ctx context.Context) (node *Node, err error) {
 		ID:     c.ID,
 		Type:   "CVE",
 		Fields: make([]*Field, 6),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(c.CveID); err != nil {
@@ -193,20 +191,30 @@ func (c *CVE) Node(ctx context.Context) (node *Node, err error) {
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
-		Type: "Vulnerability",
-		Name: "found",
+		Type: "Component",
+		Name: "components",
 	}
-	node.Edges[0].IDs, err = c.QueryFound().
-		Select(vulnerability.FieldID).
+	node.Edges[0].IDs, err = c.QueryComponents().
+		Select(component.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
+		Type: "Vulnerability",
+		Name: "vulnerabilities",
+	}
+	node.Edges[1].IDs, err = c.QueryVulnerabilities().
+		Select(vulnerability.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
 		Type: "CVERule",
 		Name: "rules",
 	}
-	node.Edges[1].IDs, err = c.QueryRules().
+	node.Edges[2].IDs, err = c.QueryRules().
 		Select(cverule.FieldID).
 		Ints(ctx)
 	if err != nil {
@@ -265,63 +273,6 @@ func (cr *CVERule) Node(ctx context.Context) (node *Node, err error) {
 	}
 	node.Edges[2].IDs, err = cr.QueryRepo().
 		Select(repo.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return node, nil
-}
-
-func (cs *CVEScan) Node(ctx context.Context) (node *Node, err error) {
-	node = &Node{
-		ID:     cs.ID,
-		Type:   "CVEScan",
-		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 3),
-	}
-	var buf []byte
-	if buf, err = json.Marshal(cs.Tool); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "string",
-		Name:  "tool",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(cs.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[1] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
-	node.Edges[0] = &Edge{
-		Type: "Release",
-		Name: "release",
-	}
-	node.Edges[0].IDs, err = cs.QueryRelease().
-		Select(release.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[1] = &Edge{
-		Type: "ReleaseEntry",
-		Name: "entry",
-	}
-	node.Edges[1].IDs, err = cs.QueryEntry().
-		Select(releaseentry.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[2] = &Edge{
-		Type: "Vulnerability",
-		Name: "vulnerabilities",
-	}
-	node.Edges[2].IDs, err = cs.QueryVulnerabilities().
-		Select(vulnerability.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
@@ -458,7 +409,7 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		ID:     cs.ID,
 		Type:   "CodeScan",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(cs.Tool); err != nil {
@@ -488,21 +439,31 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "CodeIssue",
-		Name: "issues",
+		Type: "ReleaseEntry",
+		Name: "entry",
 	}
-	node.Edges[1].IDs, err = cs.QueryIssues().
-		Select(codeissue.FieldID).
+	node.Edges[1].IDs, err = cs.QueryEntry().
+		Select(releaseentry.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
-		Type: "ReleaseEntry",
-		Name: "entry",
+		Type: "CodeIssue",
+		Name: "issues",
 	}
-	node.Edges[2].IDs, err = cs.QueryEntry().
-		Select(releaseentry.FieldID).
+	node.Edges[2].IDs, err = cs.QueryIssues().
+		Select(codeissue.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
+		Type: "ComponentUse",
+		Name: "components",
+	}
+	node.Edges[3].IDs, err = cs.QueryComponents().
+		Select(componentuse.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
@@ -567,11 +528,11 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
-		Type: "Vulnerability",
-		Name: "vulnerabilities",
+		Type: "CVE",
+		Name: "cves",
 	}
-	node.Edges[0].IDs, err = c.QueryVulnerabilities().
-		Select(vulnerability.FieldID).
+	node.Edges[0].IDs, err = c.QueryCves().
+		Select(cve.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
@@ -587,11 +548,60 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
+		Type: "ComponentUse",
+		Name: "uses",
+	}
+	node.Edges[2].IDs, err = c.QueryUses().
+		Select(componentuse.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+func (cu *ComponentUse) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     cu.ID,
+		Type:   "ComponentUse",
+		Fields: make([]*Field, 0),
+		Edges:  make([]*Edge, 3),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(cu.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "int",
+		Name:  "id",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[2].IDs, err = c.QueryRelease().
+	node.Edges[0].IDs, err = cu.QueryRelease().
 		Select(release.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "CodeScan",
+		Name: "scans",
+	}
+	node.Edges[1].IDs, err = cu.QueryScans().
+		Select(codescan.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "Component",
+		Name: "component",
+	}
+	node.Edges[2].IDs, err = cu.QueryComponent().
+		Select(component.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
@@ -737,11 +747,11 @@ func (l *License) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "LicenseUsage",
-		Name: "usages",
+		Type: "LicenseUse",
+		Name: "uses",
 	}
-	node.Edges[1].IDs, err = l.QueryUsages().
-		Select(licenseusage.FieldID).
+	node.Edges[1].IDs, err = l.QueryUses().
+		Select(licenseuse.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
@@ -749,69 +759,12 @@ func (l *License) Node(ctx context.Context) (node *Node, err error) {
 	return node, nil
 }
 
-func (ls *LicenseScan) Node(ctx context.Context) (node *Node, err error) {
-	node = &Node{
-		ID:     ls.ID,
-		Type:   "LicenseScan",
-		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 3),
-	}
-	var buf []byte
-	if buf, err = json.Marshal(ls.Tool); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "string",
-		Name:  "tool",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(ls.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[1] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
-	node.Edges[0] = &Edge{
-		Type: "Release",
-		Name: "release",
-	}
-	node.Edges[0].IDs, err = ls.QueryRelease().
-		Select(release.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[1] = &Edge{
-		Type: "ReleaseEntry",
-		Name: "entry",
-	}
-	node.Edges[1].IDs, err = ls.QueryEntry().
-		Select(releaseentry.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[2] = &Edge{
-		Type: "LicenseUsage",
-		Name: "licenses",
-	}
-	node.Edges[2].IDs, err = ls.QueryLicenses().
-		Select(licenseusage.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return node, nil
-}
-
-func (lu *LicenseUsage) Node(ctx context.Context) (node *Node, err error) {
+func (lu *LicenseUse) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     lu.ID,
-		Type:   "LicenseUsage",
+		Type:   "LicenseUse",
 		Fields: make([]*Field, 0),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(lu.ID); err != nil {
@@ -828,16 +781,6 @@ func (lu *LicenseUsage) Node(ctx context.Context) (node *Node, err error) {
 	}
 	node.Edges[0].IDs, err = lu.QueryLicense().
 		Select(license.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[1] = &Edge{
-		Type: "LicenseScan",
-		Name: "scan",
-	}
-	node.Edges[1].IDs, err = lu.QueryScan().
-		Select(licensescan.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
@@ -907,7 +850,7 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		ID:     r.ID,
 		Type:   "Release",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 12),
+		Edges:  make([]*Edge, 9),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(r.Name); err != nil {
@@ -983,31 +926,31 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[4] = &Edge{
-		Type: "Artifact",
-		Name: "artifacts",
+		Type: "ReleaseEntry",
+		Name: "log",
 	}
-	node.Edges[4].IDs, err = r.QueryArtifacts().
-		Select(artifact.FieldID).
+	node.Edges[4].IDs, err = r.QueryLog().
+		Select(releaseentry.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[5] = &Edge{
-		Type: "ReleaseCheck",
-		Name: "checks",
+		Type: "Artifact",
+		Name: "artifacts",
 	}
-	node.Edges[5].IDs, err = r.QueryChecks().
-		Select(releasecheck.FieldID).
+	node.Edges[5].IDs, err = r.QueryArtifacts().
+		Select(artifact.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[6] = &Edge{
-		Type: "ReleaseEntry",
-		Name: "log",
+		Type: "ComponentUse",
+		Name: "components",
 	}
-	node.Edges[6].IDs, err = r.QueryLog().
-		Select(releaseentry.FieldID).
+	node.Edges[6].IDs, err = r.QueryComponents().
+		Select(componentuse.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
@@ -1023,78 +966,11 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[8] = &Edge{
-		Type: "CVEScan",
-		Name: "cve_scans",
-	}
-	node.Edges[8].IDs, err = r.QueryCveScans().
-		Select(cvescan.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[9] = &Edge{
-		Type: "LicenseScan",
-		Name: "license_scans",
-	}
-	node.Edges[9].IDs, err = r.QueryLicenseScans().
-		Select(licensescan.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[10] = &Edge{
 		Type: "TestRun",
 		Name: "test_runs",
 	}
-	node.Edges[10].IDs, err = r.QueryTestRuns().
+	node.Edges[8].IDs, err = r.QueryTestRuns().
 		Select(testrun.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[11] = &Edge{
-		Type: "Component",
-		Name: "components",
-	}
-	node.Edges[11].IDs, err = r.QueryComponents().
-		Select(component.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return node, nil
-}
-
-func (rc *ReleaseCheck) Node(ctx context.Context) (node *Node, err error) {
-	node = &Node{
-		ID:     rc.ID,
-		Type:   "ReleaseCheck",
-		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 1),
-	}
-	var buf []byte
-	if buf, err = json.Marshal(rc.Type); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "releasecheck.Type",
-		Name:  "type",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(rc.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[1] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
-	node.Edges[0] = &Edge{
-		Type: "Release",
-		Name: "release",
-	}
-	node.Edges[0].IDs, err = rc.QueryRelease().
-		Select(release.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
@@ -1107,7 +983,7 @@ func (re *ReleaseEntry) Node(ctx context.Context) (node *Node, err error) {
 		ID:     re.ID,
 		Type:   "ReleaseEntry",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 6),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(re.Type); err != nil {
@@ -1165,30 +1041,10 @@ func (re *ReleaseEntry) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[3] = &Edge{
-		Type: "CVEScan",
-		Name: "cve_scan",
-	}
-	node.Edges[3].IDs, err = re.QueryCveScan().
-		Select(cvescan.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[4] = &Edge{
-		Type: "LicenseScan",
-		Name: "license_scan",
-	}
-	node.Edges[4].IDs, err = re.QueryLicenseScan().
-		Select(licensescan.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[5] = &Edge{
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[5].IDs, err = re.QueryRelease().
+	node.Edges[3].IDs, err = re.QueryRelease().
 		Select(release.FieldID).
 		Ints(ctx)
 	if err != nil {
@@ -1377,7 +1233,7 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 		ID:     v.ID,
 		Type:   "Vulnerability",
 		Fields: make([]*Field, 0),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(v.ID); err != nil {
@@ -1394,26 +1250,6 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 	}
 	node.Edges[0].IDs, err = v.QueryCve().
 		Select(cve.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[1] = &Edge{
-		Type: "CVEScan",
-		Name: "scan",
-	}
-	node.Edges[1].IDs, err = v.QueryScan().
-		Select(cvescan.FieldID).
-		Ints(ctx)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[2] = &Edge{
-		Type: "Component",
-		Name: "component",
-	}
-	node.Edges[2].IDs, err = v.QueryComponent().
-		Select(component.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
@@ -1515,15 +1351,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			return nil, err
 		}
 		return n, nil
-	case cvescan.Table:
-		n, err := c.CVEScan.Query().
-			Where(cvescan.ID(id)).
-			CollectFields(ctx, "CVEScan").
-			Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
 	case cwe.Table:
 		n, err := c.CWE.Query().
 			Where(cwe.ID(id)).
@@ -1560,6 +1387,15 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			return nil, err
 		}
 		return n, nil
+	case componentuse.Table:
+		n, err := c.ComponentUse.Query().
+			Where(componentuse.ID(id)).
+			CollectFields(ctx, "ComponentUse").
+			Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case gitcommit.Table:
 		n, err := c.GitCommit.Query().
 			Where(gitcommit.ID(id)).
@@ -1578,19 +1414,10 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			return nil, err
 		}
 		return n, nil
-	case licensescan.Table:
-		n, err := c.LicenseScan.Query().
-			Where(licensescan.ID(id)).
-			CollectFields(ctx, "LicenseScan").
-			Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
-	case licenseusage.Table:
-		n, err := c.LicenseUsage.Query().
-			Where(licenseusage.ID(id)).
-			CollectFields(ctx, "LicenseUsage").
+	case licenseuse.Table:
+		n, err := c.LicenseUse.Query().
+			Where(licenseuse.ID(id)).
+			CollectFields(ctx, "LicenseUse").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1609,15 +1436,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 		n, err := c.Release.Query().
 			Where(release.ID(id)).
 			CollectFields(ctx, "Release").
-			Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
-	case releasecheck.Table:
-		n, err := c.ReleaseCheck.Query().
-			Where(releasecheck.ID(id)).
-			CollectFields(ctx, "ReleaseCheck").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1780,19 +1598,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 				*noder = node
 			}
 		}
-	case cvescan.Table:
-		nodes, err := c.CVEScan.Query().
-			Where(cvescan.IDIn(ids...)).
-			CollectFields(ctx, "CVEScan").
-			All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
 	case cwe.Table:
 		nodes, err := c.CWE.Query().
 			Where(cwe.IDIn(ids...)).
@@ -1845,6 +1650,19 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 				*noder = node
 			}
 		}
+	case componentuse.Table:
+		nodes, err := c.ComponentUse.Query().
+			Where(componentuse.IDIn(ids...)).
+			CollectFields(ctx, "ComponentUse").
+			All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case gitcommit.Table:
 		nodes, err := c.GitCommit.Query().
 			Where(gitcommit.IDIn(ids...)).
@@ -1871,23 +1689,10 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 				*noder = node
 			}
 		}
-	case licensescan.Table:
-		nodes, err := c.LicenseScan.Query().
-			Where(licensescan.IDIn(ids...)).
-			CollectFields(ctx, "LicenseScan").
-			All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case licenseusage.Table:
-		nodes, err := c.LicenseUsage.Query().
-			Where(licenseusage.IDIn(ids...)).
-			CollectFields(ctx, "LicenseUsage").
+	case licenseuse.Table:
+		nodes, err := c.LicenseUse.Query().
+			Where(licenseuse.IDIn(ids...)).
+			CollectFields(ctx, "LicenseUse").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -1914,19 +1719,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		nodes, err := c.Release.Query().
 			Where(release.IDIn(ids...)).
 			CollectFields(ctx, "Release").
-			All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case releasecheck.Table:
-		nodes, err := c.ReleaseCheck.Query().
-			Where(releasecheck.IDIn(ids...)).
-			CollectFields(ctx, "ReleaseCheck").
 			All(ctx)
 		if err != nil {
 			return nil, err

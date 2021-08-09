@@ -18,8 +18,6 @@ type Tx struct {
 	CVE *CVEClient
 	// CVERule is the client for interacting with the CVERule builders.
 	CVERule *CVERuleClient
-	// CVEScan is the client for interacting with the CVEScan builders.
-	CVEScan *CVEScanClient
 	// CWE is the client for interacting with the CWE builders.
 	CWE *CWEClient
 	// CodeIssue is the client for interacting with the CodeIssue builders.
@@ -28,20 +26,18 @@ type Tx struct {
 	CodeScan *CodeScanClient
 	// Component is the client for interacting with the Component builders.
 	Component *ComponentClient
+	// ComponentUse is the client for interacting with the ComponentUse builders.
+	ComponentUse *ComponentUseClient
 	// GitCommit is the client for interacting with the GitCommit builders.
 	GitCommit *GitCommitClient
 	// License is the client for interacting with the License builders.
 	License *LicenseClient
-	// LicenseScan is the client for interacting with the LicenseScan builders.
-	LicenseScan *LicenseScanClient
-	// LicenseUsage is the client for interacting with the LicenseUsage builders.
-	LicenseUsage *LicenseUsageClient
+	// LicenseUse is the client for interacting with the LicenseUse builders.
+	LicenseUse *LicenseUseClient
 	// Project is the client for interacting with the Project builders.
 	Project *ProjectClient
 	// Release is the client for interacting with the Release builders.
 	Release *ReleaseClient
-	// ReleaseCheck is the client for interacting with the ReleaseCheck builders.
-	ReleaseCheck *ReleaseCheckClient
 	// ReleaseEntry is the client for interacting with the ReleaseEntry builders.
 	ReleaseEntry *ReleaseEntryClient
 	// Repo is the client for interacting with the Repo builders.
@@ -190,18 +186,16 @@ func (tx *Tx) init() {
 	tx.Artifact = NewArtifactClient(tx.config)
 	tx.CVE = NewCVEClient(tx.config)
 	tx.CVERule = NewCVERuleClient(tx.config)
-	tx.CVEScan = NewCVEScanClient(tx.config)
 	tx.CWE = NewCWEClient(tx.config)
 	tx.CodeIssue = NewCodeIssueClient(tx.config)
 	tx.CodeScan = NewCodeScanClient(tx.config)
 	tx.Component = NewComponentClient(tx.config)
+	tx.ComponentUse = NewComponentUseClient(tx.config)
 	tx.GitCommit = NewGitCommitClient(tx.config)
 	tx.License = NewLicenseClient(tx.config)
-	tx.LicenseScan = NewLicenseScanClient(tx.config)
-	tx.LicenseUsage = NewLicenseUsageClient(tx.config)
+	tx.LicenseUse = NewLicenseUseClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
 	tx.Release = NewReleaseClient(tx.config)
-	tx.ReleaseCheck = NewReleaseCheckClient(tx.config)
 	tx.ReleaseEntry = NewReleaseEntryClient(tx.config)
 	tx.Repo = NewRepoClient(tx.config)
 	tx.TestCase = NewTestCaseClient(tx.config)

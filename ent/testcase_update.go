@@ -22,9 +22,9 @@ type TestCaseUpdate struct {
 	mutation *TestCaseMutation
 }
 
-// Where adds a new predicate for the TestCaseUpdate builder.
+// Where appends a list predicates to the TestCaseUpdate builder.
 func (tcu *TestCaseUpdate) Where(ps ...predicate.TestCase) *TestCaseUpdate {
-	tcu.mutation.predicates = append(tcu.mutation.predicates, ps...)
+	tcu.mutation.Where(ps...)
 	return tcu
 }
 
@@ -109,6 +109,9 @@ func (tcu *TestCaseUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(tcu.hooks) - 1; i >= 0; i-- {
+			if tcu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = tcu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, tcu.mutation); err != nil {
@@ -346,6 +349,9 @@ func (tcuo *TestCaseUpdateOne) Save(ctx context.Context) (*TestCase, error) {
 			return node, err
 		})
 		for i := len(tcuo.hooks) - 1; i >= 0; i-- {
+			if tcuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = tcuo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, tcuo.mutation); err != nil {

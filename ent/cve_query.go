@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/cverule"
 	"github.com/valocode/bubbly/ent/predicate"
@@ -28,8 +29,9 @@ type CVEQuery struct {
 	fields     []string
 	predicates []predicate.CVE
 	// eager-loading edges.
-	withFound *VulnerabilityQuery
-	withRules *CVERuleQuery
+	withComponents      *ComponentQuery
+	withVulnerabilities *VulnerabilityQuery
+	withRules           *CVERuleQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -66,8 +68,30 @@ func (cq *CVEQuery) Order(o ...OrderFunc) *CVEQuery {
 	return cq
 }
 
-// QueryFound chains the current query on the "found" edge.
-func (cq *CVEQuery) QueryFound() *VulnerabilityQuery {
+// QueryComponents chains the current query on the "components" edge.
+func (cq *CVEQuery) QueryComponents() *ComponentQuery {
+	query := &ComponentQuery{config: cq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cve.Table, cve.FieldID, selector),
+			sqlgraph.To(component.Table, component.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, cve.ComponentsTable, cve.ComponentsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVulnerabilities chains the current query on the "vulnerabilities" edge.
+func (cq *CVEQuery) QueryVulnerabilities() *VulnerabilityQuery {
 	query := &VulnerabilityQuery{config: cq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := cq.prepareQuery(ctx); err != nil {
@@ -80,7 +104,7 @@ func (cq *CVEQuery) QueryFound() *VulnerabilityQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(cve.Table, cve.FieldID, selector),
 			sqlgraph.To(vulnerability.Table, vulnerability.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, cve.FoundTable, cve.FoundColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, cve.VulnerabilitiesTable, cve.VulnerabilitiesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
 		return fromU, nil
@@ -286,27 +310,39 @@ func (cq *CVEQuery) Clone() *CVEQuery {
 		return nil
 	}
 	return &CVEQuery{
-		config:     cq.config,
-		limit:      cq.limit,
-		offset:     cq.offset,
-		order:      append([]OrderFunc{}, cq.order...),
-		predicates: append([]predicate.CVE{}, cq.predicates...),
-		withFound:  cq.withFound.Clone(),
-		withRules:  cq.withRules.Clone(),
+		config:              cq.config,
+		limit:               cq.limit,
+		offset:              cq.offset,
+		order:               append([]OrderFunc{}, cq.order...),
+		predicates:          append([]predicate.CVE{}, cq.predicates...),
+		withComponents:      cq.withComponents.Clone(),
+		withVulnerabilities: cq.withVulnerabilities.Clone(),
+		withRules:           cq.withRules.Clone(),
 		// clone intermediate query.
 		sql:  cq.sql.Clone(),
 		path: cq.path,
 	}
 }
 
-// WithFound tells the query-builder to eager-load the nodes that are connected to
-// the "found" edge. The optional arguments are used to configure the query builder of the edge.
-func (cq *CVEQuery) WithFound(opts ...func(*VulnerabilityQuery)) *CVEQuery {
+// WithComponents tells the query-builder to eager-load the nodes that are connected to
+// the "components" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *CVEQuery) WithComponents(opts ...func(*ComponentQuery)) *CVEQuery {
+	query := &ComponentQuery{config: cq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	cq.withComponents = query
+	return cq
+}
+
+// WithVulnerabilities tells the query-builder to eager-load the nodes that are connected to
+// the "vulnerabilities" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *CVEQuery) WithVulnerabilities(opts ...func(*VulnerabilityQuery)) *CVEQuery {
 	query := &VulnerabilityQuery{config: cq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	cq.withFound = query
+	cq.withVulnerabilities = query
 	return cq
 }
 
@@ -361,8 +397,8 @@ func (cq *CVEQuery) GroupBy(field string, fields ...string) *CVEGroupBy {
 //		Select(cve.FieldCveID).
 //		Scan(ctx, &v)
 //
-func (cq *CVEQuery) Select(field string, fields ...string) *CVESelect {
-	cq.fields = append([]string{field}, fields...)
+func (cq *CVEQuery) Select(fields ...string) *CVESelect {
+	cq.fields = append(cq.fields, fields...)
 	return &CVESelect{CVEQuery: cq}
 }
 
@@ -386,8 +422,9 @@ func (cq *CVEQuery) sqlAll(ctx context.Context) ([]*CVE, error) {
 	var (
 		nodes       = []*CVE{}
 		_spec       = cq.querySpec()
-		loadedTypes = [2]bool{
-			cq.withFound != nil,
+		loadedTypes = [3]bool{
+			cq.withComponents != nil,
+			cq.withVulnerabilities != nil,
 			cq.withRules != nil,
 		}
 	)
@@ -411,17 +448,82 @@ func (cq *CVEQuery) sqlAll(ctx context.Context) ([]*CVE, error) {
 		return nodes, nil
 	}
 
-	if query := cq.withFound; query != nil {
+	if query := cq.withComponents; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*CVE, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.Components = []*Component{}
+		}
+		var (
+			edgeids []int
+			edges   = make(map[int][]*CVE)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   cve.ComponentsTable,
+				Columns: cve.ComponentsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(cve.ComponentsPrimaryKey[1], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, cq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "components": %w`, err)
+		}
+		query.Where(component.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "components" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Components = append(nodes[i].Edges.Components, n)
+			}
+		}
+	}
+
+	if query := cq.withVulnerabilities; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[int]*CVE)
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Found = []*Vulnerability{}
+			nodes[i].Edges.Vulnerabilities = []*Vulnerability{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Vulnerability(func(s *sql.Selector) {
-			s.Where(sql.InValues(cve.FoundColumn, fks...))
+			s.Where(sql.InValues(cve.VulnerabilitiesColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
@@ -436,7 +538,7 @@ func (cq *CVEQuery) sqlAll(ctx context.Context) ([]*CVE, error) {
 			if !ok {
 				return nil, fmt.Errorf(`unexpected foreign-key "vulnerability_cve" returned %v for node %v`, *fk, n.ID)
 			}
-			node.Edges.Found = append(node.Edges.Found, n)
+			node.Edges.Vulnerabilities = append(node.Edges.Vulnerabilities, n)
 		}
 	}
 

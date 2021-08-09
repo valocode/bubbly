@@ -34,8 +34,8 @@ type License struct {
 type LicenseEdges struct {
 	// Components holds the value of the components edge.
 	Components []*Component `json:"components,omitempty"`
-	// Usages holds the value of the usages edge.
-	Usages []*LicenseUsage `json:"usages,omitempty"`
+	// Uses holds the value of the uses edge.
+	Uses []*LicenseUse `json:"uses,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -50,13 +50,13 @@ func (e LicenseEdges) ComponentsOrErr() ([]*Component, error) {
 	return nil, &NotLoadedError{edge: "components"}
 }
 
-// UsagesOrErr returns the Usages value or an error if the edge
+// UsesOrErr returns the Uses value or an error if the edge
 // was not loaded in eager-loading.
-func (e LicenseEdges) UsagesOrErr() ([]*LicenseUsage, error) {
+func (e LicenseEdges) UsesOrErr() ([]*LicenseUse, error) {
 	if e.loadedTypes[1] {
-		return e.Usages, nil
+		return e.Uses, nil
 	}
-	return nil, &NotLoadedError{edge: "usages"}
+	return nil, &NotLoadedError{edge: "uses"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -131,9 +131,9 @@ func (l *License) QueryComponents() *ComponentQuery {
 	return (&LicenseClient{config: l.config}).QueryComponents(l)
 }
 
-// QueryUsages queries the "usages" edge of the License entity.
-func (l *License) QueryUsages() *LicenseUsageQuery {
-	return (&LicenseClient{config: l.config}).QueryUsages(l)
+// QueryUses queries the "uses" edge of the License entity.
+func (l *License) QueryUses() *LicenseUseQuery {
+	return (&LicenseClient{config: l.config}).QueryUses(l)
 }
 
 // Update returns a builder for updating this License.

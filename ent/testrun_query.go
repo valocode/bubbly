@@ -398,8 +398,8 @@ func (trq *TestRunQuery) GroupBy(field string, fields ...string) *TestRunGroupBy
 //		Select(testrun.FieldTool).
 //		Scan(ctx, &v)
 //
-func (trq *TestRunQuery) Select(field string, fields ...string) *TestRunSelect {
-	trq.fields = append([]string{field}, fields...)
+func (trq *TestRunQuery) Select(fields ...string) *TestRunSelect {
+	trq.fields = append(trq.fields, fields...)
 	return &TestRunSelect{TestRunQuery: trq}
 }
 

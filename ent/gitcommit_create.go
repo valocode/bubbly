@@ -118,6 +118,9 @@ func (gcc *GitCommitCreate) Save(ctx context.Context) (*GitCommit, error) {
 			return node, err
 		})
 		for i := len(gcc.hooks) - 1; i >= 0; i-- {
+			if gcc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = gcc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, gcc.mutation); err != nil {
@@ -136,26 +139,39 @@ func (gcc *GitCommitCreate) SaveX(ctx context.Context) *GitCommit {
 	return v
 }
 
+// Exec executes the query.
+func (gcc *GitCommitCreate) Exec(ctx context.Context) error {
+	_, err := gcc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (gcc *GitCommitCreate) ExecX(ctx context.Context) {
+	if err := gcc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (gcc *GitCommitCreate) check() error {
 	if _, ok := gcc.mutation.Hash(); !ok {
-		return &ValidationError{Name: "hash", err: errors.New("ent: missing required field \"hash\"")}
+		return &ValidationError{Name: "hash", err: errors.New(`ent: missing required field "hash"`)}
 	}
 	if v, ok := gcc.mutation.Hash(); ok {
 		if err := gitcommit.HashValidator(v); err != nil {
-			return &ValidationError{Name: "hash", err: fmt.Errorf("ent: validator failed for field \"hash\": %w", err)}
+			return &ValidationError{Name: "hash", err: fmt.Errorf(`ent: validator failed for field "hash": %w`, err)}
 		}
 	}
 	if _, ok := gcc.mutation.Branch(); !ok {
-		return &ValidationError{Name: "branch", err: errors.New("ent: missing required field \"branch\"")}
+		return &ValidationError{Name: "branch", err: errors.New(`ent: missing required field "branch"`)}
 	}
 	if v, ok := gcc.mutation.Branch(); ok {
 		if err := gitcommit.BranchValidator(v); err != nil {
-			return &ValidationError{Name: "branch", err: fmt.Errorf("ent: validator failed for field \"branch\": %w", err)}
+			return &ValidationError{Name: "branch", err: fmt.Errorf(`ent: validator failed for field "branch": %w`, err)}
 		}
 	}
 	if _, ok := gcc.mutation.Time(); !ok {
-		return &ValidationError{Name: "time", err: errors.New("ent: missing required field \"time\"")}
+		return &ValidationError{Name: "time", err: errors.New(`ent: missing required field "time"`)}
 	}
 	if _, ok := gcc.mutation.RepoID(); !ok {
 		return &ValidationError{Name: "repo", err: errors.New("ent: missing required edge \"repo\"")}
@@ -289,8 +305,9 @@ func (gccb *GitCommitCreateBulk) Save(ctx context.Context) ([]*GitCommit, error)
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gccb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, gccb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, gccb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -301,8 +318,10 @@ func (gccb *GitCommitCreateBulk) Save(ctx context.Context) ([]*GitCommit, error)
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -326,4 +345,17 @@ func (gccb *GitCommitCreateBulk) SaveX(ctx context.Context) []*GitCommit {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (gccb *GitCommitCreateBulk) Exec(ctx context.Context) error {
+	_, err := gccb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (gccb *GitCommitCreateBulk) ExecX(ctx context.Context) {
+	if err := gccb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

@@ -16,19 +16,19 @@ const (
 )
 
 type (
-	Extension struct {
+	TSExtension struct {
 		entc.DefaultExtension
 	}
 )
 
-func NewExtension() (*Extension, error) {
-	ex := Extension{}
+func NewTSExtension() (*TSExtension, error) {
+	ex := TSExtension{}
 
 	return &ex, nil
 }
 
 // Hooks of the extension.
-func (e *Extension) Hooks() []gen.Hook {
+func (e *TSExtension) Hooks() []gen.Hook {
 	return []gen.Hook{
 		func(next gen.Generator) gen.Generator {
 			return gen.GenerateFunc(func(g *gen.Graph) error {

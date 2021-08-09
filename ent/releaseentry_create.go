@@ -12,8 +12,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/cvescan"
-	"github.com/valocode/bubbly/ent/licensescan"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/testrun"
@@ -103,44 +101,6 @@ func (rec *ReleaseEntryCreate) SetTestRun(t *TestRun) *ReleaseEntryCreate {
 	return rec.SetTestRunID(t.ID)
 }
 
-// SetCveScanID sets the "cve_scan" edge to the CVEScan entity by ID.
-func (rec *ReleaseEntryCreate) SetCveScanID(id int) *ReleaseEntryCreate {
-	rec.mutation.SetCveScanID(id)
-	return rec
-}
-
-// SetNillableCveScanID sets the "cve_scan" edge to the CVEScan entity by ID if the given value is not nil.
-func (rec *ReleaseEntryCreate) SetNillableCveScanID(id *int) *ReleaseEntryCreate {
-	if id != nil {
-		rec = rec.SetCveScanID(*id)
-	}
-	return rec
-}
-
-// SetCveScan sets the "cve_scan" edge to the CVEScan entity.
-func (rec *ReleaseEntryCreate) SetCveScan(c *CVEScan) *ReleaseEntryCreate {
-	return rec.SetCveScanID(c.ID)
-}
-
-// SetLicenseScanID sets the "license_scan" edge to the LicenseScan entity by ID.
-func (rec *ReleaseEntryCreate) SetLicenseScanID(id int) *ReleaseEntryCreate {
-	rec.mutation.SetLicenseScanID(id)
-	return rec
-}
-
-// SetNillableLicenseScanID sets the "license_scan" edge to the LicenseScan entity by ID if the given value is not nil.
-func (rec *ReleaseEntryCreate) SetNillableLicenseScanID(id *int) *ReleaseEntryCreate {
-	if id != nil {
-		rec = rec.SetLicenseScanID(*id)
-	}
-	return rec
-}
-
-// SetLicenseScan sets the "license_scan" edge to the LicenseScan entity.
-func (rec *ReleaseEntryCreate) SetLicenseScan(l *LicenseScan) *ReleaseEntryCreate {
-	return rec.SetLicenseScanID(l.ID)
-}
-
 // SetReleaseID sets the "release" edge to the Release entity by ID.
 func (rec *ReleaseEntryCreate) SetReleaseID(id int) *ReleaseEntryCreate {
 	rec.mutation.SetReleaseID(id)
@@ -187,6 +147,9 @@ func (rec *ReleaseEntryCreate) Save(ctx context.Context) (*ReleaseEntry, error) 
 			return node, err
 		})
 		for i := len(rec.hooks) - 1; i >= 0; i-- {
+			if rec.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rec.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, rec.mutation); err != nil {
@@ -205,6 +168,19 @@ func (rec *ReleaseEntryCreate) SaveX(ctx context.Context) *ReleaseEntry {
 	return v
 }
 
+// Exec executes the query.
+func (rec *ReleaseEntryCreate) Exec(ctx context.Context) error {
+	_, err := rec.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (rec *ReleaseEntryCreate) ExecX(ctx context.Context) {
+	if err := rec.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // defaults sets the default values of the builder before save.
 func (rec *ReleaseEntryCreate) defaults() {
 	if _, ok := rec.mutation.Time(); !ok {
@@ -216,15 +192,15 @@ func (rec *ReleaseEntryCreate) defaults() {
 // check runs all checks and user-defined validators on the builder.
 func (rec *ReleaseEntryCreate) check() error {
 	if _, ok := rec.mutation.GetType(); !ok {
-		return &ValidationError{Name: "type", err: errors.New("ent: missing required field \"type\"")}
+		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "type"`)}
 	}
 	if v, ok := rec.mutation.GetType(); ok {
 		if err := releaseentry.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "type": %w`, err)}
 		}
 	}
 	if _, ok := rec.mutation.Time(); !ok {
-		return &ValidationError{Name: "time", err: errors.New("ent: missing required field \"time\"")}
+		return &ValidationError{Name: "time", err: errors.New(`ent: missing required field "time"`)}
 	}
 	if _, ok := rec.mutation.ReleaseID(); !ok {
 		return &ValidationError{Name: "release", err: errors.New("ent: missing required edge \"release\"")}
@@ -329,44 +305,6 @@ func (rec *ReleaseEntryCreate) createSpec() (*ReleaseEntry, *sqlgraph.CreateSpec
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rec.mutation.CveScanIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   releaseentry.CveScanTable,
-			Columns: []string{releaseentry.CveScanColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rec.mutation.LicenseScanIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   releaseentry.LicenseScanTable,
-			Columns: []string{releaseentry.LicenseScanColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := rec.mutation.ReleaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -419,8 +357,9 @@ func (recb *ReleaseEntryCreateBulk) Save(ctx context.Context) ([]*ReleaseEntry, 
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, recb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, recb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, recb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -431,8 +370,10 @@ func (recb *ReleaseEntryCreateBulk) Save(ctx context.Context) ([]*ReleaseEntry, 
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -456,4 +397,17 @@ func (recb *ReleaseEntryCreateBulk) SaveX(ctx context.Context) []*ReleaseEntry {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (recb *ReleaseEntryCreateBulk) Exec(ctx context.Context) error {
+	_, err := recb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (recb *ReleaseEntryCreateBulk) ExecX(ctx context.Context) {
+	if err := recb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

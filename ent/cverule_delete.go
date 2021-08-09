@@ -20,9 +20,9 @@ type CVERuleDelete struct {
 	mutation *CVERuleMutation
 }
 
-// Where adds a new predicate to the CVERuleDelete builder.
+// Where appends a list predicates to the CVERuleDelete builder.
 func (crd *CVERuleDelete) Where(ps ...predicate.CVERule) *CVERuleDelete {
-	crd.mutation.predicates = append(crd.mutation.predicates, ps...)
+	crd.mutation.Where(ps...)
 	return crd
 }
 
@@ -46,6 +46,9 @@ func (crd *CVERuleDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(crd.hooks) - 1; i >= 0; i-- {
+			if crd.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = crd.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, crd.mutation); err != nil {

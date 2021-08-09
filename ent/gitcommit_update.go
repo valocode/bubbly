@@ -23,9 +23,9 @@ type GitCommitUpdate struct {
 	mutation *GitCommitMutation
 }
 
-// Where adds a new predicate for the GitCommitUpdate builder.
+// Where appends a list predicates to the GitCommitUpdate builder.
 func (gcu *GitCommitUpdate) Where(ps ...predicate.GitCommit) *GitCommitUpdate {
-	gcu.mutation.predicates = append(gcu.mutation.predicates, ps...)
+	gcu.mutation.Where(ps...)
 	return gcu
 }
 
@@ -102,6 +102,9 @@ func (gcu *GitCommitUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(gcu.hooks) - 1; i >= 0; i-- {
+			if gcu.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = gcu.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, gcu.mutation); err != nil {
@@ -334,6 +337,9 @@ func (gcuo *GitCommitUpdateOne) Save(ctx context.Context) (*GitCommit, error) {
 			return node, err
 		})
 		for i := len(gcuo.hooks) - 1; i >= 0; i-- {
+			if gcuo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = gcuo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, gcuo.mutation); err != nil {

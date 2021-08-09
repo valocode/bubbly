@@ -141,51 +141,6 @@ func (cr *CVERuleQuery) Filter(
 	return cr.All(ctx)
 }
 
-func (cs *CVEScanQuery) Filter(
-	ctx context.Context, first *int, last *int,
-	orderBy *CVEScanOrder, where *CVEScanWhereInput,
-) ([]*CVEScan, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	if orderBy == nil {
-		orderBy = DefaultCVEScanOrder
-	}
-	if err := orderBy.Direction.Validate(); err != nil {
-		return nil, err
-	}
-	if orderBy.Field == nil {
-		orderBy.Field = DefaultCVEScanOrder.Field
-	}
-
-	cs, err := where.Filter(cs)
-	if err != nil {
-		return nil, err
-	}
-
-	// If getting last then reverse the direction
-	if last != nil {
-		orderBy.Direction = orderBy.Direction.reverse()
-	}
-	cs = cs.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
-	// If a custom order was given, also apply the default order
-	if orderBy.Field != DefaultCVEScanOrder.Field {
-		cs = cs.Order(orderBy.Direction.orderFunc(DefaultCVEScanOrder.Field.field))
-	}
-
-	var limit int
-	if first != nil {
-		limit = *first
-	} else if last != nil {
-		limit = *last
-	}
-	if limit > 0 {
-		cs = cs.Limit(limit)
-	}
-
-	return cs.All(ctx)
-}
-
 func (c *CWEQuery) Filter(
 	ctx context.Context, first *int, last *int,
 	orderBy *CWEOrder, where *CWEWhereInput,
@@ -366,6 +321,51 @@ func (c *ComponentQuery) Filter(
 	return c.All(ctx)
 }
 
+func (cu *ComponentUseQuery) Filter(
+	ctx context.Context, first *int, last *int,
+	orderBy *ComponentUseOrder, where *ComponentUseWhereInput,
+) ([]*ComponentUse, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	if orderBy == nil {
+		orderBy = DefaultComponentUseOrder
+	}
+	if err := orderBy.Direction.Validate(); err != nil {
+		return nil, err
+	}
+	if orderBy.Field == nil {
+		orderBy.Field = DefaultComponentUseOrder.Field
+	}
+
+	cu, err := where.Filter(cu)
+	if err != nil {
+		return nil, err
+	}
+
+	// If getting last then reverse the direction
+	if last != nil {
+		orderBy.Direction = orderBy.Direction.reverse()
+	}
+	cu = cu.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
+	// If a custom order was given, also apply the default order
+	if orderBy.Field != DefaultComponentUseOrder.Field {
+		cu = cu.Order(orderBy.Direction.orderFunc(DefaultComponentUseOrder.Field.field))
+	}
+
+	var limit int
+	if first != nil {
+		limit = *first
+	} else if last != nil {
+		limit = *last
+	}
+	if limit > 0 {
+		cu = cu.Limit(limit)
+	}
+
+	return cu.All(ctx)
+}
+
 func (gc *GitCommitQuery) Filter(
 	ctx context.Context, first *int, last *int,
 	orderBy *GitCommitOrder, where *GitCommitWhereInput,
@@ -456,66 +456,21 @@ func (l *LicenseQuery) Filter(
 	return l.All(ctx)
 }
 
-func (ls *LicenseScanQuery) Filter(
+func (lu *LicenseUseQuery) Filter(
 	ctx context.Context, first *int, last *int,
-	orderBy *LicenseScanOrder, where *LicenseScanWhereInput,
-) ([]*LicenseScan, error) {
+	orderBy *LicenseUseOrder, where *LicenseUseWhereInput,
+) ([]*LicenseUse, error) {
 	if err := validateFirstLast(first, last); err != nil {
 		return nil, err
 	}
 	if orderBy == nil {
-		orderBy = DefaultLicenseScanOrder
+		orderBy = DefaultLicenseUseOrder
 	}
 	if err := orderBy.Direction.Validate(); err != nil {
 		return nil, err
 	}
 	if orderBy.Field == nil {
-		orderBy.Field = DefaultLicenseScanOrder.Field
-	}
-
-	ls, err := where.Filter(ls)
-	if err != nil {
-		return nil, err
-	}
-
-	// If getting last then reverse the direction
-	if last != nil {
-		orderBy.Direction = orderBy.Direction.reverse()
-	}
-	ls = ls.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
-	// If a custom order was given, also apply the default order
-	if orderBy.Field != DefaultLicenseScanOrder.Field {
-		ls = ls.Order(orderBy.Direction.orderFunc(DefaultLicenseScanOrder.Field.field))
-	}
-
-	var limit int
-	if first != nil {
-		limit = *first
-	} else if last != nil {
-		limit = *last
-	}
-	if limit > 0 {
-		ls = ls.Limit(limit)
-	}
-
-	return ls.All(ctx)
-}
-
-func (lu *LicenseUsageQuery) Filter(
-	ctx context.Context, first *int, last *int,
-	orderBy *LicenseUsageOrder, where *LicenseUsageWhereInput,
-) ([]*LicenseUsage, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	if orderBy == nil {
-		orderBy = DefaultLicenseUsageOrder
-	}
-	if err := orderBy.Direction.Validate(); err != nil {
-		return nil, err
-	}
-	if orderBy.Field == nil {
-		orderBy.Field = DefaultLicenseUsageOrder.Field
+		orderBy.Field = DefaultLicenseUseOrder.Field
 	}
 
 	lu, err := where.Filter(lu)
@@ -529,8 +484,8 @@ func (lu *LicenseUsageQuery) Filter(
 	}
 	lu = lu.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
 	// If a custom order was given, also apply the default order
-	if orderBy.Field != DefaultLicenseUsageOrder.Field {
-		lu = lu.Order(orderBy.Direction.orderFunc(DefaultLicenseUsageOrder.Field.field))
+	if orderBy.Field != DefaultLicenseUseOrder.Field {
+		lu = lu.Order(orderBy.Direction.orderFunc(DefaultLicenseUseOrder.Field.field))
 	}
 
 	var limit int
@@ -634,51 +589,6 @@ func (r *ReleaseQuery) Filter(
 	}
 
 	return r.All(ctx)
-}
-
-func (rc *ReleaseCheckQuery) Filter(
-	ctx context.Context, first *int, last *int,
-	orderBy *ReleaseCheckOrder, where *ReleaseCheckWhereInput,
-) ([]*ReleaseCheck, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	if orderBy == nil {
-		orderBy = DefaultReleaseCheckOrder
-	}
-	if err := orderBy.Direction.Validate(); err != nil {
-		return nil, err
-	}
-	if orderBy.Field == nil {
-		orderBy.Field = DefaultReleaseCheckOrder.Field
-	}
-
-	rc, err := where.Filter(rc)
-	if err != nil {
-		return nil, err
-	}
-
-	// If getting last then reverse the direction
-	if last != nil {
-		orderBy.Direction = orderBy.Direction.reverse()
-	}
-	rc = rc.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
-	// If a custom order was given, also apply the default order
-	if orderBy.Field != DefaultReleaseCheckOrder.Field {
-		rc = rc.Order(orderBy.Direction.orderFunc(DefaultReleaseCheckOrder.Field.field))
-	}
-
-	var limit int
-	if first != nil {
-		limit = *first
-	} else if last != nil {
-		limit = *last
-	}
-	if limit > 0 {
-		rc = rc.Limit(limit)
-	}
-
-	return rc.All(ctx)
 }
 
 func (re *ReleaseEntryQuery) Filter(

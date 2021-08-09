@@ -21,21 +21,21 @@ const (
 	EdgeTests = "tests"
 	// Table holds the table name of the testrun in the database.
 	Table = "test_run"
-	// ReleaseTable is the table the holds the release relation/edge.
+	// ReleaseTable is the table that holds the release relation/edge.
 	ReleaseTable = "test_run"
 	// ReleaseInverseTable is the table name for the Release entity.
 	// It exists in this package in order to avoid circular dependency with the "release" package.
 	ReleaseInverseTable = "release"
 	// ReleaseColumn is the table column denoting the release relation/edge.
 	ReleaseColumn = "test_run_release"
-	// EntryTable is the table the holds the entry relation/edge.
+	// EntryTable is the table that holds the entry relation/edge.
 	EntryTable = "test_run"
 	// EntryInverseTable is the table name for the ReleaseEntry entity.
 	// It exists in this package in order to avoid circular dependency with the "releaseentry" package.
 	EntryInverseTable = "release_entry"
 	// EntryColumn is the table column denoting the entry relation/edge.
 	EntryColumn = "release_entry_test_run"
-	// TestsTable is the table the holds the tests relation/edge.
+	// TestsTable is the table that holds the tests relation/edge.
 	TestsTable = "test_case"
 	// TestsInverseTable is the table name for the TestCase entity.
 	// It exists in this package in order to avoid circular dependency with the "testcase" package.

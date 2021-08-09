@@ -487,6 +487,34 @@ func HasCommitWith(preds ...predicate.GitCommit) predicate.Release {
 	})
 }
 
+// HasLog applies the HasEdge predicate on the "log" edge.
+func HasLog() predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(LogTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, LogTable, LogColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasLogWith applies the HasEdge predicate on the "log" edge with a given conditions (other predicates).
+func HasLogWith(preds ...predicate.ReleaseEntry) predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(LogInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, LogTable, LogColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasArtifacts applies the HasEdge predicate on the "artifacts" edge.
 func HasArtifacts() predicate.Release {
 	return predicate.Release(func(s *sql.Selector) {
@@ -515,53 +543,25 @@ func HasArtifactsWith(preds ...predicate.Artifact) predicate.Release {
 	})
 }
 
-// HasChecks applies the HasEdge predicate on the "checks" edge.
-func HasChecks() predicate.Release {
+// HasComponents applies the HasEdge predicate on the "components" edge.
+func HasComponents() predicate.Release {
 	return predicate.Release(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ChecksTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, ChecksTable, ChecksColumn),
+			sqlgraph.To(ComponentsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ComponentsTable, ComponentsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasChecksWith applies the HasEdge predicate on the "checks" edge with a given conditions (other predicates).
-func HasChecksWith(preds ...predicate.ReleaseCheck) predicate.Release {
+// HasComponentsWith applies the HasEdge predicate on the "components" edge with a given conditions (other predicates).
+func HasComponentsWith(preds ...predicate.ComponentUse) predicate.Release {
 	return predicate.Release(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ChecksInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, ChecksTable, ChecksColumn),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasLog applies the HasEdge predicate on the "log" edge.
-func HasLog() predicate.Release {
-	return predicate.Release(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(LogTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, LogTable, LogColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasLogWith applies the HasEdge predicate on the "log" edge with a given conditions (other predicates).
-func HasLogWith(preds ...predicate.ReleaseEntry) predicate.Release {
-	return predicate.Release(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(LogInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, LogTable, LogColumn),
+			sqlgraph.To(ComponentsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ComponentsTable, ComponentsColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -599,62 +599,6 @@ func HasCodeScansWith(preds ...predicate.CodeScan) predicate.Release {
 	})
 }
 
-// HasCveScans applies the HasEdge predicate on the "cve_scans" edge.
-func HasCveScans() predicate.Release {
-	return predicate.Release(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(CveScansTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, CveScansTable, CveScansColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasCveScansWith applies the HasEdge predicate on the "cve_scans" edge with a given conditions (other predicates).
-func HasCveScansWith(preds ...predicate.CVEScan) predicate.Release {
-	return predicate.Release(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(CveScansInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, CveScansTable, CveScansColumn),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasLicenseScans applies the HasEdge predicate on the "license_scans" edge.
-func HasLicenseScans() predicate.Release {
-	return predicate.Release(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(LicenseScansTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, LicenseScansTable, LicenseScansColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasLicenseScansWith applies the HasEdge predicate on the "license_scans" edge with a given conditions (other predicates).
-func HasLicenseScansWith(preds ...predicate.LicenseScan) predicate.Release {
-	return predicate.Release(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(LicenseScansInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, LicenseScansTable, LicenseScansColumn),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasTestRuns applies the HasEdge predicate on the "test_runs" edge.
 func HasTestRuns() predicate.Release {
 	return predicate.Release(func(s *sql.Selector) {
@@ -674,34 +618,6 @@ func HasTestRunsWith(preds ...predicate.TestRun) predicate.Release {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(TestRunsInverseTable, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, TestRunsTable, TestRunsColumn),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasComponents applies the HasEdge predicate on the "components" edge.
-func HasComponents() predicate.Release {
-	return predicate.Release(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ComponentsTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, ComponentsTable, ComponentsPrimaryKey...),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasComponentsWith applies the HasEdge predicate on the "components" edge with a given conditions (other predicates).
-func HasComponentsWith(preds ...predicate.Component) predicate.Release {
-	return predicate.Release(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ComponentsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, ComponentsTable, ComponentsPrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

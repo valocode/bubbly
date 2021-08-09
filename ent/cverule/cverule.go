@@ -2,10 +2,6 @@
 
 package cverule
 
-import (
-	"entgo.io/ent"
-)
-
 const (
 	// Label holds the string label denoting the cverule type in the database.
 	Label = "cve_rule"
@@ -21,19 +17,19 @@ const (
 	EdgeRepo = "repo"
 	// Table holds the table name of the cverule in the database.
 	Table = "cve_rule"
-	// CveTable is the table the holds the cve relation/edge.
+	// CveTable is the table that holds the cve relation/edge.
 	CveTable = "cve_rule"
 	// CveInverseTable is the table name for the CVE entity.
 	// It exists in this package in order to avoid circular dependency with the "cve" package.
 	CveInverseTable = "cve"
 	// CveColumn is the table column denoting the cve relation/edge.
 	CveColumn = "cve_rule_cve"
-	// ProjectTable is the table the holds the project relation/edge. The primary key declared below.
+	// ProjectTable is the table that holds the project relation/edge. The primary key declared below.
 	ProjectTable = "cve_rule_project"
 	// ProjectInverseTable is the table name for the Project entity.
 	// It exists in this package in order to avoid circular dependency with the "project" package.
 	ProjectInverseTable = "project"
-	// RepoTable is the table the holds the repo relation/edge. The primary key declared below.
+	// RepoTable is the table that holds the repo relation/edge. The primary key declared below.
 	RepoTable = "cve_rule_repo"
 	// RepoInverseTable is the table name for the Repo entity.
 	// It exists in this package in order to avoid circular dependency with the "repo" package.
@@ -75,13 +71,3 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
-
-// Note that the variables below are initialized by the runtime
-// package on the initialization of the application. Therefore,
-// it should be imported in the main as follows:
-//
-//	import _ "github.com/valocode/bubbly/ent/runtime"
-//
-var (
-	Hooks [1]ent.Hook
-)

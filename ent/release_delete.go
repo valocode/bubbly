@@ -20,9 +20,9 @@ type ReleaseDelete struct {
 	mutation *ReleaseMutation
 }
 
-// Where adds a new predicate to the ReleaseDelete builder.
+// Where appends a list predicates to the ReleaseDelete builder.
 func (rd *ReleaseDelete) Where(ps ...predicate.Release) *ReleaseDelete {
-	rd.mutation.predicates = append(rd.mutation.predicates, ps...)
+	rd.mutation.Where(ps...)
 	return rd
 }
 
@@ -46,6 +46,9 @@ func (rd *ReleaseDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(rd.hooks) - 1; i >= 0; i-- {
+			if rd.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = rd.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, rd.mutation); err != nil {

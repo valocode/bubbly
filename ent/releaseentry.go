@@ -10,8 +10,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/cvescan"
-	"github.com/valocode/bubbly/ent/licensescan"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/testrun"
@@ -40,15 +38,11 @@ type ReleaseEntryEdges struct {
 	CodeScan *CodeScan `json:"code_scan,omitempty"`
 	// TestRun holds the value of the test_run edge.
 	TestRun *TestRun `json:"test_run,omitempty"`
-	// CveScan holds the value of the cve_scan edge.
-	CveScan *CVEScan `json:"cve_scan,omitempty"`
-	// LicenseScan holds the value of the license_scan edge.
-	LicenseScan *LicenseScan `json:"license_scan,omitempty"`
 	// Release holds the value of the release edge.
 	Release *Release `json:"release,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [4]bool
 }
 
 // ArtifactOrErr returns the Artifact value or an error if the edge
@@ -93,38 +87,10 @@ func (e ReleaseEntryEdges) TestRunOrErr() (*TestRun, error) {
 	return nil, &NotLoadedError{edge: "test_run"}
 }
 
-// CveScanOrErr returns the CveScan value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ReleaseEntryEdges) CveScanOrErr() (*CVEScan, error) {
-	if e.loadedTypes[3] {
-		if e.CveScan == nil {
-			// The edge cve_scan was loaded in eager-loading,
-			// but was not found.
-			return nil, &NotFoundError{label: cvescan.Label}
-		}
-		return e.CveScan, nil
-	}
-	return nil, &NotLoadedError{edge: "cve_scan"}
-}
-
-// LicenseScanOrErr returns the LicenseScan value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ReleaseEntryEdges) LicenseScanOrErr() (*LicenseScan, error) {
-	if e.loadedTypes[4] {
-		if e.LicenseScan == nil {
-			// The edge license_scan was loaded in eager-loading,
-			// but was not found.
-			return nil, &NotFoundError{label: licensescan.Label}
-		}
-		return e.LicenseScan, nil
-	}
-	return nil, &NotLoadedError{edge: "license_scan"}
-}
-
 // ReleaseOrErr returns the Release value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e ReleaseEntryEdges) ReleaseOrErr() (*Release, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[3] {
 		if e.Release == nil {
 			// The edge release was loaded in eager-loading,
 			// but was not found.
@@ -206,16 +172,6 @@ func (re *ReleaseEntry) QueryCodeScan() *CodeScanQuery {
 // QueryTestRun queries the "test_run" edge of the ReleaseEntry entity.
 func (re *ReleaseEntry) QueryTestRun() *TestRunQuery {
 	return (&ReleaseEntryClient{config: re.config}).QueryTestRun(re)
-}
-
-// QueryCveScan queries the "cve_scan" edge of the ReleaseEntry entity.
-func (re *ReleaseEntry) QueryCveScan() *CVEScanQuery {
-	return (&ReleaseEntryClient{config: re.config}).QueryCveScan(re)
-}
-
-// QueryLicenseScan queries the "license_scan" edge of the ReleaseEntry entity.
-func (re *ReleaseEntry) QueryLicenseScan() *LicenseScanQuery {
-	return (&ReleaseEntryClient{config: re.config}).QueryLicenseScan(re)
 }
 
 // QueryRelease queries the "release" edge of the ReleaseEntry entity.

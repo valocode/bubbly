@@ -12,17 +12,15 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/cverule"
-	"github.com/valocode/bubbly/ent/cvescan"
 	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licensescan"
-	"github.com/valocode/bubbly/ent/licenseusage"
+	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasecheck"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testcase"
@@ -60,16 +58,6 @@ func CreateNode(tx *Tx, node *DataNode) error {
 		node.Value = value
 	case cverule.Table:
 		nodeCreate := tx.CVERule.Create()
-		if err := nodeCreate.SetDataNode(node); err != nil {
-			return err
-		}
-		value, err := nodeCreate.Save(ctx)
-		if err != nil {
-			return err
-		}
-		node.Value = value
-	case cvescan.Table:
-		nodeCreate := tx.CVEScan.Create()
 		if err := nodeCreate.SetDataNode(node); err != nil {
 			return err
 		}
@@ -118,6 +106,16 @@ func CreateNode(tx *Tx, node *DataNode) error {
 			return err
 		}
 		node.Value = value
+	case componentuse.Table:
+		nodeCreate := tx.ComponentUse.Create()
+		if err := nodeCreate.SetDataNode(node); err != nil {
+			return err
+		}
+		value, err := nodeCreate.Save(ctx)
+		if err != nil {
+			return err
+		}
+		node.Value = value
 	case gitcommit.Table:
 		nodeCreate := tx.GitCommit.Create()
 		if err := nodeCreate.SetDataNode(node); err != nil {
@@ -138,18 +136,8 @@ func CreateNode(tx *Tx, node *DataNode) error {
 			return err
 		}
 		node.Value = value
-	case licensescan.Table:
-		nodeCreate := tx.LicenseScan.Create()
-		if err := nodeCreate.SetDataNode(node); err != nil {
-			return err
-		}
-		value, err := nodeCreate.Save(ctx)
-		if err != nil {
-			return err
-		}
-		node.Value = value
-	case licenseusage.Table:
-		nodeCreate := tx.LicenseUsage.Create()
+	case licenseuse.Table:
+		nodeCreate := tx.LicenseUse.Create()
 		if err := nodeCreate.SetDataNode(node); err != nil {
 			return err
 		}
@@ -170,16 +158,6 @@ func CreateNode(tx *Tx, node *DataNode) error {
 		node.Value = value
 	case release.Table:
 		nodeCreate := tx.Release.Create()
-		if err := nodeCreate.SetDataNode(node); err != nil {
-			return err
-		}
-		value, err := nodeCreate.Save(ctx)
-		if err != nil {
-			return err
-		}
-		node.Value = value
-	case releasecheck.Table:
-		nodeCreate := tx.ReleaseCheck.Create()
 		if err := nodeCreate.SetDataNode(node); err != nil {
 			return err
 		}
@@ -277,16 +255,6 @@ func UpdateNode(tx *Tx, node *DataNode) error {
 			return err
 		}
 		node.Value = value
-	case cvescan.Table:
-		nodeCreate := tx.CVEScan.UpdateOne(node.Value.(*CVEScan))
-		if err := nodeCreate.SetDataNode(node); err != nil {
-			return err
-		}
-		value, err := nodeCreate.Save(ctx)
-		if err != nil {
-			return err
-		}
-		node.Value = value
 	case cwe.Table:
 		nodeCreate := tx.CWE.UpdateOne(node.Value.(*CWE))
 		if err := nodeCreate.SetDataNode(node); err != nil {
@@ -327,6 +295,16 @@ func UpdateNode(tx *Tx, node *DataNode) error {
 			return err
 		}
 		node.Value = value
+	case componentuse.Table:
+		nodeCreate := tx.ComponentUse.UpdateOne(node.Value.(*ComponentUse))
+		if err := nodeCreate.SetDataNode(node); err != nil {
+			return err
+		}
+		value, err := nodeCreate.Save(ctx)
+		if err != nil {
+			return err
+		}
+		node.Value = value
 	case gitcommit.Table:
 		nodeCreate := tx.GitCommit.UpdateOne(node.Value.(*GitCommit))
 		if err := nodeCreate.SetDataNode(node); err != nil {
@@ -347,18 +325,8 @@ func UpdateNode(tx *Tx, node *DataNode) error {
 			return err
 		}
 		node.Value = value
-	case licensescan.Table:
-		nodeCreate := tx.LicenseScan.UpdateOne(node.Value.(*LicenseScan))
-		if err := nodeCreate.SetDataNode(node); err != nil {
-			return err
-		}
-		value, err := nodeCreate.Save(ctx)
-		if err != nil {
-			return err
-		}
-		node.Value = value
-	case licenseusage.Table:
-		nodeCreate := tx.LicenseUsage.UpdateOne(node.Value.(*LicenseUsage))
+	case licenseuse.Table:
+		nodeCreate := tx.LicenseUse.UpdateOne(node.Value.(*LicenseUse))
 		if err := nodeCreate.SetDataNode(node); err != nil {
 			return err
 		}
@@ -379,16 +347,6 @@ func UpdateNode(tx *Tx, node *DataNode) error {
 		node.Value = value
 	case release.Table:
 		nodeCreate := tx.Release.UpdateOne(node.Value.(*Release))
-		if err := nodeCreate.SetDataNode(node); err != nil {
-			return err
-		}
-		value, err := nodeCreate.Save(ctx)
-		if err != nil {
-			return err
-		}
-		node.Value = value
-	case releasecheck.Table:
-		nodeCreate := tx.ReleaseCheck.UpdateOne(node.Value.(*ReleaseCheck))
 		if err := nodeCreate.SetDataNode(node); err != nil {
 			return err
 		}
@@ -553,37 +511,6 @@ func QueryNode(tx *Tx, node *DataNode) error {
 		if len(values) == 1 {
 			node.Value = values[0]
 		}
-	case cvescan.Table:
-		query := tx.CVEScan.Query()
-		switch node.Operation {
-		case NodeOperationCreate, NodeOperationCreateUpdate, NodeOperationDefault:
-			if err := query.WhereNodeUnique(node); err != nil {
-				return err
-			}
-		case NodeOperationQuery, NodeOperationUpdate:
-			if err := query.WhereNode(node); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unknown node operation: %s", string(node.Operation))
-		}
-		// Check if there are any predicates, otherwise we want to return nil
-		// TODO: this is kinda hacky and needs to be more thoughtout -- how to
-		// check if a unique contraint will be violated or not
-		if len(query.predicates) == 0 {
-			return nil
-		}
-		query.Limit(2)
-		values, err := query.All(ctx)
-		if err != nil {
-			return err
-		}
-		if len(values) > 1 {
-			return errors.New("query returned more than 1 result")
-		}
-		if len(values) == 1 {
-			node.Value = values[0]
-		}
 	case cwe.Table:
 		query := tx.CWE.Query()
 		switch node.Operation {
@@ -708,6 +635,37 @@ func QueryNode(tx *Tx, node *DataNode) error {
 		if len(values) == 1 {
 			node.Value = values[0]
 		}
+	case componentuse.Table:
+		query := tx.ComponentUse.Query()
+		switch node.Operation {
+		case NodeOperationCreate, NodeOperationCreateUpdate, NodeOperationDefault:
+			if err := query.WhereNodeUnique(node); err != nil {
+				return err
+			}
+		case NodeOperationQuery, NodeOperationUpdate:
+			if err := query.WhereNode(node); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unknown node operation: %s", string(node.Operation))
+		}
+		// Check if there are any predicates, otherwise we want to return nil
+		// TODO: this is kinda hacky and needs to be more thoughtout -- how to
+		// check if a unique contraint will be violated or not
+		if len(query.predicates) == 0 {
+			return nil
+		}
+		query.Limit(2)
+		values, err := query.All(ctx)
+		if err != nil {
+			return err
+		}
+		if len(values) > 1 {
+			return errors.New("query returned more than 1 result")
+		}
+		if len(values) == 1 {
+			node.Value = values[0]
+		}
 	case gitcommit.Table:
 		query := tx.GitCommit.Query()
 		switch node.Operation {
@@ -770,39 +728,8 @@ func QueryNode(tx *Tx, node *DataNode) error {
 		if len(values) == 1 {
 			node.Value = values[0]
 		}
-	case licensescan.Table:
-		query := tx.LicenseScan.Query()
-		switch node.Operation {
-		case NodeOperationCreate, NodeOperationCreateUpdate, NodeOperationDefault:
-			if err := query.WhereNodeUnique(node); err != nil {
-				return err
-			}
-		case NodeOperationQuery, NodeOperationUpdate:
-			if err := query.WhereNode(node); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unknown node operation: %s", string(node.Operation))
-		}
-		// Check if there are any predicates, otherwise we want to return nil
-		// TODO: this is kinda hacky and needs to be more thoughtout -- how to
-		// check if a unique contraint will be violated or not
-		if len(query.predicates) == 0 {
-			return nil
-		}
-		query.Limit(2)
-		values, err := query.All(ctx)
-		if err != nil {
-			return err
-		}
-		if len(values) > 1 {
-			return errors.New("query returned more than 1 result")
-		}
-		if len(values) == 1 {
-			node.Value = values[0]
-		}
-	case licenseusage.Table:
-		query := tx.LicenseUsage.Query()
+	case licenseuse.Table:
+		query := tx.LicenseUse.Query()
 		switch node.Operation {
 		case NodeOperationCreate, NodeOperationCreateUpdate, NodeOperationDefault:
 			if err := query.WhereNodeUnique(node); err != nil {
@@ -865,37 +792,6 @@ func QueryNode(tx *Tx, node *DataNode) error {
 		}
 	case release.Table:
 		query := tx.Release.Query()
-		switch node.Operation {
-		case NodeOperationCreate, NodeOperationCreateUpdate, NodeOperationDefault:
-			if err := query.WhereNodeUnique(node); err != nil {
-				return err
-			}
-		case NodeOperationQuery, NodeOperationUpdate:
-			if err := query.WhereNode(node); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unknown node operation: %s", string(node.Operation))
-		}
-		// Check if there are any predicates, otherwise we want to return nil
-		// TODO: this is kinda hacky and needs to be more thoughtout -- how to
-		// check if a unique contraint will be violated or not
-		if len(query.predicates) == 0 {
-			return nil
-		}
-		query.Limit(2)
-		values, err := query.All(ctx)
-		if err != nil {
-			return err
-		}
-		if len(values) > 1 {
-			return errors.New("query returned more than 1 result")
-		}
-		if len(values) == 1 {
-			node.Value = values[0]
-		}
-	case releasecheck.Table:
-		query := tx.ReleaseCheck.Query()
 		switch node.Operation {
 		case NodeOperationCreate, NodeOperationCreateUpdate, NodeOperationDefault:
 			if err := query.WhereNodeUnique(node); err != nil {
@@ -1110,23 +1006,23 @@ func (a *ArtifactMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case artifact.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"artifact\" field \"name\": %w", err)
 			}
-			a.SetName(v)
+			a.SetName(value)
 		case artifact.FieldSha256:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"artifact\" field \"sha256\": %w", err)
 			}
-			a.SetSha256(v)
+			a.SetSha256(value)
 		case artifact.FieldType:
-			var v artifact.Type
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value artifact.Type
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"artifact\" field \"type\": %w", err)
 			}
-			a.SetType(v)
+			a.SetType(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "artifact", field.Name)
 		}
@@ -1181,23 +1077,23 @@ func (a *ArtifactQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case artifact.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"artifact\" field \"name\": %w", err)
 			}
-			a.Where(artifact.NameEQ(v))
+			a.Where(artifact.NameEQ(value))
 		case artifact.FieldSha256:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"artifact\" field \"sha256\": %w", err)
 			}
-			a.Where(artifact.Sha256EQ(v))
+			a.Where(artifact.Sha256EQ(value))
 		case artifact.FieldType:
-			var v artifact.Type
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value artifact.Type
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"artifact\" field \"type\": %w", err)
 			}
-			a.Where(artifact.TypeEQ(v))
+			a.Where(artifact.TypeEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "artifact", field.Name)
 		}
@@ -1226,11 +1122,11 @@ func (a *ArtifactQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case artifact.FieldSha256:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"artifact\" field \"sha256\": %w", err)
 			}
-			a.Where(artifact.Sha256EQ(v))
+			a.Where(artifact.Sha256EQ(value))
 		}
 	}
 
@@ -1270,41 +1166,41 @@ func (c *CVEMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case cve.FieldCveID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"cve_id\": %w", err)
 			}
-			c.SetCveID(v)
+			c.SetCveID(value)
 		case cve.FieldDescription:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"description\": %w", err)
 			}
-			c.SetDescription(v)
+			c.SetDescription(value)
 		case cve.FieldSeverityScore:
-			var v float64
-			if err := ctyToEntValue(field.Value, 20, &v); err != nil {
+			var value float64
+			if err := ctyToEntValue(field.Value, 20, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"severity_score\": %w", err)
 			}
-			c.SetSeverityScore(v)
+			c.SetSeverityScore(value)
 		case cve.FieldSeverity:
-			var v cve.Severity
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value cve.Severity
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"severity\": %w", err)
 			}
-			c.SetSeverity(v)
+			c.SetSeverity(value)
 		case cve.FieldPublishedData:
-			var v time.Time
-			if err := ctyToEntValue(field.Value, 2, &v); err != nil {
+			var value time.Time
+			if err := ctyToEntValue(field.Value, 2, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"published_data\": %w", err)
 			}
-			c.SetPublishedData(v)
+			c.SetPublishedData(value)
 		case cve.FieldModifiedData:
-			var v time.Time
-			if err := ctyToEntValue(field.Value, 2, &v); err != nil {
+			var value time.Time
+			if err := ctyToEntValue(field.Value, 2, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"modified_data\": %w", err)
 			}
-			c.SetModifiedData(v)
+			c.SetModifiedData(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "cve", field.Name)
 		}
@@ -1320,8 +1216,10 @@ func (c *CVEMutation) SetDataEdges(edges []DataEdge) error {
 		// Use the edge type (node name) + the edge name to avoid conflict
 		// in case there are multiple edges with the same name
 		switch edge.Node.Name + edge.Name {
-		case vulnerability.Table + cve.EdgeFound:
-			c.AddFoundIDs(edge.Node.Value.(*Vulnerability).ID)
+		case component.Table + cve.EdgeComponents:
+			c.AddComponentIDs(edge.Node.Value.(*Component).ID)
+		case vulnerability.Table + cve.EdgeVulnerabilities:
+			c.AddVulnerabilityIDs(edge.Node.Value.(*Vulnerability).ID)
 		case cverule.Table + cve.EdgeRules:
 			c.AddRuleIDs(edge.Node.Value.(*CVERule).ID)
 		default:
@@ -1339,8 +1237,10 @@ func (c *CVEUpdateOne) SetDataEdges(edges []DataEdge) error {
 		// Use the edge type (node name) + the edge name to avoid conflict
 		// in case there are multiple edges with the same name
 		switch edge.Node.Name + edge.Name {
-		case vulnerability.Table + cve.EdgeFound:
-			c.AddFoundIDs(edge.Node.Value.(*Vulnerability).ID)
+		case component.Table + cve.EdgeComponents:
+			c.AddComponentIDs(edge.Node.Value.(*Component).ID)
+		case vulnerability.Table + cve.EdgeVulnerabilities:
+			c.AddVulnerabilityIDs(edge.Node.Value.(*Vulnerability).ID)
 		case cverule.Table + cve.EdgeRules:
 			c.AddRuleIDs(edge.Node.Value.(*CVERule).ID)
 		default:
@@ -1355,41 +1255,41 @@ func (c *CVEQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case cve.FieldCveID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"cve_id\": %w", err)
 			}
-			c.Where(cve.CveIDEQ(v))
+			c.Where(cve.CveIDEQ(value))
 		case cve.FieldDescription:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"description\": %w", err)
 			}
-			c.Where(cve.DescriptionEQ(v))
+			c.Where(cve.DescriptionEQ(value))
 		case cve.FieldSeverityScore:
-			var v float64
-			if err := ctyToEntValue(field.Value, 20, &v); err != nil {
+			var value float64
+			if err := ctyToEntValue(field.Value, 20, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"severity_score\": %w", err)
 			}
-			c.Where(cve.SeverityScoreEQ(v))
+			c.Where(cve.SeverityScoreEQ(value))
 		case cve.FieldSeverity:
-			var v cve.Severity
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value cve.Severity
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"severity\": %w", err)
 			}
-			c.Where(cve.SeverityEQ(v))
+			c.Where(cve.SeverityEQ(value))
 		case cve.FieldPublishedData:
-			var v time.Time
-			if err := ctyToEntValue(field.Value, 2, &v); err != nil {
+			var value time.Time
+			if err := ctyToEntValue(field.Value, 2, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"published_data\": %w", err)
 			}
-			c.Where(cve.PublishedDataEQ(v))
+			c.Where(cve.PublishedDataEQ(value))
 		case cve.FieldModifiedData:
-			var v time.Time
-			if err := ctyToEntValue(field.Value, 2, &v); err != nil {
+			var value time.Time
+			if err := ctyToEntValue(field.Value, 2, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"modified_data\": %w", err)
 			}
-			c.Where(cve.ModifiedDataEQ(v))
+			c.Where(cve.ModifiedDataEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "cve", field.Name)
 		}
@@ -1402,8 +1302,10 @@ func (c *CVEQuery) WhereNode(node *DataNode) error {
 			continue
 		}
 		switch edge.Node.Name + edge.Name {
-		case vulnerability.Table + cve.EdgeFound:
-			c.Where(cve.HasFoundWith(vulnerability.IDEQ(edge.Node.Value.(*Vulnerability).ID)))
+		case component.Table + cve.EdgeComponents:
+			c.Where(cve.HasComponentsWith(component.IDEQ(edge.Node.Value.(*Component).ID)))
+		case vulnerability.Table + cve.EdgeVulnerabilities:
+			c.Where(cve.HasVulnerabilitiesWith(vulnerability.IDEQ(edge.Node.Value.(*Vulnerability).ID)))
 		case cverule.Table + cve.EdgeRules:
 			c.Where(cve.HasRulesWith(cverule.IDEQ(edge.Node.Value.(*CVERule).ID)))
 		default:
@@ -1418,11 +1320,11 @@ func (c *CVEQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case cve.FieldCveID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve\" field \"cve_id\": %w", err)
 			}
-			c.Where(cve.CveIDEQ(v))
+			c.Where(cve.CveIDEQ(value))
 		}
 	}
 
@@ -1462,11 +1364,11 @@ func (cr *CVERuleMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case cverule.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve_rule\" field \"name\": %w", err)
 			}
-			cr.SetName(v)
+			cr.SetName(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "cve_rule", field.Name)
 		}
@@ -1523,11 +1425,11 @@ func (cr *CVERuleQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case cverule.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve_rule\" field \"name\": %w", err)
 			}
-			cr.Where(cverule.NameEQ(v))
+			cr.Where(cverule.NameEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "cve_rule", field.Name)
 		}
@@ -1558,11 +1460,11 @@ func (cr *CVERuleQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case cverule.FieldID:
-			var v int
-			if err := ctyToEntValue(field.Value, 12, &v); err != nil {
+			var value int
+			if err := ctyToEntValue(field.Value, 12, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cve_rule\" field \"id\": %w", err)
 			}
-			cr.Where(cverule.IDEQ(v))
+			cr.Where(cverule.IDEQ(value))
 		}
 	}
 
@@ -1575,152 +1477,6 @@ func (cr *CVERuleQuery) WhereNodeUnique(node *DataNode) error {
 		switch edge.Node.Name + edge.Name {
 		case cve.Table + cverule.EdgeCve:
 			cr.Where(cverule.HasCveWith(cve.IDEQ(edge.Node.Value.(*CVE).ID)))
-		}
-	}
-	return nil
-}
-
-func (cs *CVEScanCreate) SetDataNode(node *DataNode) error {
-	if err := cs.mutation.SetDataFields(node.Fields); err != nil {
-		return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
-	}
-	if err := cs.mutation.SetDataEdges(node.Edges); err != nil {
-		return fmt.Errorf("error setting edges for node %s: %w", node.Name, err)
-	}
-	return nil
-}
-
-func (cs *CVEScanUpdateOne) SetDataNode(node *DataNode) error {
-	if err := cs.mutation.SetDataFields(node.Fields); err != nil {
-		return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
-	}
-	if err := cs.SetDataEdges(node.Edges); err != nil {
-		return fmt.Errorf("error setting edges for node %s: %w", node.Name, err)
-	}
-	return nil
-}
-
-func (cs *CVEScanMutation) SetDataFields(fields []DataField) error {
-	for _, field := range fields {
-		switch field.Name {
-		case cvescan.FieldTool:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"cve_scan\" field \"tool\": %w", err)
-			}
-			cs.SetTool(v)
-		default:
-			return fmt.Errorf("field does not exist for node %s: %s", "cve_scan", field.Name)
-		}
-	}
-	return nil
-}
-
-func (cs *CVEScanMutation) SetDataEdges(edges []DataEdge) error {
-	for _, edge := range edges {
-		if !edge.Inverse {
-			continue
-		}
-		// Use the edge type (node name) + the edge name to avoid conflict
-		// in case there are multiple edges with the same name
-		switch edge.Node.Name + edge.Name {
-		case release.Table + cvescan.EdgeRelease:
-			cs.SetReleaseID(edge.Node.Value.(*Release).ID)
-		case releaseentry.Table + cvescan.EdgeEntry:
-			cs.SetEntryID(edge.Node.Value.(*ReleaseEntry).ID)
-		case vulnerability.Table + cvescan.EdgeVulnerabilities:
-			cs.AddVulnerabilityIDs(edge.Node.Value.(*Vulnerability).ID)
-		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "cve_scan", edge.Name)
-		}
-	}
-	return nil
-}
-
-func (cs *CVEScanUpdateOne) SetDataEdges(edges []DataEdge) error {
-	for _, edge := range edges {
-		if !edge.Inverse {
-			continue
-		}
-		// Use the edge type (node name) + the edge name to avoid conflict
-		// in case there are multiple edges with the same name
-		switch edge.Node.Name + edge.Name {
-		case release.Table + cvescan.EdgeRelease:
-			// TODO: it can get messy updating unique edges that already exist,
-			// so for now just skip them
-			// cs.SetReleaseID(edge.Node.Value.(*Release).ID)
-		case releaseentry.Table + cvescan.EdgeEntry:
-			// TODO: it can get messy updating unique edges that already exist,
-			// so for now just skip them
-			// cs.SetEntryID(edge.Node.Value.(*ReleaseEntry).ID)
-		case vulnerability.Table + cvescan.EdgeVulnerabilities:
-			cs.AddVulnerabilityIDs(edge.Node.Value.(*Vulnerability).ID)
-		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "cve_scan", edge.Name)
-		}
-	}
-	return nil
-}
-
-func (cs *CVEScanQuery) WhereNode(node *DataNode) error {
-	// Handle fields
-	for _, field := range node.Fields {
-		switch field.Name {
-		case cvescan.FieldTool:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"cve_scan\" field \"tool\": %w", err)
-			}
-			cs.Where(cvescan.ToolEQ(v))
-		default:
-			return fmt.Errorf("field does not exist for node %s: %s", "cve_scan", field.Name)
-		}
-	}
-
-	// Handle edges
-	for _, edge := range node.Edges {
-		// Inverse edges only because they describe the WHERE for a node
-		if !edge.Inverse {
-			continue
-		}
-		switch edge.Node.Name + edge.Name {
-		case release.Table + cvescan.EdgeRelease:
-			cs.Where(cvescan.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
-		case releaseentry.Table + cvescan.EdgeEntry:
-			cs.Where(cvescan.HasEntryWith(releaseentry.IDEQ(edge.Node.Value.(*ReleaseEntry).ID)))
-		case vulnerability.Table + cvescan.EdgeVulnerabilities:
-			cs.Where(cvescan.HasVulnerabilitiesWith(vulnerability.IDEQ(edge.Node.Value.(*Vulnerability).ID)))
-		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "cve_scan", edge.Name)
-		}
-	}
-	return nil
-}
-
-func (cs *CVEScanQuery) WhereNodeUnique(node *DataNode) error {
-	// Handle fields
-	for _, field := range node.Fields {
-		switch field.Name {
-		case cvescan.FieldID:
-			var v int
-			if err := ctyToEntValue(field.Value, 12, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"cve_scan\" field \"id\": %w", err)
-			}
-			cs.Where(cvescan.IDEQ(v))
-		}
-	}
-
-	// Handle edges
-	for _, edge := range node.Edges {
-		// Inverse edges only because they describe the WHERE for a node
-		if !edge.Inverse {
-			continue
-		}
-		switch edge.Node.Name + edge.Name {
-		case release.Table + cvescan.EdgeRelease:
-			cs.Where(cvescan.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
-		case releaseentry.Table + cvescan.EdgeEntry:
-			cs.Where(cvescan.HasEntryWith(releaseentry.IDEQ(edge.Node.Value.(*ReleaseEntry).ID)))
 		}
 	}
 	return nil
@@ -1750,23 +1506,23 @@ func (c *CWEMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case cwe.FieldCweID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cwe\" field \"cwe_id\": %w", err)
 			}
-			c.SetCweID(v)
+			c.SetCweID(value)
 		case cwe.FieldDescription:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cwe\" field \"description\": %w", err)
 			}
-			c.SetDescription(v)
+			c.SetDescription(value)
 		case cwe.FieldURL:
-			var v float64
-			if err := ctyToEntValue(field.Value, 20, &v); err != nil {
+			var value float64
+			if err := ctyToEntValue(field.Value, 20, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cwe\" field \"url\": %w", err)
 			}
-			c.SetURL(v)
+			c.SetURL(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "cwe", field.Name)
 		}
@@ -1813,23 +1569,23 @@ func (c *CWEQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case cwe.FieldCweID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cwe\" field \"cwe_id\": %w", err)
 			}
-			c.Where(cwe.CweIDEQ(v))
+			c.Where(cwe.CweIDEQ(value))
 		case cwe.FieldDescription:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cwe\" field \"description\": %w", err)
 			}
-			c.Where(cwe.DescriptionEQ(v))
+			c.Where(cwe.DescriptionEQ(value))
 		case cwe.FieldURL:
-			var v float64
-			if err := ctyToEntValue(field.Value, 20, &v); err != nil {
+			var value float64
+			if err := ctyToEntValue(field.Value, 20, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cwe\" field \"url\": %w", err)
 			}
-			c.Where(cwe.URLEQ(v))
+			c.Where(cwe.URLEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "cwe", field.Name)
 		}
@@ -1856,11 +1612,11 @@ func (c *CWEQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case cwe.FieldCweID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"cwe\" field \"cwe_id\": %w", err)
 			}
-			c.Where(cwe.CweIDEQ(v))
+			c.Where(cwe.CweIDEQ(value))
 		}
 	}
 
@@ -1900,29 +1656,29 @@ func (ci *CodeIssueMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case codeissue.FieldRuleID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_issue\" field \"rule_id\": %w", err)
 			}
-			ci.SetRuleID(v)
+			ci.SetRuleID(value)
 		case codeissue.FieldMessage:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_issue\" field \"message\": %w", err)
 			}
-			ci.SetMessage(v)
+			ci.SetMessage(value)
 		case codeissue.FieldSeverity:
-			var v codeissue.Severity
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value codeissue.Severity
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_issue\" field \"severity\": %w", err)
 			}
-			ci.SetSeverity(v)
+			ci.SetSeverity(value)
 		case codeissue.FieldType:
-			var v codeissue.Type
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value codeissue.Type
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_issue\" field \"type\": %w", err)
 			}
-			ci.SetType(v)
+			ci.SetType(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "code_issue", field.Name)
 		}
@@ -1975,29 +1731,29 @@ func (ci *CodeIssueQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case codeissue.FieldRuleID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_issue\" field \"rule_id\": %w", err)
 			}
-			ci.Where(codeissue.RuleIDEQ(v))
+			ci.Where(codeissue.RuleIDEQ(value))
 		case codeissue.FieldMessage:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_issue\" field \"message\": %w", err)
 			}
-			ci.Where(codeissue.MessageEQ(v))
+			ci.Where(codeissue.MessageEQ(value))
 		case codeissue.FieldSeverity:
-			var v codeissue.Severity
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value codeissue.Severity
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_issue\" field \"severity\": %w", err)
 			}
-			ci.Where(codeissue.SeverityEQ(v))
+			ci.Where(codeissue.SeverityEQ(value))
 		case codeissue.FieldType:
-			var v codeissue.Type
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value codeissue.Type
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_issue\" field \"type\": %w", err)
 			}
-			ci.Where(codeissue.TypeEQ(v))
+			ci.Where(codeissue.TypeEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "code_issue", field.Name)
 		}
@@ -2026,11 +1782,11 @@ func (ci *CodeIssueQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case codeissue.FieldID:
-			var v int
-			if err := ctyToEntValue(field.Value, 12, &v); err != nil {
+			var value int
+			if err := ctyToEntValue(field.Value, 12, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_issue\" field \"id\": %w", err)
 			}
-			ci.Where(codeissue.IDEQ(v))
+			ci.Where(codeissue.IDEQ(value))
 		}
 	}
 
@@ -2072,11 +1828,11 @@ func (cs *CodeScanMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case codescan.FieldTool:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_scan\" field \"tool\": %w", err)
 			}
-			cs.SetTool(v)
+			cs.SetTool(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "code_scan", field.Name)
 		}
@@ -2094,10 +1850,12 @@ func (cs *CodeScanMutation) SetDataEdges(edges []DataEdge) error {
 		switch edge.Node.Name + edge.Name {
 		case release.Table + codescan.EdgeRelease:
 			cs.SetReleaseID(edge.Node.Value.(*Release).ID)
-		case codeissue.Table + codescan.EdgeIssues:
-			cs.AddIssueIDs(edge.Node.Value.(*CodeIssue).ID)
 		case releaseentry.Table + codescan.EdgeEntry:
 			cs.SetEntryID(edge.Node.Value.(*ReleaseEntry).ID)
+		case codeissue.Table + codescan.EdgeIssues:
+			cs.AddIssueIDs(edge.Node.Value.(*CodeIssue).ID)
+		case componentuse.Table + codescan.EdgeComponents:
+			cs.AddComponentIDs(edge.Node.Value.(*ComponentUse).ID)
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "code_scan", edge.Name)
 		}
@@ -2117,12 +1875,14 @@ func (cs *CodeScanUpdateOne) SetDataEdges(edges []DataEdge) error {
 			// TODO: it can get messy updating unique edges that already exist,
 			// so for now just skip them
 			// cs.SetReleaseID(edge.Node.Value.(*Release).ID)
-		case codeissue.Table + codescan.EdgeIssues:
-			cs.AddIssueIDs(edge.Node.Value.(*CodeIssue).ID)
 		case releaseentry.Table + codescan.EdgeEntry:
 			// TODO: it can get messy updating unique edges that already exist,
 			// so for now just skip them
 			// cs.SetEntryID(edge.Node.Value.(*ReleaseEntry).ID)
+		case codeissue.Table + codescan.EdgeIssues:
+			cs.AddIssueIDs(edge.Node.Value.(*CodeIssue).ID)
+		case componentuse.Table + codescan.EdgeComponents:
+			cs.AddComponentIDs(edge.Node.Value.(*ComponentUse).ID)
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "code_scan", edge.Name)
 		}
@@ -2135,11 +1895,11 @@ func (cs *CodeScanQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case codescan.FieldTool:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_scan\" field \"tool\": %w", err)
 			}
-			cs.Where(codescan.ToolEQ(v))
+			cs.Where(codescan.ToolEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "code_scan", field.Name)
 		}
@@ -2154,10 +1914,12 @@ func (cs *CodeScanQuery) WhereNode(node *DataNode) error {
 		switch edge.Node.Name + edge.Name {
 		case release.Table + codescan.EdgeRelease:
 			cs.Where(codescan.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
-		case codeissue.Table + codescan.EdgeIssues:
-			cs.Where(codescan.HasIssuesWith(codeissue.IDEQ(edge.Node.Value.(*CodeIssue).ID)))
 		case releaseentry.Table + codescan.EdgeEntry:
 			cs.Where(codescan.HasEntryWith(releaseentry.IDEQ(edge.Node.Value.(*ReleaseEntry).ID)))
+		case codeissue.Table + codescan.EdgeIssues:
+			cs.Where(codescan.HasIssuesWith(codeissue.IDEQ(edge.Node.Value.(*CodeIssue).ID)))
+		case componentuse.Table + codescan.EdgeComponents:
+			cs.Where(codescan.HasComponentsWith(componentuse.IDEQ(edge.Node.Value.(*ComponentUse).ID)))
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "code_scan", edge.Name)
 		}
@@ -2170,11 +1932,11 @@ func (cs *CodeScanQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case codescan.FieldID:
-			var v int
-			if err := ctyToEntValue(field.Value, 12, &v); err != nil {
+			var value int
+			if err := ctyToEntValue(field.Value, 12, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"code_scan\" field \"id\": %w", err)
 			}
-			cs.Where(codescan.IDEQ(v))
+			cs.Where(codescan.IDEQ(value))
 		}
 	}
 
@@ -2218,35 +1980,35 @@ func (c *ComponentMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case component.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"name\": %w", err)
 			}
-			c.SetName(v)
+			c.SetName(value)
 		case component.FieldVendor:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"vendor\": %w", err)
 			}
-			c.SetVendor(v)
+			c.SetVendor(value)
 		case component.FieldVersion:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"version\": %w", err)
 			}
-			c.SetVersion(v)
+			c.SetVersion(value)
 		case component.FieldDescription:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"description\": %w", err)
 			}
-			c.SetDescription(v)
+			c.SetDescription(value)
 		case component.FieldURL:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"url\": %w", err)
 			}
-			c.SetURL(v)
+			c.SetURL(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "component", field.Name)
 		}
@@ -2262,12 +2024,12 @@ func (c *ComponentMutation) SetDataEdges(edges []DataEdge) error {
 		// Use the edge type (node name) + the edge name to avoid conflict
 		// in case there are multiple edges with the same name
 		switch edge.Node.Name + edge.Name {
-		case vulnerability.Table + component.EdgeVulnerabilities:
-			c.AddVulnerabilityIDs(edge.Node.Value.(*Vulnerability).ID)
+		case cve.Table + component.EdgeCves:
+			c.AddCfeIDs(edge.Node.Value.(*CVE).ID)
 		case license.Table + component.EdgeLicenses:
 			c.AddLicenseIDs(edge.Node.Value.(*License).ID)
-		case release.Table + component.EdgeRelease:
-			c.AddReleaseIDs(edge.Node.Value.(*Release).ID)
+		case componentuse.Table + component.EdgeUses:
+			c.AddUseIDs(edge.Node.Value.(*ComponentUse).ID)
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "component", edge.Name)
 		}
@@ -2283,12 +2045,12 @@ func (c *ComponentUpdateOne) SetDataEdges(edges []DataEdge) error {
 		// Use the edge type (node name) + the edge name to avoid conflict
 		// in case there are multiple edges with the same name
 		switch edge.Node.Name + edge.Name {
-		case vulnerability.Table + component.EdgeVulnerabilities:
-			c.AddVulnerabilityIDs(edge.Node.Value.(*Vulnerability).ID)
+		case cve.Table + component.EdgeCves:
+			c.AddCfeIDs(edge.Node.Value.(*CVE).ID)
 		case license.Table + component.EdgeLicenses:
 			c.AddLicenseIDs(edge.Node.Value.(*License).ID)
-		case release.Table + component.EdgeRelease:
-			c.AddReleaseIDs(edge.Node.Value.(*Release).ID)
+		case componentuse.Table + component.EdgeUses:
+			c.AddUseIDs(edge.Node.Value.(*ComponentUse).ID)
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "component", edge.Name)
 		}
@@ -2301,35 +2063,35 @@ func (c *ComponentQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case component.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"name\": %w", err)
 			}
-			c.Where(component.NameEQ(v))
+			c.Where(component.NameEQ(value))
 		case component.FieldVendor:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"vendor\": %w", err)
 			}
-			c.Where(component.VendorEQ(v))
+			c.Where(component.VendorEQ(value))
 		case component.FieldVersion:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"version\": %w", err)
 			}
-			c.Where(component.VersionEQ(v))
+			c.Where(component.VersionEQ(value))
 		case component.FieldDescription:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"description\": %w", err)
 			}
-			c.Where(component.DescriptionEQ(v))
+			c.Where(component.DescriptionEQ(value))
 		case component.FieldURL:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"url\": %w", err)
 			}
-			c.Where(component.URLEQ(v))
+			c.Where(component.URLEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "component", field.Name)
 		}
@@ -2342,12 +2104,12 @@ func (c *ComponentQuery) WhereNode(node *DataNode) error {
 			continue
 		}
 		switch edge.Node.Name + edge.Name {
-		case vulnerability.Table + component.EdgeVulnerabilities:
-			c.Where(component.HasVulnerabilitiesWith(vulnerability.IDEQ(edge.Node.Value.(*Vulnerability).ID)))
+		case cve.Table + component.EdgeCves:
+			c.Where(component.HasCvesWith(cve.IDEQ(edge.Node.Value.(*CVE).ID)))
 		case license.Table + component.EdgeLicenses:
 			c.Where(component.HasLicensesWith(license.IDEQ(edge.Node.Value.(*License).ID)))
-		case release.Table + component.EdgeRelease:
-			c.Where(component.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
+		case componentuse.Table + component.EdgeUses:
+			c.Where(component.HasUsesWith(componentuse.IDEQ(edge.Node.Value.(*ComponentUse).ID)))
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "component", edge.Name)
 		}
@@ -2360,23 +2122,23 @@ func (c *ComponentQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case component.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"name\": %w", err)
 			}
-			c.Where(component.NameEQ(v))
+			c.Where(component.NameEQ(value))
 		case component.FieldVendor:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"vendor\": %w", err)
 			}
-			c.Where(component.VendorEQ(v))
+			c.Where(component.VendorEQ(value))
 		case component.FieldVersion:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"component\" field \"version\": %w", err)
 			}
-			c.Where(component.VersionEQ(v))
+			c.Where(component.VersionEQ(value))
 		}
 	}
 
@@ -2387,6 +2149,134 @@ func (c *ComponentQuery) WhereNodeUnique(node *DataNode) error {
 			continue
 		}
 		switch edge.Node.Name + edge.Name {
+		}
+	}
+	return nil
+}
+
+func (cu *ComponentUseCreate) SetDataNode(node *DataNode) error {
+	if err := cu.mutation.SetDataFields(node.Fields); err != nil {
+		return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
+	}
+	if err := cu.mutation.SetDataEdges(node.Edges); err != nil {
+		return fmt.Errorf("error setting edges for node %s: %w", node.Name, err)
+	}
+	return nil
+}
+
+func (cu *ComponentUseUpdateOne) SetDataNode(node *DataNode) error {
+	if err := cu.mutation.SetDataFields(node.Fields); err != nil {
+		return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
+	}
+	if err := cu.SetDataEdges(node.Edges); err != nil {
+		return fmt.Errorf("error setting edges for node %s: %w", node.Name, err)
+	}
+	return nil
+}
+
+func (cu *ComponentUseMutation) SetDataFields(fields []DataField) error {
+	for _, field := range fields {
+		switch field.Name {
+		default:
+			return fmt.Errorf("field does not exist for node %s: %s", "component_use", field.Name)
+		}
+	}
+	return nil
+}
+
+func (cu *ComponentUseMutation) SetDataEdges(edges []DataEdge) error {
+	for _, edge := range edges {
+		if !edge.Inverse {
+			continue
+		}
+		// Use the edge type (node name) + the edge name to avoid conflict
+		// in case there are multiple edges with the same name
+		switch edge.Node.Name + edge.Name {
+		case release.Table + componentuse.EdgeRelease:
+			cu.SetReleaseID(edge.Node.Value.(*Release).ID)
+		case codescan.Table + componentuse.EdgeScans:
+			cu.AddScanIDs(edge.Node.Value.(*CodeScan).ID)
+		case component.Table + componentuse.EdgeComponent:
+			cu.SetComponentID(edge.Node.Value.(*Component).ID)
+		default:
+			return fmt.Errorf("edge does not exist for node %s: %s", "component_use", edge.Name)
+		}
+	}
+	return nil
+}
+
+func (cu *ComponentUseUpdateOne) SetDataEdges(edges []DataEdge) error {
+	for _, edge := range edges {
+		if !edge.Inverse {
+			continue
+		}
+		// Use the edge type (node name) + the edge name to avoid conflict
+		// in case there are multiple edges with the same name
+		switch edge.Node.Name + edge.Name {
+		case release.Table + componentuse.EdgeRelease:
+			// TODO: it can get messy updating unique edges that already exist,
+			// so for now just skip them
+			// cu.SetReleaseID(edge.Node.Value.(*Release).ID)
+		case codescan.Table + componentuse.EdgeScans:
+			cu.AddScanIDs(edge.Node.Value.(*CodeScan).ID)
+		case component.Table + componentuse.EdgeComponent:
+			// TODO: it can get messy updating unique edges that already exist,
+			// so for now just skip them
+			// cu.SetComponentID(edge.Node.Value.(*Component).ID)
+		default:
+			return fmt.Errorf("edge does not exist for node %s: %s", "component_use", edge.Name)
+		}
+	}
+	return nil
+}
+
+func (cu *ComponentUseQuery) WhereNode(node *DataNode) error {
+	// Handle fields
+	for _, field := range node.Fields {
+		switch field.Name {
+		default:
+			return fmt.Errorf("field does not exist for node %s: %s", "component_use", field.Name)
+		}
+	}
+
+	// Handle edges
+	for _, edge := range node.Edges {
+		// Inverse edges only because they describe the WHERE for a node
+		if !edge.Inverse {
+			continue
+		}
+		switch edge.Node.Name + edge.Name {
+		case release.Table + componentuse.EdgeRelease:
+			cu.Where(componentuse.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
+		case codescan.Table + componentuse.EdgeScans:
+			cu.Where(componentuse.HasScansWith(codescan.IDEQ(edge.Node.Value.(*CodeScan).ID)))
+		case component.Table + componentuse.EdgeComponent:
+			cu.Where(componentuse.HasComponentWith(component.IDEQ(edge.Node.Value.(*Component).ID)))
+		default:
+			return fmt.Errorf("edge does not exist for node %s: %s", "component_use", edge.Name)
+		}
+	}
+	return nil
+}
+
+func (cu *ComponentUseQuery) WhereNodeUnique(node *DataNode) error {
+	// Handle fields
+	for _, field := range node.Fields {
+		switch field.Name {
+		}
+	}
+
+	// Handle edges
+	for _, edge := range node.Edges {
+		// Inverse edges only because they describe the WHERE for a node
+		if !edge.Inverse {
+			continue
+		}
+		switch edge.Node.Name + edge.Name {
+		case release.Table + componentuse.EdgeRelease:
+			cu.Where(componentuse.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
+		case component.Table + componentuse.EdgeComponent:
+			cu.Where(componentuse.HasComponentWith(component.IDEQ(edge.Node.Value.(*Component).ID)))
 		}
 	}
 	return nil
@@ -2416,29 +2306,29 @@ func (gc *GitCommitMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case gitcommit.FieldHash:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"commit\" field \"hash\": %w", err)
 			}
-			gc.SetHash(v)
+			gc.SetHash(value)
 		case gitcommit.FieldBranch:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"commit\" field \"branch\": %w", err)
 			}
-			gc.SetBranch(v)
+			gc.SetBranch(value)
 		case gitcommit.FieldTag:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"commit\" field \"tag\": %w", err)
 			}
-			gc.SetTag(v)
+			gc.SetTag(value)
 		case gitcommit.FieldTime:
-			var v time.Time
-			if err := ctyToEntValue(field.Value, 2, &v); err != nil {
+			var value time.Time
+			if err := ctyToEntValue(field.Value, 2, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"commit\" field \"time\": %w", err)
 			}
-			gc.SetTime(v)
+			gc.SetTime(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "commit", field.Name)
 		}
@@ -2493,29 +2383,29 @@ func (gc *GitCommitQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case gitcommit.FieldHash:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"commit\" field \"hash\": %w", err)
 			}
-			gc.Where(gitcommit.HashEQ(v))
+			gc.Where(gitcommit.HashEQ(value))
 		case gitcommit.FieldBranch:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"commit\" field \"branch\": %w", err)
 			}
-			gc.Where(gitcommit.BranchEQ(v))
+			gc.Where(gitcommit.BranchEQ(value))
 		case gitcommit.FieldTag:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"commit\" field \"tag\": %w", err)
 			}
-			gc.Where(gitcommit.TagEQ(v))
+			gc.Where(gitcommit.TagEQ(value))
 		case gitcommit.FieldTime:
-			var v time.Time
-			if err := ctyToEntValue(field.Value, 2, &v); err != nil {
+			var value time.Time
+			if err := ctyToEntValue(field.Value, 2, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"commit\" field \"time\": %w", err)
 			}
-			gc.Where(gitcommit.TimeEQ(v))
+			gc.Where(gitcommit.TimeEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "commit", field.Name)
 		}
@@ -2544,11 +2434,11 @@ func (gc *GitCommitQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case gitcommit.FieldHash:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"commit\" field \"hash\": %w", err)
 			}
-			gc.Where(gitcommit.HashEQ(v))
+			gc.Where(gitcommit.HashEQ(value))
 		}
 	}
 
@@ -2590,35 +2480,35 @@ func (l *LicenseMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case license.FieldSpdxID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"license\" field \"spdx_id\": %w", err)
 			}
-			l.SetSpdxID(v)
+			l.SetSpdxID(value)
 		case license.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"license\" field \"name\": %w", err)
 			}
-			l.SetName(v)
+			l.SetName(value)
 		case license.FieldReference:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"license\" field \"reference\": %w", err)
 			}
-			l.SetReference(v)
+			l.SetReference(value)
 		case license.FieldDetailsURL:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"license\" field \"details_url\": %w", err)
 			}
-			l.SetDetailsURL(v)
+			l.SetDetailsURL(value)
 		case license.FieldIsOsiApproved:
-			var v bool
-			if err := ctyToEntValue(field.Value, 1, &v); err != nil {
+			var value bool
+			if err := ctyToEntValue(field.Value, 1, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"license\" field \"is_osi_approved\": %w", err)
 			}
-			l.SetIsOsiApproved(v)
+			l.SetIsOsiApproved(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "license", field.Name)
 		}
@@ -2636,8 +2526,8 @@ func (l *LicenseMutation) SetDataEdges(edges []DataEdge) error {
 		switch edge.Node.Name + edge.Name {
 		case component.Table + license.EdgeComponents:
 			l.AddComponentIDs(edge.Node.Value.(*Component).ID)
-		case licenseusage.Table + license.EdgeUsages:
-			l.AddUsageIDs(edge.Node.Value.(*LicenseUsage).ID)
+		case licenseuse.Table + license.EdgeUses:
+			l.AddUseIDs(edge.Node.Value.(*LicenseUse).ID)
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "license", edge.Name)
 		}
@@ -2655,8 +2545,8 @@ func (l *LicenseUpdateOne) SetDataEdges(edges []DataEdge) error {
 		switch edge.Node.Name + edge.Name {
 		case component.Table + license.EdgeComponents:
 			l.AddComponentIDs(edge.Node.Value.(*Component).ID)
-		case licenseusage.Table + license.EdgeUsages:
-			l.AddUsageIDs(edge.Node.Value.(*LicenseUsage).ID)
+		case licenseuse.Table + license.EdgeUses:
+			l.AddUseIDs(edge.Node.Value.(*LicenseUse).ID)
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "license", edge.Name)
 		}
@@ -2669,35 +2559,35 @@ func (l *LicenseQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case license.FieldSpdxID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"license\" field \"spdx_id\": %w", err)
 			}
-			l.Where(license.SpdxIDEQ(v))
+			l.Where(license.SpdxIDEQ(value))
 		case license.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"license\" field \"name\": %w", err)
 			}
-			l.Where(license.NameEQ(v))
+			l.Where(license.NameEQ(value))
 		case license.FieldReference:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"license\" field \"reference\": %w", err)
 			}
-			l.Where(license.ReferenceEQ(v))
+			l.Where(license.ReferenceEQ(value))
 		case license.FieldDetailsURL:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"license\" field \"details_url\": %w", err)
 			}
-			l.Where(license.DetailsURLEQ(v))
+			l.Where(license.DetailsURLEQ(value))
 		case license.FieldIsOsiApproved:
-			var v bool
-			if err := ctyToEntValue(field.Value, 1, &v); err != nil {
+			var value bool
+			if err := ctyToEntValue(field.Value, 1, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"license\" field \"is_osi_approved\": %w", err)
 			}
-			l.Where(license.IsOsiApprovedEQ(v))
+			l.Where(license.IsOsiApprovedEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "license", field.Name)
 		}
@@ -2712,8 +2602,8 @@ func (l *LicenseQuery) WhereNode(node *DataNode) error {
 		switch edge.Node.Name + edge.Name {
 		case component.Table + license.EdgeComponents:
 			l.Where(license.HasComponentsWith(component.IDEQ(edge.Node.Value.(*Component).ID)))
-		case licenseusage.Table + license.EdgeUsages:
-			l.Where(license.HasUsagesWith(licenseusage.IDEQ(edge.Node.Value.(*LicenseUsage).ID)))
+		case licenseuse.Table + license.EdgeUses:
+			l.Where(license.HasUsesWith(licenseuse.IDEQ(edge.Node.Value.(*LicenseUse).ID)))
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "license", edge.Name)
 		}
@@ -2725,12 +2615,12 @@ func (l *LicenseQuery) WhereNodeUnique(node *DataNode) error {
 	// Handle fields
 	for _, field := range node.Fields {
 		switch field.Name {
-		case license.FieldSpdxID:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"license\" field \"spdx_id\": %w", err)
+		case license.FieldID:
+			var value int
+			if err := ctyToEntValue(field.Value, 12, &value); err != nil {
+				return fmt.Errorf("error converting cty value for type \"license\" field \"id\": %w", err)
 			}
-			l.Where(license.SpdxIDEQ(v))
+			l.Where(license.IDEQ(value))
 		}
 	}
 
@@ -2746,153 +2636,7 @@ func (l *LicenseQuery) WhereNodeUnique(node *DataNode) error {
 	return nil
 }
 
-func (ls *LicenseScanCreate) SetDataNode(node *DataNode) error {
-	if err := ls.mutation.SetDataFields(node.Fields); err != nil {
-		return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
-	}
-	if err := ls.mutation.SetDataEdges(node.Edges); err != nil {
-		return fmt.Errorf("error setting edges for node %s: %w", node.Name, err)
-	}
-	return nil
-}
-
-func (ls *LicenseScanUpdateOne) SetDataNode(node *DataNode) error {
-	if err := ls.mutation.SetDataFields(node.Fields); err != nil {
-		return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
-	}
-	if err := ls.SetDataEdges(node.Edges); err != nil {
-		return fmt.Errorf("error setting edges for node %s: %w", node.Name, err)
-	}
-	return nil
-}
-
-func (ls *LicenseScanMutation) SetDataFields(fields []DataField) error {
-	for _, field := range fields {
-		switch field.Name {
-		case licensescan.FieldTool:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"license_scan\" field \"tool\": %w", err)
-			}
-			ls.SetTool(v)
-		default:
-			return fmt.Errorf("field does not exist for node %s: %s", "license_scan", field.Name)
-		}
-	}
-	return nil
-}
-
-func (ls *LicenseScanMutation) SetDataEdges(edges []DataEdge) error {
-	for _, edge := range edges {
-		if !edge.Inverse {
-			continue
-		}
-		// Use the edge type (node name) + the edge name to avoid conflict
-		// in case there are multiple edges with the same name
-		switch edge.Node.Name + edge.Name {
-		case release.Table + licensescan.EdgeRelease:
-			ls.SetReleaseID(edge.Node.Value.(*Release).ID)
-		case releaseentry.Table + licensescan.EdgeEntry:
-			ls.SetEntryID(edge.Node.Value.(*ReleaseEntry).ID)
-		case licenseusage.Table + licensescan.EdgeLicenses:
-			ls.AddLicenseIDs(edge.Node.Value.(*LicenseUsage).ID)
-		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "license_scan", edge.Name)
-		}
-	}
-	return nil
-}
-
-func (ls *LicenseScanUpdateOne) SetDataEdges(edges []DataEdge) error {
-	for _, edge := range edges {
-		if !edge.Inverse {
-			continue
-		}
-		// Use the edge type (node name) + the edge name to avoid conflict
-		// in case there are multiple edges with the same name
-		switch edge.Node.Name + edge.Name {
-		case release.Table + licensescan.EdgeRelease:
-			// TODO: it can get messy updating unique edges that already exist,
-			// so for now just skip them
-			// ls.SetReleaseID(edge.Node.Value.(*Release).ID)
-		case releaseentry.Table + licensescan.EdgeEntry:
-			// TODO: it can get messy updating unique edges that already exist,
-			// so for now just skip them
-			// ls.SetEntryID(edge.Node.Value.(*ReleaseEntry).ID)
-		case licenseusage.Table + licensescan.EdgeLicenses:
-			ls.AddLicenseIDs(edge.Node.Value.(*LicenseUsage).ID)
-		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "license_scan", edge.Name)
-		}
-	}
-	return nil
-}
-
-func (ls *LicenseScanQuery) WhereNode(node *DataNode) error {
-	// Handle fields
-	for _, field := range node.Fields {
-		switch field.Name {
-		case licensescan.FieldTool:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"license_scan\" field \"tool\": %w", err)
-			}
-			ls.Where(licensescan.ToolEQ(v))
-		default:
-			return fmt.Errorf("field does not exist for node %s: %s", "license_scan", field.Name)
-		}
-	}
-
-	// Handle edges
-	for _, edge := range node.Edges {
-		// Inverse edges only because they describe the WHERE for a node
-		if !edge.Inverse {
-			continue
-		}
-		switch edge.Node.Name + edge.Name {
-		case release.Table + licensescan.EdgeRelease:
-			ls.Where(licensescan.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
-		case releaseentry.Table + licensescan.EdgeEntry:
-			ls.Where(licensescan.HasEntryWith(releaseentry.IDEQ(edge.Node.Value.(*ReleaseEntry).ID)))
-		case licenseusage.Table + licensescan.EdgeLicenses:
-			ls.Where(licensescan.HasLicensesWith(licenseusage.IDEQ(edge.Node.Value.(*LicenseUsage).ID)))
-		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "license_scan", edge.Name)
-		}
-	}
-	return nil
-}
-
-func (ls *LicenseScanQuery) WhereNodeUnique(node *DataNode) error {
-	// Handle fields
-	for _, field := range node.Fields {
-		switch field.Name {
-		case licensescan.FieldID:
-			var v int
-			if err := ctyToEntValue(field.Value, 12, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"license_scan\" field \"id\": %w", err)
-			}
-			ls.Where(licensescan.IDEQ(v))
-		}
-	}
-
-	// Handle edges
-	for _, edge := range node.Edges {
-		// Inverse edges only because they describe the WHERE for a node
-		if !edge.Inverse {
-			continue
-		}
-		switch edge.Node.Name + edge.Name {
-		case release.Table + licensescan.EdgeRelease:
-			ls.Where(licensescan.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
-		case releaseentry.Table + licensescan.EdgeEntry:
-			ls.Where(licensescan.HasEntryWith(releaseentry.IDEQ(edge.Node.Value.(*ReleaseEntry).ID)))
-		}
-	}
-	return nil
-}
-
-func (lu *LicenseUsageCreate) SetDataNode(node *DataNode) error {
+func (lu *LicenseUseCreate) SetDataNode(node *DataNode) error {
 	if err := lu.mutation.SetDataFields(node.Fields); err != nil {
 		return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
 	}
@@ -2902,7 +2646,7 @@ func (lu *LicenseUsageCreate) SetDataNode(node *DataNode) error {
 	return nil
 }
 
-func (lu *LicenseUsageUpdateOne) SetDataNode(node *DataNode) error {
+func (lu *LicenseUseUpdateOne) SetDataNode(node *DataNode) error {
 	if err := lu.mutation.SetDataFields(node.Fields); err != nil {
 		return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
 	}
@@ -2912,17 +2656,17 @@ func (lu *LicenseUsageUpdateOne) SetDataNode(node *DataNode) error {
 	return nil
 }
 
-func (lu *LicenseUsageMutation) SetDataFields(fields []DataField) error {
+func (lu *LicenseUseMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		default:
-			return fmt.Errorf("field does not exist for node %s: %s", "license_usage", field.Name)
+			return fmt.Errorf("field does not exist for node %s: %s", "license_use", field.Name)
 		}
 	}
 	return nil
 }
 
-func (lu *LicenseUsageMutation) SetDataEdges(edges []DataEdge) error {
+func (lu *LicenseUseMutation) SetDataEdges(edges []DataEdge) error {
 	for _, edge := range edges {
 		if !edge.Inverse {
 			continue
@@ -2930,18 +2674,16 @@ func (lu *LicenseUsageMutation) SetDataEdges(edges []DataEdge) error {
 		// Use the edge type (node name) + the edge name to avoid conflict
 		// in case there are multiple edges with the same name
 		switch edge.Node.Name + edge.Name {
-		case license.Table + licenseusage.EdgeLicense:
+		case license.Table + licenseuse.EdgeLicense:
 			lu.SetLicenseID(edge.Node.Value.(*License).ID)
-		case licensescan.Table + licenseusage.EdgeScan:
-			lu.SetScanID(edge.Node.Value.(*LicenseScan).ID)
 		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "license_usage", edge.Name)
+			return fmt.Errorf("edge does not exist for node %s: %s", "license_use", edge.Name)
 		}
 	}
 	return nil
 }
 
-func (lu *LicenseUsageUpdateOne) SetDataEdges(edges []DataEdge) error {
+func (lu *LicenseUseUpdateOne) SetDataEdges(edges []DataEdge) error {
 	for _, edge := range edges {
 		if !edge.Inverse {
 			continue
@@ -2949,27 +2691,23 @@ func (lu *LicenseUsageUpdateOne) SetDataEdges(edges []DataEdge) error {
 		// Use the edge type (node name) + the edge name to avoid conflict
 		// in case there are multiple edges with the same name
 		switch edge.Node.Name + edge.Name {
-		case license.Table + licenseusage.EdgeLicense:
+		case license.Table + licenseuse.EdgeLicense:
 			// TODO: it can get messy updating unique edges that already exist,
 			// so for now just skip them
 			// lu.SetLicenseID(edge.Node.Value.(*License).ID)
-		case licensescan.Table + licenseusage.EdgeScan:
-			// TODO: it can get messy updating unique edges that already exist,
-			// so for now just skip them
-			// lu.SetScanID(edge.Node.Value.(*LicenseScan).ID)
 		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "license_usage", edge.Name)
+			return fmt.Errorf("edge does not exist for node %s: %s", "license_use", edge.Name)
 		}
 	}
 	return nil
 }
 
-func (lu *LicenseUsageQuery) WhereNode(node *DataNode) error {
+func (lu *LicenseUseQuery) WhereNode(node *DataNode) error {
 	// Handle fields
 	for _, field := range node.Fields {
 		switch field.Name {
 		default:
-			return fmt.Errorf("field does not exist for node %s: %s", "license_usage", field.Name)
+			return fmt.Errorf("field does not exist for node %s: %s", "license_use", field.Name)
 		}
 	}
 
@@ -2980,27 +2718,25 @@ func (lu *LicenseUsageQuery) WhereNode(node *DataNode) error {
 			continue
 		}
 		switch edge.Node.Name + edge.Name {
-		case license.Table + licenseusage.EdgeLicense:
-			lu.Where(licenseusage.HasLicenseWith(license.IDEQ(edge.Node.Value.(*License).ID)))
-		case licensescan.Table + licenseusage.EdgeScan:
-			lu.Where(licenseusage.HasScanWith(licensescan.IDEQ(edge.Node.Value.(*LicenseScan).ID)))
+		case license.Table + licenseuse.EdgeLicense:
+			lu.Where(licenseuse.HasLicenseWith(license.IDEQ(edge.Node.Value.(*License).ID)))
 		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "license_usage", edge.Name)
+			return fmt.Errorf("edge does not exist for node %s: %s", "license_use", edge.Name)
 		}
 	}
 	return nil
 }
 
-func (lu *LicenseUsageQuery) WhereNodeUnique(node *DataNode) error {
+func (lu *LicenseUseQuery) WhereNodeUnique(node *DataNode) error {
 	// Handle fields
 	for _, field := range node.Fields {
 		switch field.Name {
-		case licenseusage.FieldID:
-			var v int
-			if err := ctyToEntValue(field.Value, 12, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"license_usage\" field \"id\": %w", err)
+		case licenseuse.FieldID:
+			var value int
+			if err := ctyToEntValue(field.Value, 12, &value); err != nil {
+				return fmt.Errorf("error converting cty value for type \"license_use\" field \"id\": %w", err)
 			}
-			lu.Where(licenseusage.IDEQ(v))
+			lu.Where(licenseuse.IDEQ(value))
 		}
 	}
 
@@ -3011,10 +2747,8 @@ func (lu *LicenseUsageQuery) WhereNodeUnique(node *DataNode) error {
 			continue
 		}
 		switch edge.Node.Name + edge.Name {
-		case license.Table + licenseusage.EdgeLicense:
-			lu.Where(licenseusage.HasLicenseWith(license.IDEQ(edge.Node.Value.(*License).ID)))
-		case licensescan.Table + licenseusage.EdgeScan:
-			lu.Where(licenseusage.HasScanWith(licensescan.IDEQ(edge.Node.Value.(*LicenseScan).ID)))
+		case license.Table + licenseuse.EdgeLicense:
+			lu.Where(licenseuse.HasLicenseWith(license.IDEQ(edge.Node.Value.(*License).ID)))
 		}
 	}
 	return nil
@@ -3044,11 +2778,11 @@ func (pr *ProjectMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case project.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"project\" field \"name\": %w", err)
 			}
-			pr.SetName(v)
+			pr.SetName(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "project", field.Name)
 		}
@@ -3103,11 +2837,11 @@ func (pr *ProjectQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case project.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"project\" field \"name\": %w", err)
 			}
-			pr.Where(project.NameEQ(v))
+			pr.Where(project.NameEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "project", field.Name)
 		}
@@ -3138,11 +2872,11 @@ func (pr *ProjectQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case project.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"project\" field \"name\": %w", err)
 			}
-			pr.Where(project.NameEQ(v))
+			pr.Where(project.NameEQ(value))
 		}
 	}
 
@@ -3182,23 +2916,23 @@ func (r *ReleaseMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case release.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release\" field \"name\": %w", err)
 			}
-			r.SetName(v)
+			r.SetName(value)
 		case release.FieldVersion:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release\" field \"version\": %w", err)
 			}
-			r.SetVersion(v)
+			r.SetVersion(value)
 		case release.FieldStatus:
-			var v release.Status
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value release.Status
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release\" field \"status\": %w", err)
 			}
-			r.SetStatus(v)
+			r.SetStatus(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "release", field.Name)
 		}
@@ -3222,22 +2956,16 @@ func (r *ReleaseMutation) SetDataEdges(edges []DataEdge) error {
 			r.SetProjectID(edge.Node.Value.(*Project).ID)
 		case gitcommit.Table + release.EdgeCommit:
 			r.SetCommitID(edge.Node.Value.(*GitCommit).ID)
-		case artifact.Table + release.EdgeArtifacts:
-			r.AddArtifactIDs(edge.Node.Value.(*Artifact).ID)
-		case releasecheck.Table + release.EdgeChecks:
-			r.AddCheckIDs(edge.Node.Value.(*ReleaseCheck).ID)
 		case releaseentry.Table + release.EdgeLog:
 			r.AddLogIDs(edge.Node.Value.(*ReleaseEntry).ID)
+		case artifact.Table + release.EdgeArtifacts:
+			r.AddArtifactIDs(edge.Node.Value.(*Artifact).ID)
+		case componentuse.Table + release.EdgeComponents:
+			r.AddComponentIDs(edge.Node.Value.(*ComponentUse).ID)
 		case codescan.Table + release.EdgeCodeScans:
 			r.AddCodeScanIDs(edge.Node.Value.(*CodeScan).ID)
-		case cvescan.Table + release.EdgeCveScans:
-			r.AddCveScanIDs(edge.Node.Value.(*CVEScan).ID)
-		case licensescan.Table + release.EdgeLicenseScans:
-			r.AddLicenseScanIDs(edge.Node.Value.(*LicenseScan).ID)
 		case testrun.Table + release.EdgeTestRuns:
 			r.AddTestRunIDs(edge.Node.Value.(*TestRun).ID)
-		case component.Table + release.EdgeComponents:
-			r.AddComponentIDs(edge.Node.Value.(*Component).ID)
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "release", edge.Name)
 		}
@@ -3265,22 +2993,16 @@ func (r *ReleaseUpdateOne) SetDataEdges(edges []DataEdge) error {
 			// TODO: it can get messy updating unique edges that already exist,
 			// so for now just skip them
 			// r.SetCommitID(edge.Node.Value.(*GitCommit).ID)
-		case artifact.Table + release.EdgeArtifacts:
-			r.AddArtifactIDs(edge.Node.Value.(*Artifact).ID)
-		case releasecheck.Table + release.EdgeChecks:
-			r.AddCheckIDs(edge.Node.Value.(*ReleaseCheck).ID)
 		case releaseentry.Table + release.EdgeLog:
 			r.AddLogIDs(edge.Node.Value.(*ReleaseEntry).ID)
+		case artifact.Table + release.EdgeArtifacts:
+			r.AddArtifactIDs(edge.Node.Value.(*Artifact).ID)
+		case componentuse.Table + release.EdgeComponents:
+			r.AddComponentIDs(edge.Node.Value.(*ComponentUse).ID)
 		case codescan.Table + release.EdgeCodeScans:
 			r.AddCodeScanIDs(edge.Node.Value.(*CodeScan).ID)
-		case cvescan.Table + release.EdgeCveScans:
-			r.AddCveScanIDs(edge.Node.Value.(*CVEScan).ID)
-		case licensescan.Table + release.EdgeLicenseScans:
-			r.AddLicenseScanIDs(edge.Node.Value.(*LicenseScan).ID)
 		case testrun.Table + release.EdgeTestRuns:
 			r.AddTestRunIDs(edge.Node.Value.(*TestRun).ID)
-		case component.Table + release.EdgeComponents:
-			r.AddComponentIDs(edge.Node.Value.(*Component).ID)
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "release", edge.Name)
 		}
@@ -3293,23 +3015,23 @@ func (r *ReleaseQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case release.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release\" field \"name\": %w", err)
 			}
-			r.Where(release.NameEQ(v))
+			r.Where(release.NameEQ(value))
 		case release.FieldVersion:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release\" field \"version\": %w", err)
 			}
-			r.Where(release.VersionEQ(v))
+			r.Where(release.VersionEQ(value))
 		case release.FieldStatus:
-			var v release.Status
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value release.Status
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release\" field \"status\": %w", err)
 			}
-			r.Where(release.StatusEQ(v))
+			r.Where(release.StatusEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "release", field.Name)
 		}
@@ -3330,22 +3052,16 @@ func (r *ReleaseQuery) WhereNode(node *DataNode) error {
 			r.Where(release.HasProjectWith(project.IDEQ(edge.Node.Value.(*Project).ID)))
 		case gitcommit.Table + release.EdgeCommit:
 			r.Where(release.HasCommitWith(gitcommit.IDEQ(edge.Node.Value.(*GitCommit).ID)))
-		case artifact.Table + release.EdgeArtifacts:
-			r.Where(release.HasArtifactsWith(artifact.IDEQ(edge.Node.Value.(*Artifact).ID)))
-		case releasecheck.Table + release.EdgeChecks:
-			r.Where(release.HasChecksWith(releasecheck.IDEQ(edge.Node.Value.(*ReleaseCheck).ID)))
 		case releaseentry.Table + release.EdgeLog:
 			r.Where(release.HasLogWith(releaseentry.IDEQ(edge.Node.Value.(*ReleaseEntry).ID)))
+		case artifact.Table + release.EdgeArtifacts:
+			r.Where(release.HasArtifactsWith(artifact.IDEQ(edge.Node.Value.(*Artifact).ID)))
+		case componentuse.Table + release.EdgeComponents:
+			r.Where(release.HasComponentsWith(componentuse.IDEQ(edge.Node.Value.(*ComponentUse).ID)))
 		case codescan.Table + release.EdgeCodeScans:
 			r.Where(release.HasCodeScansWith(codescan.IDEQ(edge.Node.Value.(*CodeScan).ID)))
-		case cvescan.Table + release.EdgeCveScans:
-			r.Where(release.HasCveScansWith(cvescan.IDEQ(edge.Node.Value.(*CVEScan).ID)))
-		case licensescan.Table + release.EdgeLicenseScans:
-			r.Where(release.HasLicenseScansWith(licensescan.IDEQ(edge.Node.Value.(*LicenseScan).ID)))
 		case testrun.Table + release.EdgeTestRuns:
 			r.Where(release.HasTestRunsWith(testrun.IDEQ(edge.Node.Value.(*TestRun).ID)))
-		case component.Table + release.EdgeComponents:
-			r.Where(release.HasComponentsWith(component.IDEQ(edge.Node.Value.(*Component).ID)))
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "release", edge.Name)
 		}
@@ -3357,18 +3073,6 @@ func (r *ReleaseQuery) WhereNodeUnique(node *DataNode) error {
 	// Handle fields
 	for _, field := range node.Fields {
 		switch field.Name {
-		case release.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"release\" field \"name\": %w", err)
-			}
-			r.Where(release.NameEQ(v))
-		case release.FieldVersion:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"release\" field \"version\": %w", err)
-			}
-			r.Where(release.VersionEQ(v))
 		}
 	}
 
@@ -3379,140 +3083,8 @@ func (r *ReleaseQuery) WhereNodeUnique(node *DataNode) error {
 			continue
 		}
 		switch edge.Node.Name + edge.Name {
-		case project.Table + release.EdgeProject:
-			r.Where(release.HasProjectWith(project.IDEQ(edge.Node.Value.(*Project).ID)))
 		case gitcommit.Table + release.EdgeCommit:
 			r.Where(release.HasCommitWith(gitcommit.IDEQ(edge.Node.Value.(*GitCommit).ID)))
-		}
-	}
-	return nil
-}
-
-func (rc *ReleaseCheckCreate) SetDataNode(node *DataNode) error {
-	if err := rc.mutation.SetDataFields(node.Fields); err != nil {
-		return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
-	}
-	if err := rc.mutation.SetDataEdges(node.Edges); err != nil {
-		return fmt.Errorf("error setting edges for node %s: %w", node.Name, err)
-	}
-	return nil
-}
-
-func (rc *ReleaseCheckUpdateOne) SetDataNode(node *DataNode) error {
-	if err := rc.mutation.SetDataFields(node.Fields); err != nil {
-		return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
-	}
-	if err := rc.SetDataEdges(node.Edges); err != nil {
-		return fmt.Errorf("error setting edges for node %s: %w", node.Name, err)
-	}
-	return nil
-}
-
-func (rc *ReleaseCheckMutation) SetDataFields(fields []DataField) error {
-	for _, field := range fields {
-		switch field.Name {
-		case releasecheck.FieldType:
-			var v releasecheck.Type
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"release_check\" field \"type\": %w", err)
-			}
-			rc.SetType(v)
-		default:
-			return fmt.Errorf("field does not exist for node %s: %s", "release_check", field.Name)
-		}
-	}
-	return nil
-}
-
-func (rc *ReleaseCheckMutation) SetDataEdges(edges []DataEdge) error {
-	for _, edge := range edges {
-		if !edge.Inverse {
-			continue
-		}
-		// Use the edge type (node name) + the edge name to avoid conflict
-		// in case there are multiple edges with the same name
-		switch edge.Node.Name + edge.Name {
-		case release.Table + releasecheck.EdgeRelease:
-			rc.SetReleaseID(edge.Node.Value.(*Release).ID)
-		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "release_check", edge.Name)
-		}
-	}
-	return nil
-}
-
-func (rc *ReleaseCheckUpdateOne) SetDataEdges(edges []DataEdge) error {
-	for _, edge := range edges {
-		if !edge.Inverse {
-			continue
-		}
-		// Use the edge type (node name) + the edge name to avoid conflict
-		// in case there are multiple edges with the same name
-		switch edge.Node.Name + edge.Name {
-		case release.Table + releasecheck.EdgeRelease:
-			// TODO: it can get messy updating unique edges that already exist,
-			// so for now just skip them
-			// rc.SetReleaseID(edge.Node.Value.(*Release).ID)
-		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "release_check", edge.Name)
-		}
-	}
-	return nil
-}
-
-func (rc *ReleaseCheckQuery) WhereNode(node *DataNode) error {
-	// Handle fields
-	for _, field := range node.Fields {
-		switch field.Name {
-		case releasecheck.FieldType:
-			var v releasecheck.Type
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"release_check\" field \"type\": %w", err)
-			}
-			rc.Where(releasecheck.TypeEQ(v))
-		default:
-			return fmt.Errorf("field does not exist for node %s: %s", "release_check", field.Name)
-		}
-	}
-
-	// Handle edges
-	for _, edge := range node.Edges {
-		// Inverse edges only because they describe the WHERE for a node
-		if !edge.Inverse {
-			continue
-		}
-		switch edge.Node.Name + edge.Name {
-		case release.Table + releasecheck.EdgeRelease:
-			rc.Where(releasecheck.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
-		default:
-			return fmt.Errorf("edge does not exist for node %s: %s", "release_check", edge.Name)
-		}
-	}
-	return nil
-}
-
-func (rc *ReleaseCheckQuery) WhereNodeUnique(node *DataNode) error {
-	// Handle fields
-	for _, field := range node.Fields {
-		switch field.Name {
-		case releasecheck.FieldType:
-			var v releasecheck.Type
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
-				return fmt.Errorf("error converting cty value for type \"release_check\" field \"type\": %w", err)
-			}
-			rc.Where(releasecheck.TypeEQ(v))
-		}
-	}
-
-	// Handle edges
-	for _, edge := range node.Edges {
-		// Inverse edges only because they describe the WHERE for a node
-		if !edge.Inverse {
-			continue
-		}
-		switch edge.Node.Name + edge.Name {
-		case release.Table + releasecheck.EdgeRelease:
-			rc.Where(releasecheck.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
 		}
 	}
 	return nil
@@ -3542,17 +3114,17 @@ func (re *ReleaseEntryMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case releaseentry.FieldType:
-			var v releaseentry.Type
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value releaseentry.Type
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release_entry\" field \"type\": %w", err)
 			}
-			re.SetType(v)
+			re.SetType(value)
 		case releaseentry.FieldTime:
-			var v time.Time
-			if err := ctyToEntValue(field.Value, 2, &v); err != nil {
+			var value time.Time
+			if err := ctyToEntValue(field.Value, 2, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release_entry\" field \"time\": %w", err)
 			}
-			re.SetTime(v)
+			re.SetTime(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "release_entry", field.Name)
 		}
@@ -3574,10 +3146,6 @@ func (re *ReleaseEntryMutation) SetDataEdges(edges []DataEdge) error {
 			re.SetCodeScanID(edge.Node.Value.(*CodeScan).ID)
 		case testrun.Table + releaseentry.EdgeTestRun:
 			re.SetTestRunID(edge.Node.Value.(*TestRun).ID)
-		case cvescan.Table + releaseentry.EdgeCveScan:
-			re.SetCveScanID(edge.Node.Value.(*CVEScan).ID)
-		case licensescan.Table + releaseentry.EdgeLicenseScan:
-			re.SetLicenseScanID(edge.Node.Value.(*LicenseScan).ID)
 		case release.Table + releaseentry.EdgeRelease:
 			re.SetReleaseID(edge.Node.Value.(*Release).ID)
 		default:
@@ -3607,14 +3175,6 @@ func (re *ReleaseEntryUpdateOne) SetDataEdges(edges []DataEdge) error {
 			// TODO: it can get messy updating unique edges that already exist,
 			// so for now just skip them
 			// re.SetTestRunID(edge.Node.Value.(*TestRun).ID)
-		case cvescan.Table + releaseentry.EdgeCveScan:
-			// TODO: it can get messy updating unique edges that already exist,
-			// so for now just skip them
-			// re.SetCveScanID(edge.Node.Value.(*CVEScan).ID)
-		case licensescan.Table + releaseentry.EdgeLicenseScan:
-			// TODO: it can get messy updating unique edges that already exist,
-			// so for now just skip them
-			// re.SetLicenseScanID(edge.Node.Value.(*LicenseScan).ID)
 		case release.Table + releaseentry.EdgeRelease:
 			// TODO: it can get messy updating unique edges that already exist,
 			// so for now just skip them
@@ -3631,17 +3191,17 @@ func (re *ReleaseEntryQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case releaseentry.FieldType:
-			var v releaseentry.Type
-			if err := ctyToEntValue(field.Value, 6, &v); err != nil {
+			var value releaseentry.Type
+			if err := ctyToEntValue(field.Value, 6, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release_entry\" field \"type\": %w", err)
 			}
-			re.Where(releaseentry.TypeEQ(v))
+			re.Where(releaseentry.TypeEQ(value))
 		case releaseentry.FieldTime:
-			var v time.Time
-			if err := ctyToEntValue(field.Value, 2, &v); err != nil {
+			var value time.Time
+			if err := ctyToEntValue(field.Value, 2, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release_entry\" field \"time\": %w", err)
 			}
-			re.Where(releaseentry.TimeEQ(v))
+			re.Where(releaseentry.TimeEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "release_entry", field.Name)
 		}
@@ -3660,10 +3220,6 @@ func (re *ReleaseEntryQuery) WhereNode(node *DataNode) error {
 			re.Where(releaseentry.HasCodeScanWith(codescan.IDEQ(edge.Node.Value.(*CodeScan).ID)))
 		case testrun.Table + releaseentry.EdgeTestRun:
 			re.Where(releaseentry.HasTestRunWith(testrun.IDEQ(edge.Node.Value.(*TestRun).ID)))
-		case cvescan.Table + releaseentry.EdgeCveScan:
-			re.Where(releaseentry.HasCveScanWith(cvescan.IDEQ(edge.Node.Value.(*CVEScan).ID)))
-		case licensescan.Table + releaseentry.EdgeLicenseScan:
-			re.Where(releaseentry.HasLicenseScanWith(licensescan.IDEQ(edge.Node.Value.(*LicenseScan).ID)))
 		case release.Table + releaseentry.EdgeRelease:
 			re.Where(releaseentry.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
 		default:
@@ -3678,11 +3234,11 @@ func (re *ReleaseEntryQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case releaseentry.FieldID:
-			var v int
-			if err := ctyToEntValue(field.Value, 12, &v); err != nil {
+			var value int
+			if err := ctyToEntValue(field.Value, 12, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"release_entry\" field \"id\": %w", err)
 			}
-			re.Where(releaseentry.IDEQ(v))
+			re.Where(releaseentry.IDEQ(value))
 		}
 	}
 
@@ -3699,10 +3255,6 @@ func (re *ReleaseEntryQuery) WhereNodeUnique(node *DataNode) error {
 			re.Where(releaseentry.HasCodeScanWith(codescan.IDEQ(edge.Node.Value.(*CodeScan).ID)))
 		case testrun.Table + releaseentry.EdgeTestRun:
 			re.Where(releaseentry.HasTestRunWith(testrun.IDEQ(edge.Node.Value.(*TestRun).ID)))
-		case cvescan.Table + releaseentry.EdgeCveScan:
-			re.Where(releaseentry.HasCveScanWith(cvescan.IDEQ(edge.Node.Value.(*CVEScan).ID)))
-		case licensescan.Table + releaseentry.EdgeLicenseScan:
-			re.Where(releaseentry.HasLicenseScanWith(licensescan.IDEQ(edge.Node.Value.(*LicenseScan).ID)))
 		case release.Table + releaseentry.EdgeRelease:
 			re.Where(releaseentry.HasReleaseWith(release.IDEQ(edge.Node.Value.(*Release).ID)))
 		}
@@ -3734,11 +3286,11 @@ func (r *RepoMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case repo.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"repo\" field \"name\": %w", err)
 			}
-			r.SetName(v)
+			r.SetName(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "repo", field.Name)
 		}
@@ -3795,11 +3347,11 @@ func (r *RepoQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case repo.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"repo\" field \"name\": %w", err)
 			}
-			r.Where(repo.NameEQ(v))
+			r.Where(repo.NameEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "repo", field.Name)
 		}
@@ -3830,11 +3382,11 @@ func (r *RepoQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case repo.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"repo\" field \"name\": %w", err)
 			}
-			r.Where(repo.NameEQ(v))
+			r.Where(repo.NameEQ(value))
 		}
 	}
 
@@ -3874,29 +3426,29 @@ func (tc *TestCaseMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case testcase.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_case\" field \"name\": %w", err)
 			}
-			tc.SetName(v)
+			tc.SetName(value)
 		case testcase.FieldResult:
-			var v bool
-			if err := ctyToEntValue(field.Value, 1, &v); err != nil {
+			var value bool
+			if err := ctyToEntValue(field.Value, 1, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_case\" field \"result\": %w", err)
 			}
-			tc.SetResult(v)
+			tc.SetResult(value)
 		case testcase.FieldMessage:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_case\" field \"message\": %w", err)
 			}
-			tc.SetMessage(v)
+			tc.SetMessage(value)
 		case testcase.FieldElapsed:
-			var v float64
-			if err := ctyToEntValue(field.Value, 20, &v); err != nil {
+			var value float64
+			if err := ctyToEntValue(field.Value, 20, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_case\" field \"elapsed\": %w", err)
 			}
-			tc.SetElapsed(v)
+			tc.SetElapsed(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "test_case", field.Name)
 		}
@@ -3945,29 +3497,29 @@ func (tc *TestCaseQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case testcase.FieldName:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_case\" field \"name\": %w", err)
 			}
-			tc.Where(testcase.NameEQ(v))
+			tc.Where(testcase.NameEQ(value))
 		case testcase.FieldResult:
-			var v bool
-			if err := ctyToEntValue(field.Value, 1, &v); err != nil {
+			var value bool
+			if err := ctyToEntValue(field.Value, 1, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_case\" field \"result\": %w", err)
 			}
-			tc.Where(testcase.ResultEQ(v))
+			tc.Where(testcase.ResultEQ(value))
 		case testcase.FieldMessage:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_case\" field \"message\": %w", err)
 			}
-			tc.Where(testcase.MessageEQ(v))
+			tc.Where(testcase.MessageEQ(value))
 		case testcase.FieldElapsed:
-			var v float64
-			if err := ctyToEntValue(field.Value, 20, &v); err != nil {
+			var value float64
+			if err := ctyToEntValue(field.Value, 20, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_case\" field \"elapsed\": %w", err)
 			}
-			tc.Where(testcase.ElapsedEQ(v))
+			tc.Where(testcase.ElapsedEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "test_case", field.Name)
 		}
@@ -3994,11 +3546,11 @@ func (tc *TestCaseQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case testcase.FieldID:
-			var v int
-			if err := ctyToEntValue(field.Value, 12, &v); err != nil {
+			var value int
+			if err := ctyToEntValue(field.Value, 12, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_case\" field \"id\": %w", err)
 			}
-			tc.Where(testcase.IDEQ(v))
+			tc.Where(testcase.IDEQ(value))
 		}
 	}
 
@@ -4040,11 +3592,11 @@ func (tr *TestRunMutation) SetDataFields(fields []DataField) error {
 	for _, field := range fields {
 		switch field.Name {
 		case testrun.FieldTool:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_run\" field \"tool\": %w", err)
 			}
-			tr.SetTool(v)
+			tr.SetTool(value)
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "test_run", field.Name)
 		}
@@ -4103,11 +3655,11 @@ func (tr *TestRunQuery) WhereNode(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case testrun.FieldTool:
-			var v string
-			if err := ctyToEntValue(field.Value, 7, &v); err != nil {
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_run\" field \"tool\": %w", err)
 			}
-			tr.Where(testrun.ToolEQ(v))
+			tr.Where(testrun.ToolEQ(value))
 		default:
 			return fmt.Errorf("field does not exist for node %s: %s", "test_run", field.Name)
 		}
@@ -4138,11 +3690,11 @@ func (tr *TestRunQuery) WhereNodeUnique(node *DataNode) error {
 	for _, field := range node.Fields {
 		switch field.Name {
 		case testrun.FieldID:
-			var v int
-			if err := ctyToEntValue(field.Value, 12, &v); err != nil {
+			var value int
+			if err := ctyToEntValue(field.Value, 12, &value); err != nil {
 				return fmt.Errorf("error converting cty value for type \"test_run\" field \"id\": %w", err)
 			}
-			tr.Where(testrun.IDEQ(v))
+			tr.Where(testrun.IDEQ(value))
 		}
 	}
 
@@ -4202,10 +3754,6 @@ func (v *VulnerabilityMutation) SetDataEdges(edges []DataEdge) error {
 		switch edge.Node.Name + edge.Name {
 		case cve.Table + vulnerability.EdgeCve:
 			v.SetCveID(edge.Node.Value.(*CVE).ID)
-		case cvescan.Table + vulnerability.EdgeScan:
-			v.SetScanID(edge.Node.Value.(*CVEScan).ID)
-		case component.Table + vulnerability.EdgeComponent:
-			v.SetComponentID(edge.Node.Value.(*Component).ID)
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "vulnerability", edge.Name)
 		}
@@ -4225,14 +3773,6 @@ func (v *VulnerabilityUpdateOne) SetDataEdges(edges []DataEdge) error {
 			// TODO: it can get messy updating unique edges that already exist,
 			// so for now just skip them
 			// v.SetCveID(edge.Node.Value.(*CVE).ID)
-		case cvescan.Table + vulnerability.EdgeScan:
-			// TODO: it can get messy updating unique edges that already exist,
-			// so for now just skip them
-			// v.SetScanID(edge.Node.Value.(*CVEScan).ID)
-		case component.Table + vulnerability.EdgeComponent:
-			// TODO: it can get messy updating unique edges that already exist,
-			// so for now just skip them
-			// v.SetComponentID(edge.Node.Value.(*Component).ID)
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "vulnerability", edge.Name)
 		}
@@ -4258,10 +3798,6 @@ func (v *VulnerabilityQuery) WhereNode(node *DataNode) error {
 		switch edge.Node.Name + edge.Name {
 		case cve.Table + vulnerability.EdgeCve:
 			v.Where(vulnerability.HasCveWith(cve.IDEQ(edge.Node.Value.(*CVE).ID)))
-		case cvescan.Table + vulnerability.EdgeScan:
-			v.Where(vulnerability.HasScanWith(cvescan.IDEQ(edge.Node.Value.(*CVEScan).ID)))
-		case component.Table + vulnerability.EdgeComponent:
-			v.Where(vulnerability.HasComponentWith(component.IDEQ(edge.Node.Value.(*Component).ID)))
 		default:
 			return fmt.Errorf("edge does not exist for node %s: %s", "vulnerability", edge.Name)
 		}
@@ -4273,6 +3809,12 @@ func (v *VulnerabilityQuery) WhereNodeUnique(node *DataNode) error {
 	// Handle fields
 	for _, field := range node.Fields {
 		switch field.Name {
+		case vulnerability.FieldID:
+			var value int
+			if err := ctyToEntValue(field.Value, 12, &value); err != nil {
+				return fmt.Errorf("error converting cty value for type \"vulnerability\" field \"id\": %w", err)
+			}
+			v.Where(vulnerability.IDEQ(value))
 		}
 	}
 
@@ -4285,8 +3827,6 @@ func (v *VulnerabilityQuery) WhereNodeUnique(node *DataNode) error {
 		switch edge.Node.Name + edge.Name {
 		case cve.Table + vulnerability.EdgeCve:
 			v.Where(vulnerability.HasCveWith(cve.IDEQ(edge.Node.Value.(*CVE).ID)))
-		case cvescan.Table + vulnerability.EdgeScan:
-			v.Where(vulnerability.HasScanWith(cvescan.IDEQ(edge.Node.Value.(*CVEScan).ID)))
 		}
 	}
 	return nil

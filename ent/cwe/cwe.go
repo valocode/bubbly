@@ -17,7 +17,7 @@ const (
 	EdgeIssues = "issues"
 	// Table holds the table name of the cwe in the database.
 	Table = "cwe"
-	// IssuesTable is the table the holds the issues relation/edge. The primary key declared below.
+	// IssuesTable is the table that holds the issues relation/edge. The primary key declared below.
 	IssuesTable = "code_issue_cwe"
 	// IssuesInverseTable is the table name for the CodeIssue entity.
 	// It exists in this package in order to avoid circular dependency with the "codeissue" package.

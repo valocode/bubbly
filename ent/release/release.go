@@ -27,96 +27,71 @@ const (
 	EdgeProject = "project"
 	// EdgeCommit holds the string denoting the commit edge name in mutations.
 	EdgeCommit = "commit"
-	// EdgeArtifacts holds the string denoting the artifacts edge name in mutations.
-	EdgeArtifacts = "artifacts"
-	// EdgeChecks holds the string denoting the checks edge name in mutations.
-	EdgeChecks = "checks"
 	// EdgeLog holds the string denoting the log edge name in mutations.
 	EdgeLog = "log"
-	// EdgeCodeScans holds the string denoting the code_scans edge name in mutations.
-	EdgeCodeScans = "code_scans"
-	// EdgeCveScans holds the string denoting the cve_scans edge name in mutations.
-	EdgeCveScans = "cve_scans"
-	// EdgeLicenseScans holds the string denoting the license_scans edge name in mutations.
-	EdgeLicenseScans = "license_scans"
-	// EdgeTestRuns holds the string denoting the test_runs edge name in mutations.
-	EdgeTestRuns = "test_runs"
+	// EdgeArtifacts holds the string denoting the artifacts edge name in mutations.
+	EdgeArtifacts = "artifacts"
 	// EdgeComponents holds the string denoting the components edge name in mutations.
 	EdgeComponents = "components"
+	// EdgeCodeScans holds the string denoting the code_scans edge name in mutations.
+	EdgeCodeScans = "code_scans"
+	// EdgeTestRuns holds the string denoting the test_runs edge name in mutations.
+	EdgeTestRuns = "test_runs"
 	// Table holds the table name of the release in the database.
 	Table = "release"
-	// SubreleasesTable is the table the holds the subreleases relation/edge. The primary key declared below.
+	// SubreleasesTable is the table that holds the subreleases relation/edge. The primary key declared below.
 	SubreleasesTable = "release_dependencies"
-	// DependenciesTable is the table the holds the dependencies relation/edge. The primary key declared below.
+	// DependenciesTable is the table that holds the dependencies relation/edge. The primary key declared below.
 	DependenciesTable = "release_dependencies"
-	// ProjectTable is the table the holds the project relation/edge.
+	// ProjectTable is the table that holds the project relation/edge.
 	ProjectTable = "release"
 	// ProjectInverseTable is the table name for the Project entity.
 	// It exists in this package in order to avoid circular dependency with the "project" package.
 	ProjectInverseTable = "project"
 	// ProjectColumn is the table column denoting the project relation/edge.
 	ProjectColumn = "release_project"
-	// CommitTable is the table the holds the commit relation/edge.
+	// CommitTable is the table that holds the commit relation/edge.
 	CommitTable = "release"
 	// CommitInverseTable is the table name for the GitCommit entity.
 	// It exists in this package in order to avoid circular dependency with the "gitcommit" package.
 	CommitInverseTable = "commit"
 	// CommitColumn is the table column denoting the commit relation/edge.
 	CommitColumn = "git_commit_release"
-	// ArtifactsTable is the table the holds the artifacts relation/edge.
-	ArtifactsTable = "artifact"
-	// ArtifactsInverseTable is the table name for the Artifact entity.
-	// It exists in this package in order to avoid circular dependency with the "artifact" package.
-	ArtifactsInverseTable = "artifact"
-	// ArtifactsColumn is the table column denoting the artifacts relation/edge.
-	ArtifactsColumn = "artifact_release"
-	// ChecksTable is the table the holds the checks relation/edge.
-	ChecksTable = "release_check"
-	// ChecksInverseTable is the table name for the ReleaseCheck entity.
-	// It exists in this package in order to avoid circular dependency with the "releasecheck" package.
-	ChecksInverseTable = "release_check"
-	// ChecksColumn is the table column denoting the checks relation/edge.
-	ChecksColumn = "release_check_release"
-	// LogTable is the table the holds the log relation/edge.
+	// LogTable is the table that holds the log relation/edge.
 	LogTable = "release_entry"
 	// LogInverseTable is the table name for the ReleaseEntry entity.
 	// It exists in this package in order to avoid circular dependency with the "releaseentry" package.
 	LogInverseTable = "release_entry"
 	// LogColumn is the table column denoting the log relation/edge.
 	LogColumn = "release_entry_release"
-	// CodeScansTable is the table the holds the code_scans relation/edge.
+	// ArtifactsTable is the table that holds the artifacts relation/edge.
+	ArtifactsTable = "artifact"
+	// ArtifactsInverseTable is the table name for the Artifact entity.
+	// It exists in this package in order to avoid circular dependency with the "artifact" package.
+	ArtifactsInverseTable = "artifact"
+	// ArtifactsColumn is the table column denoting the artifacts relation/edge.
+	ArtifactsColumn = "artifact_release"
+	// ComponentsTable is the table that holds the components relation/edge.
+	ComponentsTable = "component_use"
+	// ComponentsInverseTable is the table name for the ComponentUse entity.
+	// It exists in this package in order to avoid circular dependency with the "componentuse" package.
+	ComponentsInverseTable = "component_use"
+	// ComponentsColumn is the table column denoting the components relation/edge.
+	ComponentsColumn = "component_use_release"
+	// CodeScansTable is the table that holds the code_scans relation/edge.
 	CodeScansTable = "code_scan"
 	// CodeScansInverseTable is the table name for the CodeScan entity.
 	// It exists in this package in order to avoid circular dependency with the "codescan" package.
 	CodeScansInverseTable = "code_scan"
 	// CodeScansColumn is the table column denoting the code_scans relation/edge.
 	CodeScansColumn = "code_scan_release"
-	// CveScansTable is the table the holds the cve_scans relation/edge.
-	CveScansTable = "cve_scan"
-	// CveScansInverseTable is the table name for the CVEScan entity.
-	// It exists in this package in order to avoid circular dependency with the "cvescan" package.
-	CveScansInverseTable = "cve_scan"
-	// CveScansColumn is the table column denoting the cve_scans relation/edge.
-	CveScansColumn = "cve_scan_release"
-	// LicenseScansTable is the table the holds the license_scans relation/edge.
-	LicenseScansTable = "license_scan"
-	// LicenseScansInverseTable is the table name for the LicenseScan entity.
-	// It exists in this package in order to avoid circular dependency with the "licensescan" package.
-	LicenseScansInverseTable = "license_scan"
-	// LicenseScansColumn is the table column denoting the license_scans relation/edge.
-	LicenseScansColumn = "license_scan_release"
-	// TestRunsTable is the table the holds the test_runs relation/edge.
+	// TestRunsTable is the table that holds the test_runs relation/edge.
 	TestRunsTable = "test_run"
 	// TestRunsInverseTable is the table name for the TestRun entity.
 	// It exists in this package in order to avoid circular dependency with the "testrun" package.
 	TestRunsInverseTable = "test_run"
 	// TestRunsColumn is the table column denoting the test_runs relation/edge.
 	TestRunsColumn = "test_run_release"
-	// ComponentsTable is the table the holds the components relation/edge. The primary key declared below.
-	ComponentsTable = "component_release"
-	// ComponentsInverseTable is the table name for the Component entity.
-	// It exists in this package in order to avoid circular dependency with the "component" package.
-	ComponentsInverseTable = "component"
 )
 
 // Columns holds all SQL columns for release fields.
@@ -141,9 +116,6 @@ var (
 	// DependenciesPrimaryKey and DependenciesColumn2 are the table columns denoting the
 	// primary key for the dependencies relation (M2M).
 	DependenciesPrimaryKey = []string{"release_id", "subrelease_id"}
-	// ComponentsPrimaryKey and ComponentsColumn2 are the table columns denoting the
-	// primary key for the components relation (M2M).
-	ComponentsPrimaryKey = []string{"component_id", "release_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

@@ -17,21 +17,21 @@ const (
 	EdgeCveRules = "cve_rules"
 	// Table holds the table name of the project in the database.
 	Table = "project"
-	// ReposTable is the table the holds the repos relation/edge.
+	// ReposTable is the table that holds the repos relation/edge.
 	ReposTable = "repo"
 	// ReposInverseTable is the table name for the Repo entity.
 	// It exists in this package in order to avoid circular dependency with the "repo" package.
 	ReposInverseTable = "repo"
 	// ReposColumn is the table column denoting the repos relation/edge.
 	ReposColumn = "repo_project"
-	// ReleasesTable is the table the holds the releases relation/edge.
+	// ReleasesTable is the table that holds the releases relation/edge.
 	ReleasesTable = "release"
 	// ReleasesInverseTable is the table name for the Release entity.
 	// It exists in this package in order to avoid circular dependency with the "release" package.
 	ReleasesInverseTable = "release"
 	// ReleasesColumn is the table column denoting the releases relation/edge.
 	ReleasesColumn = "release_project"
-	// CveRulesTable is the table the holds the cve_rules relation/edge. The primary key declared below.
+	// CveRulesTable is the table that holds the cve_rules relation/edge. The primary key declared below.
 	CveRulesTable = "cve_rule_project"
 	// CveRulesInverseTable is the table name for the CVERule entity.
 	// It exists in this package in order to avoid circular dependency with the "cverule" package.

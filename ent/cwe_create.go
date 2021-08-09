@@ -103,6 +103,9 @@ func (cc *CWECreate) Save(ctx context.Context) (*CWE, error) {
 			return node, err
 		})
 		for i := len(cc.hooks) - 1; i >= 0; i-- {
+			if cc.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = cc.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, cc.mutation); err != nil {
@@ -121,14 +124,27 @@ func (cc *CWECreate) SaveX(ctx context.Context) *CWE {
 	return v
 }
 
+// Exec executes the query.
+func (cc *CWECreate) Exec(ctx context.Context) error {
+	_, err := cc.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (cc *CWECreate) ExecX(ctx context.Context) {
+	if err := cc.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (cc *CWECreate) check() error {
 	if _, ok := cc.mutation.CweID(); !ok {
-		return &ValidationError{Name: "cwe_id", err: errors.New("ent: missing required field \"cwe_id\"")}
+		return &ValidationError{Name: "cwe_id", err: errors.New(`ent: missing required field "cwe_id"`)}
 	}
 	if v, ok := cc.mutation.CweID(); ok {
 		if err := cwe.CweIDValidator(v); err != nil {
-			return &ValidationError{Name: "cwe_id", err: fmt.Errorf("ent: validator failed for field \"cwe_id\": %w", err)}
+			return &ValidationError{Name: "cwe_id", err: fmt.Errorf(`ent: validator failed for field "cwe_id": %w`, err)}
 		}
 	}
 	return nil
@@ -232,8 +248,9 @@ func (ccb *CWECreateBulk) Save(ctx context.Context) ([]*CWE, error) {
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, ccb.builders[i+1].mutation)
 				} else {
+					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
 					// Invoke the actual operation on the latest mutation in the chain.
-					if err = sqlgraph.BatchCreate(ctx, ccb.driver, &sqlgraph.BatchCreateSpec{Nodes: specs}); err != nil {
+					if err = sqlgraph.BatchCreate(ctx, ccb.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
 							err = &ConstraintError{err.Error(), err}
 						}
@@ -244,8 +261,10 @@ func (ccb *CWECreateBulk) Save(ctx context.Context) ([]*CWE, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				id := specs[i].ID.Value.(int64)
-				nodes[i].ID = int(id)
+				if specs[i].ID.Value != nil {
+					id := specs[i].ID.Value.(int64)
+					nodes[i].ID = int(id)
+				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {
@@ -269,4 +288,17 @@ func (ccb *CWECreateBulk) SaveX(ctx context.Context) []*CWE {
 		panic(err)
 	}
 	return v
+}
+
+// Exec executes the query.
+func (ccb *CWECreateBulk) Exec(ctx context.Context) error {
+	_, err := ccb.Save(ctx)
+	return err
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (ccb *CWECreateBulk) ExecX(ctx context.Context) {
+	if err := ccb.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

@@ -7,7 +7,6 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"entgo.io/ent/schema/index"
 )
 
 type License struct {
@@ -23,7 +22,7 @@ func (License) Annotations() []schema.Annotation {
 func (License) Fields() []ent.Field {
 	return []ent.Field{
 		// License ID is follows the SPDX license IDs: https://spdx.dev/ids/
-		field.Text("spdx_id").NotEmpty().
+		field.Text("spdx_id").NotEmpty().Unique().
 			Annotations(
 				entgql.OrderField("spdx_id"),
 			),
@@ -41,12 +40,6 @@ func (License) Fields() []ent.Field {
 func (License) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("components", Component.Type).Ref("licenses"),
-		edge.From("usages", LicenseUsage.Type).Ref("license"),
-	}
-}
-
-func (License) Indexes() []ent.Index {
-	return []ent.Index{
-		index.Fields("spdx_id").Unique(),
+		edge.From("uses", LicenseUse.Type).Ref("license"),
 	}
 }

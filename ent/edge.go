@@ -20,10 +20,18 @@ func (a *Artifact) Entry(ctx context.Context) (*ReleaseEntry, error) {
 	return result, MaskNotFound(err)
 }
 
-func (c *CVE) Found(ctx context.Context) ([]*Vulnerability, error) {
-	result, err := c.Edges.FoundOrErr()
+func (c *CVE) Components(ctx context.Context) ([]*Component, error) {
+	result, err := c.Edges.ComponentsOrErr()
 	if IsNotLoaded(err) {
-		result, err = c.QueryFound().All(ctx)
+		result, err = c.QueryComponents().All(ctx)
+	}
+	return result, err
+}
+
+func (c *CVE) Vulnerabilities(ctx context.Context) ([]*Vulnerability, error) {
+	result, err := c.Edges.VulnerabilitiesOrErr()
+	if IsNotLoaded(err) {
+		result, err = c.QueryVulnerabilities().All(ctx)
 	}
 	return result, err
 }
@@ -60,30 +68,6 @@ func (cr *CVERule) Repo(ctx context.Context) ([]*Repo, error) {
 	return result, err
 }
 
-func (cs *CVEScan) Release(ctx context.Context) (*Release, error) {
-	result, err := cs.Edges.ReleaseOrErr()
-	if IsNotLoaded(err) {
-		result, err = cs.QueryRelease().Only(ctx)
-	}
-	return result, err
-}
-
-func (cs *CVEScan) Entry(ctx context.Context) (*ReleaseEntry, error) {
-	result, err := cs.Edges.EntryOrErr()
-	if IsNotLoaded(err) {
-		result, err = cs.QueryEntry().Only(ctx)
-	}
-	return result, MaskNotFound(err)
-}
-
-func (cs *CVEScan) Vulnerabilities(ctx context.Context) ([]*Vulnerability, error) {
-	result, err := cs.Edges.VulnerabilitiesOrErr()
-	if IsNotLoaded(err) {
-		result, err = cs.QueryVulnerabilities().All(ctx)
-	}
-	return result, err
-}
-
 func (c *CWE) Issues(ctx context.Context) ([]*CodeIssue, error) {
 	result, err := c.Edges.IssuesOrErr()
 	if IsNotLoaded(err) {
@@ -116,14 +100,6 @@ func (cs *CodeScan) Release(ctx context.Context) (*Release, error) {
 	return result, err
 }
 
-func (cs *CodeScan) Issues(ctx context.Context) ([]*CodeIssue, error) {
-	result, err := cs.Edges.IssuesOrErr()
-	if IsNotLoaded(err) {
-		result, err = cs.QueryIssues().All(ctx)
-	}
-	return result, err
-}
-
 func (cs *CodeScan) Entry(ctx context.Context) (*ReleaseEntry, error) {
 	result, err := cs.Edges.EntryOrErr()
 	if IsNotLoaded(err) {
@@ -132,10 +108,26 @@ func (cs *CodeScan) Entry(ctx context.Context) (*ReleaseEntry, error) {
 	return result, MaskNotFound(err)
 }
 
-func (c *Component) Vulnerabilities(ctx context.Context) ([]*Vulnerability, error) {
-	result, err := c.Edges.VulnerabilitiesOrErr()
+func (cs *CodeScan) Issues(ctx context.Context) ([]*CodeIssue, error) {
+	result, err := cs.Edges.IssuesOrErr()
 	if IsNotLoaded(err) {
-		result, err = c.QueryVulnerabilities().All(ctx)
+		result, err = cs.QueryIssues().All(ctx)
+	}
+	return result, err
+}
+
+func (cs *CodeScan) Components(ctx context.Context) ([]*ComponentUse, error) {
+	result, err := cs.Edges.ComponentsOrErr()
+	if IsNotLoaded(err) {
+		result, err = cs.QueryComponents().All(ctx)
+	}
+	return result, err
+}
+
+func (c *Component) Cves(ctx context.Context) ([]*CVE, error) {
+	result, err := c.Edges.CvesOrErr()
+	if IsNotLoaded(err) {
+		result, err = c.QueryCves().All(ctx)
 	}
 	return result, err
 }
@@ -148,10 +140,34 @@ func (c *Component) Licenses(ctx context.Context) ([]*License, error) {
 	return result, err
 }
 
-func (c *Component) Release(ctx context.Context) ([]*Release, error) {
-	result, err := c.Edges.ReleaseOrErr()
+func (c *Component) Uses(ctx context.Context) ([]*ComponentUse, error) {
+	result, err := c.Edges.UsesOrErr()
 	if IsNotLoaded(err) {
-		result, err = c.QueryRelease().All(ctx)
+		result, err = c.QueryUses().All(ctx)
+	}
+	return result, err
+}
+
+func (cu *ComponentUse) Release(ctx context.Context) (*Release, error) {
+	result, err := cu.Edges.ReleaseOrErr()
+	if IsNotLoaded(err) {
+		result, err = cu.QueryRelease().Only(ctx)
+	}
+	return result, err
+}
+
+func (cu *ComponentUse) Scans(ctx context.Context) ([]*CodeScan, error) {
+	result, err := cu.Edges.ScansOrErr()
+	if IsNotLoaded(err) {
+		result, err = cu.QueryScans().All(ctx)
+	}
+	return result, err
+}
+
+func (cu *ComponentUse) Component(ctx context.Context) (*Component, error) {
+	result, err := cu.Edges.ComponentOrErr()
+	if IsNotLoaded(err) {
+		result, err = cu.QueryComponent().Only(ctx)
 	}
 	return result, err
 }
@@ -180,50 +196,18 @@ func (l *License) Components(ctx context.Context) ([]*Component, error) {
 	return result, err
 }
 
-func (l *License) Usages(ctx context.Context) ([]*LicenseUsage, error) {
-	result, err := l.Edges.UsagesOrErr()
+func (l *License) Uses(ctx context.Context) ([]*LicenseUse, error) {
+	result, err := l.Edges.UsesOrErr()
 	if IsNotLoaded(err) {
-		result, err = l.QueryUsages().All(ctx)
+		result, err = l.QueryUses().All(ctx)
 	}
 	return result, err
 }
 
-func (ls *LicenseScan) Release(ctx context.Context) (*Release, error) {
-	result, err := ls.Edges.ReleaseOrErr()
-	if IsNotLoaded(err) {
-		result, err = ls.QueryRelease().Only(ctx)
-	}
-	return result, err
-}
-
-func (ls *LicenseScan) Entry(ctx context.Context) (*ReleaseEntry, error) {
-	result, err := ls.Edges.EntryOrErr()
-	if IsNotLoaded(err) {
-		result, err = ls.QueryEntry().Only(ctx)
-	}
-	return result, MaskNotFound(err)
-}
-
-func (ls *LicenseScan) Licenses(ctx context.Context) ([]*LicenseUsage, error) {
-	result, err := ls.Edges.LicensesOrErr()
-	if IsNotLoaded(err) {
-		result, err = ls.QueryLicenses().All(ctx)
-	}
-	return result, err
-}
-
-func (lu *LicenseUsage) License(ctx context.Context) (*License, error) {
+func (lu *LicenseUse) License(ctx context.Context) (*License, error) {
 	result, err := lu.Edges.LicenseOrErr()
 	if IsNotLoaded(err) {
 		result, err = lu.QueryLicense().Only(ctx)
-	}
-	return result, err
-}
-
-func (lu *LicenseUsage) Scan(ctx context.Context) (*LicenseScan, error) {
-	result, err := lu.Edges.ScanOrErr()
-	if IsNotLoaded(err) {
-		result, err = lu.QueryScan().Only(ctx)
 	}
 	return result, err
 }
@@ -284,6 +268,14 @@ func (r *Release) Commit(ctx context.Context) (*GitCommit, error) {
 	return result, err
 }
 
+func (r *Release) Log(ctx context.Context) ([]*ReleaseEntry, error) {
+	result, err := r.Edges.LogOrErr()
+	if IsNotLoaded(err) {
+		result, err = r.QueryLog().All(ctx)
+	}
+	return result, err
+}
+
 func (r *Release) Artifacts(ctx context.Context) ([]*Artifact, error) {
 	result, err := r.Edges.ArtifactsOrErr()
 	if IsNotLoaded(err) {
@@ -292,18 +284,10 @@ func (r *Release) Artifacts(ctx context.Context) ([]*Artifact, error) {
 	return result, err
 }
 
-func (r *Release) Checks(ctx context.Context) ([]*ReleaseCheck, error) {
-	result, err := r.Edges.ChecksOrErr()
+func (r *Release) Components(ctx context.Context) ([]*ComponentUse, error) {
+	result, err := r.Edges.ComponentsOrErr()
 	if IsNotLoaded(err) {
-		result, err = r.QueryChecks().All(ctx)
-	}
-	return result, err
-}
-
-func (r *Release) Log(ctx context.Context) ([]*ReleaseEntry, error) {
-	result, err := r.Edges.LogOrErr()
-	if IsNotLoaded(err) {
-		result, err = r.QueryLog().All(ctx)
+		result, err = r.QueryComponents().All(ctx)
 	}
 	return result, err
 }
@@ -316,42 +300,10 @@ func (r *Release) CodeScans(ctx context.Context) ([]*CodeScan, error) {
 	return result, err
 }
 
-func (r *Release) CveScans(ctx context.Context) ([]*CVEScan, error) {
-	result, err := r.Edges.CveScansOrErr()
-	if IsNotLoaded(err) {
-		result, err = r.QueryCveScans().All(ctx)
-	}
-	return result, err
-}
-
-func (r *Release) LicenseScans(ctx context.Context) ([]*LicenseScan, error) {
-	result, err := r.Edges.LicenseScansOrErr()
-	if IsNotLoaded(err) {
-		result, err = r.QueryLicenseScans().All(ctx)
-	}
-	return result, err
-}
-
 func (r *Release) TestRuns(ctx context.Context) ([]*TestRun, error) {
 	result, err := r.Edges.TestRunsOrErr()
 	if IsNotLoaded(err) {
 		result, err = r.QueryTestRuns().All(ctx)
-	}
-	return result, err
-}
-
-func (r *Release) Components(ctx context.Context) ([]*Component, error) {
-	result, err := r.Edges.ComponentsOrErr()
-	if IsNotLoaded(err) {
-		result, err = r.QueryComponents().All(ctx)
-	}
-	return result, err
-}
-
-func (rc *ReleaseCheck) Release(ctx context.Context) (*Release, error) {
-	result, err := rc.Edges.ReleaseOrErr()
-	if IsNotLoaded(err) {
-		result, err = rc.QueryRelease().Only(ctx)
 	}
 	return result, err
 }
@@ -376,22 +328,6 @@ func (re *ReleaseEntry) TestRun(ctx context.Context) (*TestRun, error) {
 	result, err := re.Edges.TestRunOrErr()
 	if IsNotLoaded(err) {
 		result, err = re.QueryTestRun().Only(ctx)
-	}
-	return result, MaskNotFound(err)
-}
-
-func (re *ReleaseEntry) CveScan(ctx context.Context) (*CVEScan, error) {
-	result, err := re.Edges.CveScanOrErr()
-	if IsNotLoaded(err) {
-		result, err = re.QueryCveScan().Only(ctx)
-	}
-	return result, MaskNotFound(err)
-}
-
-func (re *ReleaseEntry) LicenseScan(ctx context.Context) (*LicenseScan, error) {
-	result, err := re.Edges.LicenseScanOrErr()
-	if IsNotLoaded(err) {
-		result, err = re.QueryLicenseScan().Only(ctx)
 	}
 	return result, MaskNotFound(err)
 }
@@ -464,22 +400,6 @@ func (v *Vulnerability) Cve(ctx context.Context) (*CVE, error) {
 	result, err := v.Edges.CveOrErr()
 	if IsNotLoaded(err) {
 		result, err = v.QueryCve().Only(ctx)
-	}
-	return result, err
-}
-
-func (v *Vulnerability) Scan(ctx context.Context) (*CVEScan, error) {
-	result, err := v.Edges.ScanOrErr()
-	if IsNotLoaded(err) {
-		result, err = v.QueryScan().Only(ctx)
-	}
-	return result, err
-}
-
-func (v *Vulnerability) Component(ctx context.Context) (*Component, error) {
-	result, err := v.Edges.ComponentOrErr()
-	if IsNotLoaded(err) {
-		result, err = v.QueryComponent().Only(ctx)
 	}
 	return result, err
 }

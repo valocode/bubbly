@@ -308,62 +308,6 @@ func HasTestRunWith(preds ...predicate.TestRun) predicate.ReleaseEntry {
 	})
 }
 
-// HasCveScan applies the HasEdge predicate on the "cve_scan" edge.
-func HasCveScan() predicate.ReleaseEntry {
-	return predicate.ReleaseEntry(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(CveScanTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, CveScanTable, CveScanColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasCveScanWith applies the HasEdge predicate on the "cve_scan" edge with a given conditions (other predicates).
-func HasCveScanWith(preds ...predicate.CVEScan) predicate.ReleaseEntry {
-	return predicate.ReleaseEntry(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(CveScanInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, CveScanTable, CveScanColumn),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasLicenseScan applies the HasEdge predicate on the "license_scan" edge.
-func HasLicenseScan() predicate.ReleaseEntry {
-	return predicate.ReleaseEntry(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(LicenseScanTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, LicenseScanTable, LicenseScanColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasLicenseScanWith applies the HasEdge predicate on the "license_scan" edge with a given conditions (other predicates).
-func HasLicenseScanWith(preds ...predicate.LicenseScan) predicate.ReleaseEntry {
-	return predicate.ReleaseEntry(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(LicenseScanInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, LicenseScanTable, LicenseScanColumn),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasRelease applies the HasEdge predicate on the "release" edge.
 func HasRelease() predicate.ReleaseEntry {
 	return predicate.ReleaseEntry(func(s *sql.Selector) {

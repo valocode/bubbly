@@ -14,8 +14,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/cvescan"
-	"github.com/valocode/bubbly/ent/licensescan"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
@@ -32,13 +30,11 @@ type ReleaseEntryQuery struct {
 	fields     []string
 	predicates []predicate.ReleaseEntry
 	// eager-loading edges.
-	withArtifact    *ArtifactQuery
-	withCodeScan    *CodeScanQuery
-	withTestRun     *TestRunQuery
-	withCveScan     *CVEScanQuery
-	withLicenseScan *LicenseScanQuery
-	withRelease     *ReleaseQuery
-	withFKs         bool
+	withArtifact *ArtifactQuery
+	withCodeScan *CodeScanQuery
+	withTestRun  *TestRunQuery
+	withRelease  *ReleaseQuery
+	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -134,50 +130,6 @@ func (req *ReleaseEntryQuery) QueryTestRun() *TestRunQuery {
 			sqlgraph.From(releaseentry.Table, releaseentry.FieldID, selector),
 			sqlgraph.To(testrun.Table, testrun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, releaseentry.TestRunTable, releaseentry.TestRunColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(req.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryCveScan chains the current query on the "cve_scan" edge.
-func (req *ReleaseEntryQuery) QueryCveScan() *CVEScanQuery {
-	query := &CVEScanQuery{config: req.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := req.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := req.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(releaseentry.Table, releaseentry.FieldID, selector),
-			sqlgraph.To(cvescan.Table, cvescan.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, releaseentry.CveScanTable, releaseentry.CveScanColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(req.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryLicenseScan chains the current query on the "license_scan" edge.
-func (req *ReleaseEntryQuery) QueryLicenseScan() *LicenseScanQuery {
-	query := &LicenseScanQuery{config: req.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := req.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := req.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(releaseentry.Table, releaseentry.FieldID, selector),
-			sqlgraph.To(licensescan.Table, licensescan.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, releaseentry.LicenseScanTable, releaseentry.LicenseScanColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(req.driver.Dialect(), step)
 		return fromU, nil
@@ -383,17 +335,15 @@ func (req *ReleaseEntryQuery) Clone() *ReleaseEntryQuery {
 		return nil
 	}
 	return &ReleaseEntryQuery{
-		config:          req.config,
-		limit:           req.limit,
-		offset:          req.offset,
-		order:           append([]OrderFunc{}, req.order...),
-		predicates:      append([]predicate.ReleaseEntry{}, req.predicates...),
-		withArtifact:    req.withArtifact.Clone(),
-		withCodeScan:    req.withCodeScan.Clone(),
-		withTestRun:     req.withTestRun.Clone(),
-		withCveScan:     req.withCveScan.Clone(),
-		withLicenseScan: req.withLicenseScan.Clone(),
-		withRelease:     req.withRelease.Clone(),
+		config:       req.config,
+		limit:        req.limit,
+		offset:       req.offset,
+		order:        append([]OrderFunc{}, req.order...),
+		predicates:   append([]predicate.ReleaseEntry{}, req.predicates...),
+		withArtifact: req.withArtifact.Clone(),
+		withCodeScan: req.withCodeScan.Clone(),
+		withTestRun:  req.withTestRun.Clone(),
+		withRelease:  req.withRelease.Clone(),
 		// clone intermediate query.
 		sql:  req.sql.Clone(),
 		path: req.path,
@@ -430,28 +380,6 @@ func (req *ReleaseEntryQuery) WithTestRun(opts ...func(*TestRunQuery)) *ReleaseE
 		opt(query)
 	}
 	req.withTestRun = query
-	return req
-}
-
-// WithCveScan tells the query-builder to eager-load the nodes that are connected to
-// the "cve_scan" edge. The optional arguments are used to configure the query builder of the edge.
-func (req *ReleaseEntryQuery) WithCveScan(opts ...func(*CVEScanQuery)) *ReleaseEntryQuery {
-	query := &CVEScanQuery{config: req.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	req.withCveScan = query
-	return req
-}
-
-// WithLicenseScan tells the query-builder to eager-load the nodes that are connected to
-// the "license_scan" edge. The optional arguments are used to configure the query builder of the edge.
-func (req *ReleaseEntryQuery) WithLicenseScan(opts ...func(*LicenseScanQuery)) *ReleaseEntryQuery {
-	query := &LicenseScanQuery{config: req.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	req.withLicenseScan = query
 	return req
 }
 
@@ -506,8 +434,8 @@ func (req *ReleaseEntryQuery) GroupBy(field string, fields ...string) *ReleaseEn
 //		Select(releaseentry.FieldType).
 //		Scan(ctx, &v)
 //
-func (req *ReleaseEntryQuery) Select(field string, fields ...string) *ReleaseEntrySelect {
-	req.fields = append([]string{field}, fields...)
+func (req *ReleaseEntryQuery) Select(fields ...string) *ReleaseEntrySelect {
+	req.fields = append(req.fields, fields...)
 	return &ReleaseEntrySelect{ReleaseEntryQuery: req}
 }
 
@@ -532,12 +460,10 @@ func (req *ReleaseEntryQuery) sqlAll(ctx context.Context) ([]*ReleaseEntry, erro
 		nodes       = []*ReleaseEntry{}
 		withFKs     = req.withFKs
 		_spec       = req.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [4]bool{
 			req.withArtifact != nil,
 			req.withCodeScan != nil,
 			req.withTestRun != nil,
-			req.withCveScan != nil,
-			req.withLicenseScan != nil,
 			req.withRelease != nil,
 		}
 	)
@@ -648,62 +574,6 @@ func (req *ReleaseEntryQuery) sqlAll(ctx context.Context) ([]*ReleaseEntry, erro
 				return nil, fmt.Errorf(`unexpected foreign-key "release_entry_test_run" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.TestRun = n
-		}
-	}
-
-	if query := req.withCveScan; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*ReleaseEntry)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-		}
-		query.withFKs = true
-		query.Where(predicate.CVEScan(func(s *sql.Selector) {
-			s.Where(sql.InValues(releaseentry.CveScanColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			fk := n.release_entry_cve_scan
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "release_entry_cve_scan" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "release_entry_cve_scan" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.CveScan = n
-		}
-	}
-
-	if query := req.withLicenseScan; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*ReleaseEntry)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-		}
-		query.withFKs = true
-		query.Where(predicate.LicenseScan(func(s *sql.Selector) {
-			s.Where(sql.InValues(releaseentry.LicenseScanColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			fk := n.release_entry_license_scan
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "release_entry_license_scan" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "release_entry_license_scan" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.LicenseScan = n
 		}
 	}
 

@@ -325,8 +325,8 @@ func (cq *CWEQuery) GroupBy(field string, fields ...string) *CWEGroupBy {
 //		Select(cwe.FieldCweID).
 //		Scan(ctx, &v)
 //
-func (cq *CWEQuery) Select(field string, fields ...string) *CWESelect {
-	cq.fields = append([]string{field}, fields...)
+func (cq *CWEQuery) Select(fields ...string) *CWESelect {
+	cq.fields = append(cq.fields, fields...)
 	return &CWESelect{CWEQuery: cq}
 }
 

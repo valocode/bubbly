@@ -14,14 +14,11 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/cvescan"
+	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/gitcommit"
-	"github.com/valocode/bubbly/ent/licensescan"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasecheck"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/testrun"
 )
@@ -40,14 +37,11 @@ type ReleaseQuery struct {
 	withDependencies *ReleaseQuery
 	withProject      *ProjectQuery
 	withCommit       *GitCommitQuery
-	withArtifacts    *ArtifactQuery
-	withChecks       *ReleaseCheckQuery
 	withLog          *ReleaseEntryQuery
+	withArtifacts    *ArtifactQuery
+	withComponents   *ComponentUseQuery
 	withCodeScans    *CodeScanQuery
-	withCveScans     *CVEScanQuery
-	withLicenseScans *LicenseScanQuery
 	withTestRuns     *TestRunQuery
-	withComponents   *ComponentQuery
 	withFKs          bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -173,6 +167,28 @@ func (rq *ReleaseQuery) QueryCommit() *GitCommitQuery {
 	return query
 }
 
+// QueryLog chains the current query on the "log" edge.
+func (rq *ReleaseQuery) QueryLog() *ReleaseEntryQuery {
+	query := &ReleaseEntryQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, selector),
+			sqlgraph.To(releaseentry.Table, releaseentry.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, release.LogTable, release.LogColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryArtifacts chains the current query on the "artifacts" edge.
 func (rq *ReleaseQuery) QueryArtifacts() *ArtifactQuery {
 	query := &ArtifactQuery{config: rq.config}
@@ -195,9 +211,9 @@ func (rq *ReleaseQuery) QueryArtifacts() *ArtifactQuery {
 	return query
 }
 
-// QueryChecks chains the current query on the "checks" edge.
-func (rq *ReleaseQuery) QueryChecks() *ReleaseCheckQuery {
-	query := &ReleaseCheckQuery{config: rq.config}
+// QueryComponents chains the current query on the "components" edge.
+func (rq *ReleaseQuery) QueryComponents() *ComponentUseQuery {
+	query := &ComponentUseQuery{config: rq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -208,30 +224,8 @@ func (rq *ReleaseQuery) QueryChecks() *ReleaseCheckQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(release.Table, release.FieldID, selector),
-			sqlgraph.To(releasecheck.Table, releasecheck.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, release.ChecksTable, release.ChecksColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryLog chains the current query on the "log" edge.
-func (rq *ReleaseQuery) QueryLog() *ReleaseEntryQuery {
-	query := &ReleaseEntryQuery{config: rq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(release.Table, release.FieldID, selector),
-			sqlgraph.To(releaseentry.Table, releaseentry.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, release.LogTable, release.LogColumn),
+			sqlgraph.To(componentuse.Table, componentuse.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, release.ComponentsTable, release.ComponentsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -261,50 +255,6 @@ func (rq *ReleaseQuery) QueryCodeScans() *CodeScanQuery {
 	return query
 }
 
-// QueryCveScans chains the current query on the "cve_scans" edge.
-func (rq *ReleaseQuery) QueryCveScans() *CVEScanQuery {
-	query := &CVEScanQuery{config: rq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(release.Table, release.FieldID, selector),
-			sqlgraph.To(cvescan.Table, cvescan.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, release.CveScansTable, release.CveScansColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryLicenseScans chains the current query on the "license_scans" edge.
-func (rq *ReleaseQuery) QueryLicenseScans() *LicenseScanQuery {
-	query := &LicenseScanQuery{config: rq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(release.Table, release.FieldID, selector),
-			sqlgraph.To(licensescan.Table, licensescan.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, release.LicenseScansTable, release.LicenseScansColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryTestRuns chains the current query on the "test_runs" edge.
 func (rq *ReleaseQuery) QueryTestRuns() *TestRunQuery {
 	query := &TestRunQuery{config: rq.config}
@@ -320,28 +270,6 @@ func (rq *ReleaseQuery) QueryTestRuns() *TestRunQuery {
 			sqlgraph.From(release.Table, release.FieldID, selector),
 			sqlgraph.To(testrun.Table, testrun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, release.TestRunsTable, release.TestRunsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryComponents chains the current query on the "components" edge.
-func (rq *ReleaseQuery) QueryComponents() *ComponentQuery {
-	query := &ComponentQuery{config: rq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(release.Table, release.FieldID, selector),
-			sqlgraph.To(component.Table, component.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, release.ComponentsTable, release.ComponentsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -534,14 +462,11 @@ func (rq *ReleaseQuery) Clone() *ReleaseQuery {
 		withDependencies: rq.withDependencies.Clone(),
 		withProject:      rq.withProject.Clone(),
 		withCommit:       rq.withCommit.Clone(),
-		withArtifacts:    rq.withArtifacts.Clone(),
-		withChecks:       rq.withChecks.Clone(),
 		withLog:          rq.withLog.Clone(),
-		withCodeScans:    rq.withCodeScans.Clone(),
-		withCveScans:     rq.withCveScans.Clone(),
-		withLicenseScans: rq.withLicenseScans.Clone(),
-		withTestRuns:     rq.withTestRuns.Clone(),
+		withArtifacts:    rq.withArtifacts.Clone(),
 		withComponents:   rq.withComponents.Clone(),
+		withCodeScans:    rq.withCodeScans.Clone(),
+		withTestRuns:     rq.withTestRuns.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
@@ -592,6 +517,17 @@ func (rq *ReleaseQuery) WithCommit(opts ...func(*GitCommitQuery)) *ReleaseQuery 
 	return rq
 }
 
+// WithLog tells the query-builder to eager-load the nodes that are connected to
+// the "log" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *ReleaseQuery) WithLog(opts ...func(*ReleaseEntryQuery)) *ReleaseQuery {
+	query := &ReleaseEntryQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withLog = query
+	return rq
+}
+
 // WithArtifacts tells the query-builder to eager-load the nodes that are connected to
 // the "artifacts" edge. The optional arguments are used to configure the query builder of the edge.
 func (rq *ReleaseQuery) WithArtifacts(opts ...func(*ArtifactQuery)) *ReleaseQuery {
@@ -603,25 +539,14 @@ func (rq *ReleaseQuery) WithArtifacts(opts ...func(*ArtifactQuery)) *ReleaseQuer
 	return rq
 }
 
-// WithChecks tells the query-builder to eager-load the nodes that are connected to
-// the "checks" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReleaseQuery) WithChecks(opts ...func(*ReleaseCheckQuery)) *ReleaseQuery {
-	query := &ReleaseCheckQuery{config: rq.config}
+// WithComponents tells the query-builder to eager-load the nodes that are connected to
+// the "components" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *ReleaseQuery) WithComponents(opts ...func(*ComponentUseQuery)) *ReleaseQuery {
+	query := &ComponentUseQuery{config: rq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	rq.withChecks = query
-	return rq
-}
-
-// WithLog tells the query-builder to eager-load the nodes that are connected to
-// the "log" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReleaseQuery) WithLog(opts ...func(*ReleaseEntryQuery)) *ReleaseQuery {
-	query := &ReleaseEntryQuery{config: rq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	rq.withLog = query
+	rq.withComponents = query
 	return rq
 }
 
@@ -636,28 +561,6 @@ func (rq *ReleaseQuery) WithCodeScans(opts ...func(*CodeScanQuery)) *ReleaseQuer
 	return rq
 }
 
-// WithCveScans tells the query-builder to eager-load the nodes that are connected to
-// the "cve_scans" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReleaseQuery) WithCveScans(opts ...func(*CVEScanQuery)) *ReleaseQuery {
-	query := &CVEScanQuery{config: rq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	rq.withCveScans = query
-	return rq
-}
-
-// WithLicenseScans tells the query-builder to eager-load the nodes that are connected to
-// the "license_scans" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReleaseQuery) WithLicenseScans(opts ...func(*LicenseScanQuery)) *ReleaseQuery {
-	query := &LicenseScanQuery{config: rq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	rq.withLicenseScans = query
-	return rq
-}
-
 // WithTestRuns tells the query-builder to eager-load the nodes that are connected to
 // the "test_runs" edge. The optional arguments are used to configure the query builder of the edge.
 func (rq *ReleaseQuery) WithTestRuns(opts ...func(*TestRunQuery)) *ReleaseQuery {
@@ -666,17 +569,6 @@ func (rq *ReleaseQuery) WithTestRuns(opts ...func(*TestRunQuery)) *ReleaseQuery 
 		opt(query)
 	}
 	rq.withTestRuns = query
-	return rq
-}
-
-// WithComponents tells the query-builder to eager-load the nodes that are connected to
-// the "components" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReleaseQuery) WithComponents(opts ...func(*ComponentQuery)) *ReleaseQuery {
-	query := &ComponentQuery{config: rq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	rq.withComponents = query
 	return rq
 }
 
@@ -720,8 +612,8 @@ func (rq *ReleaseQuery) GroupBy(field string, fields ...string) *ReleaseGroupBy 
 //		Select(release.FieldName).
 //		Scan(ctx, &v)
 //
-func (rq *ReleaseQuery) Select(field string, fields ...string) *ReleaseSelect {
-	rq.fields = append([]string{field}, fields...)
+func (rq *ReleaseQuery) Select(fields ...string) *ReleaseSelect {
+	rq.fields = append(rq.fields, fields...)
 	return &ReleaseSelect{ReleaseQuery: rq}
 }
 
@@ -746,19 +638,16 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		nodes       = []*Release{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [12]bool{
+		loadedTypes = [9]bool{
 			rq.withSubreleases != nil,
 			rq.withDependencies != nil,
 			rq.withProject != nil,
 			rq.withCommit != nil,
-			rq.withArtifacts != nil,
-			rq.withChecks != nil,
 			rq.withLog != nil,
-			rq.withCodeScans != nil,
-			rq.withCveScans != nil,
-			rq.withLicenseScans != nil,
-			rq.withTestRuns != nil,
+			rq.withArtifacts != nil,
 			rq.withComponents != nil,
+			rq.withCodeScans != nil,
+			rq.withTestRuns != nil,
 		}
 	)
 	if rq.withProject != nil || rq.withCommit != nil {
@@ -975,6 +864,35 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		}
 	}
 
+	if query := rq.withLog; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Release)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Log = []*ReleaseEntry{}
+		}
+		query.withFKs = true
+		query.Where(predicate.ReleaseEntry(func(s *sql.Selector) {
+			s.Where(sql.InValues(release.LogColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.release_entry_release
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "release_entry_release" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "release_entry_release" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Log = append(node.Edges.Log, n)
+		}
+	}
+
 	if query := rq.withArtifacts; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[int]*Release)
@@ -1004,61 +922,32 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		}
 	}
 
-	if query := rq.withChecks; query != nil {
+	if query := rq.withComponents; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[int]*Release)
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Checks = []*ReleaseCheck{}
+			nodes[i].Edges.Components = []*ComponentUse{}
 		}
 		query.withFKs = true
-		query.Where(predicate.ReleaseCheck(func(s *sql.Selector) {
-			s.Where(sql.InValues(release.ChecksColumn, fks...))
+		query.Where(predicate.ComponentUse(func(s *sql.Selector) {
+			s.Where(sql.InValues(release.ComponentsColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.release_check_release
+			fk := n.component_use_release
 			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "release_check_release" is nil for node %v`, n.ID)
+				return nil, fmt.Errorf(`foreign-key "component_use_release" is nil for node %v`, n.ID)
 			}
 			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "release_check_release" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "component_use_release" returned %v for node %v`, *fk, n.ID)
 			}
-			node.Edges.Checks = append(node.Edges.Checks, n)
-		}
-	}
-
-	if query := rq.withLog; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*Release)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Log = []*ReleaseEntry{}
-		}
-		query.withFKs = true
-		query.Where(predicate.ReleaseEntry(func(s *sql.Selector) {
-			s.Where(sql.InValues(release.LogColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			fk := n.release_entry_release
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "release_entry_release" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "release_entry_release" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.Log = append(node.Edges.Log, n)
+			node.Edges.Components = append(node.Edges.Components, n)
 		}
 	}
 
@@ -1091,64 +980,6 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		}
 	}
 
-	if query := rq.withCveScans; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*Release)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.CveScans = []*CVEScan{}
-		}
-		query.withFKs = true
-		query.Where(predicate.CVEScan(func(s *sql.Selector) {
-			s.Where(sql.InValues(release.CveScansColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			fk := n.cve_scan_release
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "cve_scan_release" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "cve_scan_release" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.CveScans = append(node.Edges.CveScans, n)
-		}
-	}
-
-	if query := rq.withLicenseScans; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*Release)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.LicenseScans = []*LicenseScan{}
-		}
-		query.withFKs = true
-		query.Where(predicate.LicenseScan(func(s *sql.Selector) {
-			s.Where(sql.InValues(release.LicenseScansColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			fk := n.license_scan_release
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "license_scan_release" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "license_scan_release" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.LicenseScans = append(node.Edges.LicenseScans, n)
-		}
-	}
-
 	if query := rq.withTestRuns; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[int]*Release)
@@ -1175,71 +1006,6 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 				return nil, fmt.Errorf(`unexpected foreign-key "test_run_release" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.TestRuns = append(node.Edges.TestRuns, n)
-		}
-	}
-
-	if query := rq.withComponents; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*Release, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Components = []*Component{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*Release)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   release.ComponentsTable,
-				Columns: release.ComponentsPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(release.ComponentsPrimaryKey[1], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, rq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "components": %w`, err)
-		}
-		query.Where(component.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "components" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Components = append(nodes[i].Edges.Components, n)
-			}
 		}
 	}
 

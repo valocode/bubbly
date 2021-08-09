@@ -7,8 +7,6 @@ import (
 	"io"
 	"strconv"
 	"time"
-
-	"entgo.io/ent"
 )
 
 const (
@@ -26,50 +24,32 @@ const (
 	EdgeCodeScan = "code_scan"
 	// EdgeTestRun holds the string denoting the test_run edge name in mutations.
 	EdgeTestRun = "test_run"
-	// EdgeCveScan holds the string denoting the cve_scan edge name in mutations.
-	EdgeCveScan = "cve_scan"
-	// EdgeLicenseScan holds the string denoting the license_scan edge name in mutations.
-	EdgeLicenseScan = "license_scan"
 	// EdgeRelease holds the string denoting the release edge name in mutations.
 	EdgeRelease = "release"
 	// Table holds the table name of the releaseentry in the database.
 	Table = "release_entry"
-	// ArtifactTable is the table the holds the artifact relation/edge.
+	// ArtifactTable is the table that holds the artifact relation/edge.
 	ArtifactTable = "artifact"
 	// ArtifactInverseTable is the table name for the Artifact entity.
 	// It exists in this package in order to avoid circular dependency with the "artifact" package.
 	ArtifactInverseTable = "artifact"
 	// ArtifactColumn is the table column denoting the artifact relation/edge.
 	ArtifactColumn = "release_entry_artifact"
-	// CodeScanTable is the table the holds the code_scan relation/edge.
+	// CodeScanTable is the table that holds the code_scan relation/edge.
 	CodeScanTable = "code_scan"
 	// CodeScanInverseTable is the table name for the CodeScan entity.
 	// It exists in this package in order to avoid circular dependency with the "codescan" package.
 	CodeScanInverseTable = "code_scan"
 	// CodeScanColumn is the table column denoting the code_scan relation/edge.
 	CodeScanColumn = "release_entry_code_scan"
-	// TestRunTable is the table the holds the test_run relation/edge.
+	// TestRunTable is the table that holds the test_run relation/edge.
 	TestRunTable = "test_run"
 	// TestRunInverseTable is the table name for the TestRun entity.
 	// It exists in this package in order to avoid circular dependency with the "testrun" package.
 	TestRunInverseTable = "test_run"
 	// TestRunColumn is the table column denoting the test_run relation/edge.
 	TestRunColumn = "release_entry_test_run"
-	// CveScanTable is the table the holds the cve_scan relation/edge.
-	CveScanTable = "cve_scan"
-	// CveScanInverseTable is the table name for the CVEScan entity.
-	// It exists in this package in order to avoid circular dependency with the "cvescan" package.
-	CveScanInverseTable = "cve_scan"
-	// CveScanColumn is the table column denoting the cve_scan relation/edge.
-	CveScanColumn = "release_entry_cve_scan"
-	// LicenseScanTable is the table the holds the license_scan relation/edge.
-	LicenseScanTable = "license_scan"
-	// LicenseScanInverseTable is the table name for the LicenseScan entity.
-	// It exists in this package in order to avoid circular dependency with the "licensescan" package.
-	LicenseScanInverseTable = "license_scan"
-	// LicenseScanColumn is the table column denoting the license_scan relation/edge.
-	LicenseScanColumn = "release_entry_license_scan"
-	// ReleaseTable is the table the holds the release relation/edge.
+	// ReleaseTable is the table that holds the release relation/edge.
 	ReleaseTable = "release_entry"
 	// ReleaseInverseTable is the table name for the Release entity.
 	// It exists in this package in order to avoid circular dependency with the "release" package.
@@ -106,14 +86,7 @@ func ValidColumn(column string) bool {
 	return false
 }
 
-// Note that the variables below are initialized by the runtime
-// package on the initialization of the application. Therefore,
-// it should be imported in the main as follows:
-//
-//	import _ "github.com/valocode/bubbly/ent/runtime"
-//
 var (
-	Hooks [1]ent.Hook
 	// DefaultTime holds the default value on creation for the "time" field.
 	DefaultTime func() time.Time
 )
@@ -123,12 +96,10 @@ type Type string
 
 // Type values.
 const (
-	TypeArtifact    Type = "artifact"
-	TypeDeploy      Type = "deploy"
-	TypeCodeScan    Type = "code_scan"
-	TypeLicenseScan Type = "license_scan"
-	TypeCveScan     Type = "cve_scan"
-	TypeTestRun     Type = "test_run"
+	TypeArtifact Type = "artifact"
+	TypeDeploy   Type = "deploy"
+	TypeCodeScan Type = "code_scan"
+	TypeTestRun  Type = "test_run"
 )
 
 func (_type Type) String() string {
@@ -138,7 +109,7 @@ func (_type Type) String() string {
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type Type) error {
 	switch _type {
-	case TypeArtifact, TypeDeploy, TypeCodeScan, TypeLicenseScan, TypeCveScan, TypeTestRun:
+	case TypeArtifact, TypeDeploy, TypeCodeScan, TypeTestRun:
 		return nil
 	default:
 		return fmt.Errorf("releaseentry: invalid enum value for type field: %q", _type)

@@ -12,14 +12,11 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/cvescan"
+	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/gitcommit"
-	"github.com/valocode/bubbly/ent/licensescan"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasecheck"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/testrun"
 )
@@ -31,9 +28,9 @@ type ReleaseUpdate struct {
 	mutation *ReleaseMutation
 }
 
-// Where adds a new predicate for the ReleaseUpdate builder.
+// Where appends a list predicates to the ReleaseUpdate builder.
 func (ru *ReleaseUpdate) Where(ps ...predicate.Release) *ReleaseUpdate {
-	ru.mutation.predicates = append(ru.mutation.predicates, ps...)
+	ru.mutation.Where(ps...)
 	return ru
 }
 
@@ -115,6 +112,21 @@ func (ru *ReleaseUpdate) SetCommit(g *GitCommit) *ReleaseUpdate {
 	return ru.SetCommitID(g.ID)
 }
 
+// AddLogIDs adds the "log" edge to the ReleaseEntry entity by IDs.
+func (ru *ReleaseUpdate) AddLogIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.AddLogIDs(ids...)
+	return ru
+}
+
+// AddLog adds the "log" edges to the ReleaseEntry entity.
+func (ru *ReleaseUpdate) AddLog(r ...*ReleaseEntry) *ReleaseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ru.AddLogIDs(ids...)
+}
+
 // AddArtifactIDs adds the "artifacts" edge to the Artifact entity by IDs.
 func (ru *ReleaseUpdate) AddArtifactIDs(ids ...int) *ReleaseUpdate {
 	ru.mutation.AddArtifactIDs(ids...)
@@ -130,34 +142,19 @@ func (ru *ReleaseUpdate) AddArtifacts(a ...*Artifact) *ReleaseUpdate {
 	return ru.AddArtifactIDs(ids...)
 }
 
-// AddCheckIDs adds the "checks" edge to the ReleaseCheck entity by IDs.
-func (ru *ReleaseUpdate) AddCheckIDs(ids ...int) *ReleaseUpdate {
-	ru.mutation.AddCheckIDs(ids...)
+// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+func (ru *ReleaseUpdate) AddComponentIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.AddComponentIDs(ids...)
 	return ru
 }
 
-// AddChecks adds the "checks" edges to the ReleaseCheck entity.
-func (ru *ReleaseUpdate) AddChecks(r ...*ReleaseCheck) *ReleaseUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddComponents adds the "components" edges to the ComponentUse entity.
+func (ru *ReleaseUpdate) AddComponents(c ...*ComponentUse) *ReleaseUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return ru.AddCheckIDs(ids...)
-}
-
-// AddLogIDs adds the "log" edge to the ReleaseEntry entity by IDs.
-func (ru *ReleaseUpdate) AddLogIDs(ids ...int) *ReleaseUpdate {
-	ru.mutation.AddLogIDs(ids...)
-	return ru
-}
-
-// AddLog adds the "log" edges to the ReleaseEntry entity.
-func (ru *ReleaseUpdate) AddLog(r ...*ReleaseEntry) *ReleaseUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return ru.AddLogIDs(ids...)
+	return ru.AddComponentIDs(ids...)
 }
 
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by IDs.
@@ -175,36 +172,6 @@ func (ru *ReleaseUpdate) AddCodeScans(c ...*CodeScan) *ReleaseUpdate {
 	return ru.AddCodeScanIDs(ids...)
 }
 
-// AddCveScanIDs adds the "cve_scans" edge to the CVEScan entity by IDs.
-func (ru *ReleaseUpdate) AddCveScanIDs(ids ...int) *ReleaseUpdate {
-	ru.mutation.AddCveScanIDs(ids...)
-	return ru
-}
-
-// AddCveScans adds the "cve_scans" edges to the CVEScan entity.
-func (ru *ReleaseUpdate) AddCveScans(c ...*CVEScan) *ReleaseUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ru.AddCveScanIDs(ids...)
-}
-
-// AddLicenseScanIDs adds the "license_scans" edge to the LicenseScan entity by IDs.
-func (ru *ReleaseUpdate) AddLicenseScanIDs(ids ...int) *ReleaseUpdate {
-	ru.mutation.AddLicenseScanIDs(ids...)
-	return ru
-}
-
-// AddLicenseScans adds the "license_scans" edges to the LicenseScan entity.
-func (ru *ReleaseUpdate) AddLicenseScans(l ...*LicenseScan) *ReleaseUpdate {
-	ids := make([]int, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
-	}
-	return ru.AddLicenseScanIDs(ids...)
-}
-
 // AddTestRunIDs adds the "test_runs" edge to the TestRun entity by IDs.
 func (ru *ReleaseUpdate) AddTestRunIDs(ids ...int) *ReleaseUpdate {
 	ru.mutation.AddTestRunIDs(ids...)
@@ -218,21 +185,6 @@ func (ru *ReleaseUpdate) AddTestRuns(t ...*TestRun) *ReleaseUpdate {
 		ids[i] = t[i].ID
 	}
 	return ru.AddTestRunIDs(ids...)
-}
-
-// AddComponentIDs adds the "components" edge to the Component entity by IDs.
-func (ru *ReleaseUpdate) AddComponentIDs(ids ...int) *ReleaseUpdate {
-	ru.mutation.AddComponentIDs(ids...)
-	return ru
-}
-
-// AddComponents adds the "components" edges to the Component entity.
-func (ru *ReleaseUpdate) AddComponents(c ...*Component) *ReleaseUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ru.AddComponentIDs(ids...)
 }
 
 // Mutation returns the ReleaseMutation object of the builder.
@@ -294,6 +246,27 @@ func (ru *ReleaseUpdate) ClearCommit() *ReleaseUpdate {
 	return ru
 }
 
+// ClearLog clears all "log" edges to the ReleaseEntry entity.
+func (ru *ReleaseUpdate) ClearLog() *ReleaseUpdate {
+	ru.mutation.ClearLog()
+	return ru
+}
+
+// RemoveLogIDs removes the "log" edge to ReleaseEntry entities by IDs.
+func (ru *ReleaseUpdate) RemoveLogIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.RemoveLogIDs(ids...)
+	return ru
+}
+
+// RemoveLog removes "log" edges to ReleaseEntry entities.
+func (ru *ReleaseUpdate) RemoveLog(r ...*ReleaseEntry) *ReleaseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ru.RemoveLogIDs(ids...)
+}
+
 // ClearArtifacts clears all "artifacts" edges to the Artifact entity.
 func (ru *ReleaseUpdate) ClearArtifacts() *ReleaseUpdate {
 	ru.mutation.ClearArtifacts()
@@ -315,46 +288,25 @@ func (ru *ReleaseUpdate) RemoveArtifacts(a ...*Artifact) *ReleaseUpdate {
 	return ru.RemoveArtifactIDs(ids...)
 }
 
-// ClearChecks clears all "checks" edges to the ReleaseCheck entity.
-func (ru *ReleaseUpdate) ClearChecks() *ReleaseUpdate {
-	ru.mutation.ClearChecks()
+// ClearComponents clears all "components" edges to the ComponentUse entity.
+func (ru *ReleaseUpdate) ClearComponents() *ReleaseUpdate {
+	ru.mutation.ClearComponents()
 	return ru
 }
 
-// RemoveCheckIDs removes the "checks" edge to ReleaseCheck entities by IDs.
-func (ru *ReleaseUpdate) RemoveCheckIDs(ids ...int) *ReleaseUpdate {
-	ru.mutation.RemoveCheckIDs(ids...)
+// RemoveComponentIDs removes the "components" edge to ComponentUse entities by IDs.
+func (ru *ReleaseUpdate) RemoveComponentIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.RemoveComponentIDs(ids...)
 	return ru
 }
 
-// RemoveChecks removes "checks" edges to ReleaseCheck entities.
-func (ru *ReleaseUpdate) RemoveChecks(r ...*ReleaseCheck) *ReleaseUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// RemoveComponents removes "components" edges to ComponentUse entities.
+func (ru *ReleaseUpdate) RemoveComponents(c ...*ComponentUse) *ReleaseUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return ru.RemoveCheckIDs(ids...)
-}
-
-// ClearLog clears all "log" edges to the ReleaseEntry entity.
-func (ru *ReleaseUpdate) ClearLog() *ReleaseUpdate {
-	ru.mutation.ClearLog()
-	return ru
-}
-
-// RemoveLogIDs removes the "log" edge to ReleaseEntry entities by IDs.
-func (ru *ReleaseUpdate) RemoveLogIDs(ids ...int) *ReleaseUpdate {
-	ru.mutation.RemoveLogIDs(ids...)
-	return ru
-}
-
-// RemoveLog removes "log" edges to ReleaseEntry entities.
-func (ru *ReleaseUpdate) RemoveLog(r ...*ReleaseEntry) *ReleaseUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return ru.RemoveLogIDs(ids...)
+	return ru.RemoveComponentIDs(ids...)
 }
 
 // ClearCodeScans clears all "code_scans" edges to the CodeScan entity.
@@ -378,48 +330,6 @@ func (ru *ReleaseUpdate) RemoveCodeScans(c ...*CodeScan) *ReleaseUpdate {
 	return ru.RemoveCodeScanIDs(ids...)
 }
 
-// ClearCveScans clears all "cve_scans" edges to the CVEScan entity.
-func (ru *ReleaseUpdate) ClearCveScans() *ReleaseUpdate {
-	ru.mutation.ClearCveScans()
-	return ru
-}
-
-// RemoveCveScanIDs removes the "cve_scans" edge to CVEScan entities by IDs.
-func (ru *ReleaseUpdate) RemoveCveScanIDs(ids ...int) *ReleaseUpdate {
-	ru.mutation.RemoveCveScanIDs(ids...)
-	return ru
-}
-
-// RemoveCveScans removes "cve_scans" edges to CVEScan entities.
-func (ru *ReleaseUpdate) RemoveCveScans(c ...*CVEScan) *ReleaseUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ru.RemoveCveScanIDs(ids...)
-}
-
-// ClearLicenseScans clears all "license_scans" edges to the LicenseScan entity.
-func (ru *ReleaseUpdate) ClearLicenseScans() *ReleaseUpdate {
-	ru.mutation.ClearLicenseScans()
-	return ru
-}
-
-// RemoveLicenseScanIDs removes the "license_scans" edge to LicenseScan entities by IDs.
-func (ru *ReleaseUpdate) RemoveLicenseScanIDs(ids ...int) *ReleaseUpdate {
-	ru.mutation.RemoveLicenseScanIDs(ids...)
-	return ru
-}
-
-// RemoveLicenseScans removes "license_scans" edges to LicenseScan entities.
-func (ru *ReleaseUpdate) RemoveLicenseScans(l ...*LicenseScan) *ReleaseUpdate {
-	ids := make([]int, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
-	}
-	return ru.RemoveLicenseScanIDs(ids...)
-}
-
 // ClearTestRuns clears all "test_runs" edges to the TestRun entity.
 func (ru *ReleaseUpdate) ClearTestRuns() *ReleaseUpdate {
 	ru.mutation.ClearTestRuns()
@@ -439,27 +349,6 @@ func (ru *ReleaseUpdate) RemoveTestRuns(t ...*TestRun) *ReleaseUpdate {
 		ids[i] = t[i].ID
 	}
 	return ru.RemoveTestRunIDs(ids...)
-}
-
-// ClearComponents clears all "components" edges to the Component entity.
-func (ru *ReleaseUpdate) ClearComponents() *ReleaseUpdate {
-	ru.mutation.ClearComponents()
-	return ru
-}
-
-// RemoveComponentIDs removes the "components" edge to Component entities by IDs.
-func (ru *ReleaseUpdate) RemoveComponentIDs(ids ...int) *ReleaseUpdate {
-	ru.mutation.RemoveComponentIDs(ids...)
-	return ru
-}
-
-// RemoveComponents removes "components" edges to Component entities.
-func (ru *ReleaseUpdate) RemoveComponents(c ...*Component) *ReleaseUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ru.RemoveComponentIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -488,6 +377,9 @@ func (ru *ReleaseUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(ru.hooks) - 1; i >= 0; i-- {
+			if ru.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ru.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ru.mutation); err != nil {
@@ -762,6 +654,60 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.LogCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LogTable,
+			Columns: []string{release.LogColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedLogIDs(); len(nodes) > 0 && !ru.mutation.LogCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LogTable,
+			Columns: []string{release.LogColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.LogIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LogTable,
+			Columns: []string{release.LogColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if ru.mutation.ArtifactsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -816,33 +762,33 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ru.mutation.ChecksCleared() {
+	if ru.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   release.ChecksTable,
-			Columns: []string{release.ChecksColumn},
+			Table:   release.ComponentsTable,
+			Columns: []string{release.ComponentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releasecheck.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedChecksIDs(); len(nodes) > 0 && !ru.mutation.ChecksCleared() {
+	if nodes := ru.mutation.RemovedComponentsIDs(); len(nodes) > 0 && !ru.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   release.ChecksTable,
-			Columns: []string{release.ChecksColumn},
+			Table:   release.ComponentsTable,
+			Columns: []string{release.ComponentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releasecheck.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
@@ -851,71 +797,17 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.ChecksIDs(); len(nodes) > 0 {
+	if nodes := ru.mutation.ComponentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   release.ChecksTable,
-			Columns: []string{release.ChecksColumn},
+			Table:   release.ComponentsTable,
+			Columns: []string{release.ComponentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releasecheck.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ru.mutation.LogCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LogTable,
-			Columns: []string{release.LogColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.RemovedLogIDs(); len(nodes) > 0 && !ru.mutation.LogCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LogTable,
-			Columns: []string{release.LogColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.LogIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LogTable,
-			Columns: []string{release.LogColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
@@ -978,114 +870,6 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ru.mutation.CveScansCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.CveScansTable,
-			Columns: []string{release.CveScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.RemovedCveScansIDs(); len(nodes) > 0 && !ru.mutation.CveScansCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.CveScansTable,
-			Columns: []string{release.CveScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.CveScansIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.CveScansTable,
-			Columns: []string{release.CveScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ru.mutation.LicenseScansCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LicenseScansTable,
-			Columns: []string{release.LicenseScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.RemovedLicenseScansIDs(); len(nodes) > 0 && !ru.mutation.LicenseScansCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LicenseScansTable,
-			Columns: []string{release.LicenseScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.LicenseScansIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LicenseScansTable,
-			Columns: []string{release.LicenseScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if ru.mutation.TestRunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -1132,60 +916,6 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: testrun.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ru.mutation.ComponentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   release.ComponentsTable,
-			Columns: release.ComponentsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: component.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.RemovedComponentsIDs(); len(nodes) > 0 && !ru.mutation.ComponentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   release.ComponentsTable,
-			Columns: release.ComponentsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: component.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.ComponentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   release.ComponentsTable,
-			Columns: release.ComponentsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: component.FieldID,
 				},
 			},
 		}
@@ -1291,6 +1021,21 @@ func (ruo *ReleaseUpdateOne) SetCommit(g *GitCommit) *ReleaseUpdateOne {
 	return ruo.SetCommitID(g.ID)
 }
 
+// AddLogIDs adds the "log" edge to the ReleaseEntry entity by IDs.
+func (ruo *ReleaseUpdateOne) AddLogIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.AddLogIDs(ids...)
+	return ruo
+}
+
+// AddLog adds the "log" edges to the ReleaseEntry entity.
+func (ruo *ReleaseUpdateOne) AddLog(r ...*ReleaseEntry) *ReleaseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ruo.AddLogIDs(ids...)
+}
+
 // AddArtifactIDs adds the "artifacts" edge to the Artifact entity by IDs.
 func (ruo *ReleaseUpdateOne) AddArtifactIDs(ids ...int) *ReleaseUpdateOne {
 	ruo.mutation.AddArtifactIDs(ids...)
@@ -1306,34 +1051,19 @@ func (ruo *ReleaseUpdateOne) AddArtifacts(a ...*Artifact) *ReleaseUpdateOne {
 	return ruo.AddArtifactIDs(ids...)
 }
 
-// AddCheckIDs adds the "checks" edge to the ReleaseCheck entity by IDs.
-func (ruo *ReleaseUpdateOne) AddCheckIDs(ids ...int) *ReleaseUpdateOne {
-	ruo.mutation.AddCheckIDs(ids...)
+// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+func (ruo *ReleaseUpdateOne) AddComponentIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.AddComponentIDs(ids...)
 	return ruo
 }
 
-// AddChecks adds the "checks" edges to the ReleaseCheck entity.
-func (ruo *ReleaseUpdateOne) AddChecks(r ...*ReleaseCheck) *ReleaseUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddComponents adds the "components" edges to the ComponentUse entity.
+func (ruo *ReleaseUpdateOne) AddComponents(c ...*ComponentUse) *ReleaseUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return ruo.AddCheckIDs(ids...)
-}
-
-// AddLogIDs adds the "log" edge to the ReleaseEntry entity by IDs.
-func (ruo *ReleaseUpdateOne) AddLogIDs(ids ...int) *ReleaseUpdateOne {
-	ruo.mutation.AddLogIDs(ids...)
-	return ruo
-}
-
-// AddLog adds the "log" edges to the ReleaseEntry entity.
-func (ruo *ReleaseUpdateOne) AddLog(r ...*ReleaseEntry) *ReleaseUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return ruo.AddLogIDs(ids...)
+	return ruo.AddComponentIDs(ids...)
 }
 
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by IDs.
@@ -1351,36 +1081,6 @@ func (ruo *ReleaseUpdateOne) AddCodeScans(c ...*CodeScan) *ReleaseUpdateOne {
 	return ruo.AddCodeScanIDs(ids...)
 }
 
-// AddCveScanIDs adds the "cve_scans" edge to the CVEScan entity by IDs.
-func (ruo *ReleaseUpdateOne) AddCveScanIDs(ids ...int) *ReleaseUpdateOne {
-	ruo.mutation.AddCveScanIDs(ids...)
-	return ruo
-}
-
-// AddCveScans adds the "cve_scans" edges to the CVEScan entity.
-func (ruo *ReleaseUpdateOne) AddCveScans(c ...*CVEScan) *ReleaseUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ruo.AddCveScanIDs(ids...)
-}
-
-// AddLicenseScanIDs adds the "license_scans" edge to the LicenseScan entity by IDs.
-func (ruo *ReleaseUpdateOne) AddLicenseScanIDs(ids ...int) *ReleaseUpdateOne {
-	ruo.mutation.AddLicenseScanIDs(ids...)
-	return ruo
-}
-
-// AddLicenseScans adds the "license_scans" edges to the LicenseScan entity.
-func (ruo *ReleaseUpdateOne) AddLicenseScans(l ...*LicenseScan) *ReleaseUpdateOne {
-	ids := make([]int, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
-	}
-	return ruo.AddLicenseScanIDs(ids...)
-}
-
 // AddTestRunIDs adds the "test_runs" edge to the TestRun entity by IDs.
 func (ruo *ReleaseUpdateOne) AddTestRunIDs(ids ...int) *ReleaseUpdateOne {
 	ruo.mutation.AddTestRunIDs(ids...)
@@ -1394,21 +1094,6 @@ func (ruo *ReleaseUpdateOne) AddTestRuns(t ...*TestRun) *ReleaseUpdateOne {
 		ids[i] = t[i].ID
 	}
 	return ruo.AddTestRunIDs(ids...)
-}
-
-// AddComponentIDs adds the "components" edge to the Component entity by IDs.
-func (ruo *ReleaseUpdateOne) AddComponentIDs(ids ...int) *ReleaseUpdateOne {
-	ruo.mutation.AddComponentIDs(ids...)
-	return ruo
-}
-
-// AddComponents adds the "components" edges to the Component entity.
-func (ruo *ReleaseUpdateOne) AddComponents(c ...*Component) *ReleaseUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ruo.AddComponentIDs(ids...)
 }
 
 // Mutation returns the ReleaseMutation object of the builder.
@@ -1470,6 +1155,27 @@ func (ruo *ReleaseUpdateOne) ClearCommit() *ReleaseUpdateOne {
 	return ruo
 }
 
+// ClearLog clears all "log" edges to the ReleaseEntry entity.
+func (ruo *ReleaseUpdateOne) ClearLog() *ReleaseUpdateOne {
+	ruo.mutation.ClearLog()
+	return ruo
+}
+
+// RemoveLogIDs removes the "log" edge to ReleaseEntry entities by IDs.
+func (ruo *ReleaseUpdateOne) RemoveLogIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.RemoveLogIDs(ids...)
+	return ruo
+}
+
+// RemoveLog removes "log" edges to ReleaseEntry entities.
+func (ruo *ReleaseUpdateOne) RemoveLog(r ...*ReleaseEntry) *ReleaseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ruo.RemoveLogIDs(ids...)
+}
+
 // ClearArtifacts clears all "artifacts" edges to the Artifact entity.
 func (ruo *ReleaseUpdateOne) ClearArtifacts() *ReleaseUpdateOne {
 	ruo.mutation.ClearArtifacts()
@@ -1491,46 +1197,25 @@ func (ruo *ReleaseUpdateOne) RemoveArtifacts(a ...*Artifact) *ReleaseUpdateOne {
 	return ruo.RemoveArtifactIDs(ids...)
 }
 
-// ClearChecks clears all "checks" edges to the ReleaseCheck entity.
-func (ruo *ReleaseUpdateOne) ClearChecks() *ReleaseUpdateOne {
-	ruo.mutation.ClearChecks()
+// ClearComponents clears all "components" edges to the ComponentUse entity.
+func (ruo *ReleaseUpdateOne) ClearComponents() *ReleaseUpdateOne {
+	ruo.mutation.ClearComponents()
 	return ruo
 }
 
-// RemoveCheckIDs removes the "checks" edge to ReleaseCheck entities by IDs.
-func (ruo *ReleaseUpdateOne) RemoveCheckIDs(ids ...int) *ReleaseUpdateOne {
-	ruo.mutation.RemoveCheckIDs(ids...)
+// RemoveComponentIDs removes the "components" edge to ComponentUse entities by IDs.
+func (ruo *ReleaseUpdateOne) RemoveComponentIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.RemoveComponentIDs(ids...)
 	return ruo
 }
 
-// RemoveChecks removes "checks" edges to ReleaseCheck entities.
-func (ruo *ReleaseUpdateOne) RemoveChecks(r ...*ReleaseCheck) *ReleaseUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// RemoveComponents removes "components" edges to ComponentUse entities.
+func (ruo *ReleaseUpdateOne) RemoveComponents(c ...*ComponentUse) *ReleaseUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
 	}
-	return ruo.RemoveCheckIDs(ids...)
-}
-
-// ClearLog clears all "log" edges to the ReleaseEntry entity.
-func (ruo *ReleaseUpdateOne) ClearLog() *ReleaseUpdateOne {
-	ruo.mutation.ClearLog()
-	return ruo
-}
-
-// RemoveLogIDs removes the "log" edge to ReleaseEntry entities by IDs.
-func (ruo *ReleaseUpdateOne) RemoveLogIDs(ids ...int) *ReleaseUpdateOne {
-	ruo.mutation.RemoveLogIDs(ids...)
-	return ruo
-}
-
-// RemoveLog removes "log" edges to ReleaseEntry entities.
-func (ruo *ReleaseUpdateOne) RemoveLog(r ...*ReleaseEntry) *ReleaseUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return ruo.RemoveLogIDs(ids...)
+	return ruo.RemoveComponentIDs(ids...)
 }
 
 // ClearCodeScans clears all "code_scans" edges to the CodeScan entity.
@@ -1554,48 +1239,6 @@ func (ruo *ReleaseUpdateOne) RemoveCodeScans(c ...*CodeScan) *ReleaseUpdateOne {
 	return ruo.RemoveCodeScanIDs(ids...)
 }
 
-// ClearCveScans clears all "cve_scans" edges to the CVEScan entity.
-func (ruo *ReleaseUpdateOne) ClearCveScans() *ReleaseUpdateOne {
-	ruo.mutation.ClearCveScans()
-	return ruo
-}
-
-// RemoveCveScanIDs removes the "cve_scans" edge to CVEScan entities by IDs.
-func (ruo *ReleaseUpdateOne) RemoveCveScanIDs(ids ...int) *ReleaseUpdateOne {
-	ruo.mutation.RemoveCveScanIDs(ids...)
-	return ruo
-}
-
-// RemoveCveScans removes "cve_scans" edges to CVEScan entities.
-func (ruo *ReleaseUpdateOne) RemoveCveScans(c ...*CVEScan) *ReleaseUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ruo.RemoveCveScanIDs(ids...)
-}
-
-// ClearLicenseScans clears all "license_scans" edges to the LicenseScan entity.
-func (ruo *ReleaseUpdateOne) ClearLicenseScans() *ReleaseUpdateOne {
-	ruo.mutation.ClearLicenseScans()
-	return ruo
-}
-
-// RemoveLicenseScanIDs removes the "license_scans" edge to LicenseScan entities by IDs.
-func (ruo *ReleaseUpdateOne) RemoveLicenseScanIDs(ids ...int) *ReleaseUpdateOne {
-	ruo.mutation.RemoveLicenseScanIDs(ids...)
-	return ruo
-}
-
-// RemoveLicenseScans removes "license_scans" edges to LicenseScan entities.
-func (ruo *ReleaseUpdateOne) RemoveLicenseScans(l ...*LicenseScan) *ReleaseUpdateOne {
-	ids := make([]int, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
-	}
-	return ruo.RemoveLicenseScanIDs(ids...)
-}
-
 // ClearTestRuns clears all "test_runs" edges to the TestRun entity.
 func (ruo *ReleaseUpdateOne) ClearTestRuns() *ReleaseUpdateOne {
 	ruo.mutation.ClearTestRuns()
@@ -1615,27 +1258,6 @@ func (ruo *ReleaseUpdateOne) RemoveTestRuns(t ...*TestRun) *ReleaseUpdateOne {
 		ids[i] = t[i].ID
 	}
 	return ruo.RemoveTestRunIDs(ids...)
-}
-
-// ClearComponents clears all "components" edges to the Component entity.
-func (ruo *ReleaseUpdateOne) ClearComponents() *ReleaseUpdateOne {
-	ruo.mutation.ClearComponents()
-	return ruo
-}
-
-// RemoveComponentIDs removes the "components" edge to Component entities by IDs.
-func (ruo *ReleaseUpdateOne) RemoveComponentIDs(ids ...int) *ReleaseUpdateOne {
-	ruo.mutation.RemoveComponentIDs(ids...)
-	return ruo
-}
-
-// RemoveComponents removes "components" edges to Component entities.
-func (ruo *ReleaseUpdateOne) RemoveComponents(c ...*Component) *ReleaseUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ruo.RemoveComponentIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -1671,6 +1293,9 @@ func (ruo *ReleaseUpdateOne) Save(ctx context.Context) (*Release, error) {
 			return node, err
 		})
 		for i := len(ruo.hooks) - 1; i >= 0; i-- {
+			if ruo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = ruo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, ruo.mutation); err != nil {
@@ -1962,6 +1587,60 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ruo.mutation.LogCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LogTable,
+			Columns: []string{release.LogColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedLogIDs(); len(nodes) > 0 && !ruo.mutation.LogCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LogTable,
+			Columns: []string{release.LogColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.LogIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LogTable,
+			Columns: []string{release.LogColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if ruo.mutation.ArtifactsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -2016,33 +1695,33 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ruo.mutation.ChecksCleared() {
+	if ruo.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   release.ChecksTable,
-			Columns: []string{release.ChecksColumn},
+			Table:   release.ComponentsTable,
+			Columns: []string{release.ComponentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releasecheck.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedChecksIDs(); len(nodes) > 0 && !ruo.mutation.ChecksCleared() {
+	if nodes := ruo.mutation.RemovedComponentsIDs(); len(nodes) > 0 && !ruo.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   release.ChecksTable,
-			Columns: []string{release.ChecksColumn},
+			Table:   release.ComponentsTable,
+			Columns: []string{release.ComponentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releasecheck.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
@@ -2051,71 +1730,17 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.ChecksIDs(); len(nodes) > 0 {
+	if nodes := ruo.mutation.ComponentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   release.ChecksTable,
-			Columns: []string{release.ChecksColumn},
+			Table:   release.ComponentsTable,
+			Columns: []string{release.ComponentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: releasecheck.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ruo.mutation.LogCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LogTable,
-			Columns: []string{release.LogColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.RemovedLogIDs(); len(nodes) > 0 && !ruo.mutation.LogCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LogTable,
-			Columns: []string{release.LogColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.LogIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LogTable,
-			Columns: []string{release.LogColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releaseentry.FieldID,
+					Column: componentuse.FieldID,
 				},
 			},
 		}
@@ -2178,114 +1803,6 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ruo.mutation.CveScansCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.CveScansTable,
-			Columns: []string{release.CveScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.RemovedCveScansIDs(); len(nodes) > 0 && !ruo.mutation.CveScansCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.CveScansTable,
-			Columns: []string{release.CveScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.CveScansIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.CveScansTable,
-			Columns: []string{release.CveScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cvescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ruo.mutation.LicenseScansCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LicenseScansTable,
-			Columns: []string{release.LicenseScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.RemovedLicenseScansIDs(); len(nodes) > 0 && !ruo.mutation.LicenseScansCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LicenseScansTable,
-			Columns: []string{release.LicenseScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.LicenseScansIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   release.LicenseScansTable,
-			Columns: []string{release.LicenseScansColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: licensescan.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if ruo.mutation.TestRunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -2332,60 +1849,6 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: testrun.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ruo.mutation.ComponentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   release.ComponentsTable,
-			Columns: release.ComponentsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: component.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.RemovedComponentsIDs(); len(nodes) > 0 && !ruo.mutation.ComponentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   release.ComponentsTable,
-			Columns: release.ComponentsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: component.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.ComponentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   release.ComponentsTable,
-			Columns: release.ComponentsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: component.FieldID,
 				},
 			},
 		}

@@ -237,6 +237,34 @@ func HasReleaseWith(preds ...predicate.Release) predicate.CodeScan {
 	})
 }
 
+// HasEntry applies the HasEdge predicate on the "entry" edge.
+func HasEntry() predicate.CodeScan {
+	return predicate.CodeScan(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(EntryTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, EntryTable, EntryColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEntryWith applies the HasEdge predicate on the "entry" edge with a given conditions (other predicates).
+func HasEntryWith(preds ...predicate.ReleaseEntry) predicate.CodeScan {
+	return predicate.CodeScan(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(EntryInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, EntryTable, EntryColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasIssues applies the HasEdge predicate on the "issues" edge.
 func HasIssues() predicate.CodeScan {
 	return predicate.CodeScan(func(s *sql.Selector) {
@@ -265,25 +293,25 @@ func HasIssuesWith(preds ...predicate.CodeIssue) predicate.CodeScan {
 	})
 }
 
-// HasEntry applies the HasEdge predicate on the "entry" edge.
-func HasEntry() predicate.CodeScan {
+// HasComponents applies the HasEdge predicate on the "components" edge.
+func HasComponents() predicate.CodeScan {
 	return predicate.CodeScan(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(EntryTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, EntryTable, EntryColumn),
+			sqlgraph.To(ComponentsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, ComponentsTable, ComponentsPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasEntryWith applies the HasEdge predicate on the "entry" edge with a given conditions (other predicates).
-func HasEntryWith(preds ...predicate.ReleaseEntry) predicate.CodeScan {
+// HasComponentsWith applies the HasEdge predicate on the "components" edge with a given conditions (other predicates).
+func HasComponentsWith(preds ...predicate.ComponentUse) predicate.CodeScan {
 	return predicate.CodeScan(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(EntryInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, EntryTable, EntryColumn),
+			sqlgraph.To(ComponentsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, ComponentsTable, ComponentsPrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

@@ -19,7 +19,7 @@ const (
 	EdgeRun = "run"
 	// Table holds the table name of the testcase in the database.
 	Table = "test_case"
-	// RunTable is the table the holds the run relation/edge.
+	// RunTable is the table that holds the run relation/edge.
 	RunTable = "test_case"
 	// RunInverseTable is the table name for the TestRun entity.
 	// It exists in this package in order to avoid circular dependency with the "testrun" package.

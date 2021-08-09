@@ -325,8 +325,8 @@ func (tcq *TestCaseQuery) GroupBy(field string, fields ...string) *TestCaseGroup
 //		Select(testcase.FieldName).
 //		Scan(ctx, &v)
 //
-func (tcq *TestCaseQuery) Select(field string, fields ...string) *TestCaseSelect {
-	tcq.fields = append([]string{field}, fields...)
+func (tcq *TestCaseQuery) Select(fields ...string) *TestCaseSelect {
+	tcq.fields = append(tcq.fields, fields...)
 	return &TestCaseSelect{TestCaseQuery: tcq}
 }
 

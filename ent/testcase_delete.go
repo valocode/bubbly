@@ -20,9 +20,9 @@ type TestCaseDelete struct {
 	mutation *TestCaseMutation
 }
 
-// Where adds a new predicate to the TestCaseDelete builder.
+// Where appends a list predicates to the TestCaseDelete builder.
 func (tcd *TestCaseDelete) Where(ps ...predicate.TestCase) *TestCaseDelete {
-	tcd.mutation.predicates = append(tcd.mutation.predicates, ps...)
+	tcd.mutation.Where(ps...)
 	return tcd
 }
 
@@ -46,6 +46,9 @@ func (tcd *TestCaseDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(tcd.hooks) - 1; i >= 0; i-- {
+			if tcd.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = tcd.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, tcd.mutation); err != nil {

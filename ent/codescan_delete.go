@@ -20,9 +20,9 @@ type CodeScanDelete struct {
 	mutation *CodeScanMutation
 }
 
-// Where adds a new predicate to the CodeScanDelete builder.
+// Where appends a list predicates to the CodeScanDelete builder.
 func (csd *CodeScanDelete) Where(ps ...predicate.CodeScan) *CodeScanDelete {
-	csd.mutation.predicates = append(csd.mutation.predicates, ps...)
+	csd.mutation.Where(ps...)
 	return csd
 }
 
@@ -46,6 +46,9 @@ func (csd *CodeScanDelete) Exec(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(csd.hooks) - 1; i >= 0; i-- {
+			if csd.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = csd.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, csd.mutation); err != nil {

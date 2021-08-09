@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
+	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
@@ -29,10 +30,11 @@ type CodeScanQuery struct {
 	fields     []string
 	predicates []predicate.CodeScan
 	// eager-loading edges.
-	withRelease *ReleaseQuery
-	withIssues  *CodeIssueQuery
-	withEntry   *ReleaseEntryQuery
-	withFKs     bool
+	withRelease    *ReleaseQuery
+	withEntry      *ReleaseEntryQuery
+	withIssues     *CodeIssueQuery
+	withComponents *ComponentUseQuery
+	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -91,6 +93,28 @@ func (csq *CodeScanQuery) QueryRelease() *ReleaseQuery {
 	return query
 }
 
+// QueryEntry chains the current query on the "entry" edge.
+func (csq *CodeScanQuery) QueryEntry() *ReleaseEntryQuery {
+	query := &ReleaseEntryQuery{config: csq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := csq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := csq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(codescan.Table, codescan.FieldID, selector),
+			sqlgraph.To(releaseentry.Table, releaseentry.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, codescan.EntryTable, codescan.EntryColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(csq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryIssues chains the current query on the "issues" edge.
 func (csq *CodeScanQuery) QueryIssues() *CodeIssueQuery {
 	query := &CodeIssueQuery{config: csq.config}
@@ -113,9 +137,9 @@ func (csq *CodeScanQuery) QueryIssues() *CodeIssueQuery {
 	return query
 }
 
-// QueryEntry chains the current query on the "entry" edge.
-func (csq *CodeScanQuery) QueryEntry() *ReleaseEntryQuery {
-	query := &ReleaseEntryQuery{config: csq.config}
+// QueryComponents chains the current query on the "components" edge.
+func (csq *CodeScanQuery) QueryComponents() *ComponentUseQuery {
+	query := &ComponentUseQuery{config: csq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := csq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -126,8 +150,8 @@ func (csq *CodeScanQuery) QueryEntry() *ReleaseEntryQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(codescan.Table, codescan.FieldID, selector),
-			sqlgraph.To(releaseentry.Table, releaseentry.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, codescan.EntryTable, codescan.EntryColumn),
+			sqlgraph.To(componentuse.Table, componentuse.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, codescan.ComponentsTable, codescan.ComponentsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(csq.driver.Dialect(), step)
 		return fromU, nil
@@ -311,14 +335,15 @@ func (csq *CodeScanQuery) Clone() *CodeScanQuery {
 		return nil
 	}
 	return &CodeScanQuery{
-		config:      csq.config,
-		limit:       csq.limit,
-		offset:      csq.offset,
-		order:       append([]OrderFunc{}, csq.order...),
-		predicates:  append([]predicate.CodeScan{}, csq.predicates...),
-		withRelease: csq.withRelease.Clone(),
-		withIssues:  csq.withIssues.Clone(),
-		withEntry:   csq.withEntry.Clone(),
+		config:         csq.config,
+		limit:          csq.limit,
+		offset:         csq.offset,
+		order:          append([]OrderFunc{}, csq.order...),
+		predicates:     append([]predicate.CodeScan{}, csq.predicates...),
+		withRelease:    csq.withRelease.Clone(),
+		withEntry:      csq.withEntry.Clone(),
+		withIssues:     csq.withIssues.Clone(),
+		withComponents: csq.withComponents.Clone(),
 		// clone intermediate query.
 		sql:  csq.sql.Clone(),
 		path: csq.path,
@@ -336,6 +361,17 @@ func (csq *CodeScanQuery) WithRelease(opts ...func(*ReleaseQuery)) *CodeScanQuer
 	return csq
 }
 
+// WithEntry tells the query-builder to eager-load the nodes that are connected to
+// the "entry" edge. The optional arguments are used to configure the query builder of the edge.
+func (csq *CodeScanQuery) WithEntry(opts ...func(*ReleaseEntryQuery)) *CodeScanQuery {
+	query := &ReleaseEntryQuery{config: csq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	csq.withEntry = query
+	return csq
+}
+
 // WithIssues tells the query-builder to eager-load the nodes that are connected to
 // the "issues" edge. The optional arguments are used to configure the query builder of the edge.
 func (csq *CodeScanQuery) WithIssues(opts ...func(*CodeIssueQuery)) *CodeScanQuery {
@@ -347,14 +383,14 @@ func (csq *CodeScanQuery) WithIssues(opts ...func(*CodeIssueQuery)) *CodeScanQue
 	return csq
 }
 
-// WithEntry tells the query-builder to eager-load the nodes that are connected to
-// the "entry" edge. The optional arguments are used to configure the query builder of the edge.
-func (csq *CodeScanQuery) WithEntry(opts ...func(*ReleaseEntryQuery)) *CodeScanQuery {
-	query := &ReleaseEntryQuery{config: csq.config}
+// WithComponents tells the query-builder to eager-load the nodes that are connected to
+// the "components" edge. The optional arguments are used to configure the query builder of the edge.
+func (csq *CodeScanQuery) WithComponents(opts ...func(*ComponentUseQuery)) *CodeScanQuery {
+	query := &ComponentUseQuery{config: csq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	csq.withEntry = query
+	csq.withComponents = query
 	return csq
 }
 
@@ -398,8 +434,8 @@ func (csq *CodeScanQuery) GroupBy(field string, fields ...string) *CodeScanGroup
 //		Select(codescan.FieldTool).
 //		Scan(ctx, &v)
 //
-func (csq *CodeScanQuery) Select(field string, fields ...string) *CodeScanSelect {
-	csq.fields = append([]string{field}, fields...)
+func (csq *CodeScanQuery) Select(fields ...string) *CodeScanSelect {
+	csq.fields = append(csq.fields, fields...)
 	return &CodeScanSelect{CodeScanQuery: csq}
 }
 
@@ -424,10 +460,11 @@ func (csq *CodeScanQuery) sqlAll(ctx context.Context) ([]*CodeScan, error) {
 		nodes       = []*CodeScan{}
 		withFKs     = csq.withFKs
 		_spec       = csq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			csq.withRelease != nil,
-			csq.withIssues != nil,
 			csq.withEntry != nil,
+			csq.withIssues != nil,
+			csq.withComponents != nil,
 		}
 	)
 	if csq.withRelease != nil || csq.withEntry != nil {
@@ -485,6 +522,35 @@ func (csq *CodeScanQuery) sqlAll(ctx context.Context) ([]*CodeScan, error) {
 		}
 	}
 
+	if query := csq.withEntry; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*CodeScan)
+		for i := range nodes {
+			if nodes[i].release_entry_code_scan == nil {
+				continue
+			}
+			fk := *nodes[i].release_entry_code_scan
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(releaseentry.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "release_entry_code_scan" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Entry = n
+			}
+		}
+	}
+
 	if query := csq.withIssues; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[int]*CodeScan)
@@ -514,31 +580,67 @@ func (csq *CodeScanQuery) sqlAll(ctx context.Context) ([]*CodeScan, error) {
 		}
 	}
 
-	if query := csq.withEntry; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*CodeScan)
-		for i := range nodes {
-			if nodes[i].release_entry_code_scan == nil {
-				continue
-			}
-			fk := *nodes[i].release_entry_code_scan
-			if _, ok := nodeids[fk]; !ok {
-				ids = append(ids, fk)
-			}
-			nodeids[fk] = append(nodeids[fk], nodes[i])
+	if query := csq.withComponents; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*CodeScan, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.Components = []*ComponentUse{}
 		}
-		query.Where(releaseentry.IDIn(ids...))
+		var (
+			edgeids []int
+			edges   = make(map[int][]*CodeScan)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   codescan.ComponentsTable,
+				Columns: codescan.ComponentsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(codescan.ComponentsPrimaryKey[1], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, csq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "components": %w`, err)
+		}
+		query.Where(componentuse.IDIn(edgeids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
+			nodes, ok := edges[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "release_entry_code_scan" returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected "components" node returned %v`, n.ID)
 			}
 			for i := range nodes {
-				nodes[i].Edges.Entry = n
+				nodes[i].Edges.Components = append(nodes[i].Edges.Components, n)
 			}
 		}
 	}

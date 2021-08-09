@@ -19,22 +19,22 @@ const (
 	FieldIsOsiApproved = "is_osi_approved"
 	// EdgeComponents holds the string denoting the components edge name in mutations.
 	EdgeComponents = "components"
-	// EdgeUsages holds the string denoting the usages edge name in mutations.
-	EdgeUsages = "usages"
+	// EdgeUses holds the string denoting the uses edge name in mutations.
+	EdgeUses = "uses"
 	// Table holds the table name of the license in the database.
 	Table = "license"
-	// ComponentsTable is the table the holds the components relation/edge. The primary key declared below.
+	// ComponentsTable is the table that holds the components relation/edge. The primary key declared below.
 	ComponentsTable = "component_licenses"
 	// ComponentsInverseTable is the table name for the Component entity.
 	// It exists in this package in order to avoid circular dependency with the "component" package.
 	ComponentsInverseTable = "component"
-	// UsagesTable is the table the holds the usages relation/edge.
-	UsagesTable = "license_usage"
-	// UsagesInverseTable is the table name for the LicenseUsage entity.
-	// It exists in this package in order to avoid circular dependency with the "licenseusage" package.
-	UsagesInverseTable = "license_usage"
-	// UsagesColumn is the table column denoting the usages relation/edge.
-	UsagesColumn = "license_usage_license"
+	// UsesTable is the table that holds the uses relation/edge.
+	UsesTable = "license_use"
+	// UsesInverseTable is the table name for the LicenseUse entity.
+	// It exists in this package in order to avoid circular dependency with the "licenseuse" package.
+	UsesInverseTable = "license_use"
+	// UsesColumn is the table column denoting the uses relation/edge.
+	UsesColumn = "license_use_license"
 )
 
 // Columns holds all SQL columns for license fields.

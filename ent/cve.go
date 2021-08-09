@@ -35,28 +35,39 @@ type CVE struct {
 
 // CVEEdges holds the relations/edges for other nodes in the graph.
 type CVEEdges struct {
-	// Found holds the value of the found edge.
-	Found []*Vulnerability `json:"found,omitempty"`
+	// Components holds the value of the components edge.
+	Components []*Component `json:"components,omitempty"`
+	// Vulnerabilities holds the value of the vulnerabilities edge.
+	Vulnerabilities []*Vulnerability `json:"vulnerabilities,omitempty"`
 	// Rules holds the value of the rules edge.
 	Rules []*CVERule `json:"rules,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
-// FoundOrErr returns the Found value or an error if the edge
+// ComponentsOrErr returns the Components value or an error if the edge
 // was not loaded in eager-loading.
-func (e CVEEdges) FoundOrErr() ([]*Vulnerability, error) {
+func (e CVEEdges) ComponentsOrErr() ([]*Component, error) {
 	if e.loadedTypes[0] {
-		return e.Found, nil
+		return e.Components, nil
 	}
-	return nil, &NotLoadedError{edge: "found"}
+	return nil, &NotLoadedError{edge: "components"}
+}
+
+// VulnerabilitiesOrErr returns the Vulnerabilities value or an error if the edge
+// was not loaded in eager-loading.
+func (e CVEEdges) VulnerabilitiesOrErr() ([]*Vulnerability, error) {
+	if e.loadedTypes[1] {
+		return e.Vulnerabilities, nil
+	}
+	return nil, &NotLoadedError{edge: "vulnerabilities"}
 }
 
 // RulesOrErr returns the Rules value or an error if the edge
 // was not loaded in eager-loading.
 func (e CVEEdges) RulesOrErr() ([]*CVERule, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Rules, nil
 	}
 	return nil, &NotLoadedError{edge: "rules"}
@@ -137,9 +148,14 @@ func (c *CVE) assignValues(columns []string, values []interface{}) error {
 	return nil
 }
 
-// QueryFound queries the "found" edge of the CVE entity.
-func (c *CVE) QueryFound() *VulnerabilityQuery {
-	return (&CVEClient{config: c.config}).QueryFound(c)
+// QueryComponents queries the "components" edge of the CVE entity.
+func (c *CVE) QueryComponents() *ComponentQuery {
+	return (&CVEClient{config: c.config}).QueryComponents(c)
+}
+
+// QueryVulnerabilities queries the "vulnerabilities" edge of the CVE entity.
+func (c *CVE) QueryVulnerabilities() *VulnerabilityQuery {
+	return (&CVEClient{config: c.config}).QueryVulnerabilities(c)
 }
 
 // QueryRules queries the "rules" edge of the CVE entity.

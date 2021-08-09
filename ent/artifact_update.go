@@ -22,9 +22,9 @@ type ArtifactUpdate struct {
 	mutation *ArtifactMutation
 }
 
-// Where adds a new predicate for the ArtifactUpdate builder.
+// Where appends a list predicates to the ArtifactUpdate builder.
 func (au *ArtifactUpdate) Where(ps ...predicate.Artifact) *ArtifactUpdate {
-	au.mutation.predicates = append(au.mutation.predicates, ps...)
+	au.mutation.Where(ps...)
 	return au
 }
 
@@ -103,6 +103,9 @@ func (au *ArtifactUpdate) Save(ctx context.Context) (int, error) {
 			return affected, err
 		})
 		for i := len(au.hooks) - 1; i >= 0; i-- {
+			if au.hooks[i] == nil {
+				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = au.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, au.mutation); err != nil {
@@ -323,6 +326,9 @@ func (auo *ArtifactUpdateOne) Save(ctx context.Context) (*Artifact, error) {
 			return node, err
 		})
 		for i := len(auo.hooks) - 1; i >= 0; i-- {
+			if auo.hooks[i] == nil {
+				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
+			}
 			mut = auo.hooks[i](mut)
 		}
 		if _, err := mut.Mutate(ctx, auo.mutation); err != nil {

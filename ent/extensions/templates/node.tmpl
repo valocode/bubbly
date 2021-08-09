@@ -1,0 +1,262 @@
+{{/* The line below tells Intellij/GoLand to enable the autocompletion based on the *gen.Graph type. */}}
+{{/* gotype: entgo.io/ent/entc/gen.Graph */}}
+
+{{ define "graph_node" }}
+
+{{/* Add the base header for the generated file */}}
+{{ $pkg := base $.Config.Package }}
+{{ template "header" $ }}
+
+type GenericMutator interface {
+	SetDataNode(node *DataNode) error
+    SaveData(context.Context) (interface{}, error)
+}
+
+func CreateNode(tx *Tx, node *DataNode) error {
+	ctx := context.Background()
+	switch node.Name {
+    {{- range $n := $.Nodes }}
+        case {{ $n.Package }}.Table:
+            nodeCreate := tx.{{ $n.Name }}.Create()
+            if err := nodeCreate.SetDataNode(node); err != nil {
+                return err
+            }
+            value, err := nodeCreate.Save(ctx)
+            if err != nil {
+                return err
+            }
+            node.Value = value
+    {{- end }}
+	default:
+		return fmt.Errorf("unknown type \"%s\"", node.Name)
+	}
+	return nil
+}
+
+func UpdateNode(tx *Tx, node *DataNode) error {
+	ctx := context.Background()
+	switch node.Name {
+    {{- range $n := $.Nodes }}
+        case {{ $n.Package }}.Table:
+            nodeCreate := tx.{{ $n.Name }}.UpdateOne(node.Value.(*{{ $n.Name }}))
+            if err := nodeCreate.SetDataNode(node); err != nil {
+                return err
+            }
+            value, err := nodeCreate.Save(ctx)
+            if err != nil {
+                return err
+            }
+            node.Value = value
+    {{- end }}
+	default:
+		return fmt.Errorf("unknown type \"%s\"", node.Name)
+	}
+	return nil
+}
+
+// QueryNode takes a node and generates a query (SELECT) based on the node.
+// The query is influenced by the operation. If create or create_update we query
+// for uniqueness (based on the table index) to know whether a create will succeed
+// and in the case of create_update, whether we should create or update
+func QueryNode(tx *Tx, node *DataNode) error {
+	ctx := context.Background()
+	switch node.Name {
+    {{- range $n := $.Nodes }}
+    case {{ $n.Package }}.Table:
+        query := tx.{{ $n.Name }}.Query()
+		switch node.Operation {
+		case NodeOperationCreate, NodeOperationCreateUpdate, NodeOperationDefault:
+			if err := query.WhereNodeUnique(node); err != nil {
+                return err
+            }
+		case NodeOperationQuery, NodeOperationUpdate:
+			if err := query.WhereNode(node); err != nil {
+                return err
+            }
+        default:
+            return fmt.Errorf("unknown node operation: %s", string(node.Operation))
+        }
+        // Check if there are any predicates, otherwise we want to return nil
+        // TODO: this is kinda hacky and needs to be more thoughtout -- how to
+        // check if a unique contraint will be violated or not
+        if len(query.predicates) == 0 {
+			return nil
+		}
+        query.Limit(2)
+        values, err := query.All(ctx)
+        if err != nil {
+            return err
+        }
+        if len(values) > 1 {
+            return errors.New("query returned more than 1 result")
+        }
+        if len(values) == 1 {
+            node.Value = values[0]
+        }
+    {{- end }}
+	default:
+		return fmt.Errorf("unknown type %s", node.Name)
+	}
+	return nil
+}
+
+
+{{- range $n := $.Nodes }}
+
+    {{ $receiver := $n.Receiver }}
+    func ({{ $receiver }} *{{ $n.CreateName }}) SetDataNode(node *DataNode) error {
+        if err := {{ $receiver }}.mutation.SetDataFields(node.Fields); err != nil {
+            return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
+        }
+        if err := {{ $receiver }}.mutation.SetDataEdges(node.Edges); err != nil {
+            return fmt.Errorf("error setting edges for node %s: %w", node.Name, err)
+        }
+        return nil
+    }
+
+    func ({{ $receiver }} *{{ $n.UpdateOneName }}) SetDataNode(node *DataNode) error {
+        if err := {{ $receiver }}.mutation.SetDataFields(node.Fields); err != nil {
+            return fmt.Errorf("error setting fields for node %s: %w", node.Name, err)
+        }
+        if err := {{ $receiver }}.SetDataEdges(node.Edges); err != nil {
+            return fmt.Errorf("error setting edges for node %s: %w", node.Name, err)
+        }
+        return nil
+    }
+
+    func ({{ $receiver }} *{{ $n.MutationName }}) SetDataFields(fields []DataField) error {
+        for _, field := range fields {
+            switch field.Name {
+            {{- range $f := $n.Fields }}
+            case {{ $n.Package }}.{{ $f.Constant }}:
+                var v {{ $f.Type.String }}
+                if err := ctyToEntValue(field.Value, {{ printf "%d" $f.Type.Type }}, &v); err != nil {
+                    return fmt.Errorf("error converting cty value for type \"{{ $n.Table }}\" field \"{{ $f.Name }}\": %w", err)
+                }
+                {{ $receiver }}.{{ $f.MutationSet }}(v)
+            {{- end }}
+            default:
+                return fmt.Errorf("field does not exist for node %s: %s", "{{ $n.Table }}", field.Name)
+            }
+        }
+        return nil
+    }
+
+    func ({{ $receiver }} *{{ $n.MutationName }}) SetDataEdges(edges []DataEdge) error {
+        for _, edge := range edges {
+            if !edge.Inverse {
+                continue
+            }
+            // Use the edge type (node name) + the edge name to avoid conflict 
+            // in case there are multiple edges with the same name
+            switch edge.Node.Name + edge.Name {
+            {{- range $e := $n.Edges }}
+            case {{ $e.Type.Package }}.Table + {{ $n.Package }}.{{ $e.Constant}}:
+                {{- if $e.Unique }}
+                {{ $receiver }}.{{ $e.MutationSet }}(edge.Node.Value.(*{{ $e.Type.Name }}).ID)
+                {{- else }}
+                {{ $receiver }}.{{ $e.MutationAdd }}(edge.Node.Value.(*{{ $e.Type.Name }}).ID)
+                {{- end }}
+            {{- end }}
+            default:
+                return fmt.Errorf("edge does not exist for node %s: %s", "{{ $n.Table }}", edge.Name)
+            }
+        }
+        return nil
+    }
+
+
+    func ({{ $receiver }} *{{ $n.UpdateOneName }}) SetDataEdges(edges []DataEdge) error {
+        for _, edge := range edges {
+            if !edge.Inverse {
+                continue
+            }
+            // Use the edge type (node name) + the edge name to avoid conflict 
+            // in case there are multiple edges with the same name
+            switch edge.Node.Name + edge.Name {
+            {{- range $e := $n.Edges }}
+            case {{ $e.Type.Package }}.Table + {{ $n.Package }}.{{ $e.Constant}}:
+                {{- if $e.Unique }}
+                // TODO: it can get messy updating unique edges that already exist,
+                // so for now just skip them
+                // {{ $receiver }}.{{ $e.MutationSet }}(edge.Node.Value.(*{{ $e.Type.Name }}).ID)
+                {{- else }}
+                {{ $receiver }}.{{ $e.MutationAdd }}(edge.Node.Value.(*{{ $e.Type.Name }}).ID)
+                {{- end }}
+            {{- end }}
+            default:
+                return fmt.Errorf("edge does not exist for node %s: %s", "{{ $n.Table }}", edge.Name)
+            }
+        }
+        return nil
+    }
+    
+    func ({{ $receiver }} *{{ $n.QueryName }}) WhereNode(node *DataNode) error {
+        // Handle fields
+        for _, field := range node.Fields {
+            switch field.Name {
+            {{- range $f := $n.Fields }}
+            case {{ $n.Package }}.{{ $f.Constant }}:
+                var v {{ $f.Type.String }}
+                if err := ctyToEntValue(field.Value, {{ printf "%d" $f.Type.Type }}, &v); err != nil {
+                    return fmt.Errorf("error converting cty value for type \"{{ $n.Table }}\" field \"{{ $f.Name }}\": %w", err)
+                }
+                {{ $receiver }}.Where({{ $n.Package }}.{{ $f.StructField }}EQ(v))
+            {{- end }}
+            default:
+                return fmt.Errorf("field does not exist for node %s: %s", "{{ $n.Table }}", field.Name)
+            }
+        }
+
+        // Handle edges
+        for _, edge := range node.Edges {
+            // Inverse edges only because they describe the WHERE for a node
+            if !edge.Inverse {
+                continue
+            }
+            switch edge.Node.Name + edge.Name {
+            {{- range $e := $n.Edges }}
+            case {{ $e.Type.Package }}.Table + {{ $n.Package }}.{{ $e.Constant}}:
+                {{ $receiver }}.Where({{ $n.Package }}.Has{{ $e.StructField }}With({{ $e.Type.Package }}.IDEQ(edge.Node.Value.(*{{ $e.Type.Name }}).ID)))
+            {{- end }}
+            default:
+                return fmt.Errorf("edge does not exist for node %s: %s", "{{ $n.Table }}", edge.Name)
+            }
+        }
+        return nil
+    }
+
+    func ({{ $receiver }} *{{ $n.QueryName }}) WhereNodeUnique(node *DataNode) error {
+        // Handle fields
+        for _, field := range node.Fields {
+            switch field.Name {
+            {{- range $f := filterNodeIndexFields $n }}
+            case {{ $n.Package }}.{{ $f.Constant }}:
+                var v {{ $f.Type.String }}
+                if err := ctyToEntValue(field.Value, {{ printf "%d" $f.Type.Type }}, &v); err != nil {
+                    return fmt.Errorf("error converting cty value for type \"{{ $n.Table }}\" field \"{{ $f.Name }}\": %w", err)
+                }
+                {{ $receiver }}.Where({{ $n.Package }}.{{ $f.StructField }}EQ(v))
+            {{- end }}
+            }
+        }
+
+        // Handle edges
+        for _, edge := range node.Edges {
+            // Inverse edges only because they describe the WHERE for a node
+            if !edge.Inverse {
+                continue
+            }
+            switch edge.Node.Name + edge.Name {
+            {{- range $e := filterNodeIndexEdges $n }}
+            case {{ $e.Type.Package }}.Table + {{ $n.Package }}.{{ $e.Constant}}:
+                {{ $receiver }}.Where({{ $n.Package }}.Has{{ $e.StructField }}With({{ $e.Type.Package }}.IDEQ(edge.Node.Value.(*{{ $e.Type.Name }}).ID)))
+            {{- end }}
+            }
+        }
+        return nil
+    }
+
+{{- end }}
+
+{{ end }}

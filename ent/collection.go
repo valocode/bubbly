@@ -45,18 +45,6 @@ func (cr *CVERuleQuery) collectField(ctx *graphql.OperationContext, field graphq
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (cs *CVEScanQuery) CollectFields(ctx context.Context, satisfies ...string) *CVEScanQuery {
-	if fc := graphql.GetFieldContext(ctx); fc != nil {
-		cs = cs.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
-	}
-	return cs
-}
-
-func (cs *CVEScanQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *CVEScanQuery {
-	return cs
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (c *CWEQuery) CollectFields(ctx context.Context, satisfies ...string) *CWEQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		c = c.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
@@ -105,6 +93,18 @@ func (c *ComponentQuery) collectField(ctx *graphql.OperationContext, field graph
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (cu *ComponentUseQuery) CollectFields(ctx context.Context, satisfies ...string) *ComponentUseQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		cu = cu.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return cu
+}
+
+func (cu *ComponentUseQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ComponentUseQuery {
+	return cu
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (gc *GitCommitQuery) CollectFields(ctx context.Context, satisfies ...string) *GitCommitQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		gc = gc.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
@@ -129,26 +129,14 @@ func (l *LicenseQuery) collectField(ctx *graphql.OperationContext, field graphql
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (ls *LicenseScanQuery) CollectFields(ctx context.Context, satisfies ...string) *LicenseScanQuery {
-	if fc := graphql.GetFieldContext(ctx); fc != nil {
-		ls = ls.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
-	}
-	return ls
-}
-
-func (ls *LicenseScanQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *LicenseScanQuery {
-	return ls
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (lu *LicenseUsageQuery) CollectFields(ctx context.Context, satisfies ...string) *LicenseUsageQuery {
+func (lu *LicenseUseQuery) CollectFields(ctx context.Context, satisfies ...string) *LicenseUseQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		lu = lu.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
 	}
 	return lu
 }
 
-func (lu *LicenseUsageQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *LicenseUsageQuery {
+func (lu *LicenseUseQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *LicenseUseQuery {
 	return lu
 }
 
@@ -174,18 +162,6 @@ func (r *ReleaseQuery) CollectFields(ctx context.Context, satisfies ...string) *
 
 func (r *ReleaseQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ReleaseQuery {
 	return r
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (rc *ReleaseCheckQuery) CollectFields(ctx context.Context, satisfies ...string) *ReleaseCheckQuery {
-	if fc := graphql.GetFieldContext(ctx); fc != nil {
-		rc = rc.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
-	}
-	return rc
-}
-
-func (rc *ReleaseCheckQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ReleaseCheckQuery {
-	return rc
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
