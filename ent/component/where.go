@@ -556,6 +556,20 @@ func DescriptionHasSuffix(v string) predicate.Component {
 	})
 }
 
+// DescriptionIsNil applies the IsNil predicate on the "description" field.
+func DescriptionIsNil() predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldDescription)))
+	})
+}
+
+// DescriptionNotNil applies the NotNil predicate on the "description" field.
+func DescriptionNotNil() predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldDescription)))
+	})
+}
+
 // DescriptionEqualFold applies the EqualFold predicate on the "description" field.
 func DescriptionEqualFold(v string) predicate.Component {
 	return predicate.Component(func(s *sql.Selector) {
@@ -664,6 +678,20 @@ func URLHasPrefix(v string) predicate.Component {
 func URLHasSuffix(v string) predicate.Component {
 	return predicate.Component(func(s *sql.Selector) {
 		s.Where(sql.HasSuffix(s.C(FieldURL), v))
+	})
+}
+
+// URLIsNil applies the IsNil predicate on the "url" field.
+func URLIsNil() predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldURL)))
+	})
+}
+
+// URLNotNil applies the NotNil predicate on the "url" field.
+func URLNotNil() predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldURL)))
 	})
 }
 

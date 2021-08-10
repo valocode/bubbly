@@ -76,12 +76,8 @@ func ValidColumn(column string) bool {
 var (
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
-	// VendorValidator is a validator for the "vendor" field. It is called by the builders before save.
-	VendorValidator func(string) error
+	// DefaultVendor holds the default value on creation for the "vendor" field.
+	DefaultVendor string
 	// VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	VersionValidator func(string) error
-	// DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	DescriptionValidator func(string) error
-	// URLValidator is a validator for the "url" field. It is called by the builders before save.
-	URLValidator func(string) error
 )

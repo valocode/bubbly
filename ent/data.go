@@ -2615,12 +2615,12 @@ func (l *LicenseQuery) WhereNodeUnique(node *DataNode) error {
 	// Handle fields
 	for _, field := range node.Fields {
 		switch field.Name {
-		case license.FieldID:
-			var value int
-			if err := ctyToEntValue(field.Value, 12, &value); err != nil {
-				return fmt.Errorf("error converting cty value for type \"license\" field \"id\": %w", err)
+		case license.FieldSpdxID:
+			var value string
+			if err := ctyToEntValue(field.Value, 7, &value); err != nil {
+				return fmt.Errorf("error converting cty value for type \"license\" field \"spdx_id\": %w", err)
 			}
-			l.Where(license.IDEQ(value))
+			l.Where(license.SpdxIDEQ(value))
 		}
 	}
 

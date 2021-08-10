@@ -41,6 +41,14 @@ func (cu *ComponentUpdate) SetVendor(s string) *ComponentUpdate {
 	return cu
 }
 
+// SetNillableVendor sets the "vendor" field if the given value is not nil.
+func (cu *ComponentUpdate) SetNillableVendor(s *string) *ComponentUpdate {
+	if s != nil {
+		cu.SetVendor(*s)
+	}
+	return cu
+}
+
 // SetVersion sets the "version" field.
 func (cu *ComponentUpdate) SetVersion(s string) *ComponentUpdate {
 	cu.mutation.SetVersion(s)
@@ -53,9 +61,37 @@ func (cu *ComponentUpdate) SetDescription(s string) *ComponentUpdate {
 	return cu
 }
 
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cu *ComponentUpdate) SetNillableDescription(s *string) *ComponentUpdate {
+	if s != nil {
+		cu.SetDescription(*s)
+	}
+	return cu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (cu *ComponentUpdate) ClearDescription() *ComponentUpdate {
+	cu.mutation.ClearDescription()
+	return cu
+}
+
 // SetURL sets the "url" field.
 func (cu *ComponentUpdate) SetURL(s string) *ComponentUpdate {
 	cu.mutation.SetURL(s)
+	return cu
+}
+
+// SetNillableURL sets the "url" field if the given value is not nil.
+func (cu *ComponentUpdate) SetNillableURL(s *string) *ComponentUpdate {
+	if s != nil {
+		cu.SetURL(*s)
+	}
+	return cu
+}
+
+// ClearURL clears the value of the "url" field.
+func (cu *ComponentUpdate) ClearURL() *ComponentUpdate {
+	cu.mutation.ClearURL()
 	return cu
 }
 
@@ -239,24 +275,9 @@ func (cu *ComponentUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
 		}
 	}
-	if v, ok := cu.mutation.Vendor(); ok {
-		if err := component.VendorValidator(v); err != nil {
-			return &ValidationError{Name: "vendor", err: fmt.Errorf("ent: validator failed for field \"vendor\": %w", err)}
-		}
-	}
 	if v, ok := cu.mutation.Version(); ok {
 		if err := component.VersionValidator(v); err != nil {
 			return &ValidationError{Name: "version", err: fmt.Errorf("ent: validator failed for field \"version\": %w", err)}
-		}
-	}
-	if v, ok := cu.mutation.Description(); ok {
-		if err := component.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf("ent: validator failed for field \"description\": %w", err)}
-		}
-	}
-	if v, ok := cu.mutation.URL(); ok {
-		if err := component.URLValidator(v); err != nil {
-			return &ValidationError{Name: "url", err: fmt.Errorf("ent: validator failed for field \"url\": %w", err)}
 		}
 	}
 	return nil
@@ -308,10 +329,22 @@ func (cu *ComponentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: component.FieldDescription,
 		})
 	}
+	if cu.mutation.DescriptionCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: component.FieldDescription,
+		})
+	}
 	if value, ok := cu.mutation.URL(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
+			Column: component.FieldURL,
+		})
+	}
+	if cu.mutation.URLCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
 			Column: component.FieldURL,
 		})
 	}
@@ -508,6 +541,14 @@ func (cuo *ComponentUpdateOne) SetVendor(s string) *ComponentUpdateOne {
 	return cuo
 }
 
+// SetNillableVendor sets the "vendor" field if the given value is not nil.
+func (cuo *ComponentUpdateOne) SetNillableVendor(s *string) *ComponentUpdateOne {
+	if s != nil {
+		cuo.SetVendor(*s)
+	}
+	return cuo
+}
+
 // SetVersion sets the "version" field.
 func (cuo *ComponentUpdateOne) SetVersion(s string) *ComponentUpdateOne {
 	cuo.mutation.SetVersion(s)
@@ -520,9 +561,37 @@ func (cuo *ComponentUpdateOne) SetDescription(s string) *ComponentUpdateOne {
 	return cuo
 }
 
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cuo *ComponentUpdateOne) SetNillableDescription(s *string) *ComponentUpdateOne {
+	if s != nil {
+		cuo.SetDescription(*s)
+	}
+	return cuo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (cuo *ComponentUpdateOne) ClearDescription() *ComponentUpdateOne {
+	cuo.mutation.ClearDescription()
+	return cuo
+}
+
 // SetURL sets the "url" field.
 func (cuo *ComponentUpdateOne) SetURL(s string) *ComponentUpdateOne {
 	cuo.mutation.SetURL(s)
+	return cuo
+}
+
+// SetNillableURL sets the "url" field if the given value is not nil.
+func (cuo *ComponentUpdateOne) SetNillableURL(s *string) *ComponentUpdateOne {
+	if s != nil {
+		cuo.SetURL(*s)
+	}
+	return cuo
+}
+
+// ClearURL clears the value of the "url" field.
+func (cuo *ComponentUpdateOne) ClearURL() *ComponentUpdateOne {
+	cuo.mutation.ClearURL()
 	return cuo
 }
 
@@ -713,24 +782,9 @@ func (cuo *ComponentUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
 		}
 	}
-	if v, ok := cuo.mutation.Vendor(); ok {
-		if err := component.VendorValidator(v); err != nil {
-			return &ValidationError{Name: "vendor", err: fmt.Errorf("ent: validator failed for field \"vendor\": %w", err)}
-		}
-	}
 	if v, ok := cuo.mutation.Version(); ok {
 		if err := component.VersionValidator(v); err != nil {
 			return &ValidationError{Name: "version", err: fmt.Errorf("ent: validator failed for field \"version\": %w", err)}
-		}
-	}
-	if v, ok := cuo.mutation.Description(); ok {
-		if err := component.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf("ent: validator failed for field \"description\": %w", err)}
-		}
-	}
-	if v, ok := cuo.mutation.URL(); ok {
-		if err := component.URLValidator(v); err != nil {
-			return &ValidationError{Name: "url", err: fmt.Errorf("ent: validator failed for field \"url\": %w", err)}
 		}
 	}
 	return nil
@@ -799,10 +853,22 @@ func (cuo *ComponentUpdateOne) sqlSave(ctx context.Context) (_node *Component, e
 			Column: component.FieldDescription,
 		})
 	}
+	if cuo.mutation.DescriptionCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: component.FieldDescription,
+		})
+	}
 	if value, ok := cuo.mutation.URL(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
+			Column: component.FieldURL,
+		})
+	}
+	if cuo.mutation.URLCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
 			Column: component.FieldURL,
 		})
 	}

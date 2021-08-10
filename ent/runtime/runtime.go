@@ -82,20 +82,12 @@ func init() {
 	component.NameValidator = componentDescName.Validators[0].(func(string) error)
 	// componentDescVendor is the schema descriptor for vendor field.
 	componentDescVendor := componentFields[1].Descriptor()
-	// component.VendorValidator is a validator for the "vendor" field. It is called by the builders before save.
-	component.VendorValidator = componentDescVendor.Validators[0].(func(string) error)
+	// component.DefaultVendor holds the default value on creation for the vendor field.
+	component.DefaultVendor = componentDescVendor.Default.(string)
 	// componentDescVersion is the schema descriptor for version field.
 	componentDescVersion := componentFields[2].Descriptor()
 	// component.VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	component.VersionValidator = componentDescVersion.Validators[0].(func(string) error)
-	// componentDescDescription is the schema descriptor for description field.
-	componentDescDescription := componentFields[3].Descriptor()
-	// component.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	component.DescriptionValidator = componentDescDescription.Validators[0].(func(string) error)
-	// componentDescURL is the schema descriptor for url field.
-	componentDescURL := componentFields[4].Descriptor()
-	// component.URLValidator is a validator for the "url" field. It is called by the builders before save.
-	component.URLValidator = componentDescURL.Validators[0].(func(string) error)
 	gitcommitFields := schema.GitCommit{}.Fields()
 	_ = gitcommitFields
 	// gitcommitDescHash is the schema descriptor for hash field.

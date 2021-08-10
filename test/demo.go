@@ -18,27 +18,50 @@ import (
 	"github.com/valocode/bubbly/store"
 )
 
-const (
-	projectName = "dummy"
-	repoName    = "github.com/valocode/dummy"
-	branchName  = "main"
+type DemoRepoOptions struct {
+	Name    string
+	Project string
+	Branch  string
 
-	numCommits    = 500
-	numTestCases  = 500
-	numCodeIssues = 10
+	NumCommits    int
+	NumTests      int
+	NumCodeIssues int
 
-	artifactTimeMin = 5
-	artifactTimeMax = 10
+	ArtifactTimeMin int
+	ArtifactTimeMax int
 
-	testRunTimeMin = 15
-	testRunTimeMax = 30
+	TestRunTimeMin int
+	TestRunTimeMax int
 
-	codeScanTimeMin = 15
-	codeScanTimeMax = 30
+	IssueScanTimeMin int
+	IssueScanTimeMax int
 
-	cveTimeMin = 25
-	cveTimeMax = 35
-)
+	CveScanTimeMin int
+	CveScanTimeMax int
+}
+
+var demoData = []DemoRepoOptions{
+	{
+		Name:          "demo",
+		Project:       "bubbly",
+		Branch:        "main",
+		NumCommits:    250,
+		NumTests:      500,
+		NumCodeIssues: 50,
+
+		ArtifactTimeMin: 5,
+		ArtifactTimeMax: 10,
+
+		TestRunTimeMin: 15,
+		TestRunTimeMax: 30,
+
+		IssueScanTimeMin: 10,
+		IssueScanTimeMax: 20,
+
+		CveScanTimeMin: 15,
+		CveScanTimeMax: 20,
+	},
+}
 
 func SaveSPDXData(client *ent.Client) error {
 	list, err := integrations.FetchSPDXLicenses()
@@ -116,31 +139,85 @@ func FailSomeRandomReleases(db *store.Store) error {
 }
 
 func CreateDummyData(client *ent.Client) error {
-	// Create a silly CVE rule... this doesn't work yet with queries
-	// if err := ent.NewCVERuleNode().
-	// 	SetCve(ent.NewCVENode().SetCveID("CVE-1")).
-	// 	Graph().
-	// 	Save(client); err != nil {
-	// 	return err
-	// }
 
-	var cves []*ent.CVE
+	var (
+		licenses   []*ent.License
+		licenseIDs = []string{"MIT", "GPL-3.0", "MPL-2.0", "Apache-2.0"}
+		cves       []*ent.CVE
+		components []*ent.Component
+		ctx        = context.Background()
+	)
 	{
 		var err error
-		cves, err = client.CVE.Query().All(context.Background())
+		licenses, err = client.License.Query().All(ctx)
+		if err != nil {
+			return err
+		}
+		cves, err = client.CVE.Query().All(ctx)
 		if err != nil {
 			return fmt.Errorf("error getting the CVE list: %w", err)
 		}
 	}
 
-	project := ent.NewProjectNode().SetName(projectName)
+	// Create some components
+	{
+		mods, err := integrations.ParseSBOM("lang/testdata/spdx-sbom-generator.json")
+		if err != nil {
+			return err
+		}
+		for i := 0; i < len(mods); i++ {
+			mod := mods[i]
+			// This  *should* only be true for the first/root module
+			if mod.Version == "" {
+				continue
+			}
+			cveID := fmt.Sprintf("CVE-%d", i)
+			if len(cves) > 0 {
+				cveID = cves[i].CveID
+			}
+			cve := ent.NewCVENode().
+				SetCveID(cveID)
+			spdxID := fmt.Sprintf("GPL-%d", i)
+			if len(licenses) > 0 {
+				spdxID = licenseIDs[i%len(licenseIDs)]
+				// if i >= len(licenseIDs) {
+				// }
+			}
+			license := ent.NewLicenseNode().SetSpdxID(spdxID)
+
+			comp := ent.NewComponentNode().
+				SetName(mod.Name).
+				SetVendor(mod.Supplier.Name).
+				SetVersion(mod.Version).SetURL(mod.PackageURL).
+				AddCves(cve).
+				AddLicenses(license)
+			if err := comp.Graph().Save(client); err != nil {
+				return err
+			}
+
+			components = append(components, comp.Value.(*ent.Component))
+
+		}
+	}
+
+	for _, opt := range demoData {
+		if err := createRepoData(client, opt, components); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createRepoData(client *ent.Client, opt DemoRepoOptions, components []*ent.Component) error {
+	project := ent.NewProjectNode().SetName(opt.Project)
 	repo := ent.NewRepoNode().
-		SetName(repoName).
+		SetName(opt.Name).
 		SetProject(project)
 
 	cTime := time.Now()
 
-	for i := 1; i <= numCommits; i++ {
+	for i := 1; i <= opt.NumCommits; i++ {
 		var (
 			tag     string
 			version string
@@ -165,13 +242,13 @@ func CreateDummyData(client *ent.Client) error {
 			SetCommit(
 				ent.NewGitCommitNode().
 					SetHash(hash).
-					SetBranch(branchName).
+					SetBranch(opt.Branch).
 					SetTag(tag).
 					SetTime(cTime).
 					SetRepo(repo),
 			).
 			SetProject(project).
-			SetName(repoName).
+			SetName(opt.Name).
 			SetVersion(version)
 
 		//
@@ -179,9 +256,9 @@ func CreateDummyData(client *ent.Client) error {
 		//
 		{
 			cTime = cTime.Add(time.Minute * time.Duration(
-				rand.Intn(artifactTimeMax-artifactTimeMin+1)+artifactTimeMin,
+				rand.Intn(opt.ArtifactTimeMax-opt.ArtifactTimeMin+1)+opt.ArtifactTimeMin,
 			))
-			artifact := ent.NewArtifactNode().
+			art := ent.NewArtifactNode().
 				SetName("dummy").
 				SetSha256(fmt.Sprintf("%x", sha256.Sum256([]byte(hash)))).
 				SetType(artifact.TypeDocker).
@@ -191,7 +268,7 @@ func CreateDummyData(client *ent.Client) error {
 						SetTime(cTime).
 						SetType(releaseentry.TypeArtifact),
 				)
-			release.AddArtifacts(artifact)
+			release.AddArtifacts(art)
 
 		}
 		//
@@ -199,7 +276,7 @@ func CreateDummyData(client *ent.Client) error {
 		//
 		{
 			cTime = cTime.Add(time.Minute * time.Duration(
-				rand.Intn(testRunTimeMax-testRunTimeMin+1)+testRunTimeMin,
+				rand.Intn(opt.TestRunTimeMax-opt.TestRunTimeMin+1)+opt.TestRunTimeMin,
 			))
 			run := ent.NewTestRunNode().
 				SetRelease(release).
@@ -210,11 +287,11 @@ func CreateDummyData(client *ent.Client) error {
 						SetType(releaseentry.TypeTestRun),
 				)
 
-			for j := 1; j <= numTestCases; j++ {
+			for j := 1; j <= opt.NumTests; j++ {
 				// Calculate the result based on the test case number. The higher
 				// the number, the more likely to fail
 				// Create a failChance percentage
-				failChance := (float64(j*100) / float64(numTestCases)) / 100.0
+				failChance := (float64(j*100) / float64(opt.NumTests)) / 100.0
 				result := (float64(rand.Intn(100)) * failChance) <= 80.0
 				// if !result {
 				// 	fmt.Printf("Test Case will fail: %d\n", j)
@@ -237,18 +314,18 @@ func CreateDummyData(client *ent.Client) error {
 		//
 		{
 			cTime = cTime.Add(time.Minute * time.Duration(
-				rand.Intn(codeScanTimeMax-codeScanTimeMin+1)+codeScanTimeMin,
+				rand.Intn(opt.IssueScanTimeMax-opt.IssueScanTimeMin+1)+opt.IssueScanTimeMin,
 			))
 			scan := ent.NewCodeScanNode().
 				SetRelease(release).
-				SetTool("gosec").
+				SetTool("spdx-sbom-generator").
 				SetEntry(
 					ent.NewReleaseEntryNode().
 						SetTime(cTime).
 						SetType(releaseentry.TypeCodeScan),
 				)
 
-			for j := 0; j < numCodeIssues; j++ {
+			for j := 0; j < opt.NumCodeIssues; j++ {
 				// cweID := fmt.Sprintf("CWE-%d", j)
 				// tx.CWE.Query().Where(cwe.CweID()).Only(ctx)
 				ent.NewCodeIssueNode().
@@ -265,7 +342,7 @@ func CreateDummyData(client *ent.Client) error {
 		//
 		{
 			cTime = cTime.Add(time.Minute * time.Duration(
-				rand.Intn(cveTimeMax-cveTimeMin+1)+cveTimeMin,
+				rand.Intn(opt.CveScanTimeMax-opt.CveScanTimeMin+1)+opt.CveScanTimeMin,
 			))
 			scan := ent.NewCodeScanNode().
 				SetRelease(release).
@@ -276,47 +353,15 @@ func CreateDummyData(client *ent.Client) error {
 						SetType(releaseentry.TypeCodeScan),
 				)
 
-			for j := 0; j < 10; j++ {
+			for _, c := range components {
 				comp := ent.NewComponentNode().
-					SetName("comp1").
-					SetDescription("TODO").
-					SetVendor("TODO").
-					SetURL("TODO").
-					SetVersion(fmt.Sprintf("0.0.%d", j))
+					SetName(c.Name)
 				compUse := ent.NewComponentUseNode().
 					// ent.NewComponentUseNode().
 					AddScans(scan).
 					SetComponent(comp)
 
 				release.AddComponents(compUse)
-
-				//
-				// Vulnerabilities
-				//
-				{
-					// HACK: do this once only
-					if i == 1 {
-						// Set a default CVE ID in case we don't have any CVEs
-						cveID := fmt.Sprintf("CVE-%d", j)
-						if len(cves) > 0 {
-							cveID = cves[j].CveID
-						}
-						cve := ent.NewCVENode().
-							SetCveID(cveID).AddComponents(comp)
-
-						if j == 9 {
-							ent.NewCVERuleNode().SetCve(cve).SetName("ignore").AddProject(project)
-						}
-
-					}
-					// ent.NewVulnerabilityNode().
-					// 	SetComponent(compUse).
-					// 	SetRelease(release).
-					// 	SetCve(
-					// 		ent.NewCVENode().
-					// 			SetCveID(cveID),
-					// 	).AddScans(scan)
-				}
 
 			}
 		}

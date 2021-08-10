@@ -1240,6 +1240,8 @@ input ComponentWhereInput {
   description_contains: String
   description_has_prefix: String
   description_has_suffix: String
+  description_is_nil: Boolean
+  description_not_nil: Boolean
   description_equal_fold: String
   description_contains_fold: String
   
@@ -1255,6 +1257,8 @@ input ComponentWhereInput {
   url_contains: String
   url_has_prefix: String
   url_has_suffix: String
+  url_is_nil: Boolean
+  url_not_nil: Boolean
   url_equal_fold: String
   url_contains_fold: String
   
