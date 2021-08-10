@@ -1,0 +1,630 @@
+{
+  "vulnerabilities": [
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:N/A:H",
+      "alternativeIds": [],
+      "creationTime": "2021-07-07T12:48:54.172023Z",
+      "credit": [
+        "Unknown"
+      ],
+      "cvssScore": 5.3,
+      "description": "## Overview\n[github.com/jackc/pgproto3/v2](https://pkg.go.dev/github.com/jackc/pgproto3/v2) is an encoder and decoder of the PostgreSQL wire protocol version 3.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS). Due to not limiting or validating the `StartupMessage` length, a malicious user can send an overwhelmingly large `StartupMessage` which could cause a DoS.\r\nThis is only an issue when directly used as a component of a PostgreSQL protocol server such as a proxy or load balancer.\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its intended and legitimate users.\n\nUnlike other vulnerabilities, DoS attacks usually do not aim at breaching security. Rather, they are focused on making websites and services unavailable to genuine users resulting in downtime.\n\nOne popular Denial of Service vulnerability is DDoS (a Distributed Denial of Service), an attack that attempts to clog network pipes to the system by generating a large volume of traffic from many machines.\n\nWhen it comes to open source libraries, DoS vulnerabilities allow attackers to trigger such a crash or crippling of the service by using a flaw either in the application code or from the use of open source libraries.\n\nTwo common types of DoS vulnerabilities:\n\n* High CPU/Memory Consumption- An attacker sending crafted requests that could cause the system to take a disproportionate amount of time to process. For example, [commons-fileupload:commons-fileupload](SNYK-JAVA-COMMONSFILEUPLOAD-30082).\n\n* Crash - An attacker sending crafted requests that could cause the system to crash. For Example,  [npm `ws` package](https://snyk.io/vuln/npm:ws:20171108)\n\n## Remediation\nUpgrade `github.com/jackc/pgproto3/v2` to version 2.1.1 or higher.\n## References\n- [GitHub Commit](https://github.com/jackc/pgproto3/commit/2d3823838e54632bd4a3c85fb174f9c6fd64b107)\n",
+      "disclosureTime": "2021-07-07T12:16:30Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.1.1"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-GOLANG-GITHUBCOMJACKCPGPROTO3V2-1316251",
+      "identifiers": {
+        "CVE": [],
+        "CWE": [
+          "CWE-400"
+        ]
+      },
+      "language": "golang",
+      "modificationTime": "2021-07-22T13:57:21.265995Z",
+      "moduleName": "github.com/jackc/pgproto3/v2",
+      "packageManager": "golang",
+      "packageName": "github.com/jackc/pgproto3/v2",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-07-22T13:57:21.498730Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/jackc/pgproto3/commit/2d3823838e54632bd4a3c85fb174f9c6fd64b107"
+        }
+      ],
+      "semver": {
+        "hashesRange": [
+          "<v2.1.1"
+        ],
+        "vulnerable": [
+          "<2.1.1"
+        ],
+        "vulnerableHashes": [
+          "8d43b38287d2efd59774e43b80ad3bbb7ca33b54",
+          "c6aef151817d0b6deb9c09847bb368b93dd3292f",
+          "e6b823d64953284cfbc874de358700902129cdae",
+          "66af2227c0d5c1d7af2412ddaebb04e0f974ee48",
+          "835cf1b0689d054f58d82f3970d59abae56178dc",
+          "bf3a27ae3f6edf9a05411024c4c789110c5b4997",
+          "a24d764440ff7448d32302091ae873884c93dd88",
+          "f225b3d4a1d815e81ad1c37cc95e92be4dfad253",
+          "1c20e7d36efaac58ececd18182685740c199182a",
+          "c116219b62db0c6cd4f646fd66a94b529020fc6d",
+          "d6312305ae92ccfb03cc100a343377a1bba84687",
+          "7c9e8407262f7bfb750aef36c3e49bbff6596d35",
+          "b3d0cbd0e6ca13ccf6f787d381e1b008ba736d21",
+          "a90ef7ed5b85de58f81c707bbd3d75720b47e6c3",
+          "9b6a681f50bf8aa2372c54523d64346b1a35d46a",
+          "b1934ad4c27caf51c362c064469e84b77e6a3018",
+          "eb9fc6e7a5ddeb45c286ff0e1954610bde8e266d",
+          "97a0ac4ddc3f3071c9ade572666ca8fee2dd171e",
+          "d25abf56747f299c190301717e7f022b7e78dbbb",
+          "b2a540ca814e2103bdb45188625a035e2ef3f6b6",
+          "a340d5f15f5d75eb0cc1f42fdd9996f666dc3224",
+          "e45a42c7efeeabc38dc4e4bbab834cbdecd93bec",
+          "eca1e51822f3ebd8f48f62029d3e32f931d32c32",
+          "ba924e5715ad0b06cf1e1ddcc343ded6e9420cf4",
+          "4c03ce451f299969fd0fff6212e1f1e696b0f523",
+          "18e7e777be8bcae5c1bc24d4fb86f5d497012575",
+          "76538434cf13478c1e52d991f5d707430bdb6828",
+          "7746f223e058383856c7cd5635f5ac06f8e1aa25",
+          "5847a2671a7407b087cec47dd6786a10dfae5781",
+          "80edb27deed6fb956c714b847b0a798baa7a4ed6",
+          "2bc8f2e6afa5b2c92854cfff6e025fcadcd07fb1",
+          "72288731fc46451324dc6f32d8deb5fee3bf849c",
+          "5f39bbaf35772562b62214493b9d56b9f59439f4",
+          "2acb7b6d4e0b4478597bc19bacf52ea6033314e0",
+          "4e2900b774649cbc58686ac047bf84f54aff4e18",
+          "6677e2430fd219d3765c1b181cf120afcd583b13",
+          "6d0b4c45e4183bbd69ca91bba3e2bd1b1854761b",
+          "127e9976962da24c9da3ec6cf97b5191aa88bebf",
+          "fede0ce5d6582beb0dfd3785d5e10e00a438dd68",
+          "440fbf158199b9de56000f1fee77cf8c0ee59b47",
+          "7bd9b776cd753ee5b13adc4872858dd2be4fe650",
+          "64b1ecf96fbb8a9824e96a77be94bfeaaf476a6e",
+          "0d1ceed7a6902fbf9ae6c0c43f00174400547d5d",
+          "ffa9ff221392368427bf369ced0a3c104bc37c02",
+          "439ea11d4737a38ab70bfadd8218d15ff7967909",
+          "1213b6977451a98e03ac7db11dbc41e52f08154b",
+          "b9d0da5558b1daaf359e39117f7904fc80d1ab64",
+          "595780be0f9f581451a23a5151b77f782202ad72",
+          "4acc0f54c6ba565535ed46a21891b9c9f377be11",
+          "3443d78a7305cbe045919f97395d92a7b2ae4cd7",
+          "bb06e6b3ff87b1433242ae482d677bf3f6fcd176",
+          "61d43869314ff91cd05d38edff698f18ba5d06f4",
+          "de9bb7e6d8ef0133ee19ce46985e140a863b163f",
+          "c34a8731b6a6e347de08f8326371255ab2d7da0f",
+          "76e904a5a4549a8f572b8980a86d6b9fc9c783af",
+          "2799a6e9a6b9c6b4211e72a8f3fee18280d29b6c",
+          "08088ecf9a92d8ba11a0784f7ff093bd5dfde1bd",
+          "9c2c389e06738fc2fb5e3c15b5d51b125435b5a0",
+          "8e404a02a32e9cc442175688667538ee09ef84ba",
+          "80f2cbce255e0b0dc138baae0c50a7ce755579b4",
+          "eff55451cfd12e893e19a0120edd519be33a6581",
+          "28c20e93c0f5d81d5e2f324ac81a1dc0ab8649a4",
+          "1ba5dcbe01a089d1f2bd3822e7bc7a0c913c44cc",
+          "432c2951c711384a18995a40538a7450dcd0c1e5",
+          "38671ea10678734cddfabb210318a6e84f49032a",
+          "88b6398594fc9aa6abeae5dc4ddb453cf08b76b9",
+          "16176b5151770608f202298776016b427a1ddcfa"
+        ]
+      },
+      "severity": "medium",
+      "severityWithCritical": "medium",
+      "socialTrendAlert": false,
+      "title": "Denial of Service (DoS)",
+      "from": [
+        "github.com/valocode/entgo-poc@0.0.0",
+        "github.com/jackc/pgx/v4/stdlib@4.11.0",
+        "github.com/jackc/pgx/v4@4.11.0",
+        "github.com/jackc/pgproto3/v2@2.1.0"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "github.com/jackc/pgproto3/v2",
+      "version": "2.1.0"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:N/A:H",
+      "alternativeIds": [],
+      "creationTime": "2021-07-07T12:48:54.172023Z",
+      "credit": [
+        "Unknown"
+      ],
+      "cvssScore": 5.3,
+      "description": "## Overview\n[github.com/jackc/pgproto3/v2](https://pkg.go.dev/github.com/jackc/pgproto3/v2) is an encoder and decoder of the PostgreSQL wire protocol version 3.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS). Due to not limiting or validating the `StartupMessage` length, a malicious user can send an overwhelmingly large `StartupMessage` which could cause a DoS.\r\nThis is only an issue when directly used as a component of a PostgreSQL protocol server such as a proxy or load balancer.\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its intended and legitimate users.\n\nUnlike other vulnerabilities, DoS attacks usually do not aim at breaching security. Rather, they are focused on making websites and services unavailable to genuine users resulting in downtime.\n\nOne popular Denial of Service vulnerability is DDoS (a Distributed Denial of Service), an attack that attempts to clog network pipes to the system by generating a large volume of traffic from many machines.\n\nWhen it comes to open source libraries, DoS vulnerabilities allow attackers to trigger such a crash or crippling of the service by using a flaw either in the application code or from the use of open source libraries.\n\nTwo common types of DoS vulnerabilities:\n\n* High CPU/Memory Consumption- An attacker sending crafted requests that could cause the system to take a disproportionate amount of time to process. For example, [commons-fileupload:commons-fileupload](SNYK-JAVA-COMMONSFILEUPLOAD-30082).\n\n* Crash - An attacker sending crafted requests that could cause the system to crash. For Example,  [npm `ws` package](https://snyk.io/vuln/npm:ws:20171108)\n\n## Remediation\nUpgrade `github.com/jackc/pgproto3/v2` to version 2.1.1 or higher.\n## References\n- [GitHub Commit](https://github.com/jackc/pgproto3/commit/2d3823838e54632bd4a3c85fb174f9c6fd64b107)\n",
+      "disclosureTime": "2021-07-07T12:16:30Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.1.1"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-GOLANG-GITHUBCOMJACKCPGPROTO3V2-1316251",
+      "identifiers": {
+        "CVE": [],
+        "CWE": [
+          "CWE-400"
+        ]
+      },
+      "language": "golang",
+      "modificationTime": "2021-07-22T13:57:21.265995Z",
+      "moduleName": "github.com/jackc/pgproto3/v2",
+      "packageManager": "golang",
+      "packageName": "github.com/jackc/pgproto3/v2",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-07-22T13:57:21.498730Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/jackc/pgproto3/commit/2d3823838e54632bd4a3c85fb174f9c6fd64b107"
+        }
+      ],
+      "semver": {
+        "hashesRange": [
+          "<v2.1.1"
+        ],
+        "vulnerable": [
+          "<2.1.1"
+        ],
+        "vulnerableHashes": [
+          "8d43b38287d2efd59774e43b80ad3bbb7ca33b54",
+          "c6aef151817d0b6deb9c09847bb368b93dd3292f",
+          "e6b823d64953284cfbc874de358700902129cdae",
+          "66af2227c0d5c1d7af2412ddaebb04e0f974ee48",
+          "835cf1b0689d054f58d82f3970d59abae56178dc",
+          "bf3a27ae3f6edf9a05411024c4c789110c5b4997",
+          "a24d764440ff7448d32302091ae873884c93dd88",
+          "f225b3d4a1d815e81ad1c37cc95e92be4dfad253",
+          "1c20e7d36efaac58ececd18182685740c199182a",
+          "c116219b62db0c6cd4f646fd66a94b529020fc6d",
+          "d6312305ae92ccfb03cc100a343377a1bba84687",
+          "7c9e8407262f7bfb750aef36c3e49bbff6596d35",
+          "b3d0cbd0e6ca13ccf6f787d381e1b008ba736d21",
+          "a90ef7ed5b85de58f81c707bbd3d75720b47e6c3",
+          "9b6a681f50bf8aa2372c54523d64346b1a35d46a",
+          "b1934ad4c27caf51c362c064469e84b77e6a3018",
+          "eb9fc6e7a5ddeb45c286ff0e1954610bde8e266d",
+          "97a0ac4ddc3f3071c9ade572666ca8fee2dd171e",
+          "d25abf56747f299c190301717e7f022b7e78dbbb",
+          "b2a540ca814e2103bdb45188625a035e2ef3f6b6",
+          "a340d5f15f5d75eb0cc1f42fdd9996f666dc3224",
+          "e45a42c7efeeabc38dc4e4bbab834cbdecd93bec",
+          "eca1e51822f3ebd8f48f62029d3e32f931d32c32",
+          "ba924e5715ad0b06cf1e1ddcc343ded6e9420cf4",
+          "4c03ce451f299969fd0fff6212e1f1e696b0f523",
+          "18e7e777be8bcae5c1bc24d4fb86f5d497012575",
+          "76538434cf13478c1e52d991f5d707430bdb6828",
+          "7746f223e058383856c7cd5635f5ac06f8e1aa25",
+          "5847a2671a7407b087cec47dd6786a10dfae5781",
+          "80edb27deed6fb956c714b847b0a798baa7a4ed6",
+          "2bc8f2e6afa5b2c92854cfff6e025fcadcd07fb1",
+          "72288731fc46451324dc6f32d8deb5fee3bf849c",
+          "5f39bbaf35772562b62214493b9d56b9f59439f4",
+          "2acb7b6d4e0b4478597bc19bacf52ea6033314e0",
+          "4e2900b774649cbc58686ac047bf84f54aff4e18",
+          "6677e2430fd219d3765c1b181cf120afcd583b13",
+          "6d0b4c45e4183bbd69ca91bba3e2bd1b1854761b",
+          "127e9976962da24c9da3ec6cf97b5191aa88bebf",
+          "fede0ce5d6582beb0dfd3785d5e10e00a438dd68",
+          "440fbf158199b9de56000f1fee77cf8c0ee59b47",
+          "7bd9b776cd753ee5b13adc4872858dd2be4fe650",
+          "64b1ecf96fbb8a9824e96a77be94bfeaaf476a6e",
+          "0d1ceed7a6902fbf9ae6c0c43f00174400547d5d",
+          "ffa9ff221392368427bf369ced0a3c104bc37c02",
+          "439ea11d4737a38ab70bfadd8218d15ff7967909",
+          "1213b6977451a98e03ac7db11dbc41e52f08154b",
+          "b9d0da5558b1daaf359e39117f7904fc80d1ab64",
+          "595780be0f9f581451a23a5151b77f782202ad72",
+          "4acc0f54c6ba565535ed46a21891b9c9f377be11",
+          "3443d78a7305cbe045919f97395d92a7b2ae4cd7",
+          "bb06e6b3ff87b1433242ae482d677bf3f6fcd176",
+          "61d43869314ff91cd05d38edff698f18ba5d06f4",
+          "de9bb7e6d8ef0133ee19ce46985e140a863b163f",
+          "c34a8731b6a6e347de08f8326371255ab2d7da0f",
+          "76e904a5a4549a8f572b8980a86d6b9fc9c783af",
+          "2799a6e9a6b9c6b4211e72a8f3fee18280d29b6c",
+          "08088ecf9a92d8ba11a0784f7ff093bd5dfde1bd",
+          "9c2c389e06738fc2fb5e3c15b5d51b125435b5a0",
+          "8e404a02a32e9cc442175688667538ee09ef84ba",
+          "80f2cbce255e0b0dc138baae0c50a7ce755579b4",
+          "eff55451cfd12e893e19a0120edd519be33a6581",
+          "28c20e93c0f5d81d5e2f324ac81a1dc0ab8649a4",
+          "1ba5dcbe01a089d1f2bd3822e7bc7a0c913c44cc",
+          "432c2951c711384a18995a40538a7450dcd0c1e5",
+          "38671ea10678734cddfabb210318a6e84f49032a",
+          "88b6398594fc9aa6abeae5dc4ddb453cf08b76b9",
+          "16176b5151770608f202298776016b427a1ddcfa"
+        ]
+      },
+      "severity": "medium",
+      "severityWithCritical": "medium",
+      "socialTrendAlert": false,
+      "title": "Denial of Service (DoS)",
+      "from": [
+        "github.com/valocode/entgo-poc@0.0.0",
+        "github.com/jackc/pgx/v4/stdlib@4.11.0",
+        "github.com/jackc/pgconn@1.8.1",
+        "github.com/jackc/pgproto3/v2@2.1.0"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "github.com/jackc/pgproto3/v2",
+      "version": "2.1.0"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:N/A:H",
+      "alternativeIds": [],
+      "creationTime": "2021-07-07T12:48:54.172023Z",
+      "credit": [
+        "Unknown"
+      ],
+      "cvssScore": 5.3,
+      "description": "## Overview\n[github.com/jackc/pgproto3/v2](https://pkg.go.dev/github.com/jackc/pgproto3/v2) is an encoder and decoder of the PostgreSQL wire protocol version 3.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS). Due to not limiting or validating the `StartupMessage` length, a malicious user can send an overwhelmingly large `StartupMessage` which could cause a DoS.\r\nThis is only an issue when directly used as a component of a PostgreSQL protocol server such as a proxy or load balancer.\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its intended and legitimate users.\n\nUnlike other vulnerabilities, DoS attacks usually do not aim at breaching security. Rather, they are focused on making websites and services unavailable to genuine users resulting in downtime.\n\nOne popular Denial of Service vulnerability is DDoS (a Distributed Denial of Service), an attack that attempts to clog network pipes to the system by generating a large volume of traffic from many machines.\n\nWhen it comes to open source libraries, DoS vulnerabilities allow attackers to trigger such a crash or crippling of the service by using a flaw either in the application code or from the use of open source libraries.\n\nTwo common types of DoS vulnerabilities:\n\n* High CPU/Memory Consumption- An attacker sending crafted requests that could cause the system to take a disproportionate amount of time to process. For example, [commons-fileupload:commons-fileupload](SNYK-JAVA-COMMONSFILEUPLOAD-30082).\n\n* Crash - An attacker sending crafted requests that could cause the system to crash. For Example,  [npm `ws` package](https://snyk.io/vuln/npm:ws:20171108)\n\n## Remediation\nUpgrade `github.com/jackc/pgproto3/v2` to version 2.1.1 or higher.\n## References\n- [GitHub Commit](https://github.com/jackc/pgproto3/commit/2d3823838e54632bd4a3c85fb174f9c6fd64b107)\n",
+      "disclosureTime": "2021-07-07T12:16:30Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.1.1"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-GOLANG-GITHUBCOMJACKCPGPROTO3V2-1316251",
+      "identifiers": {
+        "CVE": [],
+        "CWE": [
+          "CWE-400"
+        ]
+      },
+      "language": "golang",
+      "modificationTime": "2021-07-22T13:57:21.265995Z",
+      "moduleName": "github.com/jackc/pgproto3/v2",
+      "packageManager": "golang",
+      "packageName": "github.com/jackc/pgproto3/v2",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-07-22T13:57:21.498730Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/jackc/pgproto3/commit/2d3823838e54632bd4a3c85fb174f9c6fd64b107"
+        }
+      ],
+      "semver": {
+        "hashesRange": [
+          "<v2.1.1"
+        ],
+        "vulnerable": [
+          "<2.1.1"
+        ],
+        "vulnerableHashes": [
+          "8d43b38287d2efd59774e43b80ad3bbb7ca33b54",
+          "c6aef151817d0b6deb9c09847bb368b93dd3292f",
+          "e6b823d64953284cfbc874de358700902129cdae",
+          "66af2227c0d5c1d7af2412ddaebb04e0f974ee48",
+          "835cf1b0689d054f58d82f3970d59abae56178dc",
+          "bf3a27ae3f6edf9a05411024c4c789110c5b4997",
+          "a24d764440ff7448d32302091ae873884c93dd88",
+          "f225b3d4a1d815e81ad1c37cc95e92be4dfad253",
+          "1c20e7d36efaac58ececd18182685740c199182a",
+          "c116219b62db0c6cd4f646fd66a94b529020fc6d",
+          "d6312305ae92ccfb03cc100a343377a1bba84687",
+          "7c9e8407262f7bfb750aef36c3e49bbff6596d35",
+          "b3d0cbd0e6ca13ccf6f787d381e1b008ba736d21",
+          "a90ef7ed5b85de58f81c707bbd3d75720b47e6c3",
+          "9b6a681f50bf8aa2372c54523d64346b1a35d46a",
+          "b1934ad4c27caf51c362c064469e84b77e6a3018",
+          "eb9fc6e7a5ddeb45c286ff0e1954610bde8e266d",
+          "97a0ac4ddc3f3071c9ade572666ca8fee2dd171e",
+          "d25abf56747f299c190301717e7f022b7e78dbbb",
+          "b2a540ca814e2103bdb45188625a035e2ef3f6b6",
+          "a340d5f15f5d75eb0cc1f42fdd9996f666dc3224",
+          "e45a42c7efeeabc38dc4e4bbab834cbdecd93bec",
+          "eca1e51822f3ebd8f48f62029d3e32f931d32c32",
+          "ba924e5715ad0b06cf1e1ddcc343ded6e9420cf4",
+          "4c03ce451f299969fd0fff6212e1f1e696b0f523",
+          "18e7e777be8bcae5c1bc24d4fb86f5d497012575",
+          "76538434cf13478c1e52d991f5d707430bdb6828",
+          "7746f223e058383856c7cd5635f5ac06f8e1aa25",
+          "5847a2671a7407b087cec47dd6786a10dfae5781",
+          "80edb27deed6fb956c714b847b0a798baa7a4ed6",
+          "2bc8f2e6afa5b2c92854cfff6e025fcadcd07fb1",
+          "72288731fc46451324dc6f32d8deb5fee3bf849c",
+          "5f39bbaf35772562b62214493b9d56b9f59439f4",
+          "2acb7b6d4e0b4478597bc19bacf52ea6033314e0",
+          "4e2900b774649cbc58686ac047bf84f54aff4e18",
+          "6677e2430fd219d3765c1b181cf120afcd583b13",
+          "6d0b4c45e4183bbd69ca91bba3e2bd1b1854761b",
+          "127e9976962da24c9da3ec6cf97b5191aa88bebf",
+          "fede0ce5d6582beb0dfd3785d5e10e00a438dd68",
+          "440fbf158199b9de56000f1fee77cf8c0ee59b47",
+          "7bd9b776cd753ee5b13adc4872858dd2be4fe650",
+          "64b1ecf96fbb8a9824e96a77be94bfeaaf476a6e",
+          "0d1ceed7a6902fbf9ae6c0c43f00174400547d5d",
+          "ffa9ff221392368427bf369ced0a3c104bc37c02",
+          "439ea11d4737a38ab70bfadd8218d15ff7967909",
+          "1213b6977451a98e03ac7db11dbc41e52f08154b",
+          "b9d0da5558b1daaf359e39117f7904fc80d1ab64",
+          "595780be0f9f581451a23a5151b77f782202ad72",
+          "4acc0f54c6ba565535ed46a21891b9c9f377be11",
+          "3443d78a7305cbe045919f97395d92a7b2ae4cd7",
+          "bb06e6b3ff87b1433242ae482d677bf3f6fcd176",
+          "61d43869314ff91cd05d38edff698f18ba5d06f4",
+          "de9bb7e6d8ef0133ee19ce46985e140a863b163f",
+          "c34a8731b6a6e347de08f8326371255ab2d7da0f",
+          "76e904a5a4549a8f572b8980a86d6b9fc9c783af",
+          "2799a6e9a6b9c6b4211e72a8f3fee18280d29b6c",
+          "08088ecf9a92d8ba11a0784f7ff093bd5dfde1bd",
+          "9c2c389e06738fc2fb5e3c15b5d51b125435b5a0",
+          "8e404a02a32e9cc442175688667538ee09ef84ba",
+          "80f2cbce255e0b0dc138baae0c50a7ce755579b4",
+          "eff55451cfd12e893e19a0120edd519be33a6581",
+          "28c20e93c0f5d81d5e2f324ac81a1dc0ab8649a4",
+          "1ba5dcbe01a089d1f2bd3822e7bc7a0c913c44cc",
+          "432c2951c711384a18995a40538a7450dcd0c1e5",
+          "38671ea10678734cddfabb210318a6e84f49032a",
+          "88b6398594fc9aa6abeae5dc4ddb453cf08b76b9",
+          "16176b5151770608f202298776016b427a1ddcfa"
+        ]
+      },
+      "severity": "medium",
+      "severityWithCritical": "medium",
+      "socialTrendAlert": false,
+      "title": "Denial of Service (DoS)",
+      "from": [
+        "github.com/valocode/entgo-poc@0.0.0",
+        "github.com/jackc/pgx/v4/stdlib@4.11.0",
+        "github.com/jackc/pgx/v4@4.11.0",
+        "github.com/jackc/pgconn@1.8.1",
+        "github.com/jackc/pgproto3/v2@2.1.0"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "github.com/jackc/pgproto3/v2",
+      "version": "2.1.0"
+    },
+    {
+      "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:N/A:H",
+      "alternativeIds": [],
+      "creationTime": "2021-07-07T12:48:54.172023Z",
+      "credit": [
+        "Unknown"
+      ],
+      "cvssScore": 5.3,
+      "description": "## Overview\n[github.com/jackc/pgproto3/v2](https://pkg.go.dev/github.com/jackc/pgproto3/v2) is an encoder and decoder of the PostgreSQL wire protocol version 3.\n\nAffected versions of this package are vulnerable to Denial of Service (DoS). Due to not limiting or validating the `StartupMessage` length, a malicious user can send an overwhelmingly large `StartupMessage` which could cause a DoS.\r\nThis is only an issue when directly used as a component of a PostgreSQL protocol server such as a proxy or load balancer.\n\n## Details\n\nDenial of Service (DoS) describes a family of attacks, all aimed at making a system inaccessible to its intended and legitimate users.\n\nUnlike other vulnerabilities, DoS attacks usually do not aim at breaching security. Rather, they are focused on making websites and services unavailable to genuine users resulting in downtime.\n\nOne popular Denial of Service vulnerability is DDoS (a Distributed Denial of Service), an attack that attempts to clog network pipes to the system by generating a large volume of traffic from many machines.\n\nWhen it comes to open source libraries, DoS vulnerabilities allow attackers to trigger such a crash or crippling of the service by using a flaw either in the application code or from the use of open source libraries.\n\nTwo common types of DoS vulnerabilities:\n\n* High CPU/Memory Consumption- An attacker sending crafted requests that could cause the system to take a disproportionate amount of time to process. For example, [commons-fileupload:commons-fileupload](SNYK-JAVA-COMMONSFILEUPLOAD-30082).\n\n* Crash - An attacker sending crafted requests that could cause the system to crash. For Example,  [npm `ws` package](https://snyk.io/vuln/npm:ws:20171108)\n\n## Remediation\nUpgrade `github.com/jackc/pgproto3/v2` to version 2.1.1 or higher.\n## References\n- [GitHub Commit](https://github.com/jackc/pgproto3/commit/2d3823838e54632bd4a3c85fb174f9c6fd64b107)\n",
+      "disclosureTime": "2021-07-07T12:16:30Z",
+      "exploit": "Not Defined",
+      "fixedIn": [
+        "2.1.1"
+      ],
+      "functions": [],
+      "functions_new": [],
+      "id": "SNYK-GOLANG-GITHUBCOMJACKCPGPROTO3V2-1316251",
+      "identifiers": {
+        "CVE": [],
+        "CWE": [
+          "CWE-400"
+        ]
+      },
+      "language": "golang",
+      "modificationTime": "2021-07-22T13:57:21.265995Z",
+      "moduleName": "github.com/jackc/pgproto3/v2",
+      "packageManager": "golang",
+      "packageName": "github.com/jackc/pgproto3/v2",
+      "patches": [],
+      "proprietary": false,
+      "publicationTime": "2021-07-22T13:57:21.498730Z",
+      "references": [
+        {
+          "title": "GitHub Commit",
+          "url": "https://github.com/jackc/pgproto3/commit/2d3823838e54632bd4a3c85fb174f9c6fd64b107"
+        }
+      ],
+      "semver": {
+        "hashesRange": [
+          "<v2.1.1"
+        ],
+        "vulnerable": [
+          "<2.1.1"
+        ],
+        "vulnerableHashes": [
+          "8d43b38287d2efd59774e43b80ad3bbb7ca33b54",
+          "c6aef151817d0b6deb9c09847bb368b93dd3292f",
+          "e6b823d64953284cfbc874de358700902129cdae",
+          "66af2227c0d5c1d7af2412ddaebb04e0f974ee48",
+          "835cf1b0689d054f58d82f3970d59abae56178dc",
+          "bf3a27ae3f6edf9a05411024c4c789110c5b4997",
+          "a24d764440ff7448d32302091ae873884c93dd88",
+          "f225b3d4a1d815e81ad1c37cc95e92be4dfad253",
+          "1c20e7d36efaac58ececd18182685740c199182a",
+          "c116219b62db0c6cd4f646fd66a94b529020fc6d",
+          "d6312305ae92ccfb03cc100a343377a1bba84687",
+          "7c9e8407262f7bfb750aef36c3e49bbff6596d35",
+          "b3d0cbd0e6ca13ccf6f787d381e1b008ba736d21",
+          "a90ef7ed5b85de58f81c707bbd3d75720b47e6c3",
+          "9b6a681f50bf8aa2372c54523d64346b1a35d46a",
+          "b1934ad4c27caf51c362c064469e84b77e6a3018",
+          "eb9fc6e7a5ddeb45c286ff0e1954610bde8e266d",
+          "97a0ac4ddc3f3071c9ade572666ca8fee2dd171e",
+          "d25abf56747f299c190301717e7f022b7e78dbbb",
+          "b2a540ca814e2103bdb45188625a035e2ef3f6b6",
+          "a340d5f15f5d75eb0cc1f42fdd9996f666dc3224",
+          "e45a42c7efeeabc38dc4e4bbab834cbdecd93bec",
+          "eca1e51822f3ebd8f48f62029d3e32f931d32c32",
+          "ba924e5715ad0b06cf1e1ddcc343ded6e9420cf4",
+          "4c03ce451f299969fd0fff6212e1f1e696b0f523",
+          "18e7e777be8bcae5c1bc24d4fb86f5d497012575",
+          "76538434cf13478c1e52d991f5d707430bdb6828",
+          "7746f223e058383856c7cd5635f5ac06f8e1aa25",
+          "5847a2671a7407b087cec47dd6786a10dfae5781",
+          "80edb27deed6fb956c714b847b0a798baa7a4ed6",
+          "2bc8f2e6afa5b2c92854cfff6e025fcadcd07fb1",
+          "72288731fc46451324dc6f32d8deb5fee3bf849c",
+          "5f39bbaf35772562b62214493b9d56b9f59439f4",
+          "2acb7b6d4e0b4478597bc19bacf52ea6033314e0",
+          "4e2900b774649cbc58686ac047bf84f54aff4e18",
+          "6677e2430fd219d3765c1b181cf120afcd583b13",
+          "6d0b4c45e4183bbd69ca91bba3e2bd1b1854761b",
+          "127e9976962da24c9da3ec6cf97b5191aa88bebf",
+          "fede0ce5d6582beb0dfd3785d5e10e00a438dd68",
+          "440fbf158199b9de56000f1fee77cf8c0ee59b47",
+          "7bd9b776cd753ee5b13adc4872858dd2be4fe650",
+          "64b1ecf96fbb8a9824e96a77be94bfeaaf476a6e",
+          "0d1ceed7a6902fbf9ae6c0c43f00174400547d5d",
+          "ffa9ff221392368427bf369ced0a3c104bc37c02",
+          "439ea11d4737a38ab70bfadd8218d15ff7967909",
+          "1213b6977451a98e03ac7db11dbc41e52f08154b",
+          "b9d0da5558b1daaf359e39117f7904fc80d1ab64",
+          "595780be0f9f581451a23a5151b77f782202ad72",
+          "4acc0f54c6ba565535ed46a21891b9c9f377be11",
+          "3443d78a7305cbe045919f97395d92a7b2ae4cd7",
+          "bb06e6b3ff87b1433242ae482d677bf3f6fcd176",
+          "61d43869314ff91cd05d38edff698f18ba5d06f4",
+          "de9bb7e6d8ef0133ee19ce46985e140a863b163f",
+          "c34a8731b6a6e347de08f8326371255ab2d7da0f",
+          "76e904a5a4549a8f572b8980a86d6b9fc9c783af",
+          "2799a6e9a6b9c6b4211e72a8f3fee18280d29b6c",
+          "08088ecf9a92d8ba11a0784f7ff093bd5dfde1bd",
+          "9c2c389e06738fc2fb5e3c15b5d51b125435b5a0",
+          "8e404a02a32e9cc442175688667538ee09ef84ba",
+          "80f2cbce255e0b0dc138baae0c50a7ce755579b4",
+          "eff55451cfd12e893e19a0120edd519be33a6581",
+          "28c20e93c0f5d81d5e2f324ac81a1dc0ab8649a4",
+          "1ba5dcbe01a089d1f2bd3822e7bc7a0c913c44cc",
+          "432c2951c711384a18995a40538a7450dcd0c1e5",
+          "38671ea10678734cddfabb210318a6e84f49032a",
+          "88b6398594fc9aa6abeae5dc4ddb453cf08b76b9",
+          "16176b5151770608f202298776016b427a1ddcfa"
+        ]
+      },
+      "severity": "medium",
+      "severityWithCritical": "medium",
+      "socialTrendAlert": false,
+      "title": "Denial of Service (DoS)",
+      "from": [
+        "github.com/valocode/entgo-poc@0.0.0",
+        "github.com/jackc/pgx/v4/stdlib@4.11.0",
+        "github.com/jackc/pgx/v4@4.11.0",
+        "github.com/jackc/pgconn/stmtcache@1.8.1",
+        "github.com/jackc/pgconn@1.8.1",
+        "github.com/jackc/pgproto3/v2@2.1.0"
+      ],
+      "upgradePath": [],
+      "isUpgradable": false,
+      "isPatchable": false,
+      "name": "github.com/jackc/pgproto3/v2",
+      "version": "2.1.0"
+    }
+  ],
+  "ok": false,
+  "dependencyCount": 324,
+  "org": "nate-droid",
+  "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.21.5\nignore: {}\npatch: {}\n",
+  "isPrivate": true,
+  "licensesPolicy": {
+    "severities": {},
+    "orgLicenseRules": {
+      "AGPL-1.0": {
+        "licenseType": "AGPL-1.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "AGPL-3.0": {
+        "licenseType": "AGPL-3.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "Artistic-1.0": {
+        "licenseType": "Artistic-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "Artistic-2.0": {
+        "licenseType": "Artistic-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "CDDL-1.0": {
+        "licenseType": "CDDL-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "CPOL-1.02": {
+        "licenseType": "CPOL-1.02",
+        "severity": "high",
+        "instructions": ""
+      },
+      "EPL-1.0": {
+        "licenseType": "EPL-1.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "GPL-2.0": {
+        "licenseType": "GPL-2.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "GPL-3.0": {
+        "licenseType": "GPL-3.0",
+        "severity": "high",
+        "instructions": ""
+      },
+      "LGPL-2.0": {
+        "licenseType": "LGPL-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "LGPL-2.1": {
+        "licenseType": "LGPL-2.1",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "LGPL-3.0": {
+        "licenseType": "LGPL-3.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MPL-1.1": {
+        "licenseType": "MPL-1.1",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MPL-2.0": {
+        "licenseType": "MPL-2.0",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "MS-RL": {
+        "licenseType": "MS-RL",
+        "severity": "medium",
+        "instructions": ""
+      },
+      "SimPL-2.0": {
+        "licenseType": "SimPL-2.0",
+        "severity": "high",
+        "instructions": ""
+      }
+    }
+  },
+  "packageManager": "gomodules",
+  "ignoreSettings": null,
+  "summary": "4 vulnerable dependency paths",
+  "filesystemPolicy": false,
+  "filtered": {
+    "ignore": [],
+    "patch": []
+  },
+  "uniqueCount": 1,
+  "targetFile": "go.mod",
+  "projectName": "github.com/valocode/entgo-poc",
+  "displayTargetFile": "go.mod",
+  "path": "/Users/nathanielham/Projects/bubbly-v2/valocode/entgo-poc"
+}
