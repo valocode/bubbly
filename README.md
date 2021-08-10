@@ -7,6 +7,7 @@
 [![Mozilla Public License Version 2.0](https://img.shields.io/github/license/valocode/bubbly?color=brightgreen&label=License)](https://opensource.org/licenses/MPL-2.0)
 [![Bubbly on Twitter](https://img.shields.io/badge/Follow-bubblydotdev-blue.svg?style=flat&logo=twitter)](https://twitter.com/intent/follow?screen_name=bubblydotdev)
 
+> :warning: **Bubbly Rewrite In Porgress**: Following feedback from several pilots we are making very significant changes to bubbly and will release a new version. Due date is beginning of September 2021... so stay tuned!
 
 Bubbly emerged from a need that many lean software teams practicing Continuous Integration and Delivery have: the need to be better performers. The idea is quite simple: build a model that can capture all the metrics that you care about, extract data from any tool in your process, and use those metrics to drive better and more automated decisions.
 
