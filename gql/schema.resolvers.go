@@ -33,11 +33,11 @@ func (r *releaseResolver) Licenses(ctx context.Context, obj *ent.Release) ([]*en
 }
 
 func (r *cVEResolver) Components(ctx context.Context, obj *ent.CVE, first *int, last *int, where *ent.ComponentWhereInput, orderBy *ent.ComponentOrder) ([]*ent.Component, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.QueryComponents().Filter(ctx, first, last, orderBy, where)
 }
 
 func (r *cVEResolver) Vulnerabilities(ctx context.Context, obj *ent.CVE, first *int, last *int, where *ent.VulnerabilityWhereInput) ([]*ent.Vulnerability, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.QueryVulnerabilities().Filter(ctx, first, last, nil, where)
 }
 
 func (r *cVEResolver) Rules(ctx context.Context, obj *ent.CVE, first *int, last *int, where *ent.CVERuleWhereInput, orderBy *ent.CVERuleOrder) ([]*ent.CVERule, error) {
@@ -121,7 +121,7 @@ func (r *componentResolver) Uses(ctx context.Context, obj *ent.Component, first 
 }
 
 func (r *componentUseResolver) Scans(ctx context.Context, obj *ent.ComponentUse, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.QueryScans().Filter(ctx, first, last, orderBy, where)
 }
 
 func (r *licenseResolver) Components(ctx context.Context, obj *ent.License, first *int, last *int, where *ent.ComponentWhereInput, orderBy *ent.ComponentOrder) ([]*ent.Component, error) {
@@ -133,7 +133,7 @@ func (r *licenseResolver) Components(ctx context.Context, obj *ent.License, firs
 }
 
 func (r *licenseResolver) Uses(ctx context.Context, obj *ent.License, first *int, last *int, where *ent.LicenseUseWhereInput) ([]*ent.LicenseUse, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.QueryUses().Filter(ctx, first, last, nil, where)
 }
 
 func (r *projectResolver) Repos(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error) {

@@ -34,6 +34,14 @@ func (cc *ComponentCreate) SetVendor(s string) *ComponentCreate {
 	return cc
 }
 
+// SetNillableVendor sets the "vendor" field if the given value is not nil.
+func (cc *ComponentCreate) SetNillableVendor(s *string) *ComponentCreate {
+	if s != nil {
+		cc.SetVendor(*s)
+	}
+	return cc
+}
+
 // SetVersion sets the "version" field.
 func (cc *ComponentCreate) SetVersion(s string) *ComponentCreate {
 	cc.mutation.SetVersion(s)
@@ -46,9 +54,25 @@ func (cc *ComponentCreate) SetDescription(s string) *ComponentCreate {
 	return cc
 }
 
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cc *ComponentCreate) SetNillableDescription(s *string) *ComponentCreate {
+	if s != nil {
+		cc.SetDescription(*s)
+	}
+	return cc
+}
+
 // SetURL sets the "url" field.
 func (cc *ComponentCreate) SetURL(s string) *ComponentCreate {
 	cc.mutation.SetURL(s)
+	return cc
+}
+
+// SetNillableURL sets the "url" field if the given value is not nil.
+func (cc *ComponentCreate) SetNillableURL(s *string) *ComponentCreate {
+	if s != nil {
+		cc.SetURL(*s)
+	}
 	return cc
 }
 
@@ -108,6 +132,7 @@ func (cc *ComponentCreate) Save(ctx context.Context) (*Component, error) {
 		err  error
 		node *Component
 	)
+	cc.defaults()
 	if len(cc.hooks) == 0 {
 		if err = cc.check(); err != nil {
 			return nil, err
@@ -165,6 +190,14 @@ func (cc *ComponentCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (cc *ComponentCreate) defaults() {
+	if _, ok := cc.mutation.Vendor(); !ok {
+		v := component.DefaultVendor
+		cc.mutation.SetVendor(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (cc *ComponentCreate) check() error {
 	if _, ok := cc.mutation.Name(); !ok {
@@ -178,33 +211,12 @@ func (cc *ComponentCreate) check() error {
 	if _, ok := cc.mutation.Vendor(); !ok {
 		return &ValidationError{Name: "vendor", err: errors.New(`ent: missing required field "vendor"`)}
 	}
-	if v, ok := cc.mutation.Vendor(); ok {
-		if err := component.VendorValidator(v); err != nil {
-			return &ValidationError{Name: "vendor", err: fmt.Errorf(`ent: validator failed for field "vendor": %w`, err)}
-		}
-	}
 	if _, ok := cc.mutation.Version(); !ok {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "version"`)}
 	}
 	if v, ok := cc.mutation.Version(); ok {
 		if err := component.VersionValidator(v); err != nil {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "version": %w`, err)}
-		}
-	}
-	if _, ok := cc.mutation.Description(); !ok {
-		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "description"`)}
-	}
-	if v, ok := cc.mutation.Description(); ok {
-		if err := component.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "description": %w`, err)}
-		}
-	}
-	if _, ok := cc.mutation.URL(); !ok {
-		return &ValidationError{Name: "url", err: errors.New(`ent: missing required field "url"`)}
-	}
-	if v, ok := cc.mutation.URL(); ok {
-		if err := component.URLValidator(v); err != nil {
-			return &ValidationError{Name: "url", err: fmt.Errorf(`ent: validator failed for field "url": %w`, err)}
 		}
 	}
 	return nil
@@ -348,6 +360,7 @@ func (ccb *ComponentCreateBulk) Save(ctx context.Context) ([]*Component, error) 
 	for i := range ccb.builders {
 		func(i int, root context.Context) {
 			builder := ccb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ComponentMutation)
 				if !ok {

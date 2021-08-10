@@ -162,10 +162,10 @@ var (
 	ComponentColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
-		{Name: "vendor", Type: field.TypeString, Size: 2147483647},
+		{Name: "vendor", Type: field.TypeString, Size: 2147483647, Default: ""},
 		{Name: "version", Type: field.TypeString, Size: 2147483647},
-		{Name: "description", Type: field.TypeString, Size: 2147483647},
-		{Name: "url", Type: field.TypeString, Size: 2147483647},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "url", Type: field.TypeString, Nullable: true, Size: 2147483647},
 	}
 	// ComponentTable holds the schema information for the "component" table.
 	ComponentTable = &schema.Table{
@@ -257,6 +257,13 @@ var (
 		Name:       "license",
 		Columns:    LicenseColumns,
 		PrimaryKey: []*schema.Column{LicenseColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "license_spdx_id",
+				Unique:  true,
+				Columns: []*schema.Column{LicenseColumns[1]},
+			},
+		},
 	}
 	// LicenseUseColumns holds the columns for the "license_use" table.
 	LicenseUseColumns = []*schema.Column{

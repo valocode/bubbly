@@ -4061,9 +4061,22 @@ func (m *ComponentMutation) OldDescription(ctx context.Context) (v string, err e
 	return oldValue.Description, nil
 }
 
+// ClearDescription clears the value of the "description" field.
+func (m *ComponentMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[component.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *ComponentMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[component.FieldDescription]
+	return ok
+}
+
 // ResetDescription resets all changes to the "description" field.
 func (m *ComponentMutation) ResetDescription() {
 	m.description = nil
+	delete(m.clearedFields, component.FieldDescription)
 }
 
 // SetURL sets the "url" field.
@@ -4097,9 +4110,22 @@ func (m *ComponentMutation) OldURL(ctx context.Context) (v string, err error) {
 	return oldValue.URL, nil
 }
 
+// ClearURL clears the value of the "url" field.
+func (m *ComponentMutation) ClearURL() {
+	m.url = nil
+	m.clearedFields[component.FieldURL] = struct{}{}
+}
+
+// URLCleared returns if the "url" field was cleared in this mutation.
+func (m *ComponentMutation) URLCleared() bool {
+	_, ok := m.clearedFields[component.FieldURL]
+	return ok
+}
+
 // ResetURL resets all changes to the "url" field.
 func (m *ComponentMutation) ResetURL() {
 	m.url = nil
+	delete(m.clearedFields, component.FieldURL)
 }
 
 // AddCfeIDs adds the "cves" edge to the CVE entity by ids.
@@ -4409,7 +4435,14 @@ func (m *ComponentMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ComponentMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(component.FieldDescription) {
+		fields = append(fields, component.FieldDescription)
+	}
+	if m.FieldCleared(component.FieldURL) {
+		fields = append(fields, component.FieldURL)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -4422,6 +4455,14 @@ func (m *ComponentMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ComponentMutation) ClearField(name string) error {
+	switch name {
+	case component.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case component.FieldURL:
+		m.ClearURL()
+		return nil
+	}
 	return fmt.Errorf("unknown Component nullable field %s", name)
 }
 

@@ -26,7 +26,7 @@ func (Component) Fields() []ent.Field {
 			Annotations(
 				entgql.OrderField("name"),
 			),
-		field.Text("vendor").NotEmpty().
+		field.Text("vendor").Default("").
 			Annotations(
 				entgql.OrderField("vendor"),
 			),
@@ -34,8 +34,8 @@ func (Component) Fields() []ent.Field {
 			Annotations(
 				entgql.OrderField("version"),
 			),
-		field.Text("description").NotEmpty(),
-		field.Text("url").NotEmpty(),
+		field.Text("description").Optional(),
+		field.Text("url").Optional(),
 	}
 }
 

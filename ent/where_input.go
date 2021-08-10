@@ -1882,6 +1882,8 @@ type ComponentWhereInput struct {
 	DescriptionContains     *string  `json:"descriptionContains,omitempty"`
 	DescriptionHasPrefix    *string  `json:"descriptionHasPrefix,omitempty"`
 	DescriptionHasSuffix    *string  `json:"descriptionHasSuffix,omitempty"`
+	DescriptionIsNil        bool     `json:"descriptionIsNil,omitempty"`
+	DescriptionNotNil       bool     `json:"descriptionNotNil,omitempty"`
 	DescriptionEqualFold    *string  `json:"descriptionEqualFold,omitempty"`
 	DescriptionContainsFold *string  `json:"descriptionContainsFold,omitempty"`
 
@@ -1897,6 +1899,8 @@ type ComponentWhereInput struct {
 	URLContains     *string  `json:"urlContains,omitempty"`
 	URLHasPrefix    *string  `json:"urlHasPrefix,omitempty"`
 	URLHasSuffix    *string  `json:"urlHasSuffix,omitempty"`
+	URLIsNil        bool     `json:"urlIsNil,omitempty"`
+	URLNotNil       bool     `json:"urlNotNil,omitempty"`
 	URLEqualFold    *string  `json:"urlEqualFold,omitempty"`
 	URLContainsFold *string  `json:"urlContainsFold,omitempty"`
 
@@ -2132,6 +2136,12 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 	if i.DescriptionHasSuffix != nil {
 		predicates = append(predicates, component.DescriptionHasSuffix(*i.DescriptionHasSuffix))
 	}
+	if i.DescriptionIsNil {
+		predicates = append(predicates, component.DescriptionIsNil())
+	}
+	if i.DescriptionNotNil {
+		predicates = append(predicates, component.DescriptionNotNil())
+	}
 	if i.DescriptionEqualFold != nil {
 		predicates = append(predicates, component.DescriptionEqualFold(*i.DescriptionEqualFold))
 	}
@@ -2170,6 +2180,12 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 	}
 	if i.URLHasSuffix != nil {
 		predicates = append(predicates, component.URLHasSuffix(*i.URLHasSuffix))
+	}
+	if i.URLIsNil {
+		predicates = append(predicates, component.URLIsNil())
+	}
+	if i.URLNotNil {
+		predicates = append(predicates, component.URLNotNil())
 	}
 	if i.URLEqualFold != nil {
 		predicates = append(predicates, component.URLEqualFold(*i.URLEqualFold))
