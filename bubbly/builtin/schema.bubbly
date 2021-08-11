@@ -142,40 +142,53 @@ table "release" {
     join "project" { unique = true }
 }
 
+table "subrelease" {
+    join "release" {
+        alias = "parent"
+    }
+
+    join "release" {}
+}
+
+table "release_commit" {
+    join "release" {}
+    join "commit" {}
+}
+
 // release_item is used to represent what we are releasing in a single release
 // and can be of different types: git, artifact or release.
 // Based on the type it should have a join to one of those tables
-table "release_item" {
+// table "release_item" {
 
-    // type should be one of git (commit), artifact or release
-    field "type" {
-        type = string
-    }
+//     // type should be one of git (commit), artifact or release
+//     field "type" {
+//         type = string
+//     }
 
-    // Join to release. A release can have one or more release_items.
-    // A release_item can belong to only one release, because it can have
-    // criteria associated with it, which are specific to a release
-    join "release" { }
+//     // Join to release. A release can have one or more release_items.
+//     // A release_item can belong to only one release, because it can have
+//     // criteria associated with it, which are specific to a release
+//     join "release" { }
 
-    // Join to the different item tables with a one-to-one relationship.
-    // Only at most and at least one of these joins should exist, based on the
-    // "type" field
-    join "commit" {
-        single = true
-        unique = true
-    }
-    join "artifact" {
-        single = true
-        unique = true
-    }
-    // TODO: this is a problem because this creates a second join from release_item
-    // to release... It could be solved by adding an alias
-    // join "release" {
-    //     alias = "item_release"
-    //     single = true
-    //     unique = true
-    // }
-}
+//     // Join to the different item tables with a one-to-one relationship.
+//     // Only at most and at least one of these joins should exist, based on the
+//     // "type" field
+//     join "commit" {
+//         single = true
+//         unique = true
+//     }
+//     join "artifact" {
+//         single = true
+//         unique = true
+//     }
+//     // TODO: this is a problem because this creates a second join from release_item
+//     // to release... It could be solved by adding an alias
+//     // join "release" {
+//     //     alias = "item_release"
+//     //     single = true
+//     //     unique = true
+//     // }
+// }
 
 // release_entry is used to record/log an event performed on a release,
 // such as running of unit tests, or the creation of an artifact.
@@ -183,33 +196,55 @@ table "release_item" {
 // from the running of that event.
 // It has no unique fields, as release_entries should be append-only
 table "release_entry" {
-    // TODO: change to id?? should be "camel_case" naming... could provide a
-    // friendly name alternative?
     field "name" {
         type = string
     }
-    field "result" {
-        type = bool
+    // release_entry can be of different types, e.g. artifact, deploy, criteria
+    field "type" {
+        // required = true
+        type = string
     }
-    field "reason" {
+    field "time" {
+        // required = true
         type = string
     }
 
-    // TODO: what other fields do we want to store? Probably something saying
-    // *why* the criteria failed (a reason) and also perhaps the GraphQL
-    // query used so that we could fetch the data? E.g.
-    // field "query" { type = string}
-    // field "reason" { type = string}
+    join "criteria_result" { single = true }
+    join "artifact" { single = true }
+    join "deploy_env" { single = true }
 
     // Join to a release so that we can get all the entries for a release
     // (entry log)
     join "release" { }
-    // A release does not always have a release_criteria for each release_entry,
-    // and may have multiple release_criteria in case multiple entries have been
-    // logged
-    join "release_criteria" { }
-    // Join on the _resource criteria that created this entry release_entry
-    join "_resource" { }
+}
+
+table "criteria_result" {
+    // Criteria specific
+    field "result" {
+        type = bool
+    }
+    // Criteria specific
+    field "reason" {
+        type = string
+    }
+}
+
+table "deploy_env" {
+    // staging, prod, whatever
+    field "env" {
+        type = string
+    }
+}
+
+table "release_artifact" {
+    field "name" {
+        type = string
+        unique = true
+    }
+    join "release" {
+        unique = true
+    }
+    join "artifact" {}
 }
 
 table "release_stage" {
@@ -224,11 +259,13 @@ table "release_stage" {
 }
 
 table "release_criteria" {
-    field "entry_name" {
+    field "name" {
         type = string
         unique = true
     }
     join "release_stage" { }
+    // The result of evaluating the criteria creates a criteria result
+    join "criteria_result" {}
     // A release_criteria is unique per release
     join "release" { unique = true }
 }

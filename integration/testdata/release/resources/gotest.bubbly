@@ -77,9 +77,3 @@ resource "pipeline" "gotest" {
     }
   }
 }
-
-// resource "run" "gotest" {
-//     spec {
-//         resource = "pipeline/gotest"
-//     }
-// }

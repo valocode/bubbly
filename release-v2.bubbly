@@ -1,0 +1,73 @@
+
+release {
+    project = "bubbly"
+    git {}
+
+    dependency {
+        project = "bubbly"
+        release {
+            name = "github.com/valocode/bubbly"
+            version = "1.2.3" 
+        }
+        // OR
+        artifact {
+            location = "docker://...."
+        }
+    }
+
+
+    artifact {
+        name = "bubbly"
+        location = "docker://...."
+    }
+
+
+    // stage "Artifact" {
+    //     criteria "docker" {
+    //         artifact {
+    //             name = "bubbly"
+    //             location = "docker://valocode/bubbly:latest"
+    //         }
+    //     }
+    // }
+    stage "Security" {
+        criteria "gosec" {
+            run "pipeline/gosec" {
+                input "file" {
+                    value = "./gosec.json"
+                }
+            }
+            run "criteria/code-issue-high-severity" {
+                input "tool" {
+                    value = "gosec"
+                }
+            }
+        }
+    }
+    stage "Testing" {
+        criteria "unit_test" {
+            run "pipeline/gotest" {
+                input "file" {
+                    value = "./gotest-unit.json"
+                }
+            }
+            run "criteria/test-cases-pass" {
+                input "tool" {
+                    value = "gotest"
+                }
+            }
+        }
+        criteria "integration_test" {
+            run "pipeline/gotest" {
+                input "file" {
+                    value = "./gotest-integration.json"
+                }
+            }
+            run "criteria/test-cases-pass" {
+                input "tool" {
+                    value = "gotest"
+                }
+            }
+        }
+    }
+}
