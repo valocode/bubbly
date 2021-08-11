@@ -1,5 +1,8 @@
 BIN=./build/bubbly
 
+# env vars for compilation
+export CGO_ENABLED=0
+
 # env vars for running tests
 export BUBBLY_HOST=localhost
 export BUBBLY_PORT=8111
@@ -8,11 +11,16 @@ export POSTGRES_ADDR=postgres:5432
 export POSTGRES_USER=postgres
 export POSTGRES_DATABASE=bubbly
 
+# Current commit id and (if set) the tag are compiled into the Bubbly binary
+sha ::= $(shell git rev-parse HEAD)
+tag ::= $(shell git name-rev --tags --name-only $(sha))
+pre ::= github.com/valocode/bubbly
+
 all: build
 
 .PHONY: build
 build:
-	go build -o ${BIN}
+	go build -o ${BIN} -ldflags "-X '${pre}/env.sha1=${sha}' -X '${pre}/env.tag=${tag}'"
 
 .PHONY: clean
 clean:
@@ -45,7 +53,8 @@ test-integration:
 
 .PHONY: dev
 dev:
-	docker-compose up --build --abort-on-container-exit --remove-orphans
+	docker-compose build --build-arg SHA=${sha} --build-arg TAG=${tag}
+	docker-compose up --abort-on-container-exit --remove-orphans
 
 # Run this target in a separate terminal once `dev` is up to get Postgres console access
 psql:
@@ -60,4 +69,3 @@ cleanup:
 # There are some caveats, but the following target should work:
 act: 
 	act -P ubuntu-latest=golang:latest --env-file act.env -j simple
-	

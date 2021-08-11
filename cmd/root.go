@@ -9,6 +9,7 @@ import (
 	queryCmd "github.com/valocode/bubbly/cmd/query"
 	releaseCmd "github.com/valocode/bubbly/cmd/release"
 	schemaCmd "github.com/valocode/bubbly/cmd/schema"
+	versionCmd "github.com/valocode/bubbly/cmd/version"
 	"github.com/valocode/bubbly/cmd/topics"
 	"github.com/valocode/bubbly/cmd/util"
 	"github.com/valocode/bubbly/config"
@@ -62,6 +63,7 @@ func initCommands(bCtx *env.BubblyContext, cmd *cobra.Command) {
 	cmd.AddCommand(releaseCmd.New(bCtx))
 	cmd.AddCommand(queryCmd.New(bCtx))
 	cmd.AddCommand(schemaCmd.NewCmdSchema(bCtx))
+	cmd.AddCommand(versionCmd.New(bCtx))
 }
 
 func initFlags(bCtx *env.BubblyContext, cmd *cobra.Command) {
