@@ -72,6 +72,106 @@ var BuiltinTables = []core.Table{
 		),
 	),
 	// #######################################
+	// RELEASE_STAGE
+	// #######################################
+	table("release_stage",
+		fields(
+			field("name", cty.String, true),
+		),
+		joins(
+			join("release", false, true),
+		),
+	),
+	// #######################################
+	// RELEASE_CRITERIA
+	// #######################################
+	table("release_criteria",
+		fields(
+			field("entry_name", cty.String, true),
+		),
+		joins(
+			join("release_stage", false, false),
+			join("release", false, true),
+		),
+	),
+	// #######################################
+	// CODE_SCAN
+	// #######################################
+	table("code_scan",
+		fields(
+			field("tool", cty.String, false),
+		),
+		joins(
+			join("release", false, false),
+			join("lifecycle", true, false),
+		),
+	),
+	// #######################################
+	// LIFECYCLE
+	// #######################################
+	table("lifecycle",
+		fields(
+			field("status", cty.String, false),
+		),
+		joins(),
+	),
+	// #######################################
+	// LIFECYCLE_ENTRY
+	// #######################################
+	table("lifecycle_entry",
+		fields(
+			field("author", cty.String, false),
+			field("message", cty.String, false),
+			field("signed", cty.Bool, false),
+		),
+		joins(
+			join("lifecycle", false, false),
+		),
+	),
+	// #######################################
+	// TEST_RUN
+	// #######################################
+	table("test_run",
+		fields(
+			field("tool", cty.String, false),
+			field("type", cty.String, false),
+			field("name", cty.String, false),
+			field("elapsed", cty.Number, false),
+			field("result", cty.Bool, false),
+		),
+		joins(
+			join("release", false, false),
+			join("lifecycle", true, false),
+		),
+	),
+	// #######################################
+	// TEST_CASE
+	// #######################################
+	table("test_case",
+		fields(
+			field("name", cty.String, false),
+			field("result", cty.Bool, false),
+			field("message", cty.String, false),
+		),
+		joins(
+			join("test_run", false, false),
+		),
+	),
+	// #######################################
+	// CODE_ISSUE
+	// #######################################
+	table("code_issue",
+		fields(
+			field("id", cty.String, false),
+			field("message", cty.String, false),
+			field("severity", cty.String, false),
+			field("type", cty.String, false),
+		),
+		joins(
+			join("code_scan", false, false),
+		),
+	),
+	// #######################################
 	// PROJECT
 	// #######################################
 	table("project",
@@ -140,81 +240,5 @@ var BuiltinTables = []core.Table{
 			field("location", cty.String, false),
 		),
 		joins(),
-	),
-	// #######################################
-	// RELEASE_STAGE
-	// #######################################
-	table("release_stage",
-		fields(
-			field("name", cty.String, true),
-		),
-		joins(
-			join("release", false, true),
-		),
-	),
-	// #######################################
-	// RELEASE_CRITERIA
-	// #######################################
-	table("release_criteria",
-		fields(
-			field("entry_name", cty.String, true),
-		),
-		joins(
-			join("release_stage", false, false),
-			join("release", false, true),
-		),
-	),
-	// #######################################
-	// CODE_SCAN
-	// #######################################
-	table("code_scan",
-		fields(
-			field("tool", cty.String, false),
-		),
-		joins(
-			join("release", false, false),
-		),
-	),
-	// #######################################
-	// CODE_ISSUE
-	// #######################################
-	table("code_issue",
-		fields(
-			field("id", cty.String, false),
-			field("message", cty.String, false),
-			field("severity", cty.String, false),
-			field("type", cty.String, false),
-		),
-		joins(
-			join("code_scan", false, false),
-		),
-	),
-	// #######################################
-	// TEST_RUN
-	// #######################################
-	table("test_run",
-		fields(
-			field("tool", cty.String, false),
-			field("type", cty.String, false),
-			field("name", cty.String, false),
-			field("elapsed", cty.Number, false),
-			field("result", cty.Bool, false),
-		),
-		joins(
-			join("release", false, false),
-		),
-	),
-	// #######################################
-	// TEST_CASE
-	// #######################################
-	table("test_case",
-		fields(
-			field("name", cty.String, false),
-			field("result", cty.Bool, false),
-			field("message", cty.String, false),
-		),
-		joins(
-			join("test_run", false, false),
-		),
 	),
 }

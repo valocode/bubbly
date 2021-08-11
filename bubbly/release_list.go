@@ -1,11 +1,8 @@
 package bubbly
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
 
-	"github.com/graphql-go/graphql"
 	"github.com/valocode/bubbly/bubbly/builtin"
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
@@ -20,7 +17,7 @@ func ListReleases(bCtx *env.BubblyContext) (*builtin.Release_Wrap, error) {
 		project {
 			name
 		}
-		release_item(filter_on: true) {
+		release_item(not_null: true) {
 			type
 			commit {
 				repo {
@@ -28,9 +25,9 @@ func ListReleases(bCtx *env.BubblyContext) (*builtin.Release_Wrap, error) {
 				}
 			}
 		}
-		release_stage(filter_on: true) {
+		release_stage(not_null: true) {
 			name
-			release_criteria(filter_on: true) {
+			release_criteria(not_null: true) {
 				release_entry {
 					result
 				}
@@ -40,29 +37,14 @@ func ListReleases(bCtx *env.BubblyContext) (*builtin.Release_Wrap, error) {
 }
 	`
 
-	var releases builtin.Release_Wrap
-
 	client, err := client.New(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("error creating bubbly client: %w", err)
 	}
-	bytes, err := client.Query(bCtx, nil, releaseQuery)
+	var releases builtin.Release_Wrap
+	err = client.QueryType(bCtx, nil, releaseQuery, &releases)
 	if err != nil {
-		return nil, fmt.Errorf("error making GraphQL query: %w", err)
+		return nil, fmt.Errorf("error executing GraphQL query: %w", err)
 	}
-
-	var results graphql.Result
-	results.Data = &releases
-	if err := json.Unmarshal(bytes, &results); err != nil {
-		return nil, fmt.Errorf("error unmarshalling GraphQL results: %w", err)
-	}
-	if results.HasErrors() {
-		var msgs []string
-		for _, err := range results.Errors {
-			msgs = append(msgs, err.Message)
-		}
-		return nil, fmt.Errorf("GraphQL query returned errors:\n%s", strings.Join(msgs, "\n\n"))
-	}
-
 	return &releases, nil
 }

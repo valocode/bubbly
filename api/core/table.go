@@ -14,9 +14,9 @@ import (
 // Table is a schema table and defines the relationships (joins), fields,
 // unique constraints, etc
 type Table struct {
-	Name   string       `json:"name"`
-	Fields []TableField `json:"fields"`
-	Joins  []TableJoin  `json:"joins,omitempty"`
+	Name   string                `json:"name"`
+	Fields map[string]TableField `json:"fields"`
+	Joins  []TableJoin           `json:"joins,omitempty"`
 	// Single describes a one-to-one relationship for an implicit join
 	// If a Table is nested within another table it is an implicit join from the
 	// nested Table to the parent Table. Just like joins have properties (like
@@ -77,14 +77,14 @@ func TableFromHCL(hclTable TableHCL) (Table, error) {
 }
 
 // FieldsFromHCL takes fields parsed from HCL and returns a slice of TableField
-func FieldsFromHCL(hclFields []TableFieldHCL) ([]TableField, error) {
-	var fields []TableField
+func FieldsFromHCL(hclFields []TableFieldHCL) (map[string]TableField, error) {
+	var fields = make(map[string]TableField)
 	for _, f := range hclFields {
 		field, err := FieldFromHCL(f)
 		if err != nil {
 			return nil, err
 		}
-		fields = append(fields, field)
+		fields[f.Name] = field
 	}
 	return fields, nil
 }

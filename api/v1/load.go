@@ -77,7 +77,6 @@ func (l *Load) Run(bCtx *env.BubblyContext, ctx *core.ResourceContext) core.Reso
 // load outputs an error if any part of this process fails, nil if
 // the data is successfully POSTed to the bubbly server.
 func (l *Load) load(bCtx *env.BubblyContext, ctx *core.ResourceContext, data core.DataBlocks) error {
-	bCtx.Logger.Debug().Interface("server", bCtx.ServerConfig).Msg("loading to server with configuration")
 
 	c, err := client.New(bCtx)
 	if err != nil {
@@ -90,6 +89,7 @@ func (l *Load) load(bCtx *env.BubblyContext, ctx *core.ResourceContext, data cor
 		return fmt.Errorf("error marshalling data blocks: %w", err)
 	}
 
+	bCtx.Logger.Debug().Int("size", len(bytes)).Msg("loading data to server")
 	err = c.Load(bCtx, ctx.Auth, bytes)
 	if err != nil {
 		return fmt.Errorf("failed to load spec data: %w", err)

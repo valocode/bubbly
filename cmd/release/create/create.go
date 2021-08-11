@@ -66,6 +66,8 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 				return err
 			}
 
+			// Let's be optimistic and set to false in case of failure
+			o.success = true
 			if err := o.run(); err != nil {
 				o.success = false
 				if !o.noFail {

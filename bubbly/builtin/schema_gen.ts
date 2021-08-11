@@ -72,6 +72,114 @@ export interface release_wrap {
 }
 
 // #######################################
+// RELEASE_CRITERIA
+// #######################################
+export interface release_criteria {
+	entry_name?: string;
+	release_stage?: release_stage;
+	release?: release;
+	release_entry?: release_entry[];
+}
+export interface release_criteria_wrap {
+	release_criteria?: release_criteria[];
+}
+
+// #######################################
+// RELEASE_STAGE
+// #######################################
+export interface release_stage {
+	name?: string;
+	release?: release;
+	release_criteria?: release_criteria[];
+}
+export interface release_stage_wrap {
+	release_stage?: release_stage[];
+}
+
+// #######################################
+// CODE_SCAN
+// #######################################
+export interface code_scan {
+	tool?: string;
+	release?: release;
+	lifecycle?: lifecycle;
+	code_issue?: code_issue[];
+}
+export interface code_scan_wrap {
+	code_scan?: code_scan[];
+}
+
+// #######################################
+// LIFECYCLE
+// #######################################
+export interface lifecycle {
+	status?: string;
+	lifecycle_entry?: lifecycle_entry[];
+	code_scan?: code_scan;
+	test_run?: test_run;
+}
+export interface lifecycle_wrap {
+	lifecycle?: lifecycle[];
+}
+
+// #######################################
+// LIFECYCLE_ENTRY
+// #######################################
+export interface lifecycle_entry {
+	author?: string;
+	message?: string;
+	signed?: boolean;
+	lifecycle?: lifecycle;
+}
+export interface lifecycle_entry_wrap {
+	lifecycle_entry?: lifecycle_entry[];
+}
+
+// #######################################
+// TEST_RUN
+// #######################################
+export interface test_run {
+	tool?: string;
+	type?: string;
+	name?: string;
+	elapsed?: number;
+	result?: boolean;
+	test_case?: test_case[];
+	release?: release;
+	lifecycle?: lifecycle;
+}
+export interface test_run_wrap {
+	test_run?: test_run[];
+}
+
+// #######################################
+// TEST_CASE
+// #######################################
+export interface test_case {
+	name?: string;
+	result?: boolean;
+	message?: string;
+	test_run?: test_run;
+}
+export interface test_case_wrap {
+	test_case?: test_case[];
+}
+
+// #######################################
+// CODE_ISSUE
+// #######################################
+export interface code_issue {
+	id?: string;
+	message?: string;
+	severity?: string;
+	type?: string;
+	code_scan?: code_scan;
+}
+export interface code_issue_wrap {
+	code_issue?: code_issue[];
+}
+
+// #######################################
 // PROJECT
 // #######################################
 export interface project {
@@ -89,9 +197,9 @@ export interface project_wrap {
 export interface repo {
 	id?: string;
 	name?: string;
-	project?: project;
 	branch?: branch[];
 	commit?: commit[];
+	project?: project;
 }
 export interface repo_wrap {
 	repo?: repo[];
@@ -102,8 +210,8 @@ export interface repo_wrap {
 // #######################################
 export interface branch {
 	name?: string;
-	repo?: repo;
 	commit?: commit[];
+	repo?: repo;
 }
 export interface branch_wrap {
 	branch?: branch[];
@@ -129,9 +237,9 @@ export interface commit_wrap {
 // #######################################
 export interface release_item {
 	type?: string;
-	release?: release;
 	commit?: commit;
 	artifact?: artifact;
+	release?: release;
 }
 export interface release_item_wrap {
 	release_item?: release_item[];
@@ -148,85 +256,5 @@ export interface artifact {
 }
 export interface artifact_wrap {
 	artifact?: artifact[];
-}
-
-// #######################################
-// RELEASE_STAGE
-// #######################################
-export interface release_stage {
-	name?: string;
-	release?: release;
-	release_criteria?: release_criteria[];
-}
-export interface release_stage_wrap {
-	release_stage?: release_stage[];
-}
-
-// #######################################
-// RELEASE_CRITERIA
-// #######################################
-export interface release_criteria {
-	entry_name?: string;
-	release_entry?: release_entry[];
-	release_stage?: release_stage;
-	release?: release;
-}
-export interface release_criteria_wrap {
-	release_criteria?: release_criteria[];
-}
-
-// #######################################
-// CODE_SCAN
-// #######################################
-export interface code_scan {
-	tool?: string;
-	release?: release;
-	code_issue?: code_issue[];
-}
-export interface code_scan_wrap {
-	code_scan?: code_scan[];
-}
-
-// #######################################
-// CODE_ISSUE
-// #######################################
-export interface code_issue {
-	id?: string;
-	message?: string;
-	severity?: string;
-	type?: string;
-	code_scan?: code_scan;
-}
-export interface code_issue_wrap {
-	code_issue?: code_issue[];
-}
-
-// #######################################
-// TEST_RUN
-// #######################################
-export interface test_run {
-	tool?: string;
-	type?: string;
-	name?: string;
-	elapsed?: number;
-	result?: boolean;
-	release?: release;
-	test_case?: test_case[];
-}
-export interface test_run_wrap {
-	test_run?: test_run[];
-}
-
-// #######################################
-// TEST_CASE
-// #######################################
-export interface test_case {
-	name?: string;
-	result?: boolean;
-	message?: string;
-	test_run?: test_run;
-}
-export interface test_case_wrap {
-	test_case?: test_case[];
 }
 

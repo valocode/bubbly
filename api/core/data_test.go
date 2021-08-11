@@ -32,7 +32,17 @@ func TestJSONData(t *testing.T) {
 				}),
 				"time": cty.CapsuleVal(parser.TimeType, &nowTime),
 			}},
-			Joins: []string{"TestJoin", "DataRef"},
+			Lifecycle: &Lifecycle{
+				Status: "mitigated",
+				Entries: []LifecycleEntry{
+					{
+						Message: "ignore for whatever reason",
+					},
+				},
+			},
+			Policy:        UpdatePolicy,
+			IgnoreNesting: true,
+			Joins:         []string{"TestJoin", "DataRef"},
 		},
 	}
 

@@ -23,7 +23,7 @@ func DecodeExpandBody(body hcl.Body, val interface{}, inputs cty.Value) error {
 	node := dynblock.WalkVariables(body)
 
 	// get the list of variables/traversals that exist
-	traversals := walkVariables(node, reflect.TypeOf(val))
+	traversals := walkVariables(node, reflect.TypeOf(val), nil)
 
 	inputs, diags := processVariables(inputs, traversals)
 	if diags.HasErrors() {

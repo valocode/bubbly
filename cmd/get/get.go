@@ -182,33 +182,6 @@ func (o *GetOptions) Run() error {
 	}
 	o.events = eventWrap.Event
 
-	// // If we should show events, make sure we get the events
-	// if o.events {
-	// 	eventFilter = "last: 20"
-	// }
-
-	// if o.arg == "all" {
-	// 	resourceFilter = ""
-	// } else {
-	// 	if strings.ContainsAny(o.arg, "/") {
-	// 		resourceFilter = "(id: \"" + o.arg + "\")"
-	// 	} else {
-	// 		resourceFilter = "(kind: \"" + o.arg + "\")"
-	// 	}
-	// }
-
-	// query = fmt.Sprintf(`
-	// {
-	// 	_event(%s) {
-	// 		status
-	// 		time
-	// 		error
-	// 		_resource%s {
-	// 			id
-	// 		}
-	// 	}
-	// }`, eventFilter, resourceFilter)
-
 	return nil
 }
 

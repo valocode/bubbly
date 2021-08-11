@@ -48,7 +48,7 @@ func main() {
 	// 4. update the log level of the bubblyContext.Logger
 	// if --debug flag is specified
 
-	if debug, _ := fs.GetBool("debug"); debug {
+	if isDebug, _ := fs.GetBool("debug"); isDebug {
 		if err := bCtx.UpdateLogLevel(zerolog.DebugLevel); err != nil {
 			bCtx.Logger.Info().
 				Err(err).

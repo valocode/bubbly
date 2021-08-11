@@ -234,6 +234,33 @@ table "release_criteria" {
 }
 
 // #############################
+// LIFECYCLE
+// #############################
+
+// Lifecycle table
+table "lifecycle" {
+    field "status" {
+        type = string
+        // TODO: need to implement this
+        // values = ["unresolved", "invalid", "mitigated"]
+        // initial = "unresolved"
+    }
+}
+
+table "lifecycle_entry" {
+    field "author" {
+        type = string
+    }
+    field "message" {
+        type = string
+    }
+    field "signed" {
+        type = bool
+    }
+    join "lifecycle" {}
+}
+
+// #############################
 // CODE_ISSUE
 // #############################
 
@@ -241,7 +268,8 @@ table "code_scan" {
     field "tool" {
         type = string
     }
-    join "release" {}
+    join "release" { }
+    join "lifecycle" { single = true }
 }
 
 table "code_issue" {
@@ -294,4 +322,5 @@ table "test_run" {
     }
 
     join "release" { }
+    join "lifecycle" { single = true }
 }

@@ -34,9 +34,13 @@ func (e *ParserError) Error() string {
 				prevDiag = diag
 				continue
 			}
+			var errMsg string
+
+			errMsg = err.Error()
+			// errMsg += "\nEvalContext:\n"
+			// errMsg += appendEvalContext(diag.EvalContext)
 			// If it's not a duplicate, add it
-			msgs = append(msgs, err.Error())
-			// msgs = append(msgs, fmt.Sprintf("%#v\n", diag.EvalContext.Variables))
+			msgs = append(msgs, errMsg)
 			prevDiag = diag
 			continue
 		}
@@ -44,4 +48,16 @@ func (e *ParserError) Error() string {
 		msgs = append(msgs, err.Error())
 	}
 	return "\n" + strings.Join(msgs, "\n")
+}
+
+func appendEvalContext(eCtx *hcl.EvalContext) string {
+	var errMsg string
+	if eCtx == nil {
+		return ""
+	}
+	errMsg += "\nNext EvalContext Scope:\n"
+	for name, val := range eCtx.Variables {
+		errMsg += name + ": " + val.GoString() + "\n"
+	}
+	return errMsg + appendEvalContext(eCtx.Parent())
 }

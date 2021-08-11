@@ -22,25 +22,168 @@ func (t dataTree) traverse(bCtx *env.BubblyContext, fn visitFn) (core.DataBlocks
 	blocks := core.DataBlocks{}
 	for _, d := range t {
 		if err := visitNode(bCtx, d, fn, &blocks); err != nil {
-			return nil, fmt.Errorf("error occurred when traversing data tree: %w", err)
+			return nil, err
 		}
 	}
-
+	// Reset the tree afterwards (the visited boolean)
+	for _, d := range t {
+		resetDataNode(d)
+	}
 	return blocks, nil
 }
 
-// reset goes over the tree and resets the tree so that it can be traversed again
-func (t dataTree) reset() {
-	for _, n := range t {
-		resetDataNode(n)
-	}
+// prepare performs two main tasks over a dataTree:
+// 1. validates the fields and the joins that they exist in the schema
+// 2. add any "builtin" fields/data-joins that should exist (e.g. handling lifecycle)
+func (t dataTree) prepare(bCtx *env.BubblyContext, schema *SchemaGraph) error {
+	_, err := t.traverse(bCtx, func(bCtx *env.BubblyContext, node *dataNode, blocks *core.DataBlocks) error {
+		// The
+		n, ok := schema.NodeIndex[node.Data.TableName]
+		if !ok {
+			return fmt.Errorf("data block refers to non-existent table %s", node.Data.TableName)
+		}
+		// Assign the scema node to the data node
+		node.SchemaNode = n
+		// Validate the fields fist
+		for field, value := range node.Data.Fields.Values {
+			// Validate the value if it's a data reference
+			if value.Type().IsCapsuleType() {
+				if value.Type() == parser.DataRefType {
+					dref := value.EncapsulatedValue().(*parser.DataRef)
+					dEdge, ok := n.Edges[dref.TableName]
+					if !ok {
+						if n.Table.Name != dref.TableName {
+							return fmt.Errorf("data reference to relationship that does not exist: %s --> %s", n.Table.Name, dref.TableName)
+						}
+					}
+					// Check whether it's the ID field
+					if dref.Field != tableIDField {
+						// If not, check if it's a field in the table
+						if _, ok := dEdge.Node.Table.Fields[dref.Field]; !ok {
+							// As a last resort, the field name may have the join
+							// suffix _id, so remove that and try again
+							foreignField := strings.TrimSuffix(dref.Field, tableJoinSuffix)
+							if _, ok := dEdge.Node.Edges[foreignField]; !ok {
+								return fmt.Errorf("data reference to field that does not exist: %s.%s", dref.TableName, dref.Field)
+							}
+						}
+					}
+				}
+			}
+			// Check whether it's the ID field
+			if field == tableIDField {
+				continue
+			}
+			// Otherwise check all the fields for the table and make sure it's
+			// one of those
+			if _, ok := n.Table.Fields[field]; !ok {
+				if strings.HasSuffix(field, tableJoinSuffix) {
+					joinTable := strings.TrimSuffix(field, tableJoinSuffix)
+					if _, ok := n.Edges[joinTable]; !ok {
+						return fmt.Errorf("foreign key field to un-related table: %s", field)
+					}
+					continue
+				}
+				return fmt.Errorf("field does not exist for data block %s: %s", node.Data.TableName, field)
+			}
+		}
+		// Validate relationships/joins
+		// TODO: is it necessary to validate both parents and children for EVERY
+		// node? Or can we just do one of them?
+		for _, parent := range node.Parents {
+			// Check if it's the same, and refers to itself
+			if parent.Data.TableName == node.Data.TableName {
+				continue
+			}
+			if _, ok := n.Edges[parent.Data.TableName]; !ok {
+				return fmt.Errorf("data joins does not exist in the schema: %s --> %s", n.Table.Name, parent.Data.TableName)
+			}
+		}
+		for _, child := range node.Children {
+			// Check if it's the same, and refers to itself
+			if child.Data.TableName == node.Data.TableName {
+				continue
+			}
+			if _, ok := n.Edges[child.Data.TableName]; !ok {
+				return fmt.Errorf("data joins does not exist in the schema: %s --> %s", child.Data.TableName, n.Table.Name)
+			}
+		}
+		// Check whether an edge to lifecycle exists and that the relationship
+		// is what we expect - that this node "belongs to" lifecycle, meaning this
+		// node should have a lifecycle foreign key field
+		if edge, ok := n.Edges["lifecycle"]; ok && edge.Rel == BelongsTo {
+			var (
+				lifecycle = node.Data.Lifecycle
+				lcStatus  = "unresolved"
+			)
+			if lifecycle != nil {
+				lcStatus = lifecycle.Status
+			}
+			// TODO: rewrite this creating data blocks and calling dataBlocksToNodes
+			nodeContext := map[string]*dataNode{
+				node.Data.TableName: node,
+			}
+			dataBlocks := core.DataBlocks{
+				core.Data{
+					TableName: "lifecycle",
+					Fields: &core.DataFields{Values: map[string]cty.Value{
+						tableIDField: cty.CapsuleVal(parser.DataRefType, &parser.DataRef{
+							TableName: n.Table.Name, Field: "lifecycle" + tableJoinSuffix,
+						}),
+						// TODO: initial value
+						"status": cty.StringVal(lcStatus),
+					}},
+				},
+				core.Data{
+					TableName: n.Table.Name,
+					Fields: &core.DataFields{Values: map[string]cty.Value{
+						// Reference it's own _id field so that we get the correct
+						// record to update
+						tableIDField: cty.CapsuleVal(parser.DataRefType, &parser.DataRef{
+							TableName: n.Table.Name, Field: tableIDField,
+						}),
+					}},
+					Joins: []string{"lifecycle"},
+					// Specify that we should update only
+					Policy: core.UpdatePolicy,
+				},
+			}
+			if lifecycle != nil {
+				for _, entry := range lifecycle.Entries {
+					dataBlocks = append(dataBlocks, core.Data{
+						TableName: "lifecycle_entry",
+						Fields: &core.DataFields{Values: map[string]cty.Value{
+							"message": cty.StringVal(entry.Message),
+						}},
+						Joins: []string{"lifecycle"},
+					})
+				}
+			}
+			_, err := dataBlocksToNodes(dataBlocks, nil, nodeContext)
+			if err != nil {
+				return fmt.Errorf("error creating lifecycle sub-tree: %w", err)
+			}
+			// Set the nodes we just created to visited = true so that we don't
+			// visit them after this, and in doing so, create another lifecycle
+			// and end up in an infinite loop
+			for _, nc := range nodeContext {
+				nc.Visited = true
+			}
+		} else if node.Data.Lifecycle != nil {
+			return fmt.Errorf("data block has lifecycle but no relation to a lifecycle: %s", node.Data.TableName)
+		}
+		return nil
+	})
+	return err
 }
 
 // resetDataNode takes a node, resets it, and then calls itself for the node's children
 func resetDataNode(node *dataNode) {
 	node.Visited = false
 	for _, c := range node.Children {
-		resetDataNode(c)
+		if c.Visited {
+			resetDataNode(c)
+		}
 	}
 }
 
@@ -61,13 +204,13 @@ func visitNode(bCtx *env.BubblyContext, node *dataNode, fn visitFn, blocks *core
 	if parentsVisited && !node.Visited {
 		// Visit the node with the callback method
 		if err := fn(bCtx, node, blocks); err != nil {
-			return fmt.Errorf("error visiting data node %s: %w", node.Data.TableName, err)
+			return fmt.Errorf("error traversing data tree at node %s: %w", node.Data.TableName, err)
 		}
 		// If no error, mark the node as visited
 		node.Visited = true
 		for _, child := range node.Children {
 			if err := visitNode(bCtx, child, fn, blocks); err != nil {
-				return fmt.Errorf("error visiting data node %s: %w", child.Data.TableName, err)
+				return err
 			}
 		}
 	}
@@ -94,6 +237,8 @@ func newDataNode(d *core.Data) *dataNode {
 type dataNode struct {
 	// Data is the underlying data block
 	Data *core.Data
+	// SchemaNode points to the corresponding node in the schema graph
+	SchemaNode *SchemaNode
 	// Return stores the values that are returned when the Data is stored in the
 	// providers database. This is then used by any children to resolve the data
 	// references to this Data
@@ -114,7 +259,17 @@ type dataNode struct {
 	// Unlike the Parents field, a node can have multiple Children with the same
 	// table name, and thus, we store them as a slice and not a map.
 	Children []*dataNode
+	Action   dataAction
 }
+
+type dataAction int
+
+const (
+	dataCreated dataAction = iota
+	dataUpdated
+	dataSelected
+	dataNotExist
+)
 
 func (d *dataNode) Describe() string {
 	var str string
@@ -140,6 +295,10 @@ func (d *dataNode) orderedFields() []string {
 	var fieldNames = make([]string, 0, len(d.Data.Fields.Values))
 
 	for k := range d.Data.Fields.Values {
+		// Skip the ID field because we never want to insert this ourselves
+		if k == tableIDField {
+			continue
+		}
 		fieldNames = append(fieldNames, k)
 	}
 	sort.Strings(fieldNames)
@@ -178,9 +337,14 @@ func (d *dataNode) addChild(child *dataNode, fields map[string]struct{}) {
 // createDataTree is the top-level function for creating a data tree.
 // It takes the data blocks, as received by the store, and returns the data tree
 func createDataTree(data core.DataBlocks) (dataTree, error) {
-	var nodes = make(map[string]*dataNode)
+	// nodeContext will store a map of the "most recent" nodes to be visited
+	// when traversing the data blocks.
+	// Joins across data blocks are resolved by pulling the most recent data block
+	// of that table, and creating a data reference to that field in that table.
+	// So nodeContext is very important
+	var nodeContext = make(map[string]*dataNode)
 
-	dataNodes, err := dataBlocksToNodes(data, nil, nodes)
+	dataNodes, err := dataBlocksToNodes(data, nil, nodeContext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create data node tree: %w", err)
 	}
@@ -189,7 +353,7 @@ func createDataTree(data core.DataBlocks) (dataTree, error) {
 }
 
 // dataBlocksToNodes is recursively called to convert all data blocks into nodes
-func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string]*dataNode) (dataTree, error) {
+func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodeContext map[string]*dataNode) (dataTree, error) {
 	var dataNodes = make(dataTree, 0)
 	for index := range data {
 		// Store reference to the data block so that we can update it
@@ -256,10 +420,8 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 			dataRefs[ref.TableName] = tableRefs
 		}
 
-		// Create a node for the current data block and add it to the map of nodes.
-
+		// Create a node for the current data block
 		node := newDataNode(d)
-		nodes[d.TableName] = node
 
 		// If there are no data refs, then it's easy, just add this data block
 		// to the root data nodes
@@ -270,15 +432,20 @@ func dataBlocksToNodes(data core.DataBlocks, parent *core.Data, nodes map[string
 		// If there are data references then we need to add this node as a child
 		for tableName, fields := range dataRefs {
 			// Get the node which the data ref refers to
-			parentNode, ok := nodes[tableName]
+			parentNode, ok := nodeContext[tableName]
 			if !ok {
 				return nil, fmt.Errorf("join refers to data block that does not exist: %s", tableName)
 			}
 			// Add the child node to the parent
 			parentNode.addChild(node, fields)
 		}
+		// Add the node to the nodeContext so that it can be referenced by the
+		// next dataRef to this table, if one exists.
+		// It's important that we do this AFTER we handle the dataRefs for this
+		// node in case this node depends a table with the same name
+		nodeContext[d.TableName] = node
 
-		childNodes, err := dataBlocksToNodes(d.Data, d, nodes)
+		childNodes, err := dataBlocksToNodes(d.Data, d, nodeContext)
 		if err != nil {
 			return nil, err
 		}
