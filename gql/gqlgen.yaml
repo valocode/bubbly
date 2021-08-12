@@ -34,6 +34,9 @@ models:
   CodeIssueType:
     model:
       - github.com/valocode/bubbly/ent/codeissue.Type
-  CVESeverity:
+  VulnerabilitySeverity:
     model:
-      - github.com/valocode/bubbly/ent/cve.Severity
+      - github.com/valocode/bubbly/ent/vulnerability.Severity
+  VulnerabilityReviewDecision:
+    model:
+      - github.com/valocode/bubbly/ent/vulnerabilityreview.Decision

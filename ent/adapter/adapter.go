@@ -2,25 +2,142 @@
 
 package adapter
 
-import "github.com/valocode/bubbly/ent/codeissue"
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
 
-type Mapping struct {
-	CodeScan *CodeScanHCL `hcl:"code_scan,block"`
+const (
+	// Label holds the string label denoting the adapter type in the database.
+	Label = "adapter"
+	// FieldID holds the string denoting the id field in the database.
+	FieldID = "id"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldTag holds the string denoting the tag field in the database.
+	FieldTag = "tag"
+	// FieldType holds the string denoting the type field in the database.
+	FieldType = "type"
+	// FieldOperation holds the string denoting the operation field in the database.
+	FieldOperation = "operation"
+	// FieldResultsType holds the string denoting the results_type field in the database.
+	FieldResultsType = "results_type"
+	// FieldResults holds the string denoting the results field in the database.
+	FieldResults = "results"
+	// Table holds the table name of the adapter in the database.
+	Table = "adapter"
+)
+
+// Columns holds all SQL columns for adapter fields.
+var Columns = []string{
+	FieldID,
+	FieldName,
+	FieldTag,
+	FieldType,
+	FieldOperation,
+	FieldResultsType,
+	FieldResults,
 }
 
-type Result struct {
-	ReleaseID *int      `json:"release_id"`
-	CodeScan  *CodeScan `json:"code_scan,omitempty"`
+// ValidColumn reports if the column name is valid (part of the table columns).
+func ValidColumn(column string) bool {
+	for i := range Columns {
+		if column == Columns[i] {
+			return true
+		}
+	}
+	return false
 }
 
-type CodeIssueHCL struct {
-	RuleID   string             `json:"rule_id,omitempty" hcl:"rule_id,attr"`
-	Message  string             `json:"message,omitempty" hcl:"message,attr"`
-	Severity codeissue.Severity `json:"severity,omitempty" hcl:"severity,attr"`
-	Type     codeissue.Type     `json:"type,omitempty" hcl:"type,attr"`
+var (
+	// NameValidator is a validator for the "name" field. It is called by the builders before save.
+	NameValidator func(string) error
+	// TagValidator is a validator for the "tag" field. It is called by the builders before save.
+	TagValidator func(string) error
+)
+
+// Type defines the type for the "type" enum field.
+type Type string
+
+// Type values.
+const (
+	TypeJSON Type = "json"
+	TypeCsv  Type = "csv"
+	TypeXML  Type = "xml"
+	TypeYaml Type = "yaml"
+	TypeHTTP Type = "http"
+)
+
+func (_type Type) String() string {
+	return string(_type)
 }
 
-type CodeScanHCL struct {
-	Tool   string         `json:"tool,omitempty" hcl:"tool,attr"`
-	Issues []CodeIssueHCL `json:"issues,omitempty" hcl:"issues,block"`
+// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
+func TypeValidator(_type Type) error {
+	switch _type {
+	case TypeJSON, TypeCsv, TypeXML, TypeYaml, TypeHTTP:
+		return nil
+	default:
+		return fmt.Errorf("adapter: invalid enum value for type field: %q", _type)
+	}
+}
+
+// ResultsType defines the type for the "results_type" enum field.
+type ResultsType string
+
+// ResultsType values.
+const (
+	ResultsTypeCodeScan ResultsType = "code_scan"
+	ResultsTypeTestRun  ResultsType = "test_run"
+)
+
+func (rt ResultsType) String() string {
+	return string(rt)
+}
+
+// ResultsTypeValidator is a validator for the "results_type" field enum values. It is called by the builders before save.
+func ResultsTypeValidator(rt ResultsType) error {
+	switch rt {
+	case ResultsTypeCodeScan, ResultsTypeTestRun:
+		return nil
+	default:
+		return fmt.Errorf("adapter: invalid enum value for results_type field: %q", rt)
+	}
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (_type Type) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(_type.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (_type *Type) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*_type = Type(str)
+	if err := TypeValidator(*_type); err != nil {
+		return fmt.Errorf("%s is not a valid Type", str)
+	}
+	return nil
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (rt ResultsType) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(rt.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (rt *ResultsType) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*rt = ResultsType(str)
+	if err := ResultsTypeValidator(*rt); err != nil {
+		return fmt.Errorf("%s is not a valid ResultsType", str)
+	}
+	return nil
 }

@@ -19,6 +19,8 @@ const (
 	EdgeEntry = "entry"
 	// EdgeIssues holds the string denoting the issues edge name in mutations.
 	EdgeIssues = "issues"
+	// EdgeVulnerabilities holds the string denoting the vulnerabilities edge name in mutations.
+	EdgeVulnerabilities = "vulnerabilities"
 	// EdgeComponents holds the string denoting the components edge name in mutations.
 	EdgeComponents = "components"
 	// Table holds the table name of the codescan in the database.
@@ -44,11 +46,16 @@ const (
 	IssuesInverseTable = "code_issue"
 	// IssuesColumn is the table column denoting the issues relation/edge.
 	IssuesColumn = "code_issue_scan"
+	// VulnerabilitiesTable is the table that holds the vulnerabilities relation/edge. The primary key declared below.
+	VulnerabilitiesTable = "release_vulnerability_scans"
+	// VulnerabilitiesInverseTable is the table name for the ReleaseVulnerability entity.
+	// It exists in this package in order to avoid circular dependency with the "releasevulnerability" package.
+	VulnerabilitiesInverseTable = "release_vulnerability"
 	// ComponentsTable is the table that holds the components relation/edge. The primary key declared below.
-	ComponentsTable = "component_use_scans"
-	// ComponentsInverseTable is the table name for the ComponentUse entity.
-	// It exists in this package in order to avoid circular dependency with the "componentuse" package.
-	ComponentsInverseTable = "component_use"
+	ComponentsTable = "release_component_scans"
+	// ComponentsInverseTable is the table name for the ReleaseComponent entity.
+	// It exists in this package in order to avoid circular dependency with the "releasecomponent" package.
+	ComponentsInverseTable = "release_component"
 )
 
 // Columns holds all SQL columns for codescan fields.
@@ -65,9 +72,12 @@ var ForeignKeys = []string{
 }
 
 var (
+	// VulnerabilitiesPrimaryKey and VulnerabilitiesColumn2 are the table columns denoting the
+	// primary key for the vulnerabilities relation (M2M).
+	VulnerabilitiesPrimaryKey = []string{"release_vulnerability_id", "code_scan_id"}
 	// ComponentsPrimaryKey and ComponentsColumn2 are the table columns denoting the
 	// primary key for the components relation (M2M).
-	ComponentsPrimaryKey = []string{"component_use_id", "code_scan_id"}
+	ComponentsPrimaryKey = []string{"release_component_id", "code_scan_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

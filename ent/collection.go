@@ -9,6 +9,18 @@ import (
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (a *AdapterQuery) CollectFields(ctx context.Context, satisfies ...string) *AdapterQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		a = a.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return a
+}
+
+func (a *AdapterQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *AdapterQuery {
+	return a
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (a *ArtifactQuery) CollectFields(ctx context.Context, satisfies ...string) *ArtifactQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		a = a.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
@@ -18,30 +30,6 @@ func (a *ArtifactQuery) CollectFields(ctx context.Context, satisfies ...string) 
 
 func (a *ArtifactQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ArtifactQuery {
 	return a
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (c *CVEQuery) CollectFields(ctx context.Context, satisfies ...string) *CVEQuery {
-	if fc := graphql.GetFieldContext(ctx); fc != nil {
-		c = c.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
-	}
-	return c
-}
-
-func (c *CVEQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *CVEQuery {
-	return c
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (cr *CVERuleQuery) CollectFields(ctx context.Context, satisfies ...string) *CVERuleQuery {
-	if fc := graphql.GetFieldContext(ctx); fc != nil {
-		cr = cr.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
-	}
-	return cr
-}
-
-func (cr *CVERuleQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *CVERuleQuery {
-	return cr
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
@@ -90,18 +78,6 @@ func (c *ComponentQuery) CollectFields(ctx context.Context, satisfies ...string)
 
 func (c *ComponentQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ComponentQuery {
 	return c
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (cu *ComponentUseQuery) CollectFields(ctx context.Context, satisfies ...string) *ComponentUseQuery {
-	if fc := graphql.GetFieldContext(ctx); fc != nil {
-		cu = cu.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
-	}
-	return cu
-}
-
-func (cu *ComponentUseQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ComponentUseQuery {
-	return cu
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
@@ -165,6 +141,18 @@ func (r *ReleaseQuery) collectField(ctx *graphql.OperationContext, field graphql
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (rc *ReleaseComponentQuery) CollectFields(ctx context.Context, satisfies ...string) *ReleaseComponentQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		rc = rc.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return rc
+}
+
+func (rc *ReleaseComponentQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ReleaseComponentQuery {
+	return rc
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (re *ReleaseEntryQuery) CollectFields(ctx context.Context, satisfies ...string) *ReleaseEntryQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		re = re.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
@@ -174,6 +162,18 @@ func (re *ReleaseEntryQuery) CollectFields(ctx context.Context, satisfies ...str
 
 func (re *ReleaseEntryQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ReleaseEntryQuery {
 	return re
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (rv *ReleaseVulnerabilityQuery) CollectFields(ctx context.Context, satisfies ...string) *ReleaseVulnerabilityQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		rv = rv.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return rv
+}
+
+func (rv *ReleaseVulnerabilityQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *ReleaseVulnerabilityQuery {
+	return rv
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
@@ -222,4 +222,16 @@ func (v *VulnerabilityQuery) CollectFields(ctx context.Context, satisfies ...str
 
 func (v *VulnerabilityQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *VulnerabilityQuery {
 	return v
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (vr *VulnerabilityReviewQuery) CollectFields(ctx context.Context, satisfies ...string) *VulnerabilityReviewQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		vr = vr.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return vr
+}
+
+func (vr *VulnerabilityReviewQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *VulnerabilityReviewQuery {
+	return vr
 }

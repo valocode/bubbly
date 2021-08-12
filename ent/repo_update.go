@@ -9,11 +9,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/valocode/bubbly/ent/cverule"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // RepoUpdate is the builder for updating Repo entities.
@@ -35,23 +35,19 @@ func (ru *RepoUpdate) SetName(s string) *RepoUpdate {
 	return ru
 }
 
-// SetProjectID sets the "project" edge to the Project entity by ID.
-func (ru *RepoUpdate) SetProjectID(id int) *RepoUpdate {
-	ru.mutation.SetProjectID(id)
+// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
+func (ru *RepoUpdate) AddProjectIDs(ids ...int) *RepoUpdate {
+	ru.mutation.AddProjectIDs(ids...)
 	return ru
 }
 
-// SetNillableProjectID sets the "project" edge to the Project entity by ID if the given value is not nil.
-func (ru *RepoUpdate) SetNillableProjectID(id *int) *RepoUpdate {
-	if id != nil {
-		ru = ru.SetProjectID(*id)
+// AddProjects adds the "projects" edges to the Project entity.
+func (ru *RepoUpdate) AddProjects(p ...*Project) *RepoUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return ru
-}
-
-// SetProject sets the "project" edge to the Project entity.
-func (ru *RepoUpdate) SetProject(p *Project) *RepoUpdate {
-	return ru.SetProjectID(p.ID)
+	return ru.AddProjectIDs(ids...)
 }
 
 // AddCommitIDs adds the "commits" edge to the GitCommit entity by IDs.
@@ -69,19 +65,19 @@ func (ru *RepoUpdate) AddCommits(g ...*GitCommit) *RepoUpdate {
 	return ru.AddCommitIDs(ids...)
 }
 
-// AddCveRuleIDs adds the "cve_rules" edge to the CVERule entity by IDs.
-func (ru *RepoUpdate) AddCveRuleIDs(ids ...int) *RepoUpdate {
-	ru.mutation.AddCveRuleIDs(ids...)
+// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
+func (ru *RepoUpdate) AddVulnerabilityReviewIDs(ids ...int) *RepoUpdate {
+	ru.mutation.AddVulnerabilityReviewIDs(ids...)
 	return ru
 }
 
-// AddCveRules adds the "cve_rules" edges to the CVERule entity.
-func (ru *RepoUpdate) AddCveRules(c ...*CVERule) *RepoUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (ru *RepoUpdate) AddVulnerabilityReviews(v ...*VulnerabilityReview) *RepoUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.AddCveRuleIDs(ids...)
+	return ru.AddVulnerabilityReviewIDs(ids...)
 }
 
 // Mutation returns the RepoMutation object of the builder.
@@ -89,10 +85,25 @@ func (ru *RepoUpdate) Mutation() *RepoMutation {
 	return ru.mutation
 }
 
-// ClearProject clears the "project" edge to the Project entity.
-func (ru *RepoUpdate) ClearProject() *RepoUpdate {
-	ru.mutation.ClearProject()
+// ClearProjects clears all "projects" edges to the Project entity.
+func (ru *RepoUpdate) ClearProjects() *RepoUpdate {
+	ru.mutation.ClearProjects()
 	return ru
+}
+
+// RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
+func (ru *RepoUpdate) RemoveProjectIDs(ids ...int) *RepoUpdate {
+	ru.mutation.RemoveProjectIDs(ids...)
+	return ru
+}
+
+// RemoveProjects removes "projects" edges to Project entities.
+func (ru *RepoUpdate) RemoveProjects(p ...*Project) *RepoUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ru.RemoveProjectIDs(ids...)
 }
 
 // ClearCommits clears all "commits" edges to the GitCommit entity.
@@ -116,25 +127,25 @@ func (ru *RepoUpdate) RemoveCommits(g ...*GitCommit) *RepoUpdate {
 	return ru.RemoveCommitIDs(ids...)
 }
 
-// ClearCveRules clears all "cve_rules" edges to the CVERule entity.
-func (ru *RepoUpdate) ClearCveRules() *RepoUpdate {
-	ru.mutation.ClearCveRules()
+// ClearVulnerabilityReviews clears all "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (ru *RepoUpdate) ClearVulnerabilityReviews() *RepoUpdate {
+	ru.mutation.ClearVulnerabilityReviews()
 	return ru
 }
 
-// RemoveCveRuleIDs removes the "cve_rules" edge to CVERule entities by IDs.
-func (ru *RepoUpdate) RemoveCveRuleIDs(ids ...int) *RepoUpdate {
-	ru.mutation.RemoveCveRuleIDs(ids...)
+// RemoveVulnerabilityReviewIDs removes the "vulnerability_reviews" edge to VulnerabilityReview entities by IDs.
+func (ru *RepoUpdate) RemoveVulnerabilityReviewIDs(ids ...int) *RepoUpdate {
+	ru.mutation.RemoveVulnerabilityReviewIDs(ids...)
 	return ru
 }
 
-// RemoveCveRules removes "cve_rules" edges to CVERule entities.
-func (ru *RepoUpdate) RemoveCveRules(c ...*CVERule) *RepoUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// RemoveVulnerabilityReviews removes "vulnerability_reviews" edges to VulnerabilityReview entities.
+func (ru *RepoUpdate) RemoveVulnerabilityReviews(v ...*VulnerabilityReview) *RepoUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ru.RemoveCveRuleIDs(ids...)
+	return ru.RemoveVulnerabilityReviewIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -232,12 +243,12 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: repo.FieldName,
 		})
 	}
-	if ru.mutation.ProjectCleared() {
+	if ru.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   repo.ProjectTable,
-			Columns: []string{repo.ProjectColumn},
+			Table:   repo.ProjectsTable,
+			Columns: repo.ProjectsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -248,12 +259,31 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.ProjectIDs(); len(nodes) > 0 {
+	if nodes := ru.mutation.RemovedProjectsIDs(); len(nodes) > 0 && !ru.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   repo.ProjectTable,
-			Columns: []string{repo.ProjectColumn},
+			Table:   repo.ProjectsTable,
+			Columns: repo.ProjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: project.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.ProjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   repo.ProjectsTable,
+			Columns: repo.ProjectsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -321,33 +351,33 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ru.mutation.CveRulesCleared() {
+	if ru.mutation.VulnerabilityReviewsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repo.CveRulesTable,
-			Columns: repo.CveRulesPrimaryKey,
+			Table:   repo.VulnerabilityReviewsTable,
+			Columns: repo.VulnerabilityReviewsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: cverule.FieldID,
+					Column: vulnerabilityreview.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.RemovedCveRulesIDs(); len(nodes) > 0 && !ru.mutation.CveRulesCleared() {
+	if nodes := ru.mutation.RemovedVulnerabilityReviewsIDs(); len(nodes) > 0 && !ru.mutation.VulnerabilityReviewsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repo.CveRulesTable,
-			Columns: repo.CveRulesPrimaryKey,
+			Table:   repo.VulnerabilityReviewsTable,
+			Columns: repo.VulnerabilityReviewsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: cverule.FieldID,
+					Column: vulnerabilityreview.FieldID,
 				},
 			},
 		}
@@ -356,17 +386,17 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.CveRulesIDs(); len(nodes) > 0 {
+	if nodes := ru.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repo.CveRulesTable,
-			Columns: repo.CveRulesPrimaryKey,
+			Table:   repo.VulnerabilityReviewsTable,
+			Columns: repo.VulnerabilityReviewsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: cverule.FieldID,
+					Column: vulnerabilityreview.FieldID,
 				},
 			},
 		}
@@ -400,23 +430,19 @@ func (ruo *RepoUpdateOne) SetName(s string) *RepoUpdateOne {
 	return ruo
 }
 
-// SetProjectID sets the "project" edge to the Project entity by ID.
-func (ruo *RepoUpdateOne) SetProjectID(id int) *RepoUpdateOne {
-	ruo.mutation.SetProjectID(id)
+// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
+func (ruo *RepoUpdateOne) AddProjectIDs(ids ...int) *RepoUpdateOne {
+	ruo.mutation.AddProjectIDs(ids...)
 	return ruo
 }
 
-// SetNillableProjectID sets the "project" edge to the Project entity by ID if the given value is not nil.
-func (ruo *RepoUpdateOne) SetNillableProjectID(id *int) *RepoUpdateOne {
-	if id != nil {
-		ruo = ruo.SetProjectID(*id)
+// AddProjects adds the "projects" edges to the Project entity.
+func (ruo *RepoUpdateOne) AddProjects(p ...*Project) *RepoUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return ruo
-}
-
-// SetProject sets the "project" edge to the Project entity.
-func (ruo *RepoUpdateOne) SetProject(p *Project) *RepoUpdateOne {
-	return ruo.SetProjectID(p.ID)
+	return ruo.AddProjectIDs(ids...)
 }
 
 // AddCommitIDs adds the "commits" edge to the GitCommit entity by IDs.
@@ -434,19 +460,19 @@ func (ruo *RepoUpdateOne) AddCommits(g ...*GitCommit) *RepoUpdateOne {
 	return ruo.AddCommitIDs(ids...)
 }
 
-// AddCveRuleIDs adds the "cve_rules" edge to the CVERule entity by IDs.
-func (ruo *RepoUpdateOne) AddCveRuleIDs(ids ...int) *RepoUpdateOne {
-	ruo.mutation.AddCveRuleIDs(ids...)
+// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
+func (ruo *RepoUpdateOne) AddVulnerabilityReviewIDs(ids ...int) *RepoUpdateOne {
+	ruo.mutation.AddVulnerabilityReviewIDs(ids...)
 	return ruo
 }
 
-// AddCveRules adds the "cve_rules" edges to the CVERule entity.
-func (ruo *RepoUpdateOne) AddCveRules(c ...*CVERule) *RepoUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (ruo *RepoUpdateOne) AddVulnerabilityReviews(v ...*VulnerabilityReview) *RepoUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.AddCveRuleIDs(ids...)
+	return ruo.AddVulnerabilityReviewIDs(ids...)
 }
 
 // Mutation returns the RepoMutation object of the builder.
@@ -454,10 +480,25 @@ func (ruo *RepoUpdateOne) Mutation() *RepoMutation {
 	return ruo.mutation
 }
 
-// ClearProject clears the "project" edge to the Project entity.
-func (ruo *RepoUpdateOne) ClearProject() *RepoUpdateOne {
-	ruo.mutation.ClearProject()
+// ClearProjects clears all "projects" edges to the Project entity.
+func (ruo *RepoUpdateOne) ClearProjects() *RepoUpdateOne {
+	ruo.mutation.ClearProjects()
 	return ruo
+}
+
+// RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
+func (ruo *RepoUpdateOne) RemoveProjectIDs(ids ...int) *RepoUpdateOne {
+	ruo.mutation.RemoveProjectIDs(ids...)
+	return ruo
+}
+
+// RemoveProjects removes "projects" edges to Project entities.
+func (ruo *RepoUpdateOne) RemoveProjects(p ...*Project) *RepoUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return ruo.RemoveProjectIDs(ids...)
 }
 
 // ClearCommits clears all "commits" edges to the GitCommit entity.
@@ -481,25 +522,25 @@ func (ruo *RepoUpdateOne) RemoveCommits(g ...*GitCommit) *RepoUpdateOne {
 	return ruo.RemoveCommitIDs(ids...)
 }
 
-// ClearCveRules clears all "cve_rules" edges to the CVERule entity.
-func (ruo *RepoUpdateOne) ClearCveRules() *RepoUpdateOne {
-	ruo.mutation.ClearCveRules()
+// ClearVulnerabilityReviews clears all "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (ruo *RepoUpdateOne) ClearVulnerabilityReviews() *RepoUpdateOne {
+	ruo.mutation.ClearVulnerabilityReviews()
 	return ruo
 }
 
-// RemoveCveRuleIDs removes the "cve_rules" edge to CVERule entities by IDs.
-func (ruo *RepoUpdateOne) RemoveCveRuleIDs(ids ...int) *RepoUpdateOne {
-	ruo.mutation.RemoveCveRuleIDs(ids...)
+// RemoveVulnerabilityReviewIDs removes the "vulnerability_reviews" edge to VulnerabilityReview entities by IDs.
+func (ruo *RepoUpdateOne) RemoveVulnerabilityReviewIDs(ids ...int) *RepoUpdateOne {
+	ruo.mutation.RemoveVulnerabilityReviewIDs(ids...)
 	return ruo
 }
 
-// RemoveCveRules removes "cve_rules" edges to CVERule entities.
-func (ruo *RepoUpdateOne) RemoveCveRules(c ...*CVERule) *RepoUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// RemoveVulnerabilityReviews removes "vulnerability_reviews" edges to VulnerabilityReview entities.
+func (ruo *RepoUpdateOne) RemoveVulnerabilityReviews(v ...*VulnerabilityReview) *RepoUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return ruo.RemoveCveRuleIDs(ids...)
+	return ruo.RemoveVulnerabilityReviewIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -621,12 +662,12 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 			Column: repo.FieldName,
 		})
 	}
-	if ruo.mutation.ProjectCleared() {
+	if ruo.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   repo.ProjectTable,
-			Columns: []string{repo.ProjectColumn},
+			Table:   repo.ProjectsTable,
+			Columns: repo.ProjectsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -637,12 +678,31 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.ProjectIDs(); len(nodes) > 0 {
+	if nodes := ruo.mutation.RemovedProjectsIDs(); len(nodes) > 0 && !ruo.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   repo.ProjectTable,
-			Columns: []string{repo.ProjectColumn},
+			Table:   repo.ProjectsTable,
+			Columns: repo.ProjectsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: project.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.ProjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   repo.ProjectsTable,
+			Columns: repo.ProjectsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -710,33 +770,33 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ruo.mutation.CveRulesCleared() {
+	if ruo.mutation.VulnerabilityReviewsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repo.CveRulesTable,
-			Columns: repo.CveRulesPrimaryKey,
+			Table:   repo.VulnerabilityReviewsTable,
+			Columns: repo.VulnerabilityReviewsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: cverule.FieldID,
+					Column: vulnerabilityreview.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.RemovedCveRulesIDs(); len(nodes) > 0 && !ruo.mutation.CveRulesCleared() {
+	if nodes := ruo.mutation.RemovedVulnerabilityReviewsIDs(); len(nodes) > 0 && !ruo.mutation.VulnerabilityReviewsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repo.CveRulesTable,
-			Columns: repo.CveRulesPrimaryKey,
+			Table:   repo.VulnerabilityReviewsTable,
+			Columns: repo.VulnerabilityReviewsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: cverule.FieldID,
+					Column: vulnerabilityreview.FieldID,
 				},
 			},
 		}
@@ -745,17 +805,17 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.CveRulesIDs(); len(nodes) > 0 {
+	if nodes := ruo.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repo.CveRulesTable,
-			Columns: repo.CveRulesPrimaryKey,
+			Table:   repo.VulnerabilityReviewsTable,
+			Columns: repo.VulnerabilityReviewsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: cverule.FieldID,
+					Column: vulnerabilityreview.FieldID,
 				},
 			},
 		}

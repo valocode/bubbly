@@ -5,27 +5,39 @@ package runtime
 import (
 	"time"
 
+	"github.com/valocode/bubbly/ent/adapter"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/schema"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
+	"github.com/valocode/bubbly/ent/vulnerability"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	adapterFields := schema.Adapter{}.Fields()
+	_ = adapterFields
+	// adapterDescName is the schema descriptor for name field.
+	adapterDescName := adapterFields[0].Descriptor()
+	// adapter.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	adapter.NameValidator = adapterDescName.Validators[0].(func(string) error)
+	// adapterDescTag is the schema descriptor for tag field.
+	adapterDescTag := adapterFields[1].Descriptor()
+	// adapter.TagValidator is a validator for the "tag" field. It is called by the builders before save.
+	adapter.TagValidator = adapterDescTag.Validators[0].(func(string) error)
 	artifactHooks := schema.Artifact{}.Hooks()
 	artifact.Hooks[0] = artifactHooks[0]
 	artifactFields := schema.Artifact{}.Fields()
@@ -38,18 +50,6 @@ func init() {
 	artifactDescSha256 := artifactFields[1].Descriptor()
 	// artifact.Sha256Validator is a validator for the "sha256" field. It is called by the builders before save.
 	artifact.Sha256Validator = artifactDescSha256.Validators[0].(func(string) error)
-	cveHooks := schema.CVE{}.Hooks()
-	cve.Hooks[0] = cveHooks[0]
-	cveFields := schema.CVE{}.Fields()
-	_ = cveFields
-	// cveDescCveID is the schema descriptor for cve_id field.
-	cveDescCveID := cveFields[0].Descriptor()
-	// cve.CveIDValidator is a validator for the "cve_id" field. It is called by the builders before save.
-	cve.CveIDValidator = cveDescCveID.Validators[0].(func(string) error)
-	// cveDescSeverityScore is the schema descriptor for severity_score field.
-	cveDescSeverityScore := cveFields[2].Descriptor()
-	// cve.DefaultSeverityScore holds the default value on creation for the severity_score field.
-	cve.DefaultSeverityScore = cveDescSeverityScore.Default.(float64)
 	cweFields := schema.CWE{}.Fields()
 	_ = cweFields
 	// cweDescCweID is the schema descriptor for cwe_id field.
@@ -128,6 +128,8 @@ func init() {
 	releaseDescVersion := releaseFields[1].Descriptor()
 	// release.VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	release.VersionValidator = releaseDescVersion.Validators[0].(func(string) error)
+	releasecomponentHooks := schema.ReleaseComponent{}.Hooks()
+	releasecomponent.Hooks[0] = releasecomponentHooks[0]
 	releaseentryFields := schema.ReleaseEntry{}.Fields()
 	_ = releaseentryFields
 	// releaseentryDescTime is the schema descriptor for time field.
@@ -164,6 +166,18 @@ func init() {
 	testrunDescTool := testrunFields[0].Descriptor()
 	// testrun.ToolValidator is a validator for the "tool" field. It is called by the builders before save.
 	testrun.ToolValidator = testrunDescTool.Validators[0].(func(string) error)
+	vulnerabilityHooks := schema.Vulnerability{}.Hooks()
+	vulnerability.Hooks[0] = vulnerabilityHooks[0]
+	vulnerabilityFields := schema.Vulnerability{}.Fields()
+	_ = vulnerabilityFields
+	// vulnerabilityDescVid is the schema descriptor for vid field.
+	vulnerabilityDescVid := vulnerabilityFields[0].Descriptor()
+	// vulnerability.VidValidator is a validator for the "vid" field. It is called by the builders before save.
+	vulnerability.VidValidator = vulnerabilityDescVid.Validators[0].(func(string) error)
+	// vulnerabilityDescSeverityScore is the schema descriptor for severity_score field.
+	vulnerabilityDescSeverityScore := vulnerabilityFields[3].Descriptor()
+	// vulnerability.DefaultSeverityScore holds the default value on creation for the severity_score field.
+	vulnerability.DefaultSeverityScore = vulnerabilityDescSeverityScore.Default.(float64)
 }
 
 const (

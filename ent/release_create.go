@@ -11,12 +11,13 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/gitcommit"
-	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/testrun"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // ReleaseCreate is the builder for creating a Release entity.
@@ -82,17 +83,6 @@ func (rc *ReleaseCreate) AddDependencies(r ...*Release) *ReleaseCreate {
 	return rc.AddDependencyIDs(ids...)
 }
 
-// SetProjectID sets the "project" edge to the Project entity by ID.
-func (rc *ReleaseCreate) SetProjectID(id int) *ReleaseCreate {
-	rc.mutation.SetProjectID(id)
-	return rc
-}
-
-// SetProject sets the "project" edge to the Project entity.
-func (rc *ReleaseCreate) SetProject(p *Project) *ReleaseCreate {
-	return rc.SetProjectID(p.ID)
-}
-
 // SetCommitID sets the "commit" edge to the GitCommit entity by ID.
 func (rc *ReleaseCreate) SetCommitID(id int) *ReleaseCreate {
 	rc.mutation.SetCommitID(id)
@@ -134,19 +124,34 @@ func (rc *ReleaseCreate) AddArtifacts(a ...*Artifact) *ReleaseCreate {
 	return rc.AddArtifactIDs(ids...)
 }
 
-// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+// AddComponentIDs adds the "components" edge to the ReleaseComponent entity by IDs.
 func (rc *ReleaseCreate) AddComponentIDs(ids ...int) *ReleaseCreate {
 	rc.mutation.AddComponentIDs(ids...)
 	return rc
 }
 
-// AddComponents adds the "components" edges to the ComponentUse entity.
-func (rc *ReleaseCreate) AddComponents(c ...*ComponentUse) *ReleaseCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddComponents adds the "components" edges to the ReleaseComponent entity.
+func (rc *ReleaseCreate) AddComponents(r ...*ReleaseComponent) *ReleaseCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return rc.AddComponentIDs(ids...)
+}
+
+// AddVulnerabilityIDs adds the "vulnerabilities" edge to the ReleaseVulnerability entity by IDs.
+func (rc *ReleaseCreate) AddVulnerabilityIDs(ids ...int) *ReleaseCreate {
+	rc.mutation.AddVulnerabilityIDs(ids...)
+	return rc
+}
+
+// AddVulnerabilities adds the "vulnerabilities" edges to the ReleaseVulnerability entity.
+func (rc *ReleaseCreate) AddVulnerabilities(r ...*ReleaseVulnerability) *ReleaseCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return rc.AddVulnerabilityIDs(ids...)
 }
 
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by IDs.
@@ -177,6 +182,21 @@ func (rc *ReleaseCreate) AddTestRuns(t ...*TestRun) *ReleaseCreate {
 		ids[i] = t[i].ID
 	}
 	return rc.AddTestRunIDs(ids...)
+}
+
+// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
+func (rc *ReleaseCreate) AddVulnerabilityReviewIDs(ids ...int) *ReleaseCreate {
+	rc.mutation.AddVulnerabilityReviewIDs(ids...)
+	return rc
+}
+
+// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (rc *ReleaseCreate) AddVulnerabilityReviews(v ...*VulnerabilityReview) *ReleaseCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return rc.AddVulnerabilityReviewIDs(ids...)
 }
 
 // Mutation returns the ReleaseMutation object of the builder.
@@ -282,9 +302,6 @@ func (rc *ReleaseCreate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "status": %w`, err)}
 		}
 	}
-	if _, ok := rc.mutation.ProjectID(); !ok {
-		return &ValidationError{Name: "project", err: errors.New("ent: missing required edge \"project\"")}
-	}
 	if _, ok := rc.mutation.CommitID(); !ok {
 		return &ValidationError{Name: "commit", err: errors.New("ent: missing required edge \"commit\"")}
 	}
@@ -377,26 +394,6 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   release.ProjectTable,
-			Columns: []string{release.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.release_project = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := rc.mutation.CommitIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -465,7 +462,26 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.VulnerabilitiesTable,
+			Columns: []string{release.VulnerabilitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
 				},
 			},
 		}
@@ -504,6 +520,25 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: testrun.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   release.VulnerabilityReviewsTable,
+			Columns: release.VulnerabilityReviewsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: vulnerabilityreview.FieldID,
 				},
 			},
 		}

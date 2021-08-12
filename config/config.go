@@ -2,11 +2,14 @@ package config
 
 import "fmt"
 
+// ###########################################
+// Store
+// ###########################################
+
 // ServerConfig is a struct storing the server information.
 type ServerConfig struct {
-	Protocol string
-	Port     string
-	Host     string
+	Port string
+	Host string
 }
 
 func (s ServerConfig) HostURL() string {
@@ -17,20 +20,23 @@ func (s ServerConfig) HostURL() string {
 // Store
 // ###########################################
 
-// StoreProviderType is a store provider.
-type StoreProviderType string
+// Provider is a store provider.
+type Provider string
 
 const (
-	// PostgresStore is a Postgres provider.
-	PostgresStore StoreProviderType = "postgres"
-	// CockroachDBStore is a CockroachDB provider.
-	CockroachDBStore = "cockroachdb"
+	ProviderSqlite    Provider = "sqlite"
+	ProviderPostgres  Provider = "postgres"
+	ProviderCockroach Provider = "cockroachdb"
 )
+
+func (_type Provider) String() string {
+	return string(_type)
+}
 
 // StoreConfig stores the configuration of a bubbly store, used
 // to interact with a backend database
 type StoreConfig struct {
-	Provider StoreProviderType
+	Provider Provider
 
 	PostgresAddr     string
 	PostgresUser     string
@@ -46,51 +52,6 @@ type StoreConfig struct {
 	RetryAttempts int
 }
 
-// ###########################################
-// Agent
-// ###########################################
-
-type AgentDeploymentType string
-
-const (
-	SingleDeployment AgentDeploymentType = "single"
-	// TODO: Implement
-	// DistributedDeployment AgentDeploymentType = "distributed"
-)
-
-func (a AgentDeploymentType) String() string {
-	switch a {
-	case SingleDeployment:
-		return "single"
-	default:
-		return "unsupported"
-	}
-}
-
-// AgentConfig stores the configuration of a bubbly agent
-type AgentConfig struct {
-	NATSServerConfig  *NATSServerConfig
-	EnabledComponents *AgentComponentsToggle
-	DeploymentType    AgentDeploymentType
-}
-
-type AgentComponentsToggle struct {
-	APIServer  bool
-	DataStore  bool
-	Worker     bool
-	NATSServer bool
-}
-
-// ##########################
-// Auth
-// ##########################
-
-type AuthConfig struct {
-	Authentication bool
-	MultiTenancy   bool
-	AuthAddr       string
-}
-
 // ##########################
 // NATS
 // ##########################
@@ -104,18 +65,7 @@ type NATSServerConfig struct {
 // Client
 // ##########################
 
-type ClientType string
-
-const (
-	NATSClientType ClientType = "NATS"
-	HTTPClientType ClientType = "HTTP"
-)
-
-// ClientConfig defines configurations for the Bubbly client, which will either
-// use NATS or HTTP
 type ClientConfig struct {
-	ClientType ClientType
-	// AuthToken is used only by the HTTP
 	AuthToken  string
 	BubblyAddr string
 	NATSAddr   string
@@ -126,5 +76,6 @@ type ClientConfig struct {
 // ##########################
 
 type CLIConfig struct {
-	Color bool
+	NoColor bool
+	Debug   bool
 }

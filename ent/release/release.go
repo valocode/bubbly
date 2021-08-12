@@ -23,8 +23,6 @@ const (
 	EdgeSubreleases = "subreleases"
 	// EdgeDependencies holds the string denoting the dependencies edge name in mutations.
 	EdgeDependencies = "dependencies"
-	// EdgeProject holds the string denoting the project edge name in mutations.
-	EdgeProject = "project"
 	// EdgeCommit holds the string denoting the commit edge name in mutations.
 	EdgeCommit = "commit"
 	// EdgeLog holds the string denoting the log edge name in mutations.
@@ -33,23 +31,20 @@ const (
 	EdgeArtifacts = "artifacts"
 	// EdgeComponents holds the string denoting the components edge name in mutations.
 	EdgeComponents = "components"
+	// EdgeVulnerabilities holds the string denoting the vulnerabilities edge name in mutations.
+	EdgeVulnerabilities = "vulnerabilities"
 	// EdgeCodeScans holds the string denoting the code_scans edge name in mutations.
 	EdgeCodeScans = "code_scans"
 	// EdgeTestRuns holds the string denoting the test_runs edge name in mutations.
 	EdgeTestRuns = "test_runs"
+	// EdgeVulnerabilityReviews holds the string denoting the vulnerability_reviews edge name in mutations.
+	EdgeVulnerabilityReviews = "vulnerability_reviews"
 	// Table holds the table name of the release in the database.
 	Table = "release"
 	// SubreleasesTable is the table that holds the subreleases relation/edge. The primary key declared below.
 	SubreleasesTable = "release_dependencies"
 	// DependenciesTable is the table that holds the dependencies relation/edge. The primary key declared below.
 	DependenciesTable = "release_dependencies"
-	// ProjectTable is the table that holds the project relation/edge.
-	ProjectTable = "release"
-	// ProjectInverseTable is the table name for the Project entity.
-	// It exists in this package in order to avoid circular dependency with the "project" package.
-	ProjectInverseTable = "project"
-	// ProjectColumn is the table column denoting the project relation/edge.
-	ProjectColumn = "release_project"
 	// CommitTable is the table that holds the commit relation/edge.
 	CommitTable = "release"
 	// CommitInverseTable is the table name for the GitCommit entity.
@@ -72,12 +67,19 @@ const (
 	// ArtifactsColumn is the table column denoting the artifacts relation/edge.
 	ArtifactsColumn = "artifact_release"
 	// ComponentsTable is the table that holds the components relation/edge.
-	ComponentsTable = "component_use"
-	// ComponentsInverseTable is the table name for the ComponentUse entity.
-	// It exists in this package in order to avoid circular dependency with the "componentuse" package.
-	ComponentsInverseTable = "component_use"
+	ComponentsTable = "release_component"
+	// ComponentsInverseTable is the table name for the ReleaseComponent entity.
+	// It exists in this package in order to avoid circular dependency with the "releasecomponent" package.
+	ComponentsInverseTable = "release_component"
 	// ComponentsColumn is the table column denoting the components relation/edge.
-	ComponentsColumn = "component_use_release"
+	ComponentsColumn = "release_component_release"
+	// VulnerabilitiesTable is the table that holds the vulnerabilities relation/edge.
+	VulnerabilitiesTable = "release_vulnerability"
+	// VulnerabilitiesInverseTable is the table name for the ReleaseVulnerability entity.
+	// It exists in this package in order to avoid circular dependency with the "releasevulnerability" package.
+	VulnerabilitiesInverseTable = "release_vulnerability"
+	// VulnerabilitiesColumn is the table column denoting the vulnerabilities relation/edge.
+	VulnerabilitiesColumn = "release_vulnerability_release"
 	// CodeScansTable is the table that holds the code_scans relation/edge.
 	CodeScansTable = "code_scan"
 	// CodeScansInverseTable is the table name for the CodeScan entity.
@@ -92,6 +94,11 @@ const (
 	TestRunsInverseTable = "test_run"
 	// TestRunsColumn is the table column denoting the test_runs relation/edge.
 	TestRunsColumn = "test_run_release"
+	// VulnerabilityReviewsTable is the table that holds the vulnerability_reviews relation/edge. The primary key declared below.
+	VulnerabilityReviewsTable = "vulnerability_review_releases"
+	// VulnerabilityReviewsInverseTable is the table name for the VulnerabilityReview entity.
+	// It exists in this package in order to avoid circular dependency with the "vulnerabilityreview" package.
+	VulnerabilityReviewsInverseTable = "vulnerability_review"
 )
 
 // Columns holds all SQL columns for release fields.
@@ -106,7 +113,6 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"git_commit_release",
-	"release_project",
 }
 
 var (
@@ -116,6 +122,9 @@ var (
 	// DependenciesPrimaryKey and DependenciesColumn2 are the table columns denoting the
 	// primary key for the dependencies relation (M2M).
 	DependenciesPrimaryKey = []string{"release_id", "subrelease_id"}
+	// VulnerabilityReviewsPrimaryKey and VulnerabilityReviewsColumn2 are the table columns denoting the
+	// primary key for the vulnerability_reviews relation (M2M).
+	VulnerabilityReviewsPrimaryKey = []string{"vulnerability_review_id", "release_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

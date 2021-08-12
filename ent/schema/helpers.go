@@ -17,6 +17,11 @@ type entryTypeMutation interface {
 	Type() string
 }
 
+type clientMutation interface {
+	Client() *ent.Client
+	Tx() (*ent.Tx, error)
+}
+
 func createReleaseEntry(ctx context.Context, m entryTypeMutation) error {
 	var entryType releaseentry.Type
 	switch m.Type() {
@@ -51,4 +56,13 @@ func createReleaseEntry(ctx context.Context, m entryTypeMutation) error {
 	}
 	m.SetEntryID(entry.ID)
 	return nil
+}
+
+func clientOrTxClient(m clientMutation) *ent.Client {
+	if tx, err := m.Tx(); err == nil {
+		// Means there is no transaction
+		return tx.Client()
+	} else {
+		return m.Client()
+	}
 }

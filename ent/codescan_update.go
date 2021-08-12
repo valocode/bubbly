@@ -12,10 +12,11 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasevulnerability"
 )
 
 // CodeScanUpdate is the builder for updating CodeScan entities.
@@ -76,17 +77,32 @@ func (csu *CodeScanUpdate) AddIssues(c ...*CodeIssue) *CodeScanUpdate {
 	return csu.AddIssueIDs(ids...)
 }
 
-// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+// AddVulnerabilityIDs adds the "vulnerabilities" edge to the ReleaseVulnerability entity by IDs.
+func (csu *CodeScanUpdate) AddVulnerabilityIDs(ids ...int) *CodeScanUpdate {
+	csu.mutation.AddVulnerabilityIDs(ids...)
+	return csu
+}
+
+// AddVulnerabilities adds the "vulnerabilities" edges to the ReleaseVulnerability entity.
+func (csu *CodeScanUpdate) AddVulnerabilities(r ...*ReleaseVulnerability) *CodeScanUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return csu.AddVulnerabilityIDs(ids...)
+}
+
+// AddComponentIDs adds the "components" edge to the ReleaseComponent entity by IDs.
 func (csu *CodeScanUpdate) AddComponentIDs(ids ...int) *CodeScanUpdate {
 	csu.mutation.AddComponentIDs(ids...)
 	return csu
 }
 
-// AddComponents adds the "components" edges to the ComponentUse entity.
-func (csu *CodeScanUpdate) AddComponents(c ...*ComponentUse) *CodeScanUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddComponents adds the "components" edges to the ReleaseComponent entity.
+func (csu *CodeScanUpdate) AddComponents(r ...*ReleaseComponent) *CodeScanUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return csu.AddComponentIDs(ids...)
 }
@@ -129,23 +145,44 @@ func (csu *CodeScanUpdate) RemoveIssues(c ...*CodeIssue) *CodeScanUpdate {
 	return csu.RemoveIssueIDs(ids...)
 }
 
-// ClearComponents clears all "components" edges to the ComponentUse entity.
+// ClearVulnerabilities clears all "vulnerabilities" edges to the ReleaseVulnerability entity.
+func (csu *CodeScanUpdate) ClearVulnerabilities() *CodeScanUpdate {
+	csu.mutation.ClearVulnerabilities()
+	return csu
+}
+
+// RemoveVulnerabilityIDs removes the "vulnerabilities" edge to ReleaseVulnerability entities by IDs.
+func (csu *CodeScanUpdate) RemoveVulnerabilityIDs(ids ...int) *CodeScanUpdate {
+	csu.mutation.RemoveVulnerabilityIDs(ids...)
+	return csu
+}
+
+// RemoveVulnerabilities removes "vulnerabilities" edges to ReleaseVulnerability entities.
+func (csu *CodeScanUpdate) RemoveVulnerabilities(r ...*ReleaseVulnerability) *CodeScanUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return csu.RemoveVulnerabilityIDs(ids...)
+}
+
+// ClearComponents clears all "components" edges to the ReleaseComponent entity.
 func (csu *CodeScanUpdate) ClearComponents() *CodeScanUpdate {
 	csu.mutation.ClearComponents()
 	return csu
 }
 
-// RemoveComponentIDs removes the "components" edge to ComponentUse entities by IDs.
+// RemoveComponentIDs removes the "components" edge to ReleaseComponent entities by IDs.
 func (csu *CodeScanUpdate) RemoveComponentIDs(ids ...int) *CodeScanUpdate {
 	csu.mutation.RemoveComponentIDs(ids...)
 	return csu
 }
 
-// RemoveComponents removes "components" edges to ComponentUse entities.
-func (csu *CodeScanUpdate) RemoveComponents(c ...*ComponentUse) *CodeScanUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// RemoveComponents removes "components" edges to ReleaseComponent entities.
+func (csu *CodeScanUpdate) RemoveComponents(r ...*ReleaseComponent) *CodeScanUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return csu.RemoveComponentIDs(ids...)
 }
@@ -360,6 +397,60 @@ func (csu *CodeScanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if csu.mutation.VulnerabilitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   codescan.VulnerabilitiesTable,
+			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := csu.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !csu.mutation.VulnerabilitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   codescan.VulnerabilitiesTable,
+			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := csu.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   codescan.VulnerabilitiesTable,
+			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if csu.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -370,7 +461,7 @@ func (csu *CodeScanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}
@@ -386,7 +477,7 @@ func (csu *CodeScanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}
@@ -405,7 +496,7 @@ func (csu *CodeScanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}
@@ -478,17 +569,32 @@ func (csuo *CodeScanUpdateOne) AddIssues(c ...*CodeIssue) *CodeScanUpdateOne {
 	return csuo.AddIssueIDs(ids...)
 }
 
-// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+// AddVulnerabilityIDs adds the "vulnerabilities" edge to the ReleaseVulnerability entity by IDs.
+func (csuo *CodeScanUpdateOne) AddVulnerabilityIDs(ids ...int) *CodeScanUpdateOne {
+	csuo.mutation.AddVulnerabilityIDs(ids...)
+	return csuo
+}
+
+// AddVulnerabilities adds the "vulnerabilities" edges to the ReleaseVulnerability entity.
+func (csuo *CodeScanUpdateOne) AddVulnerabilities(r ...*ReleaseVulnerability) *CodeScanUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return csuo.AddVulnerabilityIDs(ids...)
+}
+
+// AddComponentIDs adds the "components" edge to the ReleaseComponent entity by IDs.
 func (csuo *CodeScanUpdateOne) AddComponentIDs(ids ...int) *CodeScanUpdateOne {
 	csuo.mutation.AddComponentIDs(ids...)
 	return csuo
 }
 
-// AddComponents adds the "components" edges to the ComponentUse entity.
-func (csuo *CodeScanUpdateOne) AddComponents(c ...*ComponentUse) *CodeScanUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddComponents adds the "components" edges to the ReleaseComponent entity.
+func (csuo *CodeScanUpdateOne) AddComponents(r ...*ReleaseComponent) *CodeScanUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return csuo.AddComponentIDs(ids...)
 }
@@ -531,23 +637,44 @@ func (csuo *CodeScanUpdateOne) RemoveIssues(c ...*CodeIssue) *CodeScanUpdateOne 
 	return csuo.RemoveIssueIDs(ids...)
 }
 
-// ClearComponents clears all "components" edges to the ComponentUse entity.
+// ClearVulnerabilities clears all "vulnerabilities" edges to the ReleaseVulnerability entity.
+func (csuo *CodeScanUpdateOne) ClearVulnerabilities() *CodeScanUpdateOne {
+	csuo.mutation.ClearVulnerabilities()
+	return csuo
+}
+
+// RemoveVulnerabilityIDs removes the "vulnerabilities" edge to ReleaseVulnerability entities by IDs.
+func (csuo *CodeScanUpdateOne) RemoveVulnerabilityIDs(ids ...int) *CodeScanUpdateOne {
+	csuo.mutation.RemoveVulnerabilityIDs(ids...)
+	return csuo
+}
+
+// RemoveVulnerabilities removes "vulnerabilities" edges to ReleaseVulnerability entities.
+func (csuo *CodeScanUpdateOne) RemoveVulnerabilities(r ...*ReleaseVulnerability) *CodeScanUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return csuo.RemoveVulnerabilityIDs(ids...)
+}
+
+// ClearComponents clears all "components" edges to the ReleaseComponent entity.
 func (csuo *CodeScanUpdateOne) ClearComponents() *CodeScanUpdateOne {
 	csuo.mutation.ClearComponents()
 	return csuo
 }
 
-// RemoveComponentIDs removes the "components" edge to ComponentUse entities by IDs.
+// RemoveComponentIDs removes the "components" edge to ReleaseComponent entities by IDs.
 func (csuo *CodeScanUpdateOne) RemoveComponentIDs(ids ...int) *CodeScanUpdateOne {
 	csuo.mutation.RemoveComponentIDs(ids...)
 	return csuo
 }
 
-// RemoveComponents removes "components" edges to ComponentUse entities.
-func (csuo *CodeScanUpdateOne) RemoveComponents(c ...*ComponentUse) *CodeScanUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// RemoveComponents removes "components" edges to ReleaseComponent entities.
+func (csuo *CodeScanUpdateOne) RemoveComponents(r ...*ReleaseComponent) *CodeScanUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return csuo.RemoveComponentIDs(ids...)
 }
@@ -786,6 +913,60 @@ func (csuo *CodeScanUpdateOne) sqlSave(ctx context.Context) (_node *CodeScan, er
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if csuo.mutation.VulnerabilitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   codescan.VulnerabilitiesTable,
+			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := csuo.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !csuo.mutation.VulnerabilitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   codescan.VulnerabilitiesTable,
+			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := csuo.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   codescan.VulnerabilitiesTable,
+			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if csuo.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -796,7 +977,7 @@ func (csuo *CodeScanUpdateOne) sqlSave(ctx context.Context) (_node *CodeScan, er
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}
@@ -812,7 +993,7 @@ func (csuo *CodeScanUpdateOne) sqlSave(ctx context.Context) (_node *CodeScan, er
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}
@@ -831,7 +1012,7 @@ func (csuo *CodeScanUpdateOne) sqlSave(ctx context.Context) (_node *CodeScan, er
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}

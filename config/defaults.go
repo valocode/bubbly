@@ -7,20 +7,19 @@ import (
 
 // Default CLI configuration
 const (
-	DefaultCLIColorToggle = true
-	DefaultDebugToggle    = false
+	DefaultCLINoColorToggle = false
+	DefaultCLIDebugToggle   = false
 )
 
-// Default Bubbly API Server configuration
+// Default Bubbly Server configuration
 const (
-	DefaultAPIServerProtocol = "http"
-	DefaultAPIServerHost     = "127.0.0.1"
-	DefaultAPIServerPort     = "8111"
+	DefaultServerHost = ""
+	DefaultServerPort = "8111"
 )
 
 // Default store configuration
 const (
-	DefaultStoreProvider = "postgres"
+	DefaultStoreProvider = "sqlite"
 	DefaultRetryAttempts = 5
 	DefaultRetrySleep    = 1
 )
@@ -45,15 +44,6 @@ const (
 const (
 	DefaultNATSServerHTTPPort = "8222"
 	DefaultNATSServerPort     = "4223"
-)
-
-// Default configuration for the bubbly agent components
-const (
-	DefaultAPIServerToggle  = false
-	DefaultDataStoreToggle  = false
-	DefaultWorkerToggle     = false
-	DefaultNATSServerToggle = true
-	DefaultDeploymentType   = SingleDeployment
 )
 
 // Default configuration for the bubbly client config
@@ -86,9 +76,8 @@ func defaultEnvBool(key string, defaultValue bool) bool {
 // or, preferentially, from provided environment variables.
 func DefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
-		Protocol: defaultEnvStr("BUBBLY_PROTOCOL", DefaultAPIServerProtocol),
-		Host:     defaultEnvStr("BUBBLY_HOST", DefaultAPIServerHost),
-		Port:     defaultEnvStr("BUBBLY_PORT", DefaultAPIServerPort),
+		Host: defaultEnvStr("BUBBLY_HOST", DefaultServerHost),
+		Port: defaultEnvStr("BUBBLY_PORT", DefaultServerPort),
 	}
 }
 
@@ -97,7 +86,7 @@ func DefaultServerConfig() *ServerConfig {
 func DefaultStoreConfig() *StoreConfig {
 	return &StoreConfig{
 		// Default provider
-		Provider: StoreProviderType(defaultEnvStr("BUBBLY_STORE_PROVIDER", DefaultStoreProvider)),
+		Provider: Provider(defaultEnvStr("BUBBLY_STORE", DefaultStoreProvider)),
 		// Default configuration for Postgres
 		PostgresAddr:     defaultEnvStr("POSTGRES_ADDR", DefaultPostgresAddr),
 		PostgresUser:     defaultEnvStr("POSTGRES_USER", DefaultPostgresUser),
@@ -116,43 +105,6 @@ func DefaultStoreConfig() *StoreConfig {
 }
 
 // ###########################################
-// Agent
-// ###########################################
-
-// DefaultAgentConfig creates an AgentConfig struct from defaults
-// or, preferentially, from provided environment variables.
-func DefaultAgentConfig() *AgentConfig {
-	return &AgentConfig{
-		NATSServerConfig:  DefaultNATSServerConfig(),
-		EnabledComponents: DefaultAgentComponentsEnabled(),
-		DeploymentType:    AgentDeploymentType(defaultEnvStr("AGENT_DEPLOYMENT_TYPE", DefaultDeploymentType.String())),
-	}
-}
-
-// DefaultAgentComponentsEnabled creates an AgentComponentsToggle struct
-// instance with all components disabled
-func DefaultAgentComponentsEnabled() *AgentComponentsToggle {
-	return &AgentComponentsToggle{
-		APIServer:  defaultEnvBool("AGENT_API_SERVER_TOGGLE", DefaultAPIServerToggle),
-		DataStore:  defaultEnvBool("AGENT_DATA_STORE_TOGGLE", DefaultDataStoreToggle),
-		Worker:     defaultEnvBool("AGENT_WORKER_TOGGLE", DefaultWorkerToggle),
-		NATSServer: defaultEnvBool("AGENT_NATS_SERVER_TOGGLE", DefaultNATSServerToggle),
-	}
-}
-
-// ###########################################
-// Auth
-// ###########################################
-
-func DefaultAuthConfig() *AuthConfig {
-	return &AuthConfig{
-		Authentication: defaultEnvBool("BUBBLY_AUTHENTICATION", false),
-		MultiTenancy:   defaultEnvBool("BUBBLY_MULTITENANCY", false),
-		AuthAddr:       defaultEnvStr("BUBBLY_AUTH_API", "http://bubbly-auth:1323/api/v1"),
-	}
-}
-
-// ###########################################
 // NATS
 // ###########################################
 
@@ -160,10 +112,10 @@ func DefaultAuthConfig() *AuthConfig {
 // or, preferentially, from provided environment variables.
 func DefaultNATSServerConfig() *NATSServerConfig {
 	httpPort, _ := strconv.Atoi(
-		defaultEnvStr("NATS_SERVER_HTTP_PORT", DefaultNATSServerHTTPPort),
+		defaultEnvStr("NATS_HTTP_PORT", DefaultNATSServerHTTPPort),
 	)
 	port, _ := strconv.Atoi(
-		defaultEnvStr("NATS_SERVER_PORT", DefaultNATSServerPort),
+		defaultEnvStr("NATS_PORT", DefaultNATSServerPort),
 	)
 	return &NATSServerConfig{
 		HTTPPort: httpPort,
@@ -177,10 +129,8 @@ func DefaultNATSServerConfig() *NATSServerConfig {
 
 func DefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
-		ClientType: HTTPClientType,
 		AuthToken:  defaultEnvStr("BUBBLY_TOKEN", DefaultClientAuthToken),
 		BubblyAddr: defaultEnvStr("BUBBLY_ADDR", DefaultBubblyAddr),
-		NATSAddr:   defaultEnvStr("BUBBLY_NATS_ADDR", DefaultNATSAddr),
 	}
 }
 
@@ -190,6 +140,6 @@ func DefaultClientConfig() *ClientConfig {
 
 func DefaultCLIConfig() *CLIConfig {
 	return &CLIConfig{
-		Color: defaultEnvBool("COLOR", DefaultCLIColorToggle),
+		NoColor: defaultEnvBool("NO_COLOR", DefaultCLINoColorToggle),
 	}
 }

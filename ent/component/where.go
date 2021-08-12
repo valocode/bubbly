@@ -709,25 +709,25 @@ func URLContainsFold(v string) predicate.Component {
 	})
 }
 
-// HasCves applies the HasEdge predicate on the "cves" edge.
-func HasCves() predicate.Component {
+// HasVulnerabilities applies the HasEdge predicate on the "vulnerabilities" edge.
+func HasVulnerabilities() predicate.Component {
 	return predicate.Component(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(CvesTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, CvesTable, CvesPrimaryKey...),
+			sqlgraph.To(VulnerabilitiesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, VulnerabilitiesTable, VulnerabilitiesPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasCvesWith applies the HasEdge predicate on the "cves" edge with a given conditions (other predicates).
-func HasCvesWith(preds ...predicate.CVE) predicate.Component {
+// HasVulnerabilitiesWith applies the HasEdge predicate on the "vulnerabilities" edge with a given conditions (other predicates).
+func HasVulnerabilitiesWith(preds ...predicate.Vulnerability) predicate.Component {
 	return predicate.Component(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(CvesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, CvesTable, CvesPrimaryKey...),
+			sqlgraph.To(VulnerabilitiesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, VulnerabilitiesTable, VulnerabilitiesPrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -778,7 +778,7 @@ func HasUses() predicate.Component {
 }
 
 // HasUsesWith applies the HasEdge predicate on the "uses" edge with a given conditions (other predicates).
-func HasUsesWith(preds ...predicate.ComponentUse) predicate.Component {
+func HasUsesWith(preds ...predicate.ReleaseComponent) predicate.Component {
 	return predicate.Component(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),

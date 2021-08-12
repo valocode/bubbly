@@ -5,6 +5,50 @@
 // #######################################
 
 // #######################################
+// Adapter
+// #######################################
+export interface Adapter_Json {
+	adapter?: Adapter[];
+}
+
+export interface Adapter {
+	id?: number;
+	name?: string;
+	tag?: string;
+	type?: AdapterType;
+	operation?: UNKNOWN_TYPE_json.RawMessage;
+	results_type?: AdapterResults_type;
+	results?: UNKNOWN_TYPE_[]byte;
+}
+
+export interface Adapter_Relay {
+	adapter_connection?: Adapter_Conn;
+}
+
+export interface Adapter_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: Adapter_Edge[];
+}
+
+export interface Adapter_Edge {
+	node?: Adapter;
+}
+
+export enum AdapterType {
+	json = "json",
+	csv = "csv",
+	xml = "xml",
+	yaml = "yaml",
+	http = "http",
+}
+
+export enum AdapterResults_type {
+	code_scan = "code_scan",
+	test_run = "test_run",
+}
+
+// #######################################
 // Artifact
 // #######################################
 export interface Artifact_Json {
@@ -37,77 +81,6 @@ export interface Artifact_Edge {
 export enum ArtifactType {
 	docker = "docker",
 	file = "file",
-}
-
-// #######################################
-// CVE
-// #######################################
-export interface CVE_Json {
-	cve?: CVE[];
-}
-
-export interface CVE {
-	id?: number;
-	cve_id?: string;
-	description?: string;
-	severity_score?: number;
-	severity?: CVESeverity;
-	published_data?: Date;
-	modified_data?: Date;
-	components?: Component[];
-	vulnerabilities?: Vulnerability[];
-	rules?: CVERule[];
-}
-
-export interface CVE_Relay {
-	cve_connection?: CVE_Conn;
-}
-
-export interface CVE_Conn {
-	totalCount?: number;
-	pageInfo?: pageInfo;
-	edges?: CVE_Edge[];
-}
-
-export interface CVE_Edge {
-	node?: CVE;
-}
-
-export enum CVESeverity {
-	None = "None",
-	Low = "Low",
-	Medium = "Medium",
-	High = "High",
-	Critical = "Critical",
-}
-
-// #######################################
-// CVERule
-// #######################################
-export interface CVERule_Json {
-	cve_rule?: CVERule[];
-}
-
-export interface CVERule {
-	id?: number;
-	name?: string;
-	cve?: CVE;
-	project?: Project[];
-	repo?: Repo[];
-}
-
-export interface CVERule_Relay {
-	cve_rule_connection?: CVERule_Conn;
-}
-
-export interface CVERule_Conn {
-	totalCount?: number;
-	pageInfo?: pageInfo;
-	edges?: CVERule_Edge[];
-}
-
-export interface CVERule_Edge {
-	node?: CVERule;
 }
 
 // #######################################
@@ -195,7 +168,8 @@ export interface CodeScan {
 	release?: Release;
 	entry?: ReleaseEntry;
 	issues?: CodeIssue[];
-	components?: ComponentUse[];
+	vulnerabilities?: ReleaseVulnerability[];
+	components?: ReleaseComponent[];
 }
 
 export interface CodeScan_Relay {
@@ -226,9 +200,9 @@ export interface Component {
 	version?: string;
 	description?: string;
 	url?: string;
-	cves?: CVE[];
+	vulnerabilities?: Vulnerability[];
 	licenses?: License[];
-	uses?: ComponentUse[];
+	uses?: ReleaseComponent[];
 }
 
 export interface Component_Relay {
@@ -243,34 +217,6 @@ export interface Component_Conn {
 
 export interface Component_Edge {
 	node?: Component;
-}
-
-// #######################################
-// ComponentUse
-// #######################################
-export interface ComponentUse_Json {
-	component_use?: ComponentUse[];
-}
-
-export interface ComponentUse {
-	id?: number;
-	release?: Release;
-	scans?: CodeScan[];
-	component?: Component;
-}
-
-export interface ComponentUse_Relay {
-	component_use_connection?: ComponentUse_Conn;
-}
-
-export interface ComponentUse_Conn {
-	totalCount?: number;
-	pageInfo?: pageInfo;
-	edges?: ComponentUse_Edge[];
-}
-
-export interface ComponentUse_Edge {
-	node?: ComponentUse;
 }
 
 // #######################################
@@ -373,8 +319,7 @@ export interface Project {
 	id?: number;
 	name?: string;
 	repos?: Repo[];
-	releases?: Release[];
-	cve_rules?: CVERule[];
+	vulnerability_reviews?: VulnerabilityReview[];
 }
 
 export interface Project_Relay {
@@ -405,13 +350,14 @@ export interface Release {
 	status?: ReleaseStatus;
 	subreleases?: Release[];
 	dependencies?: Release[];
-	project?: Project;
 	commit?: GitCommit;
 	log?: ReleaseEntry[];
 	artifacts?: Artifact[];
-	components?: ComponentUse[];
+	components?: ReleaseComponent[];
+	vulnerabilities?: ReleaseVulnerability[];
 	code_scans?: CodeScan[];
 	test_runs?: TestRun[];
+	vulnerability_reviews?: VulnerabilityReview[];
 }
 
 export interface Release_Relay {
@@ -432,6 +378,35 @@ export enum ReleaseStatus {
 	pending = "pending",
 	ready = "ready",
 	blocked = "blocked",
+}
+
+// #######################################
+// ReleaseComponent
+// #######################################
+export interface ReleaseComponent_Json {
+	release_component?: ReleaseComponent[];
+}
+
+export interface ReleaseComponent {
+	id?: number;
+	release?: Release;
+	scans?: CodeScan[];
+	component?: Component;
+	vulnerabilities?: ReleaseVulnerability[];
+}
+
+export interface ReleaseComponent_Relay {
+	release_component_connection?: ReleaseComponent_Conn;
+}
+
+export interface ReleaseComponent_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: ReleaseComponent_Edge[];
+}
+
+export interface ReleaseComponent_Edge {
+	node?: ReleaseComponent;
 }
 
 // #######################################
@@ -473,6 +448,36 @@ export enum ReleaseEntryType {
 }
 
 // #######################################
+// ReleaseVulnerability
+// #######################################
+export interface ReleaseVulnerability_Json {
+	release_vulnerability?: ReleaseVulnerability[];
+}
+
+export interface ReleaseVulnerability {
+	id?: number;
+	vulnerability?: Vulnerability;
+	components?: ReleaseComponent[];
+	release?: Release;
+	reviews?: VulnerabilityReview[];
+	scans?: CodeScan[];
+}
+
+export interface ReleaseVulnerability_Relay {
+	release_vulnerability_connection?: ReleaseVulnerability_Conn;
+}
+
+export interface ReleaseVulnerability_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: ReleaseVulnerability_Edge[];
+}
+
+export interface ReleaseVulnerability_Edge {
+	node?: ReleaseVulnerability;
+}
+
+// #######################################
 // Repo
 // #######################################
 export interface Repo_Json {
@@ -482,9 +487,9 @@ export interface Repo_Json {
 export interface Repo {
 	id?: number;
 	name?: string;
-	project?: Project;
+	projects?: Project[];
 	commits?: GitCommit[];
-	cve_rules?: CVERule[];
+	vulnerability_reviews?: VulnerabilityReview[];
 }
 
 export interface Repo_Relay {
@@ -569,7 +574,16 @@ export interface Vulnerability_Json {
 
 export interface Vulnerability {
 	id?: number;
-	cve?: CVE;
+	vid?: string;
+	summary?: string;
+	description?: string;
+	severity_score?: number;
+	severity?: VulnerabilitySeverity;
+	published?: Date;
+	modified?: Date;
+	components?: Component[];
+	reviews?: VulnerabilityReview[];
+	instances?: ReleaseVulnerability[];
 }
 
 export interface Vulnerability_Relay {
@@ -584,6 +598,54 @@ export interface Vulnerability_Conn {
 
 export interface Vulnerability_Edge {
 	node?: Vulnerability;
+}
+
+export enum VulnerabilitySeverity {
+	None = "None",
+	Low = "Low",
+	Medium = "Medium",
+	High = "High",
+	Critical = "Critical",
+}
+
+// #######################################
+// VulnerabilityReview
+// #######################################
+export interface VulnerabilityReview_Json {
+	vulnerability_review?: VulnerabilityReview[];
+}
+
+export interface VulnerabilityReview {
+	id?: number;
+	name?: string;
+	decision?: VulnerabilityReviewDecision;
+	vulnerability?: Vulnerability;
+	projects?: Project[];
+	repos?: Repo[];
+	releases?: Release[];
+	instances?: ReleaseVulnerability[];
+}
+
+export interface VulnerabilityReview_Relay {
+	vulnerability_review_connection?: VulnerabilityReview_Conn;
+}
+
+export interface VulnerabilityReview_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: VulnerabilityReview_Edge[];
+}
+
+export interface VulnerabilityReview_Edge {
+	node?: VulnerabilityReview;
+}
+
+export enum VulnerabilityReviewDecision {
+	exploitable = "exploitable",
+	in_progress = "in_progress",
+	invalid = "invalid",
+	mitigated = "mitigated",
+	ineffective = "ineffective",
 }
 
 export interface pageInfo {

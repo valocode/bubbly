@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/extensions/entmodel"
 )
 
 type TestCase struct {
@@ -18,6 +19,7 @@ type TestCase struct {
 func (TestCase) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "test_case"},
+		entmodel.Annotation{},
 	}
 }
 

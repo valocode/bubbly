@@ -12,11 +12,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/valocode/bubbly/ent/cverule"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
-	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // ProjectQuery is the builder for querying Project entities.
@@ -29,9 +28,8 @@ type ProjectQuery struct {
 	fields     []string
 	predicates []predicate.Project
 	// eager-loading edges.
-	withRepos    *RepoQuery
-	withReleases *ReleaseQuery
-	withCveRules *CVERuleQuery
+	withRepos                *RepoQuery
+	withVulnerabilityReviews *VulnerabilityReviewQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -82,7 +80,7 @@ func (pq *ProjectQuery) QueryRepos() *RepoQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, selector),
 			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, project.ReposTable, project.ReposColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, project.ReposTable, project.ReposPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -90,9 +88,9 @@ func (pq *ProjectQuery) QueryRepos() *RepoQuery {
 	return query
 }
 
-// QueryReleases chains the current query on the "releases" edge.
-func (pq *ProjectQuery) QueryReleases() *ReleaseQuery {
-	query := &ReleaseQuery{config: pq.config}
+// QueryVulnerabilityReviews chains the current query on the "vulnerability_reviews" edge.
+func (pq *ProjectQuery) QueryVulnerabilityReviews() *VulnerabilityReviewQuery {
+	query := &VulnerabilityReviewQuery{config: pq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -103,30 +101,8 @@ func (pq *ProjectQuery) QueryReleases() *ReleaseQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(release.Table, release.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, project.ReleasesTable, project.ReleasesColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryCveRules chains the current query on the "cve_rules" edge.
-func (pq *ProjectQuery) QueryCveRules() *CVERuleQuery {
-	query := &CVERuleQuery{config: pq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(cverule.Table, cverule.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, project.CveRulesTable, project.CveRulesPrimaryKey...),
+			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, project.VulnerabilityReviewsTable, project.VulnerabilityReviewsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -310,14 +286,13 @@ func (pq *ProjectQuery) Clone() *ProjectQuery {
 		return nil
 	}
 	return &ProjectQuery{
-		config:       pq.config,
-		limit:        pq.limit,
-		offset:       pq.offset,
-		order:        append([]OrderFunc{}, pq.order...),
-		predicates:   append([]predicate.Project{}, pq.predicates...),
-		withRepos:    pq.withRepos.Clone(),
-		withReleases: pq.withReleases.Clone(),
-		withCveRules: pq.withCveRules.Clone(),
+		config:                   pq.config,
+		limit:                    pq.limit,
+		offset:                   pq.offset,
+		order:                    append([]OrderFunc{}, pq.order...),
+		predicates:               append([]predicate.Project{}, pq.predicates...),
+		withRepos:                pq.withRepos.Clone(),
+		withVulnerabilityReviews: pq.withVulnerabilityReviews.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
@@ -335,25 +310,14 @@ func (pq *ProjectQuery) WithRepos(opts ...func(*RepoQuery)) *ProjectQuery {
 	return pq
 }
 
-// WithReleases tells the query-builder to eager-load the nodes that are connected to
-// the "releases" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithReleases(opts ...func(*ReleaseQuery)) *ProjectQuery {
-	query := &ReleaseQuery{config: pq.config}
+// WithVulnerabilityReviews tells the query-builder to eager-load the nodes that are connected to
+// the "vulnerability_reviews" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *ProjectQuery) WithVulnerabilityReviews(opts ...func(*VulnerabilityReviewQuery)) *ProjectQuery {
+	query := &VulnerabilityReviewQuery{config: pq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	pq.withReleases = query
-	return pq
-}
-
-// WithCveRules tells the query-builder to eager-load the nodes that are connected to
-// the "cve_rules" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithCveRules(opts ...func(*CVERuleQuery)) *ProjectQuery {
-	query := &CVERuleQuery{config: pq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	pq.withCveRules = query
+	pq.withVulnerabilityReviews = query
 	return pq
 }
 
@@ -422,10 +386,9 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context) ([]*Project, error) {
 	var (
 		nodes       = []*Project{}
 		_spec       = pq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [2]bool{
 			pq.withRepos != nil,
-			pq.withReleases != nil,
-			pq.withCveRules != nil,
+			pq.withVulnerabilityReviews != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -450,69 +413,11 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context) ([]*Project, error) {
 
 	if query := pq.withRepos; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*Project)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Repos = []*Repo{}
-		}
-		query.withFKs = true
-		query.Where(predicate.Repo(func(s *sql.Selector) {
-			s.Where(sql.InValues(project.ReposColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			fk := n.repo_project
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "repo_project" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "repo_project" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.Repos = append(node.Edges.Repos, n)
-		}
-	}
-
-	if query := pq.withReleases; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*Project)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Releases = []*Release{}
-		}
-		query.withFKs = true
-		query.Where(predicate.Release(func(s *sql.Selector) {
-			s.Where(sql.InValues(project.ReleasesColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			fk := n.release_project
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "release_project" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "release_project" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.Releases = append(node.Edges.Releases, n)
-		}
-	}
-
-	if query := pq.withCveRules; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
 		ids := make(map[int]*Project, len(nodes))
 		for _, node := range nodes {
 			ids[node.ID] = node
 			fks = append(fks, node.ID)
-			node.Edges.CveRules = []*CVERule{}
+			node.Edges.Repos = []*Repo{}
 		}
 		var (
 			edgeids []int
@@ -521,11 +426,11 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context) ([]*Project, error) {
 		_spec := &sqlgraph.EdgeQuerySpec{
 			Edge: &sqlgraph.EdgeSpec{
 				Inverse: true,
-				Table:   project.CveRulesTable,
-				Columns: project.CveRulesPrimaryKey,
+				Table:   project.ReposTable,
+				Columns: project.ReposPrimaryKey,
 			},
 			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(project.CveRulesPrimaryKey[1], fks...))
+				s.Where(sql.InValues(project.ReposPrimaryKey[1], fks...))
 			},
 			ScanValues: func() [2]interface{} {
 				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
@@ -553,9 +458,9 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context) ([]*Project, error) {
 			},
 		}
 		if err := sqlgraph.QueryEdges(ctx, pq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "cve_rules": %w`, err)
+			return nil, fmt.Errorf(`query edges "repos": %w`, err)
 		}
-		query.Where(cverule.IDIn(edgeids...))
+		query.Where(repo.IDIn(edgeids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
@@ -563,10 +468,75 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context) ([]*Project, error) {
 		for _, n := range neighbors {
 			nodes, ok := edges[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected "cve_rules" node returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected "repos" node returned %v`, n.ID)
 			}
 			for i := range nodes {
-				nodes[i].Edges.CveRules = append(nodes[i].Edges.CveRules, n)
+				nodes[i].Edges.Repos = append(nodes[i].Edges.Repos, n)
+			}
+		}
+	}
+
+	if query := pq.withVulnerabilityReviews; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*Project, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.VulnerabilityReviews = []*VulnerabilityReview{}
+		}
+		var (
+			edgeids []int
+			edges   = make(map[int][]*Project)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   project.VulnerabilityReviewsTable,
+				Columns: project.VulnerabilityReviewsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(project.VulnerabilityReviewsPrimaryKey[1], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, pq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "vulnerability_reviews": %w`, err)
+		}
+		query.Where(vulnerabilityreview.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "vulnerability_reviews" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.VulnerabilityReviews = append(nodes[i].Edges.VulnerabilityReviews, n)
 			}
 		}
 	}

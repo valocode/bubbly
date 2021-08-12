@@ -14,13 +14,14 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/predicate"
-	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/testrun"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // ReleaseQuery is the builder for querying Release entities.
@@ -33,16 +34,17 @@ type ReleaseQuery struct {
 	fields     []string
 	predicates []predicate.Release
 	// eager-loading edges.
-	withSubreleases  *ReleaseQuery
-	withDependencies *ReleaseQuery
-	withProject      *ProjectQuery
-	withCommit       *GitCommitQuery
-	withLog          *ReleaseEntryQuery
-	withArtifacts    *ArtifactQuery
-	withComponents   *ComponentUseQuery
-	withCodeScans    *CodeScanQuery
-	withTestRuns     *TestRunQuery
-	withFKs          bool
+	withSubreleases          *ReleaseQuery
+	withDependencies         *ReleaseQuery
+	withCommit               *GitCommitQuery
+	withLog                  *ReleaseEntryQuery
+	withArtifacts            *ArtifactQuery
+	withComponents           *ReleaseComponentQuery
+	withVulnerabilities      *ReleaseVulnerabilityQuery
+	withCodeScans            *CodeScanQuery
+	withTestRuns             *TestRunQuery
+	withVulnerabilityReviews *VulnerabilityReviewQuery
+	withFKs                  bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -123,28 +125,6 @@ func (rq *ReleaseQuery) QueryDependencies() *ReleaseQuery {
 	return query
 }
 
-// QueryProject chains the current query on the "project" edge.
-func (rq *ReleaseQuery) QueryProject() *ProjectQuery {
-	query := &ProjectQuery{config: rq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(release.Table, release.FieldID, selector),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, release.ProjectTable, release.ProjectColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryCommit chains the current query on the "commit" edge.
 func (rq *ReleaseQuery) QueryCommit() *GitCommitQuery {
 	query := &GitCommitQuery{config: rq.config}
@@ -212,8 +192,8 @@ func (rq *ReleaseQuery) QueryArtifacts() *ArtifactQuery {
 }
 
 // QueryComponents chains the current query on the "components" edge.
-func (rq *ReleaseQuery) QueryComponents() *ComponentUseQuery {
-	query := &ComponentUseQuery{config: rq.config}
+func (rq *ReleaseQuery) QueryComponents() *ReleaseComponentQuery {
+	query := &ReleaseComponentQuery{config: rq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -224,8 +204,30 @@ func (rq *ReleaseQuery) QueryComponents() *ComponentUseQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(release.Table, release.FieldID, selector),
-			sqlgraph.To(componentuse.Table, componentuse.FieldID),
+			sqlgraph.To(releasecomponent.Table, releasecomponent.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, release.ComponentsTable, release.ComponentsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVulnerabilities chains the current query on the "vulnerabilities" edge.
+func (rq *ReleaseQuery) QueryVulnerabilities() *ReleaseVulnerabilityQuery {
+	query := &ReleaseVulnerabilityQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, selector),
+			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, release.VulnerabilitiesTable, release.VulnerabilitiesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -270,6 +272,28 @@ func (rq *ReleaseQuery) QueryTestRuns() *TestRunQuery {
 			sqlgraph.From(release.Table, release.FieldID, selector),
 			sqlgraph.To(testrun.Table, testrun.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, release.TestRunsTable, release.TestRunsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVulnerabilityReviews chains the current query on the "vulnerability_reviews" edge.
+func (rq *ReleaseQuery) QueryVulnerabilityReviews() *VulnerabilityReviewQuery {
+	query := &VulnerabilityReviewQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, selector),
+			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, release.VulnerabilityReviewsTable, release.VulnerabilityReviewsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -453,20 +477,21 @@ func (rq *ReleaseQuery) Clone() *ReleaseQuery {
 		return nil
 	}
 	return &ReleaseQuery{
-		config:           rq.config,
-		limit:            rq.limit,
-		offset:           rq.offset,
-		order:            append([]OrderFunc{}, rq.order...),
-		predicates:       append([]predicate.Release{}, rq.predicates...),
-		withSubreleases:  rq.withSubreleases.Clone(),
-		withDependencies: rq.withDependencies.Clone(),
-		withProject:      rq.withProject.Clone(),
-		withCommit:       rq.withCommit.Clone(),
-		withLog:          rq.withLog.Clone(),
-		withArtifacts:    rq.withArtifacts.Clone(),
-		withComponents:   rq.withComponents.Clone(),
-		withCodeScans:    rq.withCodeScans.Clone(),
-		withTestRuns:     rq.withTestRuns.Clone(),
+		config:                   rq.config,
+		limit:                    rq.limit,
+		offset:                   rq.offset,
+		order:                    append([]OrderFunc{}, rq.order...),
+		predicates:               append([]predicate.Release{}, rq.predicates...),
+		withSubreleases:          rq.withSubreleases.Clone(),
+		withDependencies:         rq.withDependencies.Clone(),
+		withCommit:               rq.withCommit.Clone(),
+		withLog:                  rq.withLog.Clone(),
+		withArtifacts:            rq.withArtifacts.Clone(),
+		withComponents:           rq.withComponents.Clone(),
+		withVulnerabilities:      rq.withVulnerabilities.Clone(),
+		withCodeScans:            rq.withCodeScans.Clone(),
+		withTestRuns:             rq.withTestRuns.Clone(),
+		withVulnerabilityReviews: rq.withVulnerabilityReviews.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
@@ -492,17 +517,6 @@ func (rq *ReleaseQuery) WithDependencies(opts ...func(*ReleaseQuery)) *ReleaseQu
 		opt(query)
 	}
 	rq.withDependencies = query
-	return rq
-}
-
-// WithProject tells the query-builder to eager-load the nodes that are connected to
-// the "project" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReleaseQuery) WithProject(opts ...func(*ProjectQuery)) *ReleaseQuery {
-	query := &ProjectQuery{config: rq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	rq.withProject = query
 	return rq
 }
 
@@ -541,12 +555,23 @@ func (rq *ReleaseQuery) WithArtifacts(opts ...func(*ArtifactQuery)) *ReleaseQuer
 
 // WithComponents tells the query-builder to eager-load the nodes that are connected to
 // the "components" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReleaseQuery) WithComponents(opts ...func(*ComponentUseQuery)) *ReleaseQuery {
-	query := &ComponentUseQuery{config: rq.config}
+func (rq *ReleaseQuery) WithComponents(opts ...func(*ReleaseComponentQuery)) *ReleaseQuery {
+	query := &ReleaseComponentQuery{config: rq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
 	rq.withComponents = query
+	return rq
+}
+
+// WithVulnerabilities tells the query-builder to eager-load the nodes that are connected to
+// the "vulnerabilities" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *ReleaseQuery) WithVulnerabilities(opts ...func(*ReleaseVulnerabilityQuery)) *ReleaseQuery {
+	query := &ReleaseVulnerabilityQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withVulnerabilities = query
 	return rq
 }
 
@@ -569,6 +594,17 @@ func (rq *ReleaseQuery) WithTestRuns(opts ...func(*TestRunQuery)) *ReleaseQuery 
 		opt(query)
 	}
 	rq.withTestRuns = query
+	return rq
+}
+
+// WithVulnerabilityReviews tells the query-builder to eager-load the nodes that are connected to
+// the "vulnerability_reviews" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *ReleaseQuery) WithVulnerabilityReviews(opts ...func(*VulnerabilityReviewQuery)) *ReleaseQuery {
+	query := &VulnerabilityReviewQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withVulnerabilityReviews = query
 	return rq
 }
 
@@ -638,19 +674,20 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		nodes       = []*Release{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [9]bool{
+		loadedTypes = [10]bool{
 			rq.withSubreleases != nil,
 			rq.withDependencies != nil,
-			rq.withProject != nil,
 			rq.withCommit != nil,
 			rq.withLog != nil,
 			rq.withArtifacts != nil,
 			rq.withComponents != nil,
+			rq.withVulnerabilities != nil,
 			rq.withCodeScans != nil,
 			rq.withTestRuns != nil,
+			rq.withVulnerabilityReviews != nil,
 		}
 	)
-	if rq.withProject != nil || rq.withCommit != nil {
+	if rq.withCommit != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -806,35 +843,6 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		}
 	}
 
-	if query := rq.withProject; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*Release)
-		for i := range nodes {
-			if nodes[i].release_project == nil {
-				continue
-			}
-			fk := *nodes[i].release_project
-			if _, ok := nodeids[fk]; !ok {
-				ids = append(ids, fk)
-			}
-			nodeids[fk] = append(nodeids[fk], nodes[i])
-		}
-		query.Where(project.IDIn(ids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "release_project" returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Project = n
-			}
-		}
-	}
-
 	if query := rq.withCommit; query != nil {
 		ids := make([]int, 0, len(nodes))
 		nodeids := make(map[int][]*Release)
@@ -928,10 +936,10 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Components = []*ComponentUse{}
+			nodes[i].Edges.Components = []*ReleaseComponent{}
 		}
 		query.withFKs = true
-		query.Where(predicate.ComponentUse(func(s *sql.Selector) {
+		query.Where(predicate.ReleaseComponent(func(s *sql.Selector) {
 			s.Where(sql.InValues(release.ComponentsColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
@@ -939,15 +947,44 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.component_use_release
+			fk := n.release_component_release
 			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "component_use_release" is nil for node %v`, n.ID)
+				return nil, fmt.Errorf(`foreign-key "release_component_release" is nil for node %v`, n.ID)
 			}
 			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "component_use_release" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "release_component_release" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Components = append(node.Edges.Components, n)
+		}
+	}
+
+	if query := rq.withVulnerabilities; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Release)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Vulnerabilities = []*ReleaseVulnerability{}
+		}
+		query.withFKs = true
+		query.Where(predicate.ReleaseVulnerability(func(s *sql.Selector) {
+			s.Where(sql.InValues(release.VulnerabilitiesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.release_vulnerability_release
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "release_vulnerability_release" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "release_vulnerability_release" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Vulnerabilities = append(node.Edges.Vulnerabilities, n)
 		}
 	}
 
@@ -1006,6 +1043,71 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 				return nil, fmt.Errorf(`unexpected foreign-key "test_run_release" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.TestRuns = append(node.Edges.TestRuns, n)
+		}
+	}
+
+	if query := rq.withVulnerabilityReviews; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*Release, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.VulnerabilityReviews = []*VulnerabilityReview{}
+		}
+		var (
+			edgeids []int
+			edges   = make(map[int][]*Release)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   release.VulnerabilityReviewsTable,
+				Columns: release.VulnerabilityReviewsPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(release.VulnerabilityReviewsPrimaryKey[1], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, rq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "vulnerability_reviews": %w`, err)
+		}
+		query.Where(vulnerabilityreview.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "vulnerability_reviews" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.VulnerabilityReviews = append(nodes[i].Edges.VulnerabilityReviews, n)
+			}
 		}
 	}
 

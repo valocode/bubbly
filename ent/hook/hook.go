@@ -9,6 +9,19 @@ import (
 	"github.com/valocode/bubbly/ent"
 )
 
+// The AdapterFunc type is an adapter to allow the use of ordinary
+// function as Adapter mutator.
+type AdapterFunc func(context.Context, *ent.AdapterMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AdapterFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.AdapterMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AdapterMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The ArtifactFunc type is an adapter to allow the use of ordinary
 // function as Artifact mutator.
 type ArtifactFunc func(context.Context, *ent.ArtifactMutation) (ent.Value, error)
@@ -18,32 +31,6 @@ func (f ArtifactFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	mv, ok := m.(*ent.ArtifactMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ArtifactMutation", m)
-	}
-	return f(ctx, mv)
-}
-
-// The CVEFunc type is an adapter to allow the use of ordinary
-// function as CVE mutator.
-type CVEFunc func(context.Context, *ent.CVEMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f CVEFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.CVEMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CVEMutation", m)
-	}
-	return f(ctx, mv)
-}
-
-// The CVERuleFunc type is an adapter to allow the use of ordinary
-// function as CVERule mutator.
-type CVERuleFunc func(context.Context, *ent.CVERuleMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f CVERuleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.CVERuleMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CVERuleMutation", m)
 	}
 	return f(ctx, mv)
 }
@@ -96,19 +83,6 @@ func (f ComponentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	mv, ok := m.(*ent.ComponentMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ComponentMutation", m)
-	}
-	return f(ctx, mv)
-}
-
-// The ComponentUseFunc type is an adapter to allow the use of ordinary
-// function as ComponentUse mutator.
-type ComponentUseFunc func(context.Context, *ent.ComponentUseMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f ComponentUseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.ComponentUseMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ComponentUseMutation", m)
 	}
 	return f(ctx, mv)
 }
@@ -178,6 +152,19 @@ func (f ReleaseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return f(ctx, mv)
 }
 
+// The ReleaseComponentFunc type is an adapter to allow the use of ordinary
+// function as ReleaseComponent mutator.
+type ReleaseComponentFunc func(context.Context, *ent.ReleaseComponentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReleaseComponentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ReleaseComponentMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReleaseComponentMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The ReleaseEntryFunc type is an adapter to allow the use of ordinary
 // function as ReleaseEntry mutator.
 type ReleaseEntryFunc func(context.Context, *ent.ReleaseEntryMutation) (ent.Value, error)
@@ -187,6 +174,19 @@ func (f ReleaseEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	mv, ok := m.(*ent.ReleaseEntryMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReleaseEntryMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The ReleaseVulnerabilityFunc type is an adapter to allow the use of ordinary
+// function as ReleaseVulnerability mutator.
+type ReleaseVulnerabilityFunc func(context.Context, *ent.ReleaseVulnerabilityMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReleaseVulnerabilityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ReleaseVulnerabilityMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReleaseVulnerabilityMutation", m)
 	}
 	return f(ctx, mv)
 }
@@ -239,6 +239,19 @@ func (f VulnerabilityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Valu
 	mv, ok := m.(*ent.VulnerabilityMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VulnerabilityMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The VulnerabilityReviewFunc type is an adapter to allow the use of ordinary
+// function as VulnerabilityReview mutator.
+type VulnerabilityReviewFunc func(context.Context, *ent.VulnerabilityReviewMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f VulnerabilityReviewFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.VulnerabilityReviewMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VulnerabilityReviewMutation", m)
 	}
 	return f(ctx, mv)
 }

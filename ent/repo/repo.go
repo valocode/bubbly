@@ -9,21 +9,19 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// EdgeProject holds the string denoting the project edge name in mutations.
-	EdgeProject = "project"
+	// EdgeProjects holds the string denoting the projects edge name in mutations.
+	EdgeProjects = "projects"
 	// EdgeCommits holds the string denoting the commits edge name in mutations.
 	EdgeCommits = "commits"
-	// EdgeCveRules holds the string denoting the cve_rules edge name in mutations.
-	EdgeCveRules = "cve_rules"
+	// EdgeVulnerabilityReviews holds the string denoting the vulnerability_reviews edge name in mutations.
+	EdgeVulnerabilityReviews = "vulnerability_reviews"
 	// Table holds the table name of the repo in the database.
 	Table = "repo"
-	// ProjectTable is the table that holds the project relation/edge.
-	ProjectTable = "repo"
-	// ProjectInverseTable is the table name for the Project entity.
+	// ProjectsTable is the table that holds the projects relation/edge. The primary key declared below.
+	ProjectsTable = "repo_projects"
+	// ProjectsInverseTable is the table name for the Project entity.
 	// It exists in this package in order to avoid circular dependency with the "project" package.
-	ProjectInverseTable = "project"
-	// ProjectColumn is the table column denoting the project relation/edge.
-	ProjectColumn = "repo_project"
+	ProjectsInverseTable = "project"
 	// CommitsTable is the table that holds the commits relation/edge.
 	CommitsTable = "commit"
 	// CommitsInverseTable is the table name for the GitCommit entity.
@@ -31,11 +29,11 @@ const (
 	CommitsInverseTable = "commit"
 	// CommitsColumn is the table column denoting the commits relation/edge.
 	CommitsColumn = "git_commit_repo"
-	// CveRulesTable is the table that holds the cve_rules relation/edge. The primary key declared below.
-	CveRulesTable = "cve_rule_repo"
-	// CveRulesInverseTable is the table name for the CVERule entity.
-	// It exists in this package in order to avoid circular dependency with the "cverule" package.
-	CveRulesInverseTable = "cve_rule"
+	// VulnerabilityReviewsTable is the table that holds the vulnerability_reviews relation/edge. The primary key declared below.
+	VulnerabilityReviewsTable = "vulnerability_review_repos"
+	// VulnerabilityReviewsInverseTable is the table name for the VulnerabilityReview entity.
+	// It exists in this package in order to avoid circular dependency with the "vulnerabilityreview" package.
+	VulnerabilityReviewsInverseTable = "vulnerability_review"
 )
 
 // Columns holds all SQL columns for repo fields.
@@ -44,27 +42,19 @@ var Columns = []string{
 	FieldName,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "repo"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"repo_project",
-}
-
 var (
-	// CveRulesPrimaryKey and CveRulesColumn2 are the table columns denoting the
-	// primary key for the cve_rules relation (M2M).
-	CveRulesPrimaryKey = []string{"cve_rule_id", "repo_id"}
+	// ProjectsPrimaryKey and ProjectsColumn2 are the table columns denoting the
+	// primary key for the projects relation (M2M).
+	ProjectsPrimaryKey = []string{"repo_id", "project_id"}
+	// VulnerabilityReviewsPrimaryKey and VulnerabilityReviewsColumn2 are the table columns denoting the
+	// primary key for the vulnerability_reviews relation (M2M).
+	VulnerabilityReviewsPrimaryKey = []string{"vulnerability_review_id", "repo_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}

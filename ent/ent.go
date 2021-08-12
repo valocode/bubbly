@@ -8,24 +8,25 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/valocode/bubbly/ent/adapter"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/componentuse"
-	"github.com/valocode/bubbly/ent/cve"
-	"github.com/valocode/bubbly/ent/cverule"
 	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -46,24 +47,25 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
-		artifact.Table:      artifact.ValidColumn,
-		cve.Table:           cve.ValidColumn,
-		cverule.Table:       cverule.ValidColumn,
-		cwe.Table:           cwe.ValidColumn,
-		codeissue.Table:     codeissue.ValidColumn,
-		codescan.Table:      codescan.ValidColumn,
-		component.Table:     component.ValidColumn,
-		componentuse.Table:  componentuse.ValidColumn,
-		gitcommit.Table:     gitcommit.ValidColumn,
-		license.Table:       license.ValidColumn,
-		licenseuse.Table:    licenseuse.ValidColumn,
-		project.Table:       project.ValidColumn,
-		release.Table:       release.ValidColumn,
-		releaseentry.Table:  releaseentry.ValidColumn,
-		repo.Table:          repo.ValidColumn,
-		testcase.Table:      testcase.ValidColumn,
-		testrun.Table:       testrun.ValidColumn,
-		vulnerability.Table: vulnerability.ValidColumn,
+		adapter.Table:              adapter.ValidColumn,
+		artifact.Table:             artifact.ValidColumn,
+		cwe.Table:                  cwe.ValidColumn,
+		codeissue.Table:            codeissue.ValidColumn,
+		codescan.Table:             codescan.ValidColumn,
+		component.Table:            component.ValidColumn,
+		gitcommit.Table:            gitcommit.ValidColumn,
+		license.Table:              license.ValidColumn,
+		licenseuse.Table:           licenseuse.ValidColumn,
+		project.Table:              project.ValidColumn,
+		release.Table:              release.ValidColumn,
+		releasecomponent.Table:     releasecomponent.ValidColumn,
+		releaseentry.Table:         releaseentry.ValidColumn,
+		releasevulnerability.Table: releasevulnerability.ValidColumn,
+		repo.Table:                 repo.ValidColumn,
+		testcase.Table:             testcase.ValidColumn,
+		testrun.Table:              testrun.ValidColumn,
+		vulnerability.Table:        vulnerability.ValidColumn,
+		vulnerabilityreview.Table:  vulnerabilityreview.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {

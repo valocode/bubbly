@@ -12,13 +12,14 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/predicate"
-	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/testrun"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // ReleaseUpdate is the builder for updating Release entities.
@@ -90,17 +91,6 @@ func (ru *ReleaseUpdate) AddDependencies(r ...*Release) *ReleaseUpdate {
 	return ru.AddDependencyIDs(ids...)
 }
 
-// SetProjectID sets the "project" edge to the Project entity by ID.
-func (ru *ReleaseUpdate) SetProjectID(id int) *ReleaseUpdate {
-	ru.mutation.SetProjectID(id)
-	return ru
-}
-
-// SetProject sets the "project" edge to the Project entity.
-func (ru *ReleaseUpdate) SetProject(p *Project) *ReleaseUpdate {
-	return ru.SetProjectID(p.ID)
-}
-
 // SetCommitID sets the "commit" edge to the GitCommit entity by ID.
 func (ru *ReleaseUpdate) SetCommitID(id int) *ReleaseUpdate {
 	ru.mutation.SetCommitID(id)
@@ -142,19 +132,34 @@ func (ru *ReleaseUpdate) AddArtifacts(a ...*Artifact) *ReleaseUpdate {
 	return ru.AddArtifactIDs(ids...)
 }
 
-// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+// AddComponentIDs adds the "components" edge to the ReleaseComponent entity by IDs.
 func (ru *ReleaseUpdate) AddComponentIDs(ids ...int) *ReleaseUpdate {
 	ru.mutation.AddComponentIDs(ids...)
 	return ru
 }
 
-// AddComponents adds the "components" edges to the ComponentUse entity.
-func (ru *ReleaseUpdate) AddComponents(c ...*ComponentUse) *ReleaseUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddComponents adds the "components" edges to the ReleaseComponent entity.
+func (ru *ReleaseUpdate) AddComponents(r ...*ReleaseComponent) *ReleaseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return ru.AddComponentIDs(ids...)
+}
+
+// AddVulnerabilityIDs adds the "vulnerabilities" edge to the ReleaseVulnerability entity by IDs.
+func (ru *ReleaseUpdate) AddVulnerabilityIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.AddVulnerabilityIDs(ids...)
+	return ru
+}
+
+// AddVulnerabilities adds the "vulnerabilities" edges to the ReleaseVulnerability entity.
+func (ru *ReleaseUpdate) AddVulnerabilities(r ...*ReleaseVulnerability) *ReleaseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ru.AddVulnerabilityIDs(ids...)
 }
 
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by IDs.
@@ -185,6 +190,21 @@ func (ru *ReleaseUpdate) AddTestRuns(t ...*TestRun) *ReleaseUpdate {
 		ids[i] = t[i].ID
 	}
 	return ru.AddTestRunIDs(ids...)
+}
+
+// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
+func (ru *ReleaseUpdate) AddVulnerabilityReviewIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.AddVulnerabilityReviewIDs(ids...)
+	return ru
+}
+
+// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (ru *ReleaseUpdate) AddVulnerabilityReviews(v ...*VulnerabilityReview) *ReleaseUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return ru.AddVulnerabilityReviewIDs(ids...)
 }
 
 // Mutation returns the ReleaseMutation object of the builder.
@@ -232,12 +252,6 @@ func (ru *ReleaseUpdate) RemoveDependencies(r ...*Release) *ReleaseUpdate {
 		ids[i] = r[i].ID
 	}
 	return ru.RemoveDependencyIDs(ids...)
-}
-
-// ClearProject clears the "project" edge to the Project entity.
-func (ru *ReleaseUpdate) ClearProject() *ReleaseUpdate {
-	ru.mutation.ClearProject()
-	return ru
 }
 
 // ClearCommit clears the "commit" edge to the GitCommit entity.
@@ -288,25 +302,46 @@ func (ru *ReleaseUpdate) RemoveArtifacts(a ...*Artifact) *ReleaseUpdate {
 	return ru.RemoveArtifactIDs(ids...)
 }
 
-// ClearComponents clears all "components" edges to the ComponentUse entity.
+// ClearComponents clears all "components" edges to the ReleaseComponent entity.
 func (ru *ReleaseUpdate) ClearComponents() *ReleaseUpdate {
 	ru.mutation.ClearComponents()
 	return ru
 }
 
-// RemoveComponentIDs removes the "components" edge to ComponentUse entities by IDs.
+// RemoveComponentIDs removes the "components" edge to ReleaseComponent entities by IDs.
 func (ru *ReleaseUpdate) RemoveComponentIDs(ids ...int) *ReleaseUpdate {
 	ru.mutation.RemoveComponentIDs(ids...)
 	return ru
 }
 
-// RemoveComponents removes "components" edges to ComponentUse entities.
-func (ru *ReleaseUpdate) RemoveComponents(c ...*ComponentUse) *ReleaseUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// RemoveComponents removes "components" edges to ReleaseComponent entities.
+func (ru *ReleaseUpdate) RemoveComponents(r ...*ReleaseComponent) *ReleaseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return ru.RemoveComponentIDs(ids...)
+}
+
+// ClearVulnerabilities clears all "vulnerabilities" edges to the ReleaseVulnerability entity.
+func (ru *ReleaseUpdate) ClearVulnerabilities() *ReleaseUpdate {
+	ru.mutation.ClearVulnerabilities()
+	return ru
+}
+
+// RemoveVulnerabilityIDs removes the "vulnerabilities" edge to ReleaseVulnerability entities by IDs.
+func (ru *ReleaseUpdate) RemoveVulnerabilityIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.RemoveVulnerabilityIDs(ids...)
+	return ru
+}
+
+// RemoveVulnerabilities removes "vulnerabilities" edges to ReleaseVulnerability entities.
+func (ru *ReleaseUpdate) RemoveVulnerabilities(r ...*ReleaseVulnerability) *ReleaseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ru.RemoveVulnerabilityIDs(ids...)
 }
 
 // ClearCodeScans clears all "code_scans" edges to the CodeScan entity.
@@ -349,6 +384,27 @@ func (ru *ReleaseUpdate) RemoveTestRuns(t ...*TestRun) *ReleaseUpdate {
 		ids[i] = t[i].ID
 	}
 	return ru.RemoveTestRunIDs(ids...)
+}
+
+// ClearVulnerabilityReviews clears all "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (ru *ReleaseUpdate) ClearVulnerabilityReviews() *ReleaseUpdate {
+	ru.mutation.ClearVulnerabilityReviews()
+	return ru
+}
+
+// RemoveVulnerabilityReviewIDs removes the "vulnerability_reviews" edge to VulnerabilityReview entities by IDs.
+func (ru *ReleaseUpdate) RemoveVulnerabilityReviewIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.RemoveVulnerabilityReviewIDs(ids...)
+	return ru
+}
+
+// RemoveVulnerabilityReviews removes "vulnerability_reviews" edges to VulnerabilityReview entities.
+func (ru *ReleaseUpdate) RemoveVulnerabilityReviews(v ...*VulnerabilityReview) *ReleaseUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return ru.RemoveVulnerabilityReviewIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -427,9 +483,6 @@ func (ru *ReleaseUpdate) check() error {
 		if err := release.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
 		}
-	}
-	if _, ok := ru.mutation.ProjectID(); ru.mutation.ProjectCleared() && !ok {
-		return errors.New("ent: clearing a required unique edge \"project\"")
 	}
 	if _, ok := ru.mutation.CommitID(); ru.mutation.CommitCleared() && !ok {
 		return errors.New("ent: clearing a required unique edge \"commit\"")
@@ -576,41 +629,6 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: release.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ru.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   release.ProjectTable,
-			Columns: []string{release.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ru.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   release.ProjectTable,
-			Columns: []string{release.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
 				},
 			},
 		}
@@ -772,7 +790,7 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}
@@ -788,7 +806,7 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}
@@ -807,7 +825,61 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ru.mutation.VulnerabilitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.VulnerabilitiesTable,
+			Columns: []string{release.VulnerabilitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !ru.mutation.VulnerabilitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.VulnerabilitiesTable,
+			Columns: []string{release.VulnerabilitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.VulnerabilitiesTable,
+			Columns: []string{release.VulnerabilitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
 				},
 			},
 		}
@@ -924,6 +996,60 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.VulnerabilityReviewsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   release.VulnerabilityReviewsTable,
+			Columns: release.VulnerabilityReviewsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: vulnerabilityreview.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedVulnerabilityReviewsIDs(); len(nodes) > 0 && !ru.mutation.VulnerabilityReviewsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   release.VulnerabilityReviewsTable,
+			Columns: release.VulnerabilityReviewsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: vulnerabilityreview.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   release.VulnerabilityReviewsTable,
+			Columns: release.VulnerabilityReviewsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: vulnerabilityreview.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{release.Label}
@@ -999,17 +1125,6 @@ func (ruo *ReleaseUpdateOne) AddDependencies(r ...*Release) *ReleaseUpdateOne {
 	return ruo.AddDependencyIDs(ids...)
 }
 
-// SetProjectID sets the "project" edge to the Project entity by ID.
-func (ruo *ReleaseUpdateOne) SetProjectID(id int) *ReleaseUpdateOne {
-	ruo.mutation.SetProjectID(id)
-	return ruo
-}
-
-// SetProject sets the "project" edge to the Project entity.
-func (ruo *ReleaseUpdateOne) SetProject(p *Project) *ReleaseUpdateOne {
-	return ruo.SetProjectID(p.ID)
-}
-
 // SetCommitID sets the "commit" edge to the GitCommit entity by ID.
 func (ruo *ReleaseUpdateOne) SetCommitID(id int) *ReleaseUpdateOne {
 	ruo.mutation.SetCommitID(id)
@@ -1051,19 +1166,34 @@ func (ruo *ReleaseUpdateOne) AddArtifacts(a ...*Artifact) *ReleaseUpdateOne {
 	return ruo.AddArtifactIDs(ids...)
 }
 
-// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+// AddComponentIDs adds the "components" edge to the ReleaseComponent entity by IDs.
 func (ruo *ReleaseUpdateOne) AddComponentIDs(ids ...int) *ReleaseUpdateOne {
 	ruo.mutation.AddComponentIDs(ids...)
 	return ruo
 }
 
-// AddComponents adds the "components" edges to the ComponentUse entity.
-func (ruo *ReleaseUpdateOne) AddComponents(c ...*ComponentUse) *ReleaseUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddComponents adds the "components" edges to the ReleaseComponent entity.
+func (ruo *ReleaseUpdateOne) AddComponents(r ...*ReleaseComponent) *ReleaseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return ruo.AddComponentIDs(ids...)
+}
+
+// AddVulnerabilityIDs adds the "vulnerabilities" edge to the ReleaseVulnerability entity by IDs.
+func (ruo *ReleaseUpdateOne) AddVulnerabilityIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.AddVulnerabilityIDs(ids...)
+	return ruo
+}
+
+// AddVulnerabilities adds the "vulnerabilities" edges to the ReleaseVulnerability entity.
+func (ruo *ReleaseUpdateOne) AddVulnerabilities(r ...*ReleaseVulnerability) *ReleaseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ruo.AddVulnerabilityIDs(ids...)
 }
 
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by IDs.
@@ -1094,6 +1224,21 @@ func (ruo *ReleaseUpdateOne) AddTestRuns(t ...*TestRun) *ReleaseUpdateOne {
 		ids[i] = t[i].ID
 	}
 	return ruo.AddTestRunIDs(ids...)
+}
+
+// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
+func (ruo *ReleaseUpdateOne) AddVulnerabilityReviewIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.AddVulnerabilityReviewIDs(ids...)
+	return ruo
+}
+
+// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (ruo *ReleaseUpdateOne) AddVulnerabilityReviews(v ...*VulnerabilityReview) *ReleaseUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return ruo.AddVulnerabilityReviewIDs(ids...)
 }
 
 // Mutation returns the ReleaseMutation object of the builder.
@@ -1141,12 +1286,6 @@ func (ruo *ReleaseUpdateOne) RemoveDependencies(r ...*Release) *ReleaseUpdateOne
 		ids[i] = r[i].ID
 	}
 	return ruo.RemoveDependencyIDs(ids...)
-}
-
-// ClearProject clears the "project" edge to the Project entity.
-func (ruo *ReleaseUpdateOne) ClearProject() *ReleaseUpdateOne {
-	ruo.mutation.ClearProject()
-	return ruo
 }
 
 // ClearCommit clears the "commit" edge to the GitCommit entity.
@@ -1197,25 +1336,46 @@ func (ruo *ReleaseUpdateOne) RemoveArtifacts(a ...*Artifact) *ReleaseUpdateOne {
 	return ruo.RemoveArtifactIDs(ids...)
 }
 
-// ClearComponents clears all "components" edges to the ComponentUse entity.
+// ClearComponents clears all "components" edges to the ReleaseComponent entity.
 func (ruo *ReleaseUpdateOne) ClearComponents() *ReleaseUpdateOne {
 	ruo.mutation.ClearComponents()
 	return ruo
 }
 
-// RemoveComponentIDs removes the "components" edge to ComponentUse entities by IDs.
+// RemoveComponentIDs removes the "components" edge to ReleaseComponent entities by IDs.
 func (ruo *ReleaseUpdateOne) RemoveComponentIDs(ids ...int) *ReleaseUpdateOne {
 	ruo.mutation.RemoveComponentIDs(ids...)
 	return ruo
 }
 
-// RemoveComponents removes "components" edges to ComponentUse entities.
-func (ruo *ReleaseUpdateOne) RemoveComponents(c ...*ComponentUse) *ReleaseUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// RemoveComponents removes "components" edges to ReleaseComponent entities.
+func (ruo *ReleaseUpdateOne) RemoveComponents(r ...*ReleaseComponent) *ReleaseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return ruo.RemoveComponentIDs(ids...)
+}
+
+// ClearVulnerabilities clears all "vulnerabilities" edges to the ReleaseVulnerability entity.
+func (ruo *ReleaseUpdateOne) ClearVulnerabilities() *ReleaseUpdateOne {
+	ruo.mutation.ClearVulnerabilities()
+	return ruo
+}
+
+// RemoveVulnerabilityIDs removes the "vulnerabilities" edge to ReleaseVulnerability entities by IDs.
+func (ruo *ReleaseUpdateOne) RemoveVulnerabilityIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.RemoveVulnerabilityIDs(ids...)
+	return ruo
+}
+
+// RemoveVulnerabilities removes "vulnerabilities" edges to ReleaseVulnerability entities.
+func (ruo *ReleaseUpdateOne) RemoveVulnerabilities(r ...*ReleaseVulnerability) *ReleaseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ruo.RemoveVulnerabilityIDs(ids...)
 }
 
 // ClearCodeScans clears all "code_scans" edges to the CodeScan entity.
@@ -1258,6 +1418,27 @@ func (ruo *ReleaseUpdateOne) RemoveTestRuns(t ...*TestRun) *ReleaseUpdateOne {
 		ids[i] = t[i].ID
 	}
 	return ruo.RemoveTestRunIDs(ids...)
+}
+
+// ClearVulnerabilityReviews clears all "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (ruo *ReleaseUpdateOne) ClearVulnerabilityReviews() *ReleaseUpdateOne {
+	ruo.mutation.ClearVulnerabilityReviews()
+	return ruo
+}
+
+// RemoveVulnerabilityReviewIDs removes the "vulnerability_reviews" edge to VulnerabilityReview entities by IDs.
+func (ruo *ReleaseUpdateOne) RemoveVulnerabilityReviewIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.RemoveVulnerabilityReviewIDs(ids...)
+	return ruo
+}
+
+// RemoveVulnerabilityReviews removes "vulnerability_reviews" edges to VulnerabilityReview entities.
+func (ruo *ReleaseUpdateOne) RemoveVulnerabilityReviews(v ...*VulnerabilityReview) *ReleaseUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return ruo.RemoveVulnerabilityReviewIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -1343,9 +1524,6 @@ func (ruo *ReleaseUpdateOne) check() error {
 		if err := release.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
 		}
-	}
-	if _, ok := ruo.mutation.ProjectID(); ruo.mutation.ProjectCleared() && !ok {
-		return errors.New("ent: clearing a required unique edge \"project\"")
 	}
 	if _, ok := ruo.mutation.CommitID(); ruo.mutation.CommitCleared() && !ok {
 		return errors.New("ent: clearing a required unique edge \"commit\"")
@@ -1517,41 +1695,6 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ruo.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   release.ProjectTable,
-			Columns: []string{release.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruo.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   release.ProjectTable,
-			Columns: []string{release.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if ruo.mutation.CommitCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -1705,7 +1848,7 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}
@@ -1721,7 +1864,7 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}
@@ -1740,7 +1883,61 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.VulnerabilitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.VulnerabilitiesTable,
+			Columns: []string{release.VulnerabilitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !ruo.mutation.VulnerabilitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.VulnerabilitiesTable,
+			Columns: []string{release.VulnerabilitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.VulnerabilitiesTable,
+			Columns: []string{release.VulnerabilitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
 				},
 			},
 		}
@@ -1849,6 +2046,60 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: testrun.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.VulnerabilityReviewsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   release.VulnerabilityReviewsTable,
+			Columns: release.VulnerabilityReviewsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: vulnerabilityreview.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedVulnerabilityReviewsIDs(); len(nodes) > 0 && !ruo.mutation.VulnerabilityReviewsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   release.VulnerabilityReviewsTable,
+			Columns: release.VulnerabilityReviewsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: vulnerabilityreview.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   release.VulnerabilityReviewsTable,
+			Columns: release.VulnerabilityReviewsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: vulnerabilityreview.FieldID,
 				},
 			},
 		}

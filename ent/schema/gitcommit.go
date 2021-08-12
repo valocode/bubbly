@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/valocode/bubbly/ent/extensions/entmodel"
 )
 
 type GitCommit struct {
@@ -17,6 +18,7 @@ type GitCommit struct {
 func (GitCommit) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "commit"},
+		entmodel.Annotation{},
 	}
 }
 
