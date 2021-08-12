@@ -293,6 +293,34 @@ func HasIssuesWith(preds ...predicate.CodeIssue) predicate.CodeScan {
 	})
 }
 
+// HasVulnerabilities applies the HasEdge predicate on the "vulnerabilities" edge.
+func HasVulnerabilities() predicate.CodeScan {
+	return predicate.CodeScan(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(VulnerabilitiesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, VulnerabilitiesTable, VulnerabilitiesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasVulnerabilitiesWith applies the HasEdge predicate on the "vulnerabilities" edge with a given conditions (other predicates).
+func HasVulnerabilitiesWith(preds ...predicate.ReleaseVulnerability) predicate.CodeScan {
+	return predicate.CodeScan(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(VulnerabilitiesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, VulnerabilitiesTable, VulnerabilitiesPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasComponents applies the HasEdge predicate on the "components" edge.
 func HasComponents() predicate.CodeScan {
 	return predicate.CodeScan(func(s *sql.Selector) {
@@ -306,7 +334,7 @@ func HasComponents() predicate.CodeScan {
 }
 
 // HasComponentsWith applies the HasEdge predicate on the "components" edge with a given conditions (other predicates).
-func HasComponentsWith(preds ...predicate.ComponentUse) predicate.CodeScan {
+func HasComponentsWith(preds ...predicate.ReleaseComponent) predicate.CodeScan {
 	return predicate.CodeScan(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),

@@ -11,17 +11,22 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/migrate"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/gql"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	_ "github.com/mattn/go-sqlite3"
+
+	// required by schema hooks.
+	_ "github.com/valocode/bubbly/ent/runtime"
 )
 
-func New(provider Provider) (*Store, error) {
+func New(bCtx *env.BubblyContext) (*Store, error) {
 
 	var (
 		client *ent.Client
@@ -29,8 +34,8 @@ func New(provider Provider) (*Store, error) {
 	)
 	// Connect to the provider's database RetryAttempts times, with a RetrySleep
 	for connRetry := 1; connRetry <= 5; connRetry++ {
-		switch provider {
-		case ProviderPostgres:
+		switch bCtx.StoreConfig.Provider {
+		case config.ProviderPostgres:
 			var db *sql.DB
 			// Create ent.Client and run the schema migration.
 			db, err = sql.Open("pgx", "postgresql://postgres:postgres@127.0.0.1/bubbly")
@@ -39,7 +44,7 @@ func New(provider Provider) (*Store, error) {
 				drv := entsql.OpenDB(dialect.Postgres, db)
 				client = ent.NewClient(ent.Driver(drv))
 			}
-		case ProviderSqlite:
+		case config.ProviderSqlite:
 			client, err = ent.Open(dialect.SQLite, "file:ent?mode=memory&cache=shared&_fk=1")
 		}
 		// If there was no error the connection was successful
@@ -62,6 +67,7 @@ func New(provider Provider) (*Store, error) {
 	); err != nil {
 		return nil, fmt.Errorf("failed creating schema resources: %w", err)
 	}
+
 	return &Store{
 		client: client,
 		ctx:    context.Background(),
@@ -74,17 +80,6 @@ type (
 		ctx    context.Context
 	}
 )
-
-type Provider string
-
-const (
-	ProviderPostgres Provider = "postgres"
-	ProviderSqlite   Provider = "sqlite"
-)
-
-func (_type Provider) String() string {
-	return string(_type)
-}
 
 func (s *Store) Client() *ent.Client {
 	return s.client
@@ -144,6 +139,29 @@ func (s *Store) Query(query string) (json.RawMessage, error) {
 
 }
 
+func (s *Store) WithTx(fn func(tx *ent.Tx) error) error {
+	tx, err := s.client.Tx(s.ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			tx.Rollback()
+			panic(v)
+		}
+	}()
+	if err := fn(tx); err != nil {
+		if rerr := tx.Rollback(); rerr != nil {
+			return fmt.Errorf("error rolling back transaction: %w: %v", err, rerr)
+		}
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("error committing transaction: %w", err)
+	}
+	return nil
+}
+
 // func (s *Store) SaveAdapterResult(result *adapter.Result) error {
 // 	if result.ReleaseID == nil {
 // 		return errors.New("must provide release id")
@@ -171,14 +189,10 @@ func (s *Store) Query(query string) (json.RawMessage, error) {
 
 // }
 
-func (s *Store) Save(graph *ent.DataGraph) error {
-	for _, r := range graph.RootNodes {
-		fmt.Printf("root: %#v\n", r.Name)
-		fmt.Printf("edges: %#v\n", r.Edges)
+func (s *Store) clientOrTx(tx *ent.Tx) *ent.Client {
+	var client = s.client
+	if tx != nil {
+		client = tx.Client()
 	}
-	err := graph.Save(s.client)
-	if err != nil {
-		return err
-	}
-	return nil
+	return client
 }

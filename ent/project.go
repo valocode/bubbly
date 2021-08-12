@@ -26,13 +26,11 @@ type Project struct {
 type ProjectEdges struct {
 	// Repos holds the value of the repos edge.
 	Repos []*Repo `json:"repos,omitempty"`
-	// Releases holds the value of the releases edge.
-	Releases []*Release `json:"releases,omitempty"`
-	// CveRules holds the value of the cve_rules edge.
-	CveRules []*CVERule `json:"cve_rules,omitempty"`
+	// VulnerabilityReviews holds the value of the vulnerability_reviews edge.
+	VulnerabilityReviews []*VulnerabilityReview `json:"vulnerability_reviews,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 }
 
 // ReposOrErr returns the Repos value or an error if the edge
@@ -44,22 +42,13 @@ func (e ProjectEdges) ReposOrErr() ([]*Repo, error) {
 	return nil, &NotLoadedError{edge: "repos"}
 }
 
-// ReleasesOrErr returns the Releases value or an error if the edge
+// VulnerabilityReviewsOrErr returns the VulnerabilityReviews value or an error if the edge
 // was not loaded in eager-loading.
-func (e ProjectEdges) ReleasesOrErr() ([]*Release, error) {
+func (e ProjectEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error) {
 	if e.loadedTypes[1] {
-		return e.Releases, nil
+		return e.VulnerabilityReviews, nil
 	}
-	return nil, &NotLoadedError{edge: "releases"}
-}
-
-// CveRulesOrErr returns the CveRules value or an error if the edge
-// was not loaded in eager-loading.
-func (e ProjectEdges) CveRulesOrErr() ([]*CVERule, error) {
-	if e.loadedTypes[2] {
-		return e.CveRules, nil
-	}
-	return nil, &NotLoadedError{edge: "cve_rules"}
+	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -108,14 +97,9 @@ func (pr *Project) QueryRepos() *RepoQuery {
 	return (&ProjectClient{config: pr.config}).QueryRepos(pr)
 }
 
-// QueryReleases queries the "releases" edge of the Project entity.
-func (pr *Project) QueryReleases() *ReleaseQuery {
-	return (&ProjectClient{config: pr.config}).QueryReleases(pr)
-}
-
-// QueryCveRules queries the "cve_rules" edge of the Project entity.
-func (pr *Project) QueryCveRules() *CVERuleQuery {
-	return (&ProjectClient{config: pr.config}).QueryCveRules(pr)
+// QueryVulnerabilityReviews queries the "vulnerability_reviews" edge of the Project entity.
+func (pr *Project) QueryVulnerabilityReviews() *VulnerabilityReviewQuery {
+	return (&ProjectClient{config: pr.config}).QueryVulnerabilityReviews(pr)
 }
 
 // Update returns a builder for updating this Project.

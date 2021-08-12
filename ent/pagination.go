@@ -14,24 +14,25 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
+	"github.com/valocode/bubbly/ent/adapter"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/componentuse"
-	"github.com/valocode/bubbly/ent/cve"
-	"github.com/valocode/bubbly/ent/cverule"
 	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -248,6 +249,318 @@ const (
 	pageInfoField   = "pageInfo"
 	totalCountField = "totalCount"
 )
+
+// AdapterEdge is the edge representation of Adapter.
+type AdapterEdge struct {
+	Node   *Adapter `json:"node"`
+	Cursor Cursor   `json:"cursor"`
+}
+
+// AdapterConnection is the connection containing edges to Adapter.
+type AdapterConnection struct {
+	Edges      []*AdapterEdge `json:"edges"`
+	PageInfo   PageInfo       `json:"pageInfo"`
+	TotalCount int            `json:"totalCount"`
+}
+
+// AdapterPaginateOption enables pagination customization.
+type AdapterPaginateOption func(*adapterPager) error
+
+// WithAdapterOrder configures pagination ordering.
+func WithAdapterOrder(order *AdapterOrder) AdapterPaginateOption {
+	if order == nil {
+		order = DefaultAdapterOrder
+	}
+	o := *order
+	return func(pager *adapterPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultAdapterOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithAdapterFilter configures pagination filter.
+func WithAdapterFilter(filter func(*AdapterQuery) (*AdapterQuery, error)) AdapterPaginateOption {
+	return func(pager *adapterPager) error {
+		if filter == nil {
+			return errors.New("AdapterQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type adapterPager struct {
+	order  *AdapterOrder
+	filter func(*AdapterQuery) (*AdapterQuery, error)
+}
+
+func newAdapterPager(opts []AdapterPaginateOption) (*adapterPager, error) {
+	pager := &adapterPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultAdapterOrder
+	}
+	return pager, nil
+}
+
+func (p *adapterPager) applyFilter(query *AdapterQuery) (*AdapterQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *adapterPager) toCursor(a *Adapter) Cursor {
+	return p.order.Field.toCursor(a)
+}
+
+func (p *adapterPager) applyCursors(query *AdapterQuery, after, before *Cursor) *AdapterQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultAdapterOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *adapterPager) applyOrder(query *AdapterQuery, reverse bool) *AdapterQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultAdapterOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultAdapterOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Adapter.
+func (a *AdapterQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...AdapterPaginateOption,
+) (*AdapterConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newAdapterPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if a, err = pager.applyFilter(a); err != nil {
+		return nil, err
+	}
+
+	conn := &AdapterConnection{Edges: []*AdapterEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := a.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := a.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	a = pager.applyCursors(a, after, before)
+	a = pager.applyOrder(a, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		a = a.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		a = a.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := a.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *Adapter
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Adapter {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Adapter {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*AdapterEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &AdapterEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+var (
+	// AdapterOrderFieldName orders Adapter by name.
+	AdapterOrderFieldName = &AdapterOrderField{
+		field: adapter.FieldName,
+		toCursor: func(a *Adapter) Cursor {
+			return Cursor{
+				ID:    a.ID,
+				Value: a.Name,
+			}
+		},
+	}
+	// AdapterOrderFieldTag orders Adapter by tag.
+	AdapterOrderFieldTag = &AdapterOrderField{
+		field: adapter.FieldTag,
+		toCursor: func(a *Adapter) Cursor {
+			return Cursor{
+				ID:    a.ID,
+				Value: a.Tag,
+			}
+		},
+	}
+	// AdapterOrderFieldType orders Adapter by type.
+	AdapterOrderFieldType = &AdapterOrderField{
+		field: adapter.FieldType,
+		toCursor: func(a *Adapter) Cursor {
+			return Cursor{
+				ID:    a.ID,
+				Value: a.Type,
+			}
+		},
+	}
+	// AdapterOrderFieldResultsType orders Adapter by results_type.
+	AdapterOrderFieldResultsType = &AdapterOrderField{
+		field: adapter.FieldResultsType,
+		toCursor: func(a *Adapter) Cursor {
+			return Cursor{
+				ID:    a.ID,
+				Value: a.ResultsType,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f AdapterOrderField) String() string {
+	var str string
+	switch f.field {
+	case adapter.FieldName:
+		str = "name"
+	case adapter.FieldTag:
+		str = "tag"
+	case adapter.FieldType:
+		str = "type"
+	case adapter.FieldResultsType:
+		str = "results_type"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f AdapterOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *AdapterOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("AdapterOrderField %T must be a string", v)
+	}
+	switch str {
+	case "name":
+		*f = *AdapterOrderFieldName
+	case "tag":
+		*f = *AdapterOrderFieldTag
+	case "type":
+		*f = *AdapterOrderFieldType
+	case "results_type":
+		*f = *AdapterOrderFieldResultsType
+	default:
+		return fmt.Errorf("%s is not a valid AdapterOrderField", str)
+	}
+	return nil
+}
+
+// AdapterOrderField defines the ordering field of Adapter.
+type AdapterOrderField struct {
+	field    string
+	toCursor func(*Adapter) Cursor
+}
+
+// AdapterOrder defines the ordering of Adapter.
+type AdapterOrder struct {
+	Direction OrderDirection     `json:"direction"`
+	Field     *AdapterOrderField `json:"field"`
+}
+
+// DefaultAdapterOrder is the default ordering of Adapter.
+var DefaultAdapterOrder = &AdapterOrder{
+	Direction: OrderDirectionAsc,
+	Field: &AdapterOrderField{
+		field: adapter.FieldID,
+		toCursor: func(a *Adapter) Cursor {
+			return Cursor{ID: a.ID}
+		},
+	},
+}
+
+// ToEdge converts Adapter into AdapterEdge.
+func (a *Adapter) ToEdge(order *AdapterOrder) *AdapterEdge {
+	if order == nil {
+		order = DefaultAdapterOrder
+	}
+	return &AdapterEdge{
+		Node:   a,
+		Cursor: order.Field.toCursor(a),
+	}
+}
 
 // ArtifactEdge is the edge representation of Artifact.
 type ArtifactEdge struct {
@@ -544,616 +857,6 @@ func (a *Artifact) ToEdge(order *ArtifactOrder) *ArtifactEdge {
 	return &ArtifactEdge{
 		Node:   a,
 		Cursor: order.Field.toCursor(a),
-	}
-}
-
-// CVEEdge is the edge representation of CVE.
-type CVEEdge struct {
-	Node   *CVE   `json:"node"`
-	Cursor Cursor `json:"cursor"`
-}
-
-// CVEConnection is the connection containing edges to CVE.
-type CVEConnection struct {
-	Edges      []*CVEEdge `json:"edges"`
-	PageInfo   PageInfo   `json:"pageInfo"`
-	TotalCount int        `json:"totalCount"`
-}
-
-// CVEPaginateOption enables pagination customization.
-type CVEPaginateOption func(*cVEPager) error
-
-// WithCVEOrder configures pagination ordering.
-func WithCVEOrder(order *CVEOrder) CVEPaginateOption {
-	if order == nil {
-		order = DefaultCVEOrder
-	}
-	o := *order
-	return func(pager *cVEPager) error {
-		if err := o.Direction.Validate(); err != nil {
-			return err
-		}
-		if o.Field == nil {
-			o.Field = DefaultCVEOrder.Field
-		}
-		pager.order = &o
-		return nil
-	}
-}
-
-// WithCVEFilter configures pagination filter.
-func WithCVEFilter(filter func(*CVEQuery) (*CVEQuery, error)) CVEPaginateOption {
-	return func(pager *cVEPager) error {
-		if filter == nil {
-			return errors.New("CVEQuery filter cannot be nil")
-		}
-		pager.filter = filter
-		return nil
-	}
-}
-
-type cVEPager struct {
-	order  *CVEOrder
-	filter func(*CVEQuery) (*CVEQuery, error)
-}
-
-func newCVEPager(opts []CVEPaginateOption) (*cVEPager, error) {
-	pager := &cVEPager{}
-	for _, opt := range opts {
-		if err := opt(pager); err != nil {
-			return nil, err
-		}
-	}
-	if pager.order == nil {
-		pager.order = DefaultCVEOrder
-	}
-	return pager, nil
-}
-
-func (p *cVEPager) applyFilter(query *CVEQuery) (*CVEQuery, error) {
-	if p.filter != nil {
-		return p.filter(query)
-	}
-	return query, nil
-}
-
-func (p *cVEPager) toCursor(c *CVE) Cursor {
-	return p.order.Field.toCursor(c)
-}
-
-func (p *cVEPager) applyCursors(query *CVEQuery, after, before *Cursor) *CVEQuery {
-	for _, predicate := range cursorsToPredicates(
-		p.order.Direction, after, before,
-		p.order.Field.field, DefaultCVEOrder.Field.field,
-	) {
-		query = query.Where(predicate)
-	}
-	return query
-}
-
-func (p *cVEPager) applyOrder(query *CVEQuery, reverse bool) *CVEQuery {
-	direction := p.order.Direction
-	if reverse {
-		direction = direction.reverse()
-	}
-	query = query.Order(direction.orderFunc(p.order.Field.field))
-	if p.order.Field != DefaultCVEOrder.Field {
-		query = query.Order(direction.orderFunc(DefaultCVEOrder.Field.field))
-	}
-	return query
-}
-
-// Paginate executes the query and returns a relay based cursor connection to CVE.
-func (c *CVEQuery) Paginate(
-	ctx context.Context, after *Cursor, first *int,
-	before *Cursor, last *int, opts ...CVEPaginateOption,
-) (*CVEConnection, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	pager, err := newCVEPager(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	if c, err = pager.applyFilter(c); err != nil {
-		return nil, err
-	}
-
-	conn := &CVEConnection{Edges: []*CVEEdge{}}
-	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
-		if hasCollectedField(ctx, totalCountField) ||
-			hasCollectedField(ctx, pageInfoField) {
-			count, err := c.Count(ctx)
-			if err != nil {
-				return nil, err
-			}
-			conn.TotalCount = count
-			conn.PageInfo.HasNextPage = first != nil && count > 0
-			conn.PageInfo.HasPreviousPage = last != nil && count > 0
-		}
-		return conn, nil
-	}
-
-	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
-		count, err := c.Clone().Count(ctx)
-		if err != nil {
-			return nil, err
-		}
-		conn.TotalCount = count
-	}
-
-	c = pager.applyCursors(c, after, before)
-	c = pager.applyOrder(c, last != nil)
-	var limit int
-	if first != nil {
-		limit = *first + 1
-	} else if last != nil {
-		limit = *last + 1
-	}
-	if limit > 0 {
-		c = c.Limit(limit)
-	}
-
-	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
-		c = c.collectField(graphql.GetOperationContext(ctx), *field)
-	}
-
-	nodes, err := c.All(ctx)
-	if err != nil || len(nodes) == 0 {
-		return conn, err
-	}
-
-	if len(nodes) == limit {
-		conn.PageInfo.HasNextPage = first != nil
-		conn.PageInfo.HasPreviousPage = last != nil
-		nodes = nodes[:len(nodes)-1]
-	}
-
-	var nodeAt func(int) *CVE
-	if last != nil {
-		n := len(nodes) - 1
-		nodeAt = func(i int) *CVE {
-			return nodes[n-i]
-		}
-	} else {
-		nodeAt = func(i int) *CVE {
-			return nodes[i]
-		}
-	}
-
-	conn.Edges = make([]*CVEEdge, len(nodes))
-	for i := range nodes {
-		node := nodeAt(i)
-		conn.Edges[i] = &CVEEdge{
-			Node:   node,
-			Cursor: pager.toCursor(node),
-		}
-	}
-
-	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
-	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
-	if conn.TotalCount == 0 {
-		conn.TotalCount = len(nodes)
-	}
-
-	return conn, nil
-}
-
-var (
-	// CVEOrderFieldCveID orders CVE by cve_id.
-	CVEOrderFieldCveID = &CVEOrderField{
-		field: cve.FieldCveID,
-		toCursor: func(c *CVE) Cursor {
-			return Cursor{
-				ID:    c.ID,
-				Value: c.CveID,
-			}
-		},
-	}
-	// CVEOrderFieldDescription orders CVE by description.
-	CVEOrderFieldDescription = &CVEOrderField{
-		field: cve.FieldDescription,
-		toCursor: func(c *CVE) Cursor {
-			return Cursor{
-				ID:    c.ID,
-				Value: c.Description,
-			}
-		},
-	}
-	// CVEOrderFieldSeverityScore orders CVE by severity_score.
-	CVEOrderFieldSeverityScore = &CVEOrderField{
-		field: cve.FieldSeverityScore,
-		toCursor: func(c *CVE) Cursor {
-			return Cursor{
-				ID:    c.ID,
-				Value: c.SeverityScore,
-			}
-		},
-	}
-	// CVEOrderFieldSeverity orders CVE by severity.
-	CVEOrderFieldSeverity = &CVEOrderField{
-		field: cve.FieldSeverity,
-		toCursor: func(c *CVE) Cursor {
-			return Cursor{
-				ID:    c.ID,
-				Value: c.Severity,
-			}
-		},
-	}
-	// CVEOrderFieldPublishedData orders CVE by published_data.
-	CVEOrderFieldPublishedData = &CVEOrderField{
-		field: cve.FieldPublishedData,
-		toCursor: func(c *CVE) Cursor {
-			return Cursor{
-				ID:    c.ID,
-				Value: c.PublishedData,
-			}
-		},
-	}
-	// CVEOrderFieldModifiedData orders CVE by modified_data.
-	CVEOrderFieldModifiedData = &CVEOrderField{
-		field: cve.FieldModifiedData,
-		toCursor: func(c *CVE) Cursor {
-			return Cursor{
-				ID:    c.ID,
-				Value: c.ModifiedData,
-			}
-		},
-	}
-)
-
-// String implement fmt.Stringer interface.
-func (f CVEOrderField) String() string {
-	var str string
-	switch f.field {
-	case cve.FieldCveID:
-		str = "cve_id"
-	case cve.FieldDescription:
-		str = "description"
-	case cve.FieldSeverityScore:
-		str = "severity_score"
-	case cve.FieldSeverity:
-		str = "severity"
-	case cve.FieldPublishedData:
-		str = "published_data"
-	case cve.FieldModifiedData:
-		str = "modified_data"
-	}
-	return str
-}
-
-// MarshalGQL implements graphql.Marshaler interface.
-func (f CVEOrderField) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(f.String()))
-}
-
-// UnmarshalGQL implements graphql.Unmarshaler interface.
-func (f *CVEOrderField) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("CVEOrderField %T must be a string", v)
-	}
-	switch str {
-	case "cve_id":
-		*f = *CVEOrderFieldCveID
-	case "description":
-		*f = *CVEOrderFieldDescription
-	case "severity_score":
-		*f = *CVEOrderFieldSeverityScore
-	case "severity":
-		*f = *CVEOrderFieldSeverity
-	case "published_data":
-		*f = *CVEOrderFieldPublishedData
-	case "modified_data":
-		*f = *CVEOrderFieldModifiedData
-	default:
-		return fmt.Errorf("%s is not a valid CVEOrderField", str)
-	}
-	return nil
-}
-
-// CVEOrderField defines the ordering field of CVE.
-type CVEOrderField struct {
-	field    string
-	toCursor func(*CVE) Cursor
-}
-
-// CVEOrder defines the ordering of CVE.
-type CVEOrder struct {
-	Direction OrderDirection `json:"direction"`
-	Field     *CVEOrderField `json:"field"`
-}
-
-// DefaultCVEOrder is the default ordering of CVE.
-var DefaultCVEOrder = &CVEOrder{
-	Direction: OrderDirectionAsc,
-	Field: &CVEOrderField{
-		field: cve.FieldID,
-		toCursor: func(c *CVE) Cursor {
-			return Cursor{ID: c.ID}
-		},
-	},
-}
-
-// ToEdge converts CVE into CVEEdge.
-func (c *CVE) ToEdge(order *CVEOrder) *CVEEdge {
-	if order == nil {
-		order = DefaultCVEOrder
-	}
-	return &CVEEdge{
-		Node:   c,
-		Cursor: order.Field.toCursor(c),
-	}
-}
-
-// CVERuleEdge is the edge representation of CVERule.
-type CVERuleEdge struct {
-	Node   *CVERule `json:"node"`
-	Cursor Cursor   `json:"cursor"`
-}
-
-// CVERuleConnection is the connection containing edges to CVERule.
-type CVERuleConnection struct {
-	Edges      []*CVERuleEdge `json:"edges"`
-	PageInfo   PageInfo       `json:"pageInfo"`
-	TotalCount int            `json:"totalCount"`
-}
-
-// CVERulePaginateOption enables pagination customization.
-type CVERulePaginateOption func(*cVERulePager) error
-
-// WithCVERuleOrder configures pagination ordering.
-func WithCVERuleOrder(order *CVERuleOrder) CVERulePaginateOption {
-	if order == nil {
-		order = DefaultCVERuleOrder
-	}
-	o := *order
-	return func(pager *cVERulePager) error {
-		if err := o.Direction.Validate(); err != nil {
-			return err
-		}
-		if o.Field == nil {
-			o.Field = DefaultCVERuleOrder.Field
-		}
-		pager.order = &o
-		return nil
-	}
-}
-
-// WithCVERuleFilter configures pagination filter.
-func WithCVERuleFilter(filter func(*CVERuleQuery) (*CVERuleQuery, error)) CVERulePaginateOption {
-	return func(pager *cVERulePager) error {
-		if filter == nil {
-			return errors.New("CVERuleQuery filter cannot be nil")
-		}
-		pager.filter = filter
-		return nil
-	}
-}
-
-type cVERulePager struct {
-	order  *CVERuleOrder
-	filter func(*CVERuleQuery) (*CVERuleQuery, error)
-}
-
-func newCVERulePager(opts []CVERulePaginateOption) (*cVERulePager, error) {
-	pager := &cVERulePager{}
-	for _, opt := range opts {
-		if err := opt(pager); err != nil {
-			return nil, err
-		}
-	}
-	if pager.order == nil {
-		pager.order = DefaultCVERuleOrder
-	}
-	return pager, nil
-}
-
-func (p *cVERulePager) applyFilter(query *CVERuleQuery) (*CVERuleQuery, error) {
-	if p.filter != nil {
-		return p.filter(query)
-	}
-	return query, nil
-}
-
-func (p *cVERulePager) toCursor(cr *CVERule) Cursor {
-	return p.order.Field.toCursor(cr)
-}
-
-func (p *cVERulePager) applyCursors(query *CVERuleQuery, after, before *Cursor) *CVERuleQuery {
-	for _, predicate := range cursorsToPredicates(
-		p.order.Direction, after, before,
-		p.order.Field.field, DefaultCVERuleOrder.Field.field,
-	) {
-		query = query.Where(predicate)
-	}
-	return query
-}
-
-func (p *cVERulePager) applyOrder(query *CVERuleQuery, reverse bool) *CVERuleQuery {
-	direction := p.order.Direction
-	if reverse {
-		direction = direction.reverse()
-	}
-	query = query.Order(direction.orderFunc(p.order.Field.field))
-	if p.order.Field != DefaultCVERuleOrder.Field {
-		query = query.Order(direction.orderFunc(DefaultCVERuleOrder.Field.field))
-	}
-	return query
-}
-
-// Paginate executes the query and returns a relay based cursor connection to CVERule.
-func (cr *CVERuleQuery) Paginate(
-	ctx context.Context, after *Cursor, first *int,
-	before *Cursor, last *int, opts ...CVERulePaginateOption,
-) (*CVERuleConnection, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	pager, err := newCVERulePager(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	if cr, err = pager.applyFilter(cr); err != nil {
-		return nil, err
-	}
-
-	conn := &CVERuleConnection{Edges: []*CVERuleEdge{}}
-	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
-		if hasCollectedField(ctx, totalCountField) ||
-			hasCollectedField(ctx, pageInfoField) {
-			count, err := cr.Count(ctx)
-			if err != nil {
-				return nil, err
-			}
-			conn.TotalCount = count
-			conn.PageInfo.HasNextPage = first != nil && count > 0
-			conn.PageInfo.HasPreviousPage = last != nil && count > 0
-		}
-		return conn, nil
-	}
-
-	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
-		count, err := cr.Clone().Count(ctx)
-		if err != nil {
-			return nil, err
-		}
-		conn.TotalCount = count
-	}
-
-	cr = pager.applyCursors(cr, after, before)
-	cr = pager.applyOrder(cr, last != nil)
-	var limit int
-	if first != nil {
-		limit = *first + 1
-	} else if last != nil {
-		limit = *last + 1
-	}
-	if limit > 0 {
-		cr = cr.Limit(limit)
-	}
-
-	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
-		cr = cr.collectField(graphql.GetOperationContext(ctx), *field)
-	}
-
-	nodes, err := cr.All(ctx)
-	if err != nil || len(nodes) == 0 {
-		return conn, err
-	}
-
-	if len(nodes) == limit {
-		conn.PageInfo.HasNextPage = first != nil
-		conn.PageInfo.HasPreviousPage = last != nil
-		nodes = nodes[:len(nodes)-1]
-	}
-
-	var nodeAt func(int) *CVERule
-	if last != nil {
-		n := len(nodes) - 1
-		nodeAt = func(i int) *CVERule {
-			return nodes[n-i]
-		}
-	} else {
-		nodeAt = func(i int) *CVERule {
-			return nodes[i]
-		}
-	}
-
-	conn.Edges = make([]*CVERuleEdge, len(nodes))
-	for i := range nodes {
-		node := nodeAt(i)
-		conn.Edges[i] = &CVERuleEdge{
-			Node:   node,
-			Cursor: pager.toCursor(node),
-		}
-	}
-
-	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
-	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
-	if conn.TotalCount == 0 {
-		conn.TotalCount = len(nodes)
-	}
-
-	return conn, nil
-}
-
-var (
-	// CVERuleOrderFieldName orders CVERule by name.
-	CVERuleOrderFieldName = &CVERuleOrderField{
-		field: cverule.FieldName,
-		toCursor: func(cr *CVERule) Cursor {
-			return Cursor{
-				ID:    cr.ID,
-				Value: cr.Name,
-			}
-		},
-	}
-)
-
-// String implement fmt.Stringer interface.
-func (f CVERuleOrderField) String() string {
-	var str string
-	switch f.field {
-	case cverule.FieldName:
-		str = "name"
-	}
-	return str
-}
-
-// MarshalGQL implements graphql.Marshaler interface.
-func (f CVERuleOrderField) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(f.String()))
-}
-
-// UnmarshalGQL implements graphql.Unmarshaler interface.
-func (f *CVERuleOrderField) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("CVERuleOrderField %T must be a string", v)
-	}
-	switch str {
-	case "name":
-		*f = *CVERuleOrderFieldName
-	default:
-		return fmt.Errorf("%s is not a valid CVERuleOrderField", str)
-	}
-	return nil
-}
-
-// CVERuleOrderField defines the ordering field of CVERule.
-type CVERuleOrderField struct {
-	field    string
-	toCursor func(*CVERule) Cursor
-}
-
-// CVERuleOrder defines the ordering of CVERule.
-type CVERuleOrder struct {
-	Direction OrderDirection     `json:"direction"`
-	Field     *CVERuleOrderField `json:"field"`
-}
-
-// DefaultCVERuleOrder is the default ordering of CVERule.
-var DefaultCVERuleOrder = &CVERuleOrder{
-	Direction: OrderDirectionAsc,
-	Field: &CVERuleOrderField{
-		field: cverule.FieldID,
-		toCursor: func(cr *CVERule) Cursor {
-			return Cursor{ID: cr.ID}
-		},
-	},
-}
-
-// ToEdge converts CVERule into CVERuleEdge.
-func (cr *CVERule) ToEdge(order *CVERuleOrder) *CVERuleEdge {
-	if order == nil {
-		order = DefaultCVERuleOrder
-	}
-	return &CVERuleEdge{
-		Node:   cr,
-		Cursor: order.Field.toCursor(cr),
 	}
 }
 
@@ -2304,233 +2007,6 @@ func (c *Component) ToEdge(order *ComponentOrder) *ComponentEdge {
 	return &ComponentEdge{
 		Node:   c,
 		Cursor: order.Field.toCursor(c),
-	}
-}
-
-// ComponentUseEdge is the edge representation of ComponentUse.
-type ComponentUseEdge struct {
-	Node   *ComponentUse `json:"node"`
-	Cursor Cursor        `json:"cursor"`
-}
-
-// ComponentUseConnection is the connection containing edges to ComponentUse.
-type ComponentUseConnection struct {
-	Edges      []*ComponentUseEdge `json:"edges"`
-	PageInfo   PageInfo            `json:"pageInfo"`
-	TotalCount int                 `json:"totalCount"`
-}
-
-// ComponentUsePaginateOption enables pagination customization.
-type ComponentUsePaginateOption func(*componentUsePager) error
-
-// WithComponentUseOrder configures pagination ordering.
-func WithComponentUseOrder(order *ComponentUseOrder) ComponentUsePaginateOption {
-	if order == nil {
-		order = DefaultComponentUseOrder
-	}
-	o := *order
-	return func(pager *componentUsePager) error {
-		if err := o.Direction.Validate(); err != nil {
-			return err
-		}
-		if o.Field == nil {
-			o.Field = DefaultComponentUseOrder.Field
-		}
-		pager.order = &o
-		return nil
-	}
-}
-
-// WithComponentUseFilter configures pagination filter.
-func WithComponentUseFilter(filter func(*ComponentUseQuery) (*ComponentUseQuery, error)) ComponentUsePaginateOption {
-	return func(pager *componentUsePager) error {
-		if filter == nil {
-			return errors.New("ComponentUseQuery filter cannot be nil")
-		}
-		pager.filter = filter
-		return nil
-	}
-}
-
-type componentUsePager struct {
-	order  *ComponentUseOrder
-	filter func(*ComponentUseQuery) (*ComponentUseQuery, error)
-}
-
-func newComponentUsePager(opts []ComponentUsePaginateOption) (*componentUsePager, error) {
-	pager := &componentUsePager{}
-	for _, opt := range opts {
-		if err := opt(pager); err != nil {
-			return nil, err
-		}
-	}
-	if pager.order == nil {
-		pager.order = DefaultComponentUseOrder
-	}
-	return pager, nil
-}
-
-func (p *componentUsePager) applyFilter(query *ComponentUseQuery) (*ComponentUseQuery, error) {
-	if p.filter != nil {
-		return p.filter(query)
-	}
-	return query, nil
-}
-
-func (p *componentUsePager) toCursor(cu *ComponentUse) Cursor {
-	return p.order.Field.toCursor(cu)
-}
-
-func (p *componentUsePager) applyCursors(query *ComponentUseQuery, after, before *Cursor) *ComponentUseQuery {
-	for _, predicate := range cursorsToPredicates(
-		p.order.Direction, after, before,
-		p.order.Field.field, DefaultComponentUseOrder.Field.field,
-	) {
-		query = query.Where(predicate)
-	}
-	return query
-}
-
-func (p *componentUsePager) applyOrder(query *ComponentUseQuery, reverse bool) *ComponentUseQuery {
-	direction := p.order.Direction
-	if reverse {
-		direction = direction.reverse()
-	}
-	query = query.Order(direction.orderFunc(p.order.Field.field))
-	if p.order.Field != DefaultComponentUseOrder.Field {
-		query = query.Order(direction.orderFunc(DefaultComponentUseOrder.Field.field))
-	}
-	return query
-}
-
-// Paginate executes the query and returns a relay based cursor connection to ComponentUse.
-func (cu *ComponentUseQuery) Paginate(
-	ctx context.Context, after *Cursor, first *int,
-	before *Cursor, last *int, opts ...ComponentUsePaginateOption,
-) (*ComponentUseConnection, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	pager, err := newComponentUsePager(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	if cu, err = pager.applyFilter(cu); err != nil {
-		return nil, err
-	}
-
-	conn := &ComponentUseConnection{Edges: []*ComponentUseEdge{}}
-	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
-		if hasCollectedField(ctx, totalCountField) ||
-			hasCollectedField(ctx, pageInfoField) {
-			count, err := cu.Count(ctx)
-			if err != nil {
-				return nil, err
-			}
-			conn.TotalCount = count
-			conn.PageInfo.HasNextPage = first != nil && count > 0
-			conn.PageInfo.HasPreviousPage = last != nil && count > 0
-		}
-		return conn, nil
-	}
-
-	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
-		count, err := cu.Clone().Count(ctx)
-		if err != nil {
-			return nil, err
-		}
-		conn.TotalCount = count
-	}
-
-	cu = pager.applyCursors(cu, after, before)
-	cu = pager.applyOrder(cu, last != nil)
-	var limit int
-	if first != nil {
-		limit = *first + 1
-	} else if last != nil {
-		limit = *last + 1
-	}
-	if limit > 0 {
-		cu = cu.Limit(limit)
-	}
-
-	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
-		cu = cu.collectField(graphql.GetOperationContext(ctx), *field)
-	}
-
-	nodes, err := cu.All(ctx)
-	if err != nil || len(nodes) == 0 {
-		return conn, err
-	}
-
-	if len(nodes) == limit {
-		conn.PageInfo.HasNextPage = first != nil
-		conn.PageInfo.HasPreviousPage = last != nil
-		nodes = nodes[:len(nodes)-1]
-	}
-
-	var nodeAt func(int) *ComponentUse
-	if last != nil {
-		n := len(nodes) - 1
-		nodeAt = func(i int) *ComponentUse {
-			return nodes[n-i]
-		}
-	} else {
-		nodeAt = func(i int) *ComponentUse {
-			return nodes[i]
-		}
-	}
-
-	conn.Edges = make([]*ComponentUseEdge, len(nodes))
-	for i := range nodes {
-		node := nodeAt(i)
-		conn.Edges[i] = &ComponentUseEdge{
-			Node:   node,
-			Cursor: pager.toCursor(node),
-		}
-	}
-
-	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
-	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
-	if conn.TotalCount == 0 {
-		conn.TotalCount = len(nodes)
-	}
-
-	return conn, nil
-}
-
-// ComponentUseOrderField defines the ordering field of ComponentUse.
-type ComponentUseOrderField struct {
-	field    string
-	toCursor func(*ComponentUse) Cursor
-}
-
-// ComponentUseOrder defines the ordering of ComponentUse.
-type ComponentUseOrder struct {
-	Direction OrderDirection          `json:"direction"`
-	Field     *ComponentUseOrderField `json:"field"`
-}
-
-// DefaultComponentUseOrder is the default ordering of ComponentUse.
-var DefaultComponentUseOrder = &ComponentUseOrder{
-	Direction: OrderDirectionAsc,
-	Field: &ComponentUseOrderField{
-		field: componentuse.FieldID,
-		toCursor: func(cu *ComponentUse) Cursor {
-			return Cursor{ID: cu.ID}
-		},
-	},
-}
-
-// ToEdge converts ComponentUse into ComponentUseEdge.
-func (cu *ComponentUse) ToEdge(order *ComponentUseOrder) *ComponentUseEdge {
-	if order == nil {
-		order = DefaultComponentUseOrder
-	}
-	return &ComponentUseEdge{
-		Node:   cu,
-		Cursor: order.Field.toCursor(cu),
 	}
 }
 
@@ -3911,6 +3387,233 @@ func (r *Release) ToEdge(order *ReleaseOrder) *ReleaseEdge {
 	}
 }
 
+// ReleaseComponentEdge is the edge representation of ReleaseComponent.
+type ReleaseComponentEdge struct {
+	Node   *ReleaseComponent `json:"node"`
+	Cursor Cursor            `json:"cursor"`
+}
+
+// ReleaseComponentConnection is the connection containing edges to ReleaseComponent.
+type ReleaseComponentConnection struct {
+	Edges      []*ReleaseComponentEdge `json:"edges"`
+	PageInfo   PageInfo                `json:"pageInfo"`
+	TotalCount int                     `json:"totalCount"`
+}
+
+// ReleaseComponentPaginateOption enables pagination customization.
+type ReleaseComponentPaginateOption func(*releaseComponentPager) error
+
+// WithReleaseComponentOrder configures pagination ordering.
+func WithReleaseComponentOrder(order *ReleaseComponentOrder) ReleaseComponentPaginateOption {
+	if order == nil {
+		order = DefaultReleaseComponentOrder
+	}
+	o := *order
+	return func(pager *releaseComponentPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultReleaseComponentOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithReleaseComponentFilter configures pagination filter.
+func WithReleaseComponentFilter(filter func(*ReleaseComponentQuery) (*ReleaseComponentQuery, error)) ReleaseComponentPaginateOption {
+	return func(pager *releaseComponentPager) error {
+		if filter == nil {
+			return errors.New("ReleaseComponentQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type releaseComponentPager struct {
+	order  *ReleaseComponentOrder
+	filter func(*ReleaseComponentQuery) (*ReleaseComponentQuery, error)
+}
+
+func newReleaseComponentPager(opts []ReleaseComponentPaginateOption) (*releaseComponentPager, error) {
+	pager := &releaseComponentPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultReleaseComponentOrder
+	}
+	return pager, nil
+}
+
+func (p *releaseComponentPager) applyFilter(query *ReleaseComponentQuery) (*ReleaseComponentQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *releaseComponentPager) toCursor(rc *ReleaseComponent) Cursor {
+	return p.order.Field.toCursor(rc)
+}
+
+func (p *releaseComponentPager) applyCursors(query *ReleaseComponentQuery, after, before *Cursor) *ReleaseComponentQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultReleaseComponentOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *releaseComponentPager) applyOrder(query *ReleaseComponentQuery, reverse bool) *ReleaseComponentQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultReleaseComponentOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultReleaseComponentOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to ReleaseComponent.
+func (rc *ReleaseComponentQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...ReleaseComponentPaginateOption,
+) (*ReleaseComponentConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newReleaseComponentPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if rc, err = pager.applyFilter(rc); err != nil {
+		return nil, err
+	}
+
+	conn := &ReleaseComponentConnection{Edges: []*ReleaseComponentEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := rc.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := rc.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	rc = pager.applyCursors(rc, after, before)
+	rc = pager.applyOrder(rc, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		rc = rc.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		rc = rc.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := rc.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *ReleaseComponent
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *ReleaseComponent {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *ReleaseComponent {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*ReleaseComponentEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &ReleaseComponentEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+// ReleaseComponentOrderField defines the ordering field of ReleaseComponent.
+type ReleaseComponentOrderField struct {
+	field    string
+	toCursor func(*ReleaseComponent) Cursor
+}
+
+// ReleaseComponentOrder defines the ordering of ReleaseComponent.
+type ReleaseComponentOrder struct {
+	Direction OrderDirection              `json:"direction"`
+	Field     *ReleaseComponentOrderField `json:"field"`
+}
+
+// DefaultReleaseComponentOrder is the default ordering of ReleaseComponent.
+var DefaultReleaseComponentOrder = &ReleaseComponentOrder{
+	Direction: OrderDirectionAsc,
+	Field: &ReleaseComponentOrderField{
+		field: releasecomponent.FieldID,
+		toCursor: func(rc *ReleaseComponent) Cursor {
+			return Cursor{ID: rc.ID}
+		},
+	},
+}
+
+// ToEdge converts ReleaseComponent into ReleaseComponentEdge.
+func (rc *ReleaseComponent) ToEdge(order *ReleaseComponentOrder) *ReleaseComponentEdge {
+	if order == nil {
+		order = DefaultReleaseComponentOrder
+	}
+	return &ReleaseComponentEdge{
+		Node:   rc,
+		Cursor: order.Field.toCursor(rc),
+	}
+}
+
 // ReleaseEntryEdge is the edge representation of ReleaseEntry.
 type ReleaseEntryEdge struct {
 	Node   *ReleaseEntry `json:"node"`
@@ -4192,6 +3895,233 @@ func (re *ReleaseEntry) ToEdge(order *ReleaseEntryOrder) *ReleaseEntryEdge {
 	return &ReleaseEntryEdge{
 		Node:   re,
 		Cursor: order.Field.toCursor(re),
+	}
+}
+
+// ReleaseVulnerabilityEdge is the edge representation of ReleaseVulnerability.
+type ReleaseVulnerabilityEdge struct {
+	Node   *ReleaseVulnerability `json:"node"`
+	Cursor Cursor                `json:"cursor"`
+}
+
+// ReleaseVulnerabilityConnection is the connection containing edges to ReleaseVulnerability.
+type ReleaseVulnerabilityConnection struct {
+	Edges      []*ReleaseVulnerabilityEdge `json:"edges"`
+	PageInfo   PageInfo                    `json:"pageInfo"`
+	TotalCount int                         `json:"totalCount"`
+}
+
+// ReleaseVulnerabilityPaginateOption enables pagination customization.
+type ReleaseVulnerabilityPaginateOption func(*releaseVulnerabilityPager) error
+
+// WithReleaseVulnerabilityOrder configures pagination ordering.
+func WithReleaseVulnerabilityOrder(order *ReleaseVulnerabilityOrder) ReleaseVulnerabilityPaginateOption {
+	if order == nil {
+		order = DefaultReleaseVulnerabilityOrder
+	}
+	o := *order
+	return func(pager *releaseVulnerabilityPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultReleaseVulnerabilityOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithReleaseVulnerabilityFilter configures pagination filter.
+func WithReleaseVulnerabilityFilter(filter func(*ReleaseVulnerabilityQuery) (*ReleaseVulnerabilityQuery, error)) ReleaseVulnerabilityPaginateOption {
+	return func(pager *releaseVulnerabilityPager) error {
+		if filter == nil {
+			return errors.New("ReleaseVulnerabilityQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type releaseVulnerabilityPager struct {
+	order  *ReleaseVulnerabilityOrder
+	filter func(*ReleaseVulnerabilityQuery) (*ReleaseVulnerabilityQuery, error)
+}
+
+func newReleaseVulnerabilityPager(opts []ReleaseVulnerabilityPaginateOption) (*releaseVulnerabilityPager, error) {
+	pager := &releaseVulnerabilityPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultReleaseVulnerabilityOrder
+	}
+	return pager, nil
+}
+
+func (p *releaseVulnerabilityPager) applyFilter(query *ReleaseVulnerabilityQuery) (*ReleaseVulnerabilityQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *releaseVulnerabilityPager) toCursor(rv *ReleaseVulnerability) Cursor {
+	return p.order.Field.toCursor(rv)
+}
+
+func (p *releaseVulnerabilityPager) applyCursors(query *ReleaseVulnerabilityQuery, after, before *Cursor) *ReleaseVulnerabilityQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultReleaseVulnerabilityOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *releaseVulnerabilityPager) applyOrder(query *ReleaseVulnerabilityQuery, reverse bool) *ReleaseVulnerabilityQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultReleaseVulnerabilityOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultReleaseVulnerabilityOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to ReleaseVulnerability.
+func (rv *ReleaseVulnerabilityQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...ReleaseVulnerabilityPaginateOption,
+) (*ReleaseVulnerabilityConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newReleaseVulnerabilityPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if rv, err = pager.applyFilter(rv); err != nil {
+		return nil, err
+	}
+
+	conn := &ReleaseVulnerabilityConnection{Edges: []*ReleaseVulnerabilityEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := rv.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := rv.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	rv = pager.applyCursors(rv, after, before)
+	rv = pager.applyOrder(rv, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		rv = rv.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		rv = rv.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := rv.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *ReleaseVulnerability
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *ReleaseVulnerability {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *ReleaseVulnerability {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*ReleaseVulnerabilityEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &ReleaseVulnerabilityEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+// ReleaseVulnerabilityOrderField defines the ordering field of ReleaseVulnerability.
+type ReleaseVulnerabilityOrderField struct {
+	field    string
+	toCursor func(*ReleaseVulnerability) Cursor
+}
+
+// ReleaseVulnerabilityOrder defines the ordering of ReleaseVulnerability.
+type ReleaseVulnerabilityOrder struct {
+	Direction OrderDirection                  `json:"direction"`
+	Field     *ReleaseVulnerabilityOrderField `json:"field"`
+}
+
+// DefaultReleaseVulnerabilityOrder is the default ordering of ReleaseVulnerability.
+var DefaultReleaseVulnerabilityOrder = &ReleaseVulnerabilityOrder{
+	Direction: OrderDirectionAsc,
+	Field: &ReleaseVulnerabilityOrderField{
+		field: releasevulnerability.FieldID,
+		toCursor: func(rv *ReleaseVulnerability) Cursor {
+			return Cursor{ID: rv.ID}
+		},
+	},
+}
+
+// ToEdge converts ReleaseVulnerability into ReleaseVulnerabilityEdge.
+func (rv *ReleaseVulnerability) ToEdge(order *ReleaseVulnerabilityOrder) *ReleaseVulnerabilityEdge {
+	if order == nil {
+		order = DefaultReleaseVulnerabilityOrder
+	}
+	return &ReleaseVulnerabilityEdge{
+		Node:   rv,
+		Cursor: order.Field.toCursor(rv),
 	}
 }
 
@@ -5198,6 +5128,105 @@ func (v *VulnerabilityQuery) Paginate(
 	return conn, nil
 }
 
+var (
+	// VulnerabilityOrderFieldVid orders Vulnerability by vid.
+	VulnerabilityOrderFieldVid = &VulnerabilityOrderField{
+		field: vulnerability.FieldVid,
+		toCursor: func(v *Vulnerability) Cursor {
+			return Cursor{
+				ID:    v.ID,
+				Value: v.Vid,
+			}
+		},
+	}
+	// VulnerabilityOrderFieldSeverityScore orders Vulnerability by severity_score.
+	VulnerabilityOrderFieldSeverityScore = &VulnerabilityOrderField{
+		field: vulnerability.FieldSeverityScore,
+		toCursor: func(v *Vulnerability) Cursor {
+			return Cursor{
+				ID:    v.ID,
+				Value: v.SeverityScore,
+			}
+		},
+	}
+	// VulnerabilityOrderFieldSeverity orders Vulnerability by severity.
+	VulnerabilityOrderFieldSeverity = &VulnerabilityOrderField{
+		field: vulnerability.FieldSeverity,
+		toCursor: func(v *Vulnerability) Cursor {
+			return Cursor{
+				ID:    v.ID,
+				Value: v.Severity,
+			}
+		},
+	}
+	// VulnerabilityOrderFieldPublished orders Vulnerability by published.
+	VulnerabilityOrderFieldPublished = &VulnerabilityOrderField{
+		field: vulnerability.FieldPublished,
+		toCursor: func(v *Vulnerability) Cursor {
+			return Cursor{
+				ID:    v.ID,
+				Value: v.Published,
+			}
+		},
+	}
+	// VulnerabilityOrderFieldModified orders Vulnerability by modified.
+	VulnerabilityOrderFieldModified = &VulnerabilityOrderField{
+		field: vulnerability.FieldModified,
+		toCursor: func(v *Vulnerability) Cursor {
+			return Cursor{
+				ID:    v.ID,
+				Value: v.Modified,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f VulnerabilityOrderField) String() string {
+	var str string
+	switch f.field {
+	case vulnerability.FieldVid:
+		str = "vid"
+	case vulnerability.FieldSeverityScore:
+		str = "severity_score"
+	case vulnerability.FieldSeverity:
+		str = "severity"
+	case vulnerability.FieldPublished:
+		str = "published"
+	case vulnerability.FieldModified:
+		str = "modified"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f VulnerabilityOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *VulnerabilityOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("VulnerabilityOrderField %T must be a string", v)
+	}
+	switch str {
+	case "vid":
+		*f = *VulnerabilityOrderFieldVid
+	case "severity_score":
+		*f = *VulnerabilityOrderFieldSeverityScore
+	case "severity":
+		*f = *VulnerabilityOrderFieldSeverity
+	case "published":
+		*f = *VulnerabilityOrderFieldPublished
+	case "modified":
+		*f = *VulnerabilityOrderFieldModified
+	default:
+		return fmt.Errorf("%s is not a valid VulnerabilityOrderField", str)
+	}
+	return nil
+}
+
 // VulnerabilityOrderField defines the ordering field of Vulnerability.
 type VulnerabilityOrderField struct {
 	field    string
@@ -5229,5 +5258,275 @@ func (v *Vulnerability) ToEdge(order *VulnerabilityOrder) *VulnerabilityEdge {
 	return &VulnerabilityEdge{
 		Node:   v,
 		Cursor: order.Field.toCursor(v),
+	}
+}
+
+// VulnerabilityReviewEdge is the edge representation of VulnerabilityReview.
+type VulnerabilityReviewEdge struct {
+	Node   *VulnerabilityReview `json:"node"`
+	Cursor Cursor               `json:"cursor"`
+}
+
+// VulnerabilityReviewConnection is the connection containing edges to VulnerabilityReview.
+type VulnerabilityReviewConnection struct {
+	Edges      []*VulnerabilityReviewEdge `json:"edges"`
+	PageInfo   PageInfo                   `json:"pageInfo"`
+	TotalCount int                        `json:"totalCount"`
+}
+
+// VulnerabilityReviewPaginateOption enables pagination customization.
+type VulnerabilityReviewPaginateOption func(*vulnerabilityReviewPager) error
+
+// WithVulnerabilityReviewOrder configures pagination ordering.
+func WithVulnerabilityReviewOrder(order *VulnerabilityReviewOrder) VulnerabilityReviewPaginateOption {
+	if order == nil {
+		order = DefaultVulnerabilityReviewOrder
+	}
+	o := *order
+	return func(pager *vulnerabilityReviewPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultVulnerabilityReviewOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithVulnerabilityReviewFilter configures pagination filter.
+func WithVulnerabilityReviewFilter(filter func(*VulnerabilityReviewQuery) (*VulnerabilityReviewQuery, error)) VulnerabilityReviewPaginateOption {
+	return func(pager *vulnerabilityReviewPager) error {
+		if filter == nil {
+			return errors.New("VulnerabilityReviewQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type vulnerabilityReviewPager struct {
+	order  *VulnerabilityReviewOrder
+	filter func(*VulnerabilityReviewQuery) (*VulnerabilityReviewQuery, error)
+}
+
+func newVulnerabilityReviewPager(opts []VulnerabilityReviewPaginateOption) (*vulnerabilityReviewPager, error) {
+	pager := &vulnerabilityReviewPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultVulnerabilityReviewOrder
+	}
+	return pager, nil
+}
+
+func (p *vulnerabilityReviewPager) applyFilter(query *VulnerabilityReviewQuery) (*VulnerabilityReviewQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *vulnerabilityReviewPager) toCursor(vr *VulnerabilityReview) Cursor {
+	return p.order.Field.toCursor(vr)
+}
+
+func (p *vulnerabilityReviewPager) applyCursors(query *VulnerabilityReviewQuery, after, before *Cursor) *VulnerabilityReviewQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultVulnerabilityReviewOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *vulnerabilityReviewPager) applyOrder(query *VulnerabilityReviewQuery, reverse bool) *VulnerabilityReviewQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultVulnerabilityReviewOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultVulnerabilityReviewOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to VulnerabilityReview.
+func (vr *VulnerabilityReviewQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...VulnerabilityReviewPaginateOption,
+) (*VulnerabilityReviewConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newVulnerabilityReviewPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if vr, err = pager.applyFilter(vr); err != nil {
+		return nil, err
+	}
+
+	conn := &VulnerabilityReviewConnection{Edges: []*VulnerabilityReviewEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := vr.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := vr.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	vr = pager.applyCursors(vr, after, before)
+	vr = pager.applyOrder(vr, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		vr = vr.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		vr = vr.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := vr.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *VulnerabilityReview
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *VulnerabilityReview {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *VulnerabilityReview {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*VulnerabilityReviewEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &VulnerabilityReviewEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+var (
+	// VulnerabilityReviewOrderFieldName orders VulnerabilityReview by name.
+	VulnerabilityReviewOrderFieldName = &VulnerabilityReviewOrderField{
+		field: vulnerabilityreview.FieldName,
+		toCursor: func(vr *VulnerabilityReview) Cursor {
+			return Cursor{
+				ID:    vr.ID,
+				Value: vr.Name,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f VulnerabilityReviewOrderField) String() string {
+	var str string
+	switch f.field {
+	case vulnerabilityreview.FieldName:
+		str = "name"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f VulnerabilityReviewOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *VulnerabilityReviewOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("VulnerabilityReviewOrderField %T must be a string", v)
+	}
+	switch str {
+	case "name":
+		*f = *VulnerabilityReviewOrderFieldName
+	default:
+		return fmt.Errorf("%s is not a valid VulnerabilityReviewOrderField", str)
+	}
+	return nil
+}
+
+// VulnerabilityReviewOrderField defines the ordering field of VulnerabilityReview.
+type VulnerabilityReviewOrderField struct {
+	field    string
+	toCursor func(*VulnerabilityReview) Cursor
+}
+
+// VulnerabilityReviewOrder defines the ordering of VulnerabilityReview.
+type VulnerabilityReviewOrder struct {
+	Direction OrderDirection                 `json:"direction"`
+	Field     *VulnerabilityReviewOrderField `json:"field"`
+}
+
+// DefaultVulnerabilityReviewOrder is the default ordering of VulnerabilityReview.
+var DefaultVulnerabilityReviewOrder = &VulnerabilityReviewOrder{
+	Direction: OrderDirectionAsc,
+	Field: &VulnerabilityReviewOrderField{
+		field: vulnerabilityreview.FieldID,
+		toCursor: func(vr *VulnerabilityReview) Cursor {
+			return Cursor{ID: vr.ID}
+		},
+	},
+}
+
+// ToEdge converts VulnerabilityReview into VulnerabilityReviewEdge.
+func (vr *VulnerabilityReview) ToEdge(order *VulnerabilityReviewOrder) *VulnerabilityReviewEdge {
+	if order == nil {
+		order = DefaultVulnerabilityReviewOrder
+	}
+	return &VulnerabilityReviewEdge{
+		Node:   vr,
+		Cursor: order.Field.toCursor(vr),
 	}
 }

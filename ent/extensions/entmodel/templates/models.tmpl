@@ -1,0 +1,77 @@
+{{/* gotype: entgo.io/ent/entc/gen.Graph */}}
+
+{{ define "model/models" }}
+{{- with extend $ "Package" "model" -}}
+    {{ template "header" . }}
+{{ end }}
+{{ $pkg := base $.Config.Package }}
+
+{{ range $n := filterModelNodes $.Nodes }}
+    {{ $receiver := $n.Receiver }}
+    type  {{ $n.Name }}HCL struct {
+        {{- range $f := $n.Fields }}
+            {{- if $f.Optional }}
+                {{ $f.StructField }} *{{ $f.Type }} `hcl:"{{ $f.Name }},optional"`
+            {{- else }}
+                {{ $f.StructField }} {{ $f.Type }} `hcl:"{{ $f.Name }},attr"`
+            {{- end }}
+        {{- end }}
+    }
+    func ({{ $receiver }} {{ $n.Name }}HCL) Model() {{ $n.Name }}Model {
+        return {{ $n.Name }}Model{
+            {{- range $f := $n.Fields }}
+                {{- if $f.Optional }}
+                    {{ $f.StructField }}: {{ $receiver }}.{{ $f.StructField }},
+                {{- else }}
+                    {{ $f.StructField }}: &{{ $receiver }}.{{ $f.StructField }},
+                {{- end }}
+            {{- end }}
+        }
+    }
+    
+    type  {{ $n.Name }}Model struct {
+        {{- range $f := fieldsAndID $n }}
+            {{ $f.StructField }} *{{ $f.Type }} `json:"{{ $f.Name }},omitempty" hcl:"{{ $f.Name }},optional"`
+        {{- end }}
+    }
+
+    func New{{ $n.Name }}Model() *{{ $n.Name }}Model {
+        return &{{ $n.Name }}Model{}
+    }
+
+    func ({{ $receiver }} *{{ $n.Name }}Model) SetMutatorFields(mutator *ent.{{ $n.MutationName }}) {
+        {{- range $f := $n.Fields }}
+            if {{ $receiver }}.{{ $f.StructField }} != nil {
+                mutator.{{ $f.MutationSet }}(*{{ $receiver }}.{{ $f.StructField }})
+            }
+        {{- end }}
+    }
+
+    {{- range $f := fieldsAndID $n }}
+        func ({{ $receiver }} *{{ $n.Name }}Model) Get{{ $f.StructField }}OrErr(vErr error) *{{ $f.Type.String }} {
+            if {{ $receiver }}.{{ $f.StructField }} == nil {
+                vErr = multierror.Append(vErr, errors.New(`"{{ $f.Name }}" is required for {{ $n.Table }}`))
+                return nil
+            }
+            return {{ $receiver }}.{{ $f.StructField }}
+        }
+
+        func ({{ $receiver }} *{{ $n.Name }}Model) Set{{ $f.StructField }}(value {{ $f.Type.String }}) *{{ $n.Name }}Model {
+            {{ $receiver }}.{{ $f.StructField }} = &value
+            return {{ $receiver }}
+        }
+    {{- end }}
+
+    func ({{ $receiver }} *{{ $n.Name }}Model) Validate() error {
+        {{- range $f := $n.Fields }}
+            {{- if not $f.Optional}}
+                if {{ $receiver }}.{{ $f.StructField }} == nil {
+                    return errors.New("field \"{{ $f.Name }}\" is required for type \"{{ $n.Table }}\"")
+                }    
+            {{- end }}
+        {{- end }}
+        return nil
+    }
+{{ end }}
+
+{{ end }}

@@ -11,16 +11,15 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
-	"github.com/valocode/bubbly/ent"
+	"github.com/valocode/bubbly/store/api"
 )
 
 type ReleaseSpec struct {
-	Project      string              `hcl:"project,optional"`
-	Name         string              `hcl:"name,optional"`
-	Version      string              `hcl:"version,optional"`
-	GitSpec      *GitSpec            `hcl:"git,block"`
-	Dependencies []DependencySpec    `hcl:"dependency,block"`
-	Checks       map[string][]string `hcl:"checks,attr"`
+	Project      string           `hcl:"project,optional"`
+	Name         string           `hcl:"name,optional"`
+	Version      string           `hcl:"version,optional"`
+	GitSpec      *GitSpec         `hcl:"git,block"`
+	Dependencies []DependencySpec `hcl:"dependency,block"`
 	// BaseDir is set at runtime so that relative paths can be resolved
 	BaseDir string
 }
@@ -31,21 +30,22 @@ type DependencySpec struct {
 	Version string `hcl:"version,optional"`
 }
 
-func CreateReleaseNode(file string) (*ent.ReleaseNode, error) {
+func CreateReleaseNode(file string) (*api.ReleaseCreateRequest, error) {
 	spec, err := CreateReleaseFromSpec(file)
 	if err != nil {
 		return nil, err
 	}
-	return spec.Node(false)
+	fmt.Printf("TODODODOD: %#v\n", spec)
+	return nil, nil
 }
 
-func CreateReleaseNodeQuery(file string) (*ent.ReleaseNode, error) {
-	spec, err := CreateReleaseFromSpec(file)
-	if err != nil {
-		return nil, err
-	}
-	return spec.Node(true)
-}
+// func CreateReleaseNodeQuery(file string) (*ent.ReleaseNode, error) {
+// 	spec, err := CreateReleaseFromSpec(file)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return spec.Node(true)
+// }
 
 func CreateReleaseFromSpec(file string) (*ReleaseSpec, error) {
 
@@ -85,41 +85,41 @@ func CreateReleaseFromSpec(file string) (*ReleaseSpec, error) {
 // 	return spec, nil
 // }
 
-func (r *ReleaseSpec) Node(query bool) (*ent.ReleaseNode, error) {
-	err := r.Validate()
-	if err != nil {
-		return nil, err
-	}
-	//
-	// Create the release
-	//
-	release := ent.NewReleaseNode().
-		SetName(r.Name).
-		SetVersion(r.Version).
-		SetProject(
-			ent.NewProjectNode().
-				SetName(r.Project).
-				SetOperation(ent.NodeOperationQuery),
-		).
-		SetOperation(ent.NodeOperationCreate)
-	if query {
-		release.SetOperation(ent.NodeOperationQuery)
-	}
+// func (r *ReleaseSpec) Node(query bool) (*ent.ReleaseNode, error) {
+// 	err := r.Validate()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	//
+// 	// Create the release
+// 	//
+// 	release := ent.NewReleaseNode().
+// 		SetName(r.Name).
+// 		SetVersion(r.Version).
+// 		SetProject(
+// 			ent.NewProjectNode().
+// 				SetName(r.Project).
+// 				SetOperation(ent.NodeOperationQuery),
+// 		).
+// 		SetOperation(ent.NodeOperationCreate)
+// 	if query {
+// 		release.SetOperation(ent.NodeOperationQuery)
+// 	}
 
-	//
-	// Create the commit, unless we are querying the release in which case
-	// we don't need it
-	//
-	if !query {
-		commit, err := r.GitSpec.Commit(r.BaseDir)
-		if err != nil {
-			return nil, fmt.Errorf("error getting git data for repo %s: %w", r.GitSpec.Repo, err)
-		}
-		release.SetCommit(commit)
-	}
+// 	//
+// 	// Create the commit, unless we are querying the release in which case
+// 	// we don't need it
+// 	//
+// 	if !query {
+// 		commit, err := r.GitSpec.Commit(r.BaseDir)
+// 		if err != nil {
+// 			return nil, fmt.Errorf("error getting git data for repo %s: %w", r.GitSpec.Repo, err)
+// 		}
+// 		release.SetCommit(commit)
+// 	}
 
-	return release, nil
-}
+// 	return release, nil
+// }
 
 func (r *ReleaseSpec) Validate() error {
 	// Project is required
@@ -166,52 +166,52 @@ type GitSpec struct {
 	Remote string `hcl:"remote,optional"`
 }
 
-func (g *GitSpec) Commit(baseDir string) (*ent.GitCommitNode, error) {
-	gitRepo, err := g.openRepo(baseDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open git repository %s: %w", g.Repo, err)
-	}
-	ref, err := gitRepo.Head()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get HEAD of repo %s: %w", g.Repo, err)
-	}
-	gitCommit, err := gitRepo.CommitObject(ref.Hash())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get commit from HEAD %s: %w", ref.Hash().String(), err)
-	}
+// func (g *GitSpec) Commit(baseDir string) (*ent.GitCommitNode, error) {
+// 	gitRepo, err := g.openRepo(baseDir)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to open git repository %s: %w", g.Repo, err)
+// 	}
+// 	ref, err := gitRepo.Head()
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to get HEAD of repo %s: %w", g.Repo, err)
+// 	}
+// 	gitCommit, err := gitRepo.CommitObject(ref.Hash())
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to get commit from HEAD %s: %w", ref.Hash().String(), err)
+// 	}
 
-	// If the name is not given, or empty, then automatically fetch it from the
-	// remote
-	if g.Name == "" {
-		var err error
-		g.Name, err = g.nameFromRemote(baseDir)
-		if err != nil {
-			return nil, fmt.Errorf("error getting git repo ID from remotes: %w", err)
-		}
-	}
+// 	// If the name is not given, or empty, then automatically fetch it from the
+// 	// remote
+// 	if g.Name == "" {
+// 		var err error
+// 		g.Name, err = g.nameFromRemote(baseDir)
+// 		if err != nil {
+// 			return nil, fmt.Errorf("error getting git repo ID from remotes: %w", err)
+// 		}
+// 	}
 
-	commit := ent.NewGitCommitNode().
-		SetHash(ref.Hash().String()).
-		SetTime(gitCommit.Author.When).
-		SetRepo(
-			ent.NewRepoNode().SetName(g.Name),
-		)
-	// If HEAD is not detached, then we can add the branch name to the git data
-	// block
-	if ref.Name().IsBranch() {
-		commit.SetBranch(ref.Name().Short())
-	}
+// 	commit := ent.NewGitCommitNode().
+// 		SetHash(ref.Hash().String()).
+// 		SetTime(gitCommit.Author.When).
+// 		SetRepo(
+// 			ent.NewRepoNode().SetName(g.Name),
+// 		)
+// 	// If HEAD is not detached, then we can add the branch name to the git data
+// 	// block
+// 	if ref.Name().IsBranch() {
+// 		commit.SetBranch(ref.Name().Short())
+// 	}
 
-	tag, _, err := g.version(baseDir)
-	if err != nil {
-		return nil, fmt.Errorf("error getting git tag: %w", err)
-	}
-	if tag != "" {
-		commit.SetTag(tag)
-	}
+// 	tag, _, err := g.version(baseDir)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("error getting git tag: %w", err)
+// 	}
+// 	if tag != "" {
+// 		commit.SetTag(tag)
+// 	}
 
-	return commit, nil
-}
+// 	return commit, nil
+// }
 
 func (g *GitSpec) openRepo(baseDir string) (*git.Repository, error) {
 	// Make sure there is a default Repo set

@@ -6,6 +6,51 @@ import (
 	"context"
 )
 
+func (a *AdapterQuery) Filter(
+	ctx context.Context, first *int, last *int,
+	orderBy *AdapterOrder, where *AdapterWhereInput,
+) ([]*Adapter, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	if orderBy == nil {
+		orderBy = DefaultAdapterOrder
+	}
+	if err := orderBy.Direction.Validate(); err != nil {
+		return nil, err
+	}
+	if orderBy.Field == nil {
+		orderBy.Field = DefaultAdapterOrder.Field
+	}
+
+	a, err := where.Filter(a)
+	if err != nil {
+		return nil, err
+	}
+
+	// If getting last then reverse the direction
+	if last != nil {
+		orderBy.Direction = orderBy.Direction.reverse()
+	}
+	a = a.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
+	// If a custom order was given, also apply the default order
+	if orderBy.Field != DefaultAdapterOrder.Field {
+		a = a.Order(orderBy.Direction.orderFunc(DefaultAdapterOrder.Field.field))
+	}
+
+	var limit int
+	if first != nil {
+		limit = *first
+	} else if last != nil {
+		limit = *last
+	}
+	if limit > 0 {
+		a = a.Limit(limit)
+	}
+
+	return a.All(ctx)
+}
+
 func (a *ArtifactQuery) Filter(
 	ctx context.Context, first *int, last *int,
 	orderBy *ArtifactOrder, where *ArtifactWhereInput,
@@ -49,96 +94,6 @@ func (a *ArtifactQuery) Filter(
 	}
 
 	return a.All(ctx)
-}
-
-func (c *CVEQuery) Filter(
-	ctx context.Context, first *int, last *int,
-	orderBy *CVEOrder, where *CVEWhereInput,
-) ([]*CVE, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	if orderBy == nil {
-		orderBy = DefaultCVEOrder
-	}
-	if err := orderBy.Direction.Validate(); err != nil {
-		return nil, err
-	}
-	if orderBy.Field == nil {
-		orderBy.Field = DefaultCVEOrder.Field
-	}
-
-	c, err := where.Filter(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// If getting last then reverse the direction
-	if last != nil {
-		orderBy.Direction = orderBy.Direction.reverse()
-	}
-	c = c.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
-	// If a custom order was given, also apply the default order
-	if orderBy.Field != DefaultCVEOrder.Field {
-		c = c.Order(orderBy.Direction.orderFunc(DefaultCVEOrder.Field.field))
-	}
-
-	var limit int
-	if first != nil {
-		limit = *first
-	} else if last != nil {
-		limit = *last
-	}
-	if limit > 0 {
-		c = c.Limit(limit)
-	}
-
-	return c.All(ctx)
-}
-
-func (cr *CVERuleQuery) Filter(
-	ctx context.Context, first *int, last *int,
-	orderBy *CVERuleOrder, where *CVERuleWhereInput,
-) ([]*CVERule, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	if orderBy == nil {
-		orderBy = DefaultCVERuleOrder
-	}
-	if err := orderBy.Direction.Validate(); err != nil {
-		return nil, err
-	}
-	if orderBy.Field == nil {
-		orderBy.Field = DefaultCVERuleOrder.Field
-	}
-
-	cr, err := where.Filter(cr)
-	if err != nil {
-		return nil, err
-	}
-
-	// If getting last then reverse the direction
-	if last != nil {
-		orderBy.Direction = orderBy.Direction.reverse()
-	}
-	cr = cr.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
-	// If a custom order was given, also apply the default order
-	if orderBy.Field != DefaultCVERuleOrder.Field {
-		cr = cr.Order(orderBy.Direction.orderFunc(DefaultCVERuleOrder.Field.field))
-	}
-
-	var limit int
-	if first != nil {
-		limit = *first
-	} else if last != nil {
-		limit = *last
-	}
-	if limit > 0 {
-		cr = cr.Limit(limit)
-	}
-
-	return cr.All(ctx)
 }
 
 func (c *CWEQuery) Filter(
@@ -319,51 +274,6 @@ func (c *ComponentQuery) Filter(
 	}
 
 	return c.All(ctx)
-}
-
-func (cu *ComponentUseQuery) Filter(
-	ctx context.Context, first *int, last *int,
-	orderBy *ComponentUseOrder, where *ComponentUseWhereInput,
-) ([]*ComponentUse, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	if orderBy == nil {
-		orderBy = DefaultComponentUseOrder
-	}
-	if err := orderBy.Direction.Validate(); err != nil {
-		return nil, err
-	}
-	if orderBy.Field == nil {
-		orderBy.Field = DefaultComponentUseOrder.Field
-	}
-
-	cu, err := where.Filter(cu)
-	if err != nil {
-		return nil, err
-	}
-
-	// If getting last then reverse the direction
-	if last != nil {
-		orderBy.Direction = orderBy.Direction.reverse()
-	}
-	cu = cu.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
-	// If a custom order was given, also apply the default order
-	if orderBy.Field != DefaultComponentUseOrder.Field {
-		cu = cu.Order(orderBy.Direction.orderFunc(DefaultComponentUseOrder.Field.field))
-	}
-
-	var limit int
-	if first != nil {
-		limit = *first
-	} else if last != nil {
-		limit = *last
-	}
-	if limit > 0 {
-		cu = cu.Limit(limit)
-	}
-
-	return cu.All(ctx)
 }
 
 func (gc *GitCommitQuery) Filter(
@@ -591,6 +501,51 @@ func (r *ReleaseQuery) Filter(
 	return r.All(ctx)
 }
 
+func (rc *ReleaseComponentQuery) Filter(
+	ctx context.Context, first *int, last *int,
+	orderBy *ReleaseComponentOrder, where *ReleaseComponentWhereInput,
+) ([]*ReleaseComponent, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	if orderBy == nil {
+		orderBy = DefaultReleaseComponentOrder
+	}
+	if err := orderBy.Direction.Validate(); err != nil {
+		return nil, err
+	}
+	if orderBy.Field == nil {
+		orderBy.Field = DefaultReleaseComponentOrder.Field
+	}
+
+	rc, err := where.Filter(rc)
+	if err != nil {
+		return nil, err
+	}
+
+	// If getting last then reverse the direction
+	if last != nil {
+		orderBy.Direction = orderBy.Direction.reverse()
+	}
+	rc = rc.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
+	// If a custom order was given, also apply the default order
+	if orderBy.Field != DefaultReleaseComponentOrder.Field {
+		rc = rc.Order(orderBy.Direction.orderFunc(DefaultReleaseComponentOrder.Field.field))
+	}
+
+	var limit int
+	if first != nil {
+		limit = *first
+	} else if last != nil {
+		limit = *last
+	}
+	if limit > 0 {
+		rc = rc.Limit(limit)
+	}
+
+	return rc.All(ctx)
+}
+
 func (re *ReleaseEntryQuery) Filter(
 	ctx context.Context, first *int, last *int,
 	orderBy *ReleaseEntryOrder, where *ReleaseEntryWhereInput,
@@ -634,6 +589,51 @@ func (re *ReleaseEntryQuery) Filter(
 	}
 
 	return re.All(ctx)
+}
+
+func (rv *ReleaseVulnerabilityQuery) Filter(
+	ctx context.Context, first *int, last *int,
+	orderBy *ReleaseVulnerabilityOrder, where *ReleaseVulnerabilityWhereInput,
+) ([]*ReleaseVulnerability, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	if orderBy == nil {
+		orderBy = DefaultReleaseVulnerabilityOrder
+	}
+	if err := orderBy.Direction.Validate(); err != nil {
+		return nil, err
+	}
+	if orderBy.Field == nil {
+		orderBy.Field = DefaultReleaseVulnerabilityOrder.Field
+	}
+
+	rv, err := where.Filter(rv)
+	if err != nil {
+		return nil, err
+	}
+
+	// If getting last then reverse the direction
+	if last != nil {
+		orderBy.Direction = orderBy.Direction.reverse()
+	}
+	rv = rv.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
+	// If a custom order was given, also apply the default order
+	if orderBy.Field != DefaultReleaseVulnerabilityOrder.Field {
+		rv = rv.Order(orderBy.Direction.orderFunc(DefaultReleaseVulnerabilityOrder.Field.field))
+	}
+
+	var limit int
+	if first != nil {
+		limit = *first
+	} else if last != nil {
+		limit = *last
+	}
+	if limit > 0 {
+		rv = rv.Limit(limit)
+	}
+
+	return rv.All(ctx)
 }
 
 func (r *RepoQuery) Filter(
@@ -814,4 +814,49 @@ func (v *VulnerabilityQuery) Filter(
 	}
 
 	return v.All(ctx)
+}
+
+func (vr *VulnerabilityReviewQuery) Filter(
+	ctx context.Context, first *int, last *int,
+	orderBy *VulnerabilityReviewOrder, where *VulnerabilityReviewWhereInput,
+) ([]*VulnerabilityReview, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	if orderBy == nil {
+		orderBy = DefaultVulnerabilityReviewOrder
+	}
+	if err := orderBy.Direction.Validate(); err != nil {
+		return nil, err
+	}
+	if orderBy.Field == nil {
+		orderBy.Field = DefaultVulnerabilityReviewOrder.Field
+	}
+
+	vr, err := where.Filter(vr)
+	if err != nil {
+		return nil, err
+	}
+
+	// If getting last then reverse the direction
+	if last != nil {
+		orderBy.Direction = orderBy.Direction.reverse()
+	}
+	vr = vr.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
+	// If a custom order was given, also apply the default order
+	if orderBy.Field != DefaultVulnerabilityReviewOrder.Field {
+		vr = vr.Order(orderBy.Direction.orderFunc(DefaultVulnerabilityReviewOrder.Field.field))
+	}
+
+	var limit int
+	if first != nil {
+		limit = *first
+	} else if last != nil {
+		limit = *last
+	}
+	if limit > 0 {
+		vr = vr.Limit(limit)
+	}
+
+	return vr.All(ctx)
 }

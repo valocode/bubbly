@@ -9,24 +9,25 @@ import (
 
 	"github.com/valocode/bubbly/ent/migrate"
 
+	"github.com/valocode/bubbly/ent/adapter"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/componentuse"
-	"github.com/valocode/bubbly/ent/cve"
-	"github.com/valocode/bubbly/ent/cverule"
 	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
@@ -38,12 +39,10 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Adapter is the client for interacting with the Adapter builders.
+	Adapter *AdapterClient
 	// Artifact is the client for interacting with the Artifact builders.
 	Artifact *ArtifactClient
-	// CVE is the client for interacting with the CVE builders.
-	CVE *CVEClient
-	// CVERule is the client for interacting with the CVERule builders.
-	CVERule *CVERuleClient
 	// CWE is the client for interacting with the CWE builders.
 	CWE *CWEClient
 	// CodeIssue is the client for interacting with the CodeIssue builders.
@@ -52,8 +51,6 @@ type Client struct {
 	CodeScan *CodeScanClient
 	// Component is the client for interacting with the Component builders.
 	Component *ComponentClient
-	// ComponentUse is the client for interacting with the ComponentUse builders.
-	ComponentUse *ComponentUseClient
 	// GitCommit is the client for interacting with the GitCommit builders.
 	GitCommit *GitCommitClient
 	// License is the client for interacting with the License builders.
@@ -64,8 +61,12 @@ type Client struct {
 	Project *ProjectClient
 	// Release is the client for interacting with the Release builders.
 	Release *ReleaseClient
+	// ReleaseComponent is the client for interacting with the ReleaseComponent builders.
+	ReleaseComponent *ReleaseComponentClient
 	// ReleaseEntry is the client for interacting with the ReleaseEntry builders.
 	ReleaseEntry *ReleaseEntryClient
+	// ReleaseVulnerability is the client for interacting with the ReleaseVulnerability builders.
+	ReleaseVulnerability *ReleaseVulnerabilityClient
 	// Repo is the client for interacting with the Repo builders.
 	Repo *RepoClient
 	// TestCase is the client for interacting with the TestCase builders.
@@ -74,6 +75,8 @@ type Client struct {
 	TestRun *TestRunClient
 	// Vulnerability is the client for interacting with the Vulnerability builders.
 	Vulnerability *VulnerabilityClient
+	// VulnerabilityReview is the client for interacting with the VulnerabilityReview builders.
+	VulnerabilityReview *VulnerabilityReviewClient
 	// additional fields for node api
 	tables tables
 }
@@ -89,24 +92,25 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Adapter = NewAdapterClient(c.config)
 	c.Artifact = NewArtifactClient(c.config)
-	c.CVE = NewCVEClient(c.config)
-	c.CVERule = NewCVERuleClient(c.config)
 	c.CWE = NewCWEClient(c.config)
 	c.CodeIssue = NewCodeIssueClient(c.config)
 	c.CodeScan = NewCodeScanClient(c.config)
 	c.Component = NewComponentClient(c.config)
-	c.ComponentUse = NewComponentUseClient(c.config)
 	c.GitCommit = NewGitCommitClient(c.config)
 	c.License = NewLicenseClient(c.config)
 	c.LicenseUse = NewLicenseUseClient(c.config)
 	c.Project = NewProjectClient(c.config)
 	c.Release = NewReleaseClient(c.config)
+	c.ReleaseComponent = NewReleaseComponentClient(c.config)
 	c.ReleaseEntry = NewReleaseEntryClient(c.config)
+	c.ReleaseVulnerability = NewReleaseVulnerabilityClient(c.config)
 	c.Repo = NewRepoClient(c.config)
 	c.TestCase = NewTestCaseClient(c.config)
 	c.TestRun = NewTestRunClient(c.config)
 	c.Vulnerability = NewVulnerabilityClient(c.config)
+	c.VulnerabilityReview = NewVulnerabilityReviewClient(c.config)
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -138,26 +142,27 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:           ctx,
-		config:        cfg,
-		Artifact:      NewArtifactClient(cfg),
-		CVE:           NewCVEClient(cfg),
-		CVERule:       NewCVERuleClient(cfg),
-		CWE:           NewCWEClient(cfg),
-		CodeIssue:     NewCodeIssueClient(cfg),
-		CodeScan:      NewCodeScanClient(cfg),
-		Component:     NewComponentClient(cfg),
-		ComponentUse:  NewComponentUseClient(cfg),
-		GitCommit:     NewGitCommitClient(cfg),
-		License:       NewLicenseClient(cfg),
-		LicenseUse:    NewLicenseUseClient(cfg),
-		Project:       NewProjectClient(cfg),
-		Release:       NewReleaseClient(cfg),
-		ReleaseEntry:  NewReleaseEntryClient(cfg),
-		Repo:          NewRepoClient(cfg),
-		TestCase:      NewTestCaseClient(cfg),
-		TestRun:       NewTestRunClient(cfg),
-		Vulnerability: NewVulnerabilityClient(cfg),
+		ctx:                  ctx,
+		config:               cfg,
+		Adapter:              NewAdapterClient(cfg),
+		Artifact:             NewArtifactClient(cfg),
+		CWE:                  NewCWEClient(cfg),
+		CodeIssue:            NewCodeIssueClient(cfg),
+		CodeScan:             NewCodeScanClient(cfg),
+		Component:            NewComponentClient(cfg),
+		GitCommit:            NewGitCommitClient(cfg),
+		License:              NewLicenseClient(cfg),
+		LicenseUse:           NewLicenseUseClient(cfg),
+		Project:              NewProjectClient(cfg),
+		Release:              NewReleaseClient(cfg),
+		ReleaseComponent:     NewReleaseComponentClient(cfg),
+		ReleaseEntry:         NewReleaseEntryClient(cfg),
+		ReleaseVulnerability: NewReleaseVulnerabilityClient(cfg),
+		Repo:                 NewRepoClient(cfg),
+		TestCase:             NewTestCaseClient(cfg),
+		TestRun:              NewTestRunClient(cfg),
+		Vulnerability:        NewVulnerabilityClient(cfg),
+		VulnerabilityReview:  NewVulnerabilityReviewClient(cfg),
 	}, nil
 }
 
@@ -175,32 +180,33 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		config:        cfg,
-		Artifact:      NewArtifactClient(cfg),
-		CVE:           NewCVEClient(cfg),
-		CVERule:       NewCVERuleClient(cfg),
-		CWE:           NewCWEClient(cfg),
-		CodeIssue:     NewCodeIssueClient(cfg),
-		CodeScan:      NewCodeScanClient(cfg),
-		Component:     NewComponentClient(cfg),
-		ComponentUse:  NewComponentUseClient(cfg),
-		GitCommit:     NewGitCommitClient(cfg),
-		License:       NewLicenseClient(cfg),
-		LicenseUse:    NewLicenseUseClient(cfg),
-		Project:       NewProjectClient(cfg),
-		Release:       NewReleaseClient(cfg),
-		ReleaseEntry:  NewReleaseEntryClient(cfg),
-		Repo:          NewRepoClient(cfg),
-		TestCase:      NewTestCaseClient(cfg),
-		TestRun:       NewTestRunClient(cfg),
-		Vulnerability: NewVulnerabilityClient(cfg),
+		config:               cfg,
+		Adapter:              NewAdapterClient(cfg),
+		Artifact:             NewArtifactClient(cfg),
+		CWE:                  NewCWEClient(cfg),
+		CodeIssue:            NewCodeIssueClient(cfg),
+		CodeScan:             NewCodeScanClient(cfg),
+		Component:            NewComponentClient(cfg),
+		GitCommit:            NewGitCommitClient(cfg),
+		License:              NewLicenseClient(cfg),
+		LicenseUse:           NewLicenseUseClient(cfg),
+		Project:              NewProjectClient(cfg),
+		Release:              NewReleaseClient(cfg),
+		ReleaseComponent:     NewReleaseComponentClient(cfg),
+		ReleaseEntry:         NewReleaseEntryClient(cfg),
+		ReleaseVulnerability: NewReleaseVulnerabilityClient(cfg),
+		Repo:                 NewRepoClient(cfg),
+		TestCase:             NewTestCaseClient(cfg),
+		TestRun:              NewTestRunClient(cfg),
+		Vulnerability:        NewVulnerabilityClient(cfg),
+		VulnerabilityReview:  NewVulnerabilityReviewClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Artifact.
+//		Adapter.
 //		Query().
 //		Count(ctx)
 //
@@ -223,24 +229,115 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Adapter.Use(hooks...)
 	c.Artifact.Use(hooks...)
-	c.CVE.Use(hooks...)
-	c.CVERule.Use(hooks...)
 	c.CWE.Use(hooks...)
 	c.CodeIssue.Use(hooks...)
 	c.CodeScan.Use(hooks...)
 	c.Component.Use(hooks...)
-	c.ComponentUse.Use(hooks...)
 	c.GitCommit.Use(hooks...)
 	c.License.Use(hooks...)
 	c.LicenseUse.Use(hooks...)
 	c.Project.Use(hooks...)
 	c.Release.Use(hooks...)
+	c.ReleaseComponent.Use(hooks...)
 	c.ReleaseEntry.Use(hooks...)
+	c.ReleaseVulnerability.Use(hooks...)
 	c.Repo.Use(hooks...)
 	c.TestCase.Use(hooks...)
 	c.TestRun.Use(hooks...)
 	c.Vulnerability.Use(hooks...)
+	c.VulnerabilityReview.Use(hooks...)
+}
+
+// AdapterClient is a client for the Adapter schema.
+type AdapterClient struct {
+	config
+}
+
+// NewAdapterClient returns a client for the Adapter from the given config.
+func NewAdapterClient(c config) *AdapterClient {
+	return &AdapterClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `adapter.Hooks(f(g(h())))`.
+func (c *AdapterClient) Use(hooks ...Hook) {
+	c.hooks.Adapter = append(c.hooks.Adapter, hooks...)
+}
+
+// Create returns a create builder for Adapter.
+func (c *AdapterClient) Create() *AdapterCreate {
+	mutation := newAdapterMutation(c.config, OpCreate)
+	return &AdapterCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Adapter entities.
+func (c *AdapterClient) CreateBulk(builders ...*AdapterCreate) *AdapterCreateBulk {
+	return &AdapterCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Adapter.
+func (c *AdapterClient) Update() *AdapterUpdate {
+	mutation := newAdapterMutation(c.config, OpUpdate)
+	return &AdapterUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AdapterClient) UpdateOne(a *Adapter) *AdapterUpdateOne {
+	mutation := newAdapterMutation(c.config, OpUpdateOne, withAdapter(a))
+	return &AdapterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AdapterClient) UpdateOneID(id int) *AdapterUpdateOne {
+	mutation := newAdapterMutation(c.config, OpUpdateOne, withAdapterID(id))
+	return &AdapterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Adapter.
+func (c *AdapterClient) Delete() *AdapterDelete {
+	mutation := newAdapterMutation(c.config, OpDelete)
+	return &AdapterDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *AdapterClient) DeleteOne(a *Adapter) *AdapterDeleteOne {
+	return c.DeleteOneID(a.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *AdapterClient) DeleteOneID(id int) *AdapterDeleteOne {
+	builder := c.Delete().Where(adapter.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AdapterDeleteOne{builder}
+}
+
+// Query returns a query builder for Adapter.
+func (c *AdapterClient) Query() *AdapterQuery {
+	return &AdapterQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Adapter entity by its id.
+func (c *AdapterClient) Get(ctx context.Context, id int) (*Adapter, error) {
+	return c.Query().Where(adapter.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AdapterClient) GetX(ctx context.Context, id int) *Adapter {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *AdapterClient) Hooks() []Hook {
+	return c.hooks.Adapter
 }
 
 // ArtifactClient is a client for the Artifact schema.
@@ -364,283 +461,6 @@ func (c *ArtifactClient) QueryEntry(a *Artifact) *ReleaseEntryQuery {
 func (c *ArtifactClient) Hooks() []Hook {
 	hooks := c.hooks.Artifact
 	return append(hooks[:len(hooks):len(hooks)], artifact.Hooks[:]...)
-}
-
-// CVEClient is a client for the CVE schema.
-type CVEClient struct {
-	config
-}
-
-// NewCVEClient returns a client for the CVE from the given config.
-func NewCVEClient(c config) *CVEClient {
-	return &CVEClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `cve.Hooks(f(g(h())))`.
-func (c *CVEClient) Use(hooks ...Hook) {
-	c.hooks.CVE = append(c.hooks.CVE, hooks...)
-}
-
-// Create returns a create builder for CVE.
-func (c *CVEClient) Create() *CVECreate {
-	mutation := newCVEMutation(c.config, OpCreate)
-	return &CVECreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of CVE entities.
-func (c *CVEClient) CreateBulk(builders ...*CVECreate) *CVECreateBulk {
-	return &CVECreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for CVE.
-func (c *CVEClient) Update() *CVEUpdate {
-	mutation := newCVEMutation(c.config, OpUpdate)
-	return &CVEUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *CVEClient) UpdateOne(cv *CVE) *CVEUpdateOne {
-	mutation := newCVEMutation(c.config, OpUpdateOne, withCVE(cv))
-	return &CVEUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *CVEClient) UpdateOneID(id int) *CVEUpdateOne {
-	mutation := newCVEMutation(c.config, OpUpdateOne, withCVEID(id))
-	return &CVEUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for CVE.
-func (c *CVEClient) Delete() *CVEDelete {
-	mutation := newCVEMutation(c.config, OpDelete)
-	return &CVEDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a delete builder for the given entity.
-func (c *CVEClient) DeleteOne(cv *CVE) *CVEDeleteOne {
-	return c.DeleteOneID(cv.ID)
-}
-
-// DeleteOneID returns a delete builder for the given id.
-func (c *CVEClient) DeleteOneID(id int) *CVEDeleteOne {
-	builder := c.Delete().Where(cve.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &CVEDeleteOne{builder}
-}
-
-// Query returns a query builder for CVE.
-func (c *CVEClient) Query() *CVEQuery {
-	return &CVEQuery{
-		config: c.config,
-	}
-}
-
-// Get returns a CVE entity by its id.
-func (c *CVEClient) Get(ctx context.Context, id int) (*CVE, error) {
-	return c.Query().Where(cve.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *CVEClient) GetX(ctx context.Context, id int) *CVE {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryComponents queries the components edge of a CVE.
-func (c *CVEClient) QueryComponents(cv *CVE) *ComponentQuery {
-	query := &ComponentQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := cv.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(cve.Table, cve.FieldID, id),
-			sqlgraph.To(component.Table, component.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, cve.ComponentsTable, cve.ComponentsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(cv.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryVulnerabilities queries the vulnerabilities edge of a CVE.
-func (c *CVEClient) QueryVulnerabilities(cv *CVE) *VulnerabilityQuery {
-	query := &VulnerabilityQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := cv.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(cve.Table, cve.FieldID, id),
-			sqlgraph.To(vulnerability.Table, vulnerability.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, cve.VulnerabilitiesTable, cve.VulnerabilitiesColumn),
-		)
-		fromV = sqlgraph.Neighbors(cv.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryRules queries the rules edge of a CVE.
-func (c *CVEClient) QueryRules(cv *CVE) *CVERuleQuery {
-	query := &CVERuleQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := cv.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(cve.Table, cve.FieldID, id),
-			sqlgraph.To(cverule.Table, cverule.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, cve.RulesTable, cve.RulesColumn),
-		)
-		fromV = sqlgraph.Neighbors(cv.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *CVEClient) Hooks() []Hook {
-	hooks := c.hooks.CVE
-	return append(hooks[:len(hooks):len(hooks)], cve.Hooks[:]...)
-}
-
-// CVERuleClient is a client for the CVERule schema.
-type CVERuleClient struct {
-	config
-}
-
-// NewCVERuleClient returns a client for the CVERule from the given config.
-func NewCVERuleClient(c config) *CVERuleClient {
-	return &CVERuleClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `cverule.Hooks(f(g(h())))`.
-func (c *CVERuleClient) Use(hooks ...Hook) {
-	c.hooks.CVERule = append(c.hooks.CVERule, hooks...)
-}
-
-// Create returns a create builder for CVERule.
-func (c *CVERuleClient) Create() *CVERuleCreate {
-	mutation := newCVERuleMutation(c.config, OpCreate)
-	return &CVERuleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of CVERule entities.
-func (c *CVERuleClient) CreateBulk(builders ...*CVERuleCreate) *CVERuleCreateBulk {
-	return &CVERuleCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for CVERule.
-func (c *CVERuleClient) Update() *CVERuleUpdate {
-	mutation := newCVERuleMutation(c.config, OpUpdate)
-	return &CVERuleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *CVERuleClient) UpdateOne(cr *CVERule) *CVERuleUpdateOne {
-	mutation := newCVERuleMutation(c.config, OpUpdateOne, withCVERule(cr))
-	return &CVERuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *CVERuleClient) UpdateOneID(id int) *CVERuleUpdateOne {
-	mutation := newCVERuleMutation(c.config, OpUpdateOne, withCVERuleID(id))
-	return &CVERuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for CVERule.
-func (c *CVERuleClient) Delete() *CVERuleDelete {
-	mutation := newCVERuleMutation(c.config, OpDelete)
-	return &CVERuleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a delete builder for the given entity.
-func (c *CVERuleClient) DeleteOne(cr *CVERule) *CVERuleDeleteOne {
-	return c.DeleteOneID(cr.ID)
-}
-
-// DeleteOneID returns a delete builder for the given id.
-func (c *CVERuleClient) DeleteOneID(id int) *CVERuleDeleteOne {
-	builder := c.Delete().Where(cverule.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &CVERuleDeleteOne{builder}
-}
-
-// Query returns a query builder for CVERule.
-func (c *CVERuleClient) Query() *CVERuleQuery {
-	return &CVERuleQuery{
-		config: c.config,
-	}
-}
-
-// Get returns a CVERule entity by its id.
-func (c *CVERuleClient) Get(ctx context.Context, id int) (*CVERule, error) {
-	return c.Query().Where(cverule.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *CVERuleClient) GetX(ctx context.Context, id int) *CVERule {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryCve queries the cve edge of a CVERule.
-func (c *CVERuleClient) QueryCve(cr *CVERule) *CVEQuery {
-	query := &CVEQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := cr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(cverule.Table, cverule.FieldID, id),
-			sqlgraph.To(cve.Table, cve.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, cverule.CveTable, cverule.CveColumn),
-		)
-		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryProject queries the project edge of a CVERule.
-func (c *CVERuleClient) QueryProject(cr *CVERule) *ProjectQuery {
-	query := &ProjectQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := cr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(cverule.Table, cverule.FieldID, id),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, cverule.ProjectTable, cverule.ProjectPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryRepo queries the repo edge of a CVERule.
-func (c *CVERuleClient) QueryRepo(cr *CVERule) *RepoQuery {
-	query := &RepoQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := cr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(cverule.Table, cverule.FieldID, id),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, cverule.RepoTable, cverule.RepoPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(cr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *CVERuleClient) Hooks() []Hook {
-	return c.hooks.CVERule
 }
 
 // CWEClient is a client for the CWE schema.
@@ -1004,14 +824,30 @@ func (c *CodeScanClient) QueryIssues(cs *CodeScan) *CodeIssueQuery {
 	return query
 }
 
-// QueryComponents queries the components edge of a CodeScan.
-func (c *CodeScanClient) QueryComponents(cs *CodeScan) *ComponentUseQuery {
-	query := &ComponentUseQuery{config: c.config}
+// QueryVulnerabilities queries the vulnerabilities edge of a CodeScan.
+func (c *CodeScanClient) QueryVulnerabilities(cs *CodeScan) *ReleaseVulnerabilityQuery {
+	query := &ReleaseVulnerabilityQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := cs.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(codescan.Table, codescan.FieldID, id),
-			sqlgraph.To(componentuse.Table, componentuse.FieldID),
+			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, codescan.VulnerabilitiesTable, codescan.VulnerabilitiesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cs.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryComponents queries the components edge of a CodeScan.
+func (c *CodeScanClient) QueryComponents(cs *CodeScan) *ReleaseComponentQuery {
+	query := &ReleaseComponentQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := cs.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(codescan.Table, codescan.FieldID, id),
+			sqlgraph.To(releasecomponent.Table, releasecomponent.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, codescan.ComponentsTable, codescan.ComponentsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(cs.driver.Dialect(), step)
@@ -1111,15 +947,15 @@ func (c *ComponentClient) GetX(ctx context.Context, id int) *Component {
 	return obj
 }
 
-// QueryCves queries the cves edge of a Component.
-func (c *ComponentClient) QueryCves(co *Component) *CVEQuery {
-	query := &CVEQuery{config: c.config}
+// QueryVulnerabilities queries the vulnerabilities edge of a Component.
+func (c *ComponentClient) QueryVulnerabilities(co *Component) *VulnerabilityQuery {
+	query := &VulnerabilityQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := co.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(component.Table, component.FieldID, id),
-			sqlgraph.To(cve.Table, cve.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, component.CvesTable, component.CvesPrimaryKey...),
+			sqlgraph.To(vulnerability.Table, vulnerability.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, component.VulnerabilitiesTable, component.VulnerabilitiesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
 		return fromV, nil
@@ -1144,13 +980,13 @@ func (c *ComponentClient) QueryLicenses(co *Component) *LicenseQuery {
 }
 
 // QueryUses queries the uses edge of a Component.
-func (c *ComponentClient) QueryUses(co *Component) *ComponentUseQuery {
-	query := &ComponentUseQuery{config: c.config}
+func (c *ComponentClient) QueryUses(co *Component) *ReleaseComponentQuery {
+	query := &ReleaseComponentQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := co.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(component.Table, component.FieldID, id),
-			sqlgraph.To(componentuse.Table, componentuse.FieldID),
+			sqlgraph.To(releasecomponent.Table, releasecomponent.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, component.UsesTable, component.UsesColumn),
 		)
 		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
@@ -1162,144 +998,6 @@ func (c *ComponentClient) QueryUses(co *Component) *ComponentUseQuery {
 // Hooks returns the client hooks.
 func (c *ComponentClient) Hooks() []Hook {
 	return c.hooks.Component
-}
-
-// ComponentUseClient is a client for the ComponentUse schema.
-type ComponentUseClient struct {
-	config
-}
-
-// NewComponentUseClient returns a client for the ComponentUse from the given config.
-func NewComponentUseClient(c config) *ComponentUseClient {
-	return &ComponentUseClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `componentuse.Hooks(f(g(h())))`.
-func (c *ComponentUseClient) Use(hooks ...Hook) {
-	c.hooks.ComponentUse = append(c.hooks.ComponentUse, hooks...)
-}
-
-// Create returns a create builder for ComponentUse.
-func (c *ComponentUseClient) Create() *ComponentUseCreate {
-	mutation := newComponentUseMutation(c.config, OpCreate)
-	return &ComponentUseCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of ComponentUse entities.
-func (c *ComponentUseClient) CreateBulk(builders ...*ComponentUseCreate) *ComponentUseCreateBulk {
-	return &ComponentUseCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for ComponentUse.
-func (c *ComponentUseClient) Update() *ComponentUseUpdate {
-	mutation := newComponentUseMutation(c.config, OpUpdate)
-	return &ComponentUseUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ComponentUseClient) UpdateOne(cu *ComponentUse) *ComponentUseUpdateOne {
-	mutation := newComponentUseMutation(c.config, OpUpdateOne, withComponentUse(cu))
-	return &ComponentUseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *ComponentUseClient) UpdateOneID(id int) *ComponentUseUpdateOne {
-	mutation := newComponentUseMutation(c.config, OpUpdateOne, withComponentUseID(id))
-	return &ComponentUseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for ComponentUse.
-func (c *ComponentUseClient) Delete() *ComponentUseDelete {
-	mutation := newComponentUseMutation(c.config, OpDelete)
-	return &ComponentUseDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a delete builder for the given entity.
-func (c *ComponentUseClient) DeleteOne(cu *ComponentUse) *ComponentUseDeleteOne {
-	return c.DeleteOneID(cu.ID)
-}
-
-// DeleteOneID returns a delete builder for the given id.
-func (c *ComponentUseClient) DeleteOneID(id int) *ComponentUseDeleteOne {
-	builder := c.Delete().Where(componentuse.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &ComponentUseDeleteOne{builder}
-}
-
-// Query returns a query builder for ComponentUse.
-func (c *ComponentUseClient) Query() *ComponentUseQuery {
-	return &ComponentUseQuery{
-		config: c.config,
-	}
-}
-
-// Get returns a ComponentUse entity by its id.
-func (c *ComponentUseClient) Get(ctx context.Context, id int) (*ComponentUse, error) {
-	return c.Query().Where(componentuse.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ComponentUseClient) GetX(ctx context.Context, id int) *ComponentUse {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryRelease queries the release edge of a ComponentUse.
-func (c *ComponentUseClient) QueryRelease(cu *ComponentUse) *ReleaseQuery {
-	query := &ReleaseQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := cu.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(componentuse.Table, componentuse.FieldID, id),
-			sqlgraph.To(release.Table, release.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, componentuse.ReleaseTable, componentuse.ReleaseColumn),
-		)
-		fromV = sqlgraph.Neighbors(cu.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryScans queries the scans edge of a ComponentUse.
-func (c *ComponentUseClient) QueryScans(cu *ComponentUse) *CodeScanQuery {
-	query := &CodeScanQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := cu.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(componentuse.Table, componentuse.FieldID, id),
-			sqlgraph.To(codescan.Table, codescan.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, componentuse.ScansTable, componentuse.ScansPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(cu.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryComponent queries the component edge of a ComponentUse.
-func (c *ComponentUseClient) QueryComponent(cu *ComponentUse) *ComponentQuery {
-	query := &ComponentQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := cu.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(componentuse.Table, componentuse.FieldID, id),
-			sqlgraph.To(component.Table, component.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, componentuse.ComponentTable, componentuse.ComponentColumn),
-		)
-		fromV = sqlgraph.Neighbors(cu.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *ComponentUseClient) Hooks() []Hook {
-	return c.hooks.ComponentUse
 }
 
 // GitCommitClient is a client for the GitCommit schema.
@@ -1745,7 +1443,7 @@ func (c *ProjectClient) QueryRepos(pr *Project) *RepoQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, id),
 			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, project.ReposTable, project.ReposColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, project.ReposTable, project.ReposPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
 		return fromV, nil
@@ -1753,31 +1451,15 @@ func (c *ProjectClient) QueryRepos(pr *Project) *RepoQuery {
 	return query
 }
 
-// QueryReleases queries the releases edge of a Project.
-func (c *ProjectClient) QueryReleases(pr *Project) *ReleaseQuery {
-	query := &ReleaseQuery{config: c.config}
+// QueryVulnerabilityReviews queries the vulnerability_reviews edge of a Project.
+func (c *ProjectClient) QueryVulnerabilityReviews(pr *Project) *VulnerabilityReviewQuery {
+	query := &VulnerabilityReviewQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := pr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, id),
-			sqlgraph.To(release.Table, release.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, project.ReleasesTable, project.ReleasesColumn),
-		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryCveRules queries the cve_rules edge of a Project.
-func (c *ProjectClient) QueryCveRules(pr *Project) *CVERuleQuery {
-	query := &CVERuleQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, id),
-			sqlgraph.To(cverule.Table, cverule.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, project.CveRulesTable, project.CveRulesPrimaryKey...),
+			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, project.VulnerabilityReviewsTable, project.VulnerabilityReviewsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
 		return fromV, nil
@@ -1907,22 +1589,6 @@ func (c *ReleaseClient) QueryDependencies(r *Release) *ReleaseQuery {
 	return query
 }
 
-// QueryProject queries the project edge of a Release.
-func (c *ReleaseClient) QueryProject(r *Release) *ProjectQuery {
-	query := &ProjectQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(release.Table, release.FieldID, id),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, release.ProjectTable, release.ProjectColumn),
-		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryCommit queries the commit edge of a Release.
 func (c *ReleaseClient) QueryCommit(r *Release) *GitCommitQuery {
 	query := &GitCommitQuery{config: c.config}
@@ -1972,14 +1638,30 @@ func (c *ReleaseClient) QueryArtifacts(r *Release) *ArtifactQuery {
 }
 
 // QueryComponents queries the components edge of a Release.
-func (c *ReleaseClient) QueryComponents(r *Release) *ComponentUseQuery {
-	query := &ComponentUseQuery{config: c.config}
+func (c *ReleaseClient) QueryComponents(r *Release) *ReleaseComponentQuery {
+	query := &ReleaseComponentQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(release.Table, release.FieldID, id),
-			sqlgraph.To(componentuse.Table, componentuse.FieldID),
+			sqlgraph.To(releasecomponent.Table, releasecomponent.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, release.ComponentsTable, release.ComponentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVulnerabilities queries the vulnerabilities edge of a Release.
+func (c *ReleaseClient) QueryVulnerabilities(r *Release) *ReleaseVulnerabilityQuery {
+	query := &ReleaseVulnerabilityQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, id),
+			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, release.VulnerabilitiesTable, release.VulnerabilitiesColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -2019,9 +1701,180 @@ func (c *ReleaseClient) QueryTestRuns(r *Release) *TestRunQuery {
 	return query
 }
 
+// QueryVulnerabilityReviews queries the vulnerability_reviews edge of a Release.
+func (c *ReleaseClient) QueryVulnerabilityReviews(r *Release) *VulnerabilityReviewQuery {
+	query := &VulnerabilityReviewQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, id),
+			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, release.VulnerabilityReviewsTable, release.VulnerabilityReviewsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ReleaseClient) Hooks() []Hook {
 	return c.hooks.Release
+}
+
+// ReleaseComponentClient is a client for the ReleaseComponent schema.
+type ReleaseComponentClient struct {
+	config
+}
+
+// NewReleaseComponentClient returns a client for the ReleaseComponent from the given config.
+func NewReleaseComponentClient(c config) *ReleaseComponentClient {
+	return &ReleaseComponentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `releasecomponent.Hooks(f(g(h())))`.
+func (c *ReleaseComponentClient) Use(hooks ...Hook) {
+	c.hooks.ReleaseComponent = append(c.hooks.ReleaseComponent, hooks...)
+}
+
+// Create returns a create builder for ReleaseComponent.
+func (c *ReleaseComponentClient) Create() *ReleaseComponentCreate {
+	mutation := newReleaseComponentMutation(c.config, OpCreate)
+	return &ReleaseComponentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ReleaseComponent entities.
+func (c *ReleaseComponentClient) CreateBulk(builders ...*ReleaseComponentCreate) *ReleaseComponentCreateBulk {
+	return &ReleaseComponentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ReleaseComponent.
+func (c *ReleaseComponentClient) Update() *ReleaseComponentUpdate {
+	mutation := newReleaseComponentMutation(c.config, OpUpdate)
+	return &ReleaseComponentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ReleaseComponentClient) UpdateOne(rc *ReleaseComponent) *ReleaseComponentUpdateOne {
+	mutation := newReleaseComponentMutation(c.config, OpUpdateOne, withReleaseComponent(rc))
+	return &ReleaseComponentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ReleaseComponentClient) UpdateOneID(id int) *ReleaseComponentUpdateOne {
+	mutation := newReleaseComponentMutation(c.config, OpUpdateOne, withReleaseComponentID(id))
+	return &ReleaseComponentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ReleaseComponent.
+func (c *ReleaseComponentClient) Delete() *ReleaseComponentDelete {
+	mutation := newReleaseComponentMutation(c.config, OpDelete)
+	return &ReleaseComponentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *ReleaseComponentClient) DeleteOne(rc *ReleaseComponent) *ReleaseComponentDeleteOne {
+	return c.DeleteOneID(rc.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *ReleaseComponentClient) DeleteOneID(id int) *ReleaseComponentDeleteOne {
+	builder := c.Delete().Where(releasecomponent.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ReleaseComponentDeleteOne{builder}
+}
+
+// Query returns a query builder for ReleaseComponent.
+func (c *ReleaseComponentClient) Query() *ReleaseComponentQuery {
+	return &ReleaseComponentQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a ReleaseComponent entity by its id.
+func (c *ReleaseComponentClient) Get(ctx context.Context, id int) (*ReleaseComponent, error) {
+	return c.Query().Where(releasecomponent.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ReleaseComponentClient) GetX(ctx context.Context, id int) *ReleaseComponent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRelease queries the release edge of a ReleaseComponent.
+func (c *ReleaseComponentClient) QueryRelease(rc *ReleaseComponent) *ReleaseQuery {
+	query := &ReleaseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, id),
+			sqlgraph.To(release.Table, release.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releasecomponent.ReleaseTable, releasecomponent.ReleaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryScans queries the scans edge of a ReleaseComponent.
+func (c *ReleaseComponentClient) QueryScans(rc *ReleaseComponent) *CodeScanQuery {
+	query := &CodeScanQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, id),
+			sqlgraph.To(codescan.Table, codescan.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, releasecomponent.ScansTable, releasecomponent.ScansPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryComponent queries the component edge of a ReleaseComponent.
+func (c *ReleaseComponentClient) QueryComponent(rc *ReleaseComponent) *ComponentQuery {
+	query := &ComponentQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, id),
+			sqlgraph.To(component.Table, component.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releasecomponent.ComponentTable, releasecomponent.ComponentColumn),
+		)
+		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVulnerabilities queries the vulnerabilities edge of a ReleaseComponent.
+func (c *ReleaseComponentClient) QueryVulnerabilities(rc *ReleaseComponent) *ReleaseVulnerabilityQuery {
+	query := &ReleaseVulnerabilityQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, id),
+			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, releasecomponent.VulnerabilitiesTable, releasecomponent.VulnerabilitiesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ReleaseComponentClient) Hooks() []Hook {
+	hooks := c.hooks.ReleaseComponent
+	return append(hooks[:len(hooks):len(hooks)], releasecomponent.Hooks[:]...)
 }
 
 // ReleaseEntryClient is a client for the ReleaseEntry schema.
@@ -2178,6 +2031,176 @@ func (c *ReleaseEntryClient) Hooks() []Hook {
 	return c.hooks.ReleaseEntry
 }
 
+// ReleaseVulnerabilityClient is a client for the ReleaseVulnerability schema.
+type ReleaseVulnerabilityClient struct {
+	config
+}
+
+// NewReleaseVulnerabilityClient returns a client for the ReleaseVulnerability from the given config.
+func NewReleaseVulnerabilityClient(c config) *ReleaseVulnerabilityClient {
+	return &ReleaseVulnerabilityClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `releasevulnerability.Hooks(f(g(h())))`.
+func (c *ReleaseVulnerabilityClient) Use(hooks ...Hook) {
+	c.hooks.ReleaseVulnerability = append(c.hooks.ReleaseVulnerability, hooks...)
+}
+
+// Create returns a create builder for ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) Create() *ReleaseVulnerabilityCreate {
+	mutation := newReleaseVulnerabilityMutation(c.config, OpCreate)
+	return &ReleaseVulnerabilityCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ReleaseVulnerability entities.
+func (c *ReleaseVulnerabilityClient) CreateBulk(builders ...*ReleaseVulnerabilityCreate) *ReleaseVulnerabilityCreateBulk {
+	return &ReleaseVulnerabilityCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) Update() *ReleaseVulnerabilityUpdate {
+	mutation := newReleaseVulnerabilityMutation(c.config, OpUpdate)
+	return &ReleaseVulnerabilityUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ReleaseVulnerabilityClient) UpdateOne(rv *ReleaseVulnerability) *ReleaseVulnerabilityUpdateOne {
+	mutation := newReleaseVulnerabilityMutation(c.config, OpUpdateOne, withReleaseVulnerability(rv))
+	return &ReleaseVulnerabilityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ReleaseVulnerabilityClient) UpdateOneID(id int) *ReleaseVulnerabilityUpdateOne {
+	mutation := newReleaseVulnerabilityMutation(c.config, OpUpdateOne, withReleaseVulnerabilityID(id))
+	return &ReleaseVulnerabilityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) Delete() *ReleaseVulnerabilityDelete {
+	mutation := newReleaseVulnerabilityMutation(c.config, OpDelete)
+	return &ReleaseVulnerabilityDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *ReleaseVulnerabilityClient) DeleteOne(rv *ReleaseVulnerability) *ReleaseVulnerabilityDeleteOne {
+	return c.DeleteOneID(rv.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *ReleaseVulnerabilityClient) DeleteOneID(id int) *ReleaseVulnerabilityDeleteOne {
+	builder := c.Delete().Where(releasevulnerability.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ReleaseVulnerabilityDeleteOne{builder}
+}
+
+// Query returns a query builder for ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) Query() *ReleaseVulnerabilityQuery {
+	return &ReleaseVulnerabilityQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a ReleaseVulnerability entity by its id.
+func (c *ReleaseVulnerabilityClient) Get(ctx context.Context, id int) (*ReleaseVulnerability, error) {
+	return c.Query().Where(releasevulnerability.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ReleaseVulnerabilityClient) GetX(ctx context.Context, id int) *ReleaseVulnerability {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryVulnerability queries the vulnerability edge of a ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) QueryVulnerability(rv *ReleaseVulnerability) *VulnerabilityQuery {
+	query := &VulnerabilityQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasevulnerability.Table, releasevulnerability.FieldID, id),
+			sqlgraph.To(vulnerability.Table, vulnerability.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releasevulnerability.VulnerabilityTable, releasevulnerability.VulnerabilityColumn),
+		)
+		fromV = sqlgraph.Neighbors(rv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryComponents queries the components edge of a ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) QueryComponents(rv *ReleaseVulnerability) *ReleaseComponentQuery {
+	query := &ReleaseComponentQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasevulnerability.Table, releasevulnerability.FieldID, id),
+			sqlgraph.To(releasecomponent.Table, releasecomponent.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, releasevulnerability.ComponentsTable, releasevulnerability.ComponentsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(rv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelease queries the release edge of a ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) QueryRelease(rv *ReleaseVulnerability) *ReleaseQuery {
+	query := &ReleaseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasevulnerability.Table, releasevulnerability.FieldID, id),
+			sqlgraph.To(release.Table, release.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releasevulnerability.ReleaseTable, releasevulnerability.ReleaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(rv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReviews queries the reviews edge of a ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) QueryReviews(rv *ReleaseVulnerability) *VulnerabilityReviewQuery {
+	query := &VulnerabilityReviewQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasevulnerability.Table, releasevulnerability.FieldID, id),
+			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, releasevulnerability.ReviewsTable, releasevulnerability.ReviewsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(rv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryScans queries the scans edge of a ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) QueryScans(rv *ReleaseVulnerability) *CodeScanQuery {
+	query := &CodeScanQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasevulnerability.Table, releasevulnerability.FieldID, id),
+			sqlgraph.To(codescan.Table, codescan.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, releasevulnerability.ScansTable, releasevulnerability.ScansPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(rv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ReleaseVulnerabilityClient) Hooks() []Hook {
+	return c.hooks.ReleaseVulnerability
+}
+
 // RepoClient is a client for the Repo schema.
 type RepoClient struct {
 	config
@@ -2263,15 +2286,15 @@ func (c *RepoClient) GetX(ctx context.Context, id int) *Repo {
 	return obj
 }
 
-// QueryProject queries the project edge of a Repo.
-func (c *RepoClient) QueryProject(r *Repo) *ProjectQuery {
+// QueryProjects queries the projects edge of a Repo.
+func (c *RepoClient) QueryProjects(r *Repo) *ProjectQuery {
 	query := &ProjectQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repo.Table, repo.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, repo.ProjectTable, repo.ProjectColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, repo.ProjectsTable, repo.ProjectsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -2295,15 +2318,15 @@ func (c *RepoClient) QueryCommits(r *Repo) *GitCommitQuery {
 	return query
 }
 
-// QueryCveRules queries the cve_rules edge of a Repo.
-func (c *RepoClient) QueryCveRules(r *Repo) *CVERuleQuery {
-	query := &CVERuleQuery{config: c.config}
+// QueryVulnerabilityReviews queries the vulnerability_reviews edge of a Repo.
+func (c *RepoClient) QueryVulnerabilityReviews(r *Repo) *VulnerabilityReviewQuery {
+	query := &VulnerabilityReviewQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repo.Table, repo.FieldID, id),
-			sqlgraph.To(cverule.Table, cverule.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, repo.CveRulesTable, repo.CveRulesPrimaryKey...),
+			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, repo.VulnerabilityReviewsTable, repo.VulnerabilityReviewsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -2646,15 +2669,47 @@ func (c *VulnerabilityClient) GetX(ctx context.Context, id int) *Vulnerability {
 	return obj
 }
 
-// QueryCve queries the cve edge of a Vulnerability.
-func (c *VulnerabilityClient) QueryCve(v *Vulnerability) *CVEQuery {
-	query := &CVEQuery{config: c.config}
+// QueryComponents queries the components edge of a Vulnerability.
+func (c *VulnerabilityClient) QueryComponents(v *Vulnerability) *ComponentQuery {
+	query := &ComponentQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := v.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(vulnerability.Table, vulnerability.FieldID, id),
-			sqlgraph.To(cve.Table, cve.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, vulnerability.CveTable, vulnerability.CveColumn),
+			sqlgraph.To(component.Table, component.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, vulnerability.ComponentsTable, vulnerability.ComponentsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(v.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReviews queries the reviews edge of a Vulnerability.
+func (c *VulnerabilityClient) QueryReviews(v *Vulnerability) *VulnerabilityReviewQuery {
+	query := &VulnerabilityReviewQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := v.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(vulnerability.Table, vulnerability.FieldID, id),
+			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, vulnerability.ReviewsTable, vulnerability.ReviewsColumn),
+		)
+		fromV = sqlgraph.Neighbors(v.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryInstances queries the instances edge of a Vulnerability.
+func (c *VulnerabilityClient) QueryInstances(v *Vulnerability) *ReleaseVulnerabilityQuery {
+	query := &ReleaseVulnerabilityQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := v.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(vulnerability.Table, vulnerability.FieldID, id),
+			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, vulnerability.InstancesTable, vulnerability.InstancesColumn),
 		)
 		fromV = sqlgraph.Neighbors(v.driver.Dialect(), step)
 		return fromV, nil
@@ -2664,5 +2719,176 @@ func (c *VulnerabilityClient) QueryCve(v *Vulnerability) *CVEQuery {
 
 // Hooks returns the client hooks.
 func (c *VulnerabilityClient) Hooks() []Hook {
-	return c.hooks.Vulnerability
+	hooks := c.hooks.Vulnerability
+	return append(hooks[:len(hooks):len(hooks)], vulnerability.Hooks[:]...)
+}
+
+// VulnerabilityReviewClient is a client for the VulnerabilityReview schema.
+type VulnerabilityReviewClient struct {
+	config
+}
+
+// NewVulnerabilityReviewClient returns a client for the VulnerabilityReview from the given config.
+func NewVulnerabilityReviewClient(c config) *VulnerabilityReviewClient {
+	return &VulnerabilityReviewClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `vulnerabilityreview.Hooks(f(g(h())))`.
+func (c *VulnerabilityReviewClient) Use(hooks ...Hook) {
+	c.hooks.VulnerabilityReview = append(c.hooks.VulnerabilityReview, hooks...)
+}
+
+// Create returns a create builder for VulnerabilityReview.
+func (c *VulnerabilityReviewClient) Create() *VulnerabilityReviewCreate {
+	mutation := newVulnerabilityReviewMutation(c.config, OpCreate)
+	return &VulnerabilityReviewCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of VulnerabilityReview entities.
+func (c *VulnerabilityReviewClient) CreateBulk(builders ...*VulnerabilityReviewCreate) *VulnerabilityReviewCreateBulk {
+	return &VulnerabilityReviewCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for VulnerabilityReview.
+func (c *VulnerabilityReviewClient) Update() *VulnerabilityReviewUpdate {
+	mutation := newVulnerabilityReviewMutation(c.config, OpUpdate)
+	return &VulnerabilityReviewUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VulnerabilityReviewClient) UpdateOne(vr *VulnerabilityReview) *VulnerabilityReviewUpdateOne {
+	mutation := newVulnerabilityReviewMutation(c.config, OpUpdateOne, withVulnerabilityReview(vr))
+	return &VulnerabilityReviewUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VulnerabilityReviewClient) UpdateOneID(id int) *VulnerabilityReviewUpdateOne {
+	mutation := newVulnerabilityReviewMutation(c.config, OpUpdateOne, withVulnerabilityReviewID(id))
+	return &VulnerabilityReviewUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for VulnerabilityReview.
+func (c *VulnerabilityReviewClient) Delete() *VulnerabilityReviewDelete {
+	mutation := newVulnerabilityReviewMutation(c.config, OpDelete)
+	return &VulnerabilityReviewDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *VulnerabilityReviewClient) DeleteOne(vr *VulnerabilityReview) *VulnerabilityReviewDeleteOne {
+	return c.DeleteOneID(vr.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *VulnerabilityReviewClient) DeleteOneID(id int) *VulnerabilityReviewDeleteOne {
+	builder := c.Delete().Where(vulnerabilityreview.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VulnerabilityReviewDeleteOne{builder}
+}
+
+// Query returns a query builder for VulnerabilityReview.
+func (c *VulnerabilityReviewClient) Query() *VulnerabilityReviewQuery {
+	return &VulnerabilityReviewQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a VulnerabilityReview entity by its id.
+func (c *VulnerabilityReviewClient) Get(ctx context.Context, id int) (*VulnerabilityReview, error) {
+	return c.Query().Where(vulnerabilityreview.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VulnerabilityReviewClient) GetX(ctx context.Context, id int) *VulnerabilityReview {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryVulnerability queries the vulnerability edge of a VulnerabilityReview.
+func (c *VulnerabilityReviewClient) QueryVulnerability(vr *VulnerabilityReview) *VulnerabilityQuery {
+	query := &VulnerabilityQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := vr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(vulnerabilityreview.Table, vulnerabilityreview.FieldID, id),
+			sqlgraph.To(vulnerability.Table, vulnerability.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, vulnerabilityreview.VulnerabilityTable, vulnerabilityreview.VulnerabilityColumn),
+		)
+		fromV = sqlgraph.Neighbors(vr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProjects queries the projects edge of a VulnerabilityReview.
+func (c *VulnerabilityReviewClient) QueryProjects(vr *VulnerabilityReview) *ProjectQuery {
+	query := &ProjectQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := vr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(vulnerabilityreview.Table, vulnerabilityreview.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, vulnerabilityreview.ProjectsTable, vulnerabilityreview.ProjectsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(vr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRepos queries the repos edge of a VulnerabilityReview.
+func (c *VulnerabilityReviewClient) QueryRepos(vr *VulnerabilityReview) *RepoQuery {
+	query := &RepoQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := vr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(vulnerabilityreview.Table, vulnerabilityreview.FieldID, id),
+			sqlgraph.To(repo.Table, repo.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, vulnerabilityreview.ReposTable, vulnerabilityreview.ReposPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(vr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReleases queries the releases edge of a VulnerabilityReview.
+func (c *VulnerabilityReviewClient) QueryReleases(vr *VulnerabilityReview) *ReleaseQuery {
+	query := &ReleaseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := vr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(vulnerabilityreview.Table, vulnerabilityreview.FieldID, id),
+			sqlgraph.To(release.Table, release.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, vulnerabilityreview.ReleasesTable, vulnerabilityreview.ReleasesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(vr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryInstances queries the instances edge of a VulnerabilityReview.
+func (c *VulnerabilityReviewClient) QueryInstances(vr *VulnerabilityReview) *ReleaseVulnerabilityQuery {
+	query := &ReleaseVulnerabilityQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := vr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(vulnerabilityreview.Table, vulnerabilityreview.FieldID, id),
+			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, vulnerabilityreview.InstancesTable, vulnerabilityreview.InstancesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(vr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *VulnerabilityReviewClient) Hooks() []Hook {
+	return c.hooks.VulnerabilityReview
 }

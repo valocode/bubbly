@@ -12,16 +12,18 @@ import (
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
+	"github.com/valocode/bubbly/ent/model"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/vulnerability"
 	"github.com/valocode/bubbly/integrations"
 	"github.com/valocode/bubbly/store"
+	"github.com/valocode/bubbly/store/api"
 )
 
 type DemoRepoOptions struct {
-	Name    string
-	Project string
-	Branch  string
+	Name string
+	// Project string
+	Branch string
 
 	NumCommits    int
 	NumTests      int
@@ -42,8 +44,8 @@ type DemoRepoOptions struct {
 
 var demoData = []DemoRepoOptions{
 	{
-		Name:          "demo",
-		Project:       "bubbly",
+		Name: "demo",
+		// Project:       "bubbly",
 		Branch:        "main",
 		NumCommits:    250,
 		NumTests:      500,
@@ -83,30 +85,37 @@ func SaveSPDXData(client *ent.Client) error {
 	}
 	return nil
 }
+
 func SaveCVEData(client *ent.Client) error {
 	resp, err := integrations.FetchCVEs(integrations.DefaultCVEFetchOptions())
 	if err != nil {
 		return fmt.Errorf("error fetching CVEs: %w", err)
 	}
-	var graph ent.DataGraph
-	for _, cve := range resp.Result.CVEItems {
+	ctx := context.Background()
+	for _, vuln := range resp.Result.CVEItems {
 		var description string
 		// Get the english description
-		for _, d := range cve.CVEItem.Description.DescriptionData {
+		for _, d := range vuln.CVEItem.Description.DescriptionData {
 			if d.Lang == "en" {
 				description = d.Value
 			}
 		}
-
-		graph.RootNodes = append(graph.RootNodes, ent.NewCVENode().
-			SetCveID(cve.CVEItem.CVEDataMeta.ID).
-			SetDescription(description).
-			SetSeverityScore(float64(cve.Impact.BaseMetricV3.CVSSV3.BaseScore)).
-			Node(),
-		)
-	}
-	if err := graph.Save(client); err != nil {
-		return fmt.Errorf("error saving CVEs: %w", err)
+		_, err := client.Vulnerability.Query().Where(
+			vulnerability.Vid(vuln.CVEItem.CVEDataMeta.ID),
+		).Only(ctx)
+		if err != nil {
+			if !ent.IsNotFound(err) {
+				return fmt.Errorf("error checking vulnerability: %w", err)
+			}
+			_, err = client.Vulnerability.Create().
+				SetVid(vuln.CVEItem.CVEDataMeta.ID).
+				SetDescription(description).
+				SetSeverityScore(float64(vuln.Impact.BaseMetricV3.CVSSV3.BaseScore)).
+				Save(ctx)
+			if err != nil {
+				return fmt.Errorf("error creating vulnerability: %w", err)
+			}
+		}
 	}
 	return nil
 }
@@ -138,70 +147,93 @@ func FailSomeRandomReleases(db *store.Store) error {
 	return nil
 }
 
-func CreateDummyData(client *ent.Client) error {
+func CreateDummyData(store *store.Store) error {
 
 	var (
-		licenses   []*ent.License
-		licenseIDs = []string{"MIT", "GPL-3.0", "MPL-2.0", "Apache-2.0"}
-		cves       []*ent.CVE
+		client     = store.Client()
+		vulns      []*ent.Vulnerability
 		components []*ent.Component
-		ctx        = context.Background()
+		// licenses   []*ent.License
+		// licenseIDs = []string{"MIT", "GPL-3.0", "MPL-2.0", "Apache-2.0"}
+		ctx = context.Background()
 	)
 	{
 		var err error
-		licenses, err = client.License.Query().All(ctx)
+		_, err = client.License.Query().All(ctx)
 		if err != nil {
 			return err
 		}
-		cves, err = client.CVE.Query().All(ctx)
+		vulns, err = client.Vulnerability.Query().All(ctx)
 		if err != nil {
-			return fmt.Errorf("error getting the CVE list: %w", err)
+			return fmt.Errorf("error getting the Vulnerability list: %w", err)
 		}
 	}
 
 	// Create some components
 	{
-		mods, err := integrations.ParseSBOM("lang/testdata/spdx-sbom-generator.json")
+		mods, err := integrations.ParseSBOM("adapter/testdata/spdx-sbom-generator.json")
 		if err != nil {
 			return err
 		}
+
+		var compVulns = make([]*api.ComponentVulnerability, 0, len(mods))
 		for i := 0; i < len(mods); i++ {
 			mod := mods[i]
+
 			// This  *should* only be true for the first/root module
 			if mod.Version == "" {
 				continue
 			}
-			cveID := fmt.Sprintf("CVE-%d", i)
-			if len(cves) > 0 {
-				cveID = cves[i].CveID
-			}
-			cve := ent.NewCVENode().
-				SetCveID(cveID)
-			spdxID := fmt.Sprintf("GPL-%d", i)
-			if len(licenses) > 0 {
-				spdxID = licenseIDs[i%len(licenseIDs)]
-				// if i >= len(licenseIDs) {
-				// }
-			}
-			license := ent.NewLicenseNode().SetSpdxID(spdxID)
-
-			comp := ent.NewComponentNode().
+			dbComp, err := client.Component.Create().
 				SetName(mod.Name).
 				SetVendor(mod.Supplier.Name).
 				SetVersion(mod.Version).SetURL(mod.PackageURL).
-				AddCves(cve).
-				AddLicenses(license)
-			if err := comp.Graph().Save(client); err != nil {
+				Save(ctx)
+			if err != nil {
 				return err
 			}
+			components = append(components, dbComp)
+			compVuln := api.ComponentVulnerability{
+				Component: api.Component{ComponentModel: *model.NewComponentModel().SetID(dbComp.ID)},
+			}
 
-			components = append(components, comp.Value.(*ent.Component))
+			vulnID := fmt.Sprintf("CVE-%d", i)
+			if len(vulns) > 0 {
+				vulnID = vulns[i].Vid
+			}
 
+			compVuln.Vulnerabilities = append(compVuln.Vulnerabilities,
+				&api.Vulnerability{
+					VulnerabilityModel: *model.NewVulnerabilityModel().
+						SetVid(vulnID),
+				},
+			)
+			compVulns = append(compVulns, &compVuln)
+
+			// Demo review - TODO...
+			// project := ent.NewProjectNode().SetName("bubbly")
+			// ent.NewVulnerabilityReviewNode().
+			// 	SetName("My demo review...").
+			// 	SetDecision(vulnerabilityreview.DecisionInProgress).
+			// 	SetVulnerability(vuln).
+			// 	AddProjects(project)
+			// end TODO
+			// spdxID := fmt.Sprintf("GPL-%d", i)
+			// if len(licenses) > 0 {
+			// 	spdxID = licenseIDs[i%len(licenseIDs)]
+			// }
+			// license := ent.NewLicenseNode().SetSpdxID(spdxID)
+
+		}
+		if err := store.SaveComponentVulnerabilities(&api.ComponentVulnerabilityRequest{
+			Components: compVulns,
+		}); err != nil {
+			return fmt.Errorf("error saving component vulnerabilities: %w", err)
 		}
 	}
 
 	for _, opt := range demoData {
-		if err := createRepoData(client, opt, components); err != nil {
+		if err := createRepoData(store, opt, components); err != nil {
 			return err
 		}
 	}
@@ -209,14 +241,9 @@ func CreateDummyData(client *ent.Client) error {
 	return nil
 }
 
-func createRepoData(client *ent.Client, opt DemoRepoOptions, components []*ent.Component) error {
-	project := ent.NewProjectNode().SetName(opt.Project)
-	repo := ent.NewRepoNode().
-		SetName(opt.Name).
-		SetProject(project)
+func createRepoData(store *store.Store, opt DemoRepoOptions, components []*ent.Component) error {
 
 	cTime := time.Now()
-
 	for i := 1; i <= opt.NumCommits; i++ {
 		var (
 			tag     string
@@ -238,19 +265,18 @@ func createRepoData(client *ent.Client, opt DemoRepoOptions, components []*ent.C
 		}
 
 		fmt.Printf("Creating release with version %s at %s\n", version, cTime.Format(time.RFC3339))
-		release := ent.NewReleaseNode().
-			SetCommit(
-				ent.NewGitCommitNode().
-					SetHash(hash).
-					SetBranch(opt.Branch).
-					SetTag(tag).
-					SetTime(cTime).
-					SetRepo(repo),
-			).
-			SetProject(project).
-			SetName(opt.Name).
-			SetVersion(version)
-
+		relReq := api.ReleaseCreateRequest{
+			Repo: model.NewRepoModel().SetName(opt.Name),
+			Commit: model.NewGitCommitModel().
+				SetHash(hash).
+				SetBranch(opt.Branch).
+				SetTag(tag).
+				SetTime(cTime),
+		}
+		_, err := store.CreateRelease(&relReq)
+		if err != nil {
+			return err
+		}
 		//
 		// Artifact
 		//
@@ -258,18 +284,18 @@ func createRepoData(client *ent.Client, opt DemoRepoOptions, components []*ent.C
 			cTime = cTime.Add(time.Minute * time.Duration(
 				rand.Intn(opt.ArtifactTimeMax-opt.ArtifactTimeMin+1)+opt.ArtifactTimeMin,
 			))
-			art := ent.NewArtifactNode().
-				SetName("dummy").
-				SetSha256(fmt.Sprintf("%x", sha256.Sum256([]byte(hash)))).
-				SetType(artifact.TypeDocker).
-				// Fabriate the entry as well to override the one that is created
-				SetEntry(
-					ent.NewReleaseEntryNode().
-						SetTime(cTime).
-						SetType(releaseentry.TypeArtifact),
-				)
-			release.AddArtifacts(art)
+			artReq := api.ArtifactLogRequest{
+				Artifact: model.NewArtifactModel().
+					SetName("dummy").
+					SetSha256(fmt.Sprintf("%x", sha256.Sum256([]byte(hash)))).
+					SetType(artifact.TypeDocker),
+				Commit: &hash,
+			}
 
+			_, err := store.LogArtifact(&artReq)
+			if err != nil {
+				return err
+			}
 		}
 		//
 		// Test Run & Cases
@@ -278,14 +304,17 @@ func createRepoData(client *ent.Client, opt DemoRepoOptions, components []*ent.C
 			cTime = cTime.Add(time.Minute * time.Duration(
 				rand.Intn(opt.TestRunTimeMax-opt.TestRunTimeMin+1)+opt.TestRunTimeMin,
 			))
-			run := ent.NewTestRunNode().
-				SetRelease(release).
-				SetTool("gotest").
-				SetEntry(
-					ent.NewReleaseEntryNode().
-						SetTime(cTime).
-						SetType(releaseentry.TypeTestRun),
-				)
+
+			run := api.TestRun{
+				TestRunModel: *model.NewTestRunModel().SetTool("gotest"),
+			}
+			// run := ent.NewTestRunNode().
+			// 	SetRelease(release).
+			// 	SetEntry(
+			// 		ent.NewReleaseEntryNode().
+			// 			SetTime(cTime).
+			// 			SetType(releaseentry.TypeTestRun),
+			// 	)
 
 			for j := 1; j <= opt.NumTests; j++ {
 				// Calculate the result based on the test case number. The higher
@@ -296,17 +325,21 @@ func createRepoData(client *ent.Client, opt DemoRepoOptions, components []*ent.C
 				// if !result {
 				// 	fmt.Printf("Test Case will fail: %d\n", j)
 				// }
-				ent.NewTestCaseNode().
-					SetRun(run).
-					SetName(fmt.Sprintf("test_case_%d", j)).
-					SetMessage("TODO").
-					SetResult(result).
-					SetElapsed(0).
-					SetRun(run).
-					// Optimization to tell bubbly to only create (not update)
-					SetOperation(ent.NodeOperationCreate)
+				run.TestCases = append(run.TestCases, &api.TestRunCase{
+					TestCaseModel: *model.NewTestCaseModel().
+						SetName(fmt.Sprintf("test_case_%d", j)).
+						SetMessage("TODO").
+						SetResult(result).
+						SetElapsed(0),
+				})
 			}
-			release.AddTestRuns(run)
+			_, err := store.SaveTestRun(&api.TestRunRequest{
+				Commit:  &hash,
+				TestRun: &run,
+			})
+			if err != nil {
+				return err
+			}
 		}
 
 		//
@@ -316,24 +349,35 @@ func createRepoData(client *ent.Client, opt DemoRepoOptions, components []*ent.C
 			cTime = cTime.Add(time.Minute * time.Duration(
 				rand.Intn(opt.IssueScanTimeMax-opt.IssueScanTimeMin+1)+opt.IssueScanTimeMin,
 			))
-			scan := ent.NewCodeScanNode().
-				SetRelease(release).
-				SetTool("spdx-sbom-generator").
-				SetEntry(
-					ent.NewReleaseEntryNode().
-						SetTime(cTime).
-						SetType(releaseentry.TypeCodeScan),
-				)
+			scan := api.CodeScan{
+				CodeScanModel: *model.NewCodeScanModel().
+					SetTool("gosec"),
+			}
+			// scan := ent.NewCodeScanNode().
+			// 	SetRelease(release).
+			// 	SetEntry(
+			// 		ent.NewReleaseEntryNode().
+			// 			SetTime(cTime).
+			// 			SetType(releaseentry.TypeCodeScan),
+			// 	)
 
 			for j := 0; j < opt.NumCodeIssues; j++ {
 				// cweID := fmt.Sprintf("CWE-%d", j)
 				// tx.CWE.Query().Where(cwe.CweID()).Only(ctx)
-				ent.NewCodeIssueNode().
-					SetScan(scan).
-					SetRuleID(fmt.Sprintf("rule_%d", j)).
-					SetMessage("TODO").
-					SetSeverity(codeissue.SeverityHigh).
-					SetType(codeissue.TypeSecurity)
+				scan.Issues = append(scan.Issues, &api.CodeScanIssue{
+					CodeIssueModel: *model.NewCodeIssueModel().
+						SetRuleID(fmt.Sprintf("rule_%d", j)).
+						SetMessage("TODO").
+						SetSeverity(codeissue.SeverityHigh).
+						SetType(codeissue.TypeSecurity),
+				})
+			}
+			_, err := store.SaveCodeScan(&api.CodeScanRequest{
+				Commit:   &hash,
+				CodeScan: &scan,
+			})
+			if err != nil {
+				return err
 			}
 		}
 
@@ -344,30 +388,32 @@ func createRepoData(client *ent.Client, opt DemoRepoOptions, components []*ent.C
 			cTime = cTime.Add(time.Minute * time.Duration(
 				rand.Intn(opt.CveScanTimeMax-opt.CveScanTimeMin+1)+opt.CveScanTimeMin,
 			))
-			scan := ent.NewCodeScanNode().
-				SetRelease(release).
-				SetTool("snyk").
-				SetEntry(
-					ent.NewReleaseEntryNode().
-						SetTime(cTime).
-						SetType(releaseentry.TypeCodeScan),
-				)
+			scan := api.CodeScan{
+				CodeScanModel: *model.NewCodeScanModel().
+					SetTool("spdx-sbom-generator"),
+			}
+			// scan := ent.NewCodeScanNode().
+			// 	SetRelease(release).
+			// 	SetTool("snyk").
+			// 	SetEntry(
+			// 		ent.NewReleaseEntryNode().
+			// 			SetTime(cTime).
+			// 			SetType(releaseentry.TypeCodeScan),
+			// 	)
 
 			for _, c := range components {
-				comp := ent.NewComponentNode().
-					SetName(c.Name)
-				compUse := ent.NewComponentUseNode().
-					// ent.NewComponentUseNode().
-					AddScans(scan).
-					SetComponent(comp)
-
-				release.AddComponents(compUse)
-
+				scan.Components = append(scan.Components, &api.CodeScanComponent{
+					ComponentModel: *model.NewComponentModel().
+						SetName(c.Name).SetVendor(c.Vendor).SetVersion(c.Version),
+				})
 			}
-		}
-
-		if err := release.Graph().Save(client); err != nil {
-			return err
+			_, err := store.SaveCodeScan(&api.CodeScanRequest{
+				Commit:   &hash,
+				CodeScan: &scan,
+			})
+			if err != nil {
+				return err
+			}
 		}
 	}
 

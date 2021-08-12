@@ -11,9 +11,10 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasevulnerability"
 )
 
 // CodeScanCreate is the builder for creating a CodeScan entity.
@@ -74,17 +75,32 @@ func (csc *CodeScanCreate) AddIssues(c ...*CodeIssue) *CodeScanCreate {
 	return csc.AddIssueIDs(ids...)
 }
 
-// AddComponentIDs adds the "components" edge to the ComponentUse entity by IDs.
+// AddVulnerabilityIDs adds the "vulnerabilities" edge to the ReleaseVulnerability entity by IDs.
+func (csc *CodeScanCreate) AddVulnerabilityIDs(ids ...int) *CodeScanCreate {
+	csc.mutation.AddVulnerabilityIDs(ids...)
+	return csc
+}
+
+// AddVulnerabilities adds the "vulnerabilities" edges to the ReleaseVulnerability entity.
+func (csc *CodeScanCreate) AddVulnerabilities(r ...*ReleaseVulnerability) *CodeScanCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return csc.AddVulnerabilityIDs(ids...)
+}
+
+// AddComponentIDs adds the "components" edge to the ReleaseComponent entity by IDs.
 func (csc *CodeScanCreate) AddComponentIDs(ids ...int) *CodeScanCreate {
 	csc.mutation.AddComponentIDs(ids...)
 	return csc
 }
 
-// AddComponents adds the "components" edges to the ComponentUse entity.
-func (csc *CodeScanCreate) AddComponents(c ...*ComponentUse) *CodeScanCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddComponents adds the "components" edges to the ReleaseComponent entity.
+func (csc *CodeScanCreate) AddComponents(r ...*ReleaseComponent) *CodeScanCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return csc.AddComponentIDs(ids...)
 }
@@ -264,6 +280,25 @@ func (csc *CodeScanCreate) createSpec() (*CodeScan, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := csc.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   codescan.VulnerabilitiesTable,
+			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := csc.mutation.ComponentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -274,7 +309,7 @@ func (csc *CodeScanCreate) createSpec() (*CodeScan, *sqlgraph.CreateSpec) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}

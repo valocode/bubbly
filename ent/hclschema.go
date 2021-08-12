@@ -39,12 +39,6 @@ var AllDataNodesSchema = HCLBodySpec{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "artifact"},
 		},
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve"},
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve_rule"},
-		},
-		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cwe"},
 		},
 		{
@@ -55,9 +49,6 @@ var AllDataNodesSchema = HCLBodySpec{
 		},
 		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component"},
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component_use"},
 		},
 		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "commit"},
@@ -75,7 +66,13 @@ var AllDataNodesSchema = HCLBodySpec{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release"},
 		},
 		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_component"},
+		},
+		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_entry"},
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_vulnerability"},
 		},
 		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "repo"},
@@ -88,6 +85,9 @@ var AllDataNodesSchema = HCLBodySpec{
 		},
 		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability"},
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability_review"},
 		},
 	},
 }
@@ -121,7 +121,7 @@ var ArtifactBodySpec = HCLBodySpec{
 		},
 	},
 }
-var ArtifactReleaseEdgeSpec = HCLBodySpec{
+var ArtifactEdgeReleaseSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -134,7 +134,7 @@ var ArtifactReleaseEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ArtifactEntryEdgeSpec = HCLBodySpec{
+var ArtifactEdgeEntrySpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -144,150 +144,6 @@ var ArtifactEntryEdgeSpec = HCLBodySpec{
 		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_entry"},
 			MaxItems:          1,
-		},
-	},
-}
-var CVEBodySpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: "_operation",
-		},
-		{
-			Name: "cve_id",
-		},
-		{
-			Name: "description",
-		},
-		{
-			Name: "severity_score",
-		},
-		{
-			Name: "severity",
-		},
-		{
-			Name: "published_data",
-		},
-		{
-			Name: "modified_data",
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: blockNodeDisjoint},
-			MaxItems:          1,
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "components"},
-			MaxItems:          1,
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerabilities"},
-			MaxItems:          1,
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "rules"},
-			MaxItems:          1,
-		},
-	},
-}
-var CVEComponentsEdgeSpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: attributeNodeRef,
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component"},
-		},
-	},
-}
-var CVEVulnerabilitiesEdgeSpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: attributeNodeRef,
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability"},
-		},
-	},
-}
-var CVERulesEdgeSpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: attributeNodeRef,
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve_rule"},
-		},
-	},
-}
-var CVERuleBodySpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: "_operation",
-		},
-		{
-			Name: "name",
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: blockNodeDisjoint},
-			MaxItems:          1,
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve"},
-			MaxItems:          1,
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "project"},
-			MaxItems:          1,
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "repo"},
-			MaxItems:          1,
-		},
-	},
-}
-var CVERuleCveEdgeSpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: attributeNodeRef,
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve"},
-			MaxItems:          1,
-		},
-	},
-}
-var CVERuleProjectEdgeSpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: attributeNodeRef,
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "project"},
-		},
-	},
-}
-var CVERuleRepoEdgeSpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: attributeNodeRef,
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "repo"},
 		},
 	},
 }
@@ -317,7 +173,7 @@ var CWEBodySpec = HCLBodySpec{
 		},
 	},
 }
-var CWEIssuesEdgeSpec = HCLBodySpec{
+var CWEEdgeIssuesSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -362,7 +218,7 @@ var CodeIssueBodySpec = HCLBodySpec{
 		},
 	},
 }
-var CodeIssueCweEdgeSpec = HCLBodySpec{
+var CodeIssueEdgeCweSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -374,7 +230,7 @@ var CodeIssueCweEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var CodeIssueScanEdgeSpec = HCLBodySpec{
+var CodeIssueEdgeScanSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -414,12 +270,16 @@ var CodeScanBodySpec = HCLBodySpec{
 			MaxItems:          1,
 		},
 		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerabilities"},
+			MaxItems:          1,
+		},
+		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "components"},
 			MaxItems:          1,
 		},
 	},
 }
-var CodeScanReleaseEdgeSpec = HCLBodySpec{
+var CodeScanEdgeReleaseSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -432,7 +292,7 @@ var CodeScanReleaseEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var CodeScanEntryEdgeSpec = HCLBodySpec{
+var CodeScanEdgeEntrySpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -445,7 +305,7 @@ var CodeScanEntryEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var CodeScanIssuesEdgeSpec = HCLBodySpec{
+var CodeScanEdgeIssuesSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -457,7 +317,7 @@ var CodeScanIssuesEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var CodeScanComponentsEdgeSpec = HCLBodySpec{
+var CodeScanEdgeVulnerabilitiesSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -465,7 +325,19 @@ var CodeScanComponentsEdgeSpec = HCLBodySpec{
 	},
 	Blocks: []HCLBlockSpec{
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component_use"},
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_vulnerability"},
+		},
+	},
+}
+var CodeScanEdgeComponentsSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_component"},
 		},
 	},
 }
@@ -496,7 +368,7 @@ var ComponentBodySpec = HCLBodySpec{
 			MaxItems:          1,
 		},
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cves"},
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerabilities"},
 			MaxItems:          1,
 		},
 		{
@@ -509,7 +381,7 @@ var ComponentBodySpec = HCLBodySpec{
 		},
 	},
 }
-var ComponentCvesEdgeSpec = HCLBodySpec{
+var ComponentEdgeVulnerabilitiesSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -517,11 +389,11 @@ var ComponentCvesEdgeSpec = HCLBodySpec{
 	},
 	Blocks: []HCLBlockSpec{
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve"},
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability"},
 		},
 	},
 }
-var ComponentLicensesEdgeSpec = HCLBodySpec{
+var ComponentEdgeLicensesSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -533,7 +405,7 @@ var ComponentLicensesEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ComponentUsesEdgeSpec = HCLBodySpec{
+var ComponentEdgeUsesSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -541,70 +413,7 @@ var ComponentUsesEdgeSpec = HCLBodySpec{
 	},
 	Blocks: []HCLBlockSpec{
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component_use"},
-		},
-	},
-}
-var ComponentUseBodySpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: "_operation",
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: blockNodeDisjoint},
-			MaxItems:          1,
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release"},
-			MaxItems:          1,
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "scans"},
-			MaxItems:          1,
-		},
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component"},
-			MaxItems:          1,
-		},
-	},
-}
-var ComponentUseReleaseEdgeSpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: attributeNodeRef,
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release"},
-			MaxItems:          1,
-		},
-	},
-}
-var ComponentUseScansEdgeSpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: attributeNodeRef,
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "code_scan"},
-		},
-	},
-}
-var ComponentUseComponentEdgeSpec = HCLBodySpec{
-	Attributes: []hcl.AttributeSchema{
-		{
-			Name: attributeNodeRef,
-		},
-	},
-	Blocks: []HCLBlockSpec{
-		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component"},
-			MaxItems:          1,
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_component"},
 		},
 	},
 }
@@ -641,7 +450,7 @@ var GitCommitBodySpec = HCLBodySpec{
 		},
 	},
 }
-var GitCommitRepoEdgeSpec = HCLBodySpec{
+var GitCommitEdgeRepoSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -654,7 +463,7 @@ var GitCommitRepoEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var GitCommitReleaseEdgeSpec = HCLBodySpec{
+var GitCommitEdgeReleaseSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -703,7 +512,7 @@ var LicenseBodySpec = HCLBodySpec{
 		},
 	},
 }
-var LicenseComponentsEdgeSpec = HCLBodySpec{
+var LicenseEdgeComponentsSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -715,7 +524,7 @@ var LicenseComponentsEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var LicenseUsesEdgeSpec = HCLBodySpec{
+var LicenseEdgeUsesSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -744,7 +553,7 @@ var LicenseUseBodySpec = HCLBodySpec{
 		},
 	},
 }
-var LicenseUseLicenseEdgeSpec = HCLBodySpec{
+var LicenseUseEdgeLicenseSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -780,12 +589,12 @@ var ProjectBodySpec = HCLBodySpec{
 			MaxItems:          1,
 		},
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve_rules"},
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability_reviews"},
 			MaxItems:          1,
 		},
 	},
 }
-var ProjectReposEdgeSpec = HCLBodySpec{
+var ProjectEdgeReposSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -797,7 +606,7 @@ var ProjectReposEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ProjectReleasesEdgeSpec = HCLBodySpec{
+var ProjectEdgeReleasesSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -809,7 +618,7 @@ var ProjectReleasesEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ProjectCveRulesEdgeSpec = HCLBodySpec{
+var ProjectEdgeVulnerabilityReviewsSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -817,7 +626,7 @@ var ProjectCveRulesEdgeSpec = HCLBodySpec{
 	},
 	Blocks: []HCLBlockSpec{
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve_rule"},
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability_review"},
 		},
 	},
 }
@@ -870,6 +679,10 @@ var ReleaseBodySpec = HCLBodySpec{
 			MaxItems:          1,
 		},
 		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerabilities"},
+			MaxItems:          1,
+		},
+		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "code_scans"},
 			MaxItems:          1,
 		},
@@ -877,9 +690,13 @@ var ReleaseBodySpec = HCLBodySpec{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "test_runs"},
 			MaxItems:          1,
 		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability_reviews"},
+			MaxItems:          1,
+		},
 	},
 }
-var ReleaseSubreleasesEdgeSpec = HCLBodySpec{
+var ReleaseEdgeSubreleasesSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -891,7 +708,7 @@ var ReleaseSubreleasesEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseDependenciesEdgeSpec = HCLBodySpec{
+var ReleaseEdgeDependenciesSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -903,7 +720,7 @@ var ReleaseDependenciesEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseProjectEdgeSpec = HCLBodySpec{
+var ReleaseEdgeProjectSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -916,7 +733,7 @@ var ReleaseProjectEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseCommitEdgeSpec = HCLBodySpec{
+var ReleaseEdgeCommitSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -929,7 +746,7 @@ var ReleaseCommitEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseLogEdgeSpec = HCLBodySpec{
+var ReleaseEdgeLogSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -941,7 +758,7 @@ var ReleaseLogEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseArtifactsEdgeSpec = HCLBodySpec{
+var ReleaseEdgeArtifactsSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -953,7 +770,7 @@ var ReleaseArtifactsEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseComponentsEdgeSpec = HCLBodySpec{
+var ReleaseEdgeComponentsSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -961,11 +778,23 @@ var ReleaseComponentsEdgeSpec = HCLBodySpec{
 	},
 	Blocks: []HCLBlockSpec{
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component_use"},
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_component"},
 		},
 	},
 }
-var ReleaseCodeScansEdgeSpec = HCLBodySpec{
+var ReleaseEdgeVulnerabilitiesSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_vulnerability"},
+		},
+	},
+}
+var ReleaseEdgeCodeScansSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -977,7 +806,7 @@ var ReleaseCodeScansEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseTestRunsEdgeSpec = HCLBodySpec{
+var ReleaseEdgeTestRunsSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -986,6 +815,81 @@ var ReleaseTestRunsEdgeSpec = HCLBodySpec{
 	Blocks: []HCLBlockSpec{
 		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "test_run"},
+		},
+	},
+}
+var ReleaseEdgeVulnerabilityReviewsSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability_review"},
+		},
+	},
+}
+var ReleaseComponentBodySpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: "_operation",
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: blockNodeDisjoint},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "scans"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component"},
+			MaxItems:          1,
+		},
+	},
+}
+var ReleaseComponentEdgeReleaseSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release"},
+			MaxItems:          1,
+		},
+	},
+}
+var ReleaseComponentEdgeScansSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "code_scan"},
+		},
+	},
+}
+var ReleaseComponentEdgeComponentSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component"},
+			MaxItems:          1,
 		},
 	},
 }
@@ -1024,7 +928,7 @@ var ReleaseEntryBodySpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseEntryArtifactEdgeSpec = HCLBodySpec{
+var ReleaseEntryEdgeArtifactSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1037,7 +941,7 @@ var ReleaseEntryArtifactEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseEntryCodeScanEdgeSpec = HCLBodySpec{
+var ReleaseEntryEdgeCodeScanSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1050,7 +954,7 @@ var ReleaseEntryCodeScanEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseEntryTestRunEdgeSpec = HCLBodySpec{
+var ReleaseEntryEdgeTestRunSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1063,7 +967,7 @@ var ReleaseEntryTestRunEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var ReleaseEntryReleaseEdgeSpec = HCLBodySpec{
+var ReleaseEntryEdgeReleaseSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1073,6 +977,85 @@ var ReleaseEntryReleaseEdgeSpec = HCLBodySpec{
 		{
 			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release"},
 			MaxItems:          1,
+		},
+	},
+}
+var ReleaseVulnerabilityBodySpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: "_operation",
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: blockNodeDisjoint},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "reviews"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "scans"},
+			MaxItems:          1,
+		},
+	},
+}
+var ReleaseVulnerabilityEdgeVulnerabilitySpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability"},
+			MaxItems:          1,
+		},
+	},
+}
+var ReleaseVulnerabilityEdgeReleaseSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release"},
+			MaxItems:          1,
+		},
+	},
+}
+var ReleaseVulnerabilityEdgeReviewsSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability_review"},
+		},
+	},
+}
+var ReleaseVulnerabilityEdgeScansSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "code_scan"},
 		},
 	},
 }
@@ -1099,12 +1082,12 @@ var RepoBodySpec = HCLBodySpec{
 			MaxItems:          1,
 		},
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve_rules"},
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability_reviews"},
 			MaxItems:          1,
 		},
 	},
 }
-var RepoProjectEdgeSpec = HCLBodySpec{
+var RepoEdgeProjectSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1117,7 +1100,7 @@ var RepoProjectEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var RepoCommitsEdgeSpec = HCLBodySpec{
+var RepoEdgeCommitsSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1129,7 +1112,7 @@ var RepoCommitsEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var RepoCveRulesEdgeSpec = HCLBodySpec{
+var RepoEdgeVulnerabilityReviewsSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1137,7 +1120,7 @@ var RepoCveRulesEdgeSpec = HCLBodySpec{
 	},
 	Blocks: []HCLBlockSpec{
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve_rule"},
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability_review"},
 		},
 	},
 }
@@ -1170,7 +1153,7 @@ var TestCaseBodySpec = HCLBodySpec{
 		},
 	},
 }
-var TestCaseRunEdgeSpec = HCLBodySpec{
+var TestCaseEdgeRunSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1211,7 +1194,7 @@ var TestRunBodySpec = HCLBodySpec{
 		},
 	},
 }
-var TestRunReleaseEdgeSpec = HCLBodySpec{
+var TestRunEdgeReleaseSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1224,7 +1207,7 @@ var TestRunReleaseEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var TestRunEntryEdgeSpec = HCLBodySpec{
+var TestRunEdgeEntrySpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1237,7 +1220,7 @@ var TestRunEntryEdgeSpec = HCLBodySpec{
 		},
 	},
 }
-var TestRunTestsEdgeSpec = HCLBodySpec{
+var TestRunEdgeTestsSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1254,6 +1237,27 @@ var VulnerabilityBodySpec = HCLBodySpec{
 		{
 			Name: "_operation",
 		},
+		{
+			Name: "vid",
+		},
+		{
+			Name: "summary",
+		},
+		{
+			Name: "description",
+		},
+		{
+			Name: "severity_score",
+		},
+		{
+			Name: "severity",
+		},
+		{
+			Name: "published",
+		},
+		{
+			Name: "modified",
+		},
 	},
 	Blocks: []HCLBlockSpec{
 		{
@@ -1261,12 +1265,20 @@ var VulnerabilityBodySpec = HCLBodySpec{
 			MaxItems:          1,
 		},
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve"},
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "components"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "reviews"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "instances"},
 			MaxItems:          1,
 		},
 	},
 }
-var VulnerabilityCveEdgeSpec = HCLBodySpec{
+var VulnerabilityEdgeComponentsSpec = HCLBodySpec{
 	Attributes: []hcl.AttributeSchema{
 		{
 			Name: attributeNodeRef,
@@ -1274,108 +1286,235 @@ var VulnerabilityCveEdgeSpec = HCLBodySpec{
 	},
 	Blocks: []HCLBlockSpec{
 		{
-			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "cve"},
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "component"},
+		},
+	},
+}
+var VulnerabilityEdgeReviewsSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability_review"},
+		},
+	},
+}
+var VulnerabilityEdgeInstancesSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_vulnerability"},
+		},
+	},
+}
+var VulnerabilityReviewBodySpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: "_operation",
+		},
+		{
+			Name: "name",
+		},
+		{
+			Name: "decision",
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: blockNodeDisjoint},
 			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "projects"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "repos"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "releases"},
+			MaxItems:          1,
+		},
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "instances"},
+			MaxItems:          1,
+		},
+	},
+}
+var VulnerabilityReviewEdgeVulnerabilitySpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "vulnerability"},
+			MaxItems:          1,
+		},
+	},
+}
+var VulnerabilityReviewEdgeProjectsSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "project"},
+		},
+	},
+}
+var VulnerabilityReviewEdgeReposSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "repo"},
+		},
+	},
+}
+var VulnerabilityReviewEdgeReleasesSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release"},
+		},
+	},
+}
+var VulnerabilityReviewEdgeInstancesSpec = HCLBodySpec{
+	Attributes: []hcl.AttributeSchema{
+		{
+			Name: attributeNodeRef,
+		},
+	},
+	Blocks: []HCLBlockSpec{
+		{
+			BlockHeaderSchema: hcl.BlockHeaderSchema{Type: "release_vulnerability"},
 		},
 	},
 }
 
 var DataEdgeSchemas = map[string]map[string]*HCLBodySpec{
 	"artifact": {
-		"release": &ArtifactReleaseEdgeSpec,
-		"entry":   &ArtifactEntryEdgeSpec,
-	},
-	"cve": {
-		"components":      &CVEComponentsEdgeSpec,
-		"vulnerabilities": &CVEVulnerabilitiesEdgeSpec,
-		"rules":           &CVERulesEdgeSpec,
-	},
-	"cve_rule": {
-		"cve":     &CVERuleCveEdgeSpec,
-		"project": &CVERuleProjectEdgeSpec,
-		"repo":    &CVERuleRepoEdgeSpec,
+		"release": &ArtifactEdgeReleaseSpec,
+		"entry":   &ArtifactEdgeEntrySpec,
 	},
 	"cwe": {
-		"issues": &CWEIssuesEdgeSpec,
+		"issues": &CWEEdgeIssuesSpec,
 	},
 	"code_issue": {
-		"cwe":  &CodeIssueCweEdgeSpec,
-		"scan": &CodeIssueScanEdgeSpec,
+		"cwe":  &CodeIssueEdgeCweSpec,
+		"scan": &CodeIssueEdgeScanSpec,
 	},
 	"code_scan": {
-		"release":    &CodeScanReleaseEdgeSpec,
-		"entry":      &CodeScanEntryEdgeSpec,
-		"issues":     &CodeScanIssuesEdgeSpec,
-		"components": &CodeScanComponentsEdgeSpec,
+		"release":         &CodeScanEdgeReleaseSpec,
+		"entry":           &CodeScanEdgeEntrySpec,
+		"issues":          &CodeScanEdgeIssuesSpec,
+		"vulnerabilities": &CodeScanEdgeVulnerabilitiesSpec,
+		"components":      &CodeScanEdgeComponentsSpec,
 	},
 	"component": {
-		"cves":     &ComponentCvesEdgeSpec,
-		"licenses": &ComponentLicensesEdgeSpec,
-		"uses":     &ComponentUsesEdgeSpec,
-	},
-	"component_use": {
-		"release":   &ComponentUseReleaseEdgeSpec,
-		"scans":     &ComponentUseScansEdgeSpec,
-		"component": &ComponentUseComponentEdgeSpec,
+		"vulnerabilities": &ComponentEdgeVulnerabilitiesSpec,
+		"licenses":        &ComponentEdgeLicensesSpec,
+		"uses":            &ComponentEdgeUsesSpec,
 	},
 	"commit": {
-		"repo":    &GitCommitRepoEdgeSpec,
-		"release": &GitCommitReleaseEdgeSpec,
+		"repo":    &GitCommitEdgeRepoSpec,
+		"release": &GitCommitEdgeReleaseSpec,
 	},
 	"license": {
-		"components": &LicenseComponentsEdgeSpec,
-		"uses":       &LicenseUsesEdgeSpec,
+		"components": &LicenseEdgeComponentsSpec,
+		"uses":       &LicenseEdgeUsesSpec,
 	},
 	"license_use": {
-		"license": &LicenseUseLicenseEdgeSpec,
+		"license": &LicenseUseEdgeLicenseSpec,
 	},
 	"project": {
-		"repos":     &ProjectReposEdgeSpec,
-		"releases":  &ProjectReleasesEdgeSpec,
-		"cve_rules": &ProjectCveRulesEdgeSpec,
+		"repos":                 &ProjectEdgeReposSpec,
+		"releases":              &ProjectEdgeReleasesSpec,
+		"vulnerability_reviews": &ProjectEdgeVulnerabilityReviewsSpec,
 	},
 	"release": {
-		"subreleases":  &ReleaseSubreleasesEdgeSpec,
-		"dependencies": &ReleaseDependenciesEdgeSpec,
-		"project":      &ReleaseProjectEdgeSpec,
-		"commit":       &ReleaseCommitEdgeSpec,
-		"log":          &ReleaseLogEdgeSpec,
-		"artifacts":    &ReleaseArtifactsEdgeSpec,
-		"components":   &ReleaseComponentsEdgeSpec,
-		"code_scans":   &ReleaseCodeScansEdgeSpec,
-		"test_runs":    &ReleaseTestRunsEdgeSpec,
+		"subreleases":           &ReleaseEdgeSubreleasesSpec,
+		"dependencies":          &ReleaseEdgeDependenciesSpec,
+		"project":               &ReleaseEdgeProjectSpec,
+		"commit":                &ReleaseEdgeCommitSpec,
+		"log":                   &ReleaseEdgeLogSpec,
+		"artifacts":             &ReleaseEdgeArtifactsSpec,
+		"components":            &ReleaseEdgeComponentsSpec,
+		"vulnerabilities":       &ReleaseEdgeVulnerabilitiesSpec,
+		"code_scans":            &ReleaseEdgeCodeScansSpec,
+		"test_runs":             &ReleaseEdgeTestRunsSpec,
+		"vulnerability_reviews": &ReleaseEdgeVulnerabilityReviewsSpec,
+	},
+	"release_component": {
+		"release":   &ReleaseComponentEdgeReleaseSpec,
+		"scans":     &ReleaseComponentEdgeScansSpec,
+		"component": &ReleaseComponentEdgeComponentSpec,
 	},
 	"release_entry": {
-		"artifact":  &ReleaseEntryArtifactEdgeSpec,
-		"code_scan": &ReleaseEntryCodeScanEdgeSpec,
-		"test_run":  &ReleaseEntryTestRunEdgeSpec,
-		"release":   &ReleaseEntryReleaseEdgeSpec,
+		"artifact":  &ReleaseEntryEdgeArtifactSpec,
+		"code_scan": &ReleaseEntryEdgeCodeScanSpec,
+		"test_run":  &ReleaseEntryEdgeTestRunSpec,
+		"release":   &ReleaseEntryEdgeReleaseSpec,
+	},
+	"release_vulnerability": {
+		"vulnerability": &ReleaseVulnerabilityEdgeVulnerabilitySpec,
+		"release":       &ReleaseVulnerabilityEdgeReleaseSpec,
+		"reviews":       &ReleaseVulnerabilityEdgeReviewsSpec,
+		"scans":         &ReleaseVulnerabilityEdgeScansSpec,
 	},
 	"repo": {
-		"project":   &RepoProjectEdgeSpec,
-		"commits":   &RepoCommitsEdgeSpec,
-		"cve_rules": &RepoCveRulesEdgeSpec,
+		"project":               &RepoEdgeProjectSpec,
+		"commits":               &RepoEdgeCommitsSpec,
+		"vulnerability_reviews": &RepoEdgeVulnerabilityReviewsSpec,
 	},
 	"test_case": {
-		"run": &TestCaseRunEdgeSpec,
+		"run": &TestCaseEdgeRunSpec,
 	},
 	"test_run": {
-		"release": &TestRunReleaseEdgeSpec,
-		"entry":   &TestRunEntryEdgeSpec,
-		"tests":   &TestRunTestsEdgeSpec,
+		"release": &TestRunEdgeReleaseSpec,
+		"entry":   &TestRunEdgeEntrySpec,
+		"tests":   &TestRunEdgeTestsSpec,
 	},
 	"vulnerability": {
-		"cve": &VulnerabilityCveEdgeSpec,
+		"components": &VulnerabilityEdgeComponentsSpec,
+		"reviews":    &VulnerabilityEdgeReviewsSpec,
+		"instances":  &VulnerabilityEdgeInstancesSpec,
+	},
+	"vulnerability_review": {
+		"vulnerability": &VulnerabilityReviewEdgeVulnerabilitySpec,
+		"projects":      &VulnerabilityReviewEdgeProjectsSpec,
+		"repos":         &VulnerabilityReviewEdgeReposSpec,
+		"releases":      &VulnerabilityReviewEdgeReleasesSpec,
+		"instances":     &VulnerabilityReviewEdgeInstancesSpec,
 	},
 }
 
 var RequiredEdges = map[string]map[string]string{
 	"artifact": {},
-	"cve":      {},
-	"cve_rule": {
-		"cve": "rules",
-	},
-	"cwe": {},
+	"cwe":      {},
 	"code_issue": {
 		"scan": "issues",
 	},
@@ -1383,11 +1522,6 @@ var RequiredEdges = map[string]map[string]string{
 		"release": "code_scans",
 	},
 	"component": {},
-	"component_use": {
-		"release":   "components",
-		"scans":     "components",
-		"component": "uses",
-	},
 	"commit": {
 		"repo": "commits",
 	},
@@ -1400,8 +1534,17 @@ var RequiredEdges = map[string]map[string]string{
 		"project": "releases",
 		"commit":  "release",
 	},
+	"release_component": {
+		"release":   "components",
+		"scans":     "components",
+		"component": "uses",
+	},
 	"release_entry": {
 		"release": "log",
+	},
+	"release_vulnerability": {
+		"vulnerability": "instances",
+		"release":       "vulnerabilities",
 	},
 	"repo": {},
 	"test_case": {
@@ -1410,8 +1553,9 @@ var RequiredEdges = map[string]map[string]string{
 	"test_run": {
 		"release": "test_runs",
 	},
-	"vulnerability": {
-		"cve": "vulnerabilities",
+	"vulnerability": {},
+	"vulnerability_review": {
+		"vulnerability": "reviews",
 	},
 }
 
@@ -1419,16 +1563,6 @@ var RefDataEdges = map[string]map[string]string{
 	"artifact": {
 		"release": "artifacts",
 		"entry":   "artifact",
-	},
-	"cve": {
-		"components":      "cves",
-		"vulnerabilities": "cve",
-		"rules":           "cve",
-	},
-	"cve_rule": {
-		"cve":     "rules",
-		"project": "cve_rules",
-		"repo":    "cve_rules",
 	},
 	"cwe": {
 		"issues": "cwe",
@@ -1438,20 +1572,16 @@ var RefDataEdges = map[string]map[string]string{
 		"scan": "issues",
 	},
 	"code_scan": {
-		"release":    "code_scans",
-		"entry":      "code_scan",
-		"issues":     "scan",
-		"components": "scans",
+		"release":         "code_scans",
+		"entry":           "code_scan",
+		"issues":          "scan",
+		"vulnerabilities": "scans",
+		"components":      "scans",
 	},
 	"component": {
-		"cves":     "components",
-		"licenses": "components",
-		"uses":     "component",
-	},
-	"component_use": {
-		"release":   "components",
-		"scans":     "components",
-		"component": "uses",
+		"vulnerabilities": "components",
+		"licenses":        "components",
+		"uses":            "component",
 	},
 	"commit": {
 		"repo":    "commits",
@@ -1465,20 +1595,27 @@ var RefDataEdges = map[string]map[string]string{
 		"license": "uses",
 	},
 	"project": {
-		"repos":     "project",
-		"releases":  "project",
-		"cve_rules": "project",
+		"repos":                 "project",
+		"releases":              "project",
+		"vulnerability_reviews": "projects",
 	},
 	"release": {
-		"subreleases":  "dependencies",
-		"dependencies": "subreleases",
-		"project":      "releases",
-		"commit":       "release",
-		"log":          "release",
-		"artifacts":    "release",
-		"components":   "release",
-		"code_scans":   "release",
-		"test_runs":    "release",
+		"subreleases":           "dependencies",
+		"dependencies":          "subreleases",
+		"project":               "releases",
+		"commit":                "release",
+		"log":                   "release",
+		"artifacts":             "release",
+		"components":            "release",
+		"vulnerabilities":       "release",
+		"code_scans":            "release",
+		"test_runs":             "release",
+		"vulnerability_reviews": "releases",
+	},
+	"release_component": {
+		"release":   "components",
+		"scans":     "components",
+		"component": "uses",
 	},
 	"release_entry": {
 		"artifact":  "entry",
@@ -1486,10 +1623,16 @@ var RefDataEdges = map[string]map[string]string{
 		"test_run":  "entry",
 		"release":   "log",
 	},
+	"release_vulnerability": {
+		"vulnerability": "instances",
+		"release":       "vulnerabilities",
+		"reviews":       "instances",
+		"scans":         "vulnerabilities",
+	},
 	"repo": {
-		"project":   "repos",
-		"commits":   "repo",
-		"cve_rules": "repo",
+		"project":               "repos",
+		"commits":               "repo",
+		"vulnerability_reviews": "repos",
 	},
 	"test_case": {
 		"run": "tests",
@@ -1500,28 +1643,37 @@ var RefDataEdges = map[string]map[string]string{
 		"tests":   "run",
 	},
 	"vulnerability": {
-		"cve": "vulnerabilities",
+		"components": "vulnerabilities",
+		"reviews":    "vulnerability",
+		"instances":  "vulnerability",
+	},
+	"vulnerability_review": {
+		"vulnerability": "reviews",
+		"projects":      "vulnerability_reviews",
+		"repos":         "vulnerability_reviews",
+		"releases":      "vulnerability_reviews",
+		"instances":     "reviews",
 	},
 }
 
 var DataNodeSchemas = map[string]*HCLBodySpec{
-	"_disjoint":     &AllDataNodesSchema,
-	"artifact":      &ArtifactBodySpec,
-	"cve":           &CVEBodySpec,
-	"cve_rule":      &CVERuleBodySpec,
-	"cwe":           &CWEBodySpec,
-	"code_issue":    &CodeIssueBodySpec,
-	"code_scan":     &CodeScanBodySpec,
-	"component":     &ComponentBodySpec,
-	"component_use": &ComponentUseBodySpec,
-	"commit":        &GitCommitBodySpec,
-	"license":       &LicenseBodySpec,
-	"license_use":   &LicenseUseBodySpec,
-	"project":       &ProjectBodySpec,
-	"release":       &ReleaseBodySpec,
-	"release_entry": &ReleaseEntryBodySpec,
-	"repo":          &RepoBodySpec,
-	"test_case":     &TestCaseBodySpec,
-	"test_run":      &TestRunBodySpec,
-	"vulnerability": &VulnerabilityBodySpec,
+	"_disjoint":             &AllDataNodesSchema,
+	"artifact":              &ArtifactBodySpec,
+	"cwe":                   &CWEBodySpec,
+	"code_issue":            &CodeIssueBodySpec,
+	"code_scan":             &CodeScanBodySpec,
+	"component":             &ComponentBodySpec,
+	"commit":                &GitCommitBodySpec,
+	"license":               &LicenseBodySpec,
+	"license_use":           &LicenseUseBodySpec,
+	"project":               &ProjectBodySpec,
+	"release":               &ReleaseBodySpec,
+	"release_component":     &ReleaseComponentBodySpec,
+	"release_entry":         &ReleaseEntryBodySpec,
+	"release_vulnerability": &ReleaseVulnerabilityBodySpec,
+	"repo":                  &RepoBodySpec,
+	"test_case":             &TestCaseBodySpec,
+	"test_run":              &TestRunBodySpec,
+	"vulnerability":         &VulnerabilityBodySpec,
+	"vulnerability_review":  &VulnerabilityReviewBodySpec,
 }

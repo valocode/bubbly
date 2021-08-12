@@ -9,10 +9,10 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/valocode/bubbly/ent/cverule"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // RepoCreate is the builder for creating a Repo entity.
@@ -28,23 +28,19 @@ func (rc *RepoCreate) SetName(s string) *RepoCreate {
 	return rc
 }
 
-// SetProjectID sets the "project" edge to the Project entity by ID.
-func (rc *RepoCreate) SetProjectID(id int) *RepoCreate {
-	rc.mutation.SetProjectID(id)
+// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
+func (rc *RepoCreate) AddProjectIDs(ids ...int) *RepoCreate {
+	rc.mutation.AddProjectIDs(ids...)
 	return rc
 }
 
-// SetNillableProjectID sets the "project" edge to the Project entity by ID if the given value is not nil.
-func (rc *RepoCreate) SetNillableProjectID(id *int) *RepoCreate {
-	if id != nil {
-		rc = rc.SetProjectID(*id)
+// AddProjects adds the "projects" edges to the Project entity.
+func (rc *RepoCreate) AddProjects(p ...*Project) *RepoCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
 	}
-	return rc
-}
-
-// SetProject sets the "project" edge to the Project entity.
-func (rc *RepoCreate) SetProject(p *Project) *RepoCreate {
-	return rc.SetProjectID(p.ID)
+	return rc.AddProjectIDs(ids...)
 }
 
 // AddCommitIDs adds the "commits" edge to the GitCommit entity by IDs.
@@ -62,19 +58,19 @@ func (rc *RepoCreate) AddCommits(g ...*GitCommit) *RepoCreate {
 	return rc.AddCommitIDs(ids...)
 }
 
-// AddCveRuleIDs adds the "cve_rules" edge to the CVERule entity by IDs.
-func (rc *RepoCreate) AddCveRuleIDs(ids ...int) *RepoCreate {
-	rc.mutation.AddCveRuleIDs(ids...)
+// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
+func (rc *RepoCreate) AddVulnerabilityReviewIDs(ids ...int) *RepoCreate {
+	rc.mutation.AddVulnerabilityReviewIDs(ids...)
 	return rc
 }
 
-// AddCveRules adds the "cve_rules" edges to the CVERule entity.
-func (rc *RepoCreate) AddCveRules(c ...*CVERule) *RepoCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (rc *RepoCreate) AddVulnerabilityReviews(v ...*VulnerabilityReview) *RepoCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return rc.AddCveRuleIDs(ids...)
+	return rc.AddVulnerabilityReviewIDs(ids...)
 }
 
 // Mutation returns the RepoMutation object of the builder.
@@ -190,12 +186,12 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		})
 		_node.Name = value
 	}
-	if nodes := rc.mutation.ProjectIDs(); len(nodes) > 0 {
+	if nodes := rc.mutation.ProjectsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   repo.ProjectTable,
-			Columns: []string{repo.ProjectColumn},
+			Table:   repo.ProjectsTable,
+			Columns: repo.ProjectsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -207,7 +203,6 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.repo_project = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.CommitsIDs(); len(nodes) > 0 {
@@ -229,17 +224,17 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.CveRulesIDs(); len(nodes) > 0 {
+	if nodes := rc.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   repo.CveRulesTable,
-			Columns: repo.CveRulesPrimaryKey,
+			Table:   repo.VulnerabilityReviewsTable,
+			Columns: repo.VulnerabilityReviewsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: cverule.FieldID,
+					Column: vulnerabilityreview.FieldID,
 				},
 			},
 		}

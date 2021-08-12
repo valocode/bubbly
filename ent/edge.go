@@ -20,54 +20,6 @@ func (a *Artifact) Entry(ctx context.Context) (*ReleaseEntry, error) {
 	return result, MaskNotFound(err)
 }
 
-func (c *CVE) Components(ctx context.Context) ([]*Component, error) {
-	result, err := c.Edges.ComponentsOrErr()
-	if IsNotLoaded(err) {
-		result, err = c.QueryComponents().All(ctx)
-	}
-	return result, err
-}
-
-func (c *CVE) Vulnerabilities(ctx context.Context) ([]*Vulnerability, error) {
-	result, err := c.Edges.VulnerabilitiesOrErr()
-	if IsNotLoaded(err) {
-		result, err = c.QueryVulnerabilities().All(ctx)
-	}
-	return result, err
-}
-
-func (c *CVE) Rules(ctx context.Context) ([]*CVERule, error) {
-	result, err := c.Edges.RulesOrErr()
-	if IsNotLoaded(err) {
-		result, err = c.QueryRules().All(ctx)
-	}
-	return result, err
-}
-
-func (cr *CVERule) Cve(ctx context.Context) (*CVE, error) {
-	result, err := cr.Edges.CveOrErr()
-	if IsNotLoaded(err) {
-		result, err = cr.QueryCve().Only(ctx)
-	}
-	return result, err
-}
-
-func (cr *CVERule) Project(ctx context.Context) ([]*Project, error) {
-	result, err := cr.Edges.ProjectOrErr()
-	if IsNotLoaded(err) {
-		result, err = cr.QueryProject().All(ctx)
-	}
-	return result, err
-}
-
-func (cr *CVERule) Repo(ctx context.Context) ([]*Repo, error) {
-	result, err := cr.Edges.RepoOrErr()
-	if IsNotLoaded(err) {
-		result, err = cr.QueryRepo().All(ctx)
-	}
-	return result, err
-}
-
 func (c *CWE) Issues(ctx context.Context) ([]*CodeIssue, error) {
 	result, err := c.Edges.IssuesOrErr()
 	if IsNotLoaded(err) {
@@ -116,7 +68,15 @@ func (cs *CodeScan) Issues(ctx context.Context) ([]*CodeIssue, error) {
 	return result, err
 }
 
-func (cs *CodeScan) Components(ctx context.Context) ([]*ComponentUse, error) {
+func (cs *CodeScan) Vulnerabilities(ctx context.Context) ([]*ReleaseVulnerability, error) {
+	result, err := cs.Edges.VulnerabilitiesOrErr()
+	if IsNotLoaded(err) {
+		result, err = cs.QueryVulnerabilities().All(ctx)
+	}
+	return result, err
+}
+
+func (cs *CodeScan) Components(ctx context.Context) ([]*ReleaseComponent, error) {
 	result, err := cs.Edges.ComponentsOrErr()
 	if IsNotLoaded(err) {
 		result, err = cs.QueryComponents().All(ctx)
@@ -124,10 +84,10 @@ func (cs *CodeScan) Components(ctx context.Context) ([]*ComponentUse, error) {
 	return result, err
 }
 
-func (c *Component) Cves(ctx context.Context) ([]*CVE, error) {
-	result, err := c.Edges.CvesOrErr()
+func (c *Component) Vulnerabilities(ctx context.Context) ([]*Vulnerability, error) {
+	result, err := c.Edges.VulnerabilitiesOrErr()
 	if IsNotLoaded(err) {
-		result, err = c.QueryCves().All(ctx)
+		result, err = c.QueryVulnerabilities().All(ctx)
 	}
 	return result, err
 }
@@ -140,34 +100,10 @@ func (c *Component) Licenses(ctx context.Context) ([]*License, error) {
 	return result, err
 }
 
-func (c *Component) Uses(ctx context.Context) ([]*ComponentUse, error) {
+func (c *Component) Uses(ctx context.Context) ([]*ReleaseComponent, error) {
 	result, err := c.Edges.UsesOrErr()
 	if IsNotLoaded(err) {
 		result, err = c.QueryUses().All(ctx)
-	}
-	return result, err
-}
-
-func (cu *ComponentUse) Release(ctx context.Context) (*Release, error) {
-	result, err := cu.Edges.ReleaseOrErr()
-	if IsNotLoaded(err) {
-		result, err = cu.QueryRelease().Only(ctx)
-	}
-	return result, err
-}
-
-func (cu *ComponentUse) Scans(ctx context.Context) ([]*CodeScan, error) {
-	result, err := cu.Edges.ScansOrErr()
-	if IsNotLoaded(err) {
-		result, err = cu.QueryScans().All(ctx)
-	}
-	return result, err
-}
-
-func (cu *ComponentUse) Component(ctx context.Context) (*Component, error) {
-	result, err := cu.Edges.ComponentOrErr()
-	if IsNotLoaded(err) {
-		result, err = cu.QueryComponent().Only(ctx)
 	}
 	return result, err
 }
@@ -220,18 +156,10 @@ func (pr *Project) Repos(ctx context.Context) ([]*Repo, error) {
 	return result, err
 }
 
-func (pr *Project) Releases(ctx context.Context) ([]*Release, error) {
-	result, err := pr.Edges.ReleasesOrErr()
+func (pr *Project) VulnerabilityReviews(ctx context.Context) ([]*VulnerabilityReview, error) {
+	result, err := pr.Edges.VulnerabilityReviewsOrErr()
 	if IsNotLoaded(err) {
-		result, err = pr.QueryReleases().All(ctx)
-	}
-	return result, err
-}
-
-func (pr *Project) CveRules(ctx context.Context) ([]*CVERule, error) {
-	result, err := pr.Edges.CveRulesOrErr()
-	if IsNotLoaded(err) {
-		result, err = pr.QueryCveRules().All(ctx)
+		result, err = pr.QueryVulnerabilityReviews().All(ctx)
 	}
 	return result, err
 }
@@ -248,14 +176,6 @@ func (r *Release) Dependencies(ctx context.Context) ([]*Release, error) {
 	result, err := r.Edges.DependenciesOrErr()
 	if IsNotLoaded(err) {
 		result, err = r.QueryDependencies().All(ctx)
-	}
-	return result, err
-}
-
-func (r *Release) Project(ctx context.Context) (*Project, error) {
-	result, err := r.Edges.ProjectOrErr()
-	if IsNotLoaded(err) {
-		result, err = r.QueryProject().Only(ctx)
 	}
 	return result, err
 }
@@ -284,10 +204,18 @@ func (r *Release) Artifacts(ctx context.Context) ([]*Artifact, error) {
 	return result, err
 }
 
-func (r *Release) Components(ctx context.Context) ([]*ComponentUse, error) {
+func (r *Release) Components(ctx context.Context) ([]*ReleaseComponent, error) {
 	result, err := r.Edges.ComponentsOrErr()
 	if IsNotLoaded(err) {
 		result, err = r.QueryComponents().All(ctx)
+	}
+	return result, err
+}
+
+func (r *Release) Vulnerabilities(ctx context.Context) ([]*ReleaseVulnerability, error) {
+	result, err := r.Edges.VulnerabilitiesOrErr()
+	if IsNotLoaded(err) {
+		result, err = r.QueryVulnerabilities().All(ctx)
 	}
 	return result, err
 }
@@ -304,6 +232,46 @@ func (r *Release) TestRuns(ctx context.Context) ([]*TestRun, error) {
 	result, err := r.Edges.TestRunsOrErr()
 	if IsNotLoaded(err) {
 		result, err = r.QueryTestRuns().All(ctx)
+	}
+	return result, err
+}
+
+func (r *Release) VulnerabilityReviews(ctx context.Context) ([]*VulnerabilityReview, error) {
+	result, err := r.Edges.VulnerabilityReviewsOrErr()
+	if IsNotLoaded(err) {
+		result, err = r.QueryVulnerabilityReviews().All(ctx)
+	}
+	return result, err
+}
+
+func (rc *ReleaseComponent) Release(ctx context.Context) (*Release, error) {
+	result, err := rc.Edges.ReleaseOrErr()
+	if IsNotLoaded(err) {
+		result, err = rc.QueryRelease().Only(ctx)
+	}
+	return result, err
+}
+
+func (rc *ReleaseComponent) Scans(ctx context.Context) ([]*CodeScan, error) {
+	result, err := rc.Edges.ScansOrErr()
+	if IsNotLoaded(err) {
+		result, err = rc.QueryScans().All(ctx)
+	}
+	return result, err
+}
+
+func (rc *ReleaseComponent) Component(ctx context.Context) (*Component, error) {
+	result, err := rc.Edges.ComponentOrErr()
+	if IsNotLoaded(err) {
+		result, err = rc.QueryComponent().Only(ctx)
+	}
+	return result, err
+}
+
+func (rc *ReleaseComponent) Vulnerabilities(ctx context.Context) ([]*ReleaseVulnerability, error) {
+	result, err := rc.Edges.VulnerabilitiesOrErr()
+	if IsNotLoaded(err) {
+		result, err = rc.QueryVulnerabilities().All(ctx)
 	}
 	return result, err
 }
@@ -340,12 +308,52 @@ func (re *ReleaseEntry) Release(ctx context.Context) (*Release, error) {
 	return result, err
 }
 
-func (r *Repo) Project(ctx context.Context) (*Project, error) {
-	result, err := r.Edges.ProjectOrErr()
+func (rv *ReleaseVulnerability) Vulnerability(ctx context.Context) (*Vulnerability, error) {
+	result, err := rv.Edges.VulnerabilityOrErr()
 	if IsNotLoaded(err) {
-		result, err = r.QueryProject().Only(ctx)
+		result, err = rv.QueryVulnerability().Only(ctx)
 	}
-	return result, MaskNotFound(err)
+	return result, err
+}
+
+func (rv *ReleaseVulnerability) Components(ctx context.Context) ([]*ReleaseComponent, error) {
+	result, err := rv.Edges.ComponentsOrErr()
+	if IsNotLoaded(err) {
+		result, err = rv.QueryComponents().All(ctx)
+	}
+	return result, err
+}
+
+func (rv *ReleaseVulnerability) Release(ctx context.Context) (*Release, error) {
+	result, err := rv.Edges.ReleaseOrErr()
+	if IsNotLoaded(err) {
+		result, err = rv.QueryRelease().Only(ctx)
+	}
+	return result, err
+}
+
+func (rv *ReleaseVulnerability) Reviews(ctx context.Context) ([]*VulnerabilityReview, error) {
+	result, err := rv.Edges.ReviewsOrErr()
+	if IsNotLoaded(err) {
+		result, err = rv.QueryReviews().All(ctx)
+	}
+	return result, err
+}
+
+func (rv *ReleaseVulnerability) Scans(ctx context.Context) ([]*CodeScan, error) {
+	result, err := rv.Edges.ScansOrErr()
+	if IsNotLoaded(err) {
+		result, err = rv.QueryScans().All(ctx)
+	}
+	return result, err
+}
+
+func (r *Repo) Projects(ctx context.Context) ([]*Project, error) {
+	result, err := r.Edges.ProjectsOrErr()
+	if IsNotLoaded(err) {
+		result, err = r.QueryProjects().All(ctx)
+	}
+	return result, err
 }
 
 func (r *Repo) Commits(ctx context.Context) ([]*GitCommit, error) {
@@ -356,10 +364,10 @@ func (r *Repo) Commits(ctx context.Context) ([]*GitCommit, error) {
 	return result, err
 }
 
-func (r *Repo) CveRules(ctx context.Context) ([]*CVERule, error) {
-	result, err := r.Edges.CveRulesOrErr()
+func (r *Repo) VulnerabilityReviews(ctx context.Context) ([]*VulnerabilityReview, error) {
+	result, err := r.Edges.VulnerabilityReviewsOrErr()
 	if IsNotLoaded(err) {
-		result, err = r.QueryCveRules().All(ctx)
+		result, err = r.QueryVulnerabilityReviews().All(ctx)
 	}
 	return result, err
 }
@@ -396,10 +404,66 @@ func (tr *TestRun) Tests(ctx context.Context) ([]*TestCase, error) {
 	return result, err
 }
 
-func (v *Vulnerability) Cve(ctx context.Context) (*CVE, error) {
-	result, err := v.Edges.CveOrErr()
+func (v *Vulnerability) Components(ctx context.Context) ([]*Component, error) {
+	result, err := v.Edges.ComponentsOrErr()
 	if IsNotLoaded(err) {
-		result, err = v.QueryCve().Only(ctx)
+		result, err = v.QueryComponents().All(ctx)
+	}
+	return result, err
+}
+
+func (v *Vulnerability) Reviews(ctx context.Context) ([]*VulnerabilityReview, error) {
+	result, err := v.Edges.ReviewsOrErr()
+	if IsNotLoaded(err) {
+		result, err = v.QueryReviews().All(ctx)
+	}
+	return result, err
+}
+
+func (v *Vulnerability) Instances(ctx context.Context) ([]*ReleaseVulnerability, error) {
+	result, err := v.Edges.InstancesOrErr()
+	if IsNotLoaded(err) {
+		result, err = v.QueryInstances().All(ctx)
+	}
+	return result, err
+}
+
+func (vr *VulnerabilityReview) Vulnerability(ctx context.Context) (*Vulnerability, error) {
+	result, err := vr.Edges.VulnerabilityOrErr()
+	if IsNotLoaded(err) {
+		result, err = vr.QueryVulnerability().Only(ctx)
+	}
+	return result, err
+}
+
+func (vr *VulnerabilityReview) Projects(ctx context.Context) ([]*Project, error) {
+	result, err := vr.Edges.ProjectsOrErr()
+	if IsNotLoaded(err) {
+		result, err = vr.QueryProjects().All(ctx)
+	}
+	return result, err
+}
+
+func (vr *VulnerabilityReview) Repos(ctx context.Context) ([]*Repo, error) {
+	result, err := vr.Edges.ReposOrErr()
+	if IsNotLoaded(err) {
+		result, err = vr.QueryRepos().All(ctx)
+	}
+	return result, err
+}
+
+func (vr *VulnerabilityReview) Releases(ctx context.Context) ([]*Release, error) {
+	result, err := vr.Edges.ReleasesOrErr()
+	if IsNotLoaded(err) {
+		result, err = vr.QueryReleases().All(ctx)
+	}
+	return result, err
+}
+
+func (vr *VulnerabilityReview) Instances(ctx context.Context) ([]*ReleaseVulnerability, error) {
+	result, err := vr.Edges.InstancesOrErr()
+	if IsNotLoaded(err) {
+		result, err = vr.QueryInstances().All(ctx)
 	}
 	return result, err
 }

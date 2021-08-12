@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	gen "github.com/valocode/bubbly/ent"
+	"github.com/valocode/bubbly/ent/extensions/entmodel"
 	"github.com/valocode/bubbly/ent/hook"
 )
 
@@ -20,6 +21,7 @@ type TestRun struct {
 func (TestRun) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "test_run"},
+		entmodel.Annotation{},
 	}
 }
 

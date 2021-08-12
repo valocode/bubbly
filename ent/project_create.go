@@ -9,10 +9,9 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/valocode/bubbly/ent/cverule"
 	"github.com/valocode/bubbly/ent/project"
-	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // ProjectCreate is the builder for creating a Project entity.
@@ -43,34 +42,19 @@ func (pc *ProjectCreate) AddRepos(r ...*Repo) *ProjectCreate {
 	return pc.AddRepoIDs(ids...)
 }
 
-// AddReleaseIDs adds the "releases" edge to the Release entity by IDs.
-func (pc *ProjectCreate) AddReleaseIDs(ids ...int) *ProjectCreate {
-	pc.mutation.AddReleaseIDs(ids...)
+// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
+func (pc *ProjectCreate) AddVulnerabilityReviewIDs(ids ...int) *ProjectCreate {
+	pc.mutation.AddVulnerabilityReviewIDs(ids...)
 	return pc
 }
 
-// AddReleases adds the "releases" edges to the Release entity.
-func (pc *ProjectCreate) AddReleases(r ...*Release) *ProjectCreate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
+func (pc *ProjectCreate) AddVulnerabilityReviews(v ...*VulnerabilityReview) *ProjectCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return pc.AddReleaseIDs(ids...)
-}
-
-// AddCveRuleIDs adds the "cve_rules" edge to the CVERule entity by IDs.
-func (pc *ProjectCreate) AddCveRuleIDs(ids ...int) *ProjectCreate {
-	pc.mutation.AddCveRuleIDs(ids...)
-	return pc
-}
-
-// AddCveRules adds the "cve_rules" edges to the CVERule entity.
-func (pc *ProjectCreate) AddCveRules(c ...*CVERule) *ProjectCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return pc.AddCveRuleIDs(ids...)
+	return pc.AddVulnerabilityReviewIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
@@ -188,10 +172,10 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 	}
 	if nodes := pc.mutation.ReposIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   project.ReposTable,
-			Columns: []string{project.ReposColumn},
+			Columns: project.ReposPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -205,36 +189,17 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pc.mutation.ReleasesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   project.ReleasesTable,
-			Columns: []string{project.ReleasesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: release.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := pc.mutation.CveRulesIDs(); len(nodes) > 0 {
+	if nodes := pc.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: true,
-			Table:   project.CveRulesTable,
-			Columns: project.CveRulesPrimaryKey,
+			Table:   project.VulnerabilityReviewsTable,
+			Columns: project.VulnerabilityReviewsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: cverule.FieldID,
+					Column: vulnerabilityreview.FieldID,
 				},
 			},
 		}

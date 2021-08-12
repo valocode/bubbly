@@ -9,6 +9,29 @@ import (
 )
 
 var (
+	// AdapterColumns holds the columns for the "adapter" table.
+	AdapterColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "tag", Type: field.TypeString},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"json", "csv", "xml", "yaml", "http"}},
+		{Name: "operation", Type: field.TypeJSON, Nullable: true},
+		{Name: "results_type", Type: field.TypeEnum, Enums: []string{"code_scan", "test_run"}},
+		{Name: "results", Type: field.TypeBytes},
+	}
+	// AdapterTable holds the schema information for the "adapter" table.
+	AdapterTable = &schema.Table{
+		Name:       "adapter",
+		Columns:    AdapterColumns,
+		PrimaryKey: []*schema.Column{AdapterColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "adapter_name_tag",
+				Unique:  true,
+				Columns: []*schema.Column{AdapterColumns[1], AdapterColumns[2]},
+			},
+		},
+	}
 	// ArtifactColumns holds the columns for the "artifact" table.
 	ArtifactColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -42,49 +65,6 @@ var (
 				Name:    "artifact_sha256",
 				Unique:  true,
 				Columns: []*schema.Column{ArtifactColumns[2]},
-			},
-		},
-	}
-	// CveColumns holds the columns for the "cve" table.
-	CveColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "cve_id", Type: field.TypeString, Size: 2147483647},
-		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "severity_score", Type: field.TypeFloat64, Default: 0},
-		{Name: "severity", Type: field.TypeEnum, Enums: []string{"None", "Low", "Medium", "High", "Critical"}, Default: "None"},
-		{Name: "published_data", Type: field.TypeTime, Nullable: true},
-		{Name: "modified_data", Type: field.TypeTime, Nullable: true},
-	}
-	// CveTable holds the schema information for the "cve" table.
-	CveTable = &schema.Table{
-		Name:       "cve",
-		Columns:    CveColumns,
-		PrimaryKey: []*schema.Column{CveColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "cve_cve_id",
-				Unique:  true,
-				Columns: []*schema.Column{CveColumns[1]},
-			},
-		},
-	}
-	// CveRuleColumns holds the columns for the "cve_rule" table.
-	CveRuleColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "cve_rule_cve", Type: field.TypeInt, Nullable: true},
-	}
-	// CveRuleTable holds the schema information for the "cve_rule" table.
-	CveRuleTable = &schema.Table{
-		Name:       "cve_rule",
-		Columns:    CveRuleColumns,
-		PrimaryKey: []*schema.Column{CveRuleColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "cve_rule_cve_cve",
-				Columns:    []*schema.Column{CveRuleColumns[2]},
-				RefColumns: []*schema.Column{CveColumns[0]},
-				OnDelete:   schema.SetNull,
 			},
 		},
 	}
@@ -180,39 +160,6 @@ var (
 			},
 		},
 	}
-	// ComponentUseColumns holds the columns for the "component_use" table.
-	ComponentUseColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "component_use_release", Type: field.TypeInt, Nullable: true},
-		{Name: "component_use_component", Type: field.TypeInt, Nullable: true},
-	}
-	// ComponentUseTable holds the schema information for the "component_use" table.
-	ComponentUseTable = &schema.Table{
-		Name:       "component_use",
-		Columns:    ComponentUseColumns,
-		PrimaryKey: []*schema.Column{ComponentUseColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "component_use_release_release",
-				Columns:    []*schema.Column{ComponentUseColumns[1]},
-				RefColumns: []*schema.Column{ReleaseColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "component_use_component_component",
-				Columns:    []*schema.Column{ComponentUseColumns[2]},
-				RefColumns: []*schema.Column{ComponentColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "componentuse_component_use_release_component_use_component",
-				Unique:  true,
-				Columns: []*schema.Column{ComponentUseColumns[1], ComponentUseColumns[2]},
-			},
-		},
-	}
 	// CommitColumns holds the columns for the "commit" table.
 	CommitColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -287,7 +234,7 @@ var (
 	// ProjectColumns holds the columns for the "project" table.
 	ProjectColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "name", Type: field.TypeString, Unique: true},
 	}
 	// ProjectTable holds the schema information for the "project" table.
 	ProjectTable = &schema.Table{
@@ -309,7 +256,6 @@ var (
 		{Name: "version", Type: field.TypeString, Size: 2147483647},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "ready", "blocked"}, Default: "pending"},
 		{Name: "git_commit_release", Type: field.TypeInt, Unique: true, Nullable: true},
-		{Name: "release_project", Type: field.TypeInt, Nullable: true},
 	}
 	// ReleaseTable holds the schema information for the "release" table.
 	ReleaseTable = &schema.Table{
@@ -323,18 +269,45 @@ var (
 				RefColumns: []*schema.Column{CommitColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
-			{
-				Symbol:     "release_project_project",
-				Columns:    []*schema.Column{ReleaseColumns[5]},
-				RefColumns: []*schema.Column{ProjectColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
 		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "release_git_commit_release",
 				Unique:  true,
 				Columns: []*schema.Column{ReleaseColumns[4]},
+			},
+		},
+	}
+	// ReleaseComponentColumns holds the columns for the "release_component" table.
+	ReleaseComponentColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "release_component_release", Type: field.TypeInt, Nullable: true},
+		{Name: "release_component_component", Type: field.TypeInt, Nullable: true},
+	}
+	// ReleaseComponentTable holds the schema information for the "release_component" table.
+	ReleaseComponentTable = &schema.Table{
+		Name:       "release_component",
+		Columns:    ReleaseComponentColumns,
+		PrimaryKey: []*schema.Column{ReleaseComponentColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "release_component_release_release",
+				Columns:    []*schema.Column{ReleaseComponentColumns[1]},
+				RefColumns: []*schema.Column{ReleaseColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "release_component_component_component",
+				Columns:    []*schema.Column{ReleaseComponentColumns[2]},
+				RefColumns: []*schema.Column{ComponentColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "releasecomponent_release_component_release_release_component_component",
+				Unique:  true,
+				Columns: []*schema.Column{ReleaseComponentColumns[1], ReleaseComponentColumns[2]},
 			},
 		},
 	}
@@ -359,25 +332,42 @@ var (
 			},
 		},
 	}
+	// ReleaseVulnerabilityColumns holds the columns for the "release_vulnerability" table.
+	ReleaseVulnerabilityColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "release_vulnerability_vulnerability", Type: field.TypeInt, Nullable: true},
+		{Name: "release_vulnerability_release", Type: field.TypeInt, Nullable: true},
+	}
+	// ReleaseVulnerabilityTable holds the schema information for the "release_vulnerability" table.
+	ReleaseVulnerabilityTable = &schema.Table{
+		Name:       "release_vulnerability",
+		Columns:    ReleaseVulnerabilityColumns,
+		PrimaryKey: []*schema.Column{ReleaseVulnerabilityColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "release_vulnerability_vulnerability_vulnerability",
+				Columns:    []*schema.Column{ReleaseVulnerabilityColumns[1]},
+				RefColumns: []*schema.Column{VulnerabilityColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "release_vulnerability_release_release",
+				Columns:    []*schema.Column{ReleaseVulnerabilityColumns[2]},
+				RefColumns: []*schema.Column{ReleaseColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// RepoColumns holds the columns for the "repo" table.
 	RepoColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
-		{Name: "repo_project", Type: field.TypeInt, Nullable: true},
 	}
 	// RepoTable holds the schema information for the "repo" table.
 	RepoTable = &schema.Table{
 		Name:       "repo",
 		Columns:    RepoColumns,
 		PrimaryKey: []*schema.Column{RepoColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "repo_project_project",
-				Columns:    []*schema.Column{RepoColumns[2]},
-				RefColumns: []*schema.Column{ProjectColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "repo_name",
@@ -439,69 +429,45 @@ var (
 	// VulnerabilityColumns holds the columns for the "vulnerability" table.
 	VulnerabilityColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "vulnerability_cve", Type: field.TypeInt, Nullable: true},
+		{Name: "vid", Type: field.TypeString, Unique: true},
+		{Name: "summary", Type: field.TypeString, Nullable: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "severity_score", Type: field.TypeFloat64, Default: 0},
+		{Name: "severity", Type: field.TypeEnum, Enums: []string{"None", "Low", "Medium", "High", "Critical"}, Default: "None"},
+		{Name: "published", Type: field.TypeTime, Nullable: true},
+		{Name: "modified", Type: field.TypeTime, Nullable: true},
 	}
 	// VulnerabilityTable holds the schema information for the "vulnerability" table.
 	VulnerabilityTable = &schema.Table{
 		Name:       "vulnerability",
 		Columns:    VulnerabilityColumns,
 		PrimaryKey: []*schema.Column{VulnerabilityColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "vulnerability_vid",
+				Unique:  true,
+				Columns: []*schema.Column{VulnerabilityColumns[1]},
+			},
+		},
+	}
+	// VulnerabilityReviewColumns holds the columns for the "vulnerability_review" table.
+	VulnerabilityReviewColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "decision", Type: field.TypeEnum, Enums: []string{"exploitable", "in_progress", "invalid", "mitigated", "ineffective"}},
+		{Name: "vulnerability_review_vulnerability", Type: field.TypeInt, Nullable: true},
+	}
+	// VulnerabilityReviewTable holds the schema information for the "vulnerability_review" table.
+	VulnerabilityReviewTable = &schema.Table{
+		Name:       "vulnerability_review",
+		Columns:    VulnerabilityReviewColumns,
+		PrimaryKey: []*schema.Column{VulnerabilityReviewColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "vulnerability_cve_cve",
-				Columns:    []*schema.Column{VulnerabilityColumns[1]},
-				RefColumns: []*schema.Column{CveColumns[0]},
+				Symbol:     "vulnerability_review_vulnerability_vulnerability",
+				Columns:    []*schema.Column{VulnerabilityReviewColumns[3]},
+				RefColumns: []*schema.Column{VulnerabilityColumns[0]},
 				OnDelete:   schema.SetNull,
-			},
-		},
-	}
-	// CveRuleProjectColumns holds the columns for the "cve_rule_project" table.
-	CveRuleProjectColumns = []*schema.Column{
-		{Name: "cve_rule_id", Type: field.TypeInt},
-		{Name: "project_id", Type: field.TypeInt},
-	}
-	// CveRuleProjectTable holds the schema information for the "cve_rule_project" table.
-	CveRuleProjectTable = &schema.Table{
-		Name:       "cve_rule_project",
-		Columns:    CveRuleProjectColumns,
-		PrimaryKey: []*schema.Column{CveRuleProjectColumns[0], CveRuleProjectColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "cve_rule_project_cve_rule_id",
-				Columns:    []*schema.Column{CveRuleProjectColumns[0]},
-				RefColumns: []*schema.Column{CveRuleColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "cve_rule_project_project_id",
-				Columns:    []*schema.Column{CveRuleProjectColumns[1]},
-				RefColumns: []*schema.Column{ProjectColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
-	// CveRuleRepoColumns holds the columns for the "cve_rule_repo" table.
-	CveRuleRepoColumns = []*schema.Column{
-		{Name: "cve_rule_id", Type: field.TypeInt},
-		{Name: "repo_id", Type: field.TypeInt},
-	}
-	// CveRuleRepoTable holds the schema information for the "cve_rule_repo" table.
-	CveRuleRepoTable = &schema.Table{
-		Name:       "cve_rule_repo",
-		Columns:    CveRuleRepoColumns,
-		PrimaryKey: []*schema.Column{CveRuleRepoColumns[0], CveRuleRepoColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "cve_rule_repo_cve_rule_id",
-				Columns:    []*schema.Column{CveRuleRepoColumns[0]},
-				RefColumns: []*schema.Column{CveRuleColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "cve_rule_repo_repo_id",
-				Columns:    []*schema.Column{CveRuleRepoColumns[1]},
-				RefColumns: []*schema.Column{RepoColumns[0]},
-				OnDelete:   schema.Cascade,
 			},
 		},
 	}
@@ -530,27 +496,27 @@ var (
 			},
 		},
 	}
-	// ComponentCvesColumns holds the columns for the "component_cves" table.
-	ComponentCvesColumns = []*schema.Column{
+	// ComponentVulnerabilitiesColumns holds the columns for the "component_vulnerabilities" table.
+	ComponentVulnerabilitiesColumns = []*schema.Column{
 		{Name: "component_id", Type: field.TypeInt},
-		{Name: "cve_id", Type: field.TypeInt},
+		{Name: "vulnerability_id", Type: field.TypeInt},
 	}
-	// ComponentCvesTable holds the schema information for the "component_cves" table.
-	ComponentCvesTable = &schema.Table{
-		Name:       "component_cves",
-		Columns:    ComponentCvesColumns,
-		PrimaryKey: []*schema.Column{ComponentCvesColumns[0], ComponentCvesColumns[1]},
+	// ComponentVulnerabilitiesTable holds the schema information for the "component_vulnerabilities" table.
+	ComponentVulnerabilitiesTable = &schema.Table{
+		Name:       "component_vulnerabilities",
+		Columns:    ComponentVulnerabilitiesColumns,
+		PrimaryKey: []*schema.Column{ComponentVulnerabilitiesColumns[0], ComponentVulnerabilitiesColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "component_cves_component_id",
-				Columns:    []*schema.Column{ComponentCvesColumns[0]},
+				Symbol:     "component_vulnerabilities_component_id",
+				Columns:    []*schema.Column{ComponentVulnerabilitiesColumns[0]},
 				RefColumns: []*schema.Column{ComponentColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "component_cves_cve_id",
-				Columns:    []*schema.Column{ComponentCvesColumns[1]},
-				RefColumns: []*schema.Column{CveColumns[0]},
+				Symbol:     "component_vulnerabilities_vulnerability_id",
+				Columns:    []*schema.Column{ComponentVulnerabilitiesColumns[1]},
+				RefColumns: []*schema.Column{VulnerabilityColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -580,31 +546,6 @@ var (
 			},
 		},
 	}
-	// ComponentUseScansColumns holds the columns for the "component_use_scans" table.
-	ComponentUseScansColumns = []*schema.Column{
-		{Name: "component_use_id", Type: field.TypeInt},
-		{Name: "code_scan_id", Type: field.TypeInt},
-	}
-	// ComponentUseScansTable holds the schema information for the "component_use_scans" table.
-	ComponentUseScansTable = &schema.Table{
-		Name:       "component_use_scans",
-		Columns:    ComponentUseScansColumns,
-		PrimaryKey: []*schema.Column{ComponentUseScansColumns[0], ComponentUseScansColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "component_use_scans_component_use_id",
-				Columns:    []*schema.Column{ComponentUseScansColumns[0]},
-				RefColumns: []*schema.Column{ComponentUseColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "component_use_scans_code_scan_id",
-				Columns:    []*schema.Column{ComponentUseScansColumns[1]},
-				RefColumns: []*schema.Column{CodeScanColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// ReleaseDependenciesColumns holds the columns for the "release_dependencies" table.
 	ReleaseDependenciesColumns = []*schema.Column{
 		{Name: "release_id", Type: field.TypeInt},
@@ -630,48 +571,250 @@ var (
 			},
 		},
 	}
+	// ReleaseComponentScansColumns holds the columns for the "release_component_scans" table.
+	ReleaseComponentScansColumns = []*schema.Column{
+		{Name: "release_component_id", Type: field.TypeInt},
+		{Name: "code_scan_id", Type: field.TypeInt},
+	}
+	// ReleaseComponentScansTable holds the schema information for the "release_component_scans" table.
+	ReleaseComponentScansTable = &schema.Table{
+		Name:       "release_component_scans",
+		Columns:    ReleaseComponentScansColumns,
+		PrimaryKey: []*schema.Column{ReleaseComponentScansColumns[0], ReleaseComponentScansColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "release_component_scans_release_component_id",
+				Columns:    []*schema.Column{ReleaseComponentScansColumns[0]},
+				RefColumns: []*schema.Column{ReleaseComponentColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "release_component_scans_code_scan_id",
+				Columns:    []*schema.Column{ReleaseComponentScansColumns[1]},
+				RefColumns: []*schema.Column{CodeScanColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// ReleaseVulnerabilityComponentsColumns holds the columns for the "release_vulnerability_components" table.
+	ReleaseVulnerabilityComponentsColumns = []*schema.Column{
+		{Name: "release_vulnerability_id", Type: field.TypeInt},
+		{Name: "release_component_id", Type: field.TypeInt},
+	}
+	// ReleaseVulnerabilityComponentsTable holds the schema information for the "release_vulnerability_components" table.
+	ReleaseVulnerabilityComponentsTable = &schema.Table{
+		Name:       "release_vulnerability_components",
+		Columns:    ReleaseVulnerabilityComponentsColumns,
+		PrimaryKey: []*schema.Column{ReleaseVulnerabilityComponentsColumns[0], ReleaseVulnerabilityComponentsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "release_vulnerability_components_release_vulnerability_id",
+				Columns:    []*schema.Column{ReleaseVulnerabilityComponentsColumns[0]},
+				RefColumns: []*schema.Column{ReleaseVulnerabilityColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "release_vulnerability_components_release_component_id",
+				Columns:    []*schema.Column{ReleaseVulnerabilityComponentsColumns[1]},
+				RefColumns: []*schema.Column{ReleaseComponentColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// ReleaseVulnerabilityReviewsColumns holds the columns for the "release_vulnerability_reviews" table.
+	ReleaseVulnerabilityReviewsColumns = []*schema.Column{
+		{Name: "release_vulnerability_id", Type: field.TypeInt},
+		{Name: "vulnerability_review_id", Type: field.TypeInt},
+	}
+	// ReleaseVulnerabilityReviewsTable holds the schema information for the "release_vulnerability_reviews" table.
+	ReleaseVulnerabilityReviewsTable = &schema.Table{
+		Name:       "release_vulnerability_reviews",
+		Columns:    ReleaseVulnerabilityReviewsColumns,
+		PrimaryKey: []*schema.Column{ReleaseVulnerabilityReviewsColumns[0], ReleaseVulnerabilityReviewsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "release_vulnerability_reviews_release_vulnerability_id",
+				Columns:    []*schema.Column{ReleaseVulnerabilityReviewsColumns[0]},
+				RefColumns: []*schema.Column{ReleaseVulnerabilityColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "release_vulnerability_reviews_vulnerability_review_id",
+				Columns:    []*schema.Column{ReleaseVulnerabilityReviewsColumns[1]},
+				RefColumns: []*schema.Column{VulnerabilityReviewColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// ReleaseVulnerabilityScansColumns holds the columns for the "release_vulnerability_scans" table.
+	ReleaseVulnerabilityScansColumns = []*schema.Column{
+		{Name: "release_vulnerability_id", Type: field.TypeInt},
+		{Name: "code_scan_id", Type: field.TypeInt},
+	}
+	// ReleaseVulnerabilityScansTable holds the schema information for the "release_vulnerability_scans" table.
+	ReleaseVulnerabilityScansTable = &schema.Table{
+		Name:       "release_vulnerability_scans",
+		Columns:    ReleaseVulnerabilityScansColumns,
+		PrimaryKey: []*schema.Column{ReleaseVulnerabilityScansColumns[0], ReleaseVulnerabilityScansColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "release_vulnerability_scans_release_vulnerability_id",
+				Columns:    []*schema.Column{ReleaseVulnerabilityScansColumns[0]},
+				RefColumns: []*schema.Column{ReleaseVulnerabilityColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "release_vulnerability_scans_code_scan_id",
+				Columns:    []*schema.Column{ReleaseVulnerabilityScansColumns[1]},
+				RefColumns: []*schema.Column{CodeScanColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// RepoProjectsColumns holds the columns for the "repo_projects" table.
+	RepoProjectsColumns = []*schema.Column{
+		{Name: "repo_id", Type: field.TypeInt},
+		{Name: "project_id", Type: field.TypeInt},
+	}
+	// RepoProjectsTable holds the schema information for the "repo_projects" table.
+	RepoProjectsTable = &schema.Table{
+		Name:       "repo_projects",
+		Columns:    RepoProjectsColumns,
+		PrimaryKey: []*schema.Column{RepoProjectsColumns[0], RepoProjectsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "repo_projects_repo_id",
+				Columns:    []*schema.Column{RepoProjectsColumns[0]},
+				RefColumns: []*schema.Column{RepoColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "repo_projects_project_id",
+				Columns:    []*schema.Column{RepoProjectsColumns[1]},
+				RefColumns: []*schema.Column{ProjectColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// VulnerabilityReviewProjectsColumns holds the columns for the "vulnerability_review_projects" table.
+	VulnerabilityReviewProjectsColumns = []*schema.Column{
+		{Name: "vulnerability_review_id", Type: field.TypeInt},
+		{Name: "project_id", Type: field.TypeInt},
+	}
+	// VulnerabilityReviewProjectsTable holds the schema information for the "vulnerability_review_projects" table.
+	VulnerabilityReviewProjectsTable = &schema.Table{
+		Name:       "vulnerability_review_projects",
+		Columns:    VulnerabilityReviewProjectsColumns,
+		PrimaryKey: []*schema.Column{VulnerabilityReviewProjectsColumns[0], VulnerabilityReviewProjectsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "vulnerability_review_projects_vulnerability_review_id",
+				Columns:    []*schema.Column{VulnerabilityReviewProjectsColumns[0]},
+				RefColumns: []*schema.Column{VulnerabilityReviewColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "vulnerability_review_projects_project_id",
+				Columns:    []*schema.Column{VulnerabilityReviewProjectsColumns[1]},
+				RefColumns: []*schema.Column{ProjectColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// VulnerabilityReviewReposColumns holds the columns for the "vulnerability_review_repos" table.
+	VulnerabilityReviewReposColumns = []*schema.Column{
+		{Name: "vulnerability_review_id", Type: field.TypeInt},
+		{Name: "repo_id", Type: field.TypeInt},
+	}
+	// VulnerabilityReviewReposTable holds the schema information for the "vulnerability_review_repos" table.
+	VulnerabilityReviewReposTable = &schema.Table{
+		Name:       "vulnerability_review_repos",
+		Columns:    VulnerabilityReviewReposColumns,
+		PrimaryKey: []*schema.Column{VulnerabilityReviewReposColumns[0], VulnerabilityReviewReposColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "vulnerability_review_repos_vulnerability_review_id",
+				Columns:    []*schema.Column{VulnerabilityReviewReposColumns[0]},
+				RefColumns: []*schema.Column{VulnerabilityReviewColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "vulnerability_review_repos_repo_id",
+				Columns:    []*schema.Column{VulnerabilityReviewReposColumns[1]},
+				RefColumns: []*schema.Column{RepoColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// VulnerabilityReviewReleasesColumns holds the columns for the "vulnerability_review_releases" table.
+	VulnerabilityReviewReleasesColumns = []*schema.Column{
+		{Name: "vulnerability_review_id", Type: field.TypeInt},
+		{Name: "release_id", Type: field.TypeInt},
+	}
+	// VulnerabilityReviewReleasesTable holds the schema information for the "vulnerability_review_releases" table.
+	VulnerabilityReviewReleasesTable = &schema.Table{
+		Name:       "vulnerability_review_releases",
+		Columns:    VulnerabilityReviewReleasesColumns,
+		PrimaryKey: []*schema.Column{VulnerabilityReviewReleasesColumns[0], VulnerabilityReviewReleasesColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "vulnerability_review_releases_vulnerability_review_id",
+				Columns:    []*schema.Column{VulnerabilityReviewReleasesColumns[0]},
+				RefColumns: []*schema.Column{VulnerabilityReviewColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "vulnerability_review_releases_release_id",
+				Columns:    []*schema.Column{VulnerabilityReviewReleasesColumns[1]},
+				RefColumns: []*schema.Column{ReleaseColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AdapterTable,
 		ArtifactTable,
-		CveTable,
-		CveRuleTable,
 		CweTable,
 		CodeIssueTable,
 		CodeScanTable,
 		ComponentTable,
-		ComponentUseTable,
 		CommitTable,
 		LicenseTable,
 		LicenseUseTable,
 		ProjectTable,
 		ReleaseTable,
+		ReleaseComponentTable,
 		ReleaseEntryTable,
+		ReleaseVulnerabilityTable,
 		RepoTable,
 		TestCaseTable,
 		TestRunTable,
 		VulnerabilityTable,
-		CveRuleProjectTable,
-		CveRuleRepoTable,
+		VulnerabilityReviewTable,
 		CodeIssueCweTable,
-		ComponentCvesTable,
+		ComponentVulnerabilitiesTable,
 		ComponentLicensesTable,
-		ComponentUseScansTable,
 		ReleaseDependenciesTable,
+		ReleaseComponentScansTable,
+		ReleaseVulnerabilityComponentsTable,
+		ReleaseVulnerabilityReviewsTable,
+		ReleaseVulnerabilityScansTable,
+		RepoProjectsTable,
+		VulnerabilityReviewProjectsTable,
+		VulnerabilityReviewReposTable,
+		VulnerabilityReviewReleasesTable,
 	}
 )
 
 func init() {
+	AdapterTable.Annotation = &entsql.Annotation{
+		Table: "adapter",
+	}
 	ArtifactTable.ForeignKeys[0].RefTable = ReleaseTable
 	ArtifactTable.ForeignKeys[1].RefTable = ReleaseEntryTable
 	ArtifactTable.Annotation = &entsql.Annotation{
 		Table: "artifact",
-	}
-	CveTable.Annotation = &entsql.Annotation{
-		Table: "cve",
-	}
-	CveRuleTable.ForeignKeys[0].RefTable = CveTable
-	CveRuleTable.Annotation = &entsql.Annotation{
-		Table: "cve_rule",
 	}
 	CweTable.Annotation = &entsql.Annotation{
 		Table: "cwe",
@@ -688,11 +831,6 @@ func init() {
 	ComponentTable.Annotation = &entsql.Annotation{
 		Table: "component",
 	}
-	ComponentUseTable.ForeignKeys[0].RefTable = ReleaseTable
-	ComponentUseTable.ForeignKeys[1].RefTable = ComponentTable
-	ComponentUseTable.Annotation = &entsql.Annotation{
-		Table: "component_use",
-	}
 	CommitTable.ForeignKeys[0].RefTable = RepoTable
 	CommitTable.Annotation = &entsql.Annotation{
 		Table: "commit",
@@ -708,15 +846,23 @@ func init() {
 		Table: "project",
 	}
 	ReleaseTable.ForeignKeys[0].RefTable = CommitTable
-	ReleaseTable.ForeignKeys[1].RefTable = ProjectTable
 	ReleaseTable.Annotation = &entsql.Annotation{
 		Table: "release",
+	}
+	ReleaseComponentTable.ForeignKeys[0].RefTable = ReleaseTable
+	ReleaseComponentTable.ForeignKeys[1].RefTable = ComponentTable
+	ReleaseComponentTable.Annotation = &entsql.Annotation{
+		Table: "release_component",
 	}
 	ReleaseEntryTable.ForeignKeys[0].RefTable = ReleaseTable
 	ReleaseEntryTable.Annotation = &entsql.Annotation{
 		Table: "release_entry",
 	}
-	RepoTable.ForeignKeys[0].RefTable = ProjectTable
+	ReleaseVulnerabilityTable.ForeignKeys[0].RefTable = VulnerabilityTable
+	ReleaseVulnerabilityTable.ForeignKeys[1].RefTable = ReleaseTable
+	ReleaseVulnerabilityTable.Annotation = &entsql.Annotation{
+		Table: "release_vulnerability",
+	}
 	RepoTable.Annotation = &entsql.Annotation{
 		Table: "repo",
 	}
@@ -729,22 +875,35 @@ func init() {
 	TestRunTable.Annotation = &entsql.Annotation{
 		Table: "test_run",
 	}
-	VulnerabilityTable.ForeignKeys[0].RefTable = CveTable
 	VulnerabilityTable.Annotation = &entsql.Annotation{
 		Table: "vulnerability",
 	}
-	CveRuleProjectTable.ForeignKeys[0].RefTable = CveRuleTable
-	CveRuleProjectTable.ForeignKeys[1].RefTable = ProjectTable
-	CveRuleRepoTable.ForeignKeys[0].RefTable = CveRuleTable
-	CveRuleRepoTable.ForeignKeys[1].RefTable = RepoTable
+	VulnerabilityReviewTable.ForeignKeys[0].RefTable = VulnerabilityTable
+	VulnerabilityReviewTable.Annotation = &entsql.Annotation{
+		Table: "vulnerability_review",
+	}
 	CodeIssueCweTable.ForeignKeys[0].RefTable = CodeIssueTable
 	CodeIssueCweTable.ForeignKeys[1].RefTable = CweTable
-	ComponentCvesTable.ForeignKeys[0].RefTable = ComponentTable
-	ComponentCvesTable.ForeignKeys[1].RefTable = CveTable
+	ComponentVulnerabilitiesTable.ForeignKeys[0].RefTable = ComponentTable
+	ComponentVulnerabilitiesTable.ForeignKeys[1].RefTable = VulnerabilityTable
 	ComponentLicensesTable.ForeignKeys[0].RefTable = ComponentTable
 	ComponentLicensesTable.ForeignKeys[1].RefTable = LicenseTable
-	ComponentUseScansTable.ForeignKeys[0].RefTable = ComponentUseTable
-	ComponentUseScansTable.ForeignKeys[1].RefTable = CodeScanTable
 	ReleaseDependenciesTable.ForeignKeys[0].RefTable = ReleaseTable
 	ReleaseDependenciesTable.ForeignKeys[1].RefTable = ReleaseTable
+	ReleaseComponentScansTable.ForeignKeys[0].RefTable = ReleaseComponentTable
+	ReleaseComponentScansTable.ForeignKeys[1].RefTable = CodeScanTable
+	ReleaseVulnerabilityComponentsTable.ForeignKeys[0].RefTable = ReleaseVulnerabilityTable
+	ReleaseVulnerabilityComponentsTable.ForeignKeys[1].RefTable = ReleaseComponentTable
+	ReleaseVulnerabilityReviewsTable.ForeignKeys[0].RefTable = ReleaseVulnerabilityTable
+	ReleaseVulnerabilityReviewsTable.ForeignKeys[1].RefTable = VulnerabilityReviewTable
+	ReleaseVulnerabilityScansTable.ForeignKeys[0].RefTable = ReleaseVulnerabilityTable
+	ReleaseVulnerabilityScansTable.ForeignKeys[1].RefTable = CodeScanTable
+	RepoProjectsTable.ForeignKeys[0].RefTable = RepoTable
+	RepoProjectsTable.ForeignKeys[1].RefTable = ProjectTable
+	VulnerabilityReviewProjectsTable.ForeignKeys[0].RefTable = VulnerabilityReviewTable
+	VulnerabilityReviewProjectsTable.ForeignKeys[1].RefTable = ProjectTable
+	VulnerabilityReviewReposTable.ForeignKeys[0].RefTable = VulnerabilityReviewTable
+	VulnerabilityReviewReposTable.ForeignKeys[1].RefTable = RepoTable
+	VulnerabilityReviewReleasesTable.ForeignKeys[0].RefTable = VulnerabilityReviewTable
+	VulnerabilityReviewReleasesTable.ForeignKeys[1].RefTable = ReleaseTable
 }

@@ -32,24 +32,24 @@ type Component struct {
 
 // ComponentEdges holds the relations/edges for other nodes in the graph.
 type ComponentEdges struct {
-	// Cves holds the value of the cves edge.
-	Cves []*CVE `json:"cves,omitempty"`
+	// Vulnerabilities holds the value of the vulnerabilities edge.
+	Vulnerabilities []*Vulnerability `json:"vulnerabilities,omitempty"`
 	// Licenses holds the value of the licenses edge.
 	Licenses []*License `json:"licenses,omitempty"`
 	// Uses holds the value of the uses edge.
-	Uses []*ComponentUse `json:"uses,omitempty"`
+	Uses []*ReleaseComponent `json:"uses,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
 }
 
-// CvesOrErr returns the Cves value or an error if the edge
+// VulnerabilitiesOrErr returns the Vulnerabilities value or an error if the edge
 // was not loaded in eager-loading.
-func (e ComponentEdges) CvesOrErr() ([]*CVE, error) {
+func (e ComponentEdges) VulnerabilitiesOrErr() ([]*Vulnerability, error) {
 	if e.loadedTypes[0] {
-		return e.Cves, nil
+		return e.Vulnerabilities, nil
 	}
-	return nil, &NotLoadedError{edge: "cves"}
+	return nil, &NotLoadedError{edge: "vulnerabilities"}
 }
 
 // LicensesOrErr returns the Licenses value or an error if the edge
@@ -63,7 +63,7 @@ func (e ComponentEdges) LicensesOrErr() ([]*License, error) {
 
 // UsesOrErr returns the Uses value or an error if the edge
 // was not loaded in eager-loading.
-func (e ComponentEdges) UsesOrErr() ([]*ComponentUse, error) {
+func (e ComponentEdges) UsesOrErr() ([]*ReleaseComponent, error) {
 	if e.loadedTypes[2] {
 		return e.Uses, nil
 	}
@@ -135,9 +135,9 @@ func (c *Component) assignValues(columns []string, values []interface{}) error {
 	return nil
 }
 
-// QueryCves queries the "cves" edge of the Component entity.
-func (c *Component) QueryCves() *CVEQuery {
-	return (&ComponentClient{config: c.config}).QueryCves(c)
+// QueryVulnerabilities queries the "vulnerabilities" edge of the Component entity.
+func (c *Component) QueryVulnerabilities() *VulnerabilityQuery {
+	return (&ComponentClient{config: c.config}).QueryVulnerabilities(c)
 }
 
 // QueryLicenses queries the "licenses" edge of the Component entity.
@@ -146,7 +146,7 @@ func (c *Component) QueryLicenses() *LicenseQuery {
 }
 
 // QueryUses queries the "uses" edge of the Component entity.
-func (c *Component) QueryUses() *ComponentUseQuery {
+func (c *Component) QueryUses() *ReleaseComponentQuery {
 	return (&ComponentClient{config: c.config}).QueryUses(c)
 }
 

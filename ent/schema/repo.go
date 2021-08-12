@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/valocode/bubbly/ent/extensions/entmodel"
 )
 
 type Repo struct {
@@ -17,6 +18,7 @@ type Repo struct {
 func (Repo) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "repo"},
+		entmodel.Annotation{},
 	}
 }
 
@@ -31,9 +33,9 @@ func (Repo) Fields() []ent.Field {
 
 func (Repo) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("project", Project.Type).Unique(),
+		edge.To("projects", Project.Type),
 		edge.From("commits", GitCommit.Type).Ref("repo"),
-		edge.From("cve_rules", CVERule.Type).Ref("repo"),
+		edge.From("vulnerability_reviews", VulnerabilityReview.Type).Ref("repos"),
 	}
 }
 

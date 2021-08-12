@@ -12,12 +12,10 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Adapter is the client for interacting with the Adapter builders.
+	Adapter *AdapterClient
 	// Artifact is the client for interacting with the Artifact builders.
 	Artifact *ArtifactClient
-	// CVE is the client for interacting with the CVE builders.
-	CVE *CVEClient
-	// CVERule is the client for interacting with the CVERule builders.
-	CVERule *CVERuleClient
 	// CWE is the client for interacting with the CWE builders.
 	CWE *CWEClient
 	// CodeIssue is the client for interacting with the CodeIssue builders.
@@ -26,8 +24,6 @@ type Tx struct {
 	CodeScan *CodeScanClient
 	// Component is the client for interacting with the Component builders.
 	Component *ComponentClient
-	// ComponentUse is the client for interacting with the ComponentUse builders.
-	ComponentUse *ComponentUseClient
 	// GitCommit is the client for interacting with the GitCommit builders.
 	GitCommit *GitCommitClient
 	// License is the client for interacting with the License builders.
@@ -38,8 +34,12 @@ type Tx struct {
 	Project *ProjectClient
 	// Release is the client for interacting with the Release builders.
 	Release *ReleaseClient
+	// ReleaseComponent is the client for interacting with the ReleaseComponent builders.
+	ReleaseComponent *ReleaseComponentClient
 	// ReleaseEntry is the client for interacting with the ReleaseEntry builders.
 	ReleaseEntry *ReleaseEntryClient
+	// ReleaseVulnerability is the client for interacting with the ReleaseVulnerability builders.
+	ReleaseVulnerability *ReleaseVulnerabilityClient
 	// Repo is the client for interacting with the Repo builders.
 	Repo *RepoClient
 	// TestCase is the client for interacting with the TestCase builders.
@@ -48,6 +48,8 @@ type Tx struct {
 	TestRun *TestRunClient
 	// Vulnerability is the client for interacting with the Vulnerability builders.
 	Vulnerability *VulnerabilityClient
+	// VulnerabilityReview is the client for interacting with the VulnerabilityReview builders.
+	VulnerabilityReview *VulnerabilityReviewClient
 
 	// lazily loaded.
 	client     *Client
@@ -183,24 +185,25 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Adapter = NewAdapterClient(tx.config)
 	tx.Artifact = NewArtifactClient(tx.config)
-	tx.CVE = NewCVEClient(tx.config)
-	tx.CVERule = NewCVERuleClient(tx.config)
 	tx.CWE = NewCWEClient(tx.config)
 	tx.CodeIssue = NewCodeIssueClient(tx.config)
 	tx.CodeScan = NewCodeScanClient(tx.config)
 	tx.Component = NewComponentClient(tx.config)
-	tx.ComponentUse = NewComponentUseClient(tx.config)
 	tx.GitCommit = NewGitCommitClient(tx.config)
 	tx.License = NewLicenseClient(tx.config)
 	tx.LicenseUse = NewLicenseUseClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
 	tx.Release = NewReleaseClient(tx.config)
+	tx.ReleaseComponent = NewReleaseComponentClient(tx.config)
 	tx.ReleaseEntry = NewReleaseEntryClient(tx.config)
+	tx.ReleaseVulnerability = NewReleaseVulnerabilityClient(tx.config)
 	tx.Repo = NewRepoClient(tx.config)
 	tx.TestCase = NewTestCaseClient(tx.config)
 	tx.TestRun = NewTestRunClient(tx.config)
 	tx.Vulnerability = NewVulnerabilityClient(tx.config)
+	tx.VulnerabilityReview = NewVulnerabilityReviewClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
@@ -210,7 +213,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Artifact.QueryXXX(), the query will be executed
+// applies a query, for example: Adapter.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

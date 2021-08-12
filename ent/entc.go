@@ -9,8 +9,8 @@ import (
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
 
-	"github.com/valocode/bubbly/ent/extensions"
-	"github.com/valocode/bubbly/ent/extensions/entapt"
+	"github.com/valocode/bubbly/ent/extensions/entmodel"
+	"github.com/valocode/bubbly/ent/extensions/entts"
 )
 
 func main() {
@@ -35,15 +35,6 @@ func main() {
 		log.Fatalf("creating entgql extension: %v", err)
 	}
 
-	tsex, err := extensions.NewTSExtension()
-	if err != nil {
-		log.Fatalf("creating tsmodel extension: %v", err)
-	}
-	adapterExt, err := entapt.NewExtension()
-	if err != nil {
-		log.Fatalf("creating adapter extension: %v", err)
-	}
-
 	if err := entc.Generate("./schema",
 		&gen.Config{
 			Features: []gen.Feature{
@@ -52,7 +43,11 @@ func main() {
 			},
 			Templates: templates,
 		},
-		entc.Extensions(ex, tsex, adapterExt),
+		entc.Extensions(
+			ex,
+			entmodel.NewExtension(),
+			entts.NewExtension(),
+		),
 	); err != nil {
 		log.Fatalf("running ent codegen: %v", err)
 	}

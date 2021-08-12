@@ -14,10 +14,11 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/componentuse"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasevulnerability"
 )
 
 // CodeScanQuery is the builder for querying CodeScan entities.
@@ -30,11 +31,12 @@ type CodeScanQuery struct {
 	fields     []string
 	predicates []predicate.CodeScan
 	// eager-loading edges.
-	withRelease    *ReleaseQuery
-	withEntry      *ReleaseEntryQuery
-	withIssues     *CodeIssueQuery
-	withComponents *ComponentUseQuery
-	withFKs        bool
+	withRelease         *ReleaseQuery
+	withEntry           *ReleaseEntryQuery
+	withIssues          *CodeIssueQuery
+	withVulnerabilities *ReleaseVulnerabilityQuery
+	withComponents      *ReleaseComponentQuery
+	withFKs             bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -137,9 +139,9 @@ func (csq *CodeScanQuery) QueryIssues() *CodeIssueQuery {
 	return query
 }
 
-// QueryComponents chains the current query on the "components" edge.
-func (csq *CodeScanQuery) QueryComponents() *ComponentUseQuery {
-	query := &ComponentUseQuery{config: csq.config}
+// QueryVulnerabilities chains the current query on the "vulnerabilities" edge.
+func (csq *CodeScanQuery) QueryVulnerabilities() *ReleaseVulnerabilityQuery {
+	query := &ReleaseVulnerabilityQuery{config: csq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := csq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -150,7 +152,29 @@ func (csq *CodeScanQuery) QueryComponents() *ComponentUseQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(codescan.Table, codescan.FieldID, selector),
-			sqlgraph.To(componentuse.Table, componentuse.FieldID),
+			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, codescan.VulnerabilitiesTable, codescan.VulnerabilitiesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(csq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryComponents chains the current query on the "components" edge.
+func (csq *CodeScanQuery) QueryComponents() *ReleaseComponentQuery {
+	query := &ReleaseComponentQuery{config: csq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := csq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := csq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(codescan.Table, codescan.FieldID, selector),
+			sqlgraph.To(releasecomponent.Table, releasecomponent.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, codescan.ComponentsTable, codescan.ComponentsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(csq.driver.Dialect(), step)
@@ -335,15 +359,16 @@ func (csq *CodeScanQuery) Clone() *CodeScanQuery {
 		return nil
 	}
 	return &CodeScanQuery{
-		config:         csq.config,
-		limit:          csq.limit,
-		offset:         csq.offset,
-		order:          append([]OrderFunc{}, csq.order...),
-		predicates:     append([]predicate.CodeScan{}, csq.predicates...),
-		withRelease:    csq.withRelease.Clone(),
-		withEntry:      csq.withEntry.Clone(),
-		withIssues:     csq.withIssues.Clone(),
-		withComponents: csq.withComponents.Clone(),
+		config:              csq.config,
+		limit:               csq.limit,
+		offset:              csq.offset,
+		order:               append([]OrderFunc{}, csq.order...),
+		predicates:          append([]predicate.CodeScan{}, csq.predicates...),
+		withRelease:         csq.withRelease.Clone(),
+		withEntry:           csq.withEntry.Clone(),
+		withIssues:          csq.withIssues.Clone(),
+		withVulnerabilities: csq.withVulnerabilities.Clone(),
+		withComponents:      csq.withComponents.Clone(),
 		// clone intermediate query.
 		sql:  csq.sql.Clone(),
 		path: csq.path,
@@ -383,10 +408,21 @@ func (csq *CodeScanQuery) WithIssues(opts ...func(*CodeIssueQuery)) *CodeScanQue
 	return csq
 }
 
+// WithVulnerabilities tells the query-builder to eager-load the nodes that are connected to
+// the "vulnerabilities" edge. The optional arguments are used to configure the query builder of the edge.
+func (csq *CodeScanQuery) WithVulnerabilities(opts ...func(*ReleaseVulnerabilityQuery)) *CodeScanQuery {
+	query := &ReleaseVulnerabilityQuery{config: csq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	csq.withVulnerabilities = query
+	return csq
+}
+
 // WithComponents tells the query-builder to eager-load the nodes that are connected to
 // the "components" edge. The optional arguments are used to configure the query builder of the edge.
-func (csq *CodeScanQuery) WithComponents(opts ...func(*ComponentUseQuery)) *CodeScanQuery {
-	query := &ComponentUseQuery{config: csq.config}
+func (csq *CodeScanQuery) WithComponents(opts ...func(*ReleaseComponentQuery)) *CodeScanQuery {
+	query := &ReleaseComponentQuery{config: csq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -460,10 +496,11 @@ func (csq *CodeScanQuery) sqlAll(ctx context.Context) ([]*CodeScan, error) {
 		nodes       = []*CodeScan{}
 		withFKs     = csq.withFKs
 		_spec       = csq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			csq.withRelease != nil,
 			csq.withEntry != nil,
 			csq.withIssues != nil,
+			csq.withVulnerabilities != nil,
 			csq.withComponents != nil,
 		}
 	)
@@ -580,13 +617,78 @@ func (csq *CodeScanQuery) sqlAll(ctx context.Context) ([]*CodeScan, error) {
 		}
 	}
 
+	if query := csq.withVulnerabilities; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*CodeScan, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.Vulnerabilities = []*ReleaseVulnerability{}
+		}
+		var (
+			edgeids []int
+			edges   = make(map[int][]*CodeScan)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: true,
+				Table:   codescan.VulnerabilitiesTable,
+				Columns: codescan.VulnerabilitiesPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(codescan.VulnerabilitiesPrimaryKey[1], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, csq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "vulnerabilities": %w`, err)
+		}
+		query.Where(releasevulnerability.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "vulnerabilities" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Vulnerabilities = append(nodes[i].Edges.Vulnerabilities, n)
+			}
+		}
+	}
+
 	if query := csq.withComponents; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		ids := make(map[int]*CodeScan, len(nodes))
 		for _, node := range nodes {
 			ids[node.ID] = node
 			fks = append(fks, node.ID)
-			node.Edges.Components = []*ComponentUse{}
+			node.Edges.Components = []*ReleaseComponent{}
 		}
 		var (
 			edgeids []int
@@ -629,7 +731,7 @@ func (csq *CodeScanQuery) sqlAll(ctx context.Context) ([]*CodeScan, error) {
 		if err := sqlgraph.QueryEdges(ctx, csq.driver, _spec); err != nil {
 			return nil, fmt.Errorf(`query edges "components": %w`, err)
 		}
-		query.Where(componentuse.IDIn(edgeids...))
+		query.Where(releasecomponent.IDIn(edgeids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err

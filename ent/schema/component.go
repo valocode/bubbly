@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/valocode/bubbly/ent/extensions/entmodel"
 )
 
 type Component struct {
@@ -17,6 +18,7 @@ type Component struct {
 func (Component) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "component"},
+		entmodel.Annotation{},
 	}
 }
 
@@ -41,9 +43,9 @@ func (Component) Fields() []ent.Field {
 
 func (Component) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("cves", CVE.Type),
+		edge.To("vulnerabilities", Vulnerability.Type),
 		edge.To("licenses", License.Type),
-		edge.From("uses", ComponentUse.Type).Ref("component"),
+		edge.From("uses", ReleaseComponent.Type).Ref("component"),
 	}
 }
 

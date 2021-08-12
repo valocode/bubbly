@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/index"
 
 	gen "github.com/valocode/bubbly/ent"
+	"github.com/valocode/bubbly/ent/extensions/entmodel"
 	"github.com/valocode/bubbly/ent/hook"
 )
 
@@ -22,6 +23,7 @@ type Artifact struct {
 func (Artifact) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "artifact"},
+		entmodel.Annotation{},
 	}
 }
 

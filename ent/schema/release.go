@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/valocode/bubbly/ent/extensions/entmodel"
 )
 
 type Release struct {
@@ -17,6 +18,7 @@ type Release struct {
 func (Release) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "release"},
+		entmodel.Annotation{},
 	}
 }
 
@@ -32,30 +34,25 @@ func (Release) Fields() []ent.Field {
 			),
 		field.Enum("status").
 			Values("pending", "ready", "blocked").
-			Default("pending"),
+			Default("pending").Annotations(
+		// entmodel.Annotation{SkipCreate: true},
+		),
 	}
 }
 
 func (Release) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("dependencies", Release.Type).From("subreleases"),
-		edge.To("project", Project.Type).Unique().Required(),
 		edge.From("commit", GitCommit.Type).Ref("release").Unique().Required(),
 		edge.From("log", ReleaseEntry.Type).Ref("release"),
 		edge.From("artifacts", Artifact.Type).Ref("release"),
-		edge.From("components", ComponentUse.Type).Ref("release"),
-		// edge.From("vulnerabilities", Vulnerability.Type).Ref("release"),
+		edge.From("components", ReleaseComponent.Type).Ref("release"),
+		edge.From("vulnerabilities", ReleaseVulnerability.Type).Ref("release"),
 		// edge.From("licenses", LicenseUse.Type).Ref("release"),
 		edge.From("code_scans", CodeScan.Type).Ref("release"),
 		edge.From("test_runs", TestRun.Type).Ref("release"),
-		// edge.From("license_scans", LicenseScan.Type).Ref("release"),
-		// edge.From("cve_scans", CVEScan.Type).Ref("release"),
-		// TODO: component_scan
-		// edge.From("checks", ReleaseCheck.Type).Ref("release"),
-		// edge.From("component_scan", ComponentScan.Type).Ref("release"),
-		// edge.From("components", Component.Type).Ref("release"),
-		// edge.From("licenses", LicenseUsage.Type).Ref("release"),
-		// edge.From("vulnerabilities", Vulnerability.Type).Ref("release"),
+
+		edge.From("vulnerability_reviews", VulnerabilityReview.Type).Ref("releases"),
 	}
 }
 

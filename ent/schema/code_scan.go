@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	gen "github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/ent/extensions/entapt"
+	"github.com/valocode/bubbly/ent/extensions/entmodel"
 	"github.com/valocode/bubbly/ent/hook"
 )
 
@@ -21,7 +21,7 @@ type CodeScan struct {
 func (CodeScan) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "code_scan"},
-		entapt.Root(),
+		entmodel.Annotation{},
 	}
 }
 
@@ -40,9 +40,9 @@ func (CodeScan) Edges() []ent.Edge {
 		edge.From("entry", ReleaseEntry.Type).Ref("code_scan").Unique(),
 		// Different results from the scan
 		edge.From("issues", CodeIssue.Type).Ref("scan"),
-		// edge.From("vulnerabilities", Vulnerability.Type).Ref("scans"),
+		edge.From("vulnerabilities", ReleaseVulnerability.Type).Ref("scans"),
 		// edge.From("licenses", LicenseUse.Type).Ref("scans"),
-		edge.From("components", ComponentUse.Type).Ref("scans"),
+		edge.From("components", ReleaseComponent.Type).Ref("scans"),
 	}
 }
 

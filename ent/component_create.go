@@ -10,9 +10,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/componentuse"
-	"github.com/valocode/bubbly/ent/cve"
 	"github.com/valocode/bubbly/ent/license"
+	"github.com/valocode/bubbly/ent/releasecomponent"
+	"github.com/valocode/bubbly/ent/vulnerability"
 )
 
 // ComponentCreate is the builder for creating a Component entity.
@@ -76,19 +76,19 @@ func (cc *ComponentCreate) SetNillableURL(s *string) *ComponentCreate {
 	return cc
 }
 
-// AddCfeIDs adds the "cves" edge to the CVE entity by IDs.
-func (cc *ComponentCreate) AddCfeIDs(ids ...int) *ComponentCreate {
-	cc.mutation.AddCfeIDs(ids...)
+// AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by IDs.
+func (cc *ComponentCreate) AddVulnerabilityIDs(ids ...int) *ComponentCreate {
+	cc.mutation.AddVulnerabilityIDs(ids...)
 	return cc
 }
 
-// AddCves adds the "cves" edges to the CVE entity.
-func (cc *ComponentCreate) AddCves(c ...*CVE) *ComponentCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddVulnerabilities adds the "vulnerabilities" edges to the Vulnerability entity.
+func (cc *ComponentCreate) AddVulnerabilities(v ...*Vulnerability) *ComponentCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
 	}
-	return cc.AddCfeIDs(ids...)
+	return cc.AddVulnerabilityIDs(ids...)
 }
 
 // AddLicenseIDs adds the "licenses" edge to the License entity by IDs.
@@ -106,17 +106,17 @@ func (cc *ComponentCreate) AddLicenses(l ...*License) *ComponentCreate {
 	return cc.AddLicenseIDs(ids...)
 }
 
-// AddUseIDs adds the "uses" edge to the ComponentUse entity by IDs.
+// AddUseIDs adds the "uses" edge to the ReleaseComponent entity by IDs.
 func (cc *ComponentCreate) AddUseIDs(ids ...int) *ComponentCreate {
 	cc.mutation.AddUseIDs(ids...)
 	return cc
 }
 
-// AddUses adds the "uses" edges to the ComponentUse entity.
-func (cc *ComponentCreate) AddUses(c ...*ComponentUse) *ComponentCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
+// AddUses adds the "uses" edges to the ReleaseComponent entity.
+func (cc *ComponentCreate) AddUses(r ...*ReleaseComponent) *ComponentCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
 	return cc.AddUseIDs(ids...)
 }
@@ -286,17 +286,17 @@ func (cc *ComponentCreate) createSpec() (*Component, *sqlgraph.CreateSpec) {
 		})
 		_node.URL = value
 	}
-	if nodes := cc.mutation.CvesIDs(); len(nodes) > 0 {
+	if nodes := cc.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
 			Inverse: false,
-			Table:   component.CvesTable,
-			Columns: component.CvesPrimaryKey,
+			Table:   component.VulnerabilitiesTable,
+			Columns: component.VulnerabilitiesPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: cve.FieldID,
+					Column: vulnerability.FieldID,
 				},
 			},
 		}
@@ -334,7 +334,7 @@ func (cc *ComponentCreate) createSpec() (*Component, *sqlgraph.CreateSpec) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: componentuse.FieldID,
+					Column: releasecomponent.FieldID,
 				},
 			},
 		}
