@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+</head>
+<body>
+		<div class="mermaid" id="er-diagram">
+erDiagram
+    Adapter {
+        int id
+        string name
+        string tag
+        adapterDOTType type
+        jsonDOTRawMessage operation
+        adapterDOTResultsType results_type
+        LBRACKRBRACKbyte results
+    }
+    Artifact {
+        int id
+        string name
+        string sha256
+        artifactDOTType type
+        timeDOTTime time
+    }
+    CWE {
+        int id
+        string cwe_id
+        string description
+        float64 url
+    }
+    CodeIssue {
+        int id
+        string rule_id
+        string message
+        codeissueDOTSeverity severity
+        codeissueDOTType type
+    }
+    CodeScan {
+        int id
+        string tool
+        timeDOTTime time
+    }
+    Component {
+        int id
+        string name
+        string vendor
+        string version
+        string description
+        string url
+    }
+    GitCommit {
+        int id
+        string hash
+        string branch
+        string tag
+        timeDOTTime time
+    }
+    License {
+        int id
+        string spdx_id
+        string name
+        string reference
+        string details_url
+        bool is_osi_approved
+    }
+    LicenseUse {
+        int id
+    }
+    Project {
+        int id
+        string name
+    }
+    Release {
+        int id
+        string name
+        string version
+        releaseDOTStatus status
+    }
+    ReleaseComponent {
+        int id
+    }
+    ReleaseEntry {
+        int id
+        releaseentryDOTType type
+        timeDOTTime time
+    }
+    ReleaseVulnerability {
+        int id
+    }
+    Repo {
+        int id
+        string name
+        string default_branch
+    }
+    TestCase {
+        int id
+        string name
+        bool result
+        string message
+        float64 elapsed
+    }
+    TestRun {
+        int id
+        string tool
+        timeDOTTime time
+    }
+    Vulnerability {
+        int id
+        string vid
+        string summary
+        string description
+        float64 severity_score
+        vulnerabilityDOTSeverity severity
+        timeDOTTime published
+        timeDOTTime modified
+    }
+    VulnerabilityReview {
+        int id
+        string name
+        vulnerabilityreviewDOTDecision decision
+    }
+    	Artifact }o--o| Release : "release/artifacts"
+    	CodeIssue }o--o{ CWE : "cwe/issues"
+    	CodeIssue }o--o| CodeScan : "scan/issues"
+    	CodeScan }o--o| Release : "release/code_scans"
+    	Component }o--o{ Vulnerability : "vulnerabilities/components"
+    	Component }o--o{ License : "licenses/components"
+    	GitCommit }o--o| Repo : "repo/commits"
+    	GitCommit |o--o| Release : "release/commit"
+    	LicenseUse }o--o| License : "license/uses"
+    	Release }o--o{ Release : "dependencies/subreleases"
+    	ReleaseComponent }o--o| Release : "release/components"
+    	ReleaseComponent }o--o{ CodeScan : "scans/components"
+    	ReleaseComponent }o--o| Component : "component/uses"
+    	ReleaseEntry |o--o| Artifact : "artifact/entry"
+    	ReleaseEntry |o--o| CodeScan : "code_scan/entry"
+    	ReleaseEntry |o--o| TestRun : "test_run/entry"
+    	ReleaseEntry }o--o| Release : "release/log"
+    	ReleaseVulnerability }o--o| Vulnerability : "vulnerability/instances"
+    	ReleaseVulnerability }o--o{ ReleaseComponent : "components/vulnerabilities"
+    	ReleaseVulnerability }o--o| Release : "release/vulnerabilities"
+    	ReleaseVulnerability }o--o{ VulnerabilityReview : "reviews/instances"
+    	ReleaseVulnerability }o--o{ CodeScan : "scans/vulnerabilities"
+    	Repo }o--o{ Project : "projects/repos"
+    	Repo |o--o| Release : "head/repo"
+    	TestCase }o--o| TestRun : "run/tests"
+    	TestRun }o--o| Release : "release/test_runs"
+    	VulnerabilityReview }o--o| Vulnerability : "vulnerability/reviews"
+    	VulnerabilityReview }o--o{ Project : "projects/vulnerability_reviews"
+    	VulnerabilityReview }o--o{ Repo : "repos/vulnerability_reviews"
+    	VulnerabilityReview }o--o{ Release : "releases/vulnerability_reviews"
+		</div>
+	<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+	<script>
+		mermaid.mermaidAPI.initialize({
+			startOnLoad: true,
+		});
+		var observer = new MutationObserver((event) => {
+			document.querySelectorAll('text[id^=entity]').forEach(text => {
+				text.textContent = text.textContent.replace('DOT', '.');
+				text.textContent = text.textContent.replace('STAR', '*');
+				text.textContent = text.textContent.replace('LBRACK', '[');
+				text.textContent = text.textContent.replace('RBRACK', ']');
+			});
+			observer.disconnect();
+		});
+		observer.observe(document.getElementById('er-diagram'), { attributes: true, childList: true });
+	</script>
+</body>
+</html>

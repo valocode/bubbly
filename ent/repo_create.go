@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/project"
+	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -28,6 +29,20 @@ func (rc *RepoCreate) SetName(s string) *RepoCreate {
 	return rc
 }
 
+// SetDefaultBranch sets the "default_branch" field.
+func (rc *RepoCreate) SetDefaultBranch(s string) *RepoCreate {
+	rc.mutation.SetDefaultBranch(s)
+	return rc
+}
+
+// SetNillableDefaultBranch sets the "default_branch" field if the given value is not nil.
+func (rc *RepoCreate) SetNillableDefaultBranch(s *string) *RepoCreate {
+	if s != nil {
+		rc.SetDefaultBranch(*s)
+	}
+	return rc
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (rc *RepoCreate) AddProjectIDs(ids ...int) *RepoCreate {
 	rc.mutation.AddProjectIDs(ids...)
@@ -41,6 +56,25 @@ func (rc *RepoCreate) AddProjects(p ...*Project) *RepoCreate {
 		ids[i] = p[i].ID
 	}
 	return rc.AddProjectIDs(ids...)
+}
+
+// SetHeadID sets the "head" edge to the Release entity by ID.
+func (rc *RepoCreate) SetHeadID(id int) *RepoCreate {
+	rc.mutation.SetHeadID(id)
+	return rc
+}
+
+// SetNillableHeadID sets the "head" edge to the Release entity by ID if the given value is not nil.
+func (rc *RepoCreate) SetNillableHeadID(id *int) *RepoCreate {
+	if id != nil {
+		rc = rc.SetHeadID(*id)
+	}
+	return rc
+}
+
+// SetHead sets the "head" edge to the Release entity.
+func (rc *RepoCreate) SetHead(r *Release) *RepoCreate {
+	return rc.SetHeadID(r.ID)
 }
 
 // AddCommitIDs adds the "commits" edge to the GitCommit entity by IDs.
@@ -84,6 +118,7 @@ func (rc *RepoCreate) Save(ctx context.Context) (*Repo, error) {
 		err  error
 		node *Repo
 	)
+	rc.defaults()
 	if len(rc.hooks) == 0 {
 		if err = rc.check(); err != nil {
 			return nil, err
@@ -141,6 +176,14 @@ func (rc *RepoCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (rc *RepoCreate) defaults() {
+	if _, ok := rc.mutation.DefaultBranch(); !ok {
+		v := repo.DefaultDefaultBranch
+		rc.mutation.SetDefaultBranch(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (rc *RepoCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
@@ -149,6 +192,14 @@ func (rc *RepoCreate) check() error {
 	if v, ok := rc.mutation.Name(); ok {
 		if err := repo.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
+		}
+	}
+	if _, ok := rc.mutation.DefaultBranch(); !ok {
+		return &ValidationError{Name: "default_branch", err: errors.New(`ent: missing required field "default_branch"`)}
+	}
+	if v, ok := rc.mutation.DefaultBranch(); ok {
+		if err := repo.DefaultBranchValidator(v); err != nil {
+			return &ValidationError{Name: "default_branch", err: fmt.Errorf(`ent: validator failed for field "default_branch": %w`, err)}
 		}
 	}
 	return nil
@@ -186,6 +237,14 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		})
 		_node.Name = value
 	}
+	if value, ok := rc.mutation.DefaultBranch(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: repo.FieldDefaultBranch,
+		})
+		_node.DefaultBranch = value
+	}
 	if nodes := rc.mutation.ProjectsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -197,6 +256,25 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: project.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.HeadIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   repo.HeadTable,
+			Columns: []string{repo.HeadColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: release.FieldID,
 				},
 			},
 		}
@@ -260,6 +338,7 @@ func (rcb *RepoCreateBulk) Save(ctx context.Context) ([]*Repo, error) {
 	for i := range rcb.builders {
 		func(i int, root context.Context) {
 			builder := rcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*RepoMutation)
 				if !ok {

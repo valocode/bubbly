@@ -98,6 +98,13 @@ func Name(v string) predicate.Repo {
 	})
 }
 
+// DefaultBranch applies equality check predicate on the "default_branch" field. It's identical to DefaultBranchEQ.
+func DefaultBranch(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldDefaultBranch), v))
+	})
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Repo {
 	return predicate.Repo(func(s *sql.Selector) {
@@ -209,6 +216,117 @@ func NameContainsFold(v string) predicate.Repo {
 	})
 }
 
+// DefaultBranchEQ applies the EQ predicate on the "default_branch" field.
+func DefaultBranchEQ(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldDefaultBranch), v))
+	})
+}
+
+// DefaultBranchNEQ applies the NEQ predicate on the "default_branch" field.
+func DefaultBranchNEQ(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldDefaultBranch), v))
+	})
+}
+
+// DefaultBranchIn applies the In predicate on the "default_branch" field.
+func DefaultBranchIn(vs ...string) predicate.Repo {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Repo(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldDefaultBranch), v...))
+	})
+}
+
+// DefaultBranchNotIn applies the NotIn predicate on the "default_branch" field.
+func DefaultBranchNotIn(vs ...string) predicate.Repo {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Repo(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldDefaultBranch), v...))
+	})
+}
+
+// DefaultBranchGT applies the GT predicate on the "default_branch" field.
+func DefaultBranchGT(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldDefaultBranch), v))
+	})
+}
+
+// DefaultBranchGTE applies the GTE predicate on the "default_branch" field.
+func DefaultBranchGTE(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldDefaultBranch), v))
+	})
+}
+
+// DefaultBranchLT applies the LT predicate on the "default_branch" field.
+func DefaultBranchLT(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldDefaultBranch), v))
+	})
+}
+
+// DefaultBranchLTE applies the LTE predicate on the "default_branch" field.
+func DefaultBranchLTE(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldDefaultBranch), v))
+	})
+}
+
+// DefaultBranchContains applies the Contains predicate on the "default_branch" field.
+func DefaultBranchContains(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldDefaultBranch), v))
+	})
+}
+
+// DefaultBranchHasPrefix applies the HasPrefix predicate on the "default_branch" field.
+func DefaultBranchHasPrefix(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldDefaultBranch), v))
+	})
+}
+
+// DefaultBranchHasSuffix applies the HasSuffix predicate on the "default_branch" field.
+func DefaultBranchHasSuffix(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldDefaultBranch), v))
+	})
+}
+
+// DefaultBranchEqualFold applies the EqualFold predicate on the "default_branch" field.
+func DefaultBranchEqualFold(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldDefaultBranch), v))
+	})
+}
+
+// DefaultBranchContainsFold applies the ContainsFold predicate on the "default_branch" field.
+func DefaultBranchContainsFold(v string) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldDefaultBranch), v))
+	})
+}
+
 // HasProjects applies the HasEdge predicate on the "projects" edge.
 func HasProjects() predicate.Repo {
 	return predicate.Repo(func(s *sql.Selector) {
@@ -228,6 +346,34 @@ func HasProjectsWith(preds ...predicate.Project) predicate.Repo {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(ProjectsInverseTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, ProjectsTable, ProjectsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasHead applies the HasEdge predicate on the "head" edge.
+func HasHead() predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(HeadTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, HeadTable, HeadColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasHeadWith applies the HasEdge predicate on the "head" edge with a given conditions (other predicates).
+func HasHeadWith(preds ...predicate.Release) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(HeadInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, HeadTable, HeadColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

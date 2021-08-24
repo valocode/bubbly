@@ -3,6 +3,8 @@
 package artifact
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/valocode/bubbly/ent/predicate"
@@ -102,6 +104,13 @@ func Name(v string) predicate.Artifact {
 func Sha256(v string) predicate.Artifact {
 	return predicate.Artifact(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldSha256), v))
+	})
+}
+
+// Time applies equality check predicate on the "time" field. It's identical to TimeEQ.
+func Time(v time.Time) predicate.Artifact {
+	return predicate.Artifact(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldTime), v))
 	})
 }
 
@@ -372,6 +381,82 @@ func TypeNotIn(vs ...Type) predicate.Artifact {
 			return
 		}
 		s.Where(sql.NotIn(s.C(FieldType), v...))
+	})
+}
+
+// TimeEQ applies the EQ predicate on the "time" field.
+func TimeEQ(v time.Time) predicate.Artifact {
+	return predicate.Artifact(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldTime), v))
+	})
+}
+
+// TimeNEQ applies the NEQ predicate on the "time" field.
+func TimeNEQ(v time.Time) predicate.Artifact {
+	return predicate.Artifact(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldTime), v))
+	})
+}
+
+// TimeIn applies the In predicate on the "time" field.
+func TimeIn(vs ...time.Time) predicate.Artifact {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Artifact(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldTime), v...))
+	})
+}
+
+// TimeNotIn applies the NotIn predicate on the "time" field.
+func TimeNotIn(vs ...time.Time) predicate.Artifact {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Artifact(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldTime), v...))
+	})
+}
+
+// TimeGT applies the GT predicate on the "time" field.
+func TimeGT(v time.Time) predicate.Artifact {
+	return predicate.Artifact(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldTime), v))
+	})
+}
+
+// TimeGTE applies the GTE predicate on the "time" field.
+func TimeGTE(v time.Time) predicate.Artifact {
+	return predicate.Artifact(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldTime), v))
+	})
+}
+
+// TimeLT applies the LT predicate on the "time" field.
+func TimeLT(v time.Time) predicate.Artifact {
+	return predicate.Artifact(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldTime), v))
+	})
+}
+
+// TimeLTE applies the LTE predicate on the "time" field.
+func TimeLTE(v time.Time) predicate.Artifact {
+	return predicate.Artifact(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldTime), v))
 	})
 }
 

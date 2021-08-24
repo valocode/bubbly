@@ -181,7 +181,7 @@ func (r *queryResolver) TestRun(ctx context.Context, first *int, last *int, orde
 }
 
 func (r *queryResolver) VulnerabilityReview(ctx context.Context, first *int, last *int, orderBy *ent.VulnerabilityReviewOrder, where *ent.VulnerabilityReviewWhereInput) ([]*ent.VulnerabilityReview, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.client.VulnerabilityReview.Query().Filter(ctx, first, last, orderBy, where)
 }
 
 func (r *queryResolver) License(ctx context.Context, first *int, last *int, orderBy *ent.LicenseOrder, where *ent.LicenseWhereInput) ([]*ent.License, error) {
@@ -189,7 +189,7 @@ func (r *queryResolver) License(ctx context.Context, first *int, last *int, orde
 }
 
 func (r *queryResolver) ReleaseVulnerability(ctx context.Context, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.client.ReleaseVulnerability.Query().Filter(ctx, first, last, nil, where)
 }
 
 func (r *queryResolver) Repo(ctx context.Context, first *int, last *int, orderBy *ent.RepoOrder, where *ent.RepoWhereInput) ([]*ent.Repo, error) {
@@ -230,7 +230,10 @@ func (r *queryResolver) RepoConnection(ctx context.Context, first *int, last *in
 }
 
 func (r *queryResolver) VulnerabilityReviewConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.VulnerabilityReviewOrder, where *ent.VulnerabilityReviewWhereInput) (*ent.VulnerabilityReviewConnection, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.client.VulnerabilityReview.Query().Paginate(ctx, after, first, before, last,
+		ent.WithVulnerabilityReviewOrder(orderBy),
+		ent.WithVulnerabilityReviewFilter(where.Filter),
+	)
 }
 
 func (r *queryResolver) CodeScanConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.CodeScanOrder, where *ent.CodeScanWhereInput) (*ent.CodeScanConnection, error) {
@@ -279,7 +282,7 @@ func (r *queryResolver) ReleaseConnection(ctx context.Context, first *int, last 
 }
 
 func (r *queryResolver) ReleaseComponent(ctx context.Context, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.client.ReleaseComponent.Query().Filter(ctx, first, last, nil, where)
 }
 
 func (r *queryResolver) ReleaseVulnerabilityConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, where *ent.ReleaseVulnerabilityWhereInput) (*ent.ReleaseVulnerabilityConnection, error) {
@@ -363,15 +366,27 @@ func (r *releaseResolver) VulnerabilityReviews(ctx context.Context, obj *ent.Rel
 }
 
 func (r *releaseComponentResolver) Scans(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ScansOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryScans().Filter(ctx, first, last, orderBy, where)
+	}
+	return result, err
 }
 
 func (r *releaseComponentResolver) Vulnerabilities(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.VulnerabilitiesOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryVulnerabilities().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *releaseVulnerabilityResolver) Components(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ComponentsOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryComponents().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *releaseVulnerabilityResolver) Reviews(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error) {
@@ -383,18 +398,25 @@ func (r *releaseVulnerabilityResolver) Reviews(ctx context.Context, obj *ent.Rel
 }
 
 func (r *releaseVulnerabilityResolver) Scans(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ScansOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryScans().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *repoResolver) Projects(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ProjectsOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryProjects().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *repoResolver) Commits(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.GitCommitWhereInput, orderBy *ent.GitCommitOrder) ([]*ent.GitCommit, error) {
 	result, err := obj.Edges.CommitsOrErr()
 	if ent.IsNotLoaded(err) {
 		result, err = obj.QueryCommits().Filter(ctx, first, last, orderBy, where)
-		// result, err = obj.QueryCommits().All(ctx)
 	}
 	return result, err
 }
@@ -416,7 +438,11 @@ func (r *testRunResolver) Tests(ctx context.Context, obj *ent.TestRun, first *in
 }
 
 func (r *vulnerabilityResolver) Components(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.ComponentWhereInput, orderBy *ent.ComponentOrder) ([]*ent.Component, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ComponentsOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryComponents().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *vulnerabilityResolver) Reviews(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error) {
@@ -428,23 +454,43 @@ func (r *vulnerabilityResolver) Reviews(ctx context.Context, obj *ent.Vulnerabil
 }
 
 func (r *vulnerabilityResolver) Instances(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.InstancesOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryInstances().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *vulnerabilityReviewResolver) Projects(ctx context.Context, obj *ent.VulnerabilityReview, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ProjectsOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryProjects().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *vulnerabilityReviewResolver) Repos(ctx context.Context, obj *ent.VulnerabilityReview, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ReposOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryRepos().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *vulnerabilityReviewResolver) Releases(ctx context.Context, obj *ent.VulnerabilityReview, first *int, last *int, where *ent.ReleaseWhereInput, orderBy *ent.ReleaseOrder) ([]*ent.Release, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ReleasesOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryReleases().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *vulnerabilityReviewResolver) Instances(ctx context.Context, obj *ent.VulnerabilityReview, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.InstancesOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryInstances().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 // CWE returns CWEResolver implementation.

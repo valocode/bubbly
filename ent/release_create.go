@@ -16,6 +16,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
+	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -92,6 +93,25 @@ func (rc *ReleaseCreate) SetCommitID(id int) *ReleaseCreate {
 // SetCommit sets the "commit" edge to the GitCommit entity.
 func (rc *ReleaseCreate) SetCommit(g *GitCommit) *ReleaseCreate {
 	return rc.SetCommitID(g.ID)
+}
+
+// SetHeadOfID sets the "head_of" edge to the Repo entity by ID.
+func (rc *ReleaseCreate) SetHeadOfID(id int) *ReleaseCreate {
+	rc.mutation.SetHeadOfID(id)
+	return rc
+}
+
+// SetNillableHeadOfID sets the "head_of" edge to the Repo entity by ID if the given value is not nil.
+func (rc *ReleaseCreate) SetNillableHeadOfID(id *int) *ReleaseCreate {
+	if id != nil {
+		rc = rc.SetHeadOfID(*id)
+	}
+	return rc
+}
+
+// SetHeadOf sets the "head_of" edge to the Repo entity.
+func (rc *ReleaseCreate) SetHeadOf(r *Repo) *ReleaseCreate {
+	return rc.SetHeadOfID(r.ID)
 }
 
 // AddLogIDs adds the "log" edge to the ReleaseEntry entity by IDs.
@@ -210,7 +230,9 @@ func (rc *ReleaseCreate) Save(ctx context.Context) (*Release, error) {
 		err  error
 		node *Release
 	)
-	rc.defaults()
+	if err := rc.defaults(); err != nil {
+		return nil, err
+	}
 	if len(rc.hooks) == 0 {
 		if err = rc.check(); err != nil {
 			return nil, err
@@ -269,11 +291,12 @@ func (rc *ReleaseCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (rc *ReleaseCreate) defaults() {
+func (rc *ReleaseCreate) defaults() error {
 	if _, ok := rc.mutation.Status(); !ok {
 		v := release.DefaultStatus
 		rc.mutation.SetStatus(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -412,6 +435,26 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.git_commit_release = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.HeadOfIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   release.HeadOfTable,
+			Columns: []string{release.HeadOfColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: repo.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.repo_head = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.LogIDs(); len(nodes) > 0 {

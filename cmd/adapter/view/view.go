@@ -49,15 +49,9 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			results, err := a.Results.SpecBytes()
-			if err != nil {
-				return err
-			}
 			fmt.Println("Name: " + a.Name)
 			fmt.Println("Tag: " + a.TagOrDefault())
 			fmt.Println("Type: " + a.Operation.Type)
-			fmt.Println("Results:")
-			fmt.Printf("%s\n", results)
 			return nil
 		},
 	}

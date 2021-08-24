@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"entgo.io/contrib/entgql"
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
 	"entgo.io/ent/schema/field"
@@ -40,6 +41,24 @@ func (e *Extension) Hooks() []gen.Hook {
 	}
 }
 
+// filterNodes - copied from ent/contrib/entgql...
+func filterNodes(nodes []*gen.Type) ([]*gen.Type, error) {
+	var filteredNodes []*gen.Type
+	for _, n := range nodes {
+		ant := &entgql.Annotation{}
+		if n.Annotations != nil && n.Annotations[ant.Name()] != nil {
+			if err := ant.Decode(n.Annotations[ant.Name()]); err != nil {
+				return nil, err
+			}
+			if ant.Skip {
+				continue
+			}
+		}
+		filteredNodes = append(filteredNodes, n)
+	}
+	return filteredNodes, nil
+}
+
 func genTypescriptInterfaces(graph *gen.Graph) error {
 
 	var b bytes.Buffer
@@ -48,7 +67,11 @@ func genTypescriptInterfaces(graph *gen.Graph) error {
 	fmt.Fprintf(&b, "// DO NOT MODIFY.\n")
 	fmt.Fprintf(&b, "// Currently it is manually copied over from the bubbly repository where it is generated.\n")
 	fmt.Fprintf(&b, "// #######################################\n\n")
-	for _, node := range graph.Nodes {
+	nodes, err := filterNodes(graph.Nodes)
+	if err != nil {
+		return err
+	}
+	for _, node := range nodes {
 
 		fmt.Fprintf(&b, "// #######################################\n")
 		fmt.Fprintf(&b, "// %s\n", node.Name)
@@ -116,8 +139,7 @@ func genTypescriptInterfaces(graph *gen.Graph) error {
 	fmt.Fprintf(&b, "\tendCursor?: string;\n")
 	fmt.Fprintf(&b, "}\n\n")
 
-	err := os.WriteFile(tsSchemaFile, b.Bytes(), 0644)
-	if err != nil {
+	if err := os.WriteFile(tsSchemaFile, b.Bytes(), 0644); err != nil {
 		return fmt.Errorf("error writing to file %s: %w", tsSchemaFile, err)
 	}
 

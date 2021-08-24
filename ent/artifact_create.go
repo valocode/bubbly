@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -36,6 +37,20 @@ func (ac *ArtifactCreate) SetSha256(s string) *ArtifactCreate {
 // SetType sets the "type" field.
 func (ac *ArtifactCreate) SetType(a artifact.Type) *ArtifactCreate {
 	ac.mutation.SetType(a)
+	return ac
+}
+
+// SetTime sets the "time" field.
+func (ac *ArtifactCreate) SetTime(t time.Time) *ArtifactCreate {
+	ac.mutation.SetTime(t)
+	return ac
+}
+
+// SetNillableTime sets the "time" field if the given value is not nil.
+func (ac *ArtifactCreate) SetNillableTime(t *time.Time) *ArtifactCreate {
+	if t != nil {
+		ac.SetTime(*t)
+	}
 	return ac
 }
 
@@ -88,6 +103,9 @@ func (ac *ArtifactCreate) Save(ctx context.Context) (*Artifact, error) {
 		err  error
 		node *Artifact
 	)
+	if err := ac.defaults(); err != nil {
+		return nil, err
+	}
 	if len(ac.hooks) == 0 {
 		if err = ac.check(); err != nil {
 			return nil, err
@@ -145,6 +163,18 @@ func (ac *ArtifactCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (ac *ArtifactCreate) defaults() error {
+	if _, ok := ac.mutation.Time(); !ok {
+		if artifact.DefaultTime == nil {
+			return fmt.Errorf("ent: uninitialized artifact.DefaultTime (forgotten import ent/runtime?)")
+		}
+		v := artifact.DefaultTime()
+		ac.mutation.SetTime(v)
+	}
+	return nil
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (ac *ArtifactCreate) check() error {
 	if _, ok := ac.mutation.Name(); !ok {
@@ -170,6 +200,9 @@ func (ac *ArtifactCreate) check() error {
 		if err := artifact.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "type": %w`, err)}
 		}
+	}
+	if _, ok := ac.mutation.Time(); !ok {
+		return &ValidationError{Name: "time", err: errors.New(`ent: missing required field "time"`)}
 	}
 	return nil
 }
@@ -221,6 +254,14 @@ func (ac *ArtifactCreate) createSpec() (*Artifact, *sqlgraph.CreateSpec) {
 			Column: artifact.FieldType,
 		})
 		_node.Type = value
+	}
+	if value, ok := ac.mutation.Time(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: artifact.FieldTime,
+		})
+		_node.Time = value
 	}
 	if nodes := ac.mutation.ReleaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -279,6 +320,7 @@ func (acb *ArtifactCreateBulk) Save(ctx context.Context) ([]*Artifact, error) {
 	for i := range acb.builders {
 		func(i int, root context.Context) {
 			builder := acb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ArtifactMutation)
 				if !ok {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/valocode/bubbly/ent/adapter"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
@@ -27,261 +26,6 @@ import (
 	"github.com/valocode/bubbly/ent/vulnerability"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
-
-// AdapterWhereInput represents a where input for filtering Adapter queries.
-type AdapterWhereInput struct {
-	Not *AdapterWhereInput   `json:"not,omitempty"`
-	Or  []*AdapterWhereInput `json:"or,omitempty"`
-	And []*AdapterWhereInput `json:"and,omitempty"`
-
-	// "name" field predicates.
-	Name             *string  `json:"name,omitempty"`
-	NameNEQ          *string  `json:"nameNEQ,omitempty"`
-	NameIn           []string `json:"nameIn,omitempty"`
-	NameNotIn        []string `json:"nameNotIn,omitempty"`
-	NameGT           *string  `json:"nameGT,omitempty"`
-	NameGTE          *string  `json:"nameGTE,omitempty"`
-	NameLT           *string  `json:"nameLT,omitempty"`
-	NameLTE          *string  `json:"nameLTE,omitempty"`
-	NameContains     *string  `json:"nameContains,omitempty"`
-	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
-	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
-	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
-	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
-
-	// "tag" field predicates.
-	Tag             *string  `json:"tag,omitempty"`
-	TagNEQ          *string  `json:"tagNEQ,omitempty"`
-	TagIn           []string `json:"tagIn,omitempty"`
-	TagNotIn        []string `json:"tagNotIn,omitempty"`
-	TagGT           *string  `json:"tagGT,omitempty"`
-	TagGTE          *string  `json:"tagGTE,omitempty"`
-	TagLT           *string  `json:"tagLT,omitempty"`
-	TagLTE          *string  `json:"tagLTE,omitempty"`
-	TagContains     *string  `json:"tagContains,omitempty"`
-	TagHasPrefix    *string  `json:"tagHasPrefix,omitempty"`
-	TagHasSuffix    *string  `json:"tagHasSuffix,omitempty"`
-	TagEqualFold    *string  `json:"tagEqualFold,omitempty"`
-	TagContainsFold *string  `json:"tagContainsFold,omitempty"`
-
-	// "type" field predicates.
-	Type      *adapter.Type  `json:"type,omitempty"`
-	TypeNEQ   *adapter.Type  `json:"typeNEQ,omitempty"`
-	TypeIn    []adapter.Type `json:"typeIn,omitempty"`
-	TypeNotIn []adapter.Type `json:"typeNotIn,omitempty"`
-
-	// "results_type" field predicates.
-	ResultsType      *adapter.ResultsType  `json:"resultsType,omitempty"`
-	ResultsTypeNEQ   *adapter.ResultsType  `json:"resultsTypeNEQ,omitempty"`
-	ResultsTypeIn    []adapter.ResultsType `json:"resultsTypeIn,omitempty"`
-	ResultsTypeNotIn []adapter.ResultsType `json:"resultsTypeNotIn,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-}
-
-// Filter applies the AdapterWhereInput filter on the AdapterQuery builder.
-func (i *AdapterWhereInput) Filter(q *AdapterQuery) (*AdapterQuery, error) {
-	if i == nil {
-		return q, nil
-	}
-	p, err := i.P()
-	if err != nil {
-		return nil, err
-	}
-	return q.Where(p), nil
-}
-
-// P returns a predicate for filtering adapters.
-// An error is returned if the input is empty or invalid.
-func (i *AdapterWhereInput) P() (predicate.Adapter, error) {
-	var predicates []predicate.Adapter
-	if i.Not != nil {
-		p, err := i.Not.P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, adapter.Not(p))
-	}
-	switch n := len(i.Or); {
-	case n == 1:
-		p, err := i.Or[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		or := make([]predicate.Adapter, 0, n)
-		for _, w := range i.Or {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			or = append(or, p)
-		}
-		predicates = append(predicates, adapter.Or(or...))
-	}
-	switch n := len(i.And); {
-	case n == 1:
-		p, err := i.And[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		and := make([]predicate.Adapter, 0, n)
-		for _, w := range i.And {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			and = append(and, p)
-		}
-		predicates = append(predicates, adapter.And(and...))
-	}
-	if i.Name != nil {
-		predicates = append(predicates, adapter.NameEQ(*i.Name))
-	}
-	if i.NameNEQ != nil {
-		predicates = append(predicates, adapter.NameNEQ(*i.NameNEQ))
-	}
-	if len(i.NameIn) > 0 {
-		predicates = append(predicates, adapter.NameIn(i.NameIn...))
-	}
-	if len(i.NameNotIn) > 0 {
-		predicates = append(predicates, adapter.NameNotIn(i.NameNotIn...))
-	}
-	if i.NameGT != nil {
-		predicates = append(predicates, adapter.NameGT(*i.NameGT))
-	}
-	if i.NameGTE != nil {
-		predicates = append(predicates, adapter.NameGTE(*i.NameGTE))
-	}
-	if i.NameLT != nil {
-		predicates = append(predicates, adapter.NameLT(*i.NameLT))
-	}
-	if i.NameLTE != nil {
-		predicates = append(predicates, adapter.NameLTE(*i.NameLTE))
-	}
-	if i.NameContains != nil {
-		predicates = append(predicates, adapter.NameContains(*i.NameContains))
-	}
-	if i.NameHasPrefix != nil {
-		predicates = append(predicates, adapter.NameHasPrefix(*i.NameHasPrefix))
-	}
-	if i.NameHasSuffix != nil {
-		predicates = append(predicates, adapter.NameHasSuffix(*i.NameHasSuffix))
-	}
-	if i.NameEqualFold != nil {
-		predicates = append(predicates, adapter.NameEqualFold(*i.NameEqualFold))
-	}
-	if i.NameContainsFold != nil {
-		predicates = append(predicates, adapter.NameContainsFold(*i.NameContainsFold))
-	}
-	if i.Tag != nil {
-		predicates = append(predicates, adapter.TagEQ(*i.Tag))
-	}
-	if i.TagNEQ != nil {
-		predicates = append(predicates, adapter.TagNEQ(*i.TagNEQ))
-	}
-	if len(i.TagIn) > 0 {
-		predicates = append(predicates, adapter.TagIn(i.TagIn...))
-	}
-	if len(i.TagNotIn) > 0 {
-		predicates = append(predicates, adapter.TagNotIn(i.TagNotIn...))
-	}
-	if i.TagGT != nil {
-		predicates = append(predicates, adapter.TagGT(*i.TagGT))
-	}
-	if i.TagGTE != nil {
-		predicates = append(predicates, adapter.TagGTE(*i.TagGTE))
-	}
-	if i.TagLT != nil {
-		predicates = append(predicates, adapter.TagLT(*i.TagLT))
-	}
-	if i.TagLTE != nil {
-		predicates = append(predicates, adapter.TagLTE(*i.TagLTE))
-	}
-	if i.TagContains != nil {
-		predicates = append(predicates, adapter.TagContains(*i.TagContains))
-	}
-	if i.TagHasPrefix != nil {
-		predicates = append(predicates, adapter.TagHasPrefix(*i.TagHasPrefix))
-	}
-	if i.TagHasSuffix != nil {
-		predicates = append(predicates, adapter.TagHasSuffix(*i.TagHasSuffix))
-	}
-	if i.TagEqualFold != nil {
-		predicates = append(predicates, adapter.TagEqualFold(*i.TagEqualFold))
-	}
-	if i.TagContainsFold != nil {
-		predicates = append(predicates, adapter.TagContainsFold(*i.TagContainsFold))
-	}
-	if i.Type != nil {
-		predicates = append(predicates, adapter.TypeEQ(*i.Type))
-	}
-	if i.TypeNEQ != nil {
-		predicates = append(predicates, adapter.TypeNEQ(*i.TypeNEQ))
-	}
-	if len(i.TypeIn) > 0 {
-		predicates = append(predicates, adapter.TypeIn(i.TypeIn...))
-	}
-	if len(i.TypeNotIn) > 0 {
-		predicates = append(predicates, adapter.TypeNotIn(i.TypeNotIn...))
-	}
-	if i.ResultsType != nil {
-		predicates = append(predicates, adapter.ResultsTypeEQ(*i.ResultsType))
-	}
-	if i.ResultsTypeNEQ != nil {
-		predicates = append(predicates, adapter.ResultsTypeNEQ(*i.ResultsTypeNEQ))
-	}
-	if len(i.ResultsTypeIn) > 0 {
-		predicates = append(predicates, adapter.ResultsTypeIn(i.ResultsTypeIn...))
-	}
-	if len(i.ResultsTypeNotIn) > 0 {
-		predicates = append(predicates, adapter.ResultsTypeNotIn(i.ResultsTypeNotIn...))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, adapter.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, adapter.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, adapter.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, adapter.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, adapter.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, adapter.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, adapter.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, adapter.IDLTE(*i.IDLTE))
-	}
-
-	switch len(predicates) {
-	case 0:
-		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate AdapterWhereInput")
-	case 1:
-		return predicates[0], nil
-	default:
-		return adapter.And(predicates...), nil
-	}
-}
 
 // ArtifactWhereInput represents a where input for filtering Artifact queries.
 type ArtifactWhereInput struct {
@@ -324,6 +68,16 @@ type ArtifactWhereInput struct {
 	TypeNEQ   *artifact.Type  `json:"typeNEQ,omitempty"`
 	TypeIn    []artifact.Type `json:"typeIn,omitempty"`
 	TypeNotIn []artifact.Type `json:"typeNotIn,omitempty"`
+
+	// "time" field predicates.
+	Time      *time.Time  `json:"time,omitempty"`
+	TimeNEQ   *time.Time  `json:"timeNEQ,omitempty"`
+	TimeIn    []time.Time `json:"timeIn,omitempty"`
+	TimeNotIn []time.Time `json:"timeNotIn,omitempty"`
+	TimeGT    *time.Time  `json:"timeGT,omitempty"`
+	TimeGTE   *time.Time  `json:"timeGTE,omitempty"`
+	TimeLT    *time.Time  `json:"timeLT,omitempty"`
+	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
 
 	// "id" field predicates.
 	ID      *int  `json:"id,omitempty"`
@@ -492,6 +246,30 @@ func (i *ArtifactWhereInput) P() (predicate.Artifact, error) {
 	}
 	if len(i.TypeNotIn) > 0 {
 		predicates = append(predicates, artifact.TypeNotIn(i.TypeNotIn...))
+	}
+	if i.Time != nil {
+		predicates = append(predicates, artifact.TimeEQ(*i.Time))
+	}
+	if i.TimeNEQ != nil {
+		predicates = append(predicates, artifact.TimeNEQ(*i.TimeNEQ))
+	}
+	if len(i.TimeIn) > 0 {
+		predicates = append(predicates, artifact.TimeIn(i.TimeIn...))
+	}
+	if len(i.TimeNotIn) > 0 {
+		predicates = append(predicates, artifact.TimeNotIn(i.TimeNotIn...))
+	}
+	if i.TimeGT != nil {
+		predicates = append(predicates, artifact.TimeGT(*i.TimeGT))
+	}
+	if i.TimeGTE != nil {
+		predicates = append(predicates, artifact.TimeGTE(*i.TimeGTE))
+	}
+	if i.TimeLT != nil {
+		predicates = append(predicates, artifact.TimeLT(*i.TimeLT))
+	}
+	if i.TimeLTE != nil {
+		predicates = append(predicates, artifact.TimeLTE(*i.TimeLTE))
 	}
 	if i.ID != nil {
 		predicates = append(predicates, artifact.IDEQ(*i.ID))
@@ -1175,6 +953,16 @@ type CodeScanWhereInput struct {
 	ToolEqualFold    *string  `json:"toolEqualFold,omitempty"`
 	ToolContainsFold *string  `json:"toolContainsFold,omitempty"`
 
+	// "time" field predicates.
+	Time      *time.Time  `json:"time,omitempty"`
+	TimeNEQ   *time.Time  `json:"timeNEQ,omitempty"`
+	TimeIn    []time.Time `json:"timeIn,omitempty"`
+	TimeNotIn []time.Time `json:"timeNotIn,omitempty"`
+	TimeGT    *time.Time  `json:"timeGT,omitempty"`
+	TimeGTE   *time.Time  `json:"timeGTE,omitempty"`
+	TimeLT    *time.Time  `json:"timeLT,omitempty"`
+	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
+
 	// "id" field predicates.
 	ID      *int  `json:"id,omitempty"`
 	IDNEQ   *int  `json:"idNEQ,omitempty"`
@@ -1303,6 +1091,30 @@ func (i *CodeScanWhereInput) P() (predicate.CodeScan, error) {
 	}
 	if i.ToolContainsFold != nil {
 		predicates = append(predicates, codescan.ToolContainsFold(*i.ToolContainsFold))
+	}
+	if i.Time != nil {
+		predicates = append(predicates, codescan.TimeEQ(*i.Time))
+	}
+	if i.TimeNEQ != nil {
+		predicates = append(predicates, codescan.TimeNEQ(*i.TimeNEQ))
+	}
+	if len(i.TimeIn) > 0 {
+		predicates = append(predicates, codescan.TimeIn(i.TimeIn...))
+	}
+	if len(i.TimeNotIn) > 0 {
+		predicates = append(predicates, codescan.TimeNotIn(i.TimeNotIn...))
+	}
+	if i.TimeGT != nil {
+		predicates = append(predicates, codescan.TimeGT(*i.TimeGT))
+	}
+	if i.TimeGTE != nil {
+		predicates = append(predicates, codescan.TimeGTE(*i.TimeGTE))
+	}
+	if i.TimeLT != nil {
+		predicates = append(predicates, codescan.TimeLT(*i.TimeLT))
+	}
+	if i.TimeLTE != nil {
+		predicates = append(predicates, codescan.TimeLTE(*i.TimeLTE))
 	}
 	if i.ID != nil {
 		predicates = append(predicates, codescan.IDEQ(*i.ID))
@@ -3054,6 +2866,10 @@ type ReleaseWhereInput struct {
 	HasCommit     *bool                  `json:"hasCommit,omitempty"`
 	HasCommitWith []*GitCommitWhereInput `json:"hasCommitWith,omitempty"`
 
+	// "head_of" edge predicates.
+	HasHeadOf     *bool             `json:"hasHeadOf,omitempty"`
+	HasHeadOfWith []*RepoWhereInput `json:"hasHeadOfWith,omitempty"`
+
 	// "log" edge predicates.
 	HasLog     *bool                     `json:"hasLog,omitempty"`
 	HasLogWith []*ReleaseEntryWhereInput `json:"hasLogWith,omitempty"`
@@ -3310,6 +3126,24 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, release.HasCommitWith(with...))
+	}
+	if i.HasHeadOf != nil {
+		p := release.HasHeadOf()
+		if !*i.HasHeadOf {
+			p = release.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasHeadOfWith) > 0 {
+		with := make([]predicate.Repo, 0, len(i.HasHeadOfWith))
+		for _, w := range i.HasHeadOfWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, release.HasHeadOfWith(with...))
 	}
 	if i.HasLog != nil {
 		p := release.HasLog()
@@ -4139,6 +3973,21 @@ type RepoWhereInput struct {
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
 
+	// "default_branch" field predicates.
+	DefaultBranch             *string  `json:"defaultBranch,omitempty"`
+	DefaultBranchNEQ          *string  `json:"defaultBranchNEQ,omitempty"`
+	DefaultBranchIn           []string `json:"defaultBranchIn,omitempty"`
+	DefaultBranchNotIn        []string `json:"defaultBranchNotIn,omitempty"`
+	DefaultBranchGT           *string  `json:"defaultBranchGT,omitempty"`
+	DefaultBranchGTE          *string  `json:"defaultBranchGTE,omitempty"`
+	DefaultBranchLT           *string  `json:"defaultBranchLT,omitempty"`
+	DefaultBranchLTE          *string  `json:"defaultBranchLTE,omitempty"`
+	DefaultBranchContains     *string  `json:"defaultBranchContains,omitempty"`
+	DefaultBranchHasPrefix    *string  `json:"defaultBranchHasPrefix,omitempty"`
+	DefaultBranchHasSuffix    *string  `json:"defaultBranchHasSuffix,omitempty"`
+	DefaultBranchEqualFold    *string  `json:"defaultBranchEqualFold,omitempty"`
+	DefaultBranchContainsFold *string  `json:"defaultBranchContainsFold,omitempty"`
+
 	// "id" field predicates.
 	ID      *int  `json:"id,omitempty"`
 	IDNEQ   *int  `json:"idNEQ,omitempty"`
@@ -4152,6 +4001,10 @@ type RepoWhereInput struct {
 	// "projects" edge predicates.
 	HasProjects     *bool                `json:"hasProjects,omitempty"`
 	HasProjectsWith []*ProjectWhereInput `json:"hasProjectsWith,omitempty"`
+
+	// "head" edge predicates.
+	HasHead     *bool                `json:"hasHead,omitempty"`
+	HasHeadWith []*ReleaseWhereInput `json:"hasHeadWith,omitempty"`
 
 	// "commits" edge predicates.
 	HasCommits     *bool                  `json:"hasCommits,omitempty"`
@@ -4260,6 +4113,45 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, repo.NameContainsFold(*i.NameContainsFold))
 	}
+	if i.DefaultBranch != nil {
+		predicates = append(predicates, repo.DefaultBranchEQ(*i.DefaultBranch))
+	}
+	if i.DefaultBranchNEQ != nil {
+		predicates = append(predicates, repo.DefaultBranchNEQ(*i.DefaultBranchNEQ))
+	}
+	if len(i.DefaultBranchIn) > 0 {
+		predicates = append(predicates, repo.DefaultBranchIn(i.DefaultBranchIn...))
+	}
+	if len(i.DefaultBranchNotIn) > 0 {
+		predicates = append(predicates, repo.DefaultBranchNotIn(i.DefaultBranchNotIn...))
+	}
+	if i.DefaultBranchGT != nil {
+		predicates = append(predicates, repo.DefaultBranchGT(*i.DefaultBranchGT))
+	}
+	if i.DefaultBranchGTE != nil {
+		predicates = append(predicates, repo.DefaultBranchGTE(*i.DefaultBranchGTE))
+	}
+	if i.DefaultBranchLT != nil {
+		predicates = append(predicates, repo.DefaultBranchLT(*i.DefaultBranchLT))
+	}
+	if i.DefaultBranchLTE != nil {
+		predicates = append(predicates, repo.DefaultBranchLTE(*i.DefaultBranchLTE))
+	}
+	if i.DefaultBranchContains != nil {
+		predicates = append(predicates, repo.DefaultBranchContains(*i.DefaultBranchContains))
+	}
+	if i.DefaultBranchHasPrefix != nil {
+		predicates = append(predicates, repo.DefaultBranchHasPrefix(*i.DefaultBranchHasPrefix))
+	}
+	if i.DefaultBranchHasSuffix != nil {
+		predicates = append(predicates, repo.DefaultBranchHasSuffix(*i.DefaultBranchHasSuffix))
+	}
+	if i.DefaultBranchEqualFold != nil {
+		predicates = append(predicates, repo.DefaultBranchEqualFold(*i.DefaultBranchEqualFold))
+	}
+	if i.DefaultBranchContainsFold != nil {
+		predicates = append(predicates, repo.DefaultBranchContainsFold(*i.DefaultBranchContainsFold))
+	}
 	if i.ID != nil {
 		predicates = append(predicates, repo.IDEQ(*i.ID))
 	}
@@ -4302,6 +4194,24 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, repo.HasProjectsWith(with...))
+	}
+	if i.HasHead != nil {
+		p := repo.HasHead()
+		if !*i.HasHead {
+			p = repo.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasHeadWith) > 0 {
+		with := make([]predicate.Release, 0, len(i.HasHeadWith))
+		for _, w := range i.HasHeadWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, repo.HasHeadWith(with...))
 	}
 	if i.HasCommits != nil {
 		p := repo.HasCommits()
@@ -4655,6 +4565,16 @@ type TestRunWhereInput struct {
 	ToolEqualFold    *string  `json:"toolEqualFold,omitempty"`
 	ToolContainsFold *string  `json:"toolContainsFold,omitempty"`
 
+	// "time" field predicates.
+	Time      *time.Time  `json:"time,omitempty"`
+	TimeNEQ   *time.Time  `json:"timeNEQ,omitempty"`
+	TimeIn    []time.Time `json:"timeIn,omitempty"`
+	TimeNotIn []time.Time `json:"timeNotIn,omitempty"`
+	TimeGT    *time.Time  `json:"timeGT,omitempty"`
+	TimeGTE   *time.Time  `json:"timeGTE,omitempty"`
+	TimeLT    *time.Time  `json:"timeLT,omitempty"`
+	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
+
 	// "id" field predicates.
 	ID      *int  `json:"id,omitempty"`
 	IDNEQ   *int  `json:"idNEQ,omitempty"`
@@ -4775,6 +4695,30 @@ func (i *TestRunWhereInput) P() (predicate.TestRun, error) {
 	}
 	if i.ToolContainsFold != nil {
 		predicates = append(predicates, testrun.ToolContainsFold(*i.ToolContainsFold))
+	}
+	if i.Time != nil {
+		predicates = append(predicates, testrun.TimeEQ(*i.Time))
+	}
+	if i.TimeNEQ != nil {
+		predicates = append(predicates, testrun.TimeNEQ(*i.TimeNEQ))
+	}
+	if len(i.TimeIn) > 0 {
+		predicates = append(predicates, testrun.TimeIn(i.TimeIn...))
+	}
+	if len(i.TimeNotIn) > 0 {
+		predicates = append(predicates, testrun.TimeNotIn(i.TimeNotIn...))
+	}
+	if i.TimeGT != nil {
+		predicates = append(predicates, testrun.TimeGT(*i.TimeGT))
+	}
+	if i.TimeGTE != nil {
+		predicates = append(predicates, testrun.TimeGTE(*i.TimeGTE))
+	}
+	if i.TimeLT != nil {
+		predicates = append(predicates, testrun.TimeLT(*i.TimeLT))
+	}
+	if i.TimeLTE != nil {
+		predicates = append(predicates, testrun.TimeLTE(*i.TimeLTE))
 	}
 	if i.ID != nil {
 		predicates = append(predicates, testrun.IDEQ(*i.ID))

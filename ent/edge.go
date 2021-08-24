@@ -188,6 +188,14 @@ func (r *Release) Commit(ctx context.Context) (*GitCommit, error) {
 	return result, err
 }
 
+func (r *Release) HeadOf(ctx context.Context) (*Repo, error) {
+	result, err := r.Edges.HeadOfOrErr()
+	if IsNotLoaded(err) {
+		result, err = r.QueryHeadOf().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (r *Release) Log(ctx context.Context) ([]*ReleaseEntry, error) {
 	result, err := r.Edges.LogOrErr()
 	if IsNotLoaded(err) {
@@ -354,6 +362,14 @@ func (r *Repo) Projects(ctx context.Context) ([]*Project, error) {
 		result, err = r.QueryProjects().All(ctx)
 	}
 	return result, err
+}
+
+func (r *Repo) Head(ctx context.Context) (*Release, error) {
+	result, err := r.Edges.HeadOrErr()
+	if IsNotLoaded(err) {
+		result, err = r.QueryHead().Only(ctx)
+	}
+	return result, MaskNotFound(err)
 }
 
 func (r *Repo) Commits(ctx context.Context) ([]*GitCommit, error) {

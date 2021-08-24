@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -27,6 +28,20 @@ type CodeScanCreate struct {
 // SetTool sets the "tool" field.
 func (csc *CodeScanCreate) SetTool(s string) *CodeScanCreate {
 	csc.mutation.SetTool(s)
+	return csc
+}
+
+// SetTime sets the "time" field.
+func (csc *CodeScanCreate) SetTime(t time.Time) *CodeScanCreate {
+	csc.mutation.SetTime(t)
+	return csc
+}
+
+// SetNillableTime sets the "time" field if the given value is not nil.
+func (csc *CodeScanCreate) SetNillableTime(t *time.Time) *CodeScanCreate {
+	if t != nil {
+		csc.SetTime(*t)
+	}
 	return csc
 }
 
@@ -116,6 +131,9 @@ func (csc *CodeScanCreate) Save(ctx context.Context) (*CodeScan, error) {
 		err  error
 		node *CodeScan
 	)
+	if err := csc.defaults(); err != nil {
+		return nil, err
+	}
 	if len(csc.hooks) == 0 {
 		if err = csc.check(); err != nil {
 			return nil, err
@@ -173,6 +191,18 @@ func (csc *CodeScanCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (csc *CodeScanCreate) defaults() error {
+	if _, ok := csc.mutation.Time(); !ok {
+		if codescan.DefaultTime == nil {
+			return fmt.Errorf("ent: uninitialized codescan.DefaultTime (forgotten import ent/runtime?)")
+		}
+		v := codescan.DefaultTime()
+		csc.mutation.SetTime(v)
+	}
+	return nil
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (csc *CodeScanCreate) check() error {
 	if _, ok := csc.mutation.Tool(); !ok {
@@ -182,6 +212,9 @@ func (csc *CodeScanCreate) check() error {
 		if err := codescan.ToolValidator(v); err != nil {
 			return &ValidationError{Name: "tool", err: fmt.Errorf(`ent: validator failed for field "tool": %w`, err)}
 		}
+	}
+	if _, ok := csc.mutation.Time(); !ok {
+		return &ValidationError{Name: "time", err: errors.New(`ent: missing required field "time"`)}
 	}
 	if _, ok := csc.mutation.ReleaseID(); !ok {
 		return &ValidationError{Name: "release", err: errors.New("ent: missing required edge \"release\"")}
@@ -220,6 +253,14 @@ func (csc *CodeScanCreate) createSpec() (*CodeScan, *sqlgraph.CreateSpec) {
 			Column: codescan.FieldTool,
 		})
 		_node.Tool = value
+	}
+	if value, ok := csc.mutation.Time(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: codescan.FieldTime,
+		})
+		_node.Time = value
 	}
 	if nodes := csc.mutation.ReleaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -335,6 +376,7 @@ func (cscb *CodeScanCreateBulk) Save(ctx context.Context) ([]*CodeScan, error) {
 	for i := range cscb.builders {
 		func(i int, root context.Context) {
 			builder := cscb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*CodeScanMutation)
 				if !ok {

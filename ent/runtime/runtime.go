@@ -50,6 +50,10 @@ func init() {
 	artifactDescSha256 := artifactFields[1].Descriptor()
 	// artifact.Sha256Validator is a validator for the "sha256" field. It is called by the builders before save.
 	artifact.Sha256Validator = artifactDescSha256.Validators[0].(func(string) error)
+	// artifactDescTime is the schema descriptor for time field.
+	artifactDescTime := artifactFields[3].Descriptor()
+	// artifact.DefaultTime holds the default value on creation for the time field.
+	artifact.DefaultTime = artifactDescTime.Default.(func() time.Time)
 	cweFields := schema.CWE{}.Fields()
 	_ = cweFields
 	// cweDescCweID is the schema descriptor for cwe_id field.
@@ -74,6 +78,10 @@ func init() {
 	codescanDescTool := codescanFields[0].Descriptor()
 	// codescan.ToolValidator is a validator for the "tool" field. It is called by the builders before save.
 	codescan.ToolValidator = codescanDescTool.Validators[0].(func(string) error)
+	// codescanDescTime is the schema descriptor for time field.
+	codescanDescTime := codescanFields[1].Descriptor()
+	// codescan.DefaultTime holds the default value on creation for the time field.
+	codescan.DefaultTime = codescanDescTime.Default.(func() time.Time)
 	componentFields := schema.Component{}.Fields()
 	_ = componentFields
 	// componentDescName is the schema descriptor for name field.
@@ -118,6 +126,8 @@ func init() {
 	projectDescName := projectFields[0].Descriptor()
 	// project.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	project.NameValidator = projectDescName.Validators[0].(func(string) error)
+	releaseHooks := schema.Release{}.Hooks()
+	release.Hooks[0] = releaseHooks[0]
 	releaseFields := schema.Release{}.Fields()
 	_ = releaseFields
 	// releaseDescName is the schema descriptor for name field.
@@ -142,6 +152,12 @@ func init() {
 	repoDescName := repoFields[0].Descriptor()
 	// repo.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	repo.NameValidator = repoDescName.Validators[0].(func(string) error)
+	// repoDescDefaultBranch is the schema descriptor for default_branch field.
+	repoDescDefaultBranch := repoFields[1].Descriptor()
+	// repo.DefaultDefaultBranch holds the default value on creation for the default_branch field.
+	repo.DefaultDefaultBranch = repoDescDefaultBranch.Default.(string)
+	// repo.DefaultBranchValidator is a validator for the "default_branch" field. It is called by the builders before save.
+	repo.DefaultBranchValidator = repoDescDefaultBranch.Validators[0].(func(string) error)
 	testcaseFields := schema.TestCase{}.Fields()
 	_ = testcaseFields
 	// testcaseDescName is the schema descriptor for name field.
@@ -166,6 +182,10 @@ func init() {
 	testrunDescTool := testrunFields[0].Descriptor()
 	// testrun.ToolValidator is a validator for the "tool" field. It is called by the builders before save.
 	testrun.ToolValidator = testrunDescTool.Validators[0].(func(string) error)
+	// testrunDescTime is the schema descriptor for time field.
+	testrunDescTime := testrunFields[1].Descriptor()
+	// testrun.DefaultTime holds the default value on creation for the time field.
+	testrun.DefaultTime = testrunDescTime.Default.(func() time.Time)
 	vulnerabilityHooks := schema.Vulnerability{}.Hooks()
 	vulnerability.Hooks[0] = vulnerabilityHooks[0]
 	vulnerabilityFields := schema.Vulnerability{}.Fields()

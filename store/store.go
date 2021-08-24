@@ -5,12 +5,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
 	"time"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor"
+	"github.com/go-playground/validator/v10"
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/codeissue"
@@ -68,16 +71,35 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 		return nil, fmt.Errorf("failed creating schema resources: %w", err)
 	}
 
+	validate := validator.New()
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		// If the struct field is another struct embedded, then check if there
+		// is an alias tag attached so that we can get a nicer name than the
+		// horrible struct names, e.g. MyTypeModelCreate `alias:"type"`
+		if name == "" && fld.Anonymous {
+			return strings.SplitN(fld.Tag.Get("alias"), ",", 2)[0]
+		}
+
+		if name == "-" {
+			return ""
+		}
+
+		return name
+	})
+
 	return &Store{
-		client: client,
-		ctx:    context.Background(),
+		client:    client,
+		ctx:       context.Background(),
+		validator: validate,
 	}, nil
 }
 
 type (
 	Store struct {
-		client *ent.Client
-		ctx    context.Context
+		client    *ent.Client
+		ctx       context.Context
+		validator *validator.Validate
 	}
 )
 

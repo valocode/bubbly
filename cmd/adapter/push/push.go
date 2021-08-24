@@ -49,7 +49,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			}
 			fmt.Println("results_type: ", *model.ResultsType)
 			if err := client.SaveAdapter(bCtx, &api.AdapterSaveRequest{
-				AdapterModel: model,
+				Adapter: model,
 			}); err != nil {
 				return err
 			}

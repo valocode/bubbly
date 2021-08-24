@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -29,20 +28,6 @@ type ReleaseEntryUpdate struct {
 // Where appends a list predicates to the ReleaseEntryUpdate builder.
 func (reu *ReleaseEntryUpdate) Where(ps ...predicate.ReleaseEntry) *ReleaseEntryUpdate {
 	reu.mutation.Where(ps...)
-	return reu
-}
-
-// SetTime sets the "time" field.
-func (reu *ReleaseEntryUpdate) SetTime(t time.Time) *ReleaseEntryUpdate {
-	reu.mutation.SetTime(t)
-	return reu
-}
-
-// SetNillableTime sets the "time" field if the given value is not nil.
-func (reu *ReleaseEntryUpdate) SetNillableTime(t *time.Time) *ReleaseEntryUpdate {
-	if t != nil {
-		reu.SetTime(*t)
-	}
 	return reu
 }
 
@@ -229,13 +214,6 @@ func (reu *ReleaseEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := reu.mutation.Time(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: releaseentry.FieldTime,
-		})
-	}
 	if reu.mutation.ArtifactCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
@@ -393,20 +371,6 @@ type ReleaseEntryUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *ReleaseEntryMutation
-}
-
-// SetTime sets the "time" field.
-func (reuo *ReleaseEntryUpdateOne) SetTime(t time.Time) *ReleaseEntryUpdateOne {
-	reuo.mutation.SetTime(t)
-	return reuo
-}
-
-// SetNillableTime sets the "time" field if the given value is not nil.
-func (reuo *ReleaseEntryUpdateOne) SetNillableTime(t *time.Time) *ReleaseEntryUpdateOne {
-	if t != nil {
-		reuo.SetTime(*t)
-	}
-	return reuo
 }
 
 // SetArtifactID sets the "artifact" edge to the Artifact entity by ID.
@@ -615,13 +579,6 @@ func (reuo *ReleaseEntryUpdateOne) sqlSave(ctx context.Context) (_node *ReleaseE
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := reuo.mutation.Time(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: releaseentry.FieldTime,
-		})
 	}
 	if reuo.mutation.ArtifactCleared() {
 		edge := &sqlgraph.EdgeSpec{

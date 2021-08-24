@@ -49,24 +49,24 @@ const (
 // Default configuration for the bubbly client config
 const (
 	DefaultClientAuthToken = ""
-	DefaultBubblyAddr      = "http://localhost:8111/api/v1"
+	DefaultBubblyAddr      = "http://localhost:8111"
 	DefaultNATSAddr        = "localhost:4223"
 )
 
-// defaultEnvStr reads a string value from the environment and falls back to the
+// DefaultEnvStr reads a string value from the environment and falls back to the
 // default value if not provided.
-func defaultEnvStr(key, defaultValue string) string {
+func DefaultEnvStr(key, defaultValue string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
 	return defaultValue
 }
 
-// defaultEnvBool reads a boolean value from the environment and falls back to the
+// DefaultEnvBool reads a boolean value from the environment and falls back to the
 // default value if not provided.
-func defaultEnvBool(key string, defaultValue bool) bool {
+func DefaultEnvBool(key string, defaultValue bool) bool {
 	if value, ok := os.LookupEnv(key); ok {
-		val, _ := strconv.ParseBool(defaultEnvStr(key, value))
+		val, _ := strconv.ParseBool(DefaultEnvStr(key, value))
 		return val
 	}
 	return defaultValue
@@ -76,8 +76,8 @@ func defaultEnvBool(key string, defaultValue bool) bool {
 // or, preferentially, from provided environment variables.
 func DefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
-		Host: defaultEnvStr("BUBBLY_HOST", DefaultServerHost),
-		Port: defaultEnvStr("BUBBLY_PORT", DefaultServerPort),
+		Host: DefaultEnvStr("BUBBLY_HOST", DefaultServerHost),
+		Port: DefaultEnvStr("BUBBLY_PORT", DefaultServerPort),
 	}
 }
 
@@ -86,17 +86,17 @@ func DefaultServerConfig() *ServerConfig {
 func DefaultStoreConfig() *StoreConfig {
 	return &StoreConfig{
 		// Default provider
-		Provider: Provider(defaultEnvStr("BUBBLY_STORE", DefaultStoreProvider)),
+		Provider: Provider(DefaultEnvStr("BUBBLY_STORE", DefaultStoreProvider)),
 		// Default configuration for Postgres
-		PostgresAddr:     defaultEnvStr("POSTGRES_ADDR", DefaultPostgresAddr),
-		PostgresUser:     defaultEnvStr("POSTGRES_USER", DefaultPostgresUser),
-		PostgresPassword: defaultEnvStr("POSTGRES_PASSWORD", DefaultPostgresPassword),
-		PostgresDatabase: defaultEnvStr("POSTGRES_DATABASE", DefaultPostgresDatabase),
+		PostgresAddr:     DefaultEnvStr("POSTGRES_ADDR", DefaultPostgresAddr),
+		PostgresUser:     DefaultEnvStr("POSTGRES_USER", DefaultPostgresUser),
+		PostgresPassword: DefaultEnvStr("POSTGRES_PASSWORD", DefaultPostgresPassword),
+		PostgresDatabase: DefaultEnvStr("POSTGRES_DATABASE", DefaultPostgresDatabase),
 		// Default configuration for CockroachDB
-		CockroachAddr:     defaultEnvStr("COCKROACH_ADDR", defaultCockroachAddr),
-		CockroachUser:     defaultEnvStr("COCKROACH_USER", defaultCockroachUser),
-		CockroachPassword: defaultEnvStr("COCKROACH_PASSWORD", defaultCockroachPassword),
-		CockroachDatabase: defaultEnvStr("COCKROACH_DATABASE", defaultCockroachDatabase),
+		CockroachAddr:     DefaultEnvStr("COCKROACH_ADDR", defaultCockroachAddr),
+		CockroachUser:     DefaultEnvStr("COCKROACH_USER", defaultCockroachUser),
+		CockroachPassword: DefaultEnvStr("COCKROACH_PASSWORD", defaultCockroachPassword),
+		CockroachDatabase: DefaultEnvStr("COCKROACH_DATABASE", defaultCockroachDatabase),
 
 		// Default retry configs, so retry every 1 second up to 5 times
 		RetrySleep:    DefaultRetrySleep,
@@ -112,10 +112,10 @@ func DefaultStoreConfig() *StoreConfig {
 // or, preferentially, from provided environment variables.
 func DefaultNATSServerConfig() *NATSServerConfig {
 	httpPort, _ := strconv.Atoi(
-		defaultEnvStr("NATS_HTTP_PORT", DefaultNATSServerHTTPPort),
+		DefaultEnvStr("NATS_HTTP_PORT", DefaultNATSServerHTTPPort),
 	)
 	port, _ := strconv.Atoi(
-		defaultEnvStr("NATS_PORT", DefaultNATSServerPort),
+		DefaultEnvStr("NATS_PORT", DefaultNATSServerPort),
 	)
 	return &NATSServerConfig{
 		HTTPPort: httpPort,
@@ -129,8 +129,8 @@ func DefaultNATSServerConfig() *NATSServerConfig {
 
 func DefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
-		AuthToken:  defaultEnvStr("BUBBLY_TOKEN", DefaultClientAuthToken),
-		BubblyAddr: defaultEnvStr("BUBBLY_ADDR", DefaultBubblyAddr),
+		AuthToken:  DefaultEnvStr("BUBBLY_TOKEN", DefaultClientAuthToken),
+		BubblyAddr: DefaultEnvStr("BUBBLY_ADDR", DefaultBubblyAddr),
 	}
 }
 
@@ -140,6 +140,6 @@ func DefaultClientConfig() *ClientConfig {
 
 func DefaultCLIConfig() *CLIConfig {
 	return &CLIConfig{
-		NoColor: defaultEnvBool("NO_COLOR", DefaultCLINoColorToggle),
+		NoColor: DefaultEnvBool("NO_COLOR", DefaultCLINoColorToggle),
 	}
 }

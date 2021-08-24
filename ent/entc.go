@@ -9,17 +9,18 @@ import (
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
 
+	"github.com/valocode/bubbly/ent/extensions/entfilter"
 	"github.com/valocode/bubbly/ent/extensions/entmodel"
 	"github.com/valocode/bubbly/ent/extensions/entts"
 )
 
 func main() {
-	var templates []*gen.Template
-	templates = append(
-		templates,
-		gen.MustParse(gen.NewTemplate("static").
-			ParseDir("templates")),
-	)
+	// var templates []*gen.Template
+	// templates = append(
+	// 	templates,
+	// 	gen.MustParse(gen.NewTemplate("static").
+	// 		ParseDir("templates")),
+	// )
 
 	ex, err := entgql.NewExtension(
 		entgql.WithSchemaPath("../gql/ent.graphql"),
@@ -41,10 +42,11 @@ func main() {
 				// gen.FeaturePrivacy,
 				// gen.FeatureUpsert,
 			},
-			Templates: templates,
+			// Templates: templates,
 		},
 		entc.Extensions(
 			ex,
+			entfilter.NewExtension(),
 			entmodel.NewExtension(),
 			entts.NewExtension(),
 		),

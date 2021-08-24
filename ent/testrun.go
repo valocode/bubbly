@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/release"
@@ -19,6 +20,8 @@ type TestRun struct {
 	ID int `json:"id,omitempty"`
 	// Tool holds the value of the "tool" field.
 	Tool string `json:"tool,omitempty"`
+	// Time holds the value of the "time" field.
+	Time time.Time `json:"time,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the TestRunQuery when eager-loading is set.
 	Edges                  TestRunEdges `json:"edges"`
@@ -85,6 +88,8 @@ func (*TestRun) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case testrun.FieldTool:
 			values[i] = new(sql.NullString)
+		case testrun.FieldTime:
+			values[i] = new(sql.NullTime)
 		case testrun.ForeignKeys[0]: // release_entry_test_run
 			values[i] = new(sql.NullInt64)
 		case testrun.ForeignKeys[1]: // test_run_release
@@ -115,6 +120,12 @@ func (tr *TestRun) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field tool", values[i])
 			} else if value.Valid {
 				tr.Tool = value.String
+			}
+		case testrun.FieldTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field time", values[i])
+			} else if value.Valid {
+				tr.Time = value.Time
 			}
 		case testrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -175,6 +186,8 @@ func (tr *TestRun) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v", tr.ID))
 	builder.WriteString(", tool=")
 	builder.WriteString(tr.Tool)
+	builder.WriteString(", time=")
+	builder.WriteString(tr.Time.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

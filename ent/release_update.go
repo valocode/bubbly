@@ -18,6 +18,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
+	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -100,6 +101,25 @@ func (ru *ReleaseUpdate) SetCommitID(id int) *ReleaseUpdate {
 // SetCommit sets the "commit" edge to the GitCommit entity.
 func (ru *ReleaseUpdate) SetCommit(g *GitCommit) *ReleaseUpdate {
 	return ru.SetCommitID(g.ID)
+}
+
+// SetHeadOfID sets the "head_of" edge to the Repo entity by ID.
+func (ru *ReleaseUpdate) SetHeadOfID(id int) *ReleaseUpdate {
+	ru.mutation.SetHeadOfID(id)
+	return ru
+}
+
+// SetNillableHeadOfID sets the "head_of" edge to the Repo entity by ID if the given value is not nil.
+func (ru *ReleaseUpdate) SetNillableHeadOfID(id *int) *ReleaseUpdate {
+	if id != nil {
+		ru = ru.SetHeadOfID(*id)
+	}
+	return ru
+}
+
+// SetHeadOf sets the "head_of" edge to the Repo entity.
+func (ru *ReleaseUpdate) SetHeadOf(r *Repo) *ReleaseUpdate {
+	return ru.SetHeadOfID(r.ID)
 }
 
 // AddLogIDs adds the "log" edge to the ReleaseEntry entity by IDs.
@@ -257,6 +277,12 @@ func (ru *ReleaseUpdate) RemoveDependencies(r ...*Release) *ReleaseUpdate {
 // ClearCommit clears the "commit" edge to the GitCommit entity.
 func (ru *ReleaseUpdate) ClearCommit() *ReleaseUpdate {
 	ru.mutation.ClearCommit()
+	return ru
+}
+
+// ClearHeadOf clears the "head_of" edge to the Repo entity.
+func (ru *ReleaseUpdate) ClearHeadOf() *ReleaseUpdate {
+	ru.mutation.ClearHeadOf()
 	return ru
 }
 
@@ -664,6 +690,41 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: gitcommit.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ru.mutation.HeadOfCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   release.HeadOfTable,
+			Columns: []string{release.HeadOfColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: repo.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.HeadOfIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   release.HeadOfTable,
+			Columns: []string{release.HeadOfColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: repo.FieldID,
 				},
 			},
 		}
@@ -1136,6 +1197,25 @@ func (ruo *ReleaseUpdateOne) SetCommit(g *GitCommit) *ReleaseUpdateOne {
 	return ruo.SetCommitID(g.ID)
 }
 
+// SetHeadOfID sets the "head_of" edge to the Repo entity by ID.
+func (ruo *ReleaseUpdateOne) SetHeadOfID(id int) *ReleaseUpdateOne {
+	ruo.mutation.SetHeadOfID(id)
+	return ruo
+}
+
+// SetNillableHeadOfID sets the "head_of" edge to the Repo entity by ID if the given value is not nil.
+func (ruo *ReleaseUpdateOne) SetNillableHeadOfID(id *int) *ReleaseUpdateOne {
+	if id != nil {
+		ruo = ruo.SetHeadOfID(*id)
+	}
+	return ruo
+}
+
+// SetHeadOf sets the "head_of" edge to the Repo entity.
+func (ruo *ReleaseUpdateOne) SetHeadOf(r *Repo) *ReleaseUpdateOne {
+	return ruo.SetHeadOfID(r.ID)
+}
+
 // AddLogIDs adds the "log" edge to the ReleaseEntry entity by IDs.
 func (ruo *ReleaseUpdateOne) AddLogIDs(ids ...int) *ReleaseUpdateOne {
 	ruo.mutation.AddLogIDs(ids...)
@@ -1291,6 +1371,12 @@ func (ruo *ReleaseUpdateOne) RemoveDependencies(r ...*Release) *ReleaseUpdateOne
 // ClearCommit clears the "commit" edge to the GitCommit entity.
 func (ruo *ReleaseUpdateOne) ClearCommit() *ReleaseUpdateOne {
 	ruo.mutation.ClearCommit()
+	return ruo
+}
+
+// ClearHeadOf clears the "head_of" edge to the Repo entity.
+func (ruo *ReleaseUpdateOne) ClearHeadOf() *ReleaseUpdateOne {
+	ruo.mutation.ClearHeadOf()
 	return ruo
 }
 
@@ -1722,6 +1808,41 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: gitcommit.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.HeadOfCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   release.HeadOfTable,
+			Columns: []string{release.HeadOfColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: repo.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.HeadOfIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   release.HeadOfTable,
+			Columns: []string{release.HeadOfColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: repo.FieldID,
 				},
 			},
 		}

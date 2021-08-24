@@ -55,28 +55,25 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			fmt.Println("")
 			fmt.Println("Populating the store with dummy data...")
 
-			// if !skipAll {
-			// 	if !skipCVE {
-			// 		fmt.Println("Fetching CVEs from NVD... This will take a few seconds...")
-			// 		if err := test.SaveCVEData(client); err != nil {
-			// 			log.Fatal("loading CVEs: ", err)
-			// 		}
-			// 		fmt.Println("Done!")
-			// 		fmt.Println("")
-			// 	}
-			// 	if !skipSPDX {
-			// 		fmt.Println("Fetching SPDX licenses from GitHub...")
-			// 		if err := test.SaveSPDXData(client); err != nil {
-			// 			log.Fatal("loading SPDX: ", err)
-			// 		}
-			// 		fmt.Println("Done!")
-			// 		fmt.Println("")
-
-			// 	}
-
 			fmt.Println("Creating dummy releases...")
-			if err := test.CreateDummyData(store); err != nil {
-				log.Fatal("creating dummy data: ", err)
+			data := test.CreateDummyData()
+
+			for _, repos := range data {
+				for _, release := range repos.Releases {
+					if _, err := store.CreateRelease(release.Release); err != nil {
+						log.Fatalf("creating release %s: %s", *release.Release.Release.Name, err.Error())
+					}
+					for _, scan := range release.CodeScans {
+						if _, err := store.SaveCodeScan(scan); err != nil {
+							log.Fatalf("saving code scan: %s", err.Error())
+						}
+					}
+					for _, run := range release.TestRuns {
+						if _, err := store.SaveTestRun(run); err != nil {
+							log.Fatalf("saving test run: %s", err.Error())
+						}
+					}
+				}
 			}
 			fmt.Println("Done!")
 			fmt.Println("")
@@ -89,7 +86,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			fmt.Println("")
 
 			fmt.Printf("Starting HTTP server on %s:%s\n", bCtx.ServerConfig.Host, bCtx.ServerConfig.Port)
-			if err := server.ListenAndServe(bCtx, store); err != nil {
+			if err := server.NewWithStore(bCtx, store).Start(); err != nil {
 				return err
 			}
 			return nil

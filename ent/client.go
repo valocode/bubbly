@@ -1605,6 +1605,22 @@ func (c *ReleaseClient) QueryCommit(r *Release) *GitCommitQuery {
 	return query
 }
 
+// QueryHeadOf queries the head_of edge of a Release.
+func (c *ReleaseClient) QueryHeadOf(r *Release) *RepoQuery {
+	query := &RepoQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, id),
+			sqlgraph.To(repo.Table, repo.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, release.HeadOfTable, release.HeadOfColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryLog queries the log edge of a Release.
 func (c *ReleaseClient) QueryLog(r *Release) *ReleaseEntryQuery {
 	query := &ReleaseEntryQuery{config: c.config}
@@ -1719,7 +1735,8 @@ func (c *ReleaseClient) QueryVulnerabilityReviews(r *Release) *VulnerabilityRevi
 
 // Hooks returns the client hooks.
 func (c *ReleaseClient) Hooks() []Hook {
-	return c.hooks.Release
+	hooks := c.hooks.Release
+	return append(hooks[:len(hooks):len(hooks)], release.Hooks[:]...)
 }
 
 // ReleaseComponentClient is a client for the ReleaseComponent schema.
@@ -2295,6 +2312,22 @@ func (c *RepoClient) QueryProjects(r *Repo) *ProjectQuery {
 			sqlgraph.From(repo.Table, repo.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, repo.ProjectsTable, repo.ProjectsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryHead queries the head edge of a Repo.
+func (c *RepoClient) QueryHead(r *Repo) *ReleaseQuery {
+	query := &ReleaseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repo.Table, repo.FieldID, id),
+			sqlgraph.To(release.Table, release.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, repo.HeadTable, repo.HeadColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil

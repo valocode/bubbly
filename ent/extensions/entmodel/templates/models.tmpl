@@ -1,76 +1,101 @@
 {{/* gotype: entgo.io/ent/entc/gen.Graph */}}
 
-{{ define "model/models" }}
-{{- with extend $ "Package" "model" -}}
-    {{ template "header" . }}
-{{ end }}
+{{ define "models" }}
 {{ $pkg := base $.Config.Package }}
+{{- with extend $ "Package" $pkg }}
+        {{ template "header" . }}
+{{- end }}
 
 {{ range $n := filterModelNodes $.Nodes }}
     {{ $receiver := $n.Receiver }}
-    type  {{ $n.Name }}HCL struct {
-        {{- range $f := $n.Fields }}
-            {{- if $f.Optional }}
-                {{ $f.StructField }} *{{ $f.Type }} `hcl:"{{ $f.Name }},optional"`
-            {{- else }}
-                {{ $f.StructField }} {{ $f.Type }} `hcl:"{{ $f.Name }},attr"`
-            {{- end }}
-        {{- end }}
-    }
-    func ({{ $receiver }} {{ $n.Name }}HCL) Model() {{ $n.Name }}Model {
-        return {{ $n.Name }}Model{
-            {{- range $f := $n.Fields }}
-                {{- if $f.Optional }}
-                    {{ $f.StructField }}: {{ $receiver }}.{{ $f.StructField }},
-                {{- else }}
-                    {{ $f.StructField }}: &{{ $receiver }}.{{ $f.StructField }},
-                {{- end }}
-            {{- end }}
-        }
-    }
     
-    type  {{ $n.Name }}Model struct {
-        {{- range $f := fieldsAndID $n }}
-            {{ $f.StructField }} *{{ $f.Type }} `json:"{{ $f.Name }},omitempty" hcl:"{{ $f.Name }},optional"`
+    type  {{ $n.Name }}ModelCreate struct {
+        {{- range $f := fieldsModelCreate $n }}
+        {{- $tag := fieldTag $f }}
+            {{ $f.StructField }} *{{ $f.Type }} `{{ $tag }}`
         {{- end }}
     }
 
-    func New{{ $n.Name }}Model() *{{ $n.Name }}Model {
-        return &{{ $n.Name }}Model{}
+    func New{{ $n.Name }}ModelCreate() *{{ $n.Name }}ModelCreate {
+        return &{{ $n.Name }}ModelCreate{}
     }
 
-    func ({{ $receiver }} *{{ $n.Name }}Model) SetMutatorFields(mutator *ent.{{ $n.MutationName }}) {
+    {{/*
+    func ({{ $receiver }} *{{ $n.Name }}ModelCreate) SetMutatorFields(mutator *ent.{{ $n.MutationName }}) {
         {{- range $f := $n.Fields }}
             if {{ $receiver }}.{{ $f.StructField }} != nil {
                 mutator.{{ $f.MutationSet }}(*{{ $receiver }}.{{ $f.StructField }})
             }
         {{- end }}
     }
+    */}}
 
-    {{- range $f := fieldsAndID $n }}
-        func ({{ $receiver }} *{{ $n.Name }}Model) Get{{ $f.StructField }}OrErr(vErr error) *{{ $f.Type.String }} {
-            if {{ $receiver }}.{{ $f.StructField }} == nil {
-                vErr = multierror.Append(vErr, errors.New(`"{{ $f.Name }}" is required for {{ $n.Table }}`))
-                return nil
-            }
-            return {{ $receiver }}.{{ $f.StructField }}
-        }
-
-        func ({{ $receiver }} *{{ $n.Name }}Model) Set{{ $f.StructField }}(value {{ $f.Type.String }}) *{{ $n.Name }}Model {
+    {{- range $f := fieldsModelCreate $n }}
+        func ({{ $receiver }} *{{ $n.Name }}ModelCreate) Set{{ $f.StructField }}(value {{ $f.Type.String }}) *{{ $n.Name }}ModelCreate {
             {{ $receiver }}.{{ $f.StructField }} = &value
             return {{ $receiver }}
         }
     {{- end }}
 
-    func ({{ $receiver }} *{{ $n.Name }}Model) Validate() error {
-        {{- range $f := $n.Fields }}
-            {{- if not $f.Optional}}
-                if {{ $receiver }}.{{ $f.StructField }} == nil {
-                    return errors.New("field \"{{ $f.Name }}\" is required for type \"{{ $n.Table }}\"")
-                }    
-            {{- end }}
+    func ({{ $receiver }} *{{ $n.CreateName }}) SetModelCreate(model *{{ $n.Name }}ModelCreate) *{{ $n.CreateName }} {
+        {{ $receiver }}.mutation.SetModelCreate(model)
+        return {{ $receiver }}
+    }
+
+    func ({{ $receiver }} *{{ $n.UpdateOneName }}) SetModelCreate(model *{{ $n.Name }}ModelCreate) *{{ $n.UpdateOneName }} {
+        {{ $receiver }}.mutation.SetModelCreate(model)
+        return {{ $receiver }}
+    }
+
+    func ({{ $receiver }} *{{ $n.MutationName }}) SetModelCreate(model *{{ $n.Name }}ModelCreate) *{{ $n.MutationName }} {
+        {{- range $f := fieldsModelCreate $n }}
+            if model.{{ $f.StructField }} != nil {
+                {{ $receiver }}.{{ $f.MutationSet }}(*model.{{ $f.StructField }})
+            }
         {{- end }}
-        return nil
+        return {{ $receiver }}
+    }
+    
+    {{/*
+    func (a *AdapterQuery) WhereUnique(model *AdapterModelCreate) *AdapterQuery {
+        if model.Name != nil {
+            a.Where(adapter.Name(*model.Name))
+        }
+        // ... for other fields...
+        return a
+    }
+    */}}
+
+    type  {{ $n.Name }}ModelRead struct {
+        {{- range $f := fieldsModelRead $n }}
+        {{- $tag := fieldTag $f }}
+            {{ $f.StructField }} *{{ $f.Type }} `{{ $tag }}`
+        {{- end }}
+    }
+
+    func New{{ $n.Name }}ModelRead() *{{ $n.Name }}ModelRead {
+        return &{{ $n.Name }}ModelRead{}
+    }
+
+    func ({{ $receiver }} *{{ $n.Name }}ModelRead) FromEnt(value *{{ $n.Name }}) *{{ $n.Name }}ModelRead {
+        {{- range $f := fieldsModelRead $n }}
+            {{ $receiver}}.{{ $f.StructField }} = &value.{{ $f.StructField }}
+        {{- end }}
+        return {{ $receiver }}
+    }
+
+    type  {{ $n.Name }}ModelUpdate struct {
+        {{- $tag := fieldTag $n.ID }}
+        {{ $n.ID.StructField }} *{{ $n.ID.Type }} `{{ $tag }}`
+    }
+
+    func New{{ $n.Name }}ModelUpdate() *{{ $n.Name }}ModelUpdate {
+        return &{{ $n.Name }}ModelUpdate{}
+    }
+
+    func ({{ $receiver }} *{{ $n.Name }}ModelUpdate) Set{{ $n.ID.StructField }}(value {{ $n.ID.Type.String }}) *{{ $n.Name }}ModelUpdate {
+        {{ $receiver }}.{{ $n.ID.StructField }} = &value
+        return {{ $receiver }}
     }
 {{ end }}
 

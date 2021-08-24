@@ -150,6 +150,9 @@ func (ac *AdapterCreate) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "type": %w`, err)}
 		}
 	}
+	if _, ok := ac.mutation.Operation(); !ok {
+		return &ValidationError{Name: "operation", err: errors.New(`ent: missing required field "operation"`)}
+	}
 	if _, ok := ac.mutation.ResultsType(); !ok {
 		return &ValidationError{Name: "results_type", err: errors.New(`ent: missing required field "results_type"`)}
 	}

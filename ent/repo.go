@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/repo"
 )
 
@@ -17,6 +18,8 @@ type Repo struct {
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// DefaultBranch holds the value of the "default_branch" field.
+	DefaultBranch string `json:"default_branch,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepoQuery when eager-loading is set.
 	Edges RepoEdges `json:"edges"`
@@ -26,13 +29,15 @@ type Repo struct {
 type RepoEdges struct {
 	// Projects holds the value of the projects edge.
 	Projects []*Project `json:"projects,omitempty"`
+	// Head holds the value of the head edge.
+	Head *Release `json:"head,omitempty"`
 	// Commits holds the value of the commits edge.
 	Commits []*GitCommit `json:"commits,omitempty"`
 	// VulnerabilityReviews holds the value of the vulnerability_reviews edge.
 	VulnerabilityReviews []*VulnerabilityReview `json:"vulnerability_reviews,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // ProjectsOrErr returns the Projects value or an error if the edge
@@ -44,10 +49,24 @@ func (e RepoEdges) ProjectsOrErr() ([]*Project, error) {
 	return nil, &NotLoadedError{edge: "projects"}
 }
 
+// HeadOrErr returns the Head value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RepoEdges) HeadOrErr() (*Release, error) {
+	if e.loadedTypes[1] {
+		if e.Head == nil {
+			// The edge head was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: release.Label}
+		}
+		return e.Head, nil
+	}
+	return nil, &NotLoadedError{edge: "head"}
+}
+
 // CommitsOrErr returns the Commits value or an error if the edge
 // was not loaded in eager-loading.
 func (e RepoEdges) CommitsOrErr() ([]*GitCommit, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Commits, nil
 	}
 	return nil, &NotLoadedError{edge: "commits"}
@@ -56,7 +75,7 @@ func (e RepoEdges) CommitsOrErr() ([]*GitCommit, error) {
 // VulnerabilityReviewsOrErr returns the VulnerabilityReviews value or an error if the edge
 // was not loaded in eager-loading.
 func (e RepoEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.VulnerabilityReviews, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
@@ -69,7 +88,7 @@ func (*Repo) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case repo.FieldID:
 			values[i] = new(sql.NullInt64)
-		case repo.FieldName:
+		case repo.FieldName, repo.FieldDefaultBranch:
 			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Repo", columns[i])
@@ -98,6 +117,12 @@ func (r *Repo) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				r.Name = value.String
 			}
+		case repo.FieldDefaultBranch:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field default_branch", values[i])
+			} else if value.Valid {
+				r.DefaultBranch = value.String
+			}
 		}
 	}
 	return nil
@@ -106,6 +131,11 @@ func (r *Repo) assignValues(columns []string, values []interface{}) error {
 // QueryProjects queries the "projects" edge of the Repo entity.
 func (r *Repo) QueryProjects() *ProjectQuery {
 	return (&RepoClient{config: r.config}).QueryProjects(r)
+}
+
+// QueryHead queries the "head" edge of the Repo entity.
+func (r *Repo) QueryHead() *ReleaseQuery {
+	return (&RepoClient{config: r.config}).QueryHead(r)
 }
 
 // QueryCommits queries the "commits" edge of the Repo entity.
@@ -143,6 +173,8 @@ func (r *Repo) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v", r.ID))
 	builder.WriteString(", name=")
 	builder.WriteString(r.Name)
+	builder.WriteString(", default_branch=")
+	builder.WriteString(r.DefaultBranch)
 	builder.WriteByte(')')
 	return builder.String()
 }

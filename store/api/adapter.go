@@ -1,19 +1,22 @@
 package api
 
-import "github.com/valocode/bubbly/ent/model"
+import (
+	"github.com/valocode/bubbly/ent"
+)
 
 type (
 	AdapterSaveRequest struct {
-		*model.AdapterModel
+		Adapter *ent.AdapterModelCreate `json:"adapter,omitempty" validate:"required"`
+		// *model.AdapterModel
 	}
 
 	AdapterGetRequest struct {
-		Name *string
+		Name *string `validate:"required"`
 		Tag  *string
 		Type *string
 	}
 
 	AdapterGetResponse struct {
-		*model.AdapterModel
+		ent.AdapterModelRead `validate:"required"`
 	}
 )

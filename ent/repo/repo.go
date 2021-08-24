@@ -9,8 +9,12 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldDefaultBranch holds the string denoting the default_branch field in the database.
+	FieldDefaultBranch = "default_branch"
 	// EdgeProjects holds the string denoting the projects edge name in mutations.
 	EdgeProjects = "projects"
+	// EdgeHead holds the string denoting the head edge name in mutations.
+	EdgeHead = "head"
 	// EdgeCommits holds the string denoting the commits edge name in mutations.
 	EdgeCommits = "commits"
 	// EdgeVulnerabilityReviews holds the string denoting the vulnerability_reviews edge name in mutations.
@@ -22,6 +26,13 @@ const (
 	// ProjectsInverseTable is the table name for the Project entity.
 	// It exists in this package in order to avoid circular dependency with the "project" package.
 	ProjectsInverseTable = "project"
+	// HeadTable is the table that holds the head relation/edge.
+	HeadTable = "release"
+	// HeadInverseTable is the table name for the Release entity.
+	// It exists in this package in order to avoid circular dependency with the "release" package.
+	HeadInverseTable = "release"
+	// HeadColumn is the table column denoting the head relation/edge.
+	HeadColumn = "repo_head"
 	// CommitsTable is the table that holds the commits relation/edge.
 	CommitsTable = "commit"
 	// CommitsInverseTable is the table name for the GitCommit entity.
@@ -40,6 +51,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldDefaultBranch,
 }
 
 var (
@@ -64,4 +76,8 @@ func ValidColumn(column string) bool {
 var (
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// DefaultDefaultBranch holds the default value on creation for the "default_branch" field.
+	DefaultDefaultBranch string
+	// DefaultBranchValidator is a validator for the "default_branch" field. It is called by the builders before save.
+	DefaultBranchValidator func(string) error
 )

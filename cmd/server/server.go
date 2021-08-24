@@ -5,7 +5,6 @@ import (
 
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/server"
-	"github.com/valocode/bubbly/store"
 
 	"github.com/spf13/cobra"
 
@@ -40,16 +39,11 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		Example: cmdExamples,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			fmt.Println("Initializing store...")
-			store, err := store.New(bCtx)
+			s, err := server.New(bCtx)
 			if err != nil {
-				return fmt.Errorf("error initializing store: %w", err)
+				return fmt.Errorf("initializing store: %w", err)
 			}
-			fmt.Println("Store initialized: ", bCtx.StoreConfig.Provider.String())
-
-			fmt.Println("")
-			fmt.Printf("Starting HTTP server on %s:%s\n", bCtx.ServerConfig.Host, bCtx.ServerConfig.Port)
-			if err := server.ListenAndServe(bCtx, store); err != nil {
+			if err := s.Start(); err != nil {
 				return err
 			}
 			return nil

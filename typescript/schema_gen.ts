@@ -5,50 +5,6 @@
 // #######################################
 
 // #######################################
-// Adapter
-// #######################################
-export interface Adapter_Json {
-	adapter?: Adapter[];
-}
-
-export interface Adapter {
-	id?: number;
-	name?: string;
-	tag?: string;
-	type?: AdapterType;
-	operation?: UNKNOWN_TYPE_json.RawMessage;
-	results_type?: AdapterResults_type;
-	results?: UNKNOWN_TYPE_[]byte;
-}
-
-export interface Adapter_Relay {
-	adapter_connection?: Adapter_Conn;
-}
-
-export interface Adapter_Conn {
-	totalCount?: number;
-	pageInfo?: pageInfo;
-	edges?: Adapter_Edge[];
-}
-
-export interface Adapter_Edge {
-	node?: Adapter;
-}
-
-export enum AdapterType {
-	json = "json",
-	csv = "csv",
-	xml = "xml",
-	yaml = "yaml",
-	http = "http",
-}
-
-export enum AdapterResults_type {
-	code_scan = "code_scan",
-	test_run = "test_run",
-}
-
-// #######################################
 // Artifact
 // #######################################
 export interface Artifact_Json {
@@ -60,6 +16,7 @@ export interface Artifact {
 	name?: string;
 	sha256?: string;
 	type?: ArtifactType;
+	time?: Date;
 	release?: Release;
 	entry?: ReleaseEntry;
 }
@@ -165,6 +122,7 @@ export interface CodeScan_Json {
 export interface CodeScan {
 	id?: number;
 	tool?: string;
+	time?: Date;
 	release?: Release;
 	entry?: ReleaseEntry;
 	issues?: CodeIssue[];
@@ -351,6 +309,7 @@ export interface Release {
 	subreleases?: Release[];
 	dependencies?: Release[];
 	commit?: GitCommit;
+	head_of?: Repo;
 	log?: ReleaseEntry[];
 	artifacts?: Artifact[];
 	components?: ReleaseComponent[];
@@ -487,7 +446,9 @@ export interface Repo_Json {
 export interface Repo {
 	id?: number;
 	name?: string;
+	default_branch?: string;
 	projects?: Project[];
+	head?: Release;
 	commits?: GitCommit[];
 	vulnerability_reviews?: VulnerabilityReview[];
 }
@@ -546,6 +507,7 @@ export interface TestRun_Json {
 export interface TestRun {
 	id?: number;
 	tool?: string;
+	time?: Date;
 	release?: Release;
 	entry?: ReleaseEntry;
 	tests?: TestCase[];

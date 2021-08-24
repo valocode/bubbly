@@ -2,7 +2,6 @@ package run
 
 import (
 	"errors"
-	"fmt"
 	"path"
 
 	"github.com/valocode/bubbly/adapter"
@@ -111,7 +110,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 					CodeScan: output.CodeScan,
 				})
 				if err != nil {
-					return fmt.Errorf("error saving code scan: %w", err)
+					return err
 				}
 			}
 			return nil

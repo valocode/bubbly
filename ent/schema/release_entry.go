@@ -30,6 +30,7 @@ func (ReleaseEntry) Fields() []ent.Field {
 				entgql.OrderField("type"),
 			),
 		field.Time("time").
+			Immutable().
 			Default(func() time.Time { return time.Now() }).
 			Annotations(
 				entgql.OrderField("time"),

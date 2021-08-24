@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -25,6 +26,20 @@ type TestRunCreate struct {
 // SetTool sets the "tool" field.
 func (trc *TestRunCreate) SetTool(s string) *TestRunCreate {
 	trc.mutation.SetTool(s)
+	return trc
+}
+
+// SetTime sets the "time" field.
+func (trc *TestRunCreate) SetTime(t time.Time) *TestRunCreate {
+	trc.mutation.SetTime(t)
+	return trc
+}
+
+// SetNillableTime sets the "time" field if the given value is not nil.
+func (trc *TestRunCreate) SetNillableTime(t *time.Time) *TestRunCreate {
+	if t != nil {
+		trc.SetTime(*t)
+	}
 	return trc
 }
 
@@ -84,6 +99,9 @@ func (trc *TestRunCreate) Save(ctx context.Context) (*TestRun, error) {
 		err  error
 		node *TestRun
 	)
+	if err := trc.defaults(); err != nil {
+		return nil, err
+	}
 	if len(trc.hooks) == 0 {
 		if err = trc.check(); err != nil {
 			return nil, err
@@ -141,6 +159,18 @@ func (trc *TestRunCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (trc *TestRunCreate) defaults() error {
+	if _, ok := trc.mutation.Time(); !ok {
+		if testrun.DefaultTime == nil {
+			return fmt.Errorf("ent: uninitialized testrun.DefaultTime (forgotten import ent/runtime?)")
+		}
+		v := testrun.DefaultTime()
+		trc.mutation.SetTime(v)
+	}
+	return nil
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (trc *TestRunCreate) check() error {
 	if _, ok := trc.mutation.Tool(); !ok {
@@ -150,6 +180,9 @@ func (trc *TestRunCreate) check() error {
 		if err := testrun.ToolValidator(v); err != nil {
 			return &ValidationError{Name: "tool", err: fmt.Errorf(`ent: validator failed for field "tool": %w`, err)}
 		}
+	}
+	if _, ok := trc.mutation.Time(); !ok {
+		return &ValidationError{Name: "time", err: errors.New(`ent: missing required field "time"`)}
 	}
 	if _, ok := trc.mutation.ReleaseID(); !ok {
 		return &ValidationError{Name: "release", err: errors.New("ent: missing required edge \"release\"")}
@@ -188,6 +221,14 @@ func (trc *TestRunCreate) createSpec() (*TestRun, *sqlgraph.CreateSpec) {
 			Column: testrun.FieldTool,
 		})
 		_node.Tool = value
+	}
+	if value, ok := trc.mutation.Time(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: testrun.FieldTime,
+		})
+		_node.Time = value
 	}
 	if nodes := trc.mutation.ReleaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -265,6 +306,7 @@ func (trcb *TestRunCreateBulk) Save(ctx context.Context) ([]*TestRun, error) {
 	for i := range trcb.builders {
 		func(i int, root context.Context) {
 			builder := trcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*TestRunMutation)
 				if !ok {

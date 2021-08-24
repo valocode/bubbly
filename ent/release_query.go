@@ -20,6 +20,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
+	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -37,6 +38,7 @@ type ReleaseQuery struct {
 	withSubreleases          *ReleaseQuery
 	withDependencies         *ReleaseQuery
 	withCommit               *GitCommitQuery
+	withHeadOf               *RepoQuery
 	withLog                  *ReleaseEntryQuery
 	withArtifacts            *ArtifactQuery
 	withComponents           *ReleaseComponentQuery
@@ -140,6 +142,28 @@ func (rq *ReleaseQuery) QueryCommit() *GitCommitQuery {
 			sqlgraph.From(release.Table, release.FieldID, selector),
 			sqlgraph.To(gitcommit.Table, gitcommit.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, release.CommitTable, release.CommitColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryHeadOf chains the current query on the "head_of" edge.
+func (rq *ReleaseQuery) QueryHeadOf() *RepoQuery {
+	query := &RepoQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, selector),
+			sqlgraph.To(repo.Table, repo.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, release.HeadOfTable, release.HeadOfColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -485,6 +509,7 @@ func (rq *ReleaseQuery) Clone() *ReleaseQuery {
 		withSubreleases:          rq.withSubreleases.Clone(),
 		withDependencies:         rq.withDependencies.Clone(),
 		withCommit:               rq.withCommit.Clone(),
+		withHeadOf:               rq.withHeadOf.Clone(),
 		withLog:                  rq.withLog.Clone(),
 		withArtifacts:            rq.withArtifacts.Clone(),
 		withComponents:           rq.withComponents.Clone(),
@@ -528,6 +553,17 @@ func (rq *ReleaseQuery) WithCommit(opts ...func(*GitCommitQuery)) *ReleaseQuery 
 		opt(query)
 	}
 	rq.withCommit = query
+	return rq
+}
+
+// WithHeadOf tells the query-builder to eager-load the nodes that are connected to
+// the "head_of" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *ReleaseQuery) WithHeadOf(opts ...func(*RepoQuery)) *ReleaseQuery {
+	query := &RepoQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withHeadOf = query
 	return rq
 }
 
@@ -674,10 +710,11 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		nodes       = []*Release{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [10]bool{
+		loadedTypes = [11]bool{
 			rq.withSubreleases != nil,
 			rq.withDependencies != nil,
 			rq.withCommit != nil,
+			rq.withHeadOf != nil,
 			rq.withLog != nil,
 			rq.withArtifacts != nil,
 			rq.withComponents != nil,
@@ -687,7 +724,7 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 			rq.withVulnerabilityReviews != nil,
 		}
 	)
-	if rq.withCommit != nil {
+	if rq.withCommit != nil || rq.withHeadOf != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -868,6 +905,35 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 			}
 			for i := range nodes {
 				nodes[i].Edges.Commit = n
+			}
+		}
+	}
+
+	if query := rq.withHeadOf; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Release)
+		for i := range nodes {
+			if nodes[i].repo_head == nil {
+				continue
+			}
+			fk := *nodes[i].repo_head
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(repo.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "repo_head" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.HeadOf = n
 			}
 		}
 	}

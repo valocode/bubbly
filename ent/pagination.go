@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/errcode"
-	"github.com/valocode/bubbly/ent/adapter"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
@@ -250,318 +249,6 @@ const (
 	totalCountField = "totalCount"
 )
 
-// AdapterEdge is the edge representation of Adapter.
-type AdapterEdge struct {
-	Node   *Adapter `json:"node"`
-	Cursor Cursor   `json:"cursor"`
-}
-
-// AdapterConnection is the connection containing edges to Adapter.
-type AdapterConnection struct {
-	Edges      []*AdapterEdge `json:"edges"`
-	PageInfo   PageInfo       `json:"pageInfo"`
-	TotalCount int            `json:"totalCount"`
-}
-
-// AdapterPaginateOption enables pagination customization.
-type AdapterPaginateOption func(*adapterPager) error
-
-// WithAdapterOrder configures pagination ordering.
-func WithAdapterOrder(order *AdapterOrder) AdapterPaginateOption {
-	if order == nil {
-		order = DefaultAdapterOrder
-	}
-	o := *order
-	return func(pager *adapterPager) error {
-		if err := o.Direction.Validate(); err != nil {
-			return err
-		}
-		if o.Field == nil {
-			o.Field = DefaultAdapterOrder.Field
-		}
-		pager.order = &o
-		return nil
-	}
-}
-
-// WithAdapterFilter configures pagination filter.
-func WithAdapterFilter(filter func(*AdapterQuery) (*AdapterQuery, error)) AdapterPaginateOption {
-	return func(pager *adapterPager) error {
-		if filter == nil {
-			return errors.New("AdapterQuery filter cannot be nil")
-		}
-		pager.filter = filter
-		return nil
-	}
-}
-
-type adapterPager struct {
-	order  *AdapterOrder
-	filter func(*AdapterQuery) (*AdapterQuery, error)
-}
-
-func newAdapterPager(opts []AdapterPaginateOption) (*adapterPager, error) {
-	pager := &adapterPager{}
-	for _, opt := range opts {
-		if err := opt(pager); err != nil {
-			return nil, err
-		}
-	}
-	if pager.order == nil {
-		pager.order = DefaultAdapterOrder
-	}
-	return pager, nil
-}
-
-func (p *adapterPager) applyFilter(query *AdapterQuery) (*AdapterQuery, error) {
-	if p.filter != nil {
-		return p.filter(query)
-	}
-	return query, nil
-}
-
-func (p *adapterPager) toCursor(a *Adapter) Cursor {
-	return p.order.Field.toCursor(a)
-}
-
-func (p *adapterPager) applyCursors(query *AdapterQuery, after, before *Cursor) *AdapterQuery {
-	for _, predicate := range cursorsToPredicates(
-		p.order.Direction, after, before,
-		p.order.Field.field, DefaultAdapterOrder.Field.field,
-	) {
-		query = query.Where(predicate)
-	}
-	return query
-}
-
-func (p *adapterPager) applyOrder(query *AdapterQuery, reverse bool) *AdapterQuery {
-	direction := p.order.Direction
-	if reverse {
-		direction = direction.reverse()
-	}
-	query = query.Order(direction.orderFunc(p.order.Field.field))
-	if p.order.Field != DefaultAdapterOrder.Field {
-		query = query.Order(direction.orderFunc(DefaultAdapterOrder.Field.field))
-	}
-	return query
-}
-
-// Paginate executes the query and returns a relay based cursor connection to Adapter.
-func (a *AdapterQuery) Paginate(
-	ctx context.Context, after *Cursor, first *int,
-	before *Cursor, last *int, opts ...AdapterPaginateOption,
-) (*AdapterConnection, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	pager, err := newAdapterPager(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	if a, err = pager.applyFilter(a); err != nil {
-		return nil, err
-	}
-
-	conn := &AdapterConnection{Edges: []*AdapterEdge{}}
-	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
-		if hasCollectedField(ctx, totalCountField) ||
-			hasCollectedField(ctx, pageInfoField) {
-			count, err := a.Count(ctx)
-			if err != nil {
-				return nil, err
-			}
-			conn.TotalCount = count
-			conn.PageInfo.HasNextPage = first != nil && count > 0
-			conn.PageInfo.HasPreviousPage = last != nil && count > 0
-		}
-		return conn, nil
-	}
-
-	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
-		count, err := a.Clone().Count(ctx)
-		if err != nil {
-			return nil, err
-		}
-		conn.TotalCount = count
-	}
-
-	a = pager.applyCursors(a, after, before)
-	a = pager.applyOrder(a, last != nil)
-	var limit int
-	if first != nil {
-		limit = *first + 1
-	} else if last != nil {
-		limit = *last + 1
-	}
-	if limit > 0 {
-		a = a.Limit(limit)
-	}
-
-	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
-		a = a.collectField(graphql.GetOperationContext(ctx), *field)
-	}
-
-	nodes, err := a.All(ctx)
-	if err != nil || len(nodes) == 0 {
-		return conn, err
-	}
-
-	if len(nodes) == limit {
-		conn.PageInfo.HasNextPage = first != nil
-		conn.PageInfo.HasPreviousPage = last != nil
-		nodes = nodes[:len(nodes)-1]
-	}
-
-	var nodeAt func(int) *Adapter
-	if last != nil {
-		n := len(nodes) - 1
-		nodeAt = func(i int) *Adapter {
-			return nodes[n-i]
-		}
-	} else {
-		nodeAt = func(i int) *Adapter {
-			return nodes[i]
-		}
-	}
-
-	conn.Edges = make([]*AdapterEdge, len(nodes))
-	for i := range nodes {
-		node := nodeAt(i)
-		conn.Edges[i] = &AdapterEdge{
-			Node:   node,
-			Cursor: pager.toCursor(node),
-		}
-	}
-
-	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
-	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
-	if conn.TotalCount == 0 {
-		conn.TotalCount = len(nodes)
-	}
-
-	return conn, nil
-}
-
-var (
-	// AdapterOrderFieldName orders Adapter by name.
-	AdapterOrderFieldName = &AdapterOrderField{
-		field: adapter.FieldName,
-		toCursor: func(a *Adapter) Cursor {
-			return Cursor{
-				ID:    a.ID,
-				Value: a.Name,
-			}
-		},
-	}
-	// AdapterOrderFieldTag orders Adapter by tag.
-	AdapterOrderFieldTag = &AdapterOrderField{
-		field: adapter.FieldTag,
-		toCursor: func(a *Adapter) Cursor {
-			return Cursor{
-				ID:    a.ID,
-				Value: a.Tag,
-			}
-		},
-	}
-	// AdapterOrderFieldType orders Adapter by type.
-	AdapterOrderFieldType = &AdapterOrderField{
-		field: adapter.FieldType,
-		toCursor: func(a *Adapter) Cursor {
-			return Cursor{
-				ID:    a.ID,
-				Value: a.Type,
-			}
-		},
-	}
-	// AdapterOrderFieldResultsType orders Adapter by results_type.
-	AdapterOrderFieldResultsType = &AdapterOrderField{
-		field: adapter.FieldResultsType,
-		toCursor: func(a *Adapter) Cursor {
-			return Cursor{
-				ID:    a.ID,
-				Value: a.ResultsType,
-			}
-		},
-	}
-)
-
-// String implement fmt.Stringer interface.
-func (f AdapterOrderField) String() string {
-	var str string
-	switch f.field {
-	case adapter.FieldName:
-		str = "name"
-	case adapter.FieldTag:
-		str = "tag"
-	case adapter.FieldType:
-		str = "type"
-	case adapter.FieldResultsType:
-		str = "results_type"
-	}
-	return str
-}
-
-// MarshalGQL implements graphql.Marshaler interface.
-func (f AdapterOrderField) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(f.String()))
-}
-
-// UnmarshalGQL implements graphql.Unmarshaler interface.
-func (f *AdapterOrderField) UnmarshalGQL(v interface{}) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("AdapterOrderField %T must be a string", v)
-	}
-	switch str {
-	case "name":
-		*f = *AdapterOrderFieldName
-	case "tag":
-		*f = *AdapterOrderFieldTag
-	case "type":
-		*f = *AdapterOrderFieldType
-	case "results_type":
-		*f = *AdapterOrderFieldResultsType
-	default:
-		return fmt.Errorf("%s is not a valid AdapterOrderField", str)
-	}
-	return nil
-}
-
-// AdapterOrderField defines the ordering field of Adapter.
-type AdapterOrderField struct {
-	field    string
-	toCursor func(*Adapter) Cursor
-}
-
-// AdapterOrder defines the ordering of Adapter.
-type AdapterOrder struct {
-	Direction OrderDirection     `json:"direction"`
-	Field     *AdapterOrderField `json:"field"`
-}
-
-// DefaultAdapterOrder is the default ordering of Adapter.
-var DefaultAdapterOrder = &AdapterOrder{
-	Direction: OrderDirectionAsc,
-	Field: &AdapterOrderField{
-		field: adapter.FieldID,
-		toCursor: func(a *Adapter) Cursor {
-			return Cursor{ID: a.ID}
-		},
-	},
-}
-
-// ToEdge converts Adapter into AdapterEdge.
-func (a *Adapter) ToEdge(order *AdapterOrder) *AdapterEdge {
-	if order == nil {
-		order = DefaultAdapterOrder
-	}
-	return &AdapterEdge{
-		Node:   a,
-		Cursor: order.Field.toCursor(a),
-	}
-}
-
 // ArtifactEdge is the edge representation of Artifact.
 type ArtifactEdge struct {
 	Node   *Artifact `json:"node"`
@@ -786,6 +473,16 @@ var (
 			}
 		},
 	}
+	// ArtifactOrderFieldTime orders Artifact by time.
+	ArtifactOrderFieldTime = &ArtifactOrderField{
+		field: artifact.FieldTime,
+		toCursor: func(a *Artifact) Cursor {
+			return Cursor{
+				ID:    a.ID,
+				Value: a.Time,
+			}
+		},
+	}
 )
 
 // String implement fmt.Stringer interface.
@@ -798,6 +495,8 @@ func (f ArtifactOrderField) String() string {
 		str = "sha256"
 	case artifact.FieldType:
 		str = "type"
+	case artifact.FieldTime:
+		str = "time"
 	}
 	return str
 }
@@ -820,6 +519,8 @@ func (f *ArtifactOrderField) UnmarshalGQL(v interface{}) error {
 		*f = *ArtifactOrderFieldSha256
 	case "type":
 		*f = *ArtifactOrderFieldType
+	case "time":
+		*f = *ArtifactOrderFieldTime
 	default:
 		return fmt.Errorf("%s is not a valid ArtifactOrderField", str)
 	}
@@ -1646,6 +1347,16 @@ var (
 			}
 		},
 	}
+	// CodeScanOrderFieldTime orders CodeScan by time.
+	CodeScanOrderFieldTime = &CodeScanOrderField{
+		field: codescan.FieldTime,
+		toCursor: func(cs *CodeScan) Cursor {
+			return Cursor{
+				ID:    cs.ID,
+				Value: cs.Time,
+			}
+		},
+	}
 )
 
 // String implement fmt.Stringer interface.
@@ -1654,6 +1365,8 @@ func (f CodeScanOrderField) String() string {
 	switch f.field {
 	case codescan.FieldTool:
 		str = "tool"
+	case codescan.FieldTime:
+		str = "time"
 	}
 	return str
 }
@@ -1672,6 +1385,8 @@ func (f *CodeScanOrderField) UnmarshalGQL(v interface{}) error {
 	switch str {
 	case "tool":
 		*f = *CodeScanOrderFieldTool
+	case "time":
+		*f = *CodeScanOrderFieldTime
 	default:
 		return fmt.Errorf("%s is not a valid CodeScanOrderField", str)
 	}
@@ -4869,6 +4584,16 @@ var (
 			}
 		},
 	}
+	// TestRunOrderFieldTime orders TestRun by time.
+	TestRunOrderFieldTime = &TestRunOrderField{
+		field: testrun.FieldTime,
+		toCursor: func(tr *TestRun) Cursor {
+			return Cursor{
+				ID:    tr.ID,
+				Value: tr.Time,
+			}
+		},
+	}
 )
 
 // String implement fmt.Stringer interface.
@@ -4877,6 +4602,8 @@ func (f TestRunOrderField) String() string {
 	switch f.field {
 	case testrun.FieldTool:
 		str = "tool"
+	case testrun.FieldTime:
+		str = "time"
 	}
 	return str
 }
@@ -4895,6 +4622,8 @@ func (f *TestRunOrderField) UnmarshalGQL(v interface{}) error {
 	switch str {
 	case "tool":
 		*f = *TestRunOrderFieldTool
+	case "time":
+		*f = *TestRunOrderFieldTime
 	default:
 		return fmt.Errorf("%s is not a valid TestRunOrderField", str)
 	}

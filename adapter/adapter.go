@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2/hclsimple"
+	"github.com/valocode/bubbly/ent"
 	entadapter "github.com/valocode/bubbly/ent/adapter"
-	"github.com/valocode/bubbly/ent/model"
 )
 
 const DefaultTag = "default"
@@ -46,7 +46,7 @@ type (
 	}
 )
 
-func FromModel(model *model.AdapterModel) (*Adapter, error) {
+func FromModel(model *ent.AdapterModelRead) (*Adapter, error) {
 	a := &Adapter{
 		Name: *model.Name,
 		Tag:  model.Tag,
@@ -106,7 +106,7 @@ func (a *Adapter) Run(args RunArgs) (*Output, error) {
 	return a.Results.Spec.Output(a.Name)
 }
 
-func (a *Adapter) Model() (*model.AdapterModel, error) {
+func (a *Adapter) Model() (*ent.AdapterModelCreate, error) {
 	op, err := json.Marshal(a.Operation)
 	if err != nil {
 		return nil, fmt.Errorf("json marshalling adapter operation: %w", err)
@@ -115,7 +115,7 @@ func (a *Adapter) Model() (*model.AdapterModel, error) {
 	if err != nil {
 		return nil, fmt.Errorf("converting results body to bytes: %w", err)
 	}
-	return model.NewAdapterModel().
+	return ent.NewAdapterModelCreate().
 		SetName(a.Name).
 		SetTag(a.TagOrDefault()).
 		SetType(entadapter.Type(a.Operation.Type)).

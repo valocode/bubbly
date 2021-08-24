@@ -3,6 +3,8 @@
 package testrun
 
 import (
+	"time"
+
 	"entgo.io/ent"
 )
 
@@ -13,6 +15,8 @@ const (
 	FieldID = "id"
 	// FieldTool holds the string denoting the tool field in the database.
 	FieldTool = "tool"
+	// FieldTime holds the string denoting the time field in the database.
+	FieldTime = "time"
 	// EdgeRelease holds the string denoting the release edge name in mutations.
 	EdgeRelease = "release"
 	// EdgeEntry holds the string denoting the entry edge name in mutations.
@@ -48,6 +52,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldTool,
+	FieldTime,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "test_run"
@@ -82,4 +87,6 @@ var (
 	Hooks [1]ent.Hook
 	// ToolValidator is a validator for the "tool" field. It is called by the builders before save.
 	ToolValidator func(string) error
+	// DefaultTime holds the default value on creation for the "time" field.
+	DefaultTime func() time.Time
 )

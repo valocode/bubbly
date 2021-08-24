@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/valocode/bubbly/ent/model"
+	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/store/api"
 )
 
@@ -106,9 +106,9 @@ func (r *CodeScanResults) Output(name string) (*Output, error) {
 	}
 	return &Output{
 		CodeScan: &api.CodeScan{
-			CodeScanModel: *model.NewCodeScanModel().SetTool(tool),
-			Issues:        r.CodeIssues,
-			Components:    r.Components,
+			CodeScanModelCreate: ent.NewCodeScanModelCreate().SetTool(tool),
+			Issues:              r.CodeIssues,
+			Components:          r.Components,
 		},
 	}, nil
 }

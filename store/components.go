@@ -3,15 +3,17 @@ package store
 import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/vulnerability"
 	"github.com/valocode/bubbly/store/api"
 )
 
-func (s *Store) SaveComponentVulnerabilities(components *api.ComponentVulnerabilityRequest) error {
+func (s *Store) SaveComponentVulnerabilities(req *api.ComponentVulnerabilityRequest) error {
+	if err := s.validator.Struct(req); err != nil {
+		return HandleValidatorError(err, "component vulnerabilities")
+	}
 	txErr := s.WithTx(func(tx *ent.Tx) error {
-		for _, comp := range components.Components {
-			dbComp, err := s.GetComponentOrError(tx, &comp.Component)
+		for _, comp := range req.Components {
+			dbComp, err := s.GetComponentOrError(tx, *comp.ComponentID)
 			if err != nil {
 				return err
 			}
@@ -38,62 +40,62 @@ func (s *Store) SaveComponentVulnerabilities(components *api.ComponentVulnerabil
 	return nil
 }
 
-func (s *Store) GetComponentOrError(tx *ent.Tx, comp *api.Component) (*ent.Component, error) {
+func (s *Store) GetComponentOrError(tx *ent.Tx, id int) (*ent.Component, error) {
 	client := s.clientOrTx(tx)
-	if comp.ID != nil {
-		dbComp, err := client.Component.Get(s.ctx, *comp.ID)
-		if err != nil {
-			if !ent.IsNotFound(err) {
-				return nil, NewNotFoundError(nil, "component with ID %d", comp.ID)
-			}
-			return nil, HandleEntError(err, "component")
-		}
-		return dbComp, nil
-	}
-	var (
-		vErr        multierror.Error
-		compName    = comp.GetNameOrErr(&vErr)
-		compVendor  = comp.GetVendorOrErr(&vErr)
-		compVersion = comp.GetVersionOrErr(&vErr)
-	)
-
-	if vErr.ErrorOrNil() != nil {
-		return nil, HandleMultiVError(vErr)
-	}
-	dbComp, err := client.Component.Query().Where(
-		component.Name(*compName),
-		component.Vendor(*compVendor),
-		component.Version(*compVersion),
-	).Only(s.ctx)
+	dbComp, err := client.Component.Get(s.ctx, id)
 	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, NewNotFoundError(nil, "component %s:%s:%s", *compVendor, *compName, *compVersion)
+		if !ent.IsNotFound(err) {
+			return nil, NewNotFoundError(nil, "component with ID %d", id)
 		}
 		return nil, HandleEntError(err, "component")
 	}
 	return dbComp, nil
+
+	// Should we be able to get component by vendor:name:version?!
+	// var (
+	// 	vErr        multierror.Error
+	// 	compName    = *comp.Name
+	// 	compVendor  = *comp.Vendor
+	// 	compVersion = *comp.Version
+	// )
+
+	// if vErr.ErrorOrNil() != nil {
+	// 	return nil, HandleMultiVError(vErr)
+	// }
+	// dbComp, err := client.Component.Query().Where(
+	// 	component.Name(compName),
+	// 	component.Vendor(compVendor),
+	// 	component.Version(compVersion),
+	// ).Only(s.ctx)
+	// if err != nil {
+	// 	if ent.IsNotFound(err) {
+	// 		return nil, NewNotFoundError(nil, "component %s:%s:%s", compVendor, compName, compVersion)
+	// 	}
+	// 	return nil, HandleEntError(err, "component")
+	// }
+	// return dbComp, nil
 }
 
 func (s *Store) GetVulnerabilityOrCreate(tx *ent.Tx, vuln *api.Vulnerability) (*ent.Vulnerability, error) {
 	client := s.clientOrTx(tx)
 	var (
 		vErr multierror.Error
-		vID  = vuln.GetVidOrErr(&vErr)
+		vID  = *vuln.Vid
 	)
 	if vErr.ErrorOrNil() != nil {
 		return nil, HandleMultiVError(vErr)
 	}
 	dbVuln, err := client.Vulnerability.Query().
-		Where(vulnerability.Vid(*vID)).
+		Where(vulnerability.Vid(vID)).
 		Only(s.ctx)
 	if err != nil {
 		if !ent.IsNotFound(err) {
-			return nil, NewNotFoundError(err, "vulnerability with ID %s", *vID)
+			return nil, NewNotFoundError(err, "vulnerability with ID %s", vID)
 		}
 		// If not found, create it
-		vulnCreate := client.Vulnerability.Create()
-		vuln.SetMutatorFields(vulnCreate.Mutation())
-		dbVuln, err = vulnCreate.Save(s.ctx)
+		dbVuln, err = client.Vulnerability.Create().
+			SetModelCreate(&vuln.VulnerabilityModelCreate).
+			Save(s.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "vulnerability")
 		}

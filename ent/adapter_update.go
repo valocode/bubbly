@@ -45,12 +45,6 @@ func (au *AdapterUpdate) SetOperation(jm json.RawMessage) *AdapterUpdate {
 	return au
 }
 
-// ClearOperation clears the value of the "operation" field.
-func (au *AdapterUpdate) ClearOperation() *AdapterUpdate {
-	au.mutation.ClearOperation()
-	return au
-}
-
 // SetResults sets the "results" field.
 func (au *AdapterUpdate) SetResults(b []byte) *AdapterUpdate {
 	au.mutation.SetResults(b)
@@ -176,12 +170,6 @@ func (au *AdapterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: adapter.FieldOperation,
 		})
 	}
-	if au.mutation.OperationCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
-			Column: adapter.FieldOperation,
-		})
-	}
 	if value, ok := au.mutation.Results(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeBytes,
@@ -223,12 +211,6 @@ func (auo *AdapterUpdateOne) SetTag(s string) *AdapterUpdateOne {
 // SetOperation sets the "operation" field.
 func (auo *AdapterUpdateOne) SetOperation(jm json.RawMessage) *AdapterUpdateOne {
 	auo.mutation.SetOperation(jm)
-	return auo
-}
-
-// ClearOperation clears the value of the "operation" field.
-func (auo *AdapterUpdateOne) ClearOperation() *AdapterUpdateOne {
-	auo.mutation.ClearOperation()
 	return auo
 }
 
@@ -378,12 +360,6 @@ func (auo *AdapterUpdateOne) sqlSave(ctx context.Context) (_node *Adapter, err e
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeJSON,
 			Value:  value,
-			Column: adapter.FieldOperation,
-		})
-	}
-	if auo.mutation.OperationCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
 			Column: adapter.FieldOperation,
 		})
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/release"
@@ -13,6 +14,7 @@ import (
 type entryTypeMutation interface {
 	Client() *ent.Client
 	ReleaseID() (id int, exists bool)
+	Time() (r time.Time, exists bool)
 	SetEntryID(id int)
 	Type() string
 }
@@ -46,9 +48,14 @@ func createReleaseEntry(ctx context.Context, m entryTypeMutation) error {
 		// Validator should already catch this as an artifact needs a release
 		return errors.New("no release for artifact")
 	}
+	entryTime, ok := m.Time()
+	if !ok {
+		entryTime = time.Now()
+	}
 	// Create a release entry
 	entry, err := client.ReleaseEntry.Create().
 		SetRelease(release).
+		SetTime(entryTime).
 		SetType(entryType).
 		Save(ctx)
 	if err != nil {

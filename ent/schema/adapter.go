@@ -20,6 +20,9 @@ type Adapter struct {
 func (Adapter) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "adapter"},
+		// Skip graphql generation for the Adapter because json.RawMessage and []byte types
+		// cause problems...
+		entgql.Skip(),
 		entmodel.Annotation{},
 	}
 }
@@ -39,7 +42,7 @@ func (Adapter) Fields() []ent.Field {
 			Annotations(
 				entgql.OrderField("type"),
 			),
-		field.JSON("operation", json.RawMessage{}).Optional(),
+		field.JSON("operation", json.RawMessage{}),
 		field.Enum("results_type").Immutable().
 			Values("code_scan", "test_run").
 			Annotations(
