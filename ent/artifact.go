@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/artifact"
@@ -23,6 +24,8 @@ type Artifact struct {
 	Sha256 string `json:"sha256,omitempty"`
 	// Type holds the value of the "type" field.
 	Type artifact.Type `json:"type,omitempty"`
+	// Time holds the value of the "time" field.
+	Time time.Time `json:"time,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ArtifactQuery when eager-loading is set.
 	Edges                  ArtifactEdges `json:"edges"`
@@ -78,6 +81,8 @@ func (*Artifact) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case artifact.FieldName, artifact.FieldSha256, artifact.FieldType:
 			values[i] = new(sql.NullString)
+		case artifact.FieldTime:
+			values[i] = new(sql.NullTime)
 		case artifact.ForeignKeys[0]: // artifact_release
 			values[i] = new(sql.NullInt64)
 		case artifact.ForeignKeys[1]: // release_entry_artifact
@@ -120,6 +125,12 @@ func (a *Artifact) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
 				a.Type = artifact.Type(value.String)
+			}
+		case artifact.FieldTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field time", values[i])
+			} else if value.Valid {
+				a.Time = value.Time
 			}
 		case artifact.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -179,6 +190,8 @@ func (a *Artifact) String() string {
 	builder.WriteString(a.Sha256)
 	builder.WriteString(", type=")
 	builder.WriteString(fmt.Sprintf("%v", a.Type))
+	builder.WriteString(", time=")
+	builder.WriteString(a.Time.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

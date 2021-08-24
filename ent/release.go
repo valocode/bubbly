@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/repo"
 )
 
 // Release is the model entity for the Release schema.
@@ -26,6 +27,7 @@ type Release struct {
 	// The values are being populated by the ReleaseQuery when eager-loading is set.
 	Edges              ReleaseEdges `json:"edges"`
 	git_commit_release *int
+	repo_head          *int
 }
 
 // ReleaseEdges holds the relations/edges for other nodes in the graph.
@@ -36,6 +38,8 @@ type ReleaseEdges struct {
 	Dependencies []*Release `json:"dependencies,omitempty"`
 	// Commit holds the value of the commit edge.
 	Commit *GitCommit `json:"commit,omitempty"`
+	// HeadOf holds the value of the head_of edge.
+	HeadOf *Repo `json:"head_of,omitempty"`
 	// Log holds the value of the log edge.
 	Log []*ReleaseEntry `json:"log,omitempty"`
 	// Artifacts holds the value of the artifacts edge.
@@ -52,7 +56,7 @@ type ReleaseEdges struct {
 	VulnerabilityReviews []*VulnerabilityReview `json:"vulnerability_reviews,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [10]bool
+	loadedTypes [11]bool
 }
 
 // SubreleasesOrErr returns the Subreleases value or an error if the edge
@@ -87,10 +91,24 @@ func (e ReleaseEdges) CommitOrErr() (*GitCommit, error) {
 	return nil, &NotLoadedError{edge: "commit"}
 }
 
+// HeadOfOrErr returns the HeadOf value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ReleaseEdges) HeadOfOrErr() (*Repo, error) {
+	if e.loadedTypes[3] {
+		if e.HeadOf == nil {
+			// The edge head_of was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: repo.Label}
+		}
+		return e.HeadOf, nil
+	}
+	return nil, &NotLoadedError{edge: "head_of"}
+}
+
 // LogOrErr returns the Log value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) LogOrErr() ([]*ReleaseEntry, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.Log, nil
 	}
 	return nil, &NotLoadedError{edge: "log"}
@@ -99,7 +117,7 @@ func (e ReleaseEdges) LogOrErr() ([]*ReleaseEntry, error) {
 // ArtifactsOrErr returns the Artifacts value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) ArtifactsOrErr() ([]*Artifact, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.Artifacts, nil
 	}
 	return nil, &NotLoadedError{edge: "artifacts"}
@@ -108,7 +126,7 @@ func (e ReleaseEdges) ArtifactsOrErr() ([]*Artifact, error) {
 // ComponentsOrErr returns the Components value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) ComponentsOrErr() ([]*ReleaseComponent, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.Components, nil
 	}
 	return nil, &NotLoadedError{edge: "components"}
@@ -117,7 +135,7 @@ func (e ReleaseEdges) ComponentsOrErr() ([]*ReleaseComponent, error) {
 // VulnerabilitiesOrErr returns the Vulnerabilities value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) VulnerabilitiesOrErr() ([]*ReleaseVulnerability, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.Vulnerabilities, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerabilities"}
@@ -126,7 +144,7 @@ func (e ReleaseEdges) VulnerabilitiesOrErr() ([]*ReleaseVulnerability, error) {
 // CodeScansOrErr returns the CodeScans value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) CodeScansOrErr() ([]*CodeScan, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[8] {
 		return e.CodeScans, nil
 	}
 	return nil, &NotLoadedError{edge: "code_scans"}
@@ -135,7 +153,7 @@ func (e ReleaseEdges) CodeScansOrErr() ([]*CodeScan, error) {
 // TestRunsOrErr returns the TestRuns value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) TestRunsOrErr() ([]*TestRun, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[9] {
 		return e.TestRuns, nil
 	}
 	return nil, &NotLoadedError{edge: "test_runs"}
@@ -144,7 +162,7 @@ func (e ReleaseEdges) TestRunsOrErr() ([]*TestRun, error) {
 // VulnerabilityReviewsOrErr returns the VulnerabilityReviews value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[10] {
 		return e.VulnerabilityReviews, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
@@ -160,6 +178,8 @@ func (*Release) scanValues(columns []string) ([]interface{}, error) {
 		case release.FieldName, release.FieldVersion, release.FieldStatus:
 			values[i] = new(sql.NullString)
 		case release.ForeignKeys[0]: // git_commit_release
+			values[i] = new(sql.NullInt64)
+		case release.ForeignKeys[1]: // repo_head
 			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Release", columns[i])
@@ -207,6 +227,13 @@ func (r *Release) assignValues(columns []string, values []interface{}) error {
 				r.git_commit_release = new(int)
 				*r.git_commit_release = int(value.Int64)
 			}
+		case release.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field repo_head", value)
+			} else if value.Valid {
+				r.repo_head = new(int)
+				*r.repo_head = int(value.Int64)
+			}
 		}
 	}
 	return nil
@@ -225,6 +252,11 @@ func (r *Release) QueryDependencies() *ReleaseQuery {
 // QueryCommit queries the "commit" edge of the Release entity.
 func (r *Release) QueryCommit() *GitCommitQuery {
 	return (&ReleaseClient{config: r.config}).QueryCommit(r)
+}
+
+// QueryHeadOf queries the "head_of" edge of the Release entity.
+func (r *Release) QueryHeadOf() *RepoQuery {
+	return (&ReleaseClient{config: r.config}).QueryHeadOf(r)
 }
 
 // QueryLog queries the "log" edge of the Release entity.

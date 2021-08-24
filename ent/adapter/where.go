@@ -381,20 +381,6 @@ func TypeNotIn(vs ...Type) predicate.Adapter {
 	})
 }
 
-// OperationIsNil applies the IsNil predicate on the "operation" field.
-func OperationIsNil() predicate.Adapter {
-	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.IsNull(s.C(FieldOperation)))
-	})
-}
-
-// OperationNotNil applies the NotNil predicate on the "operation" field.
-func OperationNotNil() predicate.Adapter {
-	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.NotNull(s.C(FieldOperation)))
-	})
-}
-
 // ResultsTypeEQ applies the EQ predicate on the "results_type" field.
 func ResultsTypeEQ(v ResultsType) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {

@@ -1,16 +1,18 @@
 package api
 
-import "github.com/valocode/bubbly/ent/model"
+import (
+	"github.com/valocode/bubbly/ent"
+)
 
 type (
 	ReleaseCreateRequest struct {
-		Repo    *model.RepoModel
-		Commit  *model.GitCommitModel
-		Release *model.ReleaseModel
+		Repo    *ent.RepoModelCreate      `json:"repo,omitempty" validate:"required"`
+		Commit  *ent.GitCommitModelCreate `json:"commit,omitempty" validate:"required"`
+		Release *ent.ReleaseModelCreate   `json:"release,omitempty" validate:"required"`
 	}
 
 	ArtifactLogRequest struct {
-		Artifact *model.ArtifactModel `json:"artifact,omitempty"`
-		Commit   *string              `json:"commit,omitempty"`
+		Artifact *ent.ArtifactModelCreate `json:"artifact,omitempty"`
+		Commit   *string                  `json:"commit,omitempty"`
 	}
 )

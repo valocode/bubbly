@@ -9,6 +9,9 @@ import (
 )
 
 func (s *Store) SaveCodeScan(req *api.CodeScanRequest) (*ent.CodeScan, error) {
+	if err := s.validator.Struct(req); err != nil {
+		return nil, HandleValidatorError(err, "code scan create")
+	}
 	release, err := s.releaseFromCommit(req.Commit)
 	if err != nil {
 		return nil, err
@@ -20,23 +23,20 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 	var codeScan *ent.CodeScan
 	txErr := s.WithTx(func(tx *ent.Tx) error {
 
-		scanCreate := tx.CodeScan.Create()
-		if scan.Tool == nil {
-			return NewValidationError(nil, "scan tool is required")
-		}
-		scanCreate.SetTool(*scan.Tool).
-			SetRelease(release)
 		var err error
-		codeScan, err = scanCreate.Save(s.ctx)
+		codeScan, err = tx.CodeScan.Create().
+			SetModelCreate(scan.CodeScanModelCreate).
+			SetRelease(release).
+			Save(s.ctx)
 		if err != nil {
 			return HandleEntError(err, "code scan")
 		}
 
 		for _, issue := range scan.Issues {
-			issueCreate := tx.CodeIssue.Create().
-				SetScan(codeScan)
-			issue.SetMutatorFields(issueCreate.Mutation())
-			_, err := issueCreate.Save(s.ctx)
+			_, err := tx.CodeIssue.Create().
+				SetModelCreate(&issue.CodeIssueModelCreate).
+				SetScan(codeScan).
+				Save(s.ctx)
 			if err != nil {
 				return HandleEntError(err, "code issue")
 			}
@@ -49,6 +49,9 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 				existingComp *ent.Component
 				err          error
 			)
+			if err := s.validator.Struct(comp); err != nil {
+				return HandleValidatorError(err, "release component create")
+			}
 			existingComp, err = tx.Component.Query().Where(
 				component.Vendor(*comp.Vendor),
 				component.Name(*comp.Name),
@@ -59,9 +62,9 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 					return HandleEntError(err, "component")
 				}
 				// It is not found, so create the component...
-				compCreate := tx.Component.Create()
-				comp.SetMutatorFields(compCreate.Mutation())
-				existingComp, err = compCreate.Save(s.ctx)
+				existingComp, err = tx.Component.Create().
+					SetModelCreate(&comp.ComponentModelCreate).
+					Save(s.ctx)
 				if err != nil {
 					return HandleEntError(err, "component")
 				}
@@ -82,6 +85,9 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 					existingVuln *ent.Vulnerability
 					err          error
 				)
+				if err := s.validator.Struct(comp); err != nil {
+					return HandleValidatorError(err, "release vulnerability create")
+				}
 				existingVuln, err = tx.Vulnerability.Query().Where(
 					vulnerability.Vid(*vuln.Vid),
 				).Only(s.ctx)
@@ -90,9 +96,8 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 						return HandleEntError(err, "vulnerability")
 					}
 					// If not found, create!
-					vulnCreate := tx.Vulnerability.Create()
-					vuln.SetMutatorFields(vulnCreate.Mutation())
-					existingVuln, err = vulnCreate.Save(s.ctx)
+					existingVuln, err = tx.Vulnerability.Create().
+						SetModelCreate(&vuln.VulnerabilityModelCreate).Save(s.ctx)
 					if err != nil {
 						return HandleEntError(err, "vulnerability")
 					}
@@ -126,6 +131,9 @@ func (s *Store) releaseFromCommit(commitHash *string) (*ent.Release, error) {
 		WithRelease().
 		Only(s.ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, NewNotFoundError(nil, "no release for commit %s. Please create one.", *commitHash)
+		}
 		return nil, HandleEntError(err, "commit")
 	}
 

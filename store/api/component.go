@@ -1,23 +1,25 @@
 package api
 
-import "github.com/valocode/bubbly/ent/model"
+import (
+	"github.com/valocode/bubbly/ent"
+)
 
 type (
 	ComponentVulnerabilityRequest struct {
-		DataSource *string                   `json:"data_source,omitempty"`
-		Components []*ComponentVulnerability `json:"components,omitempty"`
+		DataSource *string                   `json:"data_source,omitempty" validate:"required"`
+		Components []*ComponentVulnerability `json:"components,omitempty" validate:"required,dive,required"`
 	}
 
 	ComponentVulnerability struct {
-		Component
-		Vulnerabilities []*Vulnerability `json:"vulnerabilities,omitempty"`
+		ComponentID     *int             `json:"component_id" validate:"required"`
+		Vulnerabilities []*Vulnerability `json:"vulnerabilities,omitempty" validate:"dive,required"`
 	}
 
 	Vulnerability struct {
-		model.VulnerabilityModel
+		ent.VulnerabilityModelCreate `validate:"required"`
 	}
 
-	Component struct {
-		model.ComponentModel
+	ComponentRead struct {
+		ent.ComponentModelRead `validate:"required"`
 	}
 )

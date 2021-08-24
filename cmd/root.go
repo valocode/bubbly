@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/fatih/color"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/valocode/bubbly/cmd/adapter"
 	"github.com/valocode/bubbly/cmd/demo"
+	"github.com/valocode/bubbly/cmd/release"
 	"github.com/valocode/bubbly/cmd/server"
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/env"
@@ -27,24 +30,30 @@ func NewCmdRoot(bCtx *env.BubblyContext) *cobra.Command {
 		SilenceUsage: true,
 		// Do not print errors on error (we will do that ourselves)
 		// SilenceErrors: true,
+		// Run: ,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if bCtx.CLIConfig.Debug {
+				fmt.Println("DEBUG!!!")
+				bCtx.UpdateLogLevel(zerolog.DebugLevel)
+			}
+			if bCtx.CLIConfig.NoColor {
+				color.NoColor = true
+			}
+		},
 	}
 
 	f := cmd.PersistentFlags()
 
+	var test bool
+	f.BoolVar(&test, "test", config.DefaultCLIDebugToggle, "specify whether to enable debug logging")
 	f.BoolVar(&bCtx.CLIConfig.Debug, "debug", config.DefaultCLIDebugToggle, "specify whether to enable debug logging")
 	f.BoolVar(&bCtx.CLIConfig.NoColor, "no-color", config.DefaultCLINoColorToggle, "specify whether to disable colorful logging")
 	cmd.InitDefaultHelpFlag()
 
-	if bCtx.CLIConfig.Debug {
-		bCtx.UpdateLogLevel(zerolog.DebugLevel)
-	}
-	if bCtx.CLIConfig.NoColor {
-		color.NoColor = true
-	}
-
-	cmd.AddCommand(demo.New(bCtx))
-	cmd.AddCommand(server.New(bCtx))
 	cmd.AddCommand(adapter.New(bCtx))
+	cmd.AddCommand(demo.New(bCtx))
+	cmd.AddCommand(release.New(bCtx))
+	cmd.AddCommand(server.New(bCtx))
 
 	// finally, print the final configuration to be used by bubbly
 	bCtx.Logger.Debug().

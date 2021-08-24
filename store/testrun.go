@@ -23,16 +23,17 @@ func (s *Store) saveTestRun(release *ent.Release, run *api.TestRun) (*ent.TestRu
 			return errors.New("tool is required")
 		}
 		dbRun, err := tx.TestRun.Create().
-			SetTool(*run.Tool).
+			SetModelCreate(&run.TestRunModelCreate).
 			SetRelease(release).
 			Save(s.ctx)
 		if err != nil {
 			return fmt.Errorf("error creating test run: %w", err)
 		}
 		for _, tc := range run.TestCases {
-			tcCreate := tx.TestCase.Create().SetRun(dbRun)
-			tc.SetMutatorFields(tcCreate.Mutation())
-			_, err := tcCreate.Save(s.ctx)
+			_, err := tx.TestCase.Create().
+				SetRun(dbRun).
+				SetModelCreate(&tc.TestCaseModelCreate).
+				Save(s.ctx)
 			if err != nil {
 				return fmt.Errorf("error creating test case: %w", err)
 			}

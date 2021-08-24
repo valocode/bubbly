@@ -18,7 +18,6 @@ func main() {
 	// if err := rootCmd.ParseFlags(os.Args); err != nil {
 	// 	log.Fatal("error parsing flags: ", err)
 	// }
-
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

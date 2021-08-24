@@ -1,6 +1,8 @@
 package api
 
-import "github.com/valocode/bubbly/ent/model"
+import (
+	"github.com/valocode/bubbly/ent"
+)
 
 type (
 	TestRunRequest struct {
@@ -9,11 +11,11 @@ type (
 	}
 
 	TestRun struct {
-		model.TestRunModel
-		TestCases []*TestRunCase `json:"test_cases,omitempty"`
+		ent.TestRunModelCreate
+		TestCases []*TestRunCase `json:"test_cases,omitempty" validate:"dive,required"`
 	}
 
 	TestRunCase struct {
-		model.TestCaseModel
+		ent.TestCaseModelCreate `validate:"required" alias:"test_case"`
 	}
 )

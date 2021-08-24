@@ -10,15 +10,17 @@
 
 {{ template "import" $ }}
 
+{{ $gqlNodes := filterNodes $.Nodes }}
+
 import (
     "context"
 
-	{{- range $n := $.Nodes }}
+	{{- range $n := $gqlNodes }}
 		"{{ $.Config.Package }}/{{ $n.Package }}"
 	{{- end }}
 )
 
-{{- range $n := $.Nodes }}
+{{- range $n := $gqlNodes }}
     {{ $receiver := $n.Receiver }}
     func ({{ $receiver }} *{{ $n.QueryName }}) Filter(
         ctx context.Context, first *int, last *int,

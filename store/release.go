@@ -1,9 +1,6 @@
 package store
 
 import (
-	"errors"
-
-	"github.com/hashicorp/go-multierror"
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/release"
@@ -11,71 +8,31 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-func (s *Store) CreateRelease(rel *api.ReleaseCreateRequest) (*ent.Release, error) {
-	return s.createRelease(rel)
+func (s *Store) CreateRelease(req *api.ReleaseCreateRequest) (*ent.Release, error) {
+	return s.createRelease(req)
 }
 
 func (s *Store) LogArtifact(req *api.ArtifactLogRequest) (*ent.Artifact, error) {
 	return s.logArtifact(req)
 }
 
-func (s *Store) createRelease(rel *api.ReleaseCreateRequest) (*ent.Release, error) {
+func (s *Store) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, error) {
+	if err := s.validator.Struct(req); err != nil {
+		return nil, HandleValidatorError(err, "release")
+	}
 
-	var vErr multierror.Error
-	if rel == nil {
-		return nil, NewValidationError(nil, "request is nil")
-	}
-	if rel.Repo == nil {
-		vErr = *multierror.Append(&vErr, errors.New("repo is required"))
-	}
-	if rel.Commit == nil {
-		vErr = *multierror.Append(&vErr, errors.New("commit is required"))
-	}
-	if err := vErr.ErrorOrNil(); err != nil {
-		return nil, HandleMultiVError(vErr)
-	}
 	var (
-		repoName     = rel.Repo.GetNameOrErr(&vErr)
-		commitHash   = rel.Commit.GetHashOrErr(&vErr)
-		commitBranch = rel.Commit.GetBranchOrErr(&vErr)
-		commitTime   = rel.Commit.GetTimeOrErr(&vErr)
-		commitTag    string
-		relName      string
-		relVersion   string
+		commitTag string
 	)
-	// Validate that all the required values exist
-	if err := vErr.ErrorOrNil(); err != nil {
-		return nil, HandleMultiVError(vErr)
-	}
-
 	// Set defaults / optional values
-	if rel.Commit.Tag != nil {
-		commitTag = *rel.Commit.Tag
+	if req.Commit.Tag != nil {
+		commitTag = *req.Commit.Tag
 	}
-	if rel.Release != nil {
-		if rel.Release.Name != nil {
-			relName = *rel.Release.Name
-		}
-		if rel.Release.Version != nil {
-			relVersion = *rel.Release.Version
-		}
-	}
-	if relName == "" {
-		relName = *repoName
-	}
-	if relVersion == "" {
-		relVersion = *commitHash
-		if commitTag != "" {
-			relVersion = commitTag
-		}
-	}
-
 	// Check if the release exists already
 	dbRelease, err := s.client.Release.Query().Where(
-		release.Name(relName), release.Version(relVersion),
+		release.Name(*req.Release.Name), release.Version(*req.Release.Version),
 		release.HasCommitWith(
-			gitcommit.Hash(*commitHash),
-			gitcommit.HasRepoWith(repo.Name(*repoName)),
+			gitcommit.Hash(*req.Commit.Hash),
 		),
 	).Only(s.ctx)
 	if err != nil {
@@ -88,29 +45,18 @@ func (s *Store) createRelease(rel *api.ReleaseCreateRequest) (*ent.Release, erro
 		return dbRelease, nil
 	}
 
-	// First we need to get the project, repo and commit
-	// dbProject, err := s.client.Project.Query().Where(
-	// 	project.Name(*projectName),
-	// ).Only(s.ctx)
-	// if err != nil {
-	// 	if !ent.IsNotFound(err) {
-	// 		return nil, HandleEntError(err, "project")
-	// 	}
-	// 	dbProject, err = s.client.Project.Create().SetName(*projectName).Save(s.ctx)
-	// 	if err != nil {
-	// 		return nil, HandleEntError(err, "project")
-	// 	}
-	// }
-
+	//
+	// Create the release, first the repo, then commit
+	//
 	dbRepo, err := s.client.Repo.Query().Where(
-		repo.Name(*repoName),
+		repo.Name(*req.Repo.Name),
 	).Only(s.ctx)
 	if err != nil {
 		if !ent.IsNotFound(err) {
 			return nil, HandleEntError(err, "repo")
 		}
 		dbRepo, err = s.client.Repo.Create().
-			SetName(*repoName).
+			SetName(*req.Repo.Name).
 			Save(s.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "repo")
@@ -118,20 +64,20 @@ func (s *Store) createRelease(rel *api.ReleaseCreateRequest) (*ent.Release, erro
 	}
 
 	dbCommit, err := s.client.GitCommit.Query().Where(
-		gitcommit.Hash(*commitHash),
+		gitcommit.Hash(*req.Commit.Hash),
 		gitcommit.HasRepoWith(repo.ID(dbRepo.ID)),
 	).Only(s.ctx)
 	if err != nil {
 		if !ent.IsNotFound(err) {
 			return nil, HandleEntError(err, "commit")
 		}
-		if rel.Commit.Tag != nil {
-			commitTag = *rel.Commit.Tag
+		if req.Commit.Tag != nil {
+			commitTag = *req.Commit.Tag
 		}
 		dbCommit, err = s.client.GitCommit.Create().
-			SetHash(*commitHash).
-			SetBranch(*commitBranch).
-			SetTime(*commitTime).
+			SetHash(*req.Commit.Hash).
+			SetBranch(*req.Commit.Branch).
+			SetTime(*req.Commit.Time).
 			SetTag(commitTag).
 			SetRepo(dbRepo).
 			Save(s.ctx)
@@ -142,8 +88,8 @@ func (s *Store) createRelease(rel *api.ReleaseCreateRequest) (*ent.Release, erro
 
 	dbRelease, err = s.client.Release.Create().
 		SetCommit(dbCommit).
-		SetName(relName).
-		SetVersion(relVersion).
+		SetName(*req.Release.Name).
+		SetVersion(*req.Release.Version).
 		Save(s.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "release")
@@ -153,33 +99,16 @@ func (s *Store) createRelease(rel *api.ReleaseCreateRequest) (*ent.Release, erro
 }
 
 func (s *Store) logArtifact(req *api.ArtifactLogRequest) (*ent.Artifact, error) {
-	var vErr error
-	if req.Commit == nil {
-		vErr = multierror.Append(vErr, NewValidationError(nil, "commit is required"))
+	if err := s.validator.Struct(req); err != nil {
+		return nil, HandleValidatorError(err, "artifact")
 	}
-	if req.Artifact == nil {
-		vErr = multierror.Append(vErr, NewValidationError(nil, "release is required"))
-	}
-	if vErr != nil {
-		return nil, vErr
-	}
-	var (
-		artName   = req.Artifact.GetNameOrErr(vErr)
-		artSha256 = req.Artifact.GetSha256OrErr(vErr)
-		artType   = req.Artifact.GetTypeOrErr(vErr)
-	)
-	if vErr != nil {
-		return nil, vErr
-	}
-	rel, err := s.releaseFromCommit(req.Commit)
+	dbRelease, err := s.releaseFromCommit(req.Commit)
 	if err != nil {
 		return nil, err
 	}
 	dbArtifact, err := s.client.Artifact.Create().
-		SetName(*artName).
-		SetSha256(*artSha256).
-		SetType(*artType).
-		SetRelease(rel).
+		SetModelCreate(req.Artifact).
+		SetRelease(dbRelease).
 		Save(s.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "artifact")

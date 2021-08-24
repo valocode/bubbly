@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/hashicorp/go-multierror"
-	"github.com/valocode/bubbly/ent/adapter"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
@@ -64,78 +63,11 @@ type Edge struct {
 	IDs  []int  `json:"ids,omitempty"`  // node ids (where this edge point to).
 }
 
-func (a *Adapter) Node(ctx context.Context) (node *Node, err error) {
-	node = &Node{
-		ID:     a.ID,
-		Type:   "Adapter",
-		Fields: make([]*Field, 6),
-		Edges:  make([]*Edge, 0),
-	}
-	var buf []byte
-	if buf, err = json.Marshal(a.Name); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "string",
-		Name:  "name",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(a.Tag); err != nil {
-		return nil, err
-	}
-	node.Fields[1] = &Field{
-		Type:  "string",
-		Name:  "tag",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(a.Type); err != nil {
-		return nil, err
-	}
-	node.Fields[2] = &Field{
-		Type:  "adapter.Type",
-		Name:  "type",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(a.Operation); err != nil {
-		return nil, err
-	}
-	node.Fields[3] = &Field{
-		Type:  "json.RawMessage",
-		Name:  "operation",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(a.ResultsType); err != nil {
-		return nil, err
-	}
-	node.Fields[4] = &Field{
-		Type:  "adapter.ResultsType",
-		Name:  "results_type",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(a.Results); err != nil {
-		return nil, err
-	}
-	node.Fields[5] = &Field{
-		Type:  "[]byte",
-		Name:  "results",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(a.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[6] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
-	return node, nil
-}
-
 func (a *Artifact) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     a.ID,
 		Type:   "Artifact",
-		Fields: make([]*Field, 3),
+		Fields: make([]*Field, 4),
 		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
@@ -163,10 +95,18 @@ func (a *Artifact) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "type",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(a.ID); err != nil {
+	if buf, err = json.Marshal(a.Time); err != nil {
 		return nil, err
 	}
 	node.Fields[3] = &Field{
+		Type:  "time.Time",
+		Name:  "time",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(a.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
@@ -322,7 +262,7 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     cs.ID,
 		Type:   "CodeScan",
-		Fields: make([]*Field, 1),
+		Fields: make([]*Field, 2),
 		Edges:  make([]*Edge, 5),
 	}
 	var buf []byte
@@ -334,10 +274,18 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "tool",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(cs.ID); err != nil {
+	if buf, err = json.Marshal(cs.Time); err != nil {
 		return nil, err
 	}
 	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "time",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(cs.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
@@ -715,7 +663,7 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		ID:     r.ID,
 		Type:   "Release",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 10),
+		Edges:  make([]*Edge, 11),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(r.Name); err != nil {
@@ -781,70 +729,80 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[3] = &Edge{
-		Type: "ReleaseEntry",
-		Name: "log",
+		Type: "Repo",
+		Name: "head_of",
 	}
-	node.Edges[3].IDs, err = r.QueryLog().
-		Select(releaseentry.FieldID).
+	node.Edges[3].IDs, err = r.QueryHeadOf().
+		Select(repo.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[4] = &Edge{
-		Type: "Artifact",
-		Name: "artifacts",
+		Type: "ReleaseEntry",
+		Name: "log",
 	}
-	node.Edges[4].IDs, err = r.QueryArtifacts().
-		Select(artifact.FieldID).
+	node.Edges[4].IDs, err = r.QueryLog().
+		Select(releaseentry.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[5] = &Edge{
-		Type: "ReleaseComponent",
-		Name: "components",
+		Type: "Artifact",
+		Name: "artifacts",
 	}
-	node.Edges[5].IDs, err = r.QueryComponents().
-		Select(releasecomponent.FieldID).
+	node.Edges[5].IDs, err = r.QueryArtifacts().
+		Select(artifact.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[6] = &Edge{
-		Type: "ReleaseVulnerability",
-		Name: "vulnerabilities",
+		Type: "ReleaseComponent",
+		Name: "components",
 	}
-	node.Edges[6].IDs, err = r.QueryVulnerabilities().
-		Select(releasevulnerability.FieldID).
+	node.Edges[6].IDs, err = r.QueryComponents().
+		Select(releasecomponent.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[7] = &Edge{
-		Type: "CodeScan",
-		Name: "code_scans",
+		Type: "ReleaseVulnerability",
+		Name: "vulnerabilities",
 	}
-	node.Edges[7].IDs, err = r.QueryCodeScans().
-		Select(codescan.FieldID).
+	node.Edges[7].IDs, err = r.QueryVulnerabilities().
+		Select(releasevulnerability.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[8] = &Edge{
-		Type: "TestRun",
-		Name: "test_runs",
+		Type: "CodeScan",
+		Name: "code_scans",
 	}
-	node.Edges[8].IDs, err = r.QueryTestRuns().
-		Select(testrun.FieldID).
+	node.Edges[8].IDs, err = r.QueryCodeScans().
+		Select(codescan.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[9] = &Edge{
+		Type: "TestRun",
+		Name: "test_runs",
+	}
+	node.Edges[9].IDs, err = r.QueryTestRuns().
+		Select(testrun.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[10] = &Edge{
 		Type: "VulnerabilityReview",
 		Name: "vulnerability_reviews",
 	}
-	node.Edges[9].IDs, err = r.QueryVulnerabilityReviews().
+	node.Edges[10].IDs, err = r.QueryVulnerabilityReviews().
 		Select(vulnerabilityreview.FieldID).
 		Ints(ctx)
 	if err != nil {
@@ -1060,8 +1018,8 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     r.ID,
 		Type:   "Repo",
-		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 3),
+		Fields: make([]*Field, 2),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(r.Name); err != nil {
@@ -1072,10 +1030,18 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "name",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(r.ID); err != nil {
+	if buf, err = json.Marshal(r.DefaultBranch); err != nil {
 		return nil, err
 	}
 	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "default_branch",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(r.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
@@ -1091,20 +1057,30 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "GitCommit",
-		Name: "commits",
+		Type: "Release",
+		Name: "head",
 	}
-	node.Edges[1].IDs, err = r.QueryCommits().
-		Select(gitcommit.FieldID).
+	node.Edges[1].IDs, err = r.QueryHead().
+		Select(release.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
+		Type: "GitCommit",
+		Name: "commits",
+	}
+	node.Edges[2].IDs, err = r.QueryCommits().
+		Select(gitcommit.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
 		Type: "VulnerabilityReview",
 		Name: "vulnerability_reviews",
 	}
-	node.Edges[2].IDs, err = r.QueryVulnerabilityReviews().
+	node.Edges[3].IDs, err = r.QueryVulnerabilityReviews().
 		Select(vulnerabilityreview.FieldID).
 		Ints(ctx)
 	if err != nil {
@@ -1178,7 +1154,7 @@ func (tr *TestRun) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     tr.ID,
 		Type:   "TestRun",
-		Fields: make([]*Field, 1),
+		Fields: make([]*Field, 2),
 		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
@@ -1190,10 +1166,18 @@ func (tr *TestRun) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "tool",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(tr.ID); err != nil {
+	if buf, err = json.Marshal(tr.Time); err != nil {
 		return nil, err
 	}
 	node.Fields[1] = &Field{
+		Type:  "time.Time",
+		Name:  "time",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(tr.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
@@ -1488,15 +1472,6 @@ func (c *Client) Noder(ctx context.Context, id int, opts ...NodeOption) (_ Noder
 
 func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error) {
 	switch table {
-	case adapter.Table:
-		n, err := c.Adapter.Query().
-			Where(adapter.ID(id)).
-			CollectFields(ctx, "Adapter").
-			Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
 	case artifact.Table:
 		n, err := c.Artifact.Query().
 			Where(artifact.ID(id)).
@@ -1732,19 +1707,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
-	case adapter.Table:
-		nodes, err := c.Adapter.Query().
-			Where(adapter.IDIn(ids...)).
-			CollectFields(ctx, "Adapter").
-			All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
 	case artifact.Table:
 		nodes, err := c.Artifact.Query().
 			Where(artifact.IDIn(ids...)).

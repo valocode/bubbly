@@ -299,22 +299,9 @@ func (m *AdapterMutation) OldOperation(ctx context.Context) (v json.RawMessage, 
 	return oldValue.Operation, nil
 }
 
-// ClearOperation clears the value of the "operation" field.
-func (m *AdapterMutation) ClearOperation() {
-	m.operation = nil
-	m.clearedFields[adapter.FieldOperation] = struct{}{}
-}
-
-// OperationCleared returns if the "operation" field was cleared in this mutation.
-func (m *AdapterMutation) OperationCleared() bool {
-	_, ok := m.clearedFields[adapter.FieldOperation]
-	return ok
-}
-
 // ResetOperation resets all changes to the "operation" field.
 func (m *AdapterMutation) ResetOperation() {
 	m.operation = nil
-	delete(m.clearedFields, adapter.FieldOperation)
 }
 
 // SetResultsType sets the "results_type" field.
@@ -548,11 +535,7 @@ func (m *AdapterMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *AdapterMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(adapter.FieldOperation) {
-		fields = append(fields, adapter.FieldOperation)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -565,11 +548,6 @@ func (m *AdapterMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *AdapterMutation) ClearField(name string) error {
-	switch name {
-	case adapter.FieldOperation:
-		m.ClearOperation()
-		return nil
-	}
 	return fmt.Errorf("unknown Adapter nullable field %s", name)
 }
 
@@ -656,6 +634,7 @@ type ArtifactMutation struct {
 	name           *string
 	sha256         *string
 	_type          *artifact.Type
+	time           *time.Time
 	clearedFields  map[string]struct{}
 	release        *int
 	clearedrelease bool
@@ -853,6 +832,42 @@ func (m *ArtifactMutation) ResetType() {
 	m._type = nil
 }
 
+// SetTime sets the "time" field.
+func (m *ArtifactMutation) SetTime(t time.Time) {
+	m.time = &t
+}
+
+// Time returns the value of the "time" field in the mutation.
+func (m *ArtifactMutation) Time() (r time.Time, exists bool) {
+	v := m.time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTime returns the old "time" field's value of the Artifact entity.
+// If the Artifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArtifactMutation) OldTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTime: %w", err)
+	}
+	return oldValue.Time, nil
+}
+
+// ResetTime resets all changes to the "time" field.
+func (m *ArtifactMutation) ResetTime() {
+	m.time = nil
+}
+
 // SetReleaseID sets the "release" edge to the Release entity by id.
 func (m *ArtifactMutation) SetReleaseID(id int) {
 	m.release = &id
@@ -950,7 +965,7 @@ func (m *ArtifactMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ArtifactMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.name != nil {
 		fields = append(fields, artifact.FieldName)
 	}
@@ -959,6 +974,9 @@ func (m *ArtifactMutation) Fields() []string {
 	}
 	if m._type != nil {
 		fields = append(fields, artifact.FieldType)
+	}
+	if m.time != nil {
+		fields = append(fields, artifact.FieldTime)
 	}
 	return fields
 }
@@ -974,6 +992,8 @@ func (m *ArtifactMutation) Field(name string) (ent.Value, bool) {
 		return m.Sha256()
 	case artifact.FieldType:
 		return m.GetType()
+	case artifact.FieldTime:
+		return m.Time()
 	}
 	return nil, false
 }
@@ -989,6 +1009,8 @@ func (m *ArtifactMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldSha256(ctx)
 	case artifact.FieldType:
 		return m.OldType(ctx)
+	case artifact.FieldTime:
+		return m.OldTime(ctx)
 	}
 	return nil, fmt.Errorf("unknown Artifact field %s", name)
 }
@@ -1018,6 +1040,13 @@ func (m *ArtifactMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetType(v)
+		return nil
+	case artifact.FieldTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTime(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Artifact field %s", name)
@@ -1076,6 +1105,9 @@ func (m *ArtifactMutation) ResetField(name string) error {
 		return nil
 	case artifact.FieldType:
 		m.ResetType()
+		return nil
+	case artifact.FieldTime:
+		m.ResetTime()
 		return nil
 	}
 	return fmt.Errorf("unknown Artifact field %s", name)
@@ -2359,6 +2391,7 @@ type CodeScanMutation struct {
 	typ                    string
 	id                     *int
 	tool                   *string
+	time                   *time.Time
 	clearedFields          map[string]struct{}
 	release                *int
 	clearedrelease         bool
@@ -2491,6 +2524,42 @@ func (m *CodeScanMutation) OldTool(ctx context.Context) (v string, err error) {
 // ResetTool resets all changes to the "tool" field.
 func (m *CodeScanMutation) ResetTool() {
 	m.tool = nil
+}
+
+// SetTime sets the "time" field.
+func (m *CodeScanMutation) SetTime(t time.Time) {
+	m.time = &t
+}
+
+// Time returns the value of the "time" field in the mutation.
+func (m *CodeScanMutation) Time() (r time.Time, exists bool) {
+	v := m.time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTime returns the old "time" field's value of the CodeScan entity.
+// If the CodeScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CodeScanMutation) OldTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTime: %w", err)
+	}
+	return oldValue.Time, nil
+}
+
+// ResetTime resets all changes to the "time" field.
+func (m *CodeScanMutation) ResetTime() {
+	m.time = nil
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by id.
@@ -2752,9 +2821,12 @@ func (m *CodeScanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CodeScanMutation) Fields() []string {
-	fields := make([]string, 0, 1)
+	fields := make([]string, 0, 2)
 	if m.tool != nil {
 		fields = append(fields, codescan.FieldTool)
+	}
+	if m.time != nil {
+		fields = append(fields, codescan.FieldTime)
 	}
 	return fields
 }
@@ -2766,6 +2838,8 @@ func (m *CodeScanMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case codescan.FieldTool:
 		return m.Tool()
+	case codescan.FieldTime:
+		return m.Time()
 	}
 	return nil, false
 }
@@ -2777,6 +2851,8 @@ func (m *CodeScanMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case codescan.FieldTool:
 		return m.OldTool(ctx)
+	case codescan.FieldTime:
+		return m.OldTime(ctx)
 	}
 	return nil, fmt.Errorf("unknown CodeScan field %s", name)
 }
@@ -2792,6 +2868,13 @@ func (m *CodeScanMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTool(v)
+		return nil
+	case codescan.FieldTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTime(v)
 		return nil
 	}
 	return fmt.Errorf("unknown CodeScan field %s", name)
@@ -2844,6 +2927,9 @@ func (m *CodeScanMutation) ResetField(name string) error {
 	switch name {
 	case codescan.FieldTool:
 		m.ResetTool()
+		return nil
+	case codescan.FieldTime:
+		m.ResetTime()
 		return nil
 	}
 	return fmt.Errorf("unknown CodeScan field %s", name)
@@ -5943,6 +6029,8 @@ type ReleaseMutation struct {
 	cleareddependencies          bool
 	commit                       *int
 	clearedcommit                bool
+	head_of                      *int
+	clearedhead_of               bool
 	log                          map[int]struct{}
 	removedlog                   map[int]struct{}
 	clearedlog                   bool
@@ -6301,6 +6389,45 @@ func (m *ReleaseMutation) CommitIDs() (ids []int) {
 func (m *ReleaseMutation) ResetCommit() {
 	m.commit = nil
 	m.clearedcommit = false
+}
+
+// SetHeadOfID sets the "head_of" edge to the Repo entity by id.
+func (m *ReleaseMutation) SetHeadOfID(id int) {
+	m.head_of = &id
+}
+
+// ClearHeadOf clears the "head_of" edge to the Repo entity.
+func (m *ReleaseMutation) ClearHeadOf() {
+	m.clearedhead_of = true
+}
+
+// HeadOfCleared reports if the "head_of" edge to the Repo entity was cleared.
+func (m *ReleaseMutation) HeadOfCleared() bool {
+	return m.clearedhead_of
+}
+
+// HeadOfID returns the "head_of" edge ID in the mutation.
+func (m *ReleaseMutation) HeadOfID() (id int, exists bool) {
+	if m.head_of != nil {
+		return *m.head_of, true
+	}
+	return
+}
+
+// HeadOfIDs returns the "head_of" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// HeadOfID instead. It exists only for internal usage by the builders.
+func (m *ReleaseMutation) HeadOfIDs() (ids []int) {
+	if id := m.head_of; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetHeadOf resets all changes to the "head_of" edge.
+func (m *ReleaseMutation) ResetHeadOf() {
+	m.head_of = nil
+	m.clearedhead_of = false
 }
 
 // AddLogIDs adds the "log" edge to the ReleaseEntry entity by ids.
@@ -6833,7 +6960,7 @@ func (m *ReleaseMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ReleaseMutation) AddedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.subreleases != nil {
 		edges = append(edges, release.EdgeSubreleases)
 	}
@@ -6842,6 +6969,9 @@ func (m *ReleaseMutation) AddedEdges() []string {
 	}
 	if m.commit != nil {
 		edges = append(edges, release.EdgeCommit)
+	}
+	if m.head_of != nil {
+		edges = append(edges, release.EdgeHeadOf)
 	}
 	if m.log != nil {
 		edges = append(edges, release.EdgeLog)
@@ -6885,6 +7015,10 @@ func (m *ReleaseMutation) AddedIDs(name string) []ent.Value {
 		return ids
 	case release.EdgeCommit:
 		if id := m.commit; id != nil {
+			return []ent.Value{*id}
+		}
+	case release.EdgeHeadOf:
+		if id := m.head_of; id != nil {
 			return []ent.Value{*id}
 		}
 	case release.EdgeLog:
@@ -6935,7 +7069,7 @@ func (m *ReleaseMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReleaseMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.removedsubreleases != nil {
 		edges = append(edges, release.EdgeSubreleases)
 	}
@@ -7030,7 +7164,7 @@ func (m *ReleaseMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ReleaseMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 11)
 	if m.clearedsubreleases {
 		edges = append(edges, release.EdgeSubreleases)
 	}
@@ -7039,6 +7173,9 @@ func (m *ReleaseMutation) ClearedEdges() []string {
 	}
 	if m.clearedcommit {
 		edges = append(edges, release.EdgeCommit)
+	}
+	if m.clearedhead_of {
+		edges = append(edges, release.EdgeHeadOf)
 	}
 	if m.clearedlog {
 		edges = append(edges, release.EdgeLog)
@@ -7074,6 +7211,8 @@ func (m *ReleaseMutation) EdgeCleared(name string) bool {
 		return m.cleareddependencies
 	case release.EdgeCommit:
 		return m.clearedcommit
+	case release.EdgeHeadOf:
+		return m.clearedhead_of
 	case release.EdgeLog:
 		return m.clearedlog
 	case release.EdgeArtifacts:
@@ -7099,6 +7238,9 @@ func (m *ReleaseMutation) ClearEdge(name string) error {
 	case release.EdgeCommit:
 		m.ClearCommit()
 		return nil
+	case release.EdgeHeadOf:
+		m.ClearHeadOf()
+		return nil
 	}
 	return fmt.Errorf("unknown Release unique edge %s", name)
 }
@@ -7115,6 +7257,9 @@ func (m *ReleaseMutation) ResetEdge(name string) error {
 		return nil
 	case release.EdgeCommit:
 		m.ResetCommit()
+		return nil
+	case release.EdgeHeadOf:
+		m.ResetHeadOf()
 		return nil
 	case release.EdgeLog:
 		m.ResetLog()
@@ -8871,10 +9016,13 @@ type RepoMutation struct {
 	typ                          string
 	id                           *int
 	name                         *string
+	default_branch               *string
 	clearedFields                map[string]struct{}
 	projects                     map[int]struct{}
 	removedprojects              map[int]struct{}
 	clearedprojects              bool
+	head                         *int
+	clearedhead                  bool
 	commits                      map[int]struct{}
 	removedcommits               map[int]struct{}
 	clearedcommits               bool
@@ -9001,6 +9149,42 @@ func (m *RepoMutation) ResetName() {
 	m.name = nil
 }
 
+// SetDefaultBranch sets the "default_branch" field.
+func (m *RepoMutation) SetDefaultBranch(s string) {
+	m.default_branch = &s
+}
+
+// DefaultBranch returns the value of the "default_branch" field in the mutation.
+func (m *RepoMutation) DefaultBranch() (r string, exists bool) {
+	v := m.default_branch
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDefaultBranch returns the old "default_branch" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldDefaultBranch(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldDefaultBranch is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldDefaultBranch requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDefaultBranch: %w", err)
+	}
+	return oldValue.DefaultBranch, nil
+}
+
+// ResetDefaultBranch resets all changes to the "default_branch" field.
+func (m *RepoMutation) ResetDefaultBranch() {
+	m.default_branch = nil
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by ids.
 func (m *RepoMutation) AddProjectIDs(ids ...int) {
 	if m.projects == nil {
@@ -9053,6 +9237,45 @@ func (m *RepoMutation) ResetProjects() {
 	m.projects = nil
 	m.clearedprojects = false
 	m.removedprojects = nil
+}
+
+// SetHeadID sets the "head" edge to the Release entity by id.
+func (m *RepoMutation) SetHeadID(id int) {
+	m.head = &id
+}
+
+// ClearHead clears the "head" edge to the Release entity.
+func (m *RepoMutation) ClearHead() {
+	m.clearedhead = true
+}
+
+// HeadCleared reports if the "head" edge to the Release entity was cleared.
+func (m *RepoMutation) HeadCleared() bool {
+	return m.clearedhead
+}
+
+// HeadID returns the "head" edge ID in the mutation.
+func (m *RepoMutation) HeadID() (id int, exists bool) {
+	if m.head != nil {
+		return *m.head, true
+	}
+	return
+}
+
+// HeadIDs returns the "head" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// HeadID instead. It exists only for internal usage by the builders.
+func (m *RepoMutation) HeadIDs() (ids []int) {
+	if id := m.head; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetHead resets all changes to the "head" edge.
+func (m *RepoMutation) ResetHead() {
+	m.head = nil
+	m.clearedhead = false
 }
 
 // AddCommitIDs adds the "commits" edge to the GitCommit entity by ids.
@@ -9182,9 +9405,12 @@ func (m *RepoMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepoMutation) Fields() []string {
-	fields := make([]string, 0, 1)
+	fields := make([]string, 0, 2)
 	if m.name != nil {
 		fields = append(fields, repo.FieldName)
+	}
+	if m.default_branch != nil {
+		fields = append(fields, repo.FieldDefaultBranch)
 	}
 	return fields
 }
@@ -9196,6 +9422,8 @@ func (m *RepoMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case repo.FieldName:
 		return m.Name()
+	case repo.FieldDefaultBranch:
+		return m.DefaultBranch()
 	}
 	return nil, false
 }
@@ -9207,6 +9435,8 @@ func (m *RepoMutation) OldField(ctx context.Context, name string) (ent.Value, er
 	switch name {
 	case repo.FieldName:
 		return m.OldName(ctx)
+	case repo.FieldDefaultBranch:
+		return m.OldDefaultBranch(ctx)
 	}
 	return nil, fmt.Errorf("unknown Repo field %s", name)
 }
@@ -9222,6 +9452,13 @@ func (m *RepoMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case repo.FieldDefaultBranch:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDefaultBranch(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Repo field %s", name)
@@ -9275,15 +9512,21 @@ func (m *RepoMutation) ResetField(name string) error {
 	case repo.FieldName:
 		m.ResetName()
 		return nil
+	case repo.FieldDefaultBranch:
+		m.ResetDefaultBranch()
+		return nil
 	}
 	return fmt.Errorf("unknown Repo field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RepoMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.projects != nil {
 		edges = append(edges, repo.EdgeProjects)
+	}
+	if m.head != nil {
+		edges = append(edges, repo.EdgeHead)
 	}
 	if m.commits != nil {
 		edges = append(edges, repo.EdgeCommits)
@@ -9304,6 +9547,10 @@ func (m *RepoMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case repo.EdgeHead:
+		if id := m.head; id != nil {
+			return []ent.Value{*id}
+		}
 	case repo.EdgeCommits:
 		ids := make([]ent.Value, 0, len(m.commits))
 		for id := range m.commits {
@@ -9322,7 +9569,7 @@ func (m *RepoMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RepoMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedprojects != nil {
 		edges = append(edges, repo.EdgeProjects)
 	}
@@ -9363,9 +9610,12 @@ func (m *RepoMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RepoMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedprojects {
 		edges = append(edges, repo.EdgeProjects)
+	}
+	if m.clearedhead {
+		edges = append(edges, repo.EdgeHead)
 	}
 	if m.clearedcommits {
 		edges = append(edges, repo.EdgeCommits)
@@ -9382,6 +9632,8 @@ func (m *RepoMutation) EdgeCleared(name string) bool {
 	switch name {
 	case repo.EdgeProjects:
 		return m.clearedprojects
+	case repo.EdgeHead:
+		return m.clearedhead
 	case repo.EdgeCommits:
 		return m.clearedcommits
 	case repo.EdgeVulnerabilityReviews:
@@ -9394,6 +9646,9 @@ func (m *RepoMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *RepoMutation) ClearEdge(name string) error {
 	switch name {
+	case repo.EdgeHead:
+		m.ClearHead()
+		return nil
 	}
 	return fmt.Errorf("unknown Repo unique edge %s", name)
 }
@@ -9404,6 +9659,9 @@ func (m *RepoMutation) ResetEdge(name string) error {
 	switch name {
 	case repo.EdgeProjects:
 		m.ResetProjects()
+		return nil
+	case repo.EdgeHead:
+		m.ResetHead()
 		return nil
 	case repo.EdgeCommits:
 		m.ResetCommits()
@@ -9981,6 +10239,7 @@ type TestRunMutation struct {
 	typ            string
 	id             *int
 	tool           *string
+	time           *time.Time
 	clearedFields  map[string]struct{}
 	release        *int
 	clearedrelease bool
@@ -10107,6 +10366,42 @@ func (m *TestRunMutation) OldTool(ctx context.Context) (v string, err error) {
 // ResetTool resets all changes to the "tool" field.
 func (m *TestRunMutation) ResetTool() {
 	m.tool = nil
+}
+
+// SetTime sets the "time" field.
+func (m *TestRunMutation) SetTime(t time.Time) {
+	m.time = &t
+}
+
+// Time returns the value of the "time" field in the mutation.
+func (m *TestRunMutation) Time() (r time.Time, exists bool) {
+	v := m.time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTime returns the old "time" field's value of the TestRun entity.
+// If the TestRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TestRunMutation) OldTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTime: %w", err)
+	}
+	return oldValue.Time, nil
+}
+
+// ResetTime resets all changes to the "time" field.
+func (m *TestRunMutation) ResetTime() {
+	m.time = nil
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by id.
@@ -10260,9 +10555,12 @@ func (m *TestRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TestRunMutation) Fields() []string {
-	fields := make([]string, 0, 1)
+	fields := make([]string, 0, 2)
 	if m.tool != nil {
 		fields = append(fields, testrun.FieldTool)
+	}
+	if m.time != nil {
+		fields = append(fields, testrun.FieldTime)
 	}
 	return fields
 }
@@ -10274,6 +10572,8 @@ func (m *TestRunMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case testrun.FieldTool:
 		return m.Tool()
+	case testrun.FieldTime:
+		return m.Time()
 	}
 	return nil, false
 }
@@ -10285,6 +10585,8 @@ func (m *TestRunMutation) OldField(ctx context.Context, name string) (ent.Value,
 	switch name {
 	case testrun.FieldTool:
 		return m.OldTool(ctx)
+	case testrun.FieldTime:
+		return m.OldTime(ctx)
 	}
 	return nil, fmt.Errorf("unknown TestRun field %s", name)
 }
@@ -10300,6 +10602,13 @@ func (m *TestRunMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTool(v)
+		return nil
+	case testrun.FieldTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTime(v)
 		return nil
 	}
 	return fmt.Errorf("unknown TestRun field %s", name)
@@ -10352,6 +10661,9 @@ func (m *TestRunMutation) ResetField(name string) error {
 	switch name {
 	case testrun.FieldTool:
 		m.ResetTool()
+		return nil
+	case testrun.FieldTime:
+		m.ResetTime()
 		return nil
 	}
 	return fmt.Errorf("unknown TestRun field %s", name)

@@ -12,6 +12,24 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
+// type RequestBuilder interface {
+// 	NewRequest(method, url string, body io.Reader) (*http.Request, error)
+// }
+
+// var (
+// 	Request RequestBuilder
+// )
+
+// type HTTPRequestBuilder struct{}
+
+// func (h HTTPRequestBuilder) NewRequest(method, url string, body io.Reader) (*http.Request, error) {
+// 	return http.NewRequest(method, url, body)
+// }
+
+// func init() {
+// 	Request = &HTTPRequestBuilder{}
+// }
+
 func CreateRelease(bCtx *env.BubblyContext, req *api.ReleaseCreateRequest) error {
 	return handlePushRequest(bCtx, req, "releases")
 }
@@ -21,7 +39,7 @@ func SaveCodeScan(bCtx *env.BubblyContext, req *api.CodeScanRequest) error {
 }
 
 func GetAdapter(bCtx *env.BubblyContext, req *api.AdapterGetRequest) (*adapter.Adapter, error) {
-	url := "http://localhost:8111/api/v1/adapters/" + *req.Name
+	url := bCtx.ClientConfig.V1() + "/adapters/" + *req.Name
 	httpReq, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -45,7 +63,7 @@ func GetAdapter(bCtx *env.BubblyContext, req *api.AdapterGetRequest) (*adapter.A
 	if err := json.NewDecoder(resp.Body).Decode(&a); err != nil {
 		return nil, fmt.Errorf("decoding adapter response: %w", err)
 	}
-	return adapter.FromModel(a.AdapterModel)
+	return adapter.FromModel(&a.AdapterModelRead)
 }
 
 func SaveAdapter(bCtx *env.BubblyContext, req *api.AdapterSaveRequest) error {
@@ -57,8 +75,15 @@ func handlePushRequest(bCtx *env.BubblyContext, req interface{}, urlsuffix strin
 	if err := json.NewEncoder(b).Encode(req); err != nil {
 		return err
 	}
-	url := "http://localhost:8111/api/v1/" + urlsuffix
-	resp, err := http.Post(url, echo.MIMEApplicationJSON, b)
+
+	fmt.Printf("%s\n", b)
+	url := bCtx.ClientConfig.V1() + "/" + urlsuffix
+	httpReq, err := http.NewRequest(http.MethodPost, url, b)
+	if err != nil {
+		return err
+	}
+	httpReq.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return err
 	}

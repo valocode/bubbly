@@ -2,6 +2,7 @@ package schema
 
 import (
 	"context"
+	"time"
 
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
@@ -41,6 +42,12 @@ func (Artifact) Fields() []ent.Field {
 			Values("docker", "file").
 			Annotations(
 				entgql.OrderField("type"),
+			),
+		field.Time("time").
+			Immutable().
+			Default(func() time.Time { return time.Now() }).
+			Annotations(
+				entgql.OrderField("time"),
 			),
 	}
 }

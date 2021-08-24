@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"time"
 
 	"entgo.io/ent"
 )
@@ -21,6 +22,8 @@ const (
 	FieldSha256 = "sha256"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
+	// FieldTime holds the string denoting the time field in the database.
+	FieldTime = "time"
 	// EdgeRelease holds the string denoting the release edge name in mutations.
 	EdgeRelease = "release"
 	// EdgeEntry holds the string denoting the entry edge name in mutations.
@@ -49,6 +52,7 @@ var Columns = []string{
 	FieldName,
 	FieldSha256,
 	FieldType,
+	FieldTime,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "artifact"
@@ -85,6 +89,8 @@ var (
 	NameValidator func(string) error
 	// Sha256Validator is a validator for the "sha256" field. It is called by the builders before save.
 	Sha256Validator func(string) error
+	// DefaultTime holds the default value on creation for the "time" field.
+	DefaultTime func() time.Time
 )
 
 // Type defines the type for the "type" enum field.

@@ -2,6 +2,8 @@ package entmodel
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"text/template"
 
 	"entgo.io/ent/entc"
@@ -23,7 +25,7 @@ type (
 	}
 
 	Annotation struct {
-		IsRoot bool
+		SkipCreate bool
 	}
 )
 
@@ -38,8 +40,12 @@ func (e *Extensions) Templates() []*gen.Template {
 		templates,
 		gen.MustParse(gen.NewTemplate("model").
 			Funcs(template.FuncMap{
-				"filterModelNodes": filterModelNodes,
-				"fieldsAndID":      fieldsAndID,
+				"filterModelNodes":        filterModelNodes,
+				"fieldsModelCreate":       fieldsModelCreate,
+				"fieldsModelRead":         fieldsModelRead,
+				"fieldsRequiredNoDefault": fieldsRequiredNoDefault,
+				"fieldTag":                fieldTag,
+				"fieldsAndID":             fieldsAndID,
 			}).ParseDir(
 			"extensions/entmodel/templates",
 		)))
@@ -51,8 +57,8 @@ func (Annotation) Name() string {
 	return antName
 }
 
-func Root() Annotation {
-	return Annotation{IsRoot: true}
+func SkipCreate() Annotation {
+	return Annotation{SkipCreate: true}
 }
 
 // Decode unmarshal annotation
@@ -81,6 +87,59 @@ func filterModelNodes(nodes []*gen.Type) ([]*gen.Type, error) {
 		}
 	}
 	return aptNodes, nil
+}
+
+func fieldsModelCreate(node *gen.Type) []*gen.Field {
+	var fields []*gen.Field
+	for _, field := range node.Fields {
+		if val, ok := field.Annotations[antName]; ok {
+			ant, err := DecodeAnnotation(val)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if ant.SkipCreate {
+				continue
+			}
+		}
+		fields = append(fields, field)
+	}
+	return fields
+}
+
+func fieldsModelRead(node *gen.Type) []*gen.Field {
+	return append(node.Fields, node.ID)
+}
+
+func fieldsRequiredNoDefault(node *gen.Type) []*gen.Field {
+	var fields []*gen.Field
+	for _, field := range node.Fields {
+		if isFieldRequiredNoDefault(field) {
+			fields = append(fields, field)
+		}
+	}
+	return fields
+}
+
+func fieldTag(field *gen.Field) string {
+	var (
+		jsonTag     = fmt.Sprintf(`json:"%s,omitempty"`, field.Name)
+		validateTag string
+		hclTag      = fmt.Sprintf(`hcl:"%s,optional"`, field.Name)
+	)
+	if isFieldRequiredNoDefault(field) {
+		validateTag = `validate:"required"`
+		hclTag = fmt.Sprintf(`hcl:"%s,attr"`, field.Name)
+	}
+	return jsonTag + " " + validateTag + " " + hclTag
+}
+
+func isFieldRequiredNoDefault(field *gen.Field) bool {
+	if !field.Optional {
+		if !field.Default {
+			return true
+		}
+	}
+	return false
 }
 
 func fieldsAndID(node *gen.Type) []*gen.Field {

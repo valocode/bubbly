@@ -15,7 +15,7 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "tag", Type: field.TypeString},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"json", "csv", "xml", "yaml", "http"}},
-		{Name: "operation", Type: field.TypeJSON, Nullable: true},
+		{Name: "operation", Type: field.TypeJSON},
 		{Name: "results_type", Type: field.TypeEnum, Enums: []string{"code_scan", "test_run"}},
 		{Name: "results", Type: field.TypeBytes},
 	}
@@ -38,6 +38,7 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 2147483647},
 		{Name: "sha256", Type: field.TypeString, Size: 2147483647},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"docker", "file"}},
+		{Name: "time", Type: field.TypeTime},
 		{Name: "artifact_release", Type: field.TypeInt, Nullable: true},
 		{Name: "release_entry_artifact", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
@@ -49,13 +50,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "artifact_release_release",
-				Columns:    []*schema.Column{ArtifactColumns[4]},
+				Columns:    []*schema.Column{ArtifactColumns[5]},
 				RefColumns: []*schema.Column{ReleaseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "artifact_release_entry_artifact",
-				Columns:    []*schema.Column{ArtifactColumns[5]},
+				Columns:    []*schema.Column{ArtifactColumns[6]},
 				RefColumns: []*schema.Column{ReleaseEntryColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -115,6 +116,7 @@ var (
 	CodeScanColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "tool", Type: field.TypeString, Size: 2147483647},
+		{Name: "time", Type: field.TypeTime},
 		{Name: "code_scan_release", Type: field.TypeInt, Nullable: true},
 		{Name: "release_entry_code_scan", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
@@ -126,13 +128,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "code_scan_release_release",
-				Columns:    []*schema.Column{CodeScanColumns[2]},
+				Columns:    []*schema.Column{CodeScanColumns[3]},
 				RefColumns: []*schema.Column{ReleaseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "code_scan_release_entry_code_scan",
-				Columns:    []*schema.Column{CodeScanColumns[3]},
+				Columns:    []*schema.Column{CodeScanColumns[4]},
 				RefColumns: []*schema.Column{ReleaseEntryColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -256,6 +258,7 @@ var (
 		{Name: "version", Type: field.TypeString, Size: 2147483647},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "ready", "blocked"}, Default: "pending"},
 		{Name: "git_commit_release", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "repo_head", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// ReleaseTable holds the schema information for the "release" table.
 	ReleaseTable = &schema.Table{
@@ -267,6 +270,12 @@ var (
 				Symbol:     "release_commit_release",
 				Columns:    []*schema.Column{ReleaseColumns[4]},
 				RefColumns: []*schema.Column{CommitColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "release_repo_head",
+				Columns:    []*schema.Column{ReleaseColumns[5]},
+				RefColumns: []*schema.Column{RepoColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -361,7 +370,8 @@ var (
 	// RepoColumns holds the columns for the "repo" table.
 	RepoColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Size: 2147483647},
+		{Name: "name", Type: field.TypeString},
+		{Name: "default_branch", Type: field.TypeString, Default: "main"},
 	}
 	// RepoTable holds the schema information for the "repo" table.
 	RepoTable = &schema.Table{
@@ -403,6 +413,7 @@ var (
 	TestRunColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "tool", Type: field.TypeString, Size: 2147483647},
+		{Name: "time", Type: field.TypeTime},
 		{Name: "release_entry_test_run", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "test_run_release", Type: field.TypeInt, Nullable: true},
 	}
@@ -414,13 +425,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "test_run_release_entry_test_run",
-				Columns:    []*schema.Column{TestRunColumns[2]},
+				Columns:    []*schema.Column{TestRunColumns[3]},
 				RefColumns: []*schema.Column{ReleaseEntryColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "test_run_release_release",
-				Columns:    []*schema.Column{TestRunColumns[3]},
+				Columns:    []*schema.Column{TestRunColumns[4]},
 				RefColumns: []*schema.Column{ReleaseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -846,6 +857,7 @@ func init() {
 		Table: "project",
 	}
 	ReleaseTable.ForeignKeys[0].RefTable = CommitTable
+	ReleaseTable.ForeignKeys[1].RefTable = RepoTable
 	ReleaseTable.Annotation = &entsql.Annotation{
 		Table: "release",
 	}

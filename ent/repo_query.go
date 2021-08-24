@@ -15,6 +15,7 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
+	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -30,6 +31,7 @@ type RepoQuery struct {
 	predicates []predicate.Repo
 	// eager-loading edges.
 	withProjects             *ProjectQuery
+	withHead                 *ReleaseQuery
 	withCommits              *GitCommitQuery
 	withVulnerabilityReviews *VulnerabilityReviewQuery
 	// intermediate query (i.e. traversal path).
@@ -83,6 +85,28 @@ func (rq *RepoQuery) QueryProjects() *ProjectQuery {
 			sqlgraph.From(repo.Table, repo.FieldID, selector),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, repo.ProjectsTable, repo.ProjectsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryHead chains the current query on the "head" edge.
+func (rq *RepoQuery) QueryHead() *ReleaseQuery {
+	query := &ReleaseQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repo.Table, repo.FieldID, selector),
+			sqlgraph.To(release.Table, release.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, repo.HeadTable, repo.HeadColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -316,6 +340,7 @@ func (rq *RepoQuery) Clone() *RepoQuery {
 		order:                    append([]OrderFunc{}, rq.order...),
 		predicates:               append([]predicate.Repo{}, rq.predicates...),
 		withProjects:             rq.withProjects.Clone(),
+		withHead:                 rq.withHead.Clone(),
 		withCommits:              rq.withCommits.Clone(),
 		withVulnerabilityReviews: rq.withVulnerabilityReviews.Clone(),
 		// clone intermediate query.
@@ -332,6 +357,17 @@ func (rq *RepoQuery) WithProjects(opts ...func(*ProjectQuery)) *RepoQuery {
 		opt(query)
 	}
 	rq.withProjects = query
+	return rq
+}
+
+// WithHead tells the query-builder to eager-load the nodes that are connected to
+// the "head" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RepoQuery) WithHead(opts ...func(*ReleaseQuery)) *RepoQuery {
+	query := &ReleaseQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withHead = query
 	return rq
 }
 
@@ -422,8 +458,9 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 	var (
 		nodes       = []*Repo{}
 		_spec       = rq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			rq.withProjects != nil,
+			rq.withHead != nil,
 			rq.withCommits != nil,
 			rq.withVulnerabilityReviews != nil,
 		}
@@ -510,6 +547,34 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 			for i := range nodes {
 				nodes[i].Edges.Projects = append(nodes[i].Edges.Projects, n)
 			}
+		}
+	}
+
+	if query := rq.withHead; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Repo)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.Release(func(s *sql.Selector) {
+			s.Where(sql.InValues(repo.HeadColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.repo_head
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "repo_head" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "repo_head" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Head = n
 		}
 	}
 

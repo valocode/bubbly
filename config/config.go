@@ -71,6 +71,10 @@ type ClientConfig struct {
 	NATSAddr   string
 }
 
+func (c *ClientConfig) V1() string {
+	return c.BubblyAddr + "/api/v1"
+}
+
 // ##########################
 // CLI
 // ##########################

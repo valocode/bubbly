@@ -12,18 +12,18 @@ import (
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
-	"github.com/valocode/bubbly/ent/model"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/vulnerability"
+	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/integrations"
 	"github.com/valocode/bubbly/store"
 	"github.com/valocode/bubbly/store/api"
 )
 
 type DemoRepoOptions struct {
-	Name string
-	// Project string
-	Branch string
+	Name    string
+	Project string
+	Branch  string
 
 	NumCommits    int
 	NumTests      int
@@ -42,12 +42,27 @@ type DemoRepoOptions struct {
 	CveScanTimeMax int
 }
 
+// type DemoData struct {
+// 	Repos []RepoData
+// }
+
+type RepoData struct {
+	Releases []ReleaseData
+}
+
+type ReleaseData struct {
+	Release   *api.ReleaseCreateRequest
+	Artifacts []*api.ArtifactLogRequest
+	CodeScans []*api.CodeScanRequest
+	TestRuns  []*api.TestRunRequest
+}
+
 var demoData = []DemoRepoOptions{
 	{
-		Name: "demo",
-		// Project:       "bubbly",
+		Name:          "demo",
+		Project:       "bubbly",
 		Branch:        "main",
-		NumCommits:    250,
+		NumCommits:    30,
 		NumTests:      500,
 		NumCodeIssues: 50,
 
@@ -147,12 +162,12 @@ func FailSomeRandomReleases(db *store.Store) error {
 	return nil
 }
 
-func CreateDummyData(store *store.Store) error {
+func CreateDummyDataOLD(bCtx *env.BubblyContext, store *store.Store) error {
 
 	var (
-		client     = store.Client()
-		vulns      []*ent.Vulnerability
-		components []*ent.Component
+		client = store.Client()
+		vulns  []*ent.Vulnerability
+		// components []*ent.Component
 		// licenses   []*ent.License
 		// licenseIDs = []string{"MIT", "GPL-3.0", "MPL-2.0", "Apache-2.0"}
 		ctx = context.Background()
@@ -171,7 +186,7 @@ func CreateDummyData(store *store.Store) error {
 
 	// Create some components
 	{
-		mods, err := integrations.ParseSBOM("adapter/testdata/spdx-sbom-generator.json")
+		mods, err := integrations.ParseSBOM("../adapter/testdata/spdx-sbom-generator.json")
 		if err != nil {
 			return err
 		}
@@ -192,9 +207,9 @@ func CreateDummyData(store *store.Store) error {
 			if err != nil {
 				return err
 			}
-			components = append(components, dbComp)
+			// components = append(components, dbComp)
 			compVuln := api.ComponentVulnerability{
-				Component: api.Component{ComponentModel: *model.NewComponentModel().SetID(dbComp.ID)},
+				ComponentID: &dbComp.ID,
 			}
 
 			vulnID := fmt.Sprintf("CVE-%d", i)
@@ -204,8 +219,7 @@ func CreateDummyData(store *store.Store) error {
 
 			compVuln.Vulnerabilities = append(compVuln.Vulnerabilities,
 				&api.Vulnerability{
-					VulnerabilityModel: *model.NewVulnerabilityModel().
-						SetVid(vulnID),
+					VulnerabilityModelCreate: *ent.NewVulnerabilityModelCreate().SetVid(vulnID),
 				},
 			)
 			compVulns = append(compVulns, &compVuln)
@@ -225,27 +239,35 @@ func CreateDummyData(store *store.Store) error {
 			// license := ent.NewLicenseNode().SetSpdxID(spdxID)
 
 		}
+		var dataSource = "demo"
 		if err := store.SaveComponentVulnerabilities(&api.ComponentVulnerabilityRequest{
+			DataSource: &dataSource,
 			Components: compVulns,
 		}); err != nil {
 			return fmt.Errorf("error saving component vulnerabilities: %w", err)
 		}
 	}
 
-	for _, opt := range demoData {
-		if err := createRepoData(store, opt, components); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-func createRepoData(store *store.Store, opt DemoRepoOptions, components []*ent.Component) error {
+func CreateDummyData() []RepoData {
+	var repos []RepoData
+	for _, opt := range demoData {
+		repos = append(repos, RepoData{
+			Releases: createRepoData(opt),
+		})
+	}
 
+	return repos
+}
+
+func createRepoData(opt DemoRepoOptions) []ReleaseData {
+	var releases []ReleaseData
 	cTime := time.Now()
 	for i := 1; i <= opt.NumCommits; i++ {
 		var (
+			data    ReleaseData
 			tag     string
 			version string
 		)
@@ -266,17 +288,15 @@ func createRepoData(store *store.Store, opt DemoRepoOptions, components []*ent.C
 
 		fmt.Printf("Creating release with version %s at %s\n", version, cTime.Format(time.RFC3339))
 		relReq := api.ReleaseCreateRequest{
-			Repo: model.NewRepoModel().SetName(opt.Name),
-			Commit: model.NewGitCommitModel().
+			Release: ent.NewReleaseModelCreate().SetName(opt.Name).SetVersion(version),
+			Repo:    ent.NewRepoModelCreate().SetName(opt.Name),
+			Commit: ent.NewGitCommitModelCreate().
 				SetHash(hash).
 				SetBranch(opt.Branch).
 				SetTag(tag).
 				SetTime(cTime),
 		}
-		_, err := store.CreateRelease(&relReq)
-		if err != nil {
-			return err
-		}
+		data.Release = &relReq
 		//
 		// Artifact
 		//
@@ -285,17 +305,15 @@ func createRepoData(store *store.Store, opt DemoRepoOptions, components []*ent.C
 				rand.Intn(opt.ArtifactTimeMax-opt.ArtifactTimeMin+1)+opt.ArtifactTimeMin,
 			))
 			artReq := api.ArtifactLogRequest{
-				Artifact: model.NewArtifactModel().
+				Artifact: ent.NewArtifactModelCreate().
 					SetName("dummy").
 					SetSha256(fmt.Sprintf("%x", sha256.Sum256([]byte(hash)))).
-					SetType(artifact.TypeDocker),
+					SetType(artifact.TypeDocker).
+					SetTime(cTime),
 				Commit: &hash,
 			}
 
-			_, err := store.LogArtifact(&artReq)
-			if err != nil {
-				return err
-			}
+			data.Artifacts = append(data.Artifacts, &artReq)
 		}
 		//
 		// Test Run & Cases
@@ -306,15 +324,10 @@ func createRepoData(store *store.Store, opt DemoRepoOptions, components []*ent.C
 			))
 
 			run := api.TestRun{
-				TestRunModel: *model.NewTestRunModel().SetTool("gotest"),
+				TestRunModelCreate: *ent.NewTestRunModelCreate().
+					SetTool("gotest").
+					SetTime(cTime),
 			}
-			// run := ent.NewTestRunNode().
-			// 	SetRelease(release).
-			// 	SetEntry(
-			// 		ent.NewReleaseEntryNode().
-			// 			SetTime(cTime).
-			// 			SetType(releaseentry.TypeTestRun),
-			// 	)
 
 			for j := 1; j <= opt.NumTests; j++ {
 				// Calculate the result based on the test case number. The higher
@@ -326,20 +339,17 @@ func createRepoData(store *store.Store, opt DemoRepoOptions, components []*ent.C
 				// 	fmt.Printf("Test Case will fail: %d\n", j)
 				// }
 				run.TestCases = append(run.TestCases, &api.TestRunCase{
-					TestCaseModel: *model.NewTestCaseModel().
+					TestCaseModelCreate: *ent.NewTestCaseModelCreate().
 						SetName(fmt.Sprintf("test_case_%d", j)).
 						SetMessage("TODO").
 						SetResult(result).
 						SetElapsed(0),
 				})
 			}
-			_, err := store.SaveTestRun(&api.TestRunRequest{
+			data.TestRuns = append(data.TestRuns, &api.TestRunRequest{
 				Commit:  &hash,
 				TestRun: &run,
 			})
-			if err != nil {
-				return err
-			}
 		}
 
 		//
@@ -350,35 +360,26 @@ func createRepoData(store *store.Store, opt DemoRepoOptions, components []*ent.C
 				rand.Intn(opt.IssueScanTimeMax-opt.IssueScanTimeMin+1)+opt.IssueScanTimeMin,
 			))
 			scan := api.CodeScan{
-				CodeScanModel: *model.NewCodeScanModel().
-					SetTool("gosec"),
+				CodeScanModelCreate: ent.NewCodeScanModelCreate().
+					SetTool("gosec").
+					SetTime(cTime),
 			}
-			// scan := ent.NewCodeScanNode().
-			// 	SetRelease(release).
-			// 	SetEntry(
-			// 		ent.NewReleaseEntryNode().
-			// 			SetTime(cTime).
-			// 			SetType(releaseentry.TypeCodeScan),
-			// 	)
 
 			for j := 0; j < opt.NumCodeIssues; j++ {
 				// cweID := fmt.Sprintf("CWE-%d", j)
 				// tx.CWE.Query().Where(cwe.CweID()).Only(ctx)
 				scan.Issues = append(scan.Issues, &api.CodeScanIssue{
-					CodeIssueModel: *model.NewCodeIssueModel().
+					CodeIssueModelCreate: *ent.NewCodeIssueModelCreate().
 						SetRuleID(fmt.Sprintf("rule_%d", j)).
 						SetMessage("TODO").
 						SetSeverity(codeissue.SeverityHigh).
 						SetType(codeissue.TypeSecurity),
 				})
 			}
-			_, err := store.SaveCodeScan(&api.CodeScanRequest{
+			data.CodeScans = append(data.CodeScans, &api.CodeScanRequest{
 				Commit:   &hash,
 				CodeScan: &scan,
 			})
-			if err != nil {
-				return err
-			}
 		}
 
 		//
@@ -389,33 +390,37 @@ func createRepoData(store *store.Store, opt DemoRepoOptions, components []*ent.C
 				rand.Intn(opt.CveScanTimeMax-opt.CveScanTimeMin+1)+opt.CveScanTimeMin,
 			))
 			scan := api.CodeScan{
-				CodeScanModel: *model.NewCodeScanModel().
-					SetTool("spdx-sbom-generator"),
+				CodeScanModelCreate: ent.NewCodeScanModelCreate().
+					SetTool("spdx-sbom-generator").
+					SetTime(cTime),
 			}
-			// scan := ent.NewCodeScanNode().
-			// 	SetRelease(release).
-			// 	SetTool("snyk").
-			// 	SetEntry(
-			// 		ent.NewReleaseEntryNode().
-			// 			SetTime(cTime).
-			// 			SetType(releaseentry.TypeCodeScan),
-			// 	)
 
+			//
+			// TODO:: set components with "real" data...
+			//
+			var components []*ent.Component
 			for _, c := range components {
 				scan.Components = append(scan.Components, &api.CodeScanComponent{
-					ComponentModel: *model.NewComponentModel().
+					ComponentModelCreate: *ent.NewComponentModelCreate().
 						SetName(c.Name).SetVendor(c.Vendor).SetVersion(c.Version),
 				})
 			}
-			_, err := store.SaveCodeScan(&api.CodeScanRequest{
+			data.CodeScans = append(data.CodeScans, &api.CodeScanRequest{
 				Commit:   &hash,
 				CodeScan: &scan,
 			})
-			if err != nil {
-				return err
-			}
+			// _, err := store.SaveCodeScan(&api.CodeScanRequest{
+			// 	Commit:   &hash,
+			// 	CodeScan: &scan,
+			// })
+			// if err != nil {
+			// 	return err
+			// }
 		}
+
+		// Prepend the release so that the dates of the releases go in ascending order
+		releases = append([]ReleaseData{data}, releases...)
 	}
 
-	return nil
+	return releases
 }

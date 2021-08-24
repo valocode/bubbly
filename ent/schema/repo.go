@@ -24,16 +24,20 @@ func (Repo) Annotations() []schema.Annotation {
 
 func (Repo) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("name").NotEmpty().
+		field.String("name").NotEmpty().
 			Annotations(
 				entgql.OrderField("name"),
 			),
+		field.String("default_branch").
+			NotEmpty().
+			Default("main"),
 	}
 }
 
 func (Repo) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("projects", Project.Type),
+		edge.To("head", Release.Type).Unique(),
 		edge.From("commits", GitCommit.Type).Ref("repo"),
 		edge.From("vulnerability_reviews", VulnerabilityReview.Type).Ref("repos"),
 	}

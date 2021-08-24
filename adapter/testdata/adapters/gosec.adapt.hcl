@@ -5,7 +5,7 @@
 adapter {
     name = "gosec"
     // optional: the tag which uniquely identifies this adapter (default: default)
-    tag = ""
+    // tag = ""
 
     operation "json" {}
         // preprocess = "[${join(",", split("\n", trimspace(raw_data)))}]"

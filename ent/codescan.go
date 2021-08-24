@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/codescan"
@@ -19,6 +20,8 @@ type CodeScan struct {
 	ID int `json:"id,omitempty"`
 	// Tool holds the value of the "tool" field.
 	Tool string `json:"tool,omitempty"`
+	// Time holds the value of the "time" field.
+	Time time.Time `json:"time,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CodeScanQuery when eager-loading is set.
 	Edges                   CodeScanEdges `json:"edges"`
@@ -107,6 +110,8 @@ func (*CodeScan) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case codescan.FieldTool:
 			values[i] = new(sql.NullString)
+		case codescan.FieldTime:
+			values[i] = new(sql.NullTime)
 		case codescan.ForeignKeys[0]: // code_scan_release
 			values[i] = new(sql.NullInt64)
 		case codescan.ForeignKeys[1]: // release_entry_code_scan
@@ -137,6 +142,12 @@ func (cs *CodeScan) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field tool", values[i])
 			} else if value.Valid {
 				cs.Tool = value.String
+			}
+		case codescan.FieldTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field time", values[i])
+			} else if value.Valid {
+				cs.Time = value.Time
 			}
 		case codescan.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -207,6 +218,8 @@ func (cs *CodeScan) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v", cs.ID))
 	builder.WriteString(", tool=")
 	builder.WriteString(cs.Tool)
+	builder.WriteString(", time=")
+	builder.WriteString(cs.Time.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

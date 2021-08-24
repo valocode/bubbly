@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"entgo.io/ent"
 )
 
 const (
@@ -25,6 +27,8 @@ const (
 	EdgeDependencies = "dependencies"
 	// EdgeCommit holds the string denoting the commit edge name in mutations.
 	EdgeCommit = "commit"
+	// EdgeHeadOf holds the string denoting the head_of edge name in mutations.
+	EdgeHeadOf = "head_of"
 	// EdgeLog holds the string denoting the log edge name in mutations.
 	EdgeLog = "log"
 	// EdgeArtifacts holds the string denoting the artifacts edge name in mutations.
@@ -52,6 +56,13 @@ const (
 	CommitInverseTable = "commit"
 	// CommitColumn is the table column denoting the commit relation/edge.
 	CommitColumn = "git_commit_release"
+	// HeadOfTable is the table that holds the head_of relation/edge.
+	HeadOfTable = "release"
+	// HeadOfInverseTable is the table name for the Repo entity.
+	// It exists in this package in order to avoid circular dependency with the "repo" package.
+	HeadOfInverseTable = "repo"
+	// HeadOfColumn is the table column denoting the head_of relation/edge.
+	HeadOfColumn = "repo_head"
 	// LogTable is the table that holds the log relation/edge.
 	LogTable = "release_entry"
 	// LogInverseTable is the table name for the ReleaseEntry entity.
@@ -113,6 +124,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"git_commit_release",
+	"repo_head",
 }
 
 var (
@@ -142,7 +154,14 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/valocode/bubbly/ent/runtime"
+//
 var (
+	Hooks [1]ent.Hook
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
 	// VersionValidator is a validator for the "version" field. It is called by the builders before save.

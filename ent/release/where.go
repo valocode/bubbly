@@ -459,6 +459,34 @@ func HasCommitWith(preds ...predicate.GitCommit) predicate.Release {
 	})
 }
 
+// HasHeadOf applies the HasEdge predicate on the "head_of" edge.
+func HasHeadOf() predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(HeadOfTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, HeadOfTable, HeadOfColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasHeadOfWith applies the HasEdge predicate on the "head_of" edge with a given conditions (other predicates).
+func HasHeadOfWith(preds ...predicate.Repo) predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(HeadOfInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, HeadOfTable, HeadOfColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasLog applies the HasEdge predicate on the "log" edge.
 func HasLog() predicate.Release {
 	return predicate.Release(func(s *sql.Selector) {

@@ -12,6 +12,7 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
+	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -35,6 +36,20 @@ func (ru *RepoUpdate) SetName(s string) *RepoUpdate {
 	return ru
 }
 
+// SetDefaultBranch sets the "default_branch" field.
+func (ru *RepoUpdate) SetDefaultBranch(s string) *RepoUpdate {
+	ru.mutation.SetDefaultBranch(s)
+	return ru
+}
+
+// SetNillableDefaultBranch sets the "default_branch" field if the given value is not nil.
+func (ru *RepoUpdate) SetNillableDefaultBranch(s *string) *RepoUpdate {
+	if s != nil {
+		ru.SetDefaultBranch(*s)
+	}
+	return ru
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (ru *RepoUpdate) AddProjectIDs(ids ...int) *RepoUpdate {
 	ru.mutation.AddProjectIDs(ids...)
@@ -48,6 +63,25 @@ func (ru *RepoUpdate) AddProjects(p ...*Project) *RepoUpdate {
 		ids[i] = p[i].ID
 	}
 	return ru.AddProjectIDs(ids...)
+}
+
+// SetHeadID sets the "head" edge to the Release entity by ID.
+func (ru *RepoUpdate) SetHeadID(id int) *RepoUpdate {
+	ru.mutation.SetHeadID(id)
+	return ru
+}
+
+// SetNillableHeadID sets the "head" edge to the Release entity by ID if the given value is not nil.
+func (ru *RepoUpdate) SetNillableHeadID(id *int) *RepoUpdate {
+	if id != nil {
+		ru = ru.SetHeadID(*id)
+	}
+	return ru
+}
+
+// SetHead sets the "head" edge to the Release entity.
+func (ru *RepoUpdate) SetHead(r *Release) *RepoUpdate {
+	return ru.SetHeadID(r.ID)
 }
 
 // AddCommitIDs adds the "commits" edge to the GitCommit entity by IDs.
@@ -104,6 +138,12 @@ func (ru *RepoUpdate) RemoveProjects(p ...*Project) *RepoUpdate {
 		ids[i] = p[i].ID
 	}
 	return ru.RemoveProjectIDs(ids...)
+}
+
+// ClearHead clears the "head" edge to the Release entity.
+func (ru *RepoUpdate) ClearHead() *RepoUpdate {
+	ru.mutation.ClearHead()
+	return ru
 }
 
 // ClearCommits clears all "commits" edges to the GitCommit entity.
@@ -215,6 +255,11 @@ func (ru *RepoUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
 		}
 	}
+	if v, ok := ru.mutation.DefaultBranch(); ok {
+		if err := repo.DefaultBranchValidator(v); err != nil {
+			return &ValidationError{Name: "default_branch", err: fmt.Errorf("ent: validator failed for field \"default_branch\": %w", err)}
+		}
+	}
 	return nil
 }
 
@@ -241,6 +286,13 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeString,
 			Value:  value,
 			Column: repo.FieldName,
+		})
+	}
+	if value, ok := ru.mutation.DefaultBranch(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: repo.FieldDefaultBranch,
 		})
 	}
 	if ru.mutation.ProjectsCleared() {
@@ -289,6 +341,41 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: project.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ru.mutation.HeadCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   repo.HeadTable,
+			Columns: []string{repo.HeadColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: release.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.HeadIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   repo.HeadTable,
+			Columns: []string{repo.HeadColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: release.FieldID,
 				},
 			},
 		}
@@ -430,6 +517,20 @@ func (ruo *RepoUpdateOne) SetName(s string) *RepoUpdateOne {
 	return ruo
 }
 
+// SetDefaultBranch sets the "default_branch" field.
+func (ruo *RepoUpdateOne) SetDefaultBranch(s string) *RepoUpdateOne {
+	ruo.mutation.SetDefaultBranch(s)
+	return ruo
+}
+
+// SetNillableDefaultBranch sets the "default_branch" field if the given value is not nil.
+func (ruo *RepoUpdateOne) SetNillableDefaultBranch(s *string) *RepoUpdateOne {
+	if s != nil {
+		ruo.SetDefaultBranch(*s)
+	}
+	return ruo
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (ruo *RepoUpdateOne) AddProjectIDs(ids ...int) *RepoUpdateOne {
 	ruo.mutation.AddProjectIDs(ids...)
@@ -443,6 +544,25 @@ func (ruo *RepoUpdateOne) AddProjects(p ...*Project) *RepoUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return ruo.AddProjectIDs(ids...)
+}
+
+// SetHeadID sets the "head" edge to the Release entity by ID.
+func (ruo *RepoUpdateOne) SetHeadID(id int) *RepoUpdateOne {
+	ruo.mutation.SetHeadID(id)
+	return ruo
+}
+
+// SetNillableHeadID sets the "head" edge to the Release entity by ID if the given value is not nil.
+func (ruo *RepoUpdateOne) SetNillableHeadID(id *int) *RepoUpdateOne {
+	if id != nil {
+		ruo = ruo.SetHeadID(*id)
+	}
+	return ruo
+}
+
+// SetHead sets the "head" edge to the Release entity.
+func (ruo *RepoUpdateOne) SetHead(r *Release) *RepoUpdateOne {
+	return ruo.SetHeadID(r.ID)
 }
 
 // AddCommitIDs adds the "commits" edge to the GitCommit entity by IDs.
@@ -499,6 +619,12 @@ func (ruo *RepoUpdateOne) RemoveProjects(p ...*Project) *RepoUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return ruo.RemoveProjectIDs(ids...)
+}
+
+// ClearHead clears the "head" edge to the Release entity.
+func (ruo *RepoUpdateOne) ClearHead() *RepoUpdateOne {
+	ruo.mutation.ClearHead()
+	return ruo
 }
 
 // ClearCommits clears all "commits" edges to the GitCommit entity.
@@ -617,6 +743,11 @@ func (ruo *RepoUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
 		}
 	}
+	if v, ok := ruo.mutation.DefaultBranch(); ok {
+		if err := repo.DefaultBranchValidator(v); err != nil {
+			return &ValidationError{Name: "default_branch", err: fmt.Errorf("ent: validator failed for field \"default_branch\": %w", err)}
+		}
+	}
 	return nil
 }
 
@@ -660,6 +791,13 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 			Type:   field.TypeString,
 			Value:  value,
 			Column: repo.FieldName,
+		})
+	}
+	if value, ok := ruo.mutation.DefaultBranch(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: repo.FieldDefaultBranch,
 		})
 	}
 	if ruo.mutation.ProjectsCleared() {
@@ -708,6 +846,41 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: project.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.HeadCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   repo.HeadTable,
+			Columns: []string{repo.HeadColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: release.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.HeadIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   repo.HeadTable,
+			Columns: []string{repo.HeadColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: release.FieldID,
 				},
 			},
 		}
