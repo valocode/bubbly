@@ -28,7 +28,7 @@ func (TestRun) Annotations() []schema.Annotation {
 
 func (TestRun) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("tool").Immutable().NotEmpty().
+		field.String("tool").Immutable().NotEmpty().
 			Annotations(
 				entgql.OrderField("tool"),
 			),

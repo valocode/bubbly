@@ -515,6 +515,34 @@ func HasLogWith(preds ...predicate.ReleaseEntry) predicate.Release {
 	})
 }
 
+// HasViolations applies the HasEdge predicate on the "violations" edge.
+func HasViolations() predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(ViolationsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ViolationsTable, ViolationsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasViolationsWith applies the HasEdge predicate on the "violations" edge with a given conditions (other predicates).
+func HasViolationsWith(preds ...predicate.ReleasePolicyViolation) predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(ViolationsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ViolationsTable, ViolationsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasArtifacts applies the HasEdge predicate on the "artifacts" edge.
 func HasArtifacts() predicate.Release {
 	return predicate.Release(func(s *sql.Selector) {

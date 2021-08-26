@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"encoding/json"
+	"regexp"
 
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
@@ -20,9 +20,6 @@ type Adapter struct {
 func (Adapter) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "adapter"},
-		// Skip graphql generation for the Adapter because json.RawMessage and []byte types
-		// cause problems...
-		entgql.Skip(),
 		entmodel.Annotation{},
 	}
 }
@@ -30,6 +27,7 @@ func (Adapter) Annotations() []schema.Annotation {
 func (Adapter) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").NotEmpty().
+			Match(regexp.MustCompile("^[a-z0-9_]+$")).
 			Annotations(
 				entgql.OrderField("name"),
 			),
@@ -37,18 +35,7 @@ func (Adapter) Fields() []ent.Field {
 			Annotations(
 				entgql.OrderField("tag"),
 			),
-		field.Enum("type").Immutable().
-			Values("json", "csv", "xml", "yaml", "http").
-			Annotations(
-				entgql.OrderField("type"),
-			),
-		field.JSON("operation", json.RawMessage{}),
-		field.Enum("results_type").Immutable().
-			Values("code_scan", "test_run").
-			Annotations(
-				entgql.OrderField("results_type"),
-			),
-		field.Bytes("results"),
+		field.String("module").NotEmpty(),
 	}
 }
 

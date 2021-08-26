@@ -11,21 +11,25 @@ const (
 	FieldName = "name"
 	// FieldDefaultBranch holds the string denoting the default_branch field in the database.
 	FieldDefaultBranch = "default_branch"
-	// EdgeProjects holds the string denoting the projects edge name in mutations.
-	EdgeProjects = "projects"
+	// EdgeProject holds the string denoting the project edge name in mutations.
+	EdgeProject = "project"
 	// EdgeHead holds the string denoting the head edge name in mutations.
 	EdgeHead = "head"
 	// EdgeCommits holds the string denoting the commits edge name in mutations.
 	EdgeCommits = "commits"
 	// EdgeVulnerabilityReviews holds the string denoting the vulnerability_reviews edge name in mutations.
 	EdgeVulnerabilityReviews = "vulnerability_reviews"
+	// EdgePolicies holds the string denoting the policies edge name in mutations.
+	EdgePolicies = "policies"
 	// Table holds the table name of the repo in the database.
 	Table = "repo"
-	// ProjectsTable is the table that holds the projects relation/edge. The primary key declared below.
-	ProjectsTable = "repo_projects"
-	// ProjectsInverseTable is the table name for the Project entity.
+	// ProjectTable is the table that holds the project relation/edge.
+	ProjectTable = "repo"
+	// ProjectInverseTable is the table name for the Project entity.
 	// It exists in this package in order to avoid circular dependency with the "project" package.
-	ProjectsInverseTable = "project"
+	ProjectInverseTable = "project"
+	// ProjectColumn is the table column denoting the project relation/edge.
+	ProjectColumn = "repo_project"
 	// HeadTable is the table that holds the head relation/edge.
 	HeadTable = "release"
 	// HeadInverseTable is the table name for the Release entity.
@@ -45,6 +49,11 @@ const (
 	// VulnerabilityReviewsInverseTable is the table name for the VulnerabilityReview entity.
 	// It exists in this package in order to avoid circular dependency with the "vulnerabilityreview" package.
 	VulnerabilityReviewsInverseTable = "vulnerability_review"
+	// PoliciesTable is the table that holds the policies relation/edge. The primary key declared below.
+	PoliciesTable = "release_policy_repos"
+	// PoliciesInverseTable is the table name for the ReleasePolicy entity.
+	// It exists in this package in order to avoid circular dependency with the "releasepolicy" package.
+	PoliciesInverseTable = "release_policy"
 )
 
 // Columns holds all SQL columns for repo fields.
@@ -54,19 +63,30 @@ var Columns = []string{
 	FieldDefaultBranch,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "repo"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"repo_project",
+}
+
 var (
-	// ProjectsPrimaryKey and ProjectsColumn2 are the table columns denoting the
-	// primary key for the projects relation (M2M).
-	ProjectsPrimaryKey = []string{"repo_id", "project_id"}
 	// VulnerabilityReviewsPrimaryKey and VulnerabilityReviewsColumn2 are the table columns denoting the
 	// primary key for the vulnerability_reviews relation (M2M).
 	VulnerabilityReviewsPrimaryKey = []string{"vulnerability_review_id", "repo_id"}
+	// PoliciesPrimaryKey and PoliciesColumn2 are the table columns denoting the
+	// primary key for the policies relation (M2M).
+	PoliciesPrimaryKey = []string{"release_policy_id", "repo_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}

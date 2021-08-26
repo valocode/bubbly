@@ -36,10 +36,11 @@ func (Repo) Fields() []ent.Field {
 
 func (Repo) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("projects", Project.Type),
+		edge.To("project", Project.Type).Unique().Required(),
 		edge.To("head", Release.Type).Unique(),
 		edge.From("commits", GitCommit.Type).Ref("repo"),
 		edge.From("vulnerability_reviews", VulnerabilityReview.Type).Ref("repos"),
+		edge.From("policies", ReleasePolicy.Type).Ref("repos"),
 	}
 }
 

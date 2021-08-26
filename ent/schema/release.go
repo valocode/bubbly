@@ -30,11 +30,11 @@ func (Release) Annotations() []schema.Annotation {
 
 func (Release) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("name").NotEmpty().
+		field.String("name").NotEmpty().
 			Annotations(
 				entgql.OrderField("name"),
 			),
-		field.Text("version").NotEmpty().
+		field.String("version").NotEmpty().
 			Annotations(
 				entgql.OrderField("version"),
 			),
@@ -53,6 +53,7 @@ func (Release) Edges() []ent.Edge {
 		edge.From("commit", GitCommit.Type).Ref("release").Unique().Required(),
 		edge.From("head_of", Repo.Type).Ref("head").Unique(),
 		edge.From("log", ReleaseEntry.Type).Ref("release"),
+		edge.From("violations", ReleasePolicyViolation.Type).Ref("release"),
 		edge.From("artifacts", Artifact.Type).Ref("release"),
 		edge.From("components", ReleaseComponent.Type).Ref("release"),
 		edge.From("vulnerabilities", ReleaseVulnerability.Type).Ref("release"),

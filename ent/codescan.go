@@ -27,6 +27,7 @@ type CodeScan struct {
 	Edges                   CodeScanEdges `json:"edges"`
 	code_scan_release       *int
 	release_entry_code_scan *int
+	release_license_scans   *int
 }
 
 // CodeScanEdges holds the relations/edges for other nodes in the graph.
@@ -116,6 +117,8 @@ func (*CodeScan) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case codescan.ForeignKeys[1]: // release_entry_code_scan
 			values[i] = new(sql.NullInt64)
+		case codescan.ForeignKeys[2]: // release_license_scans
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type CodeScan", columns[i])
 		}
@@ -162,6 +165,13 @@ func (cs *CodeScan) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				cs.release_entry_code_scan = new(int)
 				*cs.release_entry_code_scan = int(value.Int64)
+			}
+		case codescan.ForeignKeys[2]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field release_license_scans", value)
+			} else if value.Valid {
+				cs.release_license_scans = new(int)
+				*cs.release_license_scans = int(value.Int64)
 			}
 		}
 	}

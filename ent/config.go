@@ -24,25 +24,27 @@ type config struct {
 
 // hooks per client, for fast access.
 type hooks struct {
-	Adapter              []ent.Hook
-	Artifact             []ent.Hook
-	CWE                  []ent.Hook
-	CodeIssue            []ent.Hook
-	CodeScan             []ent.Hook
-	Component            []ent.Hook
-	GitCommit            []ent.Hook
-	License              []ent.Hook
-	LicenseUse           []ent.Hook
-	Project              []ent.Hook
-	Release              []ent.Hook
-	ReleaseComponent     []ent.Hook
-	ReleaseEntry         []ent.Hook
-	ReleaseVulnerability []ent.Hook
-	Repo                 []ent.Hook
-	TestCase             []ent.Hook
-	TestRun              []ent.Hook
-	Vulnerability        []ent.Hook
-	VulnerabilityReview  []ent.Hook
+	Adapter                []ent.Hook
+	Artifact               []ent.Hook
+	CodeIssue              []ent.Hook
+	CodeScan               []ent.Hook
+	Component              []ent.Hook
+	GitCommit              []ent.Hook
+	License                []ent.Hook
+	LicenseUse             []ent.Hook
+	Project                []ent.Hook
+	Release                []ent.Hook
+	ReleaseComponent       []ent.Hook
+	ReleaseEntry           []ent.Hook
+	ReleaseLicense         []ent.Hook
+	ReleasePolicy          []ent.Hook
+	ReleasePolicyViolation []ent.Hook
+	ReleaseVulnerability   []ent.Hook
+	Repo                   []ent.Hook
+	TestCase               []ent.Hook
+	TestRun                []ent.Hook
+	Vulnerability          []ent.Hook
+	VulnerabilityReview    []ent.Hook
 }
 
 // Options applies the options on the config object.

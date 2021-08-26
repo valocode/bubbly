@@ -31,6 +31,20 @@ func (rcu *ReleaseComponentUpdate) Where(ps ...predicate.ReleaseComponent) *Rele
 	return rcu
 }
 
+// SetType sets the "type" field.
+func (rcu *ReleaseComponentUpdate) SetType(r releasecomponent.Type) *ReleaseComponentUpdate {
+	rcu.mutation.SetType(r)
+	return rcu
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (rcu *ReleaseComponentUpdate) SetNillableType(r *releasecomponent.Type) *ReleaseComponentUpdate {
+	if r != nil {
+		rcu.SetType(*r)
+	}
+	return rcu
+}
+
 // SetReleaseID sets the "release" edge to the Release entity by ID.
 func (rcu *ReleaseComponentUpdate) SetReleaseID(id int) *ReleaseComponentUpdate {
 	rcu.mutation.SetReleaseID(id)
@@ -204,6 +218,11 @@ func (rcu *ReleaseComponentUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (rcu *ReleaseComponentUpdate) check() error {
+	if v, ok := rcu.mutation.GetType(); ok {
+		if err := releasecomponent.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+		}
+	}
 	if _, ok := rcu.mutation.ReleaseID(); rcu.mutation.ReleaseCleared() && !ok {
 		return errors.New("ent: clearing a required unique edge \"release\"")
 	}
@@ -230,6 +249,13 @@ func (rcu *ReleaseComponentUpdate) sqlSave(ctx context.Context) (n int, err erro
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := rcu.mutation.GetType(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: releasecomponent.FieldType,
+		})
 	}
 	if rcu.mutation.ReleaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -357,10 +383,10 @@ func (rcu *ReleaseComponentUpdate) sqlSave(ctx context.Context) (n int, err erro
 	}
 	if rcu.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   releasecomponent.VulnerabilitiesTable,
-			Columns: releasecomponent.VulnerabilitiesPrimaryKey,
+			Columns: []string{releasecomponent.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -373,10 +399,10 @@ func (rcu *ReleaseComponentUpdate) sqlSave(ctx context.Context) (n int, err erro
 	}
 	if nodes := rcu.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !rcu.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   releasecomponent.VulnerabilitiesTable,
-			Columns: releasecomponent.VulnerabilitiesPrimaryKey,
+			Columns: []string{releasecomponent.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -392,10 +418,10 @@ func (rcu *ReleaseComponentUpdate) sqlSave(ctx context.Context) (n int, err erro
 	}
 	if nodes := rcu.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   releasecomponent.VulnerabilitiesTable,
-			Columns: releasecomponent.VulnerabilitiesPrimaryKey,
+			Columns: []string{releasecomponent.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -426,6 +452,20 @@ type ReleaseComponentUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *ReleaseComponentMutation
+}
+
+// SetType sets the "type" field.
+func (rcuo *ReleaseComponentUpdateOne) SetType(r releasecomponent.Type) *ReleaseComponentUpdateOne {
+	rcuo.mutation.SetType(r)
+	return rcuo
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (rcuo *ReleaseComponentUpdateOne) SetNillableType(r *releasecomponent.Type) *ReleaseComponentUpdateOne {
+	if r != nil {
+		rcuo.SetType(*r)
+	}
+	return rcuo
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by ID.
@@ -608,6 +648,11 @@ func (rcuo *ReleaseComponentUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (rcuo *ReleaseComponentUpdateOne) check() error {
+	if v, ok := rcuo.mutation.GetType(); ok {
+		if err := releasecomponent.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+		}
+	}
 	if _, ok := rcuo.mutation.ReleaseID(); rcuo.mutation.ReleaseCleared() && !ok {
 		return errors.New("ent: clearing a required unique edge \"release\"")
 	}
@@ -651,6 +696,13 @@ func (rcuo *ReleaseComponentUpdateOne) sqlSave(ctx context.Context) (_node *Rele
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := rcuo.mutation.GetType(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: releasecomponent.FieldType,
+		})
 	}
 	if rcuo.mutation.ReleaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -778,10 +830,10 @@ func (rcuo *ReleaseComponentUpdateOne) sqlSave(ctx context.Context) (_node *Rele
 	}
 	if rcuo.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   releasecomponent.VulnerabilitiesTable,
-			Columns: releasecomponent.VulnerabilitiesPrimaryKey,
+			Columns: []string{releasecomponent.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -794,10 +846,10 @@ func (rcuo *ReleaseComponentUpdateOne) sqlSave(ctx context.Context) (_node *Rele
 	}
 	if nodes := rcuo.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !rcuo.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   releasecomponent.VulnerabilitiesTable,
-			Columns: releasecomponent.VulnerabilitiesPrimaryKey,
+			Columns: []string{releasecomponent.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -813,10 +865,10 @@ func (rcuo *ReleaseComponentUpdateOne) sqlSave(ctx context.Context) (_node *Rele
 	}
 	if nodes := rcuo.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   releasecomponent.VulnerabilitiesTable,
-			Columns: releasecomponent.VulnerabilitiesPrimaryKey,
+			Columns: []string{releasecomponent.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

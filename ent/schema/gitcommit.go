@@ -24,15 +24,15 @@ func (GitCommit) Annotations() []schema.Annotation {
 
 func (GitCommit) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("hash").Immutable().NotEmpty().
+		field.String("hash").Immutable().NotEmpty().
 			Annotations(
 				entgql.OrderField("hash"),
 			),
-		field.Text("branch").Immutable().NotEmpty().
+		field.String("branch").Immutable().NotEmpty().
 			Annotations(
 				entgql.OrderField("branch"),
 			),
-		field.Text("tag").Immutable().Optional().
+		field.String("tag").Immutable().Optional().
 			Annotations(
 				entgql.OrderField("tag"),
 			),

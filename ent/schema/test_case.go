@@ -25,12 +25,12 @@ func (TestCase) Annotations() []schema.Annotation {
 
 func (TestCase) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("name").Immutable().NotEmpty().
+		field.String("name").Immutable().NotEmpty().
 			Annotations(
 				entgql.OrderField("name"),
 			),
 		field.Bool("result"),
-		field.Text("message").NotEmpty(),
+		field.String("message").NotEmpty(),
 		field.Float("elapsed").Validate(func(f float64) error {
 			if f < 0 {
 				return errors.New("value cannot be negative")

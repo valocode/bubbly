@@ -21,17 +21,10 @@ const (
 	FieldSeverity = "severity"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
-	// EdgeCwe holds the string denoting the cwe edge name in mutations.
-	EdgeCwe = "cwe"
 	// EdgeScan holds the string denoting the scan edge name in mutations.
 	EdgeScan = "scan"
 	// Table holds the table name of the codeissue in the database.
 	Table = "code_issue"
-	// CweTable is the table that holds the cwe relation/edge. The primary key declared below.
-	CweTable = "code_issue_cwe"
-	// CweInverseTable is the table name for the CWE entity.
-	// It exists in this package in order to avoid circular dependency with the "cwe" package.
-	CweInverseTable = "cwe"
 	// ScanTable is the table that holds the scan relation/edge.
 	ScanTable = "code_issue"
 	// ScanInverseTable is the table name for the CodeScan entity.
@@ -55,12 +48,6 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"code_issue_scan",
 }
-
-var (
-	// CwePrimaryKey and CweColumn2 are the table columns denoting the
-	// primary key for the cwe relation (M2M).
-	CwePrimaryKey = []string{"code_issue_id", "cwe_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

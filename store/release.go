@@ -3,6 +3,7 @@ package store
 import (
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/gitcommit"
+	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/store/api"
@@ -42,12 +43,27 @@ func (s *Store) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, erro
 		// Otherwise continue and create the release
 	}
 	if dbRelease != nil {
-		return dbRelease, nil
+		return dbRelease, NewConflictError(nil, "release already exists")
 	}
 
 	//
-	// Create the release, first the repo, then commit
+	// Create the release, first the project, then repo, then commit
 	//
+	dbProject, err := s.client.Project.Query().Where(
+		project.Name(*req.Project.Name),
+	).Only(s.ctx)
+	if err != nil {
+		if !ent.IsNotFound(err) {
+			return nil, HandleEntError(err, "repo")
+		}
+		dbProject, err = s.client.Project.Create().
+			SetModelCreate(req.Project).
+			Save(s.ctx)
+		if err != nil {
+			return nil, HandleEntError(err, "repo")
+		}
+	}
+
 	dbRepo, err := s.client.Repo.Query().Where(
 		repo.Name(*req.Repo.Name),
 	).Only(s.ctx)
@@ -56,7 +72,8 @@ func (s *Store) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, erro
 			return nil, HandleEntError(err, "repo")
 		}
 		dbRepo, err = s.client.Repo.Create().
-			SetName(*req.Repo.Name).
+			SetModelCreate(req.Repo).
+			SetProject(dbProject).
 			Save(s.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "repo")

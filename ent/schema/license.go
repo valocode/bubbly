@@ -23,17 +23,17 @@ func (License) Annotations() []schema.Annotation {
 func (License) Fields() []ent.Field {
 	return []ent.Field{
 		// License ID is follows the SPDX license IDs: https://spdx.dev/ids/
-		field.Text("spdx_id").NotEmpty().Unique().
+		field.String("spdx_id").NotEmpty().Unique().
 			Annotations(
 				entgql.OrderField("spdx_id"),
 			),
-		field.Text("name").NotEmpty().
+		field.String("name").NotEmpty().
 			Annotations(
 				entgql.OrderField("name"),
 			),
 		// reference points to a url where more information is available
-		field.Text("reference").Optional(),
-		field.Text("details_url").Optional(),
+		field.String("reference").Optional(),
+		field.String("details_url").Optional(),
 		field.Bool("is_osi_approved").Default(false),
 	}
 }

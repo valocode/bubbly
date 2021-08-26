@@ -14,9 +14,15 @@ import (
 
 // ReleaseComponent is the model entity for the ReleaseComponent schema.
 type ReleaseComponent struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// Type holds the value of the "type" field.
+	//
+	// The type indicates how the component is used in the project,
+	// e.g. whether it is embedded into the build (static link) or just
+	// distributed (dynamic link) or just a development dependency
+	Type releasecomponent.Type `json:"type,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ReleaseComponentQuery when eager-loading is set.
 	Edges                       ReleaseComponentEdges `json:"edges"`
@@ -92,6 +98,8 @@ func (*ReleaseComponent) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case releasecomponent.FieldID:
 			values[i] = new(sql.NullInt64)
+		case releasecomponent.FieldType:
+			values[i] = new(sql.NullString)
 		case releasecomponent.ForeignKeys[0]: // release_component_release
 			values[i] = new(sql.NullInt64)
 		case releasecomponent.ForeignKeys[1]: // release_component_component
@@ -117,6 +125,12 @@ func (rc *ReleaseComponent) assignValues(columns []string, values []interface{})
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			rc.ID = int(value.Int64)
+		case releasecomponent.FieldType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field type", values[i])
+			} else if value.Valid {
+				rc.Type = releasecomponent.Type(value.String)
+			}
 		case releasecomponent.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field release_component_release", value)
@@ -179,6 +193,8 @@ func (rc *ReleaseComponent) String() string {
 	var builder strings.Builder
 	builder.WriteString("ReleaseComponent(")
 	builder.WriteString(fmt.Sprintf("id=%v", rc.ID))
+	builder.WriteString(", type=")
+	builder.WriteString(fmt.Sprintf("%v", rc.Type))
 	builder.WriteByte(')')
 	return builder.String()
 }

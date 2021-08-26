@@ -31,6 +31,8 @@ const (
 	EdgeHeadOf = "head_of"
 	// EdgeLog holds the string denoting the log edge name in mutations.
 	EdgeLog = "log"
+	// EdgeViolations holds the string denoting the violations edge name in mutations.
+	EdgeViolations = "violations"
 	// EdgeArtifacts holds the string denoting the artifacts edge name in mutations.
 	EdgeArtifacts = "artifacts"
 	// EdgeComponents holds the string denoting the components edge name in mutations.
@@ -70,6 +72,13 @@ const (
 	LogInverseTable = "release_entry"
 	// LogColumn is the table column denoting the log relation/edge.
 	LogColumn = "release_entry_release"
+	// ViolationsTable is the table that holds the violations relation/edge.
+	ViolationsTable = "release_policy_violation"
+	// ViolationsInverseTable is the table name for the ReleasePolicyViolation entity.
+	// It exists in this package in order to avoid circular dependency with the "releasepolicyviolation" package.
+	ViolationsInverseTable = "release_policy_violation"
+	// ViolationsColumn is the table column denoting the violations relation/edge.
+	ViolationsColumn = "release_policy_violation_release"
 	// ArtifactsTable is the table that holds the artifacts relation/edge.
 	ArtifactsTable = "artifact"
 	// ArtifactsInverseTable is the table name for the Artifact entity.

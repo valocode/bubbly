@@ -23,6 +23,20 @@ type ReleaseComponentCreate struct {
 	hooks    []Hook
 }
 
+// SetType sets the "type" field.
+func (rcc *ReleaseComponentCreate) SetType(r releasecomponent.Type) *ReleaseComponentCreate {
+	rcc.mutation.SetType(r)
+	return rcc
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (rcc *ReleaseComponentCreate) SetNillableType(r *releasecomponent.Type) *ReleaseComponentCreate {
+	if r != nil {
+		rcc.SetType(*r)
+	}
+	return rcc
+}
+
 // SetReleaseID sets the "release" edge to the Release entity by ID.
 func (rcc *ReleaseComponentCreate) SetReleaseID(id int) *ReleaseComponentCreate {
 	rcc.mutation.SetReleaseID(id)
@@ -86,6 +100,9 @@ func (rcc *ReleaseComponentCreate) Save(ctx context.Context) (*ReleaseComponent,
 		err  error
 		node *ReleaseComponent
 	)
+	if err := rcc.defaults(); err != nil {
+		return nil, err
+	}
 	if len(rcc.hooks) == 0 {
 		if err = rcc.check(); err != nil {
 			return nil, err
@@ -143,8 +160,25 @@ func (rcc *ReleaseComponentCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (rcc *ReleaseComponentCreate) defaults() error {
+	if _, ok := rcc.mutation.GetType(); !ok {
+		v := releasecomponent.DefaultType
+		rcc.mutation.SetType(v)
+	}
+	return nil
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (rcc *ReleaseComponentCreate) check() error {
+	if _, ok := rcc.mutation.GetType(); !ok {
+		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "type"`)}
+	}
+	if v, ok := rcc.mutation.GetType(); ok {
+		if err := releasecomponent.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "type": %w`, err)}
+		}
+	}
 	if _, ok := rcc.mutation.ReleaseID(); !ok {
 		return &ValidationError{Name: "release", err: errors.New("ent: missing required edge \"release\"")}
 	}
@@ -181,6 +215,14 @@ func (rcc *ReleaseComponentCreate) createSpec() (*ReleaseComponent, *sqlgraph.Cr
 			},
 		}
 	)
+	if value, ok := rcc.mutation.GetType(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: releasecomponent.FieldType,
+		})
+		_node.Type = value
+	}
 	if nodes := rcc.mutation.ReleaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -242,10 +284,10 @@ func (rcc *ReleaseComponentCreate) createSpec() (*ReleaseComponent, *sqlgraph.Cr
 	}
 	if nodes := rcc.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   releasecomponent.VulnerabilitiesTable,
-			Columns: releasecomponent.VulnerabilitiesPrimaryKey,
+			Columns: []string{releasecomponent.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -276,6 +318,7 @@ func (rccb *ReleaseComponentCreateBulk) Save(ctx context.Context) ([]*ReleaseCom
 	for i := range rccb.builders {
 		func(i int, root context.Context) {
 			builder := rccb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ReleaseComponentMutation)
 				if !ok {

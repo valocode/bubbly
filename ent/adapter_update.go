@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
@@ -39,15 +38,9 @@ func (au *AdapterUpdate) SetTag(s string) *AdapterUpdate {
 	return au
 }
 
-// SetOperation sets the "operation" field.
-func (au *AdapterUpdate) SetOperation(jm json.RawMessage) *AdapterUpdate {
-	au.mutation.SetOperation(jm)
-	return au
-}
-
-// SetResults sets the "results" field.
-func (au *AdapterUpdate) SetResults(b []byte) *AdapterUpdate {
-	au.mutation.SetResults(b)
+// SetModule sets the "module" field.
+func (au *AdapterUpdate) SetModule(s string) *AdapterUpdate {
+	au.mutation.SetModule(s)
 	return au
 }
 
@@ -128,6 +121,11 @@ func (au *AdapterUpdate) check() error {
 			return &ValidationError{Name: "tag", err: fmt.Errorf("ent: validator failed for field \"tag\": %w", err)}
 		}
 	}
+	if v, ok := au.mutation.Module(); ok {
+		if err := adapter.ModuleValidator(v); err != nil {
+			return &ValidationError{Name: "module", err: fmt.Errorf("ent: validator failed for field \"module\": %w", err)}
+		}
+	}
 	return nil
 }
 
@@ -163,18 +161,11 @@ func (au *AdapterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: adapter.FieldTag,
 		})
 	}
-	if value, ok := au.mutation.Operation(); ok {
+	if value, ok := au.mutation.Module(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
+			Type:   field.TypeString,
 			Value:  value,
-			Column: adapter.FieldOperation,
-		})
-	}
-	if value, ok := au.mutation.Results(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBytes,
-			Value:  value,
-			Column: adapter.FieldResults,
+			Column: adapter.FieldModule,
 		})
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
@@ -208,15 +199,9 @@ func (auo *AdapterUpdateOne) SetTag(s string) *AdapterUpdateOne {
 	return auo
 }
 
-// SetOperation sets the "operation" field.
-func (auo *AdapterUpdateOne) SetOperation(jm json.RawMessage) *AdapterUpdateOne {
-	auo.mutation.SetOperation(jm)
-	return auo
-}
-
-// SetResults sets the "results" field.
-func (auo *AdapterUpdateOne) SetResults(b []byte) *AdapterUpdateOne {
-	auo.mutation.SetResults(b)
+// SetModule sets the "module" field.
+func (auo *AdapterUpdateOne) SetModule(s string) *AdapterUpdateOne {
+	auo.mutation.SetModule(s)
 	return auo
 }
 
@@ -304,6 +289,11 @@ func (auo *AdapterUpdateOne) check() error {
 			return &ValidationError{Name: "tag", err: fmt.Errorf("ent: validator failed for field \"tag\": %w", err)}
 		}
 	}
+	if v, ok := auo.mutation.Module(); ok {
+		if err := adapter.ModuleValidator(v); err != nil {
+			return &ValidationError{Name: "module", err: fmt.Errorf("ent: validator failed for field \"module\": %w", err)}
+		}
+	}
 	return nil
 }
 
@@ -356,18 +346,11 @@ func (auo *AdapterUpdateOne) sqlSave(ctx context.Context) (_node *Adapter, err e
 			Column: adapter.FieldTag,
 		})
 	}
-	if value, ok := auo.mutation.Operation(); ok {
+	if value, ok := auo.mutation.Module(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
+			Type:   field.TypeString,
 			Value:  value,
-			Column: adapter.FieldOperation,
-		})
-	}
-	if value, ok := auo.mutation.Results(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBytes,
-			Value:  value,
-			Column: adapter.FieldResults,
+			Column: adapter.FieldModule,
 		})
 	}
 	_node = &Adapter{config: auo.config}

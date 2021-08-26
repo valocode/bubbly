@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
@@ -14,7 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/predicate"
 )
 
@@ -28,7 +26,6 @@ type CodeIssueQuery struct {
 	fields     []string
 	predicates []predicate.CodeIssue
 	// eager-loading edges.
-	withCwe  *CWEQuery
 	withScan *CodeScanQuery
 	withFKs  bool
 	// intermediate query (i.e. traversal path).
@@ -65,28 +62,6 @@ func (ciq *CodeIssueQuery) Unique(unique bool) *CodeIssueQuery {
 func (ciq *CodeIssueQuery) Order(o ...OrderFunc) *CodeIssueQuery {
 	ciq.order = append(ciq.order, o...)
 	return ciq
-}
-
-// QueryCwe chains the current query on the "cwe" edge.
-func (ciq *CodeIssueQuery) QueryCwe() *CWEQuery {
-	query := &CWEQuery{config: ciq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := ciq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := ciq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(codeissue.Table, codeissue.FieldID, selector),
-			sqlgraph.To(cwe.Table, cwe.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, codeissue.CweTable, codeissue.CwePrimaryKey...),
-		)
-		fromU = sqlgraph.SetNeighbors(ciq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryScan chains the current query on the "scan" edge.
@@ -292,23 +267,11 @@ func (ciq *CodeIssueQuery) Clone() *CodeIssueQuery {
 		offset:     ciq.offset,
 		order:      append([]OrderFunc{}, ciq.order...),
 		predicates: append([]predicate.CodeIssue{}, ciq.predicates...),
-		withCwe:    ciq.withCwe.Clone(),
 		withScan:   ciq.withScan.Clone(),
 		// clone intermediate query.
 		sql:  ciq.sql.Clone(),
 		path: ciq.path,
 	}
-}
-
-// WithCwe tells the query-builder to eager-load the nodes that are connected to
-// the "cwe" edge. The optional arguments are used to configure the query builder of the edge.
-func (ciq *CodeIssueQuery) WithCwe(opts ...func(*CWEQuery)) *CodeIssueQuery {
-	query := &CWEQuery{config: ciq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	ciq.withCwe = query
-	return ciq
 }
 
 // WithScan tells the query-builder to eager-load the nodes that are connected to
@@ -388,8 +351,7 @@ func (ciq *CodeIssueQuery) sqlAll(ctx context.Context) ([]*CodeIssue, error) {
 		nodes       = []*CodeIssue{}
 		withFKs     = ciq.withFKs
 		_spec       = ciq.querySpec()
-		loadedTypes = [2]bool{
-			ciq.withCwe != nil,
+		loadedTypes = [1]bool{
 			ciq.withScan != nil,
 		}
 	)
@@ -417,71 +379,6 @@ func (ciq *CodeIssueQuery) sqlAll(ctx context.Context) ([]*CodeIssue, error) {
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
-	}
-
-	if query := ciq.withCwe; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*CodeIssue, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Cwe = []*CWE{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*CodeIssue)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: false,
-				Table:   codeissue.CweTable,
-				Columns: codeissue.CwePrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(codeissue.CwePrimaryKey[0], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, ciq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "cwe": %w`, err)
-		}
-		query.Where(cwe.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "cwe" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Cwe = append(nodes[i].Edges.Cwe, n)
-			}
-		}
 	}
 
 	if query := ciq.withScan; query != nil {

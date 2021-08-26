@@ -399,10 +399,10 @@ func (csu *CodeScanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if csu.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   codescan.VulnerabilitiesTable,
-			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Columns: []string{codescan.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -415,10 +415,10 @@ func (csu *CodeScanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := csu.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !csu.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   codescan.VulnerabilitiesTable,
-			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Columns: []string{codescan.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -434,10 +434,10 @@ func (csu *CodeScanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := csu.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   codescan.VulnerabilitiesTable,
-			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Columns: []string{codescan.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -915,10 +915,10 @@ func (csuo *CodeScanUpdateOne) sqlSave(ctx context.Context) (_node *CodeScan, er
 	}
 	if csuo.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   codescan.VulnerabilitiesTable,
-			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Columns: []string{codescan.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -931,10 +931,10 @@ func (csuo *CodeScanUpdateOne) sqlSave(ctx context.Context) (_node *CodeScan, er
 	}
 	if nodes := csuo.mutation.RemovedVulnerabilitiesIDs(); len(nodes) > 0 && !csuo.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   codescan.VulnerabilitiesTable,
-			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Columns: []string{codescan.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -950,10 +950,10 @@ func (csuo *CodeScanUpdateOne) sqlSave(ctx context.Context) (_node *CodeScan, er
 	}
 	if nodes := csuo.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   codescan.VulnerabilitiesTable,
-			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Columns: []string{codescan.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

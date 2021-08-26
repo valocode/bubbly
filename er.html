@@ -22,12 +22,6 @@ erDiagram
         artifactDOTType type
         timeDOTTime time
     }
-    CWE {
-        int id
-        string cwe_id
-        string description
-        float64 url
-    }
     CodeIssue {
         int id
         string rule_id
@@ -78,11 +72,25 @@ erDiagram
     }
     ReleaseComponent {
         int id
+        releasecomponentDOTType type
     }
     ReleaseEntry {
         int id
         releaseentryDOTType type
         timeDOTTime time
+    }
+    ReleaseLicense {
+        int id
+    }
+    ReleasePolicy {
+        int id
+        string name
+        string module
+    }
+    ReleasePolicyViolation {
+        int id
+        string message
+        releasepolicyviolationDOTSeverity severity
     }
     ReleaseVulnerability {
         int id
@@ -120,7 +128,6 @@ erDiagram
         vulnerabilityreviewDOTDecision decision
     }
     	Artifact }o--o| Release : "release/artifacts"
-    	CodeIssue }o--o{ CWE : "cwe/issues"
     	CodeIssue }o--o| CodeScan : "scan/issues"
     	CodeScan }o--o| Release : "release/code_scans"
     	Component }o--o{ Vulnerability : "vulnerabilities/components"
@@ -136,13 +143,21 @@ erDiagram
     	ReleaseEntry |o--o| CodeScan : "code_scan/entry"
     	ReleaseEntry |o--o| TestRun : "test_run/entry"
     	ReleaseEntry }o--o| Release : "release/log"
+    	ReleaseLicense }o--o| License : "license"
+    	ReleaseLicense }o--o| ReleaseComponent : "component"
+    	ReleaseLicense }o--o| Release : "release"
+    	ReleaseLicense |o--o{ CodeScan : "scans"
+    	ReleasePolicy }o--o{ Project : "projects/policies"
+    	ReleasePolicy }o--o{ Repo : "repos/policies"
+    	ReleasePolicyViolation }o--o| ReleasePolicy : "policy/violations"
+    	ReleasePolicyViolation }o--o| Release : "release/violations"
     	ReleaseVulnerability }o--o| Vulnerability : "vulnerability/instances"
-    	ReleaseVulnerability }o--o{ ReleaseComponent : "components/vulnerabilities"
+    	ReleaseVulnerability }o--o| ReleaseComponent : "component/vulnerabilities"
     	ReleaseVulnerability }o--o| Release : "release/vulnerabilities"
     	ReleaseVulnerability }o--o{ VulnerabilityReview : "reviews/instances"
-    	ReleaseVulnerability }o--o{ CodeScan : "scans/vulnerabilities"
-    	Repo }o--o{ Project : "projects/repos"
-    	Repo |o--o| Release : "head/repo"
+    	ReleaseVulnerability }o--o| CodeScan : "scan/vulnerabilities"
+    	Repo }o--o| Project : "project/repos"
+    	Repo |o--o| Release : "head/head_of"
     	TestCase }o--o| TestRun : "run/tests"
     	TestRun }o--o| Release : "release/test_runs"
     	VulnerabilityReview }o--o| Vulnerability : "vulnerability/reviews"

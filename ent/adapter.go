@@ -3,7 +3,6 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -20,14 +19,8 @@ type Adapter struct {
 	Name string `json:"name,omitempty"`
 	// Tag holds the value of the "tag" field.
 	Tag string `json:"tag,omitempty"`
-	// Type holds the value of the "type" field.
-	Type adapter.Type `json:"type,omitempty"`
-	// Operation holds the value of the "operation" field.
-	Operation json.RawMessage `json:"operation,omitempty"`
-	// ResultsType holds the value of the "results_type" field.
-	ResultsType adapter.ResultsType `json:"results_type,omitempty"`
-	// Results holds the value of the "results" field.
-	Results []byte `json:"results,omitempty"`
+	// Module holds the value of the "module" field.
+	Module string `json:"module,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -35,11 +28,9 @@ func (*Adapter) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case adapter.FieldOperation, adapter.FieldResults:
-			values[i] = new([]byte)
 		case adapter.FieldID:
 			values[i] = new(sql.NullInt64)
-		case adapter.FieldName, adapter.FieldTag, adapter.FieldType, adapter.FieldResultsType:
+		case adapter.FieldName, adapter.FieldTag, adapter.FieldModule:
 			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Adapter", columns[i])
@@ -74,31 +65,11 @@ func (a *Adapter) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				a.Tag = value.String
 			}
-		case adapter.FieldType:
+		case adapter.FieldModule:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field type", values[i])
+				return fmt.Errorf("unexpected type %T for field module", values[i])
 			} else if value.Valid {
-				a.Type = adapter.Type(value.String)
-			}
-		case adapter.FieldOperation:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field operation", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &a.Operation); err != nil {
-					return fmt.Errorf("unmarshal field operation: %w", err)
-				}
-			}
-		case adapter.FieldResultsType:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field results_type", values[i])
-			} else if value.Valid {
-				a.ResultsType = adapter.ResultsType(value.String)
-			}
-		case adapter.FieldResults:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field results", values[i])
-			} else if value != nil {
-				a.Results = *value
+				a.Module = value.String
 			}
 		}
 	}
@@ -132,14 +103,8 @@ func (a *Adapter) String() string {
 	builder.WriteString(a.Name)
 	builder.WriteString(", tag=")
 	builder.WriteString(a.Tag)
-	builder.WriteString(", type=")
-	builder.WriteString(fmt.Sprintf("%v", a.Type))
-	builder.WriteString(", operation=")
-	builder.WriteString(fmt.Sprintf("%v", a.Operation))
-	builder.WriteString(", results_type=")
-	builder.WriteString(fmt.Sprintf("%v", a.ResultsType))
-	builder.WriteString(", results=")
-	builder.WriteString(fmt.Sprintf("%v", a.Results))
+	builder.WriteString(", module=")
+	builder.WriteString(a.Module)
 	builder.WriteByte(')')
 	return builder.String()
 }

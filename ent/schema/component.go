@@ -24,20 +24,20 @@ func (Component) Annotations() []schema.Annotation {
 
 func (Component) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("name").NotEmpty().
+		field.String("name").NotEmpty().
 			Annotations(
 				entgql.OrderField("name"),
 			),
-		field.Text("vendor").Default("").
+		field.String("vendor").Default("").
 			Annotations(
 				entgql.OrderField("vendor"),
 			),
-		field.Text("version").NotEmpty().
+		field.String("version").NotEmpty().
 			Annotations(
 				entgql.OrderField("version"),
 			),
-		field.Text("description").Optional(),
-		field.Text("url").Optional(),
+		field.String("description").Optional(),
+		field.String("url").Optional(),
 	}
 }
 

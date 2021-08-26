@@ -19,6 +19,7 @@ import (
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testrun"
@@ -40,6 +41,7 @@ type ReleaseQuery struct {
 	withCommit               *GitCommitQuery
 	withHeadOf               *RepoQuery
 	withLog                  *ReleaseEntryQuery
+	withViolations           *ReleasePolicyViolationQuery
 	withArtifacts            *ArtifactQuery
 	withComponents           *ReleaseComponentQuery
 	withVulnerabilities      *ReleaseVulnerabilityQuery
@@ -186,6 +188,28 @@ func (rq *ReleaseQuery) QueryLog() *ReleaseEntryQuery {
 			sqlgraph.From(release.Table, release.FieldID, selector),
 			sqlgraph.To(releaseentry.Table, releaseentry.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, release.LogTable, release.LogColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryViolations chains the current query on the "violations" edge.
+func (rq *ReleaseQuery) QueryViolations() *ReleasePolicyViolationQuery {
+	query := &ReleasePolicyViolationQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, selector),
+			sqlgraph.To(releasepolicyviolation.Table, releasepolicyviolation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, release.ViolationsTable, release.ViolationsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -511,6 +535,7 @@ func (rq *ReleaseQuery) Clone() *ReleaseQuery {
 		withCommit:               rq.withCommit.Clone(),
 		withHeadOf:               rq.withHeadOf.Clone(),
 		withLog:                  rq.withLog.Clone(),
+		withViolations:           rq.withViolations.Clone(),
 		withArtifacts:            rq.withArtifacts.Clone(),
 		withComponents:           rq.withComponents.Clone(),
 		withVulnerabilities:      rq.withVulnerabilities.Clone(),
@@ -575,6 +600,17 @@ func (rq *ReleaseQuery) WithLog(opts ...func(*ReleaseEntryQuery)) *ReleaseQuery 
 		opt(query)
 	}
 	rq.withLog = query
+	return rq
+}
+
+// WithViolations tells the query-builder to eager-load the nodes that are connected to
+// the "violations" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *ReleaseQuery) WithViolations(opts ...func(*ReleasePolicyViolationQuery)) *ReleaseQuery {
+	query := &ReleasePolicyViolationQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withViolations = query
 	return rq
 }
 
@@ -710,12 +746,13 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		nodes       = []*Release{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [11]bool{
+		loadedTypes = [12]bool{
 			rq.withSubreleases != nil,
 			rq.withDependencies != nil,
 			rq.withCommit != nil,
 			rq.withHeadOf != nil,
 			rq.withLog != nil,
+			rq.withViolations != nil,
 			rq.withArtifacts != nil,
 			rq.withComponents != nil,
 			rq.withVulnerabilities != nil,
@@ -964,6 +1001,35 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 				return nil, fmt.Errorf(`unexpected foreign-key "release_entry_release" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Log = append(node.Edges.Log, n)
+		}
+	}
+
+	if query := rq.withViolations; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Release)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Violations = []*ReleasePolicyViolation{}
+		}
+		query.withFKs = true
+		query.Where(predicate.ReleasePolicyViolation(func(s *sql.Selector) {
+			s.Where(sql.InValues(release.ViolationsColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.release_policy_violation_release
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "release_policy_violation_release" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "release_policy_violation_release" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Violations = append(node.Edges.Violations, n)
 		}
 	}
 

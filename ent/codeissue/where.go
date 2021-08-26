@@ -423,34 +423,6 @@ func TypeNotIn(vs ...Type) predicate.CodeIssue {
 	})
 }
 
-// HasCwe applies the HasEdge predicate on the "cwe" edge.
-func HasCwe() predicate.CodeIssue {
-	return predicate.CodeIssue(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(CweTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, CweTable, CwePrimaryKey...),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasCweWith applies the HasEdge predicate on the "cwe" edge with a given conditions (other predicates).
-func HasCweWith(preds ...predicate.CWE) predicate.CodeIssue {
-	return predicate.CodeIssue(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(CweInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, CweTable, CwePrimaryKey...),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasScan applies the HasEdge predicate on the "scan" edge.
 func HasScan() predicate.CodeIssue {
 	return predicate.CodeIssue(func(s *sql.Selector) {

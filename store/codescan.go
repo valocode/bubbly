@@ -105,8 +105,8 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 				_, err = tx.ReleaseVulnerability.Create().
 					SetRelease(release).
 					SetVulnerability(existingVuln).
-					AddScans(codeScan).
-					AddComponents(relComp).
+					SetScan(codeScan).
+					SetComponent(relComp).
 					Save(s.ctx)
 				if err != nil {
 					return HandleEntError(err, "release vulnerability")

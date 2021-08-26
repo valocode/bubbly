@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -32,27 +31,9 @@ func (ac *AdapterCreate) SetTag(s string) *AdapterCreate {
 	return ac
 }
 
-// SetType sets the "type" field.
-func (ac *AdapterCreate) SetType(a adapter.Type) *AdapterCreate {
-	ac.mutation.SetType(a)
-	return ac
-}
-
-// SetOperation sets the "operation" field.
-func (ac *AdapterCreate) SetOperation(jm json.RawMessage) *AdapterCreate {
-	ac.mutation.SetOperation(jm)
-	return ac
-}
-
-// SetResultsType sets the "results_type" field.
-func (ac *AdapterCreate) SetResultsType(at adapter.ResultsType) *AdapterCreate {
-	ac.mutation.SetResultsType(at)
-	return ac
-}
-
-// SetResults sets the "results" field.
-func (ac *AdapterCreate) SetResults(b []byte) *AdapterCreate {
-	ac.mutation.SetResults(b)
+// SetModule sets the "module" field.
+func (ac *AdapterCreate) SetModule(s string) *AdapterCreate {
+	ac.mutation.SetModule(s)
 	return ac
 }
 
@@ -142,27 +123,13 @@ func (ac *AdapterCreate) check() error {
 			return &ValidationError{Name: "tag", err: fmt.Errorf(`ent: validator failed for field "tag": %w`, err)}
 		}
 	}
-	if _, ok := ac.mutation.GetType(); !ok {
-		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "type"`)}
+	if _, ok := ac.mutation.Module(); !ok {
+		return &ValidationError{Name: "module", err: errors.New(`ent: missing required field "module"`)}
 	}
-	if v, ok := ac.mutation.GetType(); ok {
-		if err := adapter.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "type": %w`, err)}
+	if v, ok := ac.mutation.Module(); ok {
+		if err := adapter.ModuleValidator(v); err != nil {
+			return &ValidationError{Name: "module", err: fmt.Errorf(`ent: validator failed for field "module": %w`, err)}
 		}
-	}
-	if _, ok := ac.mutation.Operation(); !ok {
-		return &ValidationError{Name: "operation", err: errors.New(`ent: missing required field "operation"`)}
-	}
-	if _, ok := ac.mutation.ResultsType(); !ok {
-		return &ValidationError{Name: "results_type", err: errors.New(`ent: missing required field "results_type"`)}
-	}
-	if v, ok := ac.mutation.ResultsType(); ok {
-		if err := adapter.ResultsTypeValidator(v); err != nil {
-			return &ValidationError{Name: "results_type", err: fmt.Errorf(`ent: validator failed for field "results_type": %w`, err)}
-		}
-	}
-	if _, ok := ac.mutation.Results(); !ok {
-		return &ValidationError{Name: "results", err: errors.New(`ent: missing required field "results"`)}
 	}
 	return nil
 }
@@ -207,37 +174,13 @@ func (ac *AdapterCreate) createSpec() (*Adapter, *sqlgraph.CreateSpec) {
 		})
 		_node.Tag = value
 	}
-	if value, ok := ac.mutation.GetType(); ok {
+	if value, ok := ac.mutation.Module(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
+			Type:   field.TypeString,
 			Value:  value,
-			Column: adapter.FieldType,
+			Column: adapter.FieldModule,
 		})
-		_node.Type = value
-	}
-	if value, ok := ac.mutation.Operation(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeJSON,
-			Value:  value,
-			Column: adapter.FieldOperation,
-		})
-		_node.Operation = value
-	}
-	if value, ok := ac.mutation.ResultsType(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: adapter.FieldResultsType,
-		})
-		_node.ResultsType = value
-	}
-	if value, ok := ac.mutation.Results(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeBytes,
-			Value:  value,
-			Column: adapter.FieldResults,
-		})
-		_node.Results = value
+		_node.Module = value
 	}
 	return _node, _spec
 }

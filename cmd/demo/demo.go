@@ -2,12 +2,10 @@ package demo
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/server"
 	"github.com/valocode/bubbly/store"
-	"github.com/valocode/bubbly/test"
 
 	"github.com/spf13/cobra"
 
@@ -56,33 +54,17 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			fmt.Println("Populating the store with dummy data...")
 
 			fmt.Println("Creating dummy releases...")
-			data := test.CreateDummyData()
-
-			for _, repos := range data {
-				for _, release := range repos.Releases {
-					if _, err := store.CreateRelease(release.Release); err != nil {
-						log.Fatalf("creating release %s: %s", *release.Release.Release.Name, err.Error())
-					}
-					for _, scan := range release.CodeScans {
-						if _, err := store.SaveCodeScan(scan); err != nil {
-							log.Fatalf("saving code scan: %s", err.Error())
-						}
-					}
-					for _, run := range release.TestRuns {
-						if _, err := store.SaveTestRun(run); err != nil {
-							log.Fatalf("saving test run: %s", err.Error())
-						}
-					}
-				}
+			if err := store.PopulateStoreWithDummyData(); err != nil {
+				return err
 			}
 			fmt.Println("Done!")
 			fmt.Println("")
 
-			fmt.Println("Evaluating releases...")
-			if err := test.FailSomeRandomReleases(store); err != nil {
-				log.Fatal("evaluating releases: ", err)
-			}
-			fmt.Println("Done!")
+			// fmt.Println("Evaluating releases...")
+			// if err := test.FailSomeRandomReleases(store); err != nil {
+			// 	log.Fatal("evaluating releases: ", err)
+			// }
+			// fmt.Println("Done!")
 			fmt.Println("")
 
 			fmt.Printf("Starting HTTP server on %s:%s\n", bCtx.ServerConfig.Host, bCtx.ServerConfig.Port)

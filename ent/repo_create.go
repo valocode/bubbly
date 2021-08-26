@@ -12,6 +12,7 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -43,19 +44,15 @@ func (rc *RepoCreate) SetNillableDefaultBranch(s *string) *RepoCreate {
 	return rc
 }
 
-// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
-func (rc *RepoCreate) AddProjectIDs(ids ...int) *RepoCreate {
-	rc.mutation.AddProjectIDs(ids...)
+// SetProjectID sets the "project" edge to the Project entity by ID.
+func (rc *RepoCreate) SetProjectID(id int) *RepoCreate {
+	rc.mutation.SetProjectID(id)
 	return rc
 }
 
-// AddProjects adds the "projects" edges to the Project entity.
-func (rc *RepoCreate) AddProjects(p ...*Project) *RepoCreate {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return rc.AddProjectIDs(ids...)
+// SetProject sets the "project" edge to the Project entity.
+func (rc *RepoCreate) SetProject(p *Project) *RepoCreate {
+	return rc.SetProjectID(p.ID)
 }
 
 // SetHeadID sets the "head" edge to the Release entity by ID.
@@ -105,6 +102,21 @@ func (rc *RepoCreate) AddVulnerabilityReviews(v ...*VulnerabilityReview) *RepoCr
 		ids[i] = v[i].ID
 	}
 	return rc.AddVulnerabilityReviewIDs(ids...)
+}
+
+// AddPolicyIDs adds the "policies" edge to the ReleasePolicy entity by IDs.
+func (rc *RepoCreate) AddPolicyIDs(ids ...int) *RepoCreate {
+	rc.mutation.AddPolicyIDs(ids...)
+	return rc
+}
+
+// AddPolicies adds the "policies" edges to the ReleasePolicy entity.
+func (rc *RepoCreate) AddPolicies(r ...*ReleasePolicy) *RepoCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return rc.AddPolicyIDs(ids...)
 }
 
 // Mutation returns the RepoMutation object of the builder.
@@ -202,6 +214,9 @@ func (rc *RepoCreate) check() error {
 			return &ValidationError{Name: "default_branch", err: fmt.Errorf(`ent: validator failed for field "default_branch": %w`, err)}
 		}
 	}
+	if _, ok := rc.mutation.ProjectID(); !ok {
+		return &ValidationError{Name: "project", err: errors.New("ent: missing required edge \"project\"")}
+	}
 	return nil
 }
 
@@ -245,12 +260,12 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		})
 		_node.DefaultBranch = value
 	}
-	if nodes := rc.mutation.ProjectsIDs(); len(nodes) > 0 {
+	if nodes := rc.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   repo.ProjectsTable,
-			Columns: repo.ProjectsPrimaryKey,
+			Table:   repo.ProjectTable,
+			Columns: []string{repo.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -262,6 +277,7 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.repo_project = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.HeadIDs(); len(nodes) > 0 {
@@ -313,6 +329,25 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: vulnerabilityreview.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.PoliciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   repo.PoliciesTable,
+			Columns: repo.PoliciesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasepolicy.FieldID,
 				},
 			},
 		}

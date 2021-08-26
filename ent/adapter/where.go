@@ -104,10 +104,10 @@ func Tag(v string) predicate.Adapter {
 	})
 }
 
-// Results applies equality check predicate on the "results" field. It's identical to ResultsEQ.
-func Results(v []byte) predicate.Adapter {
+// Module applies equality check predicate on the "module" field. It's identical to ModuleEQ.
+func Module(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldResults), v))
+		s.Where(sql.EQ(s.C(FieldModule), v))
 	})
 }
 
@@ -333,22 +333,22 @@ func TagContainsFold(v string) predicate.Adapter {
 	})
 }
 
-// TypeEQ applies the EQ predicate on the "type" field.
-func TypeEQ(v Type) predicate.Adapter {
+// ModuleEQ applies the EQ predicate on the "module" field.
+func ModuleEQ(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldType), v))
+		s.Where(sql.EQ(s.C(FieldModule), v))
 	})
 }
 
-// TypeNEQ applies the NEQ predicate on the "type" field.
-func TypeNEQ(v Type) predicate.Adapter {
+// ModuleNEQ applies the NEQ predicate on the "module" field.
+func ModuleNEQ(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldType), v))
+		s.Where(sql.NEQ(s.C(FieldModule), v))
 	})
 }
 
-// TypeIn applies the In predicate on the "type" field.
-func TypeIn(vs ...Type) predicate.Adapter {
+// ModuleIn applies the In predicate on the "module" field.
+func ModuleIn(vs ...string) predicate.Adapter {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -360,12 +360,12 @@ func TypeIn(vs ...Type) predicate.Adapter {
 			s.Where(sql.False())
 			return
 		}
-		s.Where(sql.In(s.C(FieldType), v...))
+		s.Where(sql.In(s.C(FieldModule), v...))
 	})
 }
 
-// TypeNotIn applies the NotIn predicate on the "type" field.
-func TypeNotIn(vs ...Type) predicate.Adapter {
+// ModuleNotIn applies the NotIn predicate on the "module" field.
+func ModuleNotIn(vs ...string) predicate.Adapter {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -377,131 +377,70 @@ func TypeNotIn(vs ...Type) predicate.Adapter {
 			s.Where(sql.False())
 			return
 		}
-		s.Where(sql.NotIn(s.C(FieldType), v...))
+		s.Where(sql.NotIn(s.C(FieldModule), v...))
 	})
 }
 
-// ResultsTypeEQ applies the EQ predicate on the "results_type" field.
-func ResultsTypeEQ(v ResultsType) predicate.Adapter {
+// ModuleGT applies the GT predicate on the "module" field.
+func ModuleGT(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldResultsType), v))
+		s.Where(sql.GT(s.C(FieldModule), v))
 	})
 }
 
-// ResultsTypeNEQ applies the NEQ predicate on the "results_type" field.
-func ResultsTypeNEQ(v ResultsType) predicate.Adapter {
+// ModuleGTE applies the GTE predicate on the "module" field.
+func ModuleGTE(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldResultsType), v))
+		s.Where(sql.GTE(s.C(FieldModule), v))
 	})
 }
 
-// ResultsTypeIn applies the In predicate on the "results_type" field.
-func ResultsTypeIn(vs ...ResultsType) predicate.Adapter {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
+// ModuleLT applies the LT predicate on the "module" field.
+func ModuleLT(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.In(s.C(FieldResultsType), v...))
+		s.Where(sql.LT(s.C(FieldModule), v))
 	})
 }
 
-// ResultsTypeNotIn applies the NotIn predicate on the "results_type" field.
-func ResultsTypeNotIn(vs ...ResultsType) predicate.Adapter {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
+// ModuleLTE applies the LTE predicate on the "module" field.
+func ModuleLTE(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.NotIn(s.C(FieldResultsType), v...))
+		s.Where(sql.LTE(s.C(FieldModule), v))
 	})
 }
 
-// ResultsEQ applies the EQ predicate on the "results" field.
-func ResultsEQ(v []byte) predicate.Adapter {
+// ModuleContains applies the Contains predicate on the "module" field.
+func ModuleContains(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldResults), v))
+		s.Where(sql.Contains(s.C(FieldModule), v))
 	})
 }
 
-// ResultsNEQ applies the NEQ predicate on the "results" field.
-func ResultsNEQ(v []byte) predicate.Adapter {
+// ModuleHasPrefix applies the HasPrefix predicate on the "module" field.
+func ModuleHasPrefix(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldResults), v))
+		s.Where(sql.HasPrefix(s.C(FieldModule), v))
 	})
 }
 
-// ResultsIn applies the In predicate on the "results" field.
-func ResultsIn(vs ...[]byte) predicate.Adapter {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
+// ModuleHasSuffix applies the HasSuffix predicate on the "module" field.
+func ModuleHasSuffix(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.In(s.C(FieldResults), v...))
+		s.Where(sql.HasSuffix(s.C(FieldModule), v))
 	})
 }
 
-// ResultsNotIn applies the NotIn predicate on the "results" field.
-func ResultsNotIn(vs ...[]byte) predicate.Adapter {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
+// ModuleEqualFold applies the EqualFold predicate on the "module" field.
+func ModuleEqualFold(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.NotIn(s.C(FieldResults), v...))
+		s.Where(sql.EqualFold(s.C(FieldModule), v))
 	})
 }
 
-// ResultsGT applies the GT predicate on the "results" field.
-func ResultsGT(v []byte) predicate.Adapter {
+// ModuleContainsFold applies the ContainsFold predicate on the "module" field.
+func ModuleContainsFold(v string) predicate.Adapter {
 	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldResults), v))
-	})
-}
-
-// ResultsGTE applies the GTE predicate on the "results" field.
-func ResultsGTE(v []byte) predicate.Adapter {
-	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldResults), v))
-	})
-}
-
-// ResultsLT applies the LT predicate on the "results" field.
-func ResultsLT(v []byte) predicate.Adapter {
-	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldResults), v))
-	})
-}
-
-// ResultsLTE applies the LTE predicate on the "results" field.
-func ResultsLTE(v []byte) predicate.Adapter {
-	return predicate.Adapter(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldResults), v))
+		s.Where(sql.ContainsFold(s.C(FieldModule), v))
 	})
 }
 

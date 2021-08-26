@@ -2,6 +2,8 @@ package run
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"path"
 
 	"github.com/valocode/bubbly/adapter"
@@ -33,8 +35,11 @@ var (
 func New(bCtx *env.BubblyContext) *cobra.Command {
 
 	var (
-		opts        adapter.RunOptions
-		adapterArgs adapter.RunArgs
+		basedir  string
+		filename string
+		name     string
+		tag      string
+		// adapterArgs adapter.RunArgs
 	)
 
 	cmd := &cobra.Command{
@@ -46,8 +51,8 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				// Then user must provide --from-file
-				if opts.Filename == "" {
-					return errors.New("provide either an adapter name[:tag] or a --from-file to read the adapter from")
+				if filename == "" {
+					return errors.New("provide either an adapter name[:tag] or a --from-file")
 				}
 			}
 			if len(args) == 1 {
@@ -55,7 +60,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 				// if opts.Filename != "" {
 				// }
 				var err error
-				opts.Name, opts.Tag, err = adapter.ParseAdpaterID(args[0])
+				name, tag, err = adapter.ParseAdpaterID(args[0])
 				if err != nil {
 					return err
 				}
@@ -65,49 +70,64 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			// to read locally and it fails, then fail the run. Otherwise continue
 			// to fetching the adapter remotely
 			var (
-				// a           *adapter.Adapter
 				adapterPath string
 				failOnError bool
 			)
-			if opts.Filename != "" {
-				adapterPath = opts.Filename
+			if filename != "" {
+				adapterPath = filename
+				failOnError = true
+			} else {
+				adapterPath = path.Join(basedir, "adapters", name+".rego")
+			}
+			if basedir != ".bubbly" {
 				failOnError = true
 			}
-			if opts.Filename == "" && opts.BaseDir != "" {
-				adapterPath = path.Join(opts.BaseDir, opts.Name+".adapter.hcl")
-				failOnError = true
-			}
-			if adapterPath == "" {
-				// Set the default adapter path
-				adapterPath = path.Join(".bubbly", opts.Name+".adapter.hcl")
-			}
-			a, err := adapter.FromFile(adapterPath)
-			if err != nil {
+
+			var result *adapter.AdapterResult
+			if _, err := os.Stat(adapterPath); err == nil {
+				result, err = adapter.RunFromFile(adapterPath)
+				if err != nil {
+					return fmt.Errorf("error running adapter: %w", err)
+				}
+			} else if os.IsNotExist(err) {
 				if failOnError {
+					return fmt.Errorf("adapter does not exist: %s", adapterPath)
+				}
+			} else {
+				return fmt.Errorf("error checking for adapter existence: %w", err)
+			}
+
+			if result == nil {
+				a, err := client.GetAdapter(bCtx, &api.AdapterGetRequest{
+					Name: &name,
+					Tag:  &tag,
+				})
+				if err != nil {
 					return err
 				}
-				// Else, try to fetch the adapter remotely
+				result, err = adapter.Run(*a.Module)
+				if err != nil {
+					return fmt.Errorf("error running adapter: %w", err)
+				}
 			}
-			if a == nil {
-				a, err = client.GetAdapter(bCtx, &api.AdapterGetRequest{
-					Name: &opts.Name,
-					Tag:  &opts.Tag,
+
+			commit := "asdasd"
+			if result == nil {
+				return errors.New("did not receive any results from the adapter")
+			}
+			if result.CodeScan != nil {
+				err := client.SaveCodeScan(bCtx, &api.CodeScanRequest{
+					Commit:   &commit,
+					CodeScan: result.CodeScan,
 				})
 				if err != nil {
 					return err
 				}
 			}
-
-			output, err := a.Run(adapterArgs)
-			if err != nil {
-				return err
-			}
-
-			commit := "asdasd"
-			if output.HasCodeScan() {
-				err := client.SaveCodeScan(bCtx, &api.CodeScanRequest{
-					Commit:   &commit,
-					CodeScan: output.CodeScan,
+			if result.TestRun != nil {
+				err := client.SaveTestRun(bCtx, &api.TestRunRequest{
+					Commit:  &commit,
+					TestRun: result.TestRun,
 				})
 				if err != nil {
 					return err
@@ -119,19 +139,25 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 
 	f := cmd.PersistentFlags()
 	f.StringVarP(
-		&opts.Filename,
+		&filename,
 		"from-file", "f",
 		"",
 		`Get the adapter to run from a specific file containing an adapter.`,
 	)
-	f.StringVar(
-		&adapterArgs.Filename,
-		"arg-file",
-		"",
-		`An argument for the adapter providing an input file.
-Only valid for adapter types that read an input file (json, yaml, csv, etc).
-Default is <name>.adapter.<type>, e.g. snyk.adapter.json`,
+	f.StringVarP(
+		&basedir,
+		"directory", "d",
+		".bubbly",
+		`Use the following directory as the base instead of the default ".bubbly".`,
 	)
+	// 	f.StringVar(
+	// 		&adapterArgs.Filename,
+	// 		"arg-file",
+	// 		"",
+	// 		`An argument for the adapter providing an input file.
+	// Only valid for adapter types that read an input file (json, yaml, csv, etc).
+	// Default is <name>.adapter.<type>, e.g. snyk.adapter.json`,
+	// 	)
 
 	return cmd
 }

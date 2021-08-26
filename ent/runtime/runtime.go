@@ -10,18 +10,20 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasepolicy"
+	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/schema"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -33,11 +35,29 @@ func init() {
 	// adapterDescName is the schema descriptor for name field.
 	adapterDescName := adapterFields[0].Descriptor()
 	// adapter.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	adapter.NameValidator = adapterDescName.Validators[0].(func(string) error)
+	adapter.NameValidator = func() func(string) error {
+		validators := adapterDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// adapterDescTag is the schema descriptor for tag field.
 	adapterDescTag := adapterFields[1].Descriptor()
 	// adapter.TagValidator is a validator for the "tag" field. It is called by the builders before save.
 	adapter.TagValidator = adapterDescTag.Validators[0].(func(string) error)
+	// adapterDescModule is the schema descriptor for module field.
+	adapterDescModule := adapterFields[2].Descriptor()
+	// adapter.ModuleValidator is a validator for the "module" field. It is called by the builders before save.
+	adapter.ModuleValidator = adapterDescModule.Validators[0].(func(string) error)
 	artifactHooks := schema.Artifact{}.Hooks()
 	artifact.Hooks[0] = artifactHooks[0]
 	artifactFields := schema.Artifact{}.Fields()
@@ -54,12 +74,6 @@ func init() {
 	artifactDescTime := artifactFields[3].Descriptor()
 	// artifact.DefaultTime holds the default value on creation for the time field.
 	artifact.DefaultTime = artifactDescTime.Default.(func() time.Time)
-	cweFields := schema.CWE{}.Fields()
-	_ = cweFields
-	// cweDescCweID is the schema descriptor for cwe_id field.
-	cweDescCweID := cweFields[0].Descriptor()
-	// cwe.CweIDValidator is a validator for the "cwe_id" field. It is called by the builders before save.
-	cwe.CweIDValidator = cweDescCweID.Validators[0].(func(string) error)
 	codeissueFields := schema.CodeIssue{}.Fields()
 	_ = codeissueFields
 	// codeissueDescRuleID is the schema descriptor for rule_id field.
@@ -140,12 +154,44 @@ func init() {
 	release.VersionValidator = releaseDescVersion.Validators[0].(func(string) error)
 	releasecomponentHooks := schema.ReleaseComponent{}.Hooks()
 	releasecomponent.Hooks[0] = releasecomponentHooks[0]
+	releasecomponentFields := schema.ReleaseComponent{}.Fields()
+	_ = releasecomponentFields
 	releaseentryFields := schema.ReleaseEntry{}.Fields()
 	_ = releaseentryFields
 	// releaseentryDescTime is the schema descriptor for time field.
 	releaseentryDescTime := releaseentryFields[1].Descriptor()
 	// releaseentry.DefaultTime holds the default value on creation for the time field.
 	releaseentry.DefaultTime = releaseentryDescTime.Default.(func() time.Time)
+	releasepolicyFields := schema.ReleasePolicy{}.Fields()
+	_ = releasepolicyFields
+	// releasepolicyDescName is the schema descriptor for name field.
+	releasepolicyDescName := releasepolicyFields[0].Descriptor()
+	// releasepolicy.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	releasepolicy.NameValidator = func() func(string) error {
+		validators := releasepolicyDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// releasepolicyDescModule is the schema descriptor for module field.
+	releasepolicyDescModule := releasepolicyFields[1].Descriptor()
+	// releasepolicy.ModuleValidator is a validator for the "module" field. It is called by the builders before save.
+	releasepolicy.ModuleValidator = releasepolicyDescModule.Validators[0].(func(string) error)
+	releasepolicyviolationFields := schema.ReleasePolicyViolation{}.Fields()
+	_ = releasepolicyviolationFields
+	// releasepolicyviolationDescMessage is the schema descriptor for message field.
+	releasepolicyviolationDescMessage := releasepolicyviolationFields[0].Descriptor()
+	// releasepolicyviolation.MessageValidator is a validator for the "message" field. It is called by the builders before save.
+	releasepolicyviolation.MessageValidator = releasepolicyviolationDescMessage.Validators[0].(func(string) error)
 	repoFields := schema.Repo{}.Fields()
 	_ = repoFields
 	// repoDescName is the schema descriptor for name field.
@@ -198,6 +244,12 @@ func init() {
 	vulnerabilityDescSeverityScore := vulnerabilityFields[3].Descriptor()
 	// vulnerability.DefaultSeverityScore holds the default value on creation for the severity_score field.
 	vulnerability.DefaultSeverityScore = vulnerabilityDescSeverityScore.Default.(float64)
+	vulnerabilityreviewFields := schema.VulnerabilityReview{}.Fields()
+	_ = vulnerabilityreviewFields
+	// vulnerabilityreviewDescName is the schema descriptor for name field.
+	vulnerabilityreviewDescName := vulnerabilityreviewFields[0].Descriptor()
+	// vulnerabilityreview.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	vulnerabilityreview.NameValidator = vulnerabilityreviewDescName.Validators[0].(func(string) error)
 }
 
 const (

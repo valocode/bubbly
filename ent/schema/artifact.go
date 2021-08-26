@@ -30,11 +30,11 @@ func (Artifact) Annotations() []schema.Annotation {
 
 func (Artifact) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("name").Immutable().NotEmpty().
+		field.String("name").Immutable().NotEmpty().
 			Annotations(
 				entgql.OrderField("name"),
 			),
-		field.Text("sha256").Immutable().NotEmpty().
+		field.String("sha256").Immutable().NotEmpty().
 			Annotations(
 				entgql.OrderField("sha256"),
 			),

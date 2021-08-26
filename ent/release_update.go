@@ -17,6 +17,7 @@ import (
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testrun"
@@ -135,6 +136,21 @@ func (ru *ReleaseUpdate) AddLog(r ...*ReleaseEntry) *ReleaseUpdate {
 		ids[i] = r[i].ID
 	}
 	return ru.AddLogIDs(ids...)
+}
+
+// AddViolationIDs adds the "violations" edge to the ReleasePolicyViolation entity by IDs.
+func (ru *ReleaseUpdate) AddViolationIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.AddViolationIDs(ids...)
+	return ru
+}
+
+// AddViolations adds the "violations" edges to the ReleasePolicyViolation entity.
+func (ru *ReleaseUpdate) AddViolations(r ...*ReleasePolicyViolation) *ReleaseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ru.AddViolationIDs(ids...)
 }
 
 // AddArtifactIDs adds the "artifacts" edge to the Artifact entity by IDs.
@@ -305,6 +321,27 @@ func (ru *ReleaseUpdate) RemoveLog(r ...*ReleaseEntry) *ReleaseUpdate {
 		ids[i] = r[i].ID
 	}
 	return ru.RemoveLogIDs(ids...)
+}
+
+// ClearViolations clears all "violations" edges to the ReleasePolicyViolation entity.
+func (ru *ReleaseUpdate) ClearViolations() *ReleaseUpdate {
+	ru.mutation.ClearViolations()
+	return ru
+}
+
+// RemoveViolationIDs removes the "violations" edge to ReleasePolicyViolation entities by IDs.
+func (ru *ReleaseUpdate) RemoveViolationIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.RemoveViolationIDs(ids...)
+	return ru
+}
+
+// RemoveViolations removes "violations" edges to ReleasePolicyViolation entities.
+func (ru *ReleaseUpdate) RemoveViolations(r ...*ReleasePolicyViolation) *ReleaseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ru.RemoveViolationIDs(ids...)
 }
 
 // ClearArtifacts clears all "artifacts" edges to the Artifact entity.
@@ -787,6 +824,60 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.ViolationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.ViolationsTable,
+			Columns: []string{release.ViolationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasepolicyviolation.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedViolationsIDs(); len(nodes) > 0 && !ru.mutation.ViolationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.ViolationsTable,
+			Columns: []string{release.ViolationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasepolicyviolation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.ViolationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.ViolationsTable,
+			Columns: []string{release.ViolationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasepolicyviolation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if ru.mutation.ArtifactsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -1231,6 +1322,21 @@ func (ruo *ReleaseUpdateOne) AddLog(r ...*ReleaseEntry) *ReleaseUpdateOne {
 	return ruo.AddLogIDs(ids...)
 }
 
+// AddViolationIDs adds the "violations" edge to the ReleasePolicyViolation entity by IDs.
+func (ruo *ReleaseUpdateOne) AddViolationIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.AddViolationIDs(ids...)
+	return ruo
+}
+
+// AddViolations adds the "violations" edges to the ReleasePolicyViolation entity.
+func (ruo *ReleaseUpdateOne) AddViolations(r ...*ReleasePolicyViolation) *ReleaseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ruo.AddViolationIDs(ids...)
+}
+
 // AddArtifactIDs adds the "artifacts" edge to the Artifact entity by IDs.
 func (ruo *ReleaseUpdateOne) AddArtifactIDs(ids ...int) *ReleaseUpdateOne {
 	ruo.mutation.AddArtifactIDs(ids...)
@@ -1399,6 +1505,27 @@ func (ruo *ReleaseUpdateOne) RemoveLog(r ...*ReleaseEntry) *ReleaseUpdateOne {
 		ids[i] = r[i].ID
 	}
 	return ruo.RemoveLogIDs(ids...)
+}
+
+// ClearViolations clears all "violations" edges to the ReleasePolicyViolation entity.
+func (ruo *ReleaseUpdateOne) ClearViolations() *ReleaseUpdateOne {
+	ruo.mutation.ClearViolations()
+	return ruo
+}
+
+// RemoveViolationIDs removes the "violations" edge to ReleasePolicyViolation entities by IDs.
+func (ruo *ReleaseUpdateOne) RemoveViolationIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.RemoveViolationIDs(ids...)
+	return ruo
+}
+
+// RemoveViolations removes "violations" edges to ReleasePolicyViolation entities.
+func (ruo *ReleaseUpdateOne) RemoveViolations(r ...*ReleasePolicyViolation) *ReleaseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ruo.RemoveViolationIDs(ids...)
 }
 
 // ClearArtifacts clears all "artifacts" edges to the Artifact entity.
@@ -1897,6 +2024,60 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: releaseentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.ViolationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.ViolationsTable,
+			Columns: []string{release.ViolationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasepolicyviolation.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedViolationsIDs(); len(nodes) > 0 && !ruo.mutation.ViolationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.ViolationsTable,
+			Columns: []string{release.ViolationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasepolicyviolation.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.ViolationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.ViolationsTable,
+			Columns: []string{release.ViolationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasepolicyviolation.FieldID,
 				},
 			},
 		}

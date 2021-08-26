@@ -1,139 +1,168 @@
 package adapter
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/hashicorp/hcl/v2/hclsimple"
+	"github.com/go-playground/validator/v10"
+	"github.com/mitchellh/mapstructure"
+	"github.com/open-policy-agent/opa/ast"
+	"github.com/open-policy-agent/opa/rego"
+	"github.com/open-policy-agent/opa/types"
 	"github.com/valocode/bubbly/ent"
-	entadapter "github.com/valocode/bubbly/ent/adapter"
+	"github.com/valocode/bubbly/store/api"
 )
 
-const DefaultTag = "default"
+const (
+	DefaultTag = "default"
+
+	adapterQuery   = "data.adapter"
+	adapterModule  = "adapter"
+	adapterPackage = "data.adapter"
+
+	codeScanResult  = "code_scan"
+	codeIssueResult = "code_issue"
+)
 
 type (
-	// Adapter is the main definition of an adapter.
-	//
-	// An adapter is one of the main forms of input into bubbly and is created
-	// to extract data from somewhere (e.g. JSON file or REST api) and map the
-	// data to a bubbly data graph which can then be processed by the bubbly
-	// server.
-	Adapter struct {
-		Name      string    `hcl:"name,attr"`
-		Tag       *string   `hcl:"tag,optional"`
-		Operation Operation `json:"operation,omitempty" hcl:"operation,block"`
-		Results   Results   `json:"results,omitempty" hcl:"results,block"`
-	}
-
-	// RunOptions defines the options about the adapter to run, such as the
-	// name, tag, or from file
-	RunOptions struct {
-		Name     string
-		Tag      string
-		Filename string
-		BaseDir  string
-	}
-	// RunArgs defines the runtime arguments that are provided to the adapter
-	// which come from user input
-	RunArgs struct {
-		Filename string
-	}
-	// adapterWrap is used for wrapping an Adapter to be decoded using gohcl
-	adapterWrap struct {
-		Adapter Adapter `hcl:"adapter,block"`
+	AdapterResult struct {
+		CodeScan *api.CodeScan
+		TestRun  *api.TestRun
 	}
 )
 
-func FromModel(model *ent.AdapterModelRead) (*Adapter, error) {
-	a := &Adapter{
-		Name: *model.Name,
-		Tag:  model.Tag,
-		Operation: Operation{
-			Type: string(*model.Type),
-		},
-		Results: Results{
-			Type: string(*model.ResultsType),
-		},
-	}
-	if err := json.Unmarshal(*model.Operation, &a.Operation); err != nil {
-		return nil, err
-	}
-	if err := a.Results.FromBytes(a.String(), *model.Results); err != nil {
-		return nil, err
-	}
-	return a, nil
-}
-
-func FromFile(filename string) (*Adapter, error) {
-	src, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("could not read file %s: %w", filename, err)
-	}
-	return Decode(filename, src)
-}
-
-func Decode(filename string, src []byte) (*Adapter, error) {
-	var adaptWrap adapterWrap
-	err := hclsimple.Decode(filename, src, nil, &adaptWrap)
+func RunFromFile(path string) (*AdapterResult, error) {
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-
-	a := adaptWrap.Adapter
-	if err := a.Operation.Decode(); err != nil {
-		return nil, fmt.Errorf("error decoding operation: %w", err)
-	}
-
-	return &a, nil
+	return Run(string(b))
 }
 
-func (a *Adapter) Run(args RunArgs) (*Output, error) {
-
-	opValue, err := a.Operation.Spec.Run(a.Name, args)
+func Run(module string) (*AdapterResult, error) {
+	ctx := context.Background()
+	r := rego.New(
+		rego.Query(adapterQuery),
+		rego.Module(adapterModule, module),
+		rego.Function1(&rego.Function{
+			Name: "readfile",
+			Decl: types.NewFunction(
+				types.Args(types.S),
+				types.S,
+			),
+		}, func(bctx rego.BuiltinContext, op1 *ast.Term) (*ast.Term, error) {
+			path := op1.Value.(ast.String)
+			b, err := os.ReadFile(string(path))
+			if err != nil {
+				return nil, err
+			}
+			return ast.StringTerm(string(b)), nil
+		}),
+		rego.Function1(&rego.Function{
+			Name: "json",
+			Decl: types.NewFunction(
+				types.Args(types.S),
+				types.NewObject(nil, types.NewDynamicProperty(types.A, types.A)),
+			),
+		}, func(bctx rego.BuiltinContext, op1 *ast.Term) (*ast.Term, error) {
+			path := op1.Value.(ast.String)
+			file, err := os.Open(string(path))
+			if err != nil {
+				return nil, err
+			}
+			var result map[string]interface{}
+			if err := json.NewDecoder(file).Decode(&result); err != nil {
+				return nil, err
+			}
+			v, err := ast.InterfaceToValue(result)
+			if err != nil {
+				return nil, err
+			}
+			return ast.NewTerm(v), nil
+		}),
+	)
+	query, err := r.PrepareForEval(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error performing operation %s: %w", a.Operation.Type, err)
+		return nil, fmt.Errorf("error preparing adapter for evaluation: %w", err)
 	}
 
-	eCtx := NewEvalContext(nil)
-	eCtx.Variables["data"] = opValue
-
-	if err := a.Results.Decode(eCtx); err != nil {
-		return nil, fmt.Errorf("error decoding results: %w", err)
+	// Check that the module and such is correct
+	mod := query.Modules()[adapterModule]
+	pkg := mod.Package.Path.String()
+	if pkg != adapterPackage {
+		return nil, fmt.Errorf("package should be \"%s\", received \"%s\"", adapterPackage, pkg)
 	}
 
-	return a.Results.Spec.Output(a.Name)
-}
-
-func (a *Adapter) Model() (*ent.AdapterModelCreate, error) {
-	op, err := json.Marshal(a.Operation)
+	// Run evaluation
+	// TODO: add some inputs
+	rs, err := query.Eval(ctx)
+	// rs, err := r.Eval(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("json marshalling adapter operation: %w", err)
+		return nil, fmt.Errorf("error evaluating adapter: %w", err)
 	}
-	results, err := a.Results.SpecBytes()
-	if err != nil {
-		return nil, fmt.Errorf("converting results body to bytes: %w", err)
+	// ResultSet should never be empty, but just to double check
+	if len(rs) == 0 {
+		return nil, errors.New("adapter result set is empty; check the adapter query")
 	}
-	return ent.NewAdapterModelCreate().
-		SetName(a.Name).
-		SetTag(a.TagOrDefault()).
-		SetType(entadapter.Type(a.Operation.Type)).
-		SetOperation(op).
-		SetResultsType(entadapter.ResultsType(a.Results.Type)).
-		SetResults(results), nil
-}
+	queryResult := rs[0]
+	if len(queryResult.Bindings) != 0 {
+		return nil, fmt.Errorf("result has variable bindings; check the adapter query: %v", queryResult.Bindings)
+	}
+	if len(queryResult.Expressions) == 0 {
+		return nil, fmt.Errorf("result has no expressions; check the policy query")
+	}
+	expr := queryResult.Expressions[0]
+	obj, ok := expr.Value.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("internal error: result is not a map[string]interface{}")
+	}
+	var (
+		codeScans  []*ent.CodeScanModelCreate
+		codeIssues []*api.CodeScanIssue
+	)
+	validate := validator.New()
+	for name, value := range obj {
+		switch name {
+		case codeScanResult:
+			if err := mapstructure.Decode(value, &codeScans); err != nil {
+				return nil, fmt.Errorf("error decoding code scan: %w", err)
+			}
+			if len(codeScans) > 1 {
+				return nil, fmt.Errorf("multiple code scans detected: only one is allowed per adapter")
+			}
+			if err := validate.Var(codeScans, "required,dive"); err != nil {
+				return nil, err
+			}
+		case codeIssueResult:
+			if err := mapstructure.Decode(value, &codeIssues); err != nil {
+				return nil, fmt.Errorf("error decoding code issues: %w", err)
+			}
+			if err := validate.Var(codeIssues, "required,dive"); err != nil {
+				return nil, err
+			}
+		}
+	}
 
-func (a *Adapter) String() string {
-	return a.Name + ":" + a.TagOrDefault()
-}
-
-func (a *Adapter) TagOrDefault() string {
-	var tag = DefaultTag
-	if a.Tag != nil {
-		tag = *a.Tag
+	var result AdapterResult
+	// Check that the data seems appropriate
+	if codeScans != nil {
+		result.CodeScan = &api.CodeScan{
+			CodeScanModelCreate: codeScans[0],
+			Issues:              codeIssues,
+		}
+	} else {
+		// Check if there was no code_scan that there were no results to associate
+		// the missing code_scan
+		if codeIssues != nil {
+			return nil, fmt.Errorf("cannot provide code_issue without code_scan: please provide a code_scan")
+		}
 	}
-	return tag
+
+	return &result, nil
 }
 
 func ParseAdpaterID(id string) (string, string, error) {
