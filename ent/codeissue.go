@@ -32,28 +32,17 @@ type CodeIssue struct {
 
 // CodeIssueEdges holds the relations/edges for other nodes in the graph.
 type CodeIssueEdges struct {
-	// Cwe holds the value of the cwe edge.
-	Cwe []*CWE `json:"cwe,omitempty"`
 	// Scan holds the value of the scan edge.
 	Scan *CodeScan `json:"scan,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
-}
-
-// CweOrErr returns the Cwe value or an error if the edge
-// was not loaded in eager-loading.
-func (e CodeIssueEdges) CweOrErr() ([]*CWE, error) {
-	if e.loadedTypes[0] {
-		return e.Cwe, nil
-	}
-	return nil, &NotLoadedError{edge: "cwe"}
+	loadedTypes [1]bool
 }
 
 // ScanOrErr returns the Scan value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e CodeIssueEdges) ScanOrErr() (*CodeScan, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		if e.Scan == nil {
 			// The edge scan was loaded in eager-loading,
 			// but was not found.
@@ -130,11 +119,6 @@ func (ci *CodeIssue) assignValues(columns []string, values []interface{}) error 
 		}
 	}
 	return nil
-}
-
-// QueryCwe queries the "cwe" edge of the CodeIssue entity.
-func (ci *CodeIssue) QueryCwe() *CWEQuery {
-	return (&CodeIssueClient{config: ci.config}).QueryCwe(ci)
 }
 
 // QueryScan queries the "scan" edge of the CodeIssue entity.

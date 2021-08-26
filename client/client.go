@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
-	"github.com/valocode/bubbly/adapter"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/store/api"
 )
@@ -38,7 +38,11 @@ func SaveCodeScan(bCtx *env.BubblyContext, req *api.CodeScanRequest) error {
 	return handlePushRequest(bCtx, req, "codescans")
 }
 
-func GetAdapter(bCtx *env.BubblyContext, req *api.AdapterGetRequest) (*adapter.Adapter, error) {
+func SaveTestRun(bCtx *env.BubblyContext, req *api.TestRunRequest) error {
+	return handlePushRequest(bCtx, req, "testruns")
+}
+
+func GetAdapter(bCtx *env.BubblyContext, req *api.AdapterGetRequest) (*api.AdapterGetResponse, error) {
 	url := bCtx.ClientConfig.V1() + "/adapters/" + *req.Name
 	httpReq, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -47,9 +51,6 @@ func GetAdapter(bCtx *env.BubblyContext, req *api.AdapterGetRequest) (*adapter.A
 	q := httpReq.URL.Query()
 	if req.Tag != nil {
 		q.Add("tag", *req.Tag)
-	}
-	if req.Type != nil {
-		q.Add("type", *req.Type)
 	}
 	httpReq.URL.RawQuery = q.Encode()
 	resp, err := http.DefaultClient.Do(httpReq)
@@ -63,7 +64,10 @@ func GetAdapter(bCtx *env.BubblyContext, req *api.AdapterGetRequest) (*adapter.A
 	if err := json.NewDecoder(resp.Body).Decode(&a); err != nil {
 		return nil, fmt.Errorf("decoding adapter response: %w", err)
 	}
-	return adapter.FromModel(&a.AdapterModelRead)
+	if err := validator.New().Struct(a); err != nil {
+		return nil, err
+	}
+	return &a, nil
 }
 
 func SaveAdapter(bCtx *env.BubblyContext, req *api.AdapterSaveRequest) error {

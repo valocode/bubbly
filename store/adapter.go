@@ -50,9 +50,6 @@ func (s *Store) GetAdapter(req *api.AdapterGetRequest) (*api.AdapterGetResponse,
 	query := s.client.Adapter.Query().Where(
 		adapter.Name(*req.Name), adapter.Tag(tag),
 	)
-	if req.Type != nil {
-		query.Where(adapter.TypeEQ(adapter.Type(*req.Type)))
-	}
 	dbAdapter, err := query.Only(s.ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {

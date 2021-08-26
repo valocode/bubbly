@@ -2,12 +2,6 @@
 
 package adapter
 
-import (
-	"fmt"
-	"io"
-	"strconv"
-)
-
 const (
 	// Label holds the string label denoting the adapter type in the database.
 	Label = "adapter"
@@ -17,14 +11,8 @@ const (
 	FieldName = "name"
 	// FieldTag holds the string denoting the tag field in the database.
 	FieldTag = "tag"
-	// FieldType holds the string denoting the type field in the database.
-	FieldType = "type"
-	// FieldOperation holds the string denoting the operation field in the database.
-	FieldOperation = "operation"
-	// FieldResultsType holds the string denoting the results_type field in the database.
-	FieldResultsType = "results_type"
-	// FieldResults holds the string denoting the results field in the database.
-	FieldResults = "results"
+	// FieldModule holds the string denoting the module field in the database.
+	FieldModule = "module"
 	// Table holds the table name of the adapter in the database.
 	Table = "adapter"
 )
@@ -34,10 +22,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldTag,
-	FieldType,
-	FieldOperation,
-	FieldResultsType,
-	FieldResults,
+	FieldModule,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -55,89 +40,6 @@ var (
 	NameValidator func(string) error
 	// TagValidator is a validator for the "tag" field. It is called by the builders before save.
 	TagValidator func(string) error
+	// ModuleValidator is a validator for the "module" field. It is called by the builders before save.
+	ModuleValidator func(string) error
 )
-
-// Type defines the type for the "type" enum field.
-type Type string
-
-// Type values.
-const (
-	TypeJSON Type = "json"
-	TypeCsv  Type = "csv"
-	TypeXML  Type = "xml"
-	TypeYaml Type = "yaml"
-	TypeHTTP Type = "http"
-)
-
-func (_type Type) String() string {
-	return string(_type)
-}
-
-// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
-func TypeValidator(_type Type) error {
-	switch _type {
-	case TypeJSON, TypeCsv, TypeXML, TypeYaml, TypeHTTP:
-		return nil
-	default:
-		return fmt.Errorf("adapter: invalid enum value for type field: %q", _type)
-	}
-}
-
-// ResultsType defines the type for the "results_type" enum field.
-type ResultsType string
-
-// ResultsType values.
-const (
-	ResultsTypeCodeScan ResultsType = "code_scan"
-	ResultsTypeTestRun  ResultsType = "test_run"
-)
-
-func (rt ResultsType) String() string {
-	return string(rt)
-}
-
-// ResultsTypeValidator is a validator for the "results_type" field enum values. It is called by the builders before save.
-func ResultsTypeValidator(rt ResultsType) error {
-	switch rt {
-	case ResultsTypeCodeScan, ResultsTypeTestRun:
-		return nil
-	default:
-		return fmt.Errorf("adapter: invalid enum value for results_type field: %q", rt)
-	}
-}
-
-// MarshalGQL implements graphql.Marshaler interface.
-func (_type Type) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(_type.String()))
-}
-
-// UnmarshalGQL implements graphql.Unmarshaler interface.
-func (_type *Type) UnmarshalGQL(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return fmt.Errorf("enum %T must be a string", val)
-	}
-	*_type = Type(str)
-	if err := TypeValidator(*_type); err != nil {
-		return fmt.Errorf("%s is not a valid Type", str)
-	}
-	return nil
-}
-
-// MarshalGQL implements graphql.Marshaler interface.
-func (rt ResultsType) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(rt.String()))
-}
-
-// UnmarshalGQL implements graphql.Unmarshaler interface.
-func (rt *ResultsType) UnmarshalGQL(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return fmt.Errorf("enum %T must be a string", val)
-	}
-	*rt = ResultsType(str)
-	if err := ResultsTypeValidator(*rt); err != nil {
-		return fmt.Errorf("%s is not a valid ResultsType", str)
-	}
-	return nil
-}

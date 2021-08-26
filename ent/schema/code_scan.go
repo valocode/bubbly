@@ -28,7 +28,7 @@ func (CodeScan) Annotations() []schema.Annotation {
 
 func (CodeScan) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("tool").Immutable().NotEmpty().
+		field.String("tool").Immutable().NotEmpty().
 			Annotations(
 				entgql.OrderField("tool"),
 			),
@@ -47,7 +47,7 @@ func (CodeScan) Edges() []ent.Edge {
 		edge.From("entry", ReleaseEntry.Type).Ref("code_scan").Unique(),
 		// Different results from the scan
 		edge.From("issues", CodeIssue.Type).Ref("scan"),
-		edge.From("vulnerabilities", ReleaseVulnerability.Type).Ref("scans"),
+		edge.From("vulnerabilities", ReleaseVulnerability.Type).Ref("scan"),
 		// edge.From("licenses", LicenseUse.Type).Ref("scans"),
 		edge.From("components", ReleaseComponent.Type).Ref("scans"),
 	}

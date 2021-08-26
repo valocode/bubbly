@@ -153,7 +153,7 @@ func (csq *CodeScanQuery) QueryVulnerabilities() *ReleaseVulnerabilityQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(codescan.Table, codescan.FieldID, selector),
 			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, codescan.VulnerabilitiesTable, codescan.VulnerabilitiesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, codescan.VulnerabilitiesTable, codescan.VulnerabilitiesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(csq.driver.Dialect(), step)
 		return fromU, nil
@@ -619,66 +619,30 @@ func (csq *CodeScanQuery) sqlAll(ctx context.Context) ([]*CodeScan, error) {
 
 	if query := csq.withVulnerabilities; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*CodeScan, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Vulnerabilities = []*ReleaseVulnerability{}
+		nodeids := make(map[int]*CodeScan)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Vulnerabilities = []*ReleaseVulnerability{}
 		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*CodeScan)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   codescan.VulnerabilitiesTable,
-				Columns: codescan.VulnerabilitiesPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(codescan.VulnerabilitiesPrimaryKey[1], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, csq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "vulnerabilities": %w`, err)
-		}
-		query.Where(releasevulnerability.IDIn(edgeids...))
+		query.withFKs = true
+		query.Where(predicate.ReleaseVulnerability(func(s *sql.Selector) {
+			s.Where(sql.InValues(codescan.VulnerabilitiesColumn, fks...))
+		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
+			fk := n.release_vulnerability_scan
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "release_vulnerability_scan" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected "vulnerabilities" node returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "release_vulnerability_scan" returned %v for node %v`, *fk, n.ID)
 			}
-			for i := range nodes {
-				nodes[i].Edges.Vulnerabilities = append(nodes[i].Edges.Vulnerabilities, n)
-			}
+			node.Edges.Vulnerabilities = append(node.Edges.Vulnerabilities, n)
 		}
 	}
 

@@ -50,11 +50,13 @@ const (
 	IssuesInverseTable = "code_issue"
 	// IssuesColumn is the table column denoting the issues relation/edge.
 	IssuesColumn = "code_issue_scan"
-	// VulnerabilitiesTable is the table that holds the vulnerabilities relation/edge. The primary key declared below.
-	VulnerabilitiesTable = "release_vulnerability_scans"
+	// VulnerabilitiesTable is the table that holds the vulnerabilities relation/edge.
+	VulnerabilitiesTable = "release_vulnerability"
 	// VulnerabilitiesInverseTable is the table name for the ReleaseVulnerability entity.
 	// It exists in this package in order to avoid circular dependency with the "releasevulnerability" package.
 	VulnerabilitiesInverseTable = "release_vulnerability"
+	// VulnerabilitiesColumn is the table column denoting the vulnerabilities relation/edge.
+	VulnerabilitiesColumn = "release_vulnerability_scan"
 	// ComponentsTable is the table that holds the components relation/edge. The primary key declared below.
 	ComponentsTable = "release_component_scans"
 	// ComponentsInverseTable is the table name for the ReleaseComponent entity.
@@ -74,12 +76,10 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"code_scan_release",
 	"release_entry_code_scan",
+	"release_license_scans",
 }
 
 var (
-	// VulnerabilitiesPrimaryKey and VulnerabilitiesColumn2 are the table columns denoting the
-	// primary key for the vulnerabilities relation (M2M).
-	VulnerabilitiesPrimaryKey = []string{"release_vulnerability_id", "code_scan_id"}
 	// ComponentsPrimaryKey and ComponentsColumn2 are the table columns denoting the
 	// primary key for the components relation (M2M).
 	ComponentsPrimaryKey = []string{"release_component_id", "code_scan_id"}

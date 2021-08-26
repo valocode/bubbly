@@ -14,7 +14,6 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
@@ -22,6 +21,9 @@ import (
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releaselicense"
+	"github.com/valocode/bubbly/ent/releasepolicy"
+	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testcase"
@@ -43,8 +45,6 @@ type Client struct {
 	Adapter *AdapterClient
 	// Artifact is the client for interacting with the Artifact builders.
 	Artifact *ArtifactClient
-	// CWE is the client for interacting with the CWE builders.
-	CWE *CWEClient
 	// CodeIssue is the client for interacting with the CodeIssue builders.
 	CodeIssue *CodeIssueClient
 	// CodeScan is the client for interacting with the CodeScan builders.
@@ -65,6 +65,12 @@ type Client struct {
 	ReleaseComponent *ReleaseComponentClient
 	// ReleaseEntry is the client for interacting with the ReleaseEntry builders.
 	ReleaseEntry *ReleaseEntryClient
+	// ReleaseLicense is the client for interacting with the ReleaseLicense builders.
+	ReleaseLicense *ReleaseLicenseClient
+	// ReleasePolicy is the client for interacting with the ReleasePolicy builders.
+	ReleasePolicy *ReleasePolicyClient
+	// ReleasePolicyViolation is the client for interacting with the ReleasePolicyViolation builders.
+	ReleasePolicyViolation *ReleasePolicyViolationClient
 	// ReleaseVulnerability is the client for interacting with the ReleaseVulnerability builders.
 	ReleaseVulnerability *ReleaseVulnerabilityClient
 	// Repo is the client for interacting with the Repo builders.
@@ -94,7 +100,6 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Adapter = NewAdapterClient(c.config)
 	c.Artifact = NewArtifactClient(c.config)
-	c.CWE = NewCWEClient(c.config)
 	c.CodeIssue = NewCodeIssueClient(c.config)
 	c.CodeScan = NewCodeScanClient(c.config)
 	c.Component = NewComponentClient(c.config)
@@ -105,6 +110,9 @@ func (c *Client) init() {
 	c.Release = NewReleaseClient(c.config)
 	c.ReleaseComponent = NewReleaseComponentClient(c.config)
 	c.ReleaseEntry = NewReleaseEntryClient(c.config)
+	c.ReleaseLicense = NewReleaseLicenseClient(c.config)
+	c.ReleasePolicy = NewReleasePolicyClient(c.config)
+	c.ReleasePolicyViolation = NewReleasePolicyViolationClient(c.config)
 	c.ReleaseVulnerability = NewReleaseVulnerabilityClient(c.config)
 	c.Repo = NewRepoClient(c.config)
 	c.TestCase = NewTestCaseClient(c.config)
@@ -142,27 +150,29 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:                  ctx,
-		config:               cfg,
-		Adapter:              NewAdapterClient(cfg),
-		Artifact:             NewArtifactClient(cfg),
-		CWE:                  NewCWEClient(cfg),
-		CodeIssue:            NewCodeIssueClient(cfg),
-		CodeScan:             NewCodeScanClient(cfg),
-		Component:            NewComponentClient(cfg),
-		GitCommit:            NewGitCommitClient(cfg),
-		License:              NewLicenseClient(cfg),
-		LicenseUse:           NewLicenseUseClient(cfg),
-		Project:              NewProjectClient(cfg),
-		Release:              NewReleaseClient(cfg),
-		ReleaseComponent:     NewReleaseComponentClient(cfg),
-		ReleaseEntry:         NewReleaseEntryClient(cfg),
-		ReleaseVulnerability: NewReleaseVulnerabilityClient(cfg),
-		Repo:                 NewRepoClient(cfg),
-		TestCase:             NewTestCaseClient(cfg),
-		TestRun:              NewTestRunClient(cfg),
-		Vulnerability:        NewVulnerabilityClient(cfg),
-		VulnerabilityReview:  NewVulnerabilityReviewClient(cfg),
+		ctx:                    ctx,
+		config:                 cfg,
+		Adapter:                NewAdapterClient(cfg),
+		Artifact:               NewArtifactClient(cfg),
+		CodeIssue:              NewCodeIssueClient(cfg),
+		CodeScan:               NewCodeScanClient(cfg),
+		Component:              NewComponentClient(cfg),
+		GitCommit:              NewGitCommitClient(cfg),
+		License:                NewLicenseClient(cfg),
+		LicenseUse:             NewLicenseUseClient(cfg),
+		Project:                NewProjectClient(cfg),
+		Release:                NewReleaseClient(cfg),
+		ReleaseComponent:       NewReleaseComponentClient(cfg),
+		ReleaseEntry:           NewReleaseEntryClient(cfg),
+		ReleaseLicense:         NewReleaseLicenseClient(cfg),
+		ReleasePolicy:          NewReleasePolicyClient(cfg),
+		ReleasePolicyViolation: NewReleasePolicyViolationClient(cfg),
+		ReleaseVulnerability:   NewReleaseVulnerabilityClient(cfg),
+		Repo:                   NewRepoClient(cfg),
+		TestCase:               NewTestCaseClient(cfg),
+		TestRun:                NewTestRunClient(cfg),
+		Vulnerability:          NewVulnerabilityClient(cfg),
+		VulnerabilityReview:    NewVulnerabilityReviewClient(cfg),
 	}, nil
 }
 
@@ -180,26 +190,28 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		config:               cfg,
-		Adapter:              NewAdapterClient(cfg),
-		Artifact:             NewArtifactClient(cfg),
-		CWE:                  NewCWEClient(cfg),
-		CodeIssue:            NewCodeIssueClient(cfg),
-		CodeScan:             NewCodeScanClient(cfg),
-		Component:            NewComponentClient(cfg),
-		GitCommit:            NewGitCommitClient(cfg),
-		License:              NewLicenseClient(cfg),
-		LicenseUse:           NewLicenseUseClient(cfg),
-		Project:              NewProjectClient(cfg),
-		Release:              NewReleaseClient(cfg),
-		ReleaseComponent:     NewReleaseComponentClient(cfg),
-		ReleaseEntry:         NewReleaseEntryClient(cfg),
-		ReleaseVulnerability: NewReleaseVulnerabilityClient(cfg),
-		Repo:                 NewRepoClient(cfg),
-		TestCase:             NewTestCaseClient(cfg),
-		TestRun:              NewTestRunClient(cfg),
-		Vulnerability:        NewVulnerabilityClient(cfg),
-		VulnerabilityReview:  NewVulnerabilityReviewClient(cfg),
+		config:                 cfg,
+		Adapter:                NewAdapterClient(cfg),
+		Artifact:               NewArtifactClient(cfg),
+		CodeIssue:              NewCodeIssueClient(cfg),
+		CodeScan:               NewCodeScanClient(cfg),
+		Component:              NewComponentClient(cfg),
+		GitCommit:              NewGitCommitClient(cfg),
+		License:                NewLicenseClient(cfg),
+		LicenseUse:             NewLicenseUseClient(cfg),
+		Project:                NewProjectClient(cfg),
+		Release:                NewReleaseClient(cfg),
+		ReleaseComponent:       NewReleaseComponentClient(cfg),
+		ReleaseEntry:           NewReleaseEntryClient(cfg),
+		ReleaseLicense:         NewReleaseLicenseClient(cfg),
+		ReleasePolicy:          NewReleasePolicyClient(cfg),
+		ReleasePolicyViolation: NewReleasePolicyViolationClient(cfg),
+		ReleaseVulnerability:   NewReleaseVulnerabilityClient(cfg),
+		Repo:                   NewRepoClient(cfg),
+		TestCase:               NewTestCaseClient(cfg),
+		TestRun:                NewTestRunClient(cfg),
+		Vulnerability:          NewVulnerabilityClient(cfg),
+		VulnerabilityReview:    NewVulnerabilityReviewClient(cfg),
 	}, nil
 }
 
@@ -231,7 +243,6 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	c.Adapter.Use(hooks...)
 	c.Artifact.Use(hooks...)
-	c.CWE.Use(hooks...)
 	c.CodeIssue.Use(hooks...)
 	c.CodeScan.Use(hooks...)
 	c.Component.Use(hooks...)
@@ -242,6 +253,9 @@ func (c *Client) Use(hooks ...Hook) {
 	c.Release.Use(hooks...)
 	c.ReleaseComponent.Use(hooks...)
 	c.ReleaseEntry.Use(hooks...)
+	c.ReleaseLicense.Use(hooks...)
+	c.ReleasePolicy.Use(hooks...)
+	c.ReleasePolicyViolation.Use(hooks...)
 	c.ReleaseVulnerability.Use(hooks...)
 	c.Repo.Use(hooks...)
 	c.TestCase.Use(hooks...)
@@ -463,112 +477,6 @@ func (c *ArtifactClient) Hooks() []Hook {
 	return append(hooks[:len(hooks):len(hooks)], artifact.Hooks[:]...)
 }
 
-// CWEClient is a client for the CWE schema.
-type CWEClient struct {
-	config
-}
-
-// NewCWEClient returns a client for the CWE from the given config.
-func NewCWEClient(c config) *CWEClient {
-	return &CWEClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `cwe.Hooks(f(g(h())))`.
-func (c *CWEClient) Use(hooks ...Hook) {
-	c.hooks.CWE = append(c.hooks.CWE, hooks...)
-}
-
-// Create returns a create builder for CWE.
-func (c *CWEClient) Create() *CWECreate {
-	mutation := newCWEMutation(c.config, OpCreate)
-	return &CWECreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of CWE entities.
-func (c *CWEClient) CreateBulk(builders ...*CWECreate) *CWECreateBulk {
-	return &CWECreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for CWE.
-func (c *CWEClient) Update() *CWEUpdate {
-	mutation := newCWEMutation(c.config, OpUpdate)
-	return &CWEUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *CWEClient) UpdateOne(cw *CWE) *CWEUpdateOne {
-	mutation := newCWEMutation(c.config, OpUpdateOne, withCWE(cw))
-	return &CWEUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *CWEClient) UpdateOneID(id int) *CWEUpdateOne {
-	mutation := newCWEMutation(c.config, OpUpdateOne, withCWEID(id))
-	return &CWEUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for CWE.
-func (c *CWEClient) Delete() *CWEDelete {
-	mutation := newCWEMutation(c.config, OpDelete)
-	return &CWEDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a delete builder for the given entity.
-func (c *CWEClient) DeleteOne(cw *CWE) *CWEDeleteOne {
-	return c.DeleteOneID(cw.ID)
-}
-
-// DeleteOneID returns a delete builder for the given id.
-func (c *CWEClient) DeleteOneID(id int) *CWEDeleteOne {
-	builder := c.Delete().Where(cwe.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &CWEDeleteOne{builder}
-}
-
-// Query returns a query builder for CWE.
-func (c *CWEClient) Query() *CWEQuery {
-	return &CWEQuery{
-		config: c.config,
-	}
-}
-
-// Get returns a CWE entity by its id.
-func (c *CWEClient) Get(ctx context.Context, id int) (*CWE, error) {
-	return c.Query().Where(cwe.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *CWEClient) GetX(ctx context.Context, id int) *CWE {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryIssues queries the issues edge of a CWE.
-func (c *CWEClient) QueryIssues(cw *CWE) *CodeIssueQuery {
-	query := &CodeIssueQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := cw.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(cwe.Table, cwe.FieldID, id),
-			sqlgraph.To(codeissue.Table, codeissue.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, cwe.IssuesTable, cwe.IssuesPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(cw.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *CWEClient) Hooks() []Hook {
-	return c.hooks.CWE
-}
-
 // CodeIssueClient is a client for the CodeIssue schema.
 type CodeIssueClient struct {
 	config
@@ -652,22 +560,6 @@ func (c *CodeIssueClient) GetX(ctx context.Context, id int) *CodeIssue {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryCwe queries the cwe edge of a CodeIssue.
-func (c *CodeIssueClient) QueryCwe(ci *CodeIssue) *CWEQuery {
-	query := &CWEQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := ci.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(codeissue.Table, codeissue.FieldID, id),
-			sqlgraph.To(cwe.Table, cwe.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, codeissue.CweTable, codeissue.CwePrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(ci.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryScan queries the scan edge of a CodeIssue.
@@ -832,7 +724,7 @@ func (c *CodeScanClient) QueryVulnerabilities(cs *CodeScan) *ReleaseVulnerabilit
 		step := sqlgraph.NewStep(
 			sqlgraph.From(codescan.Table, codescan.FieldID, id),
 			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, codescan.VulnerabilitiesTable, codescan.VulnerabilitiesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, codescan.VulnerabilitiesTable, codescan.VulnerabilitiesColumn),
 		)
 		fromV = sqlgraph.Neighbors(cs.driver.Dialect(), step)
 		return fromV, nil
@@ -1443,7 +1335,7 @@ func (c *ProjectClient) QueryRepos(pr *Project) *RepoQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, id),
 			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, project.ReposTable, project.ReposPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, project.ReposTable, project.ReposColumn),
 		)
 		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
 		return fromV, nil
@@ -1460,6 +1352,22 @@ func (c *ProjectClient) QueryVulnerabilityReviews(pr *Project) *VulnerabilityRev
 			sqlgraph.From(project.Table, project.FieldID, id),
 			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, project.VulnerabilityReviewsTable, project.VulnerabilityReviewsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPolicies queries the policies edge of a Project.
+func (c *ProjectClient) QueryPolicies(pr *Project) *ReleasePolicyQuery {
+	query := &ReleasePolicyQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, id),
+			sqlgraph.To(releasepolicy.Table, releasepolicy.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, project.PoliciesTable, project.PoliciesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
 		return fromV, nil
@@ -1630,6 +1538,22 @@ func (c *ReleaseClient) QueryLog(r *Release) *ReleaseEntryQuery {
 			sqlgraph.From(release.Table, release.FieldID, id),
 			sqlgraph.To(releaseentry.Table, releaseentry.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, release.LogTable, release.LogColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryViolations queries the violations edge of a Release.
+func (c *ReleaseClient) QueryViolations(r *Release) *ReleasePolicyViolationQuery {
+	query := &ReleasePolicyViolationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, id),
+			sqlgraph.To(releasepolicyviolation.Table, releasepolicyviolation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, release.ViolationsTable, release.ViolationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -1880,7 +1804,7 @@ func (c *ReleaseComponentClient) QueryVulnerabilities(rc *ReleaseComponent) *Rel
 		step := sqlgraph.NewStep(
 			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, id),
 			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, releasecomponent.VulnerabilitiesTable, releasecomponent.VulnerabilitiesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, releasecomponent.VulnerabilitiesTable, releasecomponent.VulnerabilitiesColumn),
 		)
 		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
 		return fromV, nil
@@ -2048,6 +1972,420 @@ func (c *ReleaseEntryClient) Hooks() []Hook {
 	return c.hooks.ReleaseEntry
 }
 
+// ReleaseLicenseClient is a client for the ReleaseLicense schema.
+type ReleaseLicenseClient struct {
+	config
+}
+
+// NewReleaseLicenseClient returns a client for the ReleaseLicense from the given config.
+func NewReleaseLicenseClient(c config) *ReleaseLicenseClient {
+	return &ReleaseLicenseClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `releaselicense.Hooks(f(g(h())))`.
+func (c *ReleaseLicenseClient) Use(hooks ...Hook) {
+	c.hooks.ReleaseLicense = append(c.hooks.ReleaseLicense, hooks...)
+}
+
+// Create returns a create builder for ReleaseLicense.
+func (c *ReleaseLicenseClient) Create() *ReleaseLicenseCreate {
+	mutation := newReleaseLicenseMutation(c.config, OpCreate)
+	return &ReleaseLicenseCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ReleaseLicense entities.
+func (c *ReleaseLicenseClient) CreateBulk(builders ...*ReleaseLicenseCreate) *ReleaseLicenseCreateBulk {
+	return &ReleaseLicenseCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ReleaseLicense.
+func (c *ReleaseLicenseClient) Update() *ReleaseLicenseUpdate {
+	mutation := newReleaseLicenseMutation(c.config, OpUpdate)
+	return &ReleaseLicenseUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ReleaseLicenseClient) UpdateOne(rl *ReleaseLicense) *ReleaseLicenseUpdateOne {
+	mutation := newReleaseLicenseMutation(c.config, OpUpdateOne, withReleaseLicense(rl))
+	return &ReleaseLicenseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ReleaseLicenseClient) UpdateOneID(id int) *ReleaseLicenseUpdateOne {
+	mutation := newReleaseLicenseMutation(c.config, OpUpdateOne, withReleaseLicenseID(id))
+	return &ReleaseLicenseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ReleaseLicense.
+func (c *ReleaseLicenseClient) Delete() *ReleaseLicenseDelete {
+	mutation := newReleaseLicenseMutation(c.config, OpDelete)
+	return &ReleaseLicenseDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *ReleaseLicenseClient) DeleteOne(rl *ReleaseLicense) *ReleaseLicenseDeleteOne {
+	return c.DeleteOneID(rl.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *ReleaseLicenseClient) DeleteOneID(id int) *ReleaseLicenseDeleteOne {
+	builder := c.Delete().Where(releaselicense.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ReleaseLicenseDeleteOne{builder}
+}
+
+// Query returns a query builder for ReleaseLicense.
+func (c *ReleaseLicenseClient) Query() *ReleaseLicenseQuery {
+	return &ReleaseLicenseQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a ReleaseLicense entity by its id.
+func (c *ReleaseLicenseClient) Get(ctx context.Context, id int) (*ReleaseLicense, error) {
+	return c.Query().Where(releaselicense.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ReleaseLicenseClient) GetX(ctx context.Context, id int) *ReleaseLicense {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryLicense queries the license edge of a ReleaseLicense.
+func (c *ReleaseLicenseClient) QueryLicense(rl *ReleaseLicense) *LicenseQuery {
+	query := &LicenseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releaselicense.Table, releaselicense.FieldID, id),
+			sqlgraph.To(license.Table, license.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releaselicense.LicenseTable, releaselicense.LicenseColumn),
+		)
+		fromV = sqlgraph.Neighbors(rl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryComponent queries the component edge of a ReleaseLicense.
+func (c *ReleaseLicenseClient) QueryComponent(rl *ReleaseLicense) *ReleaseComponentQuery {
+	query := &ReleaseComponentQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releaselicense.Table, releaselicense.FieldID, id),
+			sqlgraph.To(releasecomponent.Table, releasecomponent.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releaselicense.ComponentTable, releaselicense.ComponentColumn),
+		)
+		fromV = sqlgraph.Neighbors(rl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelease queries the release edge of a ReleaseLicense.
+func (c *ReleaseLicenseClient) QueryRelease(rl *ReleaseLicense) *ReleaseQuery {
+	query := &ReleaseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releaselicense.Table, releaselicense.FieldID, id),
+			sqlgraph.To(release.Table, release.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releaselicense.ReleaseTable, releaselicense.ReleaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(rl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryScans queries the scans edge of a ReleaseLicense.
+func (c *ReleaseLicenseClient) QueryScans(rl *ReleaseLicense) *CodeScanQuery {
+	query := &CodeScanQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releaselicense.Table, releaselicense.FieldID, id),
+			sqlgraph.To(codescan.Table, codescan.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, releaselicense.ScansTable, releaselicense.ScansColumn),
+		)
+		fromV = sqlgraph.Neighbors(rl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ReleaseLicenseClient) Hooks() []Hook {
+	return c.hooks.ReleaseLicense
+}
+
+// ReleasePolicyClient is a client for the ReleasePolicy schema.
+type ReleasePolicyClient struct {
+	config
+}
+
+// NewReleasePolicyClient returns a client for the ReleasePolicy from the given config.
+func NewReleasePolicyClient(c config) *ReleasePolicyClient {
+	return &ReleasePolicyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `releasepolicy.Hooks(f(g(h())))`.
+func (c *ReleasePolicyClient) Use(hooks ...Hook) {
+	c.hooks.ReleasePolicy = append(c.hooks.ReleasePolicy, hooks...)
+}
+
+// Create returns a create builder for ReleasePolicy.
+func (c *ReleasePolicyClient) Create() *ReleasePolicyCreate {
+	mutation := newReleasePolicyMutation(c.config, OpCreate)
+	return &ReleasePolicyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ReleasePolicy entities.
+func (c *ReleasePolicyClient) CreateBulk(builders ...*ReleasePolicyCreate) *ReleasePolicyCreateBulk {
+	return &ReleasePolicyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ReleasePolicy.
+func (c *ReleasePolicyClient) Update() *ReleasePolicyUpdate {
+	mutation := newReleasePolicyMutation(c.config, OpUpdate)
+	return &ReleasePolicyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ReleasePolicyClient) UpdateOne(rp *ReleasePolicy) *ReleasePolicyUpdateOne {
+	mutation := newReleasePolicyMutation(c.config, OpUpdateOne, withReleasePolicy(rp))
+	return &ReleasePolicyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ReleasePolicyClient) UpdateOneID(id int) *ReleasePolicyUpdateOne {
+	mutation := newReleasePolicyMutation(c.config, OpUpdateOne, withReleasePolicyID(id))
+	return &ReleasePolicyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ReleasePolicy.
+func (c *ReleasePolicyClient) Delete() *ReleasePolicyDelete {
+	mutation := newReleasePolicyMutation(c.config, OpDelete)
+	return &ReleasePolicyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *ReleasePolicyClient) DeleteOne(rp *ReleasePolicy) *ReleasePolicyDeleteOne {
+	return c.DeleteOneID(rp.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *ReleasePolicyClient) DeleteOneID(id int) *ReleasePolicyDeleteOne {
+	builder := c.Delete().Where(releasepolicy.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ReleasePolicyDeleteOne{builder}
+}
+
+// Query returns a query builder for ReleasePolicy.
+func (c *ReleasePolicyClient) Query() *ReleasePolicyQuery {
+	return &ReleasePolicyQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a ReleasePolicy entity by its id.
+func (c *ReleasePolicyClient) Get(ctx context.Context, id int) (*ReleasePolicy, error) {
+	return c.Query().Where(releasepolicy.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ReleasePolicyClient) GetX(ctx context.Context, id int) *ReleasePolicy {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryProjects queries the projects edge of a ReleasePolicy.
+func (c *ReleasePolicyClient) QueryProjects(rp *ReleasePolicy) *ProjectQuery {
+	query := &ProjectQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasepolicy.Table, releasepolicy.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, releasepolicy.ProjectsTable, releasepolicy.ProjectsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRepos queries the repos edge of a ReleasePolicy.
+func (c *ReleasePolicyClient) QueryRepos(rp *ReleasePolicy) *RepoQuery {
+	query := &RepoQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasepolicy.Table, releasepolicy.FieldID, id),
+			sqlgraph.To(repo.Table, repo.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, releasepolicy.ReposTable, releasepolicy.ReposPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryViolations queries the violations edge of a ReleasePolicy.
+func (c *ReleasePolicyClient) QueryViolations(rp *ReleasePolicy) *ReleasePolicyViolationQuery {
+	query := &ReleasePolicyViolationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasepolicy.Table, releasepolicy.FieldID, id),
+			sqlgraph.To(releasepolicyviolation.Table, releasepolicyviolation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, releasepolicy.ViolationsTable, releasepolicy.ViolationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ReleasePolicyClient) Hooks() []Hook {
+	return c.hooks.ReleasePolicy
+}
+
+// ReleasePolicyViolationClient is a client for the ReleasePolicyViolation schema.
+type ReleasePolicyViolationClient struct {
+	config
+}
+
+// NewReleasePolicyViolationClient returns a client for the ReleasePolicyViolation from the given config.
+func NewReleasePolicyViolationClient(c config) *ReleasePolicyViolationClient {
+	return &ReleasePolicyViolationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `releasepolicyviolation.Hooks(f(g(h())))`.
+func (c *ReleasePolicyViolationClient) Use(hooks ...Hook) {
+	c.hooks.ReleasePolicyViolation = append(c.hooks.ReleasePolicyViolation, hooks...)
+}
+
+// Create returns a create builder for ReleasePolicyViolation.
+func (c *ReleasePolicyViolationClient) Create() *ReleasePolicyViolationCreate {
+	mutation := newReleasePolicyViolationMutation(c.config, OpCreate)
+	return &ReleasePolicyViolationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ReleasePolicyViolation entities.
+func (c *ReleasePolicyViolationClient) CreateBulk(builders ...*ReleasePolicyViolationCreate) *ReleasePolicyViolationCreateBulk {
+	return &ReleasePolicyViolationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ReleasePolicyViolation.
+func (c *ReleasePolicyViolationClient) Update() *ReleasePolicyViolationUpdate {
+	mutation := newReleasePolicyViolationMutation(c.config, OpUpdate)
+	return &ReleasePolicyViolationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ReleasePolicyViolationClient) UpdateOne(rpv *ReleasePolicyViolation) *ReleasePolicyViolationUpdateOne {
+	mutation := newReleasePolicyViolationMutation(c.config, OpUpdateOne, withReleasePolicyViolation(rpv))
+	return &ReleasePolicyViolationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ReleasePolicyViolationClient) UpdateOneID(id int) *ReleasePolicyViolationUpdateOne {
+	mutation := newReleasePolicyViolationMutation(c.config, OpUpdateOne, withReleasePolicyViolationID(id))
+	return &ReleasePolicyViolationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ReleasePolicyViolation.
+func (c *ReleasePolicyViolationClient) Delete() *ReleasePolicyViolationDelete {
+	mutation := newReleasePolicyViolationMutation(c.config, OpDelete)
+	return &ReleasePolicyViolationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *ReleasePolicyViolationClient) DeleteOne(rpv *ReleasePolicyViolation) *ReleasePolicyViolationDeleteOne {
+	return c.DeleteOneID(rpv.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *ReleasePolicyViolationClient) DeleteOneID(id int) *ReleasePolicyViolationDeleteOne {
+	builder := c.Delete().Where(releasepolicyviolation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ReleasePolicyViolationDeleteOne{builder}
+}
+
+// Query returns a query builder for ReleasePolicyViolation.
+func (c *ReleasePolicyViolationClient) Query() *ReleasePolicyViolationQuery {
+	return &ReleasePolicyViolationQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a ReleasePolicyViolation entity by its id.
+func (c *ReleasePolicyViolationClient) Get(ctx context.Context, id int) (*ReleasePolicyViolation, error) {
+	return c.Query().Where(releasepolicyviolation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ReleasePolicyViolationClient) GetX(ctx context.Context, id int) *ReleasePolicyViolation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryPolicy queries the policy edge of a ReleasePolicyViolation.
+func (c *ReleasePolicyViolationClient) QueryPolicy(rpv *ReleasePolicyViolation) *ReleasePolicyQuery {
+	query := &ReleasePolicyQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rpv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasepolicyviolation.Table, releasepolicyviolation.FieldID, id),
+			sqlgraph.To(releasepolicy.Table, releasepolicy.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releasepolicyviolation.PolicyTable, releasepolicyviolation.PolicyColumn),
+		)
+		fromV = sqlgraph.Neighbors(rpv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelease queries the release edge of a ReleasePolicyViolation.
+func (c *ReleasePolicyViolationClient) QueryRelease(rpv *ReleasePolicyViolation) *ReleaseQuery {
+	query := &ReleaseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rpv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasepolicyviolation.Table, releasepolicyviolation.FieldID, id),
+			sqlgraph.To(release.Table, release.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releasepolicyviolation.ReleaseTable, releasepolicyviolation.ReleaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(rpv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ReleasePolicyViolationClient) Hooks() []Hook {
+	return c.hooks.ReleasePolicyViolation
+}
+
 // ReleaseVulnerabilityClient is a client for the ReleaseVulnerability schema.
 type ReleaseVulnerabilityClient struct {
 	config
@@ -2149,15 +2487,15 @@ func (c *ReleaseVulnerabilityClient) QueryVulnerability(rv *ReleaseVulnerability
 	return query
 }
 
-// QueryComponents queries the components edge of a ReleaseVulnerability.
-func (c *ReleaseVulnerabilityClient) QueryComponents(rv *ReleaseVulnerability) *ReleaseComponentQuery {
+// QueryComponent queries the component edge of a ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) QueryComponent(rv *ReleaseVulnerability) *ReleaseComponentQuery {
 	query := &ReleaseComponentQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := rv.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(releasevulnerability.Table, releasevulnerability.FieldID, id),
 			sqlgraph.To(releasecomponent.Table, releasecomponent.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, releasevulnerability.ComponentsTable, releasevulnerability.ComponentsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, false, releasevulnerability.ComponentTable, releasevulnerability.ComponentColumn),
 		)
 		fromV = sqlgraph.Neighbors(rv.driver.Dialect(), step)
 		return fromV, nil
@@ -2197,15 +2535,15 @@ func (c *ReleaseVulnerabilityClient) QueryReviews(rv *ReleaseVulnerability) *Vul
 	return query
 }
 
-// QueryScans queries the scans edge of a ReleaseVulnerability.
-func (c *ReleaseVulnerabilityClient) QueryScans(rv *ReleaseVulnerability) *CodeScanQuery {
+// QueryScan queries the scan edge of a ReleaseVulnerability.
+func (c *ReleaseVulnerabilityClient) QueryScan(rv *ReleaseVulnerability) *CodeScanQuery {
 	query := &CodeScanQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := rv.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(releasevulnerability.Table, releasevulnerability.FieldID, id),
 			sqlgraph.To(codescan.Table, codescan.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, releasevulnerability.ScansTable, releasevulnerability.ScansPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, false, releasevulnerability.ScanTable, releasevulnerability.ScanColumn),
 		)
 		fromV = sqlgraph.Neighbors(rv.driver.Dialect(), step)
 		return fromV, nil
@@ -2303,15 +2641,15 @@ func (c *RepoClient) GetX(ctx context.Context, id int) *Repo {
 	return obj
 }
 
-// QueryProjects queries the projects edge of a Repo.
-func (c *RepoClient) QueryProjects(r *Repo) *ProjectQuery {
+// QueryProject queries the project edge of a Repo.
+func (c *RepoClient) QueryProject(r *Repo) *ProjectQuery {
 	query := &ProjectQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(repo.Table, repo.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, repo.ProjectsTable, repo.ProjectsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, false, repo.ProjectTable, repo.ProjectColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -2360,6 +2698,22 @@ func (c *RepoClient) QueryVulnerabilityReviews(r *Repo) *VulnerabilityReviewQuer
 			sqlgraph.From(repo.Table, repo.FieldID, id),
 			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, repo.VulnerabilityReviewsTable, repo.VulnerabilityReviewsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPolicies queries the policies edge of a Repo.
+func (c *RepoClient) QueryPolicies(r *Repo) *ReleasePolicyQuery {
+	query := &ReleasePolicyQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repo.Table, repo.FieldID, id),
+			sqlgraph.To(releasepolicy.Table, releasepolicy.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, repo.PoliciesTable, repo.PoliciesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil

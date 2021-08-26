@@ -25,6 +25,12 @@ models:
   ReleaseStatus:
     model:
       - github.com/valocode/bubbly/ent/release.Status
+  ReleasePolicyViolationSeverity:
+    model:
+      - github.com/valocode/bubbly/ent/releasepolicyviolation.Severity
+  ReleaseComponentType:
+    model:
+      - github.com/valocode/bubbly/ent/releasecomponent.Type
   ReleaseEntryType:
     model:
       - github.com/valocode/bubbly/ent/releaseentry.Type

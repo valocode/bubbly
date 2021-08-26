@@ -193,16 +193,12 @@ func (s *Server) getAdapter(c echo.Context) error {
 		req  api.AdapterGetRequest
 		name = c.Param("name")
 		tag  = c.QueryParam("tag")
-		ty   = c.QueryParam("type")
 	)
 	if name != "" {
 		req.Name = &name
 	}
 	if tag != "" {
 		req.Tag = &tag
-	}
-	if ty != "" {
-		req.Type = &ty
 	}
 	adapter, err := s.store.GetAdapter(&req)
 	if err != nil {

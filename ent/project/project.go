@@ -13,18 +13,27 @@ const (
 	EdgeRepos = "repos"
 	// EdgeVulnerabilityReviews holds the string denoting the vulnerability_reviews edge name in mutations.
 	EdgeVulnerabilityReviews = "vulnerability_reviews"
+	// EdgePolicies holds the string denoting the policies edge name in mutations.
+	EdgePolicies = "policies"
 	// Table holds the table name of the project in the database.
 	Table = "project"
-	// ReposTable is the table that holds the repos relation/edge. The primary key declared below.
-	ReposTable = "repo_projects"
+	// ReposTable is the table that holds the repos relation/edge.
+	ReposTable = "repo"
 	// ReposInverseTable is the table name for the Repo entity.
 	// It exists in this package in order to avoid circular dependency with the "repo" package.
 	ReposInverseTable = "repo"
+	// ReposColumn is the table column denoting the repos relation/edge.
+	ReposColumn = "repo_project"
 	// VulnerabilityReviewsTable is the table that holds the vulnerability_reviews relation/edge. The primary key declared below.
 	VulnerabilityReviewsTable = "vulnerability_review_projects"
 	// VulnerabilityReviewsInverseTable is the table name for the VulnerabilityReview entity.
 	// It exists in this package in order to avoid circular dependency with the "vulnerabilityreview" package.
 	VulnerabilityReviewsInverseTable = "vulnerability_review"
+	// PoliciesTable is the table that holds the policies relation/edge. The primary key declared below.
+	PoliciesTable = "release_policy_projects"
+	// PoliciesInverseTable is the table name for the ReleasePolicy entity.
+	// It exists in this package in order to avoid circular dependency with the "releasepolicy" package.
+	PoliciesInverseTable = "release_policy"
 )
 
 // Columns holds all SQL columns for project fields.
@@ -34,12 +43,12 @@ var Columns = []string{
 }
 
 var (
-	// ReposPrimaryKey and ReposColumn2 are the table columns denoting the
-	// primary key for the repos relation (M2M).
-	ReposPrimaryKey = []string{"repo_id", "project_id"}
 	// VulnerabilityReviewsPrimaryKey and VulnerabilityReviewsColumn2 are the table columns denoting the
 	// primary key for the vulnerability_reviews relation (M2M).
 	VulnerabilityReviewsPrimaryKey = []string{"vulnerability_review_id", "project_id"}
+	// PoliciesPrimaryKey and PoliciesColumn2 are the table columns denoting the
+	// primary key for the policies relation (M2M).
+	PoliciesPrimaryKey = []string{"release_policy_id", "project_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).

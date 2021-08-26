@@ -10,22 +10,6 @@ import (
 	"github.com/valocode/bubbly/ent"
 )
 
-func (r *cWEResolver) Issues(ctx context.Context, obj *ent.CWE, first *int, last *int, where *ent.CodeIssueWhereInput, orderBy *ent.CodeIssueOrder) ([]*ent.CodeIssue, error) {
-	result, err := obj.Edges.IssuesOrErr()
-	if ent.IsNotLoaded(err) {
-		result, err = obj.QueryIssues().Filter(ctx, first, last, orderBy, where)
-	}
-	return result, err
-}
-
-func (r *codeIssueResolver) Cwe(ctx context.Context, obj *ent.CodeIssue, first *int, last *int, where *ent.CWEWhereInput, orderBy *ent.CWEOrder) ([]*ent.CWE, error) {
-	result, err := obj.Edges.CweOrErr()
-	if ent.IsNotLoaded(err) {
-		result, err = obj.QueryCwe().Filter(ctx, first, last, orderBy, where)
-	}
-	return result, err
-}
-
 func (r *codeScanResolver) Issues(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.CodeIssueWhereInput, orderBy *ent.CodeIssueOrder) ([]*ent.CodeIssue, error) {
 	result, err := obj.Edges.IssuesOrErr()
 	if ent.IsNotLoaded(err) {
@@ -102,6 +86,10 @@ func (r *projectResolver) VulnerabilityReviews(ctx context.Context, obj *ent.Pro
 	return result, err
 }
 
+func (r *projectResolver) Policies(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) ([]*ent.ReleasePolicy, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *queryResolver) ArtifactConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ArtifactOrder, where *ent.ArtifactWhereInput) (*ent.ArtifactConnection, error) {
 	return r.client.Artifact.Query().Paginate(ctx, after, first, before, last,
 		ent.WithArtifactOrder(orderBy),
@@ -153,13 +141,6 @@ func (r *queryResolver) CommitConnection(ctx context.Context, first *int, last *
 
 func (r *queryResolver) TestCase(ctx context.Context, first *int, last *int, orderBy *ent.TestCaseOrder, where *ent.TestCaseWhereInput) ([]*ent.TestCase, error) {
 	return r.client.TestCase.Query().Filter(ctx, first, last, orderBy, where)
-}
-
-func (r *queryResolver) CweConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.CWEOrder, where *ent.CWEWhereInput) (*ent.CWEConnection, error) {
-	return r.client.CWE.Query().Paginate(ctx, after, first, before, last,
-		ent.WithCWEOrder(orderBy),
-		ent.WithCWEFilter(where.Filter),
-	)
 }
 
 func (r *queryResolver) LicenseConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.LicenseOrder, where *ent.LicenseWhereInput) (*ent.LicenseConnection, error) {
@@ -259,10 +240,6 @@ func (r *queryResolver) ReleaseEntry(ctx context.Context, first *int, last *int,
 	return r.client.ReleaseEntry.Query().Filter(ctx, first, last, orderBy, where)
 }
 
-func (r *queryResolver) Cwe(ctx context.Context, first *int, last *int, orderBy *ent.CWEOrder, where *ent.CWEWhereInput) ([]*ent.CWE, error) {
-	return r.client.CWE.Query().Filter(ctx, first, last, orderBy, where)
-}
-
 func (r *queryResolver) CodeIssue(ctx context.Context, first *int, last *int, orderBy *ent.CodeIssueOrder, where *ent.CodeIssueWhereInput) ([]*ent.CodeIssue, error) {
 	return r.client.CodeIssue.Query().Filter(ctx, first, last, orderBy, where)
 }
@@ -315,6 +292,10 @@ func (r *releaseResolver) Log(ctx context.Context, obj *ent.Release, first *int,
 		result, err = obj.QueryLog().Filter(ctx, first, last, orderBy, where)
 	}
 	return result, err
+}
+
+func (r *releaseResolver) Violations(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) ([]*ent.ReleasePolicyViolation, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *releaseResolver) Artifacts(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ArtifactWhereInput, orderBy *ent.ArtifactOrder) ([]*ent.Artifact, error) {
@@ -381,34 +362,26 @@ func (r *releaseComponentResolver) Vulnerabilities(ctx context.Context, obj *ent
 	return result, err
 }
 
-func (r *releaseVulnerabilityResolver) Components(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error) {
-	result, err := obj.Edges.ComponentsOrErr()
-	if ent.IsNotLoaded(err) {
-		result, err = obj.QueryComponents().Filter(ctx, first, last, nil, where)
-	}
-	return result, err
+func (r *releaseLicenseResolver) Scans(ctx context.Context, obj *ent.ReleaseLicense, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *releasePolicyResolver) Projects(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *releasePolicyResolver) Repos(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *releasePolicyResolver) Violations(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) ([]*ent.ReleasePolicyViolation, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *releaseVulnerabilityResolver) Reviews(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error) {
 	result, err := obj.Edges.ReviewsOrErr()
 	if ent.IsNotLoaded(err) {
 		result, err = obj.QueryReviews().Filter(ctx, first, last, orderBy, where)
-	}
-	return result, err
-}
-
-func (r *releaseVulnerabilityResolver) Scans(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error) {
-	result, err := obj.Edges.ScansOrErr()
-	if ent.IsNotLoaded(err) {
-		result, err = obj.QueryScans().Filter(ctx, first, last, nil, where)
-	}
-	return result, err
-}
-
-func (r *repoResolver) Projects(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error) {
-	result, err := obj.Edges.ProjectsOrErr()
-	if ent.IsNotLoaded(err) {
-		result, err = obj.QueryProjects().Filter(ctx, first, last, nil, where)
 	}
 	return result, err
 }
@@ -427,6 +400,10 @@ func (r *repoResolver) VulnerabilityReviews(ctx context.Context, obj *ent.Repo, 
 		result, err = obj.QueryVulnerabilityReviews().Filter(ctx, first, last, orderBy, where)
 	}
 	return result, err
+}
+
+func (r *repoResolver) Policies(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) ([]*ent.ReleasePolicy, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *testRunResolver) Tests(ctx context.Context, obj *ent.TestRun, first *int, last *int, where *ent.TestCaseWhereInput, orderBy *ent.TestCaseOrder) ([]*ent.TestCase, error) {
@@ -493,12 +470,6 @@ func (r *vulnerabilityReviewResolver) Instances(ctx context.Context, obj *ent.Vu
 	return result, err
 }
 
-// CWE returns CWEResolver implementation.
-func (r *Resolver) CWE() CWEResolver { return &cWEResolver{r} }
-
-// CodeIssue returns CodeIssueResolver implementation.
-func (r *Resolver) CodeIssue() CodeIssueResolver { return &codeIssueResolver{r} }
-
 // CodeScan returns CodeScanResolver implementation.
 func (r *Resolver) CodeScan() CodeScanResolver { return &codeScanResolver{r} }
 
@@ -520,6 +491,12 @@ func (r *Resolver) Release() ReleaseResolver { return &releaseResolver{r} }
 // ReleaseComponent returns ReleaseComponentResolver implementation.
 func (r *Resolver) ReleaseComponent() ReleaseComponentResolver { return &releaseComponentResolver{r} }
 
+// ReleaseLicense returns ReleaseLicenseResolver implementation.
+func (r *Resolver) ReleaseLicense() ReleaseLicenseResolver { return &releaseLicenseResolver{r} }
+
+// ReleasePolicy returns ReleasePolicyResolver implementation.
+func (r *Resolver) ReleasePolicy() ReleasePolicyResolver { return &releasePolicyResolver{r} }
+
 // ReleaseVulnerability returns ReleaseVulnerabilityResolver implementation.
 func (r *Resolver) ReleaseVulnerability() ReleaseVulnerabilityResolver {
 	return &releaseVulnerabilityResolver{r}
@@ -539,8 +516,6 @@ func (r *Resolver) VulnerabilityReview() VulnerabilityReviewResolver {
 	return &vulnerabilityReviewResolver{r}
 }
 
-type cWEResolver struct{ *Resolver }
-type codeIssueResolver struct{ *Resolver }
 type codeScanResolver struct{ *Resolver }
 type componentResolver struct{ *Resolver }
 type licenseResolver struct{ *Resolver }
@@ -548,6 +523,8 @@ type projectResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type releaseResolver struct{ *Resolver }
 type releaseComponentResolver struct{ *Resolver }
+type releaseLicenseResolver struct{ *Resolver }
+type releasePolicyResolver struct{ *Resolver }
 type releaseVulnerabilityResolver struct{ *Resolver }
 type repoResolver struct{ *Resolver }
 type testRunResolver struct{ *Resolver }

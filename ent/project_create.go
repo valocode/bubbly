@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/project"
+	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -55,6 +56,21 @@ func (pc *ProjectCreate) AddVulnerabilityReviews(v ...*VulnerabilityReview) *Pro
 		ids[i] = v[i].ID
 	}
 	return pc.AddVulnerabilityReviewIDs(ids...)
+}
+
+// AddPolicyIDs adds the "policies" edge to the ReleasePolicy entity by IDs.
+func (pc *ProjectCreate) AddPolicyIDs(ids ...int) *ProjectCreate {
+	pc.mutation.AddPolicyIDs(ids...)
+	return pc
+}
+
+// AddPolicies adds the "policies" edges to the ReleasePolicy entity.
+func (pc *ProjectCreate) AddPolicies(r ...*ReleasePolicy) *ProjectCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return pc.AddPolicyIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
@@ -172,10 +188,10 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 	}
 	if nodes := pc.mutation.ReposIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   project.ReposTable,
-			Columns: project.ReposPrimaryKey,
+			Columns: []string{project.ReposColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -200,6 +216,25 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: vulnerabilityreview.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.PoliciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   project.PoliciesTable,
+			Columns: project.PoliciesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releasepolicy.FieldID,
 				},
 			},
 		}

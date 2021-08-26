@@ -3,23 +3,19 @@
 package ent
 
 import (
-	"encoding/json"
 	"time"
 
-	"github.com/valocode/bubbly/ent/adapter"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/vulnerability"
 )
 
 type AdapterModelCreate struct {
-	Name        *string              `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	Tag         *string              `json:"tag,omitempty" validate:"required" hcl:"tag,attr"`
-	Type        *adapter.Type        `json:"type,omitempty" validate:"required" hcl:"type,attr"`
-	Operation   *json.RawMessage     `json:"operation,omitempty" validate:"required" hcl:"operation,attr"`
-	ResultsType *adapter.ResultsType `json:"results_type,omitempty" validate:"required" hcl:"results_type,attr"`
-	Results     *[]byte              `json:"results,omitempty" validate:"required" hcl:"results,attr"`
+	Name   *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Tag    *string `json:"tag,omitempty" validate:"required" mapstructure:"tag"`
+	Module *string `json:"module,omitempty" validate:"required" mapstructure:"module"`
 }
 
 func NewAdapterModelCreate() *AdapterModelCreate {
@@ -34,20 +30,8 @@ func (a *AdapterModelCreate) SetTag(value string) *AdapterModelCreate {
 	a.Tag = &value
 	return a
 }
-func (a *AdapterModelCreate) SetType(value adapter.Type) *AdapterModelCreate {
-	a.Type = &value
-	return a
-}
-func (a *AdapterModelCreate) SetOperation(value json.RawMessage) *AdapterModelCreate {
-	a.Operation = &value
-	return a
-}
-func (a *AdapterModelCreate) SetResultsType(value adapter.ResultsType) *AdapterModelCreate {
-	a.ResultsType = &value
-	return a
-}
-func (a *AdapterModelCreate) SetResults(value []byte) *AdapterModelCreate {
-	a.Results = &value
+func (a *AdapterModelCreate) SetModule(value string) *AdapterModelCreate {
+	a.Module = &value
 	return a
 }
 
@@ -68,29 +52,17 @@ func (a *AdapterMutation) SetModelCreate(model *AdapterModelCreate) *AdapterMuta
 	if model.Tag != nil {
 		a.SetTag(*model.Tag)
 	}
-	if model.Type != nil {
-		a.SetType(*model.Type)
-	}
-	if model.Operation != nil {
-		a.SetOperation(*model.Operation)
-	}
-	if model.ResultsType != nil {
-		a.SetResultsType(*model.ResultsType)
-	}
-	if model.Results != nil {
-		a.SetResults(*model.Results)
+	if model.Module != nil {
+		a.SetModule(*model.Module)
 	}
 	return a
 }
 
 type AdapterModelRead struct {
-	Name        *string              `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	Tag         *string              `json:"tag,omitempty" validate:"required" hcl:"tag,attr"`
-	Type        *adapter.Type        `json:"type,omitempty" validate:"required" hcl:"type,attr"`
-	Operation   *json.RawMessage     `json:"operation,omitempty" validate:"required" hcl:"operation,attr"`
-	ResultsType *adapter.ResultsType `json:"results_type,omitempty" validate:"required" hcl:"results_type,attr"`
-	Results     *[]byte              `json:"results,omitempty" validate:"required" hcl:"results,attr"`
-	ID          *int                 `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Name   *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Tag    *string `json:"tag,omitempty" validate:"required" mapstructure:"tag"`
+	Module *string `json:"module,omitempty" validate:"required" mapstructure:"module"`
+	ID     *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewAdapterModelRead() *AdapterModelRead {
@@ -100,16 +72,13 @@ func NewAdapterModelRead() *AdapterModelRead {
 func (a *AdapterModelRead) FromEnt(value *Adapter) *AdapterModelRead {
 	a.Name = &value.Name
 	a.Tag = &value.Tag
-	a.Type = &value.Type
-	a.Operation = &value.Operation
-	a.ResultsType = &value.ResultsType
-	a.Results = &value.Results
+	a.Module = &value.Module
 	a.ID = &value.ID
 	return a
 }
 
 type AdapterModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewAdapterModelUpdate() *AdapterModelUpdate {
@@ -122,10 +91,10 @@ func (a *AdapterModelUpdate) SetID(value int) *AdapterModelUpdate {
 }
 
 type ArtifactModelCreate struct {
-	Name   *string        `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	Sha256 *string        `json:"sha256,omitempty" validate:"required" hcl:"sha256,attr"`
-	Type   *artifact.Type `json:"type,omitempty" validate:"required" hcl:"type,attr"`
-	Time   *time.Time     `json:"time,omitempty"  hcl:"time,optional"`
+	Name   *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Sha256 *string        `json:"sha256,omitempty" validate:"required" mapstructure:"sha256"`
+	Type   *artifact.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time   *time.Time     `json:"time,omitempty"  mapstructure:"time"`
 }
 
 func NewArtifactModelCreate() *ArtifactModelCreate {
@@ -176,11 +145,11 @@ func (a *ArtifactMutation) SetModelCreate(model *ArtifactModelCreate) *ArtifactM
 }
 
 type ArtifactModelRead struct {
-	Name   *string        `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	Sha256 *string        `json:"sha256,omitempty" validate:"required" hcl:"sha256,attr"`
-	Type   *artifact.Type `json:"type,omitempty" validate:"required" hcl:"type,attr"`
-	Time   *time.Time     `json:"time,omitempty"  hcl:"time,optional"`
-	ID     *int           `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Name   *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Sha256 *string        `json:"sha256,omitempty" validate:"required" mapstructure:"sha256"`
+	Type   *artifact.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time   *time.Time     `json:"time,omitempty"  mapstructure:"time"`
+	ID     *int           `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewArtifactModelRead() *ArtifactModelRead {
@@ -197,7 +166,7 @@ func (a *ArtifactModelRead) FromEnt(value *Artifact) *ArtifactModelRead {
 }
 
 type ArtifactModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewArtifactModelUpdate() *ArtifactModelUpdate {
@@ -210,10 +179,10 @@ func (a *ArtifactModelUpdate) SetID(value int) *ArtifactModelUpdate {
 }
 
 type CodeIssueModelCreate struct {
-	RuleID   *string             `json:"rule_id,omitempty" validate:"required" hcl:"rule_id,attr"`
-	Message  *string             `json:"message,omitempty" validate:"required" hcl:"message,attr"`
-	Severity *codeissue.Severity `json:"severity,omitempty" validate:"required" hcl:"severity,attr"`
-	Type     *codeissue.Type     `json:"type,omitempty" validate:"required" hcl:"type,attr"`
+	RuleID   *string             `json:"rule_id,omitempty" validate:"required" mapstructure:"rule_id"`
+	Message  *string             `json:"message,omitempty" validate:"required" mapstructure:"message"`
+	Severity *codeissue.Severity `json:"severity,omitempty" validate:"required" mapstructure:"severity"`
+	Type     *codeissue.Type     `json:"type,omitempty" validate:"required" mapstructure:"type"`
 }
 
 func NewCodeIssueModelCreate() *CodeIssueModelCreate {
@@ -264,11 +233,11 @@ func (ci *CodeIssueMutation) SetModelCreate(model *CodeIssueModelCreate) *CodeIs
 }
 
 type CodeIssueModelRead struct {
-	RuleID   *string             `json:"rule_id,omitempty" validate:"required" hcl:"rule_id,attr"`
-	Message  *string             `json:"message,omitempty" validate:"required" hcl:"message,attr"`
-	Severity *codeissue.Severity `json:"severity,omitempty" validate:"required" hcl:"severity,attr"`
-	Type     *codeissue.Type     `json:"type,omitempty" validate:"required" hcl:"type,attr"`
-	ID       *int                `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	RuleID   *string             `json:"rule_id,omitempty" validate:"required" mapstructure:"rule_id"`
+	Message  *string             `json:"message,omitempty" validate:"required" mapstructure:"message"`
+	Severity *codeissue.Severity `json:"severity,omitempty" validate:"required" mapstructure:"severity"`
+	Type     *codeissue.Type     `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	ID       *int                `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewCodeIssueModelRead() *CodeIssueModelRead {
@@ -285,7 +254,7 @@ func (ci *CodeIssueModelRead) FromEnt(value *CodeIssue) *CodeIssueModelRead {
 }
 
 type CodeIssueModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewCodeIssueModelUpdate() *CodeIssueModelUpdate {
@@ -298,8 +267,8 @@ func (ci *CodeIssueModelUpdate) SetID(value int) *CodeIssueModelUpdate {
 }
 
 type CodeScanModelCreate struct {
-	Tool *string    `json:"tool,omitempty" validate:"required" hcl:"tool,attr"`
-	Time *time.Time `json:"time,omitempty"  hcl:"time,optional"`
+	Tool *string    `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
+	Time *time.Time `json:"time,omitempty"  mapstructure:"time"`
 }
 
 func NewCodeScanModelCreate() *CodeScanModelCreate {
@@ -336,9 +305,9 @@ func (cs *CodeScanMutation) SetModelCreate(model *CodeScanModelCreate) *CodeScan
 }
 
 type CodeScanModelRead struct {
-	Tool *string    `json:"tool,omitempty" validate:"required" hcl:"tool,attr"`
-	Time *time.Time `json:"time,omitempty"  hcl:"time,optional"`
-	ID   *int       `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Tool *string    `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
+	Time *time.Time `json:"time,omitempty"  mapstructure:"time"`
+	ID   *int       `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewCodeScanModelRead() *CodeScanModelRead {
@@ -353,7 +322,7 @@ func (cs *CodeScanModelRead) FromEnt(value *CodeScan) *CodeScanModelRead {
 }
 
 type CodeScanModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewCodeScanModelUpdate() *CodeScanModelUpdate {
@@ -366,11 +335,11 @@ func (cs *CodeScanModelUpdate) SetID(value int) *CodeScanModelUpdate {
 }
 
 type ComponentModelCreate struct {
-	Name        *string `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	Vendor      *string `json:"vendor,omitempty"  hcl:"vendor,optional"`
-	Version     *string `json:"version,omitempty" validate:"required" hcl:"version,attr"`
-	Description *string `json:"description,omitempty"  hcl:"description,optional"`
-	URL         *string `json:"url,omitempty"  hcl:"url,optional"`
+	Name        *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Vendor      *string `json:"vendor,omitempty"  mapstructure:"vendor"`
+	Version     *string `json:"version,omitempty" validate:"required" mapstructure:"version"`
+	Description *string `json:"description,omitempty"  mapstructure:"description"`
+	URL         *string `json:"url,omitempty"  mapstructure:"url"`
 }
 
 func NewComponentModelCreate() *ComponentModelCreate {
@@ -428,12 +397,12 @@ func (c *ComponentMutation) SetModelCreate(model *ComponentModelCreate) *Compone
 }
 
 type ComponentModelRead struct {
-	Name        *string `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	Vendor      *string `json:"vendor,omitempty"  hcl:"vendor,optional"`
-	Version     *string `json:"version,omitempty" validate:"required" hcl:"version,attr"`
-	Description *string `json:"description,omitempty"  hcl:"description,optional"`
-	URL         *string `json:"url,omitempty"  hcl:"url,optional"`
-	ID          *int    `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Name        *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Vendor      *string `json:"vendor,omitempty"  mapstructure:"vendor"`
+	Version     *string `json:"version,omitempty" validate:"required" mapstructure:"version"`
+	Description *string `json:"description,omitempty"  mapstructure:"description"`
+	URL         *string `json:"url,omitempty"  mapstructure:"url"`
+	ID          *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewComponentModelRead() *ComponentModelRead {
@@ -451,7 +420,7 @@ func (c *ComponentModelRead) FromEnt(value *Component) *ComponentModelRead {
 }
 
 type ComponentModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewComponentModelUpdate() *ComponentModelUpdate {
@@ -464,10 +433,10 @@ func (c *ComponentModelUpdate) SetID(value int) *ComponentModelUpdate {
 }
 
 type GitCommitModelCreate struct {
-	Hash   *string    `json:"hash,omitempty" validate:"required" hcl:"hash,attr"`
-	Branch *string    `json:"branch,omitempty" validate:"required" hcl:"branch,attr"`
-	Tag    *string    `json:"tag,omitempty"  hcl:"tag,optional"`
-	Time   *time.Time `json:"time,omitempty" validate:"required" hcl:"time,attr"`
+	Hash   *string    `json:"hash,omitempty" validate:"required" mapstructure:"hash"`
+	Branch *string    `json:"branch,omitempty" validate:"required" mapstructure:"branch"`
+	Tag    *string    `json:"tag,omitempty"  mapstructure:"tag"`
+	Time   *time.Time `json:"time,omitempty" validate:"required" mapstructure:"time"`
 }
 
 func NewGitCommitModelCreate() *GitCommitModelCreate {
@@ -518,11 +487,11 @@ func (gc *GitCommitMutation) SetModelCreate(model *GitCommitModelCreate) *GitCom
 }
 
 type GitCommitModelRead struct {
-	Hash   *string    `json:"hash,omitempty" validate:"required" hcl:"hash,attr"`
-	Branch *string    `json:"branch,omitempty" validate:"required" hcl:"branch,attr"`
-	Tag    *string    `json:"tag,omitempty"  hcl:"tag,optional"`
-	Time   *time.Time `json:"time,omitempty" validate:"required" hcl:"time,attr"`
-	ID     *int       `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Hash   *string    `json:"hash,omitempty" validate:"required" mapstructure:"hash"`
+	Branch *string    `json:"branch,omitempty" validate:"required" mapstructure:"branch"`
+	Tag    *string    `json:"tag,omitempty"  mapstructure:"tag"`
+	Time   *time.Time `json:"time,omitempty" validate:"required" mapstructure:"time"`
+	ID     *int       `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewGitCommitModelRead() *GitCommitModelRead {
@@ -539,7 +508,7 @@ func (gc *GitCommitModelRead) FromEnt(value *GitCommit) *GitCommitModelRead {
 }
 
 type GitCommitModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewGitCommitModelUpdate() *GitCommitModelUpdate {
@@ -552,7 +521,7 @@ func (gc *GitCommitModelUpdate) SetID(value int) *GitCommitModelUpdate {
 }
 
 type ProjectModelCreate struct {
-	Name *string `json:"name,omitempty" validate:"required" hcl:"name,attr"`
+	Name *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
 }
 
 func NewProjectModelCreate() *ProjectModelCreate {
@@ -582,8 +551,8 @@ func (pr *ProjectMutation) SetModelCreate(model *ProjectModelCreate) *ProjectMut
 }
 
 type ProjectModelRead struct {
-	Name *string `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	ID   *int    `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Name *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	ID   *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewProjectModelRead() *ProjectModelRead {
@@ -597,7 +566,7 @@ func (pr *ProjectModelRead) FromEnt(value *Project) *ProjectModelRead {
 }
 
 type ProjectModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewProjectModelUpdate() *ProjectModelUpdate {
@@ -610,8 +579,8 @@ func (pr *ProjectModelUpdate) SetID(value int) *ProjectModelUpdate {
 }
 
 type ReleaseModelCreate struct {
-	Name    *string `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	Version *string `json:"version,omitempty" validate:"required" hcl:"version,attr"`
+	Name    *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Version *string `json:"version,omitempty" validate:"required" mapstructure:"version"`
 }
 
 func NewReleaseModelCreate() *ReleaseModelCreate {
@@ -648,10 +617,10 @@ func (r *ReleaseMutation) SetModelCreate(model *ReleaseModelCreate) *ReleaseMuta
 }
 
 type ReleaseModelRead struct {
-	Name    *string         `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	Version *string         `json:"version,omitempty" validate:"required" hcl:"version,attr"`
-	Status  *release.Status `json:"status,omitempty"  hcl:"status,optional"`
-	ID      *int            `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Name    *string         `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Version *string         `json:"version,omitempty" validate:"required" mapstructure:"version"`
+	Status  *release.Status `json:"status,omitempty"  mapstructure:"status"`
+	ID      *int            `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewReleaseModelRead() *ReleaseModelRead {
@@ -667,7 +636,7 @@ func (r *ReleaseModelRead) FromEnt(value *Release) *ReleaseModelRead {
 }
 
 type ReleaseModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewReleaseModelUpdate() *ReleaseModelUpdate {
@@ -679,9 +648,145 @@ func (r *ReleaseModelUpdate) SetID(value int) *ReleaseModelUpdate {
 	return r
 }
 
+type ReleasePolicyModelCreate struct {
+	Name   *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Module *string `json:"module,omitempty" validate:"required" mapstructure:"module"`
+}
+
+func NewReleasePolicyModelCreate() *ReleasePolicyModelCreate {
+	return &ReleasePolicyModelCreate{}
+}
+
+func (rp *ReleasePolicyModelCreate) SetName(value string) *ReleasePolicyModelCreate {
+	rp.Name = &value
+	return rp
+}
+func (rp *ReleasePolicyModelCreate) SetModule(value string) *ReleasePolicyModelCreate {
+	rp.Module = &value
+	return rp
+}
+
+func (rp *ReleasePolicyCreate) SetModelCreate(model *ReleasePolicyModelCreate) *ReleasePolicyCreate {
+	rp.mutation.SetModelCreate(model)
+	return rp
+}
+
+func (rp *ReleasePolicyUpdateOne) SetModelCreate(model *ReleasePolicyModelCreate) *ReleasePolicyUpdateOne {
+	rp.mutation.SetModelCreate(model)
+	return rp
+}
+
+func (rp *ReleasePolicyMutation) SetModelCreate(model *ReleasePolicyModelCreate) *ReleasePolicyMutation {
+	if model.Name != nil {
+		rp.SetName(*model.Name)
+	}
+	if model.Module != nil {
+		rp.SetModule(*model.Module)
+	}
+	return rp
+}
+
+type ReleasePolicyModelRead struct {
+	Name   *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Module *string `json:"module,omitempty" validate:"required" mapstructure:"module"`
+	ID     *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewReleasePolicyModelRead() *ReleasePolicyModelRead {
+	return &ReleasePolicyModelRead{}
+}
+
+func (rp *ReleasePolicyModelRead) FromEnt(value *ReleasePolicy) *ReleasePolicyModelRead {
+	rp.Name = &value.Name
+	rp.Module = &value.Module
+	rp.ID = &value.ID
+	return rp
+}
+
+type ReleasePolicyModelUpdate struct {
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewReleasePolicyModelUpdate() *ReleasePolicyModelUpdate {
+	return &ReleasePolicyModelUpdate{}
+}
+
+func (rp *ReleasePolicyModelUpdate) SetID(value int) *ReleasePolicyModelUpdate {
+	rp.ID = &value
+	return rp
+}
+
+type ReleasePolicyViolationModelCreate struct {
+	Message  *string                          `json:"message,omitempty" validate:"required" mapstructure:"message"`
+	Severity *releasepolicyviolation.Severity `json:"severity,omitempty" validate:"required" mapstructure:"severity"`
+}
+
+func NewReleasePolicyViolationModelCreate() *ReleasePolicyViolationModelCreate {
+	return &ReleasePolicyViolationModelCreate{}
+}
+
+func (rpv *ReleasePolicyViolationModelCreate) SetMessage(value string) *ReleasePolicyViolationModelCreate {
+	rpv.Message = &value
+	return rpv
+}
+func (rpv *ReleasePolicyViolationModelCreate) SetSeverity(value releasepolicyviolation.Severity) *ReleasePolicyViolationModelCreate {
+	rpv.Severity = &value
+	return rpv
+}
+
+func (rpv *ReleasePolicyViolationCreate) SetModelCreate(model *ReleasePolicyViolationModelCreate) *ReleasePolicyViolationCreate {
+	rpv.mutation.SetModelCreate(model)
+	return rpv
+}
+
+func (rpv *ReleasePolicyViolationUpdateOne) SetModelCreate(model *ReleasePolicyViolationModelCreate) *ReleasePolicyViolationUpdateOne {
+	rpv.mutation.SetModelCreate(model)
+	return rpv
+}
+
+func (rpv *ReleasePolicyViolationMutation) SetModelCreate(model *ReleasePolicyViolationModelCreate) *ReleasePolicyViolationMutation {
+	if model.Message != nil {
+		rpv.SetMessage(*model.Message)
+	}
+	if model.Severity != nil {
+		rpv.SetSeverity(*model.Severity)
+	}
+	return rpv
+}
+
+type ReleasePolicyViolationModelRead struct {
+	Message  *string                          `json:"message,omitempty" validate:"required" mapstructure:"message"`
+	Severity *releasepolicyviolation.Severity `json:"severity,omitempty" validate:"required" mapstructure:"severity"`
+	ID       *int                             `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewReleasePolicyViolationModelRead() *ReleasePolicyViolationModelRead {
+	return &ReleasePolicyViolationModelRead{}
+}
+
+func (rpv *ReleasePolicyViolationModelRead) FromEnt(value *ReleasePolicyViolation) *ReleasePolicyViolationModelRead {
+	rpv.Message = &value.Message
+	rpv.Severity = &value.Severity
+	rpv.ID = &value.ID
+	return rpv
+}
+
+type ReleasePolicyViolationModelUpdate struct {
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewReleasePolicyViolationModelUpdate() *ReleasePolicyViolationModelUpdate {
+	return &ReleasePolicyViolationModelUpdate{}
+}
+
+func (rpv *ReleasePolicyViolationModelUpdate) SetID(value int) *ReleasePolicyViolationModelUpdate {
+	rpv.ID = &value
+	return rpv
+}
+
 type RepoModelCreate struct {
-	Name          *string `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	DefaultBranch *string `json:"default_branch,omitempty"  hcl:"default_branch,optional"`
+	Name          *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	DefaultBranch *string `json:"default_branch,omitempty"  mapstructure:"default_branch"`
 }
 
 func NewRepoModelCreate() *RepoModelCreate {
@@ -718,9 +823,9 @@ func (r *RepoMutation) SetModelCreate(model *RepoModelCreate) *RepoMutation {
 }
 
 type RepoModelRead struct {
-	Name          *string `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	DefaultBranch *string `json:"default_branch,omitempty"  hcl:"default_branch,optional"`
-	ID            *int    `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Name          *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	DefaultBranch *string `json:"default_branch,omitempty"  mapstructure:"default_branch"`
+	ID            *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewRepoModelRead() *RepoModelRead {
@@ -735,7 +840,7 @@ func (r *RepoModelRead) FromEnt(value *Repo) *RepoModelRead {
 }
 
 type RepoModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewRepoModelUpdate() *RepoModelUpdate {
@@ -748,10 +853,10 @@ func (r *RepoModelUpdate) SetID(value int) *RepoModelUpdate {
 }
 
 type TestCaseModelCreate struct {
-	Name    *string  `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	Result  *bool    `json:"result,omitempty" validate:"required" hcl:"result,attr"`
-	Message *string  `json:"message,omitempty" validate:"required" hcl:"message,attr"`
-	Elapsed *float64 `json:"elapsed,omitempty"  hcl:"elapsed,optional"`
+	Name    *string  `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Result  *bool    `json:"result,omitempty" validate:"required" mapstructure:"result"`
+	Message *string  `json:"message,omitempty" validate:"required" mapstructure:"message"`
+	Elapsed *float64 `json:"elapsed,omitempty"  mapstructure:"elapsed"`
 }
 
 func NewTestCaseModelCreate() *TestCaseModelCreate {
@@ -802,11 +907,11 @@ func (tc *TestCaseMutation) SetModelCreate(model *TestCaseModelCreate) *TestCase
 }
 
 type TestCaseModelRead struct {
-	Name    *string  `json:"name,omitempty" validate:"required" hcl:"name,attr"`
-	Result  *bool    `json:"result,omitempty" validate:"required" hcl:"result,attr"`
-	Message *string  `json:"message,omitempty" validate:"required" hcl:"message,attr"`
-	Elapsed *float64 `json:"elapsed,omitempty"  hcl:"elapsed,optional"`
-	ID      *int     `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Name    *string  `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Result  *bool    `json:"result,omitempty" validate:"required" mapstructure:"result"`
+	Message *string  `json:"message,omitempty" validate:"required" mapstructure:"message"`
+	Elapsed *float64 `json:"elapsed,omitempty"  mapstructure:"elapsed"`
+	ID      *int     `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewTestCaseModelRead() *TestCaseModelRead {
@@ -823,7 +928,7 @@ func (tc *TestCaseModelRead) FromEnt(value *TestCase) *TestCaseModelRead {
 }
 
 type TestCaseModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewTestCaseModelUpdate() *TestCaseModelUpdate {
@@ -836,8 +941,8 @@ func (tc *TestCaseModelUpdate) SetID(value int) *TestCaseModelUpdate {
 }
 
 type TestRunModelCreate struct {
-	Tool *string    `json:"tool,omitempty" validate:"required" hcl:"tool,attr"`
-	Time *time.Time `json:"time,omitempty"  hcl:"time,optional"`
+	Tool *string    `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
+	Time *time.Time `json:"time,omitempty"  mapstructure:"time"`
 }
 
 func NewTestRunModelCreate() *TestRunModelCreate {
@@ -874,9 +979,9 @@ func (tr *TestRunMutation) SetModelCreate(model *TestRunModelCreate) *TestRunMut
 }
 
 type TestRunModelRead struct {
-	Tool *string    `json:"tool,omitempty" validate:"required" hcl:"tool,attr"`
-	Time *time.Time `json:"time,omitempty"  hcl:"time,optional"`
-	ID   *int       `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Tool *string    `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
+	Time *time.Time `json:"time,omitempty"  mapstructure:"time"`
+	ID   *int       `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewTestRunModelRead() *TestRunModelRead {
@@ -891,7 +996,7 @@ func (tr *TestRunModelRead) FromEnt(value *TestRun) *TestRunModelRead {
 }
 
 type TestRunModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewTestRunModelUpdate() *TestRunModelUpdate {
@@ -904,13 +1009,13 @@ func (tr *TestRunModelUpdate) SetID(value int) *TestRunModelUpdate {
 }
 
 type VulnerabilityModelCreate struct {
-	Vid           *string                 `json:"vid,omitempty" validate:"required" hcl:"vid,attr"`
-	Summary       *string                 `json:"summary,omitempty"  hcl:"summary,optional"`
-	Description   *string                 `json:"description,omitempty"  hcl:"description,optional"`
-	SeverityScore *float64                `json:"severity_score,omitempty"  hcl:"severity_score,optional"`
-	Severity      *vulnerability.Severity `json:"severity,omitempty"  hcl:"severity,optional"`
-	Published     *time.Time              `json:"published,omitempty"  hcl:"published,optional"`
-	Modified      *time.Time              `json:"modified,omitempty"  hcl:"modified,optional"`
+	Vid           *string                 `json:"vid,omitempty" validate:"required" mapstructure:"vid"`
+	Summary       *string                 `json:"summary,omitempty"  mapstructure:"summary"`
+	Description   *string                 `json:"description,omitempty"  mapstructure:"description"`
+	SeverityScore *float64                `json:"severity_score,omitempty"  mapstructure:"severity_score"`
+	Severity      *vulnerability.Severity `json:"severity,omitempty"  mapstructure:"severity"`
+	Published     *time.Time              `json:"published,omitempty"  mapstructure:"published"`
+	Modified      *time.Time              `json:"modified,omitempty"  mapstructure:"modified"`
 }
 
 func NewVulnerabilityModelCreate() *VulnerabilityModelCreate {
@@ -982,14 +1087,14 @@ func (v *VulnerabilityMutation) SetModelCreate(model *VulnerabilityModelCreate) 
 }
 
 type VulnerabilityModelRead struct {
-	Vid           *string                 `json:"vid,omitempty" validate:"required" hcl:"vid,attr"`
-	Summary       *string                 `json:"summary,omitempty"  hcl:"summary,optional"`
-	Description   *string                 `json:"description,omitempty"  hcl:"description,optional"`
-	SeverityScore *float64                `json:"severity_score,omitempty"  hcl:"severity_score,optional"`
-	Severity      *vulnerability.Severity `json:"severity,omitempty"  hcl:"severity,optional"`
-	Published     *time.Time              `json:"published,omitempty"  hcl:"published,optional"`
-	Modified      *time.Time              `json:"modified,omitempty"  hcl:"modified,optional"`
-	ID            *int                    `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	Vid           *string                 `json:"vid,omitempty" validate:"required" mapstructure:"vid"`
+	Summary       *string                 `json:"summary,omitempty"  mapstructure:"summary"`
+	Description   *string                 `json:"description,omitempty"  mapstructure:"description"`
+	SeverityScore *float64                `json:"severity_score,omitempty"  mapstructure:"severity_score"`
+	Severity      *vulnerability.Severity `json:"severity,omitempty"  mapstructure:"severity"`
+	Published     *time.Time              `json:"published,omitempty"  mapstructure:"published"`
+	Modified      *time.Time              `json:"modified,omitempty"  mapstructure:"modified"`
+	ID            *int                    `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewVulnerabilityModelRead() *VulnerabilityModelRead {
@@ -1009,7 +1114,7 @@ func (v *VulnerabilityModelRead) FromEnt(value *Vulnerability) *VulnerabilityMod
 }
 
 type VulnerabilityModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" hcl:"id,attr"`
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewVulnerabilityModelUpdate() *VulnerabilityModelUpdate {

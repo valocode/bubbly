@@ -13,7 +13,6 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
-	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
@@ -21,6 +20,9 @@ import (
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releaselicense"
+	"github.com/valocode/bubbly/ent/releasepolicy"
+	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/testcase"
@@ -47,25 +49,27 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
-		adapter.Table:              adapter.ValidColumn,
-		artifact.Table:             artifact.ValidColumn,
-		cwe.Table:                  cwe.ValidColumn,
-		codeissue.Table:            codeissue.ValidColumn,
-		codescan.Table:             codescan.ValidColumn,
-		component.Table:            component.ValidColumn,
-		gitcommit.Table:            gitcommit.ValidColumn,
-		license.Table:              license.ValidColumn,
-		licenseuse.Table:           licenseuse.ValidColumn,
-		project.Table:              project.ValidColumn,
-		release.Table:              release.ValidColumn,
-		releasecomponent.Table:     releasecomponent.ValidColumn,
-		releaseentry.Table:         releaseentry.ValidColumn,
-		releasevulnerability.Table: releasevulnerability.ValidColumn,
-		repo.Table:                 repo.ValidColumn,
-		testcase.Table:             testcase.ValidColumn,
-		testrun.Table:              testrun.ValidColumn,
-		vulnerability.Table:        vulnerability.ValidColumn,
-		vulnerabilityreview.Table:  vulnerabilityreview.ValidColumn,
+		adapter.Table:                adapter.ValidColumn,
+		artifact.Table:               artifact.ValidColumn,
+		codeissue.Table:              codeissue.ValidColumn,
+		codescan.Table:               codescan.ValidColumn,
+		component.Table:              component.ValidColumn,
+		gitcommit.Table:              gitcommit.ValidColumn,
+		license.Table:                license.ValidColumn,
+		licenseuse.Table:             licenseuse.ValidColumn,
+		project.Table:                project.ValidColumn,
+		release.Table:                release.ValidColumn,
+		releasecomponent.Table:       releasecomponent.ValidColumn,
+		releaseentry.Table:           releaseentry.ValidColumn,
+		releaselicense.Table:         releaselicense.ValidColumn,
+		releasepolicy.Table:          releasepolicy.ValidColumn,
+		releasepolicyviolation.Table: releasepolicyviolation.ValidColumn,
+		releasevulnerability.Table:   releasevulnerability.ValidColumn,
+		repo.Table:                   repo.ValidColumn,
+		testcase.Table:               testcase.ValidColumn,
+		testrun.Table:                testrun.ValidColumn,
+		vulnerability.Table:          vulnerability.ValidColumn,
+		vulnerabilityreview.Table:    vulnerabilityreview.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {

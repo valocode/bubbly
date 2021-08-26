@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/repo"
 )
@@ -22,31 +23,39 @@ type Repo struct {
 	DefaultBranch string `json:"default_branch,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepoQuery when eager-loading is set.
-	Edges RepoEdges `json:"edges"`
+	Edges        RepoEdges `json:"edges"`
+	repo_project *int
 }
 
 // RepoEdges holds the relations/edges for other nodes in the graph.
 type RepoEdges struct {
-	// Projects holds the value of the projects edge.
-	Projects []*Project `json:"projects,omitempty"`
+	// Project holds the value of the project edge.
+	Project *Project `json:"project,omitempty"`
 	// Head holds the value of the head edge.
 	Head *Release `json:"head,omitempty"`
 	// Commits holds the value of the commits edge.
 	Commits []*GitCommit `json:"commits,omitempty"`
 	// VulnerabilityReviews holds the value of the vulnerability_reviews edge.
 	VulnerabilityReviews []*VulnerabilityReview `json:"vulnerability_reviews,omitempty"`
+	// Policies holds the value of the policies edge.
+	Policies []*ReleasePolicy `json:"policies,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
-// ProjectsOrErr returns the Projects value or an error if the edge
-// was not loaded in eager-loading.
-func (e RepoEdges) ProjectsOrErr() ([]*Project, error) {
+// ProjectOrErr returns the Project value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RepoEdges) ProjectOrErr() (*Project, error) {
 	if e.loadedTypes[0] {
-		return e.Projects, nil
+		if e.Project == nil {
+			// The edge project was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: project.Label}
+		}
+		return e.Project, nil
 	}
-	return nil, &NotLoadedError{edge: "projects"}
+	return nil, &NotLoadedError{edge: "project"}
 }
 
 // HeadOrErr returns the Head value or an error if the edge
@@ -81,6 +90,15 @@ func (e RepoEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error) {
 	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
 }
 
+// PoliciesOrErr returns the Policies value or an error if the edge
+// was not loaded in eager-loading.
+func (e RepoEdges) PoliciesOrErr() ([]*ReleasePolicy, error) {
+	if e.loadedTypes[4] {
+		return e.Policies, nil
+	}
+	return nil, &NotLoadedError{edge: "policies"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Repo) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
@@ -90,6 +108,8 @@ func (*Repo) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case repo.FieldName, repo.FieldDefaultBranch:
 			values[i] = new(sql.NullString)
+		case repo.ForeignKeys[0]: // repo_project
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Repo", columns[i])
 		}
@@ -123,14 +143,21 @@ func (r *Repo) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				r.DefaultBranch = value.String
 			}
+		case repo.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field repo_project", value)
+			} else if value.Valid {
+				r.repo_project = new(int)
+				*r.repo_project = int(value.Int64)
+			}
 		}
 	}
 	return nil
 }
 
-// QueryProjects queries the "projects" edge of the Repo entity.
-func (r *Repo) QueryProjects() *ProjectQuery {
-	return (&RepoClient{config: r.config}).QueryProjects(r)
+// QueryProject queries the "project" edge of the Repo entity.
+func (r *Repo) QueryProject() *ProjectQuery {
+	return (&RepoClient{config: r.config}).QueryProject(r)
 }
 
 // QueryHead queries the "head" edge of the Repo entity.
@@ -146,6 +173,11 @@ func (r *Repo) QueryCommits() *GitCommitQuery {
 // QueryVulnerabilityReviews queries the "vulnerability_reviews" edge of the Repo entity.
 func (r *Repo) QueryVulnerabilityReviews() *VulnerabilityReviewQuery {
 	return (&RepoClient{config: r.config}).QueryVulnerabilityReviews(r)
+}
+
+// QueryPolicies queries the "policies" edge of the Repo entity.
+func (r *Repo) QueryPolicies() *ReleasePolicyQuery {
+	return (&RepoClient{config: r.config}).QueryPolicies(r)
 }
 
 // Update returns a builder for updating this Repo.

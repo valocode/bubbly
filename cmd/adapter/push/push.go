@@ -2,9 +2,13 @@ package push
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/valocode/bubbly/adapter"
 	"github.com/valocode/bubbly/client"
+	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/store/api"
 
@@ -31,6 +35,10 @@ var (
 
 func New(bCtx *env.BubblyContext) *cobra.Command {
 
+	var (
+		name string
+		tag  string
+	)
 	cmd := &cobra.Command{
 		Use:     "push <adapter-file> [flags]",
 		Short:   "Push a Bubbly adapter",
@@ -39,22 +47,38 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			filename := args[0]
-			adapter, err := adapter.FromFile(filename)
+			b, err := os.ReadFile(filename)
 			if err != nil {
 				return err
 			}
-			model, err := adapter.Model()
-			if err != nil {
-				return fmt.Errorf("preparing adapter for push: %w", err)
+			if name == "" {
+				fname := filepath.Base(filename)
+				name = strings.TrimSuffix(fname, filepath.Ext(fname))
 			}
-			fmt.Println("results_type: ", *model.ResultsType)
 			if err := client.SaveAdapter(bCtx, &api.AdapterSaveRequest{
-				Adapter: model,
+				Adapter: ent.NewAdapterModelCreate().
+					SetName(name).
+					SetTag(tag).
+					SetModule(string(b)),
 			}); err != nil {
 				return err
 			}
 			return nil
 		},
 	}
+
+	f := cmd.PersistentFlags()
+	f.StringVar(
+		&name,
+		"name",
+		"",
+		`Provide the name of the adapter (default is filename without extension)`,
+	)
+	f.StringVar(
+		&tag,
+		"tag",
+		adapter.DefaultTag,
+		fmt.Sprintf(`Provide the tag to apply to the adapter (default is "%s")`, adapter.DefaultTag),
+	)
 	return cmd
 }

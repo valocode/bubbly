@@ -327,25 +327,25 @@ func DefaultBranchContainsFold(v string) predicate.Repo {
 	})
 }
 
-// HasProjects applies the HasEdge predicate on the "projects" edge.
-func HasProjects() predicate.Repo {
+// HasProject applies the HasEdge predicate on the "project" edge.
+func HasProject() predicate.Repo {
 	return predicate.Repo(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ProjectsTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, ProjectsTable, ProjectsPrimaryKey...),
+			sqlgraph.To(ProjectTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasProjectsWith applies the HasEdge predicate on the "projects" edge with a given conditions (other predicates).
-func HasProjectsWith(preds ...predicate.Project) predicate.Repo {
+// HasProjectWith applies the HasEdge predicate on the "project" edge with a given conditions (other predicates).
+func HasProjectWith(preds ...predicate.Project) predicate.Repo {
 	return predicate.Repo(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ProjectsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, ProjectsTable, ProjectsPrimaryKey...),
+			sqlgraph.To(ProjectInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -430,6 +430,34 @@ func HasVulnerabilityReviewsWith(preds ...predicate.VulnerabilityReview) predica
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(VulnerabilityReviewsInverseTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, VulnerabilityReviewsTable, VulnerabilityReviewsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPolicies applies the HasEdge predicate on the "policies" edge.
+func HasPolicies() predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoliciesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, PoliciesTable, PoliciesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPoliciesWith applies the HasEdge predicate on the "policies" edge with a given conditions (other predicates).
+func HasPoliciesWith(preds ...predicate.ReleasePolicy) predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoliciesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, PoliciesTable, PoliciesPrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

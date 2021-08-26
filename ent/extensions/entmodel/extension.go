@@ -124,11 +124,10 @@ func fieldTag(field *gen.Field) string {
 	var (
 		jsonTag     = fmt.Sprintf(`json:"%s,omitempty"`, field.Name)
 		validateTag string
-		hclTag      = fmt.Sprintf(`hcl:"%s,optional"`, field.Name)
+		hclTag      = fmt.Sprintf(`mapstructure:"%s"`, field.Name)
 	)
 	if isFieldRequiredNoDefault(field) {
 		validateTag = `validate:"required"`
-		hclTag = fmt.Sprintf(`hcl:"%s,attr"`, field.Name)
 	}
 	return jsonTag + " " + validateTag + " " + hclTag
 }

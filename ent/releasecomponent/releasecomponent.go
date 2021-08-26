@@ -3,6 +3,10 @@
 package releasecomponent
 
 import (
+	"fmt"
+	"io"
+	"strconv"
+
 	"entgo.io/ent"
 )
 
@@ -11,6 +15,8 @@ const (
 	Label = "release_component"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldType holds the string denoting the type field in the database.
+	FieldType = "type"
 	// EdgeRelease holds the string denoting the release edge name in mutations.
 	EdgeRelease = "release"
 	// EdgeScans holds the string denoting the scans edge name in mutations.
@@ -40,16 +46,19 @@ const (
 	ComponentInverseTable = "component"
 	// ComponentColumn is the table column denoting the component relation/edge.
 	ComponentColumn = "release_component_component"
-	// VulnerabilitiesTable is the table that holds the vulnerabilities relation/edge. The primary key declared below.
-	VulnerabilitiesTable = "release_vulnerability_components"
+	// VulnerabilitiesTable is the table that holds the vulnerabilities relation/edge.
+	VulnerabilitiesTable = "release_vulnerability"
 	// VulnerabilitiesInverseTable is the table name for the ReleaseVulnerability entity.
 	// It exists in this package in order to avoid circular dependency with the "releasevulnerability" package.
 	VulnerabilitiesInverseTable = "release_vulnerability"
+	// VulnerabilitiesColumn is the table column denoting the vulnerabilities relation/edge.
+	VulnerabilitiesColumn = "release_vulnerability_component"
 )
 
 // Columns holds all SQL columns for releasecomponent fields.
 var Columns = []string{
 	FieldID,
+	FieldType,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "release_component"
@@ -63,9 +72,6 @@ var (
 	// ScansPrimaryKey and ScansColumn2 are the table columns denoting the
 	// primary key for the scans relation (M2M).
 	ScansPrimaryKey = []string{"release_component_id", "code_scan_id"}
-	// VulnerabilitiesPrimaryKey and VulnerabilitiesColumn2 are the table columns denoting the
-	// primary key for the vulnerabilities relation (M2M).
-	VulnerabilitiesPrimaryKey = []string{"release_vulnerability_id", "release_component_id"}
 )
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -92,3 +98,48 @@ func ValidColumn(column string) bool {
 var (
 	Hooks [1]ent.Hook
 )
+
+// Type defines the type for the "type" enum field.
+type Type string
+
+// TypeEmbedded is the default value of the Type enum.
+const DefaultType = TypeEmbedded
+
+// Type values.
+const (
+	TypeEmbedded    Type = "embedded"
+	TypeDistributed Type = "distributed"
+	TypeDevelopment Type = "development"
+)
+
+func (_type Type) String() string {
+	return string(_type)
+}
+
+// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
+func TypeValidator(_type Type) error {
+	switch _type {
+	case TypeEmbedded, TypeDistributed, TypeDevelopment:
+		return nil
+	default:
+		return fmt.Errorf("releasecomponent: invalid enum value for type field: %q", _type)
+	}
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (_type Type) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(_type.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (_type *Type) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*_type = Type(str)
+	if err := TypeValidator(*_type); err != nil {
+		return fmt.Errorf("%s is not a valid Type", str)
+	}
+	return nil
+}

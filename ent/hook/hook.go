@@ -35,19 +35,6 @@ func (f ArtifactFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return f(ctx, mv)
 }
 
-// The CWEFunc type is an adapter to allow the use of ordinary
-// function as CWE mutator.
-type CWEFunc func(context.Context, *ent.CWEMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f CWEFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.CWEMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CWEMutation", m)
-	}
-	return f(ctx, mv)
-}
-
 // The CodeIssueFunc type is an adapter to allow the use of ordinary
 // function as CodeIssue mutator.
 type CodeIssueFunc func(context.Context, *ent.CodeIssueMutation) (ent.Value, error)
@@ -174,6 +161,45 @@ func (f ReleaseEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	mv, ok := m.(*ent.ReleaseEntryMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReleaseEntryMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The ReleaseLicenseFunc type is an adapter to allow the use of ordinary
+// function as ReleaseLicense mutator.
+type ReleaseLicenseFunc func(context.Context, *ent.ReleaseLicenseMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReleaseLicenseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ReleaseLicenseMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReleaseLicenseMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The ReleasePolicyFunc type is an adapter to allow the use of ordinary
+// function as ReleasePolicy mutator.
+type ReleasePolicyFunc func(context.Context, *ent.ReleasePolicyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReleasePolicyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ReleasePolicyMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReleasePolicyMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The ReleasePolicyViolationFunc type is an adapter to allow the use of ordinary
+// function as ReleasePolicyViolation mutator.
+type ReleasePolicyViolationFunc func(context.Context, *ent.ReleasePolicyViolationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReleasePolicyViolationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ReleasePolicyViolationMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReleasePolicyViolationMutation", m)
 	}
 	return f(ctx, mv)
 }

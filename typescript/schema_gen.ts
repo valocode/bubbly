@@ -5,6 +5,34 @@
 // #######################################
 
 // #######################################
+// Adapter
+// #######################################
+export interface Adapter_Json {
+	adapter?: Adapter[];
+}
+
+export interface Adapter {
+	id?: number;
+	name?: string;
+	tag?: string;
+	module?: string;
+}
+
+export interface Adapter_Relay {
+	adapter_connection?: Adapter_Conn;
+}
+
+export interface Adapter_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: Adapter_Edge[];
+}
+
+export interface Adapter_Edge {
+	node?: Adapter;
+}
+
+// #######################################
 // Artifact
 // #######################################
 export interface Artifact_Json {
@@ -41,35 +69,6 @@ export enum ArtifactType {
 }
 
 // #######################################
-// CWE
-// #######################################
-export interface CWE_Json {
-	cwe?: CWE[];
-}
-
-export interface CWE {
-	id?: number;
-	cwe_id?: string;
-	description?: string;
-	url?: number;
-	issues?: CodeIssue[];
-}
-
-export interface CWE_Relay {
-	cwe_connection?: CWE_Conn;
-}
-
-export interface CWE_Conn {
-	totalCount?: number;
-	pageInfo?: pageInfo;
-	edges?: CWE_Edge[];
-}
-
-export interface CWE_Edge {
-	node?: CWE;
-}
-
-// #######################################
 // CodeIssue
 // #######################################
 export interface CodeIssue_Json {
@@ -82,7 +81,6 @@ export interface CodeIssue {
 	message?: string;
 	severity?: CodeIssueSeverity;
 	type?: CodeIssueType;
-	cwe?: CWE[];
 	scan?: CodeScan;
 }
 
@@ -278,6 +276,7 @@ export interface Project {
 	name?: string;
 	repos?: Repo[];
 	vulnerability_reviews?: VulnerabilityReview[];
+	policies?: ReleasePolicy[];
 }
 
 export interface Project_Relay {
@@ -311,6 +310,7 @@ export interface Release {
 	commit?: GitCommit;
 	head_of?: Repo;
 	log?: ReleaseEntry[];
+	violations?: ReleasePolicyViolation[];
 	artifacts?: Artifact[];
 	components?: ReleaseComponent[];
 	vulnerabilities?: ReleaseVulnerability[];
@@ -348,6 +348,7 @@ export interface ReleaseComponent_Json {
 
 export interface ReleaseComponent {
 	id?: number;
+	type?: ReleaseComponentType;
 	release?: Release;
 	scans?: CodeScan[];
 	component?: Component;
@@ -366,6 +367,12 @@ export interface ReleaseComponent_Conn {
 
 export interface ReleaseComponent_Edge {
 	node?: ReleaseComponent;
+}
+
+export enum ReleaseComponentType {
+	embedded = "embedded",
+	distributed = "distributed",
+	development = "development",
 }
 
 // #######################################
@@ -407,6 +414,101 @@ export enum ReleaseEntryType {
 }
 
 // #######################################
+// ReleaseLicense
+// #######################################
+export interface ReleaseLicense_Json {
+	release_license?: ReleaseLicense[];
+}
+
+export interface ReleaseLicense {
+	id?: number;
+	license?: License;
+	component?: ReleaseComponent;
+	release?: Release;
+	scans?: CodeScan[];
+}
+
+export interface ReleaseLicense_Relay {
+	release_license_connection?: ReleaseLicense_Conn;
+}
+
+export interface ReleaseLicense_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: ReleaseLicense_Edge[];
+}
+
+export interface ReleaseLicense_Edge {
+	node?: ReleaseLicense;
+}
+
+// #######################################
+// ReleasePolicy
+// #######################################
+export interface ReleasePolicy_Json {
+	release_policy?: ReleasePolicy[];
+}
+
+export interface ReleasePolicy {
+	id?: number;
+	name?: string;
+	module?: string;
+	projects?: Project[];
+	repos?: Repo[];
+	violations?: ReleasePolicyViolation[];
+}
+
+export interface ReleasePolicy_Relay {
+	release_policy_connection?: ReleasePolicy_Conn;
+}
+
+export interface ReleasePolicy_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: ReleasePolicy_Edge[];
+}
+
+export interface ReleasePolicy_Edge {
+	node?: ReleasePolicy;
+}
+
+// #######################################
+// ReleasePolicyViolation
+// #######################################
+export interface ReleasePolicyViolation_Json {
+	release_policy_violation?: ReleasePolicyViolation[];
+}
+
+export interface ReleasePolicyViolation {
+	id?: number;
+	message?: string;
+	severity?: ReleasePolicyViolationSeverity;
+	policy?: ReleasePolicy;
+	release?: Release;
+}
+
+export interface ReleasePolicyViolation_Relay {
+	release_policy_violation_connection?: ReleasePolicyViolation_Conn;
+}
+
+export interface ReleasePolicyViolation_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: ReleasePolicyViolation_Edge[];
+}
+
+export interface ReleasePolicyViolation_Edge {
+	node?: ReleasePolicyViolation;
+}
+
+export enum ReleasePolicyViolationSeverity {
+	suggestion = "suggestion",
+	warning = "warning",
+	error = "error",
+	blocking = "blocking",
+}
+
+// #######################################
 // ReleaseVulnerability
 // #######################################
 export interface ReleaseVulnerability_Json {
@@ -416,10 +518,10 @@ export interface ReleaseVulnerability_Json {
 export interface ReleaseVulnerability {
 	id?: number;
 	vulnerability?: Vulnerability;
-	components?: ReleaseComponent[];
+	component?: ReleaseComponent;
 	release?: Release;
 	reviews?: VulnerabilityReview[];
-	scans?: CodeScan[];
+	scan?: CodeScan;
 }
 
 export interface ReleaseVulnerability_Relay {
@@ -447,10 +549,11 @@ export interface Repo {
 	id?: number;
 	name?: string;
 	default_branch?: string;
-	projects?: Project[];
+	project?: Project;
 	head?: Release;
 	commits?: GitCommit[];
 	vulnerability_reviews?: VulnerabilityReview[];
+	policies?: ReleasePolicy[];
 }
 
 export interface Repo_Relay {

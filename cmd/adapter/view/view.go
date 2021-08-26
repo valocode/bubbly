@@ -49,9 +49,12 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("Name: " + a.Name)
-			fmt.Println("Tag: " + a.TagOrDefault())
-			fmt.Println("Type: " + a.Operation.Type)
+			fmt.Println("Name: " + *a.Name)
+			fmt.Println("Tag: " + *a.Tag)
+			fmt.Println("")
+			fmt.Println("===")
+			fmt.Println("")
+			fmt.Println(*a.Module)
 			return nil
 		},
 	}

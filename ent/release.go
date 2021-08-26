@@ -42,6 +42,8 @@ type ReleaseEdges struct {
 	HeadOf *Repo `json:"head_of,omitempty"`
 	// Log holds the value of the log edge.
 	Log []*ReleaseEntry `json:"log,omitempty"`
+	// Violations holds the value of the violations edge.
+	Violations []*ReleasePolicyViolation `json:"violations,omitempty"`
 	// Artifacts holds the value of the artifacts edge.
 	Artifacts []*Artifact `json:"artifacts,omitempty"`
 	// Components holds the value of the components edge.
@@ -56,7 +58,7 @@ type ReleaseEdges struct {
 	VulnerabilityReviews []*VulnerabilityReview `json:"vulnerability_reviews,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [11]bool
+	loadedTypes [12]bool
 }
 
 // SubreleasesOrErr returns the Subreleases value or an error if the edge
@@ -114,10 +116,19 @@ func (e ReleaseEdges) LogOrErr() ([]*ReleaseEntry, error) {
 	return nil, &NotLoadedError{edge: "log"}
 }
 
+// ViolationsOrErr returns the Violations value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReleaseEdges) ViolationsOrErr() ([]*ReleasePolicyViolation, error) {
+	if e.loadedTypes[5] {
+		return e.Violations, nil
+	}
+	return nil, &NotLoadedError{edge: "violations"}
+}
+
 // ArtifactsOrErr returns the Artifacts value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) ArtifactsOrErr() ([]*Artifact, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.Artifacts, nil
 	}
 	return nil, &NotLoadedError{edge: "artifacts"}
@@ -126,7 +137,7 @@ func (e ReleaseEdges) ArtifactsOrErr() ([]*Artifact, error) {
 // ComponentsOrErr returns the Components value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) ComponentsOrErr() ([]*ReleaseComponent, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.Components, nil
 	}
 	return nil, &NotLoadedError{edge: "components"}
@@ -135,7 +146,7 @@ func (e ReleaseEdges) ComponentsOrErr() ([]*ReleaseComponent, error) {
 // VulnerabilitiesOrErr returns the Vulnerabilities value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) VulnerabilitiesOrErr() ([]*ReleaseVulnerability, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[8] {
 		return e.Vulnerabilities, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerabilities"}
@@ -144,7 +155,7 @@ func (e ReleaseEdges) VulnerabilitiesOrErr() ([]*ReleaseVulnerability, error) {
 // CodeScansOrErr returns the CodeScans value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) CodeScansOrErr() ([]*CodeScan, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[9] {
 		return e.CodeScans, nil
 	}
 	return nil, &NotLoadedError{edge: "code_scans"}
@@ -153,7 +164,7 @@ func (e ReleaseEdges) CodeScansOrErr() ([]*CodeScan, error) {
 // TestRunsOrErr returns the TestRuns value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) TestRunsOrErr() ([]*TestRun, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[10] {
 		return e.TestRuns, nil
 	}
 	return nil, &NotLoadedError{edge: "test_runs"}
@@ -162,7 +173,7 @@ func (e ReleaseEdges) TestRunsOrErr() ([]*TestRun, error) {
 // VulnerabilityReviewsOrErr returns the VulnerabilityReviews value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[11] {
 		return e.VulnerabilityReviews, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
@@ -262,6 +273,11 @@ func (r *Release) QueryHeadOf() *RepoQuery {
 // QueryLog queries the "log" edge of the Release entity.
 func (r *Release) QueryLog() *ReleaseEntryQuery {
 	return (&ReleaseClient{config: r.config}).QueryLog(r)
+}
+
+// QueryViolations queries the "violations" edge of the Release entity.
+func (r *Release) QueryViolations() *ReleasePolicyViolationQuery {
+	return (&ReleaseClient{config: r.config}).QueryViolations(r)
 }
 
 // QueryArtifacts queries the "artifacts" edge of the Release entity.

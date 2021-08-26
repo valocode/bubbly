@@ -18,7 +18,9 @@ import (
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/vulnerability"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 	gqlparser "github.com/vektah/gqlparser/v2"
@@ -43,8 +45,6 @@ type Config struct {
 }
 
 type ResolverRoot interface {
-	CWE() CWEResolver
-	CodeIssue() CodeIssueResolver
 	CodeScan() CodeScanResolver
 	Component() ComponentResolver
 	License() LicenseResolver
@@ -52,6 +52,8 @@ type ResolverRoot interface {
 	Query() QueryResolver
 	Release() ReleaseResolver
 	ReleaseComponent() ReleaseComponentResolver
+	ReleaseLicense() ReleaseLicenseResolver
+	ReleasePolicy() ReleasePolicyResolver
 	ReleaseVulnerability() ReleaseVulnerabilityResolver
 	Repo() RepoResolver
 	TestRun() TestRunResolver
@@ -63,6 +65,24 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Adapter struct {
+		ID     func(childComplexity int) int
+		Module func(childComplexity int) int
+		Name   func(childComplexity int) int
+		Tag    func(childComplexity int) int
+	}
+
+	AdapterConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	AdapterEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	Artifact struct {
 		Entry   func(childComplexity int) int
 		ID      func(childComplexity int) int
@@ -84,27 +104,7 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
-	Cwe struct {
-		CweID       func(childComplexity int) int
-		Description func(childComplexity int) int
-		ID          func(childComplexity int) int
-		Issues      func(childComplexity int, first *int, last *int, where *ent.CodeIssueWhereInput, orderBy *ent.CodeIssueOrder) int
-		URL         func(childComplexity int) int
-	}
-
-	CWEConnection struct {
-		Edges      func(childComplexity int) int
-		PageInfo   func(childComplexity int) int
-		TotalCount func(childComplexity int) int
-	}
-
-	CWEEdge struct {
-		Cursor func(childComplexity int) int
-		Node   func(childComplexity int) int
-	}
-
 	CodeIssue struct {
-		Cwe      func(childComplexity int, first *int, last *int, where *ent.CWEWhereInput, orderBy *ent.CWEOrder) int
 		ID       func(childComplexity int) int
 		Message  func(childComplexity int) int
 		RuleID   func(childComplexity int) int
@@ -238,6 +238,7 @@ type ComplexityRoot struct {
 	Project struct {
 		ID                   func(childComplexity int) int
 		Name                 func(childComplexity int) int
+		Policies             func(childComplexity int, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) int
 		Repos                func(childComplexity int, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) int
 		VulnerabilityReviews func(childComplexity int, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) int
 	}
@@ -264,8 +265,6 @@ type ComplexityRoot struct {
 		CommitConnection               func(childComplexity int, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.GitCommitOrder, where *ent.GitCommitWhereInput) int
 		Component                      func(childComplexity int, first *int, last *int, orderBy *ent.ComponentOrder, where *ent.ComponentWhereInput) int
 		ComponentConnection            func(childComplexity int, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ComponentOrder, where *ent.ComponentWhereInput) int
-		Cwe                            func(childComplexity int, first *int, last *int, orderBy *ent.CWEOrder, where *ent.CWEWhereInput) int
-		CweConnection                  func(childComplexity int, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.CWEOrder, where *ent.CWEWhereInput) int
 		License                        func(childComplexity int, first *int, last *int, orderBy *ent.LicenseOrder, where *ent.LicenseWhereInput) int
 		LicenseConnection              func(childComplexity int, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.LicenseOrder, where *ent.LicenseWhereInput) int
 		LicenseUse                     func(childComplexity int, first *int, last *int, where *ent.LicenseUseWhereInput) int
@@ -298,6 +297,7 @@ type ComplexityRoot struct {
 		Commit               func(childComplexity int) int
 		Components           func(childComplexity int, first *int, last *int, where *ent.ReleaseComponentWhereInput) int
 		Dependencies         func(childComplexity int, first *int, last *int, where *ent.ReleaseWhereInput, orderBy *ent.ReleaseOrder) int
+		HeadOf               func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		Log                  func(childComplexity int, first *int, last *int, where *ent.ReleaseEntryWhereInput, orderBy *ent.ReleaseEntryOrder) int
 		Name                 func(childComplexity int) int
@@ -305,6 +305,7 @@ type ComplexityRoot struct {
 		Subreleases          func(childComplexity int, first *int, last *int, where *ent.ReleaseWhereInput, orderBy *ent.ReleaseOrder) int
 		TestRuns             func(childComplexity int, first *int, last *int, where *ent.TestRunWhereInput, orderBy *ent.TestRunOrder) int
 		Version              func(childComplexity int) int
+		Violations           func(childComplexity int, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) int
 		Vulnerabilities      func(childComplexity int, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) int
 		VulnerabilityReviews func(childComplexity int, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) int
 	}
@@ -314,6 +315,7 @@ type ComplexityRoot struct {
 		ID              func(childComplexity int) int
 		Release         func(childComplexity int) int
 		Scans           func(childComplexity int, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) int
+		Type            func(childComplexity int) int
 		Vulnerabilities func(childComplexity int, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) int
 	}
 
@@ -360,12 +362,70 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	ReleaseLicense struct {
+		Component func(childComplexity int) int
+		ID        func(childComplexity int) int
+		License   func(childComplexity int) int
+		Release   func(childComplexity int) int
+		Scans     func(childComplexity int, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) int
+	}
+
+	ReleaseLicenseConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	ReleaseLicenseEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	ReleasePolicy struct {
+		ID         func(childComplexity int) int
+		Module     func(childComplexity int) int
+		Name       func(childComplexity int) int
+		Projects   func(childComplexity int, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) int
+		Repos      func(childComplexity int, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) int
+		Violations func(childComplexity int, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) int
+	}
+
+	ReleasePolicyConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	ReleasePolicyEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
+	ReleasePolicyViolation struct {
+		ID       func(childComplexity int) int
+		Message  func(childComplexity int) int
+		Policy   func(childComplexity int) int
+		Release  func(childComplexity int) int
+		Severity func(childComplexity int) int
+	}
+
+	ReleasePolicyViolationConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	ReleasePolicyViolationEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	ReleaseVulnerability struct {
-		Components    func(childComplexity int, first *int, last *int, where *ent.ReleaseComponentWhereInput) int
+		Component     func(childComplexity int) int
 		ID            func(childComplexity int) int
 		Release       func(childComplexity int) int
 		Reviews       func(childComplexity int, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) int
-		Scans         func(childComplexity int, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) int
+		Scan          func(childComplexity int) int
 		Vulnerability func(childComplexity int) int
 	}
 
@@ -382,9 +442,12 @@ type ComplexityRoot struct {
 
 	Repo struct {
 		Commits              func(childComplexity int, first *int, last *int, where *ent.GitCommitWhereInput, orderBy *ent.GitCommitOrder) int
+		DefaultBranch        func(childComplexity int) int
+		Head                 func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		Name                 func(childComplexity int) int
-		Projects             func(childComplexity int, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) int
+		Policies             func(childComplexity int, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) int
+		Project              func(childComplexity int) int
 		VulnerabilityReviews func(childComplexity int, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) int
 	}
 
@@ -487,12 +550,6 @@ type ComplexityRoot struct {
 	}
 }
 
-type CWEResolver interface {
-	Issues(ctx context.Context, obj *ent.CWE, first *int, last *int, where *ent.CodeIssueWhereInput, orderBy *ent.CodeIssueOrder) ([]*ent.CodeIssue, error)
-}
-type CodeIssueResolver interface {
-	Cwe(ctx context.Context, obj *ent.CodeIssue, first *int, last *int, where *ent.CWEWhereInput, orderBy *ent.CWEOrder) ([]*ent.CWE, error)
-}
 type CodeScanResolver interface {
 	Issues(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.CodeIssueWhereInput, orderBy *ent.CodeIssueOrder) ([]*ent.CodeIssue, error)
 	Vulnerabilities(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
@@ -510,6 +567,7 @@ type LicenseResolver interface {
 type ProjectResolver interface {
 	Repos(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error)
 	VulnerabilityReviews(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error)
+	Policies(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) ([]*ent.ReleasePolicy, error)
 }
 type QueryResolver interface {
 	ArtifactConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ArtifactOrder, where *ent.ArtifactWhereInput) (*ent.ArtifactConnection, error)
@@ -521,7 +579,6 @@ type QueryResolver interface {
 	Component(ctx context.Context, first *int, last *int, orderBy *ent.ComponentOrder, where *ent.ComponentWhereInput) ([]*ent.Component, error)
 	CommitConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.GitCommitOrder, where *ent.GitCommitWhereInput) (*ent.GitCommitConnection, error)
 	TestCase(ctx context.Context, first *int, last *int, orderBy *ent.TestCaseOrder, where *ent.TestCaseWhereInput) ([]*ent.TestCase, error)
-	CweConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.CWEOrder, where *ent.CWEWhereInput) (*ent.CWEConnection, error)
 	LicenseConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.LicenseOrder, where *ent.LicenseWhereInput) (*ent.LicenseConnection, error)
 	ReleaseEntryConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ReleaseEntryOrder, where *ent.ReleaseEntryWhereInput) (*ent.ReleaseEntryConnection, error)
 	TestRun(ctx context.Context, first *int, last *int, orderBy *ent.TestRunOrder, where *ent.TestRunWhereInput) ([]*ent.TestRun, error)
@@ -541,7 +598,6 @@ type QueryResolver interface {
 	CodeScan(ctx context.Context, first *int, last *int, orderBy *ent.CodeScanOrder, where *ent.CodeScanWhereInput) ([]*ent.CodeScan, error)
 	ReleaseComponentConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, where *ent.ReleaseComponentWhereInput) (*ent.ReleaseComponentConnection, error)
 	ReleaseEntry(ctx context.Context, first *int, last *int, orderBy *ent.ReleaseEntryOrder, where *ent.ReleaseEntryWhereInput) ([]*ent.ReleaseEntry, error)
-	Cwe(ctx context.Context, first *int, last *int, orderBy *ent.CWEOrder, where *ent.CWEWhereInput) ([]*ent.CWE, error)
 	CodeIssue(ctx context.Context, first *int, last *int, orderBy *ent.CodeIssueOrder, where *ent.CodeIssueWhereInput) ([]*ent.CodeIssue, error)
 	ProjectConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ProjectOrder, where *ent.ProjectWhereInput) (*ent.ProjectConnection, error)
 	ReleaseConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ReleaseOrder, where *ent.ReleaseWhereInput) (*ent.ReleaseConnection, error)
@@ -554,6 +610,7 @@ type ReleaseResolver interface {
 	Dependencies(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseWhereInput, orderBy *ent.ReleaseOrder) ([]*ent.Release, error)
 
 	Log(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseEntryWhereInput, orderBy *ent.ReleaseEntryOrder) ([]*ent.ReleaseEntry, error)
+	Violations(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) ([]*ent.ReleasePolicyViolation, error)
 	Artifacts(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ArtifactWhereInput, orderBy *ent.ArtifactOrder) ([]*ent.Artifact, error)
 	Components(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error)
 	Vulnerabilities(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
@@ -566,16 +623,21 @@ type ReleaseComponentResolver interface {
 
 	Vulnerabilities(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
 }
+type ReleaseLicenseResolver interface {
+	Scans(ctx context.Context, obj *ent.ReleaseLicense, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error)
+}
+type ReleasePolicyResolver interface {
+	Projects(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error)
+	Repos(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error)
+	Violations(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) ([]*ent.ReleasePolicyViolation, error)
+}
 type ReleaseVulnerabilityResolver interface {
-	Components(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error)
-
 	Reviews(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error)
-	Scans(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error)
 }
 type RepoResolver interface {
-	Projects(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error)
 	Commits(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.GitCommitWhereInput, orderBy *ent.GitCommitOrder) ([]*ent.GitCommit, error)
 	VulnerabilityReviews(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error)
+	Policies(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) ([]*ent.ReleasePolicy, error)
 }
 type TestRunResolver interface {
 	Tests(ctx context.Context, obj *ent.TestRun, first *int, last *int, where *ent.TestCaseWhereInput, orderBy *ent.TestCaseOrder) ([]*ent.TestCase, error)
@@ -606,6 +668,69 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Adapter.id":
+		if e.complexity.Adapter.ID == nil {
+			break
+		}
+
+		return e.complexity.Adapter.ID(childComplexity), true
+
+	case "Adapter.module":
+		if e.complexity.Adapter.Module == nil {
+			break
+		}
+
+		return e.complexity.Adapter.Module(childComplexity), true
+
+	case "Adapter.name":
+		if e.complexity.Adapter.Name == nil {
+			break
+		}
+
+		return e.complexity.Adapter.Name(childComplexity), true
+
+	case "Adapter.tag":
+		if e.complexity.Adapter.Tag == nil {
+			break
+		}
+
+		return e.complexity.Adapter.Tag(childComplexity), true
+
+	case "AdapterConnection.edges":
+		if e.complexity.AdapterConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.AdapterConnection.Edges(childComplexity), true
+
+	case "AdapterConnection.pageInfo":
+		if e.complexity.AdapterConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.AdapterConnection.PageInfo(childComplexity), true
+
+	case "AdapterConnection.totalCount":
+		if e.complexity.AdapterConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.AdapterConnection.TotalCount(childComplexity), true
+
+	case "AdapterEdge.cursor":
+		if e.complexity.AdapterEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.AdapterEdge.Cursor(childComplexity), true
+
+	case "AdapterEdge.node":
+		if e.complexity.AdapterEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.AdapterEdge.Node(childComplexity), true
 
 	case "Artifact.entry":
 		if e.complexity.Artifact.Entry == nil {
@@ -690,93 +815,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ArtifactEdge.Node(childComplexity), true
-
-	case "CWE.cwe_id":
-		if e.complexity.Cwe.CweID == nil {
-			break
-		}
-
-		return e.complexity.Cwe.CweID(childComplexity), true
-
-	case "CWE.description":
-		if e.complexity.Cwe.Description == nil {
-			break
-		}
-
-		return e.complexity.Cwe.Description(childComplexity), true
-
-	case "CWE.id":
-		if e.complexity.Cwe.ID == nil {
-			break
-		}
-
-		return e.complexity.Cwe.ID(childComplexity), true
-
-	case "CWE.issues":
-		if e.complexity.Cwe.Issues == nil {
-			break
-		}
-
-		args, err := ec.field_CWE_issues_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Cwe.Issues(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.CodeIssueWhereInput), args["order_by"].(*ent.CodeIssueOrder)), true
-
-	case "CWE.url":
-		if e.complexity.Cwe.URL == nil {
-			break
-		}
-
-		return e.complexity.Cwe.URL(childComplexity), true
-
-	case "CWEConnection.edges":
-		if e.complexity.CWEConnection.Edges == nil {
-			break
-		}
-
-		return e.complexity.CWEConnection.Edges(childComplexity), true
-
-	case "CWEConnection.pageInfo":
-		if e.complexity.CWEConnection.PageInfo == nil {
-			break
-		}
-
-		return e.complexity.CWEConnection.PageInfo(childComplexity), true
-
-	case "CWEConnection.totalCount":
-		if e.complexity.CWEConnection.TotalCount == nil {
-			break
-		}
-
-		return e.complexity.CWEConnection.TotalCount(childComplexity), true
-
-	case "CWEEdge.cursor":
-		if e.complexity.CWEEdge.Cursor == nil {
-			break
-		}
-
-		return e.complexity.CWEEdge.Cursor(childComplexity), true
-
-	case "CWEEdge.node":
-		if e.complexity.CWEEdge.Node == nil {
-			break
-		}
-
-		return e.complexity.CWEEdge.Node(childComplexity), true
-
-	case "CodeIssue.cwe":
-		if e.complexity.CodeIssue.Cwe == nil {
-			break
-		}
-
-		args, err := ec.field_CodeIssue_cwe_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.CodeIssue.Cwe(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.CWEWhereInput), args["order_by"].(*ent.CWEOrder)), true
 
 	case "CodeIssue.id":
 		if e.complexity.CodeIssue.ID == nil {
@@ -1350,6 +1388,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Project.Name(childComplexity), true
 
+	case "Project.policies":
+		if e.complexity.Project.Policies == nil {
+			break
+		}
+
+		args, err := ec.field_Project_policies_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Project.Policies(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleasePolicyWhereInput), args["order_by"].(*ent.ReleasePolicyOrder)), true
+
 	case "Project.repos":
 		if e.complexity.Project.Repos == nil {
 			break
@@ -1528,30 +1578,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.ComponentConnection(childComplexity, args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["order_by"].(*ent.ComponentOrder), args["where"].(*ent.ComponentWhereInput)), true
-
-	case "Query.cwe":
-		if e.complexity.Query.Cwe == nil {
-			break
-		}
-
-		args, err := ec.field_Query_cwe_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Cwe(childComplexity, args["first"].(*int), args["last"].(*int), args["order_by"].(*ent.CWEOrder), args["where"].(*ent.CWEWhereInput)), true
-
-	case "Query.cwe_connection":
-		if e.complexity.Query.CweConnection == nil {
-			break
-		}
-
-		args, err := ec.field_Query_cwe_connection_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.CweConnection(childComplexity, args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["order_by"].(*ent.CWEOrder), args["where"].(*ent.CWEWhereInput)), true
 
 	case "Query.license":
 		if e.complexity.Query.License == nil {
@@ -1896,6 +1922,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Release.Dependencies(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseWhereInput), args["order_by"].(*ent.ReleaseOrder)), true
 
+	case "Release.head_of":
+		if e.complexity.Release.HeadOf == nil {
+			break
+		}
+
+		return e.complexity.Release.HeadOf(childComplexity), true
+
 	case "Release.id":
 		if e.complexity.Release.ID == nil {
 			break
@@ -1960,6 +1993,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Release.Version(childComplexity), true
 
+	case "Release.violations":
+		if e.complexity.Release.Violations == nil {
+			break
+		}
+
+		args, err := ec.field_Release_violations_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Release.Violations(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleasePolicyViolationWhereInput)), true
+
 	case "Release.vulnerabilities":
 		if e.complexity.Release.Vulnerabilities == nil {
 			break
@@ -2016,6 +2061,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ReleaseComponent.Scans(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.CodeScanWhereInput), args["order_by"].(*ent.CodeScanOrder)), true
+
+	case "ReleaseComponent.type":
+		if e.complexity.ReleaseComponent.Type == nil {
+			break
+		}
+
+		return e.complexity.ReleaseComponent.Type(childComplexity), true
 
 	case "ReleaseComponent.vulnerabilities":
 		if e.complexity.ReleaseComponent.Vulnerabilities == nil {
@@ -2183,17 +2235,249 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ReleaseEntryEdge.Node(childComplexity), true
 
-	case "ReleaseVulnerability.components":
-		if e.complexity.ReleaseVulnerability.Components == nil {
+	case "ReleaseLicense.component":
+		if e.complexity.ReleaseLicense.Component == nil {
 			break
 		}
 
-		args, err := ec.field_ReleaseVulnerability_components_args(context.TODO(), rawArgs)
+		return e.complexity.ReleaseLicense.Component(childComplexity), true
+
+	case "ReleaseLicense.id":
+		if e.complexity.ReleaseLicense.ID == nil {
+			break
+		}
+
+		return e.complexity.ReleaseLicense.ID(childComplexity), true
+
+	case "ReleaseLicense.license":
+		if e.complexity.ReleaseLicense.License == nil {
+			break
+		}
+
+		return e.complexity.ReleaseLicense.License(childComplexity), true
+
+	case "ReleaseLicense.release":
+		if e.complexity.ReleaseLicense.Release == nil {
+			break
+		}
+
+		return e.complexity.ReleaseLicense.Release(childComplexity), true
+
+	case "ReleaseLicense.scans":
+		if e.complexity.ReleaseLicense.Scans == nil {
+			break
+		}
+
+		args, err := ec.field_ReleaseLicense_scans_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.ReleaseVulnerability.Components(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseComponentWhereInput)), true
+		return e.complexity.ReleaseLicense.Scans(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.CodeScanWhereInput), args["order_by"].(*ent.CodeScanOrder)), true
+
+	case "ReleaseLicenseConnection.edges":
+		if e.complexity.ReleaseLicenseConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.ReleaseLicenseConnection.Edges(childComplexity), true
+
+	case "ReleaseLicenseConnection.pageInfo":
+		if e.complexity.ReleaseLicenseConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.ReleaseLicenseConnection.PageInfo(childComplexity), true
+
+	case "ReleaseLicenseConnection.totalCount":
+		if e.complexity.ReleaseLicenseConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.ReleaseLicenseConnection.TotalCount(childComplexity), true
+
+	case "ReleaseLicenseEdge.cursor":
+		if e.complexity.ReleaseLicenseEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.ReleaseLicenseEdge.Cursor(childComplexity), true
+
+	case "ReleaseLicenseEdge.node":
+		if e.complexity.ReleaseLicenseEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.ReleaseLicenseEdge.Node(childComplexity), true
+
+	case "ReleasePolicy.id":
+		if e.complexity.ReleasePolicy.ID == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicy.ID(childComplexity), true
+
+	case "ReleasePolicy.module":
+		if e.complexity.ReleasePolicy.Module == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicy.Module(childComplexity), true
+
+	case "ReleasePolicy.name":
+		if e.complexity.ReleasePolicy.Name == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicy.Name(childComplexity), true
+
+	case "ReleasePolicy.projects":
+		if e.complexity.ReleasePolicy.Projects == nil {
+			break
+		}
+
+		args, err := ec.field_ReleasePolicy_projects_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.ReleasePolicy.Projects(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ProjectWhereInput), args["order_by"].(*ent.ProjectOrder)), true
+
+	case "ReleasePolicy.repos":
+		if e.complexity.ReleasePolicy.Repos == nil {
+			break
+		}
+
+		args, err := ec.field_ReleasePolicy_repos_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.ReleasePolicy.Repos(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.RepoWhereInput), args["order_by"].(*ent.RepoOrder)), true
+
+	case "ReleasePolicy.violations":
+		if e.complexity.ReleasePolicy.Violations == nil {
+			break
+		}
+
+		args, err := ec.field_ReleasePolicy_violations_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.ReleasePolicy.Violations(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleasePolicyViolationWhereInput)), true
+
+	case "ReleasePolicyConnection.edges":
+		if e.complexity.ReleasePolicyConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyConnection.Edges(childComplexity), true
+
+	case "ReleasePolicyConnection.pageInfo":
+		if e.complexity.ReleasePolicyConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyConnection.PageInfo(childComplexity), true
+
+	case "ReleasePolicyConnection.totalCount":
+		if e.complexity.ReleasePolicyConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyConnection.TotalCount(childComplexity), true
+
+	case "ReleasePolicyEdge.cursor":
+		if e.complexity.ReleasePolicyEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyEdge.Cursor(childComplexity), true
+
+	case "ReleasePolicyEdge.node":
+		if e.complexity.ReleasePolicyEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyEdge.Node(childComplexity), true
+
+	case "ReleasePolicyViolation.id":
+		if e.complexity.ReleasePolicyViolation.ID == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyViolation.ID(childComplexity), true
+
+	case "ReleasePolicyViolation.message":
+		if e.complexity.ReleasePolicyViolation.Message == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyViolation.Message(childComplexity), true
+
+	case "ReleasePolicyViolation.policy":
+		if e.complexity.ReleasePolicyViolation.Policy == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyViolation.Policy(childComplexity), true
+
+	case "ReleasePolicyViolation.release":
+		if e.complexity.ReleasePolicyViolation.Release == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyViolation.Release(childComplexity), true
+
+	case "ReleasePolicyViolation.severity":
+		if e.complexity.ReleasePolicyViolation.Severity == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyViolation.Severity(childComplexity), true
+
+	case "ReleasePolicyViolationConnection.edges":
+		if e.complexity.ReleasePolicyViolationConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyViolationConnection.Edges(childComplexity), true
+
+	case "ReleasePolicyViolationConnection.pageInfo":
+		if e.complexity.ReleasePolicyViolationConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyViolationConnection.PageInfo(childComplexity), true
+
+	case "ReleasePolicyViolationConnection.totalCount":
+		if e.complexity.ReleasePolicyViolationConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyViolationConnection.TotalCount(childComplexity), true
+
+	case "ReleasePolicyViolationEdge.cursor":
+		if e.complexity.ReleasePolicyViolationEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyViolationEdge.Cursor(childComplexity), true
+
+	case "ReleasePolicyViolationEdge.node":
+		if e.complexity.ReleasePolicyViolationEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicyViolationEdge.Node(childComplexity), true
+
+	case "ReleaseVulnerability.component":
+		if e.complexity.ReleaseVulnerability.Component == nil {
+			break
+		}
+
+		return e.complexity.ReleaseVulnerability.Component(childComplexity), true
 
 	case "ReleaseVulnerability.id":
 		if e.complexity.ReleaseVulnerability.ID == nil {
@@ -2221,17 +2505,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ReleaseVulnerability.Reviews(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.VulnerabilityReviewWhereInput), args["order_by"].(*ent.VulnerabilityReviewOrder)), true
 
-	case "ReleaseVulnerability.scans":
-		if e.complexity.ReleaseVulnerability.Scans == nil {
+	case "ReleaseVulnerability.scan":
+		if e.complexity.ReleaseVulnerability.Scan == nil {
 			break
 		}
 
-		args, err := ec.field_ReleaseVulnerability_scans_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.ReleaseVulnerability.Scans(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.CodeScanWhereInput), args["order_by"].(*ent.CodeScanOrder)), true
+		return e.complexity.ReleaseVulnerability.Scan(childComplexity), true
 
 	case "ReleaseVulnerability.vulnerability":
 		if e.complexity.ReleaseVulnerability.Vulnerability == nil {
@@ -2287,6 +2566,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Repo.Commits(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.GitCommitWhereInput), args["order_by"].(*ent.GitCommitOrder)), true
 
+	case "Repo.default_branch":
+		if e.complexity.Repo.DefaultBranch == nil {
+			break
+		}
+
+		return e.complexity.Repo.DefaultBranch(childComplexity), true
+
+	case "Repo.head":
+		if e.complexity.Repo.Head == nil {
+			break
+		}
+
+		return e.complexity.Repo.Head(childComplexity), true
+
 	case "Repo.id":
 		if e.complexity.Repo.ID == nil {
 			break
@@ -2301,17 +2594,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Repo.Name(childComplexity), true
 
-	case "Repo.projects":
-		if e.complexity.Repo.Projects == nil {
+	case "Repo.policies":
+		if e.complexity.Repo.Policies == nil {
 			break
 		}
 
-		args, err := ec.field_Repo_projects_args(context.TODO(), rawArgs)
+		args, err := ec.field_Repo_policies_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Repo.Projects(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ProjectWhereInput), args["order_by"].(*ent.ProjectOrder)), true
+		return e.complexity.Repo.Policies(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleasePolicyWhereInput), args["order_by"].(*ent.ReleasePolicyOrder)), true
+
+	case "Repo.project":
+		if e.complexity.Repo.Project == nil {
+			break
+		}
+
+		return e.complexity.Repo.Project(childComplexity), true
 
 	case "Repo.vulnerability_reviews":
 		if e.complexity.Repo.VulnerabilityReviews == nil {
@@ -2822,7 +3122,6 @@ type Query {
   component(first: Int, last: Int, order_by: ComponentOrder, where: ComponentWhereInput): [Component]
   commit_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: GitCommitOrder, where: GitCommitWhereInput): GitCommitConnection
   test_case(first: Int, last: Int, order_by: TestCaseOrder, where: TestCaseWhereInput): [TestCase]
-  cwe_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: CWEOrder, where: CWEWhereInput): CWEConnection
   license_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: LicenseOrder, where: LicenseWhereInput): LicenseConnection
   release_entry_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: ReleaseEntryOrder, where: ReleaseEntryWhereInput): ReleaseEntryConnection
   test_run(first: Int, last: Int, order_by: TestRunOrder, where: TestRunWhereInput): [TestRun]
@@ -2842,7 +3141,6 @@ type Query {
   code_scan(first: Int, last: Int, order_by: CodeScanOrder, where: CodeScanWhereInput): [CodeScan]
   release_component_connection(first: Int, last: Int, before: Cursor, after: Cursor, where: ReleaseComponentWhereInput): ReleaseComponentConnection
   release_entry(first: Int, last: Int, order_by: ReleaseEntryOrder, where: ReleaseEntryWhereInput): [ReleaseEntry]
-  cwe(first: Int, last: Int, order_by: CWEOrder, where: CWEWhereInput): [CWE]
   code_issue(first: Int, last: Int, order_by: CodeIssueOrder, where: CodeIssueWhereInput): [CodeIssue]
   project_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: ProjectOrder, where: ProjectWhereInput): ProjectConnection
   release_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: ReleaseOrder, where: ReleaseWhereInput): ReleaseConnection
@@ -2868,43 +3166,9 @@ interface Node {
   id: ID!
 }
 
-enum CWEOrderField {
-  cwe_id
-  description
-}
-
-enum CodeScanOrderField {
-  tool
-  time
-}
-
-enum TestRunOrderField {
-  tool
-  time
-}
-
-enum VulnerabilityReviewDecision {
-  exploitable
-  in_progress
-  invalid
-  mitigated
-  ineffective
-}
-
-enum GitCommitOrderField {
-  hash
-  branch
+enum AdapterOrderField {
+  name
   tag
-  time
-}
-
-enum ReleaseOrderField {
-  name
-  version
-}
-
-enum VulnerabilityReviewOrderField {
-  name
 }
 
 enum ArtifactType {
@@ -2912,23 +3176,23 @@ enum ArtifactType {
   file
 }
 
-enum ArtifactOrderField {
-  name
-  sha256
+enum CodeIssueOrderField {
+  rule_id
+  severity
   type
-  time
-}
-
-enum CodeIssueType {
-  style
-  security
-  bug
 }
 
 enum ComponentOrderField {
   name
   vendor
   version
+}
+
+enum GitCommitOrderField {
+  hash
+  branch
+  tag
+  time
 }
 
 enum TestCaseOrderField {
@@ -2946,27 +3210,30 @@ enum CodeIssueSeverity {
   high
 }
 
-enum CodeIssueOrderField {
-  rule_id
-  severity
-  type
+enum CodeIssueType {
+  style
+  security
+  bug
 }
 
-enum ProjectOrderField {
+enum CodeScanOrderField {
+  tool
+  time
+}
+
+enum LicenseOrderField {
+  spdx_id
   name
+}
+
+enum ReleaseOrderField {
+  name
+  version
 }
 
 enum ReleaseEntryOrderField {
   type
   time
-}
-
-enum VulnerabilitySeverity {
-  None
-  Low
-  Medium
-  High
-  Critical
 }
 
 enum VulnerabilityOrderField {
@@ -2977,9 +3244,19 @@ enum VulnerabilityOrderField {
   modified
 }
 
-enum LicenseOrderField {
-  spdx_id
+enum VulnerabilityReviewDecision {
+  exploitable
+  in_progress
+  invalid
+  mitigated
+  ineffective
+}
+
+enum ArtifactOrderField {
   name
+  sha256
+  type
+  time
 }
 
 enum ReleaseStatus {
@@ -2995,95 +3272,212 @@ enum ReleaseEntryType {
   test_run
 }
 
+enum ReleasePolicyOrderField {
+  name
+}
+
 enum RepoOrderField {
   name
 }
 
-"""
-License represents the node License in the ent schema.
-Generated by ent.
-"""
-type License implements Node {
-  id: ID!
-  spdx_id: String
-  name: String
-  reference: String
-  details_url: String
-  is_osi_approved: Boolean
-  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
-  uses(first: Int, last: Int, where: LicenseUseWhereInput): [LicenseUse] @goField(forceResolver: true)
+enum VulnerabilitySeverity {
+  None
+  Low
+  Medium
+  High
+  Critical
+}
+
+enum ProjectOrderField {
+  name
+}
+
+enum ReleaseComponentType {
+  embedded
+  distributed
+  development
+}
+
+enum ReleasePolicyViolationSeverity {
+  suggestion
+  warning
+  error
+  blocking
+}
+
+enum TestRunOrderField {
+  tool
+  time
+}
+
+enum VulnerabilityReviewOrderField {
+  name
 }
 
 """
-LicenseConnection supports the relay edge specification for node License in the ent schema.
+Artifact represents the node Artifact in the ent schema.
 Generated by ent.
 """
-type LicenseEdge {
-  node: License
-  cursor: Cursor!
-}
-
-"""
-ReleaseVulnerabilityConnection supports the relay connection specification for node ReleaseVulnerability in the ent schema.
-Generated by ent.
-"""
-type ReleaseVulnerabilityConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleaseVulnerabilityEdge]
-}
-
-"""
-ArtifactConnection supports the relay connection specification for node Artifact in the ent schema.
-Generated by ent.
-"""
-type ArtifactConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ArtifactEdge]
-}
-
-"""
-CodeIssueConnection supports the relay connection specification for node CodeIssue in the ent schema.
-Generated by ent.
-"""
-type CodeIssueConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [CodeIssueEdge]
-}
-
-"""
-ReleaseVulnerabilityConnection supports the relay edge specification for node ReleaseVulnerability in the ent schema.
-Generated by ent.
-"""
-type ReleaseVulnerabilityEdge {
-  node: ReleaseVulnerability
-  cursor: Cursor!
-}
-
-"""
-VulnerabilityConnection supports the relay edge specification for node Vulnerability in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityEdge {
-  node: Vulnerability
-  cursor: Cursor!
-}
-
-"""
-VulnerabilityReview represents the node VulnerabilityReview in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityReview implements Node {
+type Artifact implements Node {
   id: ID!
   name: String
-  decision: VulnerabilityReviewDecision
-  vulnerability: Vulnerability!
-  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
+  sha256: String
+  type: ArtifactType
+  time: Time
+  release: Release
+  entry: ReleaseEntry
+}
+
+"""
+ComponentConnection supports the relay edge specification for node Component in the ent schema.
+Generated by ent.
+"""
+type ComponentEdge {
+  node: Component
+  cursor: Cursor!
+}
+
+"""
+GitCommitConnection supports the relay edge specification for node GitCommit in the ent schema.
+Generated by ent.
+"""
+type GitCommitEdge {
+  node: GitCommit
+  cursor: Cursor!
+}
+
+"""
+LicenseUseConnection supports the relay connection specification for node LicenseUse in the ent schema.
+Generated by ent.
+"""
+type LicenseUseConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [LicenseUseEdge]
+}
+
+"""
+Release represents the node Release in the ent schema.
+Generated by ent.
+"""
+type Release implements Node {
+  id: ID!
+  name: String
+  version: String
+  status: ReleaseStatus
+  subreleases(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
+  dependencies(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
+  commit: GitCommit!
+  head_of: Repo
+  log(first: Int, last: Int, where: ReleaseEntryWhereInput, order_by: ReleaseEntryOrder): [ReleaseEntry] @goField(forceResolver: true)
+  violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
+  artifacts(first: Int, last: Int, where: ArtifactWhereInput, order_by: ArtifactOrder): [Artifact] @goField(forceResolver: true)
+  components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
+  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+  code_scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
+  test_runs(first: Int, last: Int, where: TestRunWhereInput, order_by: TestRunOrder): [TestRun] @goField(forceResolver: true)
+  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+}
+
+"""
+LicenseUse represents the node LicenseUse in the ent schema.
+Generated by ent.
+"""
+type LicenseUse implements Node {
+  id: ID!
+  license: License!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: Cursor
+  endCursor: Cursor
+}
+
+"""
+AdapterConnection supports the relay connection specification for node Adapter in the ent schema.
+Generated by ent.
+"""
+type AdapterConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [AdapterEdge]
+}
+
+"""
+AdapterConnection supports the relay edge specification for node Adapter in the ent schema.
+Generated by ent.
+"""
+type AdapterEdge {
+  node: Adapter
+  cursor: Cursor!
+}
+
+"""
+ProjectConnection supports the relay edge specification for node Project in the ent schema.
+Generated by ent.
+"""
+type ProjectEdge {
+  node: Project
+  cursor: Cursor!
+}
+
+"""
+RepoConnection supports the relay edge specification for node Repo in the ent schema.
+Generated by ent.
+"""
+type RepoEdge {
+  node: Repo
+  cursor: Cursor!
+}
+
+"""
+TestRun represents the node TestRun in the ent schema.
+Generated by ent.
+"""
+type TestRun implements Node {
+  id: ID!
+  tool: String
+  time: Time
+  release: Release!
+  entry: ReleaseEntry
+  tests(first: Int, last: Int, where: TestCaseWhereInput, order_by: TestCaseOrder): [TestCase] @goField(forceResolver: true)
+}
+
+"""
+TestCase represents the node TestCase in the ent schema.
+Generated by ent.
+"""
+type TestCase implements Node {
+  id: ID!
+  name: String
+  result: Boolean
+  message: String
+  elapsed: Float
+  run: TestRun!
+}
+
+"""
+VulnerabilityConnection supports the relay connection specification for node Vulnerability in the ent schema.
+Generated by ent.
+"""
+type VulnerabilityConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [VulnerabilityEdge]
+}
+
+"""
+Project represents the node Project in the ent schema.
+Generated by ent.
+"""
+type Project implements Node {
+  id: ID!
+  name: String
   repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-  releases(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
-  instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  policies(first: Int, last: Int, where: ReleasePolicyWhereInput, order_by: ReleasePolicyOrder): [ReleasePolicy] @goField(forceResolver: true)
 }
 
 """
@@ -3097,12 +3491,23 @@ type ReleaseConnection {
 }
 
 """
-CodeScanConnection supports the relay edge specification for node CodeScan in the ent schema.
+ReleaseLicenseConnection supports the relay connection specification for node ReleaseLicense in the ent schema.
 Generated by ent.
 """
-type CodeScanEdge {
-  node: CodeScan
-  cursor: Cursor!
+type ReleaseLicenseConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleaseLicenseEdge]
+}
+
+"""
+ReleaseVulnerabilityConnection supports the relay connection specification for node ReleaseVulnerability in the ent schema.
+Generated by ent.
+"""
+type ReleaseVulnerabilityConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleaseVulnerabilityEdge]
 }
 
 """
@@ -3116,30 +3521,30 @@ type RepoConnection {
 }
 
 """
-RepoConnection supports the relay edge specification for node Repo in the ent schema.
+CodeIssueConnection supports the relay connection specification for node CodeIssue in the ent schema.
 Generated by ent.
 """
-type RepoEdge {
-  node: Repo
+type CodeIssueConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [CodeIssueEdge]
+}
+
+"""
+CodeScanConnection supports the relay edge specification for node CodeScan in the ent schema.
+Generated by ent.
+"""
+type CodeScanEdge {
+  node: CodeScan
   cursor: Cursor!
 }
 
 """
-CWEConnection supports the relay connection specification for node CWE in the ent schema.
+VulnerabilityConnection supports the relay edge specification for node Vulnerability in the ent schema.
 Generated by ent.
 """
-type CWEConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [CWEEdge]
-}
-
-"""
-CWEConnection supports the relay edge specification for node CWE in the ent schema.
-Generated by ent.
-"""
-type CWEEdge {
-  node: CWE
+type VulnerabilityEdge {
+  node: Vulnerability
   cursor: Cursor!
 }
 
@@ -3160,12 +3565,86 @@ type Component implements Node {
 }
 
 """
+ReleaseConnection supports the relay edge specification for node Release in the ent schema.
+Generated by ent.
+"""
+type ReleaseEdge {
+  node: Release
+  cursor: Cursor!
+}
+
+"""
+Repo represents the node Repo in the ent schema.
+Generated by ent.
+"""
+type Repo implements Node {
+  id: ID!
+  name: String
+  default_branch: String
+  project: Project!
+  head: Release
+  commits(first: Int, last: Int, where: GitCommitWhereInput, order_by: GitCommitOrder): [GitCommit] @goField(forceResolver: true)
+  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  policies(first: Int, last: Int, where: ReleasePolicyWhereInput, order_by: ReleasePolicyOrder): [ReleasePolicy] @goField(forceResolver: true)
+}
+
+"""
+TestCaseConnection supports the relay connection specification for node TestCase in the ent schema.
+Generated by ent.
+"""
+type TestCaseConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [TestCaseEdge]
+}
+
+"""
 ReleaseEntryConnection supports the relay edge specification for node ReleaseEntry in the ent schema.
 Generated by ent.
 """
 type ReleaseEntryEdge {
   node: ReleaseEntry
   cursor: Cursor!
+}
+
+"""
+ReleaseLicenseConnection supports the relay edge specification for node ReleaseLicense in the ent schema.
+Generated by ent.
+"""
+type ReleaseLicenseEdge {
+  node: ReleaseLicense
+  cursor: Cursor!
+}
+
+"""
+ReleasePolicyViolation represents the node ReleasePolicyViolation in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicyViolation implements Node {
+  id: ID!
+  message: String
+  severity: ReleasePolicyViolationSeverity
+  policy: ReleasePolicy!
+  release: Release!
+}
+
+"""
+ReleasePolicyViolationConnection supports the relay edge specification for node ReleasePolicyViolation in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicyViolationEdge {
+  node: ReleasePolicyViolation
+  cursor: Cursor!
+}
+
+"""
+ReleaseComponentConnection supports the relay connection specification for node ReleaseComponent in the ent schema.
+Generated by ent.
+"""
+type ReleaseComponentConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleaseComponentEdge]
 }
 
 """
@@ -3188,55 +3667,6 @@ type TestRunEdge {
 }
 
 """
-VulnerabilityReviewConnection supports the relay edge specification for node VulnerabilityReview in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityReviewEdge {
-  node: VulnerabilityReview
-  cursor: Cursor!
-}
-
-"""
-LicenseUse represents the node LicenseUse in the ent schema.
-Generated by ent.
-"""
-type LicenseUse implements Node {
-  id: ID!
-  license: License!
-}
-
-"""
-ReleaseConnection supports the relay edge specification for node Release in the ent schema.
-Generated by ent.
-"""
-type ReleaseEdge {
-  node: Release
-  cursor: Cursor!
-}
-
-"""
-TestCaseConnection supports the relay edge specification for node TestCase in the ent schema.
-Generated by ent.
-"""
-type TestCaseEdge {
-  node: TestCase
-  cursor: Cursor!
-}
-
-"""
-TestCase represents the node TestCase in the ent schema.
-Generated by ent.
-"""
-type TestCase implements Node {
-  id: ID!
-  name: String
-  result: Boolean
-  message: String
-  elapsed: Float
-  run: TestRun!
-}
-
-"""
 CodeScan represents the node CodeScan in the ent schema.
 Generated by ent.
 """
@@ -3252,12 +3682,119 @@ type CodeScan implements Node {
 }
 
 """
-ComponentConnection supports the relay edge specification for node Component in the ent schema.
+LicenseConnection supports the relay edge specification for node License in the ent schema.
 Generated by ent.
 """
-type ComponentEdge {
-  node: Component
+type LicenseEdge {
+  node: License
   cursor: Cursor!
+}
+
+"""
+ReleaseComponent represents the node ReleaseComponent in the ent schema.
+Generated by ent.
+"""
+type ReleaseComponent implements Node {
+  id: ID!
+  type: ReleaseComponentType
+  release: Release!
+  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan!] @goField(forceResolver: true)
+  component: Component!
+  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+}
+
+"""
+ReleaseComponentConnection supports the relay edge specification for node ReleaseComponent in the ent schema.
+Generated by ent.
+"""
+type ReleaseComponentEdge {
+  node: ReleaseComponent
+  cursor: Cursor!
+}
+
+"""
+ReleaseEntry represents the node ReleaseEntry in the ent schema.
+Generated by ent.
+"""
+type ReleaseEntry implements Node {
+  id: ID!
+  type: ReleaseEntryType
+  time: Time
+  artifact: Artifact
+  code_scan: CodeScan
+  test_run: TestRun
+  release: Release!
+}
+
+"""
+ArtifactConnection supports the relay connection specification for node Artifact in the ent schema.
+Generated by ent.
+"""
+type ArtifactConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ArtifactEdge]
+}
+
+"""
+CodeIssue represents the node CodeIssue in the ent schema.
+Generated by ent.
+"""
+type CodeIssue implements Node {
+  id: ID!
+  rule_id: String
+  message: String
+  severity: CodeIssueSeverity
+  type: CodeIssueType
+  scan: CodeScan!
+}
+
+"""
+ReleasePolicy represents the node ReleasePolicy in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicy implements Node {
+  id: ID!
+  name: String
+  module: String
+  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
+  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
+  violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
+}
+
+"""
+ReleasePolicyViolationConnection supports the relay connection specification for node ReleasePolicyViolation in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicyViolationConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleasePolicyViolationEdge]
+}
+
+"""
+VulnerabilityReview represents the node VulnerabilityReview in the ent schema.
+Generated by ent.
+"""
+type VulnerabilityReview implements Node {
+  id: ID!
+  name: String
+  decision: VulnerabilityReviewDecision
+  vulnerability: Vulnerability!
+  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
+  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
+  releases(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
+  instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+}
+
+"""
+CodeScanConnection supports the relay connection specification for node CodeScan in the ent schema.
+Generated by ent.
+"""
+type CodeScanConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [CodeScanEdge]
 }
 
 """
@@ -3271,77 +3808,28 @@ type GitCommitConnection {
 }
 
 """
-ProjectConnection supports the relay edge specification for node Project in the ent schema.
+License represents the node License in the ent schema.
 Generated by ent.
 """
-type ProjectEdge {
-  node: Project
-  cursor: Cursor!
+type License implements Node {
+  id: ID!
+  spdx_id: String
+  name: String
+  reference: String
+  details_url: String
+  is_osi_approved: Boolean
+  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
+  uses(first: Int, last: Int, where: LicenseUseWhereInput): [LicenseUse] @goField(forceResolver: true)
 }
 
 """
-TestCaseConnection supports the relay connection specification for node TestCase in the ent schema.
+ReleasePolicyConnection supports the relay connection specification for node ReleasePolicy in the ent schema.
 Generated by ent.
 """
-type TestCaseConnection {
+type ReleasePolicyConnection {
   totalCount: Int!
   pageInfo: PageInfo!
-  edges: [TestCaseEdge]
-}
-
-"""
-GitCommit represents the node GitCommit in the ent schema.
-Generated by ent.
-"""
-type GitCommit implements Node {
-  id: ID!
-  hash: String
-  branch: String
-  tag: String
-  time: Time
-  repo: Repo!
-  release: Release
-}
-
-"""
-ReleaseComponentConnection supports the relay edge specification for node ReleaseComponent in the ent schema.
-Generated by ent.
-"""
-type ReleaseComponentEdge {
-  node: ReleaseComponent
-  cursor: Cursor!
-}
-
-"""
-CodeIssueConnection supports the relay edge specification for node CodeIssue in the ent schema.
-Generated by ent.
-"""
-type CodeIssueEdge {
-  node: CodeIssue
-  cursor: Cursor!
-}
-
-"""
-LicenseUseConnection supports the relay edge specification for node LicenseUse in the ent schema.
-Generated by ent.
-"""
-type LicenseUseEdge {
-  node: LicenseUse
-  cursor: Cursor!
-}
-
-"""
-CodeIssue represents the node CodeIssue in the ent schema.
-Generated by ent.
-"""
-type CodeIssue implements Node {
-  id: ID!
-  rule_id: String
-  message: String
-  severity: CodeIssueSeverity
-  type: CodeIssueType
-  cwe(first: Int, last: Int, where: CWEWhereInput, order_by: CWEOrder): [CWE] @goField(forceResolver: true)
-  scan: CodeScan!
+  edges: [ReleasePolicyEdge]
 }
 
 """
@@ -3363,220 +3851,26 @@ type Vulnerability implements Node {
 }
 
 """
-CWE represents the node CWE in the ent schema.
+CodeIssueConnection supports the relay edge specification for node CodeIssue in the ent schema.
 Generated by ent.
 """
-type CWE implements Node {
-  id: ID!
-  cwe_id: String
-  description: String
-  url: Float
-  issues(first: Int, last: Int, where: CodeIssueWhereInput, order_by: CodeIssueOrder): [CodeIssue] @goField(forceResolver: true)
-}
-
-"""
-Project represents the node Project in the ent schema.
-Generated by ent.
-"""
-type Project implements Node {
-  id: ID!
-  name: String
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-}
-
-"""
-ReleaseVulnerability represents the node ReleaseVulnerability in the ent schema.
-Generated by ent.
-"""
-type ReleaseVulnerability implements Node {
-  id: ID!
-  vulnerability: Vulnerability!
-  components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
-  release: Release!
-  reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
-}
-
-"""
-Repo represents the node Repo in the ent schema.
-Generated by ent.
-"""
-type Repo implements Node {
-  id: ID!
-  name: String
-  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
-  commits(first: Int, last: Int, where: GitCommitWhereInput, order_by: GitCommitOrder): [GitCommit] @goField(forceResolver: true)
-  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-}
-
-"""
-Release represents the node Release in the ent schema.
-Generated by ent.
-"""
-type Release implements Node {
-  id: ID!
-  name: String
-  version: String
-  status: ReleaseStatus
-  subreleases(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
-  dependencies(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
-  commit: GitCommit!
-  log(first: Int, last: Int, where: ReleaseEntryWhereInput, order_by: ReleaseEntryOrder): [ReleaseEntry] @goField(forceResolver: true)
-  artifacts(first: Int, last: Int, where: ArtifactWhereInput, order_by: ArtifactOrder): [Artifact] @goField(forceResolver: true)
-  components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
-  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
-  code_scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
-  test_runs(first: Int, last: Int, where: TestRunWhereInput, order_by: TestRunOrder): [TestRun] @goField(forceResolver: true)
-  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-}
-
-"""
-VulnerabilityConnection supports the relay connection specification for node Vulnerability in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [VulnerabilityEdge]
-}
-
-"""
-ComponentConnection supports the relay connection specification for node Component in the ent schema.
-Generated by ent.
-"""
-type ComponentConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ComponentEdge]
-}
-
-"""
-ReleaseComponent represents the node ReleaseComponent in the ent schema.
-Generated by ent.
-"""
-type ReleaseComponent implements Node {
-  id: ID!
-  release: Release!
-  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan!] @goField(forceResolver: true)
-  component: Component!
-  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
-}
-
-"""
-TestRun represents the node TestRun in the ent schema.
-Generated by ent.
-"""
-type TestRun implements Node {
-  id: ID!
-  tool: String
-  time: Time
-  release: Release!
-  entry: ReleaseEntry
-  tests(first: Int, last: Int, where: TestCaseWhereInput, order_by: TestCaseOrder): [TestCase] @goField(forceResolver: true)
-}
-
-"""
-TestRunConnection supports the relay connection specification for node TestRun in the ent schema.
-Generated by ent.
-"""
-type TestRunConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [TestRunEdge]
-}
-
-"""
-ArtifactConnection supports the relay edge specification for node Artifact in the ent schema.
-Generated by ent.
-"""
-type ArtifactEdge {
-  node: Artifact
+type CodeIssueEdge {
+  node: CodeIssue
   cursor: Cursor!
 }
 
 """
-GitCommitConnection supports the relay edge specification for node GitCommit in the ent schema.
+GitCommit represents the node GitCommit in the ent schema.
 Generated by ent.
 """
-type GitCommitEdge {
-  node: GitCommit
-  cursor: Cursor!
-}
-
-"""
-ProjectConnection supports the relay connection specification for node Project in the ent schema.
-Generated by ent.
-"""
-type ProjectConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ProjectEdge]
-}
-
-"""
-LicenseUseConnection supports the relay connection specification for node LicenseUse in the ent schema.
-Generated by ent.
-"""
-type LicenseUseConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [LicenseUseEdge]
-}
-
-"""
-ReleaseEntry represents the node ReleaseEntry in the ent schema.
-Generated by ent.
-"""
-type ReleaseEntry implements Node {
+type GitCommit implements Node {
   id: ID!
-  type: ReleaseEntryType
+  hash: String
+  branch: String
+  tag: String
   time: Time
-  artifact: Artifact
-  code_scan: CodeScan
-  test_run: TestRun
-  release: Release!
-}
-
-type PageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  startCursor: Cursor
-  endCursor: Cursor
-}
-
-"""
-ReleaseComponentConnection supports the relay connection specification for node ReleaseComponent in the ent schema.
-Generated by ent.
-"""
-type ReleaseComponentConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleaseComponentEdge]
-}
-
-"""
-Artifact represents the node Artifact in the ent schema.
-Generated by ent.
-"""
-type Artifact implements Node {
-  id: ID!
-  name: String
-  sha256: String
-  type: ArtifactType
-  time: Time
+  repo: Repo!
   release: Release
-  entry: ReleaseEntry
-}
-
-"""
-CodeScanConnection supports the relay connection specification for node CodeScan in the ent schema.
-Generated by ent.
-"""
-type CodeScanConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [CodeScanEdge]
 }
 
 """
@@ -3590,6 +3884,104 @@ type LicenseConnection {
 }
 
 """
+ReleaseVulnerabilityConnection supports the relay edge specification for node ReleaseVulnerability in the ent schema.
+Generated by ent.
+"""
+type ReleaseVulnerabilityEdge {
+  node: ReleaseVulnerability
+  cursor: Cursor!
+}
+
+"""
+LicenseUseConnection supports the relay edge specification for node LicenseUse in the ent schema.
+Generated by ent.
+"""
+type LicenseUseEdge {
+  node: LicenseUse
+  cursor: Cursor!
+}
+
+"""
+Adapter represents the node Adapter in the ent schema.
+Generated by ent.
+"""
+type Adapter implements Node {
+  id: ID!
+  name: String
+  tag: String
+  module: String
+}
+
+"""
+TestRunConnection supports the relay connection specification for node TestRun in the ent schema.
+Generated by ent.
+"""
+type TestRunConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [TestRunEdge]
+}
+
+"""
+ComponentConnection supports the relay connection specification for node Component in the ent schema.
+Generated by ent.
+"""
+type ComponentConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ComponentEdge]
+}
+
+"""
+ProjectConnection supports the relay connection specification for node Project in the ent schema.
+Generated by ent.
+"""
+type ProjectConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ProjectEdge]
+}
+
+"""
+ReleaseLicense represents the node ReleaseLicense in the ent schema.
+Generated by ent.
+"""
+type ReleaseLicense implements Node {
+  id: ID!
+  license: License!
+  component: ReleaseComponent
+  release: Release!
+  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
+}
+
+"""
+ReleasePolicyConnection supports the relay edge specification for node ReleasePolicy in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicyEdge {
+  node: ReleasePolicy
+  cursor: Cursor!
+}
+
+"""
+VulnerabilityReviewConnection supports the relay edge specification for node VulnerabilityReview in the ent schema.
+Generated by ent.
+"""
+type VulnerabilityReviewEdge {
+  node: VulnerabilityReview
+  cursor: Cursor!
+}
+
+"""
+ArtifactConnection supports the relay edge specification for node Artifact in the ent schema.
+Generated by ent.
+"""
+type ArtifactEdge {
+  node: Artifact
+  cursor: Cursor!
+}
+
+"""
 ReleaseEntryConnection supports the relay connection specification for node ReleaseEntry in the ent schema.
 Generated by ent.
 """
@@ -3599,493 +3991,26 @@ type ReleaseEntryConnection {
   edges: [ReleaseEntryEdge]
 }
 
-input CodeScanOrder {
-  direction: OrderDirection!
-  field: CodeScanOrderField
+"""
+ReleaseVulnerability represents the node ReleaseVulnerability in the ent schema.
+Generated by ent.
+"""
+type ReleaseVulnerability implements Node {
+  id: ID!
+  vulnerability: Vulnerability!
+  component: ReleaseComponent
+  release: Release!
+  reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  scan: CodeScan
 }
 
 """
-CodeScanWhereInput is used for filtering CodeScan objects.
-Input was generated by ent.
+TestCaseConnection supports the relay edge specification for node TestCase in the ent schema.
+Generated by ent.
 """
-input CodeScanWhereInput {
-  not: CodeScanWhereInput
-  and: [CodeScanWhereInput!]
-  or: [CodeScanWhereInput!]
-  
-  """tool field predicates"""
-  tool: String
-  tool_neq: String
-  tool_in: [String!]
-  tool_not_in: [String!]
-  tool_gt: String
-  tool_gte: String
-  tool_lt: String
-  tool_lte: String
-  tool_contains: String
-  tool_has_prefix: String
-  tool_has_suffix: String
-  tool_equal_fold: String
-  tool_contains_fold: String
-  
-  """time field predicates"""
-  time: Time
-  time_neq: Time
-  time_in: [Time!]
-  time_not_in: [Time!]
-  time_gt: Time
-  time_gte: Time
-  time_lt: Time
-  time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """entry edge predicates"""
-  has_entry: Boolean
-  has_entry_with: [ReleaseEntryWhereInput!]
-  
-  """issues edge predicates"""
-  has_issues: Boolean
-  has_issues_with: [CodeIssueWhereInput!]
-  
-  """vulnerabilities edge predicates"""
-  has_vulnerabilities: Boolean
-  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
-  
-  """components edge predicates"""
-  has_components: Boolean
-  has_components_with: [ReleaseComponentWhereInput!]
-}
-
-input LicenseOrder {
-  direction: OrderDirection!
-  field: LicenseOrderField
-}
-
-"""
-ReleaseVulnerabilityWhereInput is used for filtering ReleaseVulnerability objects.
-Input was generated by ent.
-"""
-input ReleaseVulnerabilityWhereInput {
-  not: ReleaseVulnerabilityWhereInput
-  and: [ReleaseVulnerabilityWhereInput!]
-  or: [ReleaseVulnerabilityWhereInput!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """vulnerability edge predicates"""
-  has_vulnerability: Boolean
-  has_vulnerability_with: [VulnerabilityWhereInput!]
-  
-  """components edge predicates"""
-  has_components: Boolean
-  has_components_with: [ReleaseComponentWhereInput!]
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """reviews edge predicates"""
-  has_reviews: Boolean
-  has_reviews_with: [VulnerabilityReviewWhereInput!]
-  
-  """scans edge predicates"""
-  has_scans: Boolean
-  has_scans_with: [CodeScanWhereInput!]
-}
-
-input TestCaseOrder {
-  direction: OrderDirection!
-  field: TestCaseOrderField
-}
-
-"""
-TestCaseWhereInput is used for filtering TestCase objects.
-Input was generated by ent.
-"""
-input TestCaseWhereInput {
-  not: TestCaseWhereInput
-  and: [TestCaseWhereInput!]
-  or: [TestCaseWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """result field predicates"""
-  result: Boolean
-  result_neq: Boolean
-  
-  """message field predicates"""
-  message: String
-  message_neq: String
-  message_in: [String!]
-  message_not_in: [String!]
-  message_gt: String
-  message_gte: String
-  message_lt: String
-  message_lte: String
-  message_contains: String
-  message_has_prefix: String
-  message_has_suffix: String
-  message_equal_fold: String
-  message_contains_fold: String
-  
-  """elapsed field predicates"""
-  elapsed: Float
-  elapsed_neq: Float
-  elapsed_in: [Float!]
-  elapsed_not_in: [Float!]
-  elapsed_gt: Float
-  elapsed_gte: Float
-  elapsed_lt: Float
-  elapsed_lte: Float
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """run edge predicates"""
-  has_run: Boolean
-  has_run_with: [TestRunWhereInput!]
-}
-
-"""
-TestRunWhereInput is used for filtering TestRun objects.
-Input was generated by ent.
-"""
-input TestRunWhereInput {
-  not: TestRunWhereInput
-  and: [TestRunWhereInput!]
-  or: [TestRunWhereInput!]
-  
-  """tool field predicates"""
-  tool: String
-  tool_neq: String
-  tool_in: [String!]
-  tool_not_in: [String!]
-  tool_gt: String
-  tool_gte: String
-  tool_lt: String
-  tool_lte: String
-  tool_contains: String
-  tool_has_prefix: String
-  tool_has_suffix: String
-  tool_equal_fold: String
-  tool_contains_fold: String
-  
-  """time field predicates"""
-  time: Time
-  time_neq: Time
-  time_in: [Time!]
-  time_not_in: [Time!]
-  time_gt: Time
-  time_gte: Time
-  time_lt: Time
-  time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """entry edge predicates"""
-  has_entry: Boolean
-  has_entry_with: [ReleaseEntryWhereInput!]
-  
-  """tests edge predicates"""
-  has_tests: Boolean
-  has_tests_with: [TestCaseWhereInput!]
-}
-
-input TestRunOrder {
-  direction: OrderDirection!
-  field: TestRunOrderField
-}
-
-input VulnerabilityReviewOrder {
-  direction: OrderDirection!
-  field: VulnerabilityReviewOrderField
-}
-
-input CodeIssueOrder {
-  direction: OrderDirection!
-  field: CodeIssueOrderField
-}
-
-"""
-LicenseUseWhereInput is used for filtering LicenseUse objects.
-Input was generated by ent.
-"""
-input LicenseUseWhereInput {
-  not: LicenseUseWhereInput
-  and: [LicenseUseWhereInput!]
-  or: [LicenseUseWhereInput!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """license edge predicates"""
-  has_license: Boolean
-  has_license_with: [LicenseWhereInput!]
-}
-
-"""
-ReleaseWhereInput is used for filtering Release objects.
-Input was generated by ent.
-"""
-input ReleaseWhereInput {
-  not: ReleaseWhereInput
-  and: [ReleaseWhereInput!]
-  or: [ReleaseWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """version field predicates"""
-  version: String
-  version_neq: String
-  version_in: [String!]
-  version_not_in: [String!]
-  version_gt: String
-  version_gte: String
-  version_lt: String
-  version_lte: String
-  version_contains: String
-  version_has_prefix: String
-  version_has_suffix: String
-  version_equal_fold: String
-  version_contains_fold: String
-  
-  """status field predicates"""
-  status: ReleaseStatus
-  status_neq: ReleaseStatus
-  status_in: [ReleaseStatus!]
-  status_not_in: [ReleaseStatus!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """subreleases edge predicates"""
-  has_subreleases: Boolean
-  has_subreleases_with: [ReleaseWhereInput!]
-  
-  """dependencies edge predicates"""
-  has_dependencies: Boolean
-  has_dependencies_with: [ReleaseWhereInput!]
-  
-  """commit edge predicates"""
-  has_commit: Boolean
-  has_commit_with: [GitCommitWhereInput!]
-  
-  """log edge predicates"""
-  has_log: Boolean
-  has_log_with: [ReleaseEntryWhereInput!]
-  
-  """artifacts edge predicates"""
-  has_artifacts: Boolean
-  has_artifacts_with: [ArtifactWhereInput!]
-  
-  """components edge predicates"""
-  has_components: Boolean
-  has_components_with: [ReleaseComponentWhereInput!]
-  
-  """vulnerabilities edge predicates"""
-  has_vulnerabilities: Boolean
-  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
-  
-  """code_scans edge predicates"""
-  has_code_scans: Boolean
-  has_code_scans_with: [CodeScanWhereInput!]
-  
-  """test_runs edge predicates"""
-  has_test_runs: Boolean
-  has_test_runs_with: [TestRunWhereInput!]
-  
-  """vulnerability_reviews edge predicates"""
-  has_vulnerability_reviews: Boolean
-  has_vulnerability_reviews_with: [VulnerabilityReviewWhereInput!]
-}
-
-"""
-ReleaseComponentWhereInput is used for filtering ReleaseComponent objects.
-Input was generated by ent.
-"""
-input ReleaseComponentWhereInput {
-  not: ReleaseComponentWhereInput
-  and: [ReleaseComponentWhereInput!]
-  or: [ReleaseComponentWhereInput!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """scans edge predicates"""
-  has_scans: Boolean
-  has_scans_with: [CodeScanWhereInput!]
-  
-  """component edge predicates"""
-  has_component: Boolean
-  has_component_with: [ComponentWhereInput!]
-  
-  """vulnerabilities edge predicates"""
-  has_vulnerabilities: Boolean
-  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
-}
-
-input RepoOrder {
-  direction: OrderDirection!
-  field: RepoOrderField
-}
-
-"""
-VulnerabilityReviewWhereInput is used for filtering VulnerabilityReview objects.
-Input was generated by ent.
-"""
-input VulnerabilityReviewWhereInput {
-  not: VulnerabilityReviewWhereInput
-  and: [VulnerabilityReviewWhereInput!]
-  or: [VulnerabilityReviewWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_is_nil: Boolean
-  name_not_nil: Boolean
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """decision field predicates"""
-  decision: VulnerabilityReviewDecision
-  decision_neq: VulnerabilityReviewDecision
-  decision_in: [VulnerabilityReviewDecision!]
-  decision_not_in: [VulnerabilityReviewDecision!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """vulnerability edge predicates"""
-  has_vulnerability: Boolean
-  has_vulnerability_with: [VulnerabilityWhereInput!]
-  
-  """projects edge predicates"""
-  has_projects: Boolean
-  has_projects_with: [ProjectWhereInput!]
-  
-  """repos edge predicates"""
-  has_repos: Boolean
-  has_repos_with: [RepoWhereInput!]
-  
-  """releases edge predicates"""
-  has_releases: Boolean
-  has_releases_with: [ReleaseWhereInput!]
-  
-  """instances edge predicates"""
-  has_instances: Boolean
-  has_instances_with: [ReleaseVulnerabilityWhereInput!]
-}
-
-input CWEOrder {
-  direction: OrderDirection!
-  field: CWEOrderField
+type TestCaseEdge {
+  node: TestCase
+  cursor: Cursor!
 }
 
 """
@@ -4199,76 +4124,50 @@ input ComponentWhereInput {
   has_uses_with: [ReleaseComponentWhereInput!]
 }
 
-input GitCommitOrder {
-  direction: OrderDirection!
-  field: GitCommitOrderField
-}
-
 """
-GitCommitWhereInput is used for filtering GitCommit objects.
+ReleaseWhereInput is used for filtering Release objects.
 Input was generated by ent.
 """
-input GitCommitWhereInput {
-  not: GitCommitWhereInput
-  and: [GitCommitWhereInput!]
-  or: [GitCommitWhereInput!]
+input ReleaseWhereInput {
+  not: ReleaseWhereInput
+  and: [ReleaseWhereInput!]
+  or: [ReleaseWhereInput!]
   
-  """hash field predicates"""
-  hash: String
-  hash_neq: String
-  hash_in: [String!]
-  hash_not_in: [String!]
-  hash_gt: String
-  hash_gte: String
-  hash_lt: String
-  hash_lte: String
-  hash_contains: String
-  hash_has_prefix: String
-  hash_has_suffix: String
-  hash_equal_fold: String
-  hash_contains_fold: String
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
   
-  """branch field predicates"""
-  branch: String
-  branch_neq: String
-  branch_in: [String!]
-  branch_not_in: [String!]
-  branch_gt: String
-  branch_gte: String
-  branch_lt: String
-  branch_lte: String
-  branch_contains: String
-  branch_has_prefix: String
-  branch_has_suffix: String
-  branch_equal_fold: String
-  branch_contains_fold: String
+  """version field predicates"""
+  version: String
+  version_neq: String
+  version_in: [String!]
+  version_not_in: [String!]
+  version_gt: String
+  version_gte: String
+  version_lt: String
+  version_lte: String
+  version_contains: String
+  version_has_prefix: String
+  version_has_suffix: String
+  version_equal_fold: String
+  version_contains_fold: String
   
-  """tag field predicates"""
-  tag: String
-  tag_neq: String
-  tag_in: [String!]
-  tag_not_in: [String!]
-  tag_gt: String
-  tag_gte: String
-  tag_lt: String
-  tag_lte: String
-  tag_contains: String
-  tag_has_prefix: String
-  tag_has_suffix: String
-  tag_is_nil: Boolean
-  tag_not_nil: Boolean
-  tag_equal_fold: String
-  tag_contains_fold: String
-  
-  """time field predicates"""
-  time: Time
-  time_neq: Time
-  time_in: [Time!]
-  time_not_in: [Time!]
-  time_gt: Time
-  time_gte: Time
-  time_lt: Time
-  time_lte: Time
+  """status field predicates"""
+  status: ReleaseStatus
+  status_neq: ReleaseStatus
+  status_in: [ReleaseStatus!]
+  status_not_in: [ReleaseStatus!]
   
   """id field predicates"""
   id: Int
@@ -4280,18 +4179,105 @@ input GitCommitWhereInput {
   id_lt: Int
   id_lte: Int
   
-  """repo edge predicates"""
-  has_repo: Boolean
-  has_repo_with: [RepoWhereInput!]
+  """subreleases edge predicates"""
+  has_subreleases: Boolean
+  has_subreleases_with: [ReleaseWhereInput!]
+  
+  """dependencies edge predicates"""
+  has_dependencies: Boolean
+  has_dependencies_with: [ReleaseWhereInput!]
+  
+  """commit edge predicates"""
+  has_commit: Boolean
+  has_commit_with: [GitCommitWhereInput!]
+  
+  """head_of edge predicates"""
+  has_head_of: Boolean
+  has_head_of_with: [RepoWhereInput!]
+  
+  """log edge predicates"""
+  has_log: Boolean
+  has_log_with: [ReleaseEntryWhereInput!]
+  
+  """violations edge predicates"""
+  has_violations: Boolean
+  has_violations_with: [ReleasePolicyViolationWhereInput!]
+  
+  """artifacts edge predicates"""
+  has_artifacts: Boolean
+  has_artifacts_with: [ArtifactWhereInput!]
+  
+  """components edge predicates"""
+  has_components: Boolean
+  has_components_with: [ReleaseComponentWhereInput!]
+  
+  """vulnerabilities edge predicates"""
+  has_vulnerabilities: Boolean
+  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
+  
+  """code_scans edge predicates"""
+  has_code_scans: Boolean
+  has_code_scans_with: [CodeScanWhereInput!]
+  
+  """test_runs edge predicates"""
+  has_test_runs: Boolean
+  has_test_runs_with: [TestRunWhereInput!]
+  
+  """vulnerability_reviews edge predicates"""
+  has_vulnerability_reviews: Boolean
+  has_vulnerability_reviews_with: [VulnerabilityReviewWhereInput!]
+}
+
+"""
+ReleaseComponentWhereInput is used for filtering ReleaseComponent objects.
+Input was generated by ent.
+"""
+input ReleaseComponentWhereInput {
+  not: ReleaseComponentWhereInput
+  and: [ReleaseComponentWhereInput!]
+  or: [ReleaseComponentWhereInput!]
+  
+  """type field predicates"""
+  type: ReleaseComponentType
+  type_neq: ReleaseComponentType
+  type_in: [ReleaseComponentType!]
+  type_not_in: [ReleaseComponentType!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
   
   """release edge predicates"""
   has_release: Boolean
   has_release_with: [ReleaseWhereInput!]
+  
+  """scans edge predicates"""
+  has_scans: Boolean
+  has_scans_with: [CodeScanWhereInput!]
+  
+  """component edge predicates"""
+  has_component: Boolean
+  has_component_with: [ComponentWhereInput!]
+  
+  """vulnerabilities edge predicates"""
+  has_vulnerabilities: Boolean
+  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
 }
 
-input ProjectOrder {
+input RepoOrder {
   direction: OrderDirection!
-  field: ProjectOrderField
+  field: RepoOrderField
+}
+
+input TestRunOrder {
+  direction: OrderDirection!
+  field: TestRunOrderField
 }
 
 """
@@ -4416,57 +4402,83 @@ input VulnerabilityWhereInput {
 }
 
 """
-CWEWhereInput is used for filtering CWE objects.
+AdapterWhereInput is used for filtering Adapter objects.
 Input was generated by ent.
 """
-input CWEWhereInput {
-  not: CWEWhereInput
-  and: [CWEWhereInput!]
-  or: [CWEWhereInput!]
+input AdapterWhereInput {
+  not: AdapterWhereInput
+  and: [AdapterWhereInput!]
+  or: [AdapterWhereInput!]
   
-  """cwe_id field predicates"""
-  cwe_id: String
-  cwe_id_neq: String
-  cwe_id_in: [String!]
-  cwe_id_not_in: [String!]
-  cwe_id_gt: String
-  cwe_id_gte: String
-  cwe_id_lt: String
-  cwe_id_lte: String
-  cwe_id_contains: String
-  cwe_id_has_prefix: String
-  cwe_id_has_suffix: String
-  cwe_id_equal_fold: String
-  cwe_id_contains_fold: String
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
   
-  """description field predicates"""
-  description: String
-  description_neq: String
-  description_in: [String!]
-  description_not_in: [String!]
-  description_gt: String
-  description_gte: String
-  description_lt: String
-  description_lte: String
-  description_contains: String
-  description_has_prefix: String
-  description_has_suffix: String
-  description_is_nil: Boolean
-  description_not_nil: Boolean
-  description_equal_fold: String
-  description_contains_fold: String
+  """tag field predicates"""
+  tag: String
+  tag_neq: String
+  tag_in: [String!]
+  tag_not_in: [String!]
+  tag_gt: String
+  tag_gte: String
+  tag_lt: String
+  tag_lte: String
+  tag_contains: String
+  tag_has_prefix: String
+  tag_has_suffix: String
+  tag_equal_fold: String
+  tag_contains_fold: String
   
-  """url field predicates"""
-  url: Float
-  url_neq: Float
-  url_in: [Float!]
-  url_not_in: [Float!]
-  url_gt: Float
-  url_gte: Float
-  url_lt: Float
-  url_lte: Float
-  url_is_nil: Boolean
-  url_not_nil: Boolean
+  """module field predicates"""
+  module: String
+  module_neq: String
+  module_in: [String!]
+  module_not_in: [String!]
+  module_gt: String
+  module_gte: String
+  module_lt: String
+  module_lte: String
+  module_contains: String
+  module_has_prefix: String
+  module_has_suffix: String
+  module_equal_fold: String
+  module_contains_fold: String
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+}
+
+input CodeScanOrder {
+  direction: OrderDirection!
+  field: CodeScanOrderField
+}
+
+"""
+LicenseUseWhereInput is used for filtering LicenseUse objects.
+Input was generated by ent.
+"""
+input LicenseUseWhereInput {
+  not: LicenseUseWhereInput
+  and: [LicenseUseWhereInput!]
+  or: [LicenseUseWhereInput!]
   
   """id field predicates"""
   id: Int
@@ -4478,30 +4490,316 @@ input CWEWhereInput {
   id_lt: Int
   id_lte: Int
   
-  """issues edge predicates"""
-  has_issues: Boolean
-  has_issues_with: [CodeIssueWhereInput!]
+  """license edge predicates"""
+  has_license: Boolean
+  has_license_with: [LicenseWhereInput!]
 }
 
-input ReleaseOrder {
+input ReleaseEntryOrder {
   direction: OrderDirection!
-  field: ReleaseOrderField
+  field: ReleaseEntryOrderField
 }
 
 """
-ReleaseEntryWhereInput is used for filtering ReleaseEntry objects.
+ReleasePolicyWhereInput is used for filtering ReleasePolicy objects.
 Input was generated by ent.
 """
-input ReleaseEntryWhereInput {
-  not: ReleaseEntryWhereInput
-  and: [ReleaseEntryWhereInput!]
-  or: [ReleaseEntryWhereInput!]
+input ReleasePolicyWhereInput {
+  not: ReleasePolicyWhereInput
+  and: [ReleasePolicyWhereInput!]
+  or: [ReleasePolicyWhereInput!]
   
-  """type field predicates"""
-  type: ReleaseEntryType
-  type_neq: ReleaseEntryType
-  type_in: [ReleaseEntryType!]
-  type_not_in: [ReleaseEntryType!]
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+  
+  """module field predicates"""
+  module: String
+  module_neq: String
+  module_in: [String!]
+  module_not_in: [String!]
+  module_gt: String
+  module_gte: String
+  module_lt: String
+  module_lte: String
+  module_contains: String
+  module_has_prefix: String
+  module_has_suffix: String
+  module_equal_fold: String
+  module_contains_fold: String
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """projects edge predicates"""
+  has_projects: Boolean
+  has_projects_with: [ProjectWhereInput!]
+  
+  """repos edge predicates"""
+  has_repos: Boolean
+  has_repos_with: [RepoWhereInput!]
+  
+  """violations edge predicates"""
+  has_violations: Boolean
+  has_violations_with: [ReleasePolicyViolationWhereInput!]
+}
+
+"""
+ReleasePolicyViolationWhereInput is used for filtering ReleasePolicyViolation objects.
+Input was generated by ent.
+"""
+input ReleasePolicyViolationWhereInput {
+  not: ReleasePolicyViolationWhereInput
+  and: [ReleasePolicyViolationWhereInput!]
+  or: [ReleasePolicyViolationWhereInput!]
+  
+  """message field predicates"""
+  message: String
+  message_neq: String
+  message_in: [String!]
+  message_not_in: [String!]
+  message_gt: String
+  message_gte: String
+  message_lt: String
+  message_lte: String
+  message_contains: String
+  message_has_prefix: String
+  message_has_suffix: String
+  message_equal_fold: String
+  message_contains_fold: String
+  
+  """severity field predicates"""
+  severity: ReleasePolicyViolationSeverity
+  severity_neq: ReleasePolicyViolationSeverity
+  severity_in: [ReleasePolicyViolationSeverity!]
+  severity_not_in: [ReleasePolicyViolationSeverity!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """policy edge predicates"""
+  has_policy: Boolean
+  has_policy_with: [ReleasePolicyWhereInput!]
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+}
+
+"""
+TestCaseWhereInput is used for filtering TestCase objects.
+Input was generated by ent.
+"""
+input TestCaseWhereInput {
+  not: TestCaseWhereInput
+  and: [TestCaseWhereInput!]
+  or: [TestCaseWhereInput!]
+  
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+  
+  """result field predicates"""
+  result: Boolean
+  result_neq: Boolean
+  
+  """message field predicates"""
+  message: String
+  message_neq: String
+  message_in: [String!]
+  message_not_in: [String!]
+  message_gt: String
+  message_gte: String
+  message_lt: String
+  message_lte: String
+  message_contains: String
+  message_has_prefix: String
+  message_has_suffix: String
+  message_equal_fold: String
+  message_contains_fold: String
+  
+  """elapsed field predicates"""
+  elapsed: Float
+  elapsed_neq: Float
+  elapsed_in: [Float!]
+  elapsed_not_in: [Float!]
+  elapsed_gt: Float
+  elapsed_gte: Float
+  elapsed_lt: Float
+  elapsed_lte: Float
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """run edge predicates"""
+  has_run: Boolean
+  has_run_with: [TestRunWhereInput!]
+}
+
+"""
+VulnerabilityReviewWhereInput is used for filtering VulnerabilityReview objects.
+Input was generated by ent.
+"""
+input VulnerabilityReviewWhereInput {
+  not: VulnerabilityReviewWhereInput
+  and: [VulnerabilityReviewWhereInput!]
+  or: [VulnerabilityReviewWhereInput!]
+  
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+  
+  """decision field predicates"""
+  decision: VulnerabilityReviewDecision
+  decision_neq: VulnerabilityReviewDecision
+  decision_in: [VulnerabilityReviewDecision!]
+  decision_not_in: [VulnerabilityReviewDecision!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """vulnerability edge predicates"""
+  has_vulnerability: Boolean
+  has_vulnerability_with: [VulnerabilityWhereInput!]
+  
+  """projects edge predicates"""
+  has_projects: Boolean
+  has_projects_with: [ProjectWhereInput!]
+  
+  """repos edge predicates"""
+  has_repos: Boolean
+  has_repos_with: [RepoWhereInput!]
+  
+  """releases edge predicates"""
+  has_releases: Boolean
+  has_releases_with: [ReleaseWhereInput!]
+  
+  """instances edge predicates"""
+  has_instances: Boolean
+  has_instances_with: [ReleaseVulnerabilityWhereInput!]
+}
+
+input ArtifactOrder {
+  direction: OrderDirection!
+  field: ArtifactOrderField
+}
+
+"""
+GitCommitWhereInput is used for filtering GitCommit objects.
+Input was generated by ent.
+"""
+input GitCommitWhereInput {
+  not: GitCommitWhereInput
+  and: [GitCommitWhereInput!]
+  or: [GitCommitWhereInput!]
+  
+  """hash field predicates"""
+  hash: String
+  hash_neq: String
+  hash_in: [String!]
+  hash_not_in: [String!]
+  hash_gt: String
+  hash_gte: String
+  hash_lt: String
+  hash_lte: String
+  hash_contains: String
+  hash_has_prefix: String
+  hash_has_suffix: String
+  hash_equal_fold: String
+  hash_contains_fold: String
+  
+  """branch field predicates"""
+  branch: String
+  branch_neq: String
+  branch_in: [String!]
+  branch_not_in: [String!]
+  branch_gt: String
+  branch_gte: String
+  branch_lt: String
+  branch_lte: String
+  branch_contains: String
+  branch_has_prefix: String
+  branch_has_suffix: String
+  branch_equal_fold: String
+  branch_contains_fold: String
+  
+  """tag field predicates"""
+  tag: String
+  tag_neq: String
+  tag_in: [String!]
+  tag_not_in: [String!]
+  tag_gt: String
+  tag_gte: String
+  tag_lt: String
+  tag_lte: String
+  tag_contains: String
+  tag_has_prefix: String
+  tag_has_suffix: String
+  tag_is_nil: Boolean
+  tag_not_nil: Boolean
+  tag_equal_fold: String
+  tag_contains_fold: String
   
   """time field predicates"""
   time: Time
@@ -4523,120 +4821,58 @@ input ReleaseEntryWhereInput {
   id_lt: Int
   id_lte: Int
   
-  """artifact edge predicates"""
-  has_artifact: Boolean
-  has_artifact_with: [ArtifactWhereInput!]
-  
-  """code_scan edge predicates"""
-  has_code_scan: Boolean
-  has_code_scan_with: [CodeScanWhereInput!]
-  
-  """test_run edge predicates"""
-  has_test_run: Boolean
-  has_test_run_with: [TestRunWhereInput!]
+  """repo edge predicates"""
+  has_repo: Boolean
+  has_repo_with: [RepoWhereInput!]
   
   """release edge predicates"""
   has_release: Boolean
   has_release_with: [ReleaseWhereInput!]
 }
 
-"""
-RepoWhereInput is used for filtering Repo objects.
-Input was generated by ent.
-"""
-input RepoWhereInput {
-  not: RepoWhereInput
-  and: [RepoWhereInput!]
-  or: [RepoWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """projects edge predicates"""
-  has_projects: Boolean
-  has_projects_with: [ProjectWhereInput!]
-  
-  """commits edge predicates"""
-  has_commits: Boolean
-  has_commits_with: [GitCommitWhereInput!]
-  
-  """vulnerability_reviews edge predicates"""
-  has_vulnerability_reviews: Boolean
-  has_vulnerability_reviews_with: [VulnerabilityReviewWhereInput!]
+input ReleasePolicyOrder {
+  direction: OrderDirection!
+  field: ReleasePolicyOrderField
+}
+
+input TestCaseOrder {
+  direction: OrderDirection!
+  field: TestCaseOrderField
 }
 
 """
-CodeIssueWhereInput is used for filtering CodeIssue objects.
+TestRunWhereInput is used for filtering TestRun objects.
 Input was generated by ent.
 """
-input CodeIssueWhereInput {
-  not: CodeIssueWhereInput
-  and: [CodeIssueWhereInput!]
-  or: [CodeIssueWhereInput!]
+input TestRunWhereInput {
+  not: TestRunWhereInput
+  and: [TestRunWhereInput!]
+  or: [TestRunWhereInput!]
   
-  """rule_id field predicates"""
-  rule_id: String
-  rule_id_neq: String
-  rule_id_in: [String!]
-  rule_id_not_in: [String!]
-  rule_id_gt: String
-  rule_id_gte: String
-  rule_id_lt: String
-  rule_id_lte: String
-  rule_id_contains: String
-  rule_id_has_prefix: String
-  rule_id_has_suffix: String
-  rule_id_equal_fold: String
-  rule_id_contains_fold: String
+  """tool field predicates"""
+  tool: String
+  tool_neq: String
+  tool_in: [String!]
+  tool_not_in: [String!]
+  tool_gt: String
+  tool_gte: String
+  tool_lt: String
+  tool_lte: String
+  tool_contains: String
+  tool_has_prefix: String
+  tool_has_suffix: String
+  tool_equal_fold: String
+  tool_contains_fold: String
   
-  """message field predicates"""
-  message: String
-  message_neq: String
-  message_in: [String!]
-  message_not_in: [String!]
-  message_gt: String
-  message_gte: String
-  message_lt: String
-  message_lte: String
-  message_contains: String
-  message_has_prefix: String
-  message_has_suffix: String
-  message_equal_fold: String
-  message_contains_fold: String
-  
-  """severity field predicates"""
-  severity: CodeIssueSeverity
-  severity_neq: CodeIssueSeverity
-  severity_in: [CodeIssueSeverity!]
-  severity_not_in: [CodeIssueSeverity!]
-  
-  """type field predicates"""
-  type: CodeIssueType
-  type_neq: CodeIssueType
-  type_in: [CodeIssueType!]
-  type_not_in: [CodeIssueType!]
+  """time field predicates"""
+  time: Time
+  time_neq: Time
+  time_in: [Time!]
+  time_not_in: [Time!]
+  time_gt: Time
+  time_gte: Time
+  time_lt: Time
+  time_lte: Time
   
   """id field predicates"""
   id: Int
@@ -4648,13 +4884,92 @@ input CodeIssueWhereInput {
   id_lt: Int
   id_lte: Int
   
-  """cwe edge predicates"""
-  has_cwe: Boolean
-  has_cwe_with: [CWEWhereInput!]
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
   
-  """scan edge predicates"""
-  has_scan: Boolean
-  has_scan_with: [CodeScanWhereInput!]
+  """entry edge predicates"""
+  has_entry: Boolean
+  has_entry_with: [ReleaseEntryWhereInput!]
+  
+  """tests edge predicates"""
+  has_tests: Boolean
+  has_tests_with: [TestCaseWhereInput!]
+}
+
+input AdapterOrder {
+  direction: OrderDirection!
+  field: AdapterOrderField
+}
+
+"""
+CodeScanWhereInput is used for filtering CodeScan objects.
+Input was generated by ent.
+"""
+input CodeScanWhereInput {
+  not: CodeScanWhereInput
+  and: [CodeScanWhereInput!]
+  or: [CodeScanWhereInput!]
+  
+  """tool field predicates"""
+  tool: String
+  tool_neq: String
+  tool_in: [String!]
+  tool_not_in: [String!]
+  tool_gt: String
+  tool_gte: String
+  tool_lt: String
+  tool_lte: String
+  tool_contains: String
+  tool_has_prefix: String
+  tool_has_suffix: String
+  tool_equal_fold: String
+  tool_contains_fold: String
+  
+  """time field predicates"""
+  time: Time
+  time_neq: Time
+  time_in: [Time!]
+  time_not_in: [Time!]
+  time_gt: Time
+  time_gte: Time
+  time_lt: Time
+  time_lte: Time
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+  
+  """entry edge predicates"""
+  has_entry: Boolean
+  has_entry_with: [ReleaseEntryWhereInput!]
+  
+  """issues edge predicates"""
+  has_issues: Boolean
+  has_issues_with: [CodeIssueWhereInput!]
+  
+  """vulnerabilities edge predicates"""
+  has_vulnerabilities: Boolean
+  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
+  
+  """components edge predicates"""
+  has_components: Boolean
+  has_components_with: [ReleaseComponentWhereInput!]
+}
+
+input ProjectOrder {
+  direction: OrderDirection!
+  field: ProjectOrderField
 }
 
 """
@@ -4698,11 +5013,20 @@ input ProjectWhereInput {
   """vulnerability_reviews edge predicates"""
   has_vulnerability_reviews: Boolean
   has_vulnerability_reviews_with: [VulnerabilityReviewWhereInput!]
+  
+  """policies edge predicates"""
+  has_policies: Boolean
+  has_policies_with: [ReleasePolicyWhereInput!]
 }
 
-input ArtifactOrder {
+input ReleaseOrder {
   direction: OrderDirection!
-  field: ArtifactOrderField
+  field: ReleaseOrderField
+}
+
+input VulnerabilityReviewOrder {
+  direction: OrderDirection!
+  field: VulnerabilityReviewOrderField
 }
 
 """
@@ -4777,16 +5101,6 @@ input ArtifactWhereInput {
   """entry edge predicates"""
   has_entry: Boolean
   has_entry_with: [ReleaseEntryWhereInput!]
-}
-
-input ComponentOrder {
-  direction: OrderDirection!
-  field: ComponentOrderField
-}
-
-input VulnerabilityOrder {
-  direction: OrderDirection!
-  field: VulnerabilityOrderField
 }
 
 """
@@ -4885,9 +5199,293 @@ input LicenseWhereInput {
   has_uses_with: [LicenseUseWhereInput!]
 }
 
-input ReleaseEntryOrder {
+"""
+ReleaseLicenseWhereInput is used for filtering ReleaseLicense objects.
+Input was generated by ent.
+"""
+input ReleaseLicenseWhereInput {
+  not: ReleaseLicenseWhereInput
+  and: [ReleaseLicenseWhereInput!]
+  or: [ReleaseLicenseWhereInput!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """license edge predicates"""
+  has_license: Boolean
+  has_license_with: [LicenseWhereInput!]
+  
+  """component edge predicates"""
+  has_component: Boolean
+  has_component_with: [ReleaseComponentWhereInput!]
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+  
+  """scans edge predicates"""
+  has_scans: Boolean
+  has_scans_with: [CodeScanWhereInput!]
+}
+
+"""
+RepoWhereInput is used for filtering Repo objects.
+Input was generated by ent.
+"""
+input RepoWhereInput {
+  not: RepoWhereInput
+  and: [RepoWhereInput!]
+  or: [RepoWhereInput!]
+  
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+  
+  """default_branch field predicates"""
+  default_branch: String
+  default_branch_neq: String
+  default_branch_in: [String!]
+  default_branch_not_in: [String!]
+  default_branch_gt: String
+  default_branch_gte: String
+  default_branch_lt: String
+  default_branch_lte: String
+  default_branch_contains: String
+  default_branch_has_prefix: String
+  default_branch_has_suffix: String
+  default_branch_equal_fold: String
+  default_branch_contains_fold: String
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """project edge predicates"""
+  has_project: Boolean
+  has_project_with: [ProjectWhereInput!]
+  
+  """head edge predicates"""
+  has_head: Boolean
+  has_head_with: [ReleaseWhereInput!]
+  
+  """commits edge predicates"""
+  has_commits: Boolean
+  has_commits_with: [GitCommitWhereInput!]
+  
+  """vulnerability_reviews edge predicates"""
+  has_vulnerability_reviews: Boolean
+  has_vulnerability_reviews_with: [VulnerabilityReviewWhereInput!]
+  
+  """policies edge predicates"""
+  has_policies: Boolean
+  has_policies_with: [ReleasePolicyWhereInput!]
+}
+
+input VulnerabilityOrder {
   direction: OrderDirection!
-  field: ReleaseEntryOrderField
+  field: VulnerabilityOrderField
+}
+
+input ComponentOrder {
+  direction: OrderDirection!
+  field: ComponentOrderField
+}
+
+"""
+ReleaseVulnerabilityWhereInput is used for filtering ReleaseVulnerability objects.
+Input was generated by ent.
+"""
+input ReleaseVulnerabilityWhereInput {
+  not: ReleaseVulnerabilityWhereInput
+  and: [ReleaseVulnerabilityWhereInput!]
+  or: [ReleaseVulnerabilityWhereInput!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """vulnerability edge predicates"""
+  has_vulnerability: Boolean
+  has_vulnerability_with: [VulnerabilityWhereInput!]
+  
+  """component edge predicates"""
+  has_component: Boolean
+  has_component_with: [ReleaseComponentWhereInput!]
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+  
+  """reviews edge predicates"""
+  has_reviews: Boolean
+  has_reviews_with: [VulnerabilityReviewWhereInput!]
+  
+  """scan edge predicates"""
+  has_scan: Boolean
+  has_scan_with: [CodeScanWhereInput!]
+}
+
+input CodeIssueOrder {
+  direction: OrderDirection!
+  field: CodeIssueOrderField
+}
+
+"""
+ReleaseEntryWhereInput is used for filtering ReleaseEntry objects.
+Input was generated by ent.
+"""
+input ReleaseEntryWhereInput {
+  not: ReleaseEntryWhereInput
+  and: [ReleaseEntryWhereInput!]
+  or: [ReleaseEntryWhereInput!]
+  
+  """type field predicates"""
+  type: ReleaseEntryType
+  type_neq: ReleaseEntryType
+  type_in: [ReleaseEntryType!]
+  type_not_in: [ReleaseEntryType!]
+  
+  """time field predicates"""
+  time: Time
+  time_neq: Time
+  time_in: [Time!]
+  time_not_in: [Time!]
+  time_gt: Time
+  time_gte: Time
+  time_lt: Time
+  time_lte: Time
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """artifact edge predicates"""
+  has_artifact: Boolean
+  has_artifact_with: [ArtifactWhereInput!]
+  
+  """code_scan edge predicates"""
+  has_code_scan: Boolean
+  has_code_scan_with: [CodeScanWhereInput!]
+  
+  """test_run edge predicates"""
+  has_test_run: Boolean
+  has_test_run_with: [TestRunWhereInput!]
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+}
+
+input GitCommitOrder {
+  direction: OrderDirection!
+  field: GitCommitOrderField
+}
+
+input LicenseOrder {
+  direction: OrderDirection!
+  field: LicenseOrderField
+}
+
+"""
+CodeIssueWhereInput is used for filtering CodeIssue objects.
+Input was generated by ent.
+"""
+input CodeIssueWhereInput {
+  not: CodeIssueWhereInput
+  and: [CodeIssueWhereInput!]
+  or: [CodeIssueWhereInput!]
+  
+  """rule_id field predicates"""
+  rule_id: String
+  rule_id_neq: String
+  rule_id_in: [String!]
+  rule_id_not_in: [String!]
+  rule_id_gt: String
+  rule_id_gte: String
+  rule_id_lt: String
+  rule_id_lte: String
+  rule_id_contains: String
+  rule_id_has_prefix: String
+  rule_id_has_suffix: String
+  rule_id_equal_fold: String
+  rule_id_contains_fold: String
+  
+  """message field predicates"""
+  message: String
+  message_neq: String
+  message_in: [String!]
+  message_not_in: [String!]
+  message_gt: String
+  message_gte: String
+  message_lt: String
+  message_lte: String
+  message_contains: String
+  message_has_prefix: String
+  message_has_suffix: String
+  message_equal_fold: String
+  message_contains_fold: String
+  
+  """severity field predicates"""
+  severity: CodeIssueSeverity
+  severity_neq: CodeIssueSeverity
+  severity_in: [CodeIssueSeverity!]
+  severity_not_in: [CodeIssueSeverity!]
+  
+  """type field predicates"""
+  type: CodeIssueType
+  type_neq: CodeIssueType
+  type_in: [CodeIssueType!]
+  type_not_in: [CodeIssueType!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """scan edge predicates"""
+  has_scan: Boolean
+  has_scan_with: [CodeScanWhereInput!]
 }
 `, BuiltIn: false},
 }
@@ -4896,90 +5494,6 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) field_CWE_issues_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *int
-	if tmp, ok := rawArgs["first"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["first"] = arg0
-	var arg1 *int
-	if tmp, ok := rawArgs["last"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["last"] = arg1
-	var arg2 *ent.CodeIssueWhereInput
-	if tmp, ok := rawArgs["where"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
-		arg2, err = ec.unmarshalOCodeIssueWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeIssueWhereInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["where"] = arg2
-	var arg3 *ent.CodeIssueOrder
-	if tmp, ok := rawArgs["order_by"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
-		arg3, err = ec.unmarshalOCodeIssueOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeIssueOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["order_by"] = arg3
-	return args, nil
-}
-
-func (ec *executionContext) field_CodeIssue_cwe_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *int
-	if tmp, ok := rawArgs["first"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["first"] = arg0
-	var arg1 *int
-	if tmp, ok := rawArgs["last"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["last"] = arg1
-	var arg2 *ent.CWEWhereInput
-	if tmp, ok := rawArgs["where"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
-		arg2, err = ec.unmarshalOCWEWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["where"] = arg2
-	var arg3 *ent.CWEOrder
-	if tmp, ok := rawArgs["order_by"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
-		arg3, err = ec.unmarshalOCWEOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["order_by"] = arg3
-	return args, nil
-}
 
 func (ec *executionContext) field_CodeScan_components_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -5278,6 +5792,48 @@ func (ec *executionContext) field_License_uses_args(ctx context.Context, rawArgs
 		}
 	}
 	args["where"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Project_policies_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg1
+	var arg2 *ent.ReleasePolicyWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg2, err = ec.unmarshalOReleasePolicyWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg2
+	var arg3 *ent.ReleasePolicyOrder
+	if tmp, ok := rawArgs["order_by"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
+		arg3, err = ec.unmarshalOReleasePolicyOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["order_by"] = arg3
 	return args, nil
 }
 
@@ -5882,108 +6438,6 @@ func (ec *executionContext) field_Query_component_connection_args(ctx context.Co
 	if tmp, ok := rawArgs["where"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
 		arg5, err = ec.unmarshalOComponentWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐComponentWhereInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["where"] = arg5
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_cwe_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *int
-	if tmp, ok := rawArgs["first"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["first"] = arg0
-	var arg1 *int
-	if tmp, ok := rawArgs["last"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["last"] = arg1
-	var arg2 *ent.CWEOrder
-	if tmp, ok := rawArgs["order_by"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
-		arg2, err = ec.unmarshalOCWEOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["order_by"] = arg2
-	var arg3 *ent.CWEWhereInput
-	if tmp, ok := rawArgs["where"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
-		arg3, err = ec.unmarshalOCWEWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["where"] = arg3
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_cwe_connection_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *int
-	if tmp, ok := rawArgs["first"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["first"] = arg0
-	var arg1 *int
-	if tmp, ok := rawArgs["last"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["last"] = arg1
-	var arg2 *ent.Cursor
-	if tmp, ok := rawArgs["before"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
-		arg2, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCursor(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["before"] = arg2
-	var arg3 *ent.Cursor
-	if tmp, ok := rawArgs["after"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
-		arg3, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCursor(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["after"] = arg3
-	var arg4 *ent.CWEOrder
-	if tmp, ok := rawArgs["order_by"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
-		arg4, err = ec.unmarshalOCWEOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["order_by"] = arg4
-	var arg5 *ent.CWEWhereInput
-	if tmp, ok := rawArgs["where"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
-		arg5, err = ec.unmarshalOCWEWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -7237,7 +7691,7 @@ func (ec *executionContext) field_ReleaseComponent_vulnerabilities_args(ctx cont
 	return args, nil
 }
 
-func (ec *executionContext) field_ReleaseVulnerability_components_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_ReleaseLicense_scans_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *int
@@ -7258,10 +7712,136 @@ func (ec *executionContext) field_ReleaseVulnerability_components_args(ctx conte
 		}
 	}
 	args["last"] = arg1
-	var arg2 *ent.ReleaseComponentWhereInput
+	var arg2 *ent.CodeScanWhereInput
 	if tmp, ok := rawArgs["where"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
-		arg2, err = ec.unmarshalOReleaseComponentWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponentWhereInput(ctx, tmp)
+		arg2, err = ec.unmarshalOCodeScanWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeScanWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg2
+	var arg3 *ent.CodeScanOrder
+	if tmp, ok := rawArgs["order_by"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
+		arg3, err = ec.unmarshalOCodeScanOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeScanOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["order_by"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_ReleasePolicy_projects_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg1
+	var arg2 *ent.ProjectWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg2, err = ec.unmarshalOProjectWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProjectWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg2
+	var arg3 *ent.ProjectOrder
+	if tmp, ok := rawArgs["order_by"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
+		arg3, err = ec.unmarshalOProjectOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProjectOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["order_by"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_ReleasePolicy_repos_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg1
+	var arg2 *ent.RepoWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg2, err = ec.unmarshalORepoWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐRepoWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg2
+	var arg3 *ent.RepoOrder
+	if tmp, ok := rawArgs["order_by"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
+		arg3, err = ec.unmarshalORepoOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐRepoOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["order_by"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_ReleasePolicy_violations_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg1
+	var arg2 *ent.ReleasePolicyViolationWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg2, err = ec.unmarshalOReleasePolicyViolationWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -7304,48 +7884,6 @@ func (ec *executionContext) field_ReleaseVulnerability_reviews_args(ctx context.
 	if tmp, ok := rawArgs["order_by"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
 		arg3, err = ec.unmarshalOVulnerabilityReviewOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐVulnerabilityReviewOrder(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["order_by"] = arg3
-	return args, nil
-}
-
-func (ec *executionContext) field_ReleaseVulnerability_scans_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *int
-	if tmp, ok := rawArgs["first"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
-		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["first"] = arg0
-	var arg1 *int
-	if tmp, ok := rawArgs["last"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["last"] = arg1
-	var arg2 *ent.CodeScanWhereInput
-	if tmp, ok := rawArgs["where"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
-		arg2, err = ec.unmarshalOCodeScanWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeScanWhereInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["where"] = arg2
-	var arg3 *ent.CodeScanOrder
-	if tmp, ok := rawArgs["order_by"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
-		arg3, err = ec.unmarshalOCodeScanOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeScanOrder(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -7639,6 +8177,39 @@ func (ec *executionContext) field_Release_test_runs_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Release_violations_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg1
+	var arg2 *ent.ReleasePolicyViolationWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg2, err = ec.unmarshalOReleasePolicyViolationWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Release_vulnerabilities_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -7756,7 +8327,7 @@ func (ec *executionContext) field_Repo_commits_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
-func (ec *executionContext) field_Repo_projects_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Repo_policies_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *int
@@ -7777,19 +8348,19 @@ func (ec *executionContext) field_Repo_projects_args(ctx context.Context, rawArg
 		}
 	}
 	args["last"] = arg1
-	var arg2 *ent.ProjectWhereInput
+	var arg2 *ent.ReleasePolicyWhereInput
 	if tmp, ok := rawArgs["where"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
-		arg2, err = ec.unmarshalOProjectWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProjectWhereInput(ctx, tmp)
+		arg2, err = ec.unmarshalOReleasePolicyWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["where"] = arg2
-	var arg3 *ent.ProjectOrder
+	var arg3 *ent.ReleasePolicyOrder
 	if tmp, ok := rawArgs["order_by"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
-		arg3, err = ec.unmarshalOProjectOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProjectOrder(ctx, tmp)
+		arg3, err = ec.unmarshalOReleasePolicyOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyOrder(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -8196,6 +8767,306 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _Adapter_id(ctx context.Context, field graphql.CollectedField, obj *ent.Adapter) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Adapter",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Adapter_name(ctx context.Context, field graphql.CollectedField, obj *ent.Adapter) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Adapter",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Adapter_tag(ctx context.Context, field graphql.CollectedField, obj *ent.Adapter) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Adapter",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tag, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Adapter_module(ctx context.Context, field graphql.CollectedField, obj *ent.Adapter) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Adapter",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Module, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AdapterConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.AdapterConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AdapterConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AdapterConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.AdapterConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AdapterConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AdapterConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.AdapterConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AdapterConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.AdapterEdge)
+	fc.Result = res
+	return ec.marshalOAdapterEdge2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterEdge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AdapterEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.AdapterEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AdapterEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Adapter)
+	fc.Result = res
+	return ec.marshalOAdapter2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapter(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AdapterEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.AdapterEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AdapterEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.Cursor)
+	fc.Result = res
+	return ec.marshalNCursor2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐCursor(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Artifact_id(ctx context.Context, field graphql.CollectedField, obj *ent.Artifact) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -8592,345 +9463,6 @@ func (ec *executionContext) _ArtifactEdge_cursor(ctx context.Context, field grap
 	return ec.marshalNCursor2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _CWE_id(ctx context.Context, field graphql.CollectedField, obj *ent.CWE) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CWE",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNID2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CWE_cwe_id(ctx context.Context, field graphql.CollectedField, obj *ent.CWE) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CWE",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CweID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalOString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CWE_description(ctx context.Context, field graphql.CollectedField, obj *ent.CWE) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CWE",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Description, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalOString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CWE_url(ctx context.Context, field graphql.CollectedField, obj *ent.CWE) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CWE",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.URL, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(float64)
-	fc.Result = res
-	return ec.marshalOFloat2float64(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CWE_issues(ctx context.Context, field graphql.CollectedField, obj *ent.CWE) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CWE",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_CWE_issues_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.CWE().Issues(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.CodeIssueWhereInput), args["order_by"].(*ent.CodeIssueOrder))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*ent.CodeIssue)
-	fc.Result = res
-	return ec.marshalOCodeIssue2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeIssue(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CWEConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.CWEConnection) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CWEConnection",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.TotalCount, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CWEConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.CWEConnection) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CWEConnection",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PageInfo, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(ent.PageInfo)
-	fc.Result = res
-	return ec.marshalNPageInfo2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐPageInfo(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CWEConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.CWEConnection) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CWEConnection",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Edges, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*ent.CWEEdge)
-	fc.Result = res
-	return ec.marshalOCWEEdge2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEEdge(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CWEEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.CWEEdge) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CWEEdge",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Node, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*ent.CWE)
-	fc.Result = res
-	return ec.marshalOCWE2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWE(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CWEEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.CWEEdge) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CWEEdge",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Cursor, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(ent.Cursor)
-	fc.Result = res
-	return ec.marshalNCursor2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐCursor(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _CodeIssue_id(ctx context.Context, field graphql.CollectedField, obj *ent.CodeIssue) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -9092,45 +9624,6 @@ func (ec *executionContext) _CodeIssue_type(ctx context.Context, field graphql.C
 	res := resTmp.(codeissue.Type)
 	fc.Result = res
 	return ec.marshalOCodeIssueType2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋcodeissueᚐType(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CodeIssue_cwe(ctx context.Context, field graphql.CollectedField, obj *ent.CodeIssue) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CodeIssue",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_CodeIssue_cwe_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.CodeIssue().Cwe(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.CWEWhereInput), args["order_by"].(*ent.CWEOrder))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*ent.CWE)
-	fc.Result = res
-	return ec.marshalOCWE2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWE(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CodeIssue_scan(ctx context.Context, field graphql.CollectedField, obj *ent.CodeIssue) (ret graphql.Marshaler) {
@@ -11629,6 +12122,45 @@ func (ec *executionContext) _Project_vulnerability_reviews(ctx context.Context, 
 	return ec.marshalOVulnerabilityReview2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐVulnerabilityReview(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Project_policies(ctx context.Context, field graphql.CollectedField, obj *ent.Project) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Project",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Project_policies_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Project().Policies(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleasePolicyWhereInput), args["order_by"].(*ent.ReleasePolicyOrder))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleasePolicy)
+	fc.Result = res
+	return ec.marshalOReleasePolicy2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicy(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _ProjectConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ProjectConnection) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -12147,45 +12679,6 @@ func (ec *executionContext) _Query_test_case(ctx context.Context, field graphql.
 	res := resTmp.([]*ent.TestCase)
 	fc.Result = res
 	return ec.marshalOTestCase2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐTestCase(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Query_cwe_connection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_cwe_connection_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().CweConnection(rctx, args["first"].(*int), args["last"].(*int), args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["order_by"].(*ent.CWEOrder), args["where"].(*ent.CWEWhereInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*ent.CWEConnection)
-	fc.Result = res
-	return ec.marshalOCWEConnection2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_license_connection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -12929,45 +13422,6 @@ func (ec *executionContext) _Query_release_entry(ctx context.Context, field grap
 	return ec.marshalOReleaseEntry2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseEntry(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_cwe(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_cwe_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Cwe(rctx, args["first"].(*int), args["last"].(*int), args["order_by"].(*ent.CWEOrder), args["where"].(*ent.CWEWhereInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*ent.CWE)
-	fc.Result = res
-	return ec.marshalOCWE2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWE(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Query_code_issue(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -13517,6 +13971,38 @@ func (ec *executionContext) _Release_commit(ctx context.Context, field graphql.C
 	return ec.marshalNGitCommit2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐGitCommit(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Release_head_of(ctx context.Context, field graphql.CollectedField, obj *ent.Release) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Release",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HeadOf(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Repo)
+	fc.Result = res
+	return ec.marshalORepo2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐRepo(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Release_log(ctx context.Context, field graphql.CollectedField, obj *ent.Release) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -13554,6 +14040,45 @@ func (ec *executionContext) _Release_log(ctx context.Context, field graphql.Coll
 	res := resTmp.([]*ent.ReleaseEntry)
 	fc.Result = res
 	return ec.marshalOReleaseEntry2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseEntry(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Release_violations(ctx context.Context, field graphql.CollectedField, obj *ent.Release) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Release",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Release_violations_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Release().Violations(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleasePolicyViolationWhereInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleasePolicyViolation)
+	fc.Result = res
+	return ec.marshalOReleasePolicyViolation2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolation(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Release_artifacts(ctx context.Context, field graphql.CollectedField, obj *ent.Release) (ret graphql.Marshaler) {
@@ -13823,6 +14348,38 @@ func (ec *executionContext) _ReleaseComponent_id(ctx context.Context, field grap
 	res := resTmp.(int)
 	fc.Result = res
 	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseComponent_type(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseComponent) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseComponent",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(releasecomponent.Type)
+	fc.Result = res
+	return ec.marshalOReleaseComponentType2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ReleaseComponent_release(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseComponent) (ret graphql.Marshaler) {
@@ -14710,6 +15267,1074 @@ func (ec *executionContext) _ReleaseEntryEdge_cursor(ctx context.Context, field 
 	return ec.marshalNCursor2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐCursor(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ReleaseLicense_id(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseLicense_license(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.License(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.License)
+	fc.Result = res
+	return ec.marshalNLicense2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐLicense(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseLicense_component(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Component(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ReleaseComponent)
+	fc.Result = res
+	return ec.marshalOReleaseComponent2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseLicense_release(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Release(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Release)
+	fc.Result = res
+	return ec.marshalNRelease2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐRelease(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseLicense_scans(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_ReleaseLicense_scans_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ReleaseLicense().Scans(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.CodeScanWhereInput), args["order_by"].(*ent.CodeScanOrder))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.CodeScan)
+	fc.Result = res
+	return ec.marshalOCodeScan2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeScan(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseLicenseConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseLicenseConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseLicenseConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseLicenseConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseLicenseConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseLicenseConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseLicenseConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseLicenseConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseLicenseConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleaseLicenseEdge)
+	fc.Result = res
+	return ec.marshalOReleaseLicenseEdge2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseEdge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseLicenseEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseLicenseEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseLicenseEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ReleaseLicense)
+	fc.Result = res
+	return ec.marshalOReleaseLicense2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicense(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseLicenseEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseLicenseEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseLicenseEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.Cursor)
+	fc.Result = res
+	return ec.marshalNCursor2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicy_id(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicy_name(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicy_module(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Module, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicy_projects(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_ReleasePolicy_projects_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ReleasePolicy().Projects(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ProjectWhereInput), args["order_by"].(*ent.ProjectOrder))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Project)
+	fc.Result = res
+	return ec.marshalOProject2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProject(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicy_repos(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_ReleasePolicy_repos_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ReleasePolicy().Repos(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.RepoWhereInput), args["order_by"].(*ent.RepoOrder))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Repo)
+	fc.Result = res
+	return ec.marshalORepo2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐRepo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicy_violations(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_ReleasePolicy_violations_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ReleasePolicy().Violations(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleasePolicyViolationWhereInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleasePolicyViolation)
+	fc.Result = res
+	return ec.marshalOReleasePolicyViolation2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleasePolicyEdge)
+	fc.Result = res
+	return ec.marshalOReleasePolicyEdge2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyEdge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ReleasePolicy)
+	fc.Result = res
+	return ec.marshalOReleasePolicy2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.Cursor)
+	fc.Result = res
+	return ec.marshalNCursor2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyViolation_id(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyViolation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyViolation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyViolation_message(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyViolation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyViolation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyViolation_severity(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyViolation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyViolation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Severity, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(releasepolicyviolation.Severity)
+	fc.Result = res
+	return ec.marshalOReleasePolicyViolationSeverity2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyViolation_policy(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyViolation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyViolation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Policy(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ReleasePolicy)
+	fc.Result = res
+	return ec.marshalNReleasePolicy2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyViolation_release(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyViolation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyViolation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Release(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Release)
+	fc.Result = res
+	return ec.marshalNRelease2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐRelease(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyViolationConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyViolationConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyViolationConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyViolationConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyViolationConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyViolationConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyViolationConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyViolationConnection) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyViolationConnection",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleasePolicyViolationEdge)
+	fc.Result = res
+	return ec.marshalOReleasePolicyViolationEdge2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationEdge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyViolationEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyViolationEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyViolationEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.ReleasePolicyViolation)
+	fc.Result = res
+	return ec.marshalOReleasePolicyViolation2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleasePolicyViolationEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicyViolationEdge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicyViolationEdge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.Cursor)
+	fc.Result = res
+	return ec.marshalNCursor2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐCursor(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _ReleaseVulnerability_id(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseVulnerability) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -14780,7 +16405,7 @@ func (ec *executionContext) _ReleaseVulnerability_vulnerability(ctx context.Cont
 	return ec.marshalNVulnerability2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐVulnerability(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ReleaseVulnerability_components(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseVulnerability) (ret graphql.Marshaler) {
+func (ec *executionContext) _ReleaseVulnerability_component(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseVulnerability) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -14792,20 +16417,13 @@ func (ec *executionContext) _ReleaseVulnerability_components(ctx context.Context
 		Field:      field,
 		Args:       nil,
 		IsMethod:   true,
-		IsResolver: true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_ReleaseVulnerability_components_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ReleaseVulnerability().Components(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseComponentWhereInput))
+		return obj.Component(ctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -14814,9 +16432,9 @@ func (ec *executionContext) _ReleaseVulnerability_components(ctx context.Context
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.ReleaseComponent)
+	res := resTmp.(*ent.ReleaseComponent)
 	fc.Result = res
-	return ec.marshalOReleaseComponent2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponent(ctx, field.Selections, res)
+	return ec.marshalOReleaseComponent2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponent(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ReleaseVulnerability_release(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseVulnerability) (ret graphql.Marshaler) {
@@ -14893,7 +16511,7 @@ func (ec *executionContext) _ReleaseVulnerability_reviews(ctx context.Context, f
 	return ec.marshalOVulnerabilityReview2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐVulnerabilityReview(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _ReleaseVulnerability_scans(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseVulnerability) (ret graphql.Marshaler) {
+func (ec *executionContext) _ReleaseVulnerability_scan(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseVulnerability) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -14905,20 +16523,13 @@ func (ec *executionContext) _ReleaseVulnerability_scans(ctx context.Context, fie
 		Field:      field,
 		Args:       nil,
 		IsMethod:   true,
-		IsResolver: true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_ReleaseVulnerability_scans_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.ReleaseVulnerability().Scans(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.CodeScanWhereInput), args["order_by"].(*ent.CodeScanOrder))
+		return obj.Scan(ctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -14927,9 +16538,9 @@ func (ec *executionContext) _ReleaseVulnerability_scans(ctx context.Context, fie
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.CodeScan)
+	res := resTmp.(*ent.CodeScan)
 	fc.Result = res
-	return ec.marshalOCodeScan2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeScan(ctx, field.Selections, res)
+	return ec.marshalOCodeScan2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeScan(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ReleaseVulnerabilityConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseVulnerabilityConnection) (ret graphql.Marshaler) {
@@ -15168,7 +16779,39 @@ func (ec *executionContext) _Repo_name(ctx context.Context, field graphql.Collec
 	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Repo_projects(ctx context.Context, field graphql.CollectedField, obj *ent.Repo) (ret graphql.Marshaler) {
+func (ec *executionContext) _Repo_default_branch(ctx context.Context, field graphql.CollectedField, obj *ent.Repo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Repo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DefaultBranch, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Repo_project(ctx context.Context, field graphql.CollectedField, obj *ent.Repo) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -15180,20 +16823,48 @@ func (ec *executionContext) _Repo_projects(ctx context.Context, field graphql.Co
 		Field:      field,
 		Args:       nil,
 		IsMethod:   true,
-		IsResolver: true,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Repo_projects_args(ctx, rawArgs)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Project(ctx)
+	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
-	fc.Args = args
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Project)
+	fc.Result = res
+	return ec.marshalNProject2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProject(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Repo_head(ctx context.Context, field graphql.CollectedField, obj *ent.Repo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Repo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Repo().Projects(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ProjectWhereInput), args["order_by"].(*ent.ProjectOrder))
+		return obj.Head(ctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -15202,9 +16873,9 @@ func (ec *executionContext) _Repo_projects(ctx context.Context, field graphql.Co
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.Project)
+	res := resTmp.(*ent.Release)
 	fc.Result = res
-	return ec.marshalOProject2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProject(ctx, field.Selections, res)
+	return ec.marshalORelease2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐRelease(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Repo_commits(ctx context.Context, field graphql.CollectedField, obj *ent.Repo) (ret graphql.Marshaler) {
@@ -15283,6 +16954,45 @@ func (ec *executionContext) _Repo_vulnerability_reviews(ctx context.Context, fie
 	res := resTmp.([]*ent.VulnerabilityReview)
 	fc.Result = res
 	return ec.marshalOVulnerabilityReview2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐVulnerabilityReview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Repo_policies(ctx context.Context, field graphql.CollectedField, obj *ent.Repo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Repo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Repo_policies_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Repo().Policies(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleasePolicyWhereInput), args["order_by"].(*ent.ReleasePolicyOrder))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleasePolicy)
+	fc.Result = res
+	return ec.marshalOReleasePolicy2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicy(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _RepoConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.RepoConnection) (ret graphql.Marshaler) {
@@ -18286,6 +19996,446 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAdapterOrder(ctx context.Context, obj interface{}) (ent.AdapterOrder, error) {
+	var it ent.AdapterOrder
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "direction":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			it.Direction, err = ec.unmarshalNOrderDirection2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "field":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			it.Field, err = ec.unmarshalOAdapterOrderField2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAdapterWhereInput(ctx context.Context, obj interface{}) (ent.AdapterWhereInput, error) {
+	var it ent.AdapterWhereInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "not":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			it.Not, err = ec.unmarshalOAdapterWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "and":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			it.And, err = ec.unmarshalOAdapterWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "or":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			it.Or, err = ec.unmarshalOAdapterWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_neq"))
+			it.NameNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_in"))
+			it.NameIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_not_in"))
+			it.NameNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_gt"))
+			it.NameGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_gte"))
+			it.NameGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_lt"))
+			it.NameLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_lte"))
+			it.NameLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_contains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_contains"))
+			it.NameContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_has_prefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_has_prefix"))
+			it.NameHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_has_suffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_has_suffix"))
+			it.NameHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_equal_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_equal_fold"))
+			it.NameEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_contains_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_contains_fold"))
+			it.NameContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag"))
+			it.Tag, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_neq"))
+			it.TagNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_in"))
+			it.TagIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_not_in"))
+			it.TagNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_gt"))
+			it.TagGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_gte"))
+			it.TagGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_lt"))
+			it.TagLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_lte"))
+			it.TagLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_contains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_contains"))
+			it.TagContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_has_prefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_has_prefix"))
+			it.TagHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_has_suffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_has_suffix"))
+			it.TagHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_equal_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_equal_fold"))
+			it.TagEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "tag_contains_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag_contains_fold"))
+			it.TagContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module"))
+			it.Module, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_neq"))
+			it.ModuleNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_in"))
+			it.ModuleIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_not_in"))
+			it.ModuleNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_gt"))
+			it.ModuleGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_gte"))
+			it.ModuleGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_lt"))
+			it.ModuleLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_lte"))
+			it.ModuleLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_contains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_contains"))
+			it.ModuleContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_has_prefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_has_prefix"))
+			it.ModuleHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_has_suffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_has_suffix"))
+			it.ModuleHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_equal_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_equal_fold"))
+			it.ModuleEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_contains_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_contains_fold"))
+			it.ModuleContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_neq"))
+			it.IDNEQ, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_in"))
+			it.IDIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_not_in"))
+			it.IDNotIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_gt"))
+			it.IDGT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_gte"))
+			it.IDGTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lt"))
+			it.IDLT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lte"))
+			it.IDLTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputArtifactOrder(ctx context.Context, obj interface{}) (ent.ArtifactOrder, error) {
 	var it ent.ArtifactOrder
 	var asMap = obj.(map[string]interface{})
@@ -18750,454 +20900,6 @@ func (ec *executionContext) unmarshalInputArtifactWhereInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputCWEOrder(ctx context.Context, obj interface{}) (ent.CWEOrder, error) {
-	var it ent.CWEOrder
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "direction":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
-			it.Direction, err = ec.unmarshalNOrderDirection2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "field":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
-			it.Field, err = ec.unmarshalOCWEOrderField2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEOrderField(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputCWEWhereInput(ctx context.Context, obj interface{}) (ent.CWEWhereInput, error) {
-	var it ent.CWEWhereInput
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "not":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
-			it.Not, err = ec.unmarshalOCWEWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInput(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "and":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
-			it.And, err = ec.unmarshalOCWEWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "or":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
-			it.Or, err = ec.unmarshalOCWEWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id"))
-			it.CweID, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_neq":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_neq"))
-			it.CweIDNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_in":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_in"))
-			it.CweIDIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_not_in":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_not_in"))
-			it.CweIDNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_gt":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_gt"))
-			it.CweIDGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_gte":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_gte"))
-			it.CweIDGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_lt":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_lt"))
-			it.CweIDLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_lte":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_lte"))
-			it.CweIDLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_contains":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_contains"))
-			it.CweIDContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_has_prefix":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_has_prefix"))
-			it.CweIDHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_has_suffix":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_has_suffix"))
-			it.CweIDHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_equal_fold":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_equal_fold"))
-			it.CweIDEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "cwe_id_contains_fold":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe_id_contains_fold"))
-			it.CweIDContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_neq":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_neq"))
-			it.DescriptionNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_in":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_in"))
-			it.DescriptionIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_not_in":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_not_in"))
-			it.DescriptionNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_gt":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_gt"))
-			it.DescriptionGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_gte":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_gte"))
-			it.DescriptionGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_lt":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_lt"))
-			it.DescriptionLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_lte":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_lte"))
-			it.DescriptionLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_contains":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_contains"))
-			it.DescriptionContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_has_prefix":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_has_prefix"))
-			it.DescriptionHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_has_suffix":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_has_suffix"))
-			it.DescriptionHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_is_nil":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_is_nil"))
-			it.DescriptionIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_not_nil":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_not_nil"))
-			it.DescriptionNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_equal_fold":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_equal_fold"))
-			it.DescriptionEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "description_contains_fold":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description_contains_fold"))
-			it.DescriptionContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url"))
-			it.URL, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url_neq":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url_neq"))
-			it.URLNEQ, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url_in":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url_in"))
-			it.URLIn, err = ec.unmarshalOFloat2ᚕfloat64ᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url_not_in":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url_not_in"))
-			it.URLNotIn, err = ec.unmarshalOFloat2ᚕfloat64ᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url_gt":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url_gt"))
-			it.URLGT, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url_gte":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url_gte"))
-			it.URLGTE, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url_lt":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url_lt"))
-			it.URLLT, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url_lte":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url_lte"))
-			it.URLLTE, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url_is_nil":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url_is_nil"))
-			it.URLIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "url_not_nil":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("url_not_nil"))
-			it.URLNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			it.ID, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "id_neq":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_neq"))
-			it.IDNEQ, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "id_in":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_in"))
-			it.IDIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "id_not_in":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_not_in"))
-			it.IDNotIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "id_gt":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_gt"))
-			it.IDGT, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "id_gte":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_gte"))
-			it.IDGTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "id_lt":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lt"))
-			it.IDLT, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "id_lte":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lte"))
-			it.IDLTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "has_issues":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_issues"))
-			it.HasIssues, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "has_issues_with":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_issues_with"))
-			it.HasIssuesWith, err = ec.unmarshalOCodeIssueWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeIssueWhereInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputCodeIssueOrder(ctx context.Context, obj interface{}) (ent.CodeIssueOrder, error) {
 	var it ent.CodeIssueOrder
 	var asMap = obj.(map[string]interface{})
@@ -19589,22 +21291,6 @@ func (ec *executionContext) unmarshalInputCodeIssueWhereInput(ctx context.Contex
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lte"))
 			it.IDLTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "has_cwe":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_cwe"))
-			it.HasCwe, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "has_cwe_with":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_cwe_with"))
-			it.HasCweWith, err = ec.unmarshalOCWEWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -22284,6 +23970,22 @@ func (ec *executionContext) unmarshalInputProjectWhereInput(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
+		case "has_policies":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_policies"))
+			it.HasPolicies, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_policies_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_policies_with"))
+			it.HasPoliciesWith, err = ec.unmarshalOReleasePolicyWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -22317,6 +24019,38 @@ func (ec *executionContext) unmarshalInputReleaseComponentWhereInput(ctx context
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
 			it.Or, err = ec.unmarshalOReleaseComponentWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponentWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			it.Type, err = ec.unmarshalOReleaseComponentType2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "type_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type_neq"))
+			it.TypeNEQ, err = ec.unmarshalOReleaseComponentType2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "type_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type_in"))
+			it.TypeIn, err = ec.unmarshalOReleaseComponentType2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐTypeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "type_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type_not_in"))
+			it.TypeNotIn, err = ec.unmarshalOReleaseComponentType2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐTypeᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -22742,6 +24476,170 @@ func (ec *executionContext) unmarshalInputReleaseEntryWhereInput(ctx context.Con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputReleaseLicenseWhereInput(ctx context.Context, obj interface{}) (ent.ReleaseLicenseWhereInput, error) {
+	var it ent.ReleaseLicenseWhereInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "not":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			it.Not, err = ec.unmarshalOReleaseLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "and":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			it.And, err = ec.unmarshalOReleaseLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "or":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			it.Or, err = ec.unmarshalOReleaseLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_neq"))
+			it.IDNEQ, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_in"))
+			it.IDIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_not_in"))
+			it.IDNotIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_gt"))
+			it.IDGT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_gte"))
+			it.IDGTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lt"))
+			it.IDLT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lte"))
+			it.IDLTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_license":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_license"))
+			it.HasLicense, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_license_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_license_with"))
+			it.HasLicenseWith, err = ec.unmarshalOLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐLicenseWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_component":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_component"))
+			it.HasComponent, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_component_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_component_with"))
+			it.HasComponentWith, err = ec.unmarshalOReleaseComponentWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponentWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_release":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_release"))
+			it.HasRelease, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_release_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_release_with"))
+			it.HasReleaseWith, err = ec.unmarshalOReleaseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_scans":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_scans"))
+			it.HasScans, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_scans_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_scans_with"))
+			it.HasScansWith, err = ec.unmarshalOCodeScanWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeScanWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputReleaseOrder(ctx context.Context, obj interface{}) (ent.ReleaseOrder, error) {
 	var it ent.ReleaseOrder
 	var asMap = obj.(map[string]interface{})
@@ -22761,6 +24659,658 @@ func (ec *executionContext) unmarshalInputReleaseOrder(ctx context.Context, obj 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
 			it.Field, err = ec.unmarshalOReleaseOrderField2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputReleasePolicyOrder(ctx context.Context, obj interface{}) (ent.ReleasePolicyOrder, error) {
+	var it ent.ReleasePolicyOrder
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "direction":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			it.Direction, err = ec.unmarshalNOrderDirection2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "field":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			it.Field, err = ec.unmarshalOReleasePolicyOrderField2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputReleasePolicyViolationWhereInput(ctx context.Context, obj interface{}) (ent.ReleasePolicyViolationWhereInput, error) {
+	var it ent.ReleasePolicyViolationWhereInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "not":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			it.Not, err = ec.unmarshalOReleasePolicyViolationWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "and":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			it.And, err = ec.unmarshalOReleasePolicyViolationWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "or":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			it.Or, err = ec.unmarshalOReleasePolicyViolationWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message"))
+			it.Message, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_neq"))
+			it.MessageNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_in"))
+			it.MessageIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_not_in"))
+			it.MessageNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_gt"))
+			it.MessageGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_gte"))
+			it.MessageGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_lt"))
+			it.MessageLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_lte"))
+			it.MessageLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_contains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_contains"))
+			it.MessageContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_has_prefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_has_prefix"))
+			it.MessageHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_has_suffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_has_suffix"))
+			it.MessageHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_equal_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_equal_fold"))
+			it.MessageEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message_contains_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message_contains_fold"))
+			it.MessageContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "severity":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("severity"))
+			it.Severity, err = ec.unmarshalOReleasePolicyViolationSeverity2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "severity_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("severity_neq"))
+			it.SeverityNEQ, err = ec.unmarshalOReleasePolicyViolationSeverity2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "severity_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("severity_in"))
+			it.SeverityIn, err = ec.unmarshalOReleasePolicyViolationSeverity2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverityᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "severity_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("severity_not_in"))
+			it.SeverityNotIn, err = ec.unmarshalOReleasePolicyViolationSeverity2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverityᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_neq"))
+			it.IDNEQ, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_in"))
+			it.IDIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_not_in"))
+			it.IDNotIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_gt"))
+			it.IDGT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_gte"))
+			it.IDGTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lt"))
+			it.IDLT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lte"))
+			it.IDLTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_policy":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_policy"))
+			it.HasPolicy, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_policy_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_policy_with"))
+			it.HasPolicyWith, err = ec.unmarshalOReleasePolicyWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_release":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_release"))
+			it.HasRelease, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_release_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_release_with"))
+			it.HasReleaseWith, err = ec.unmarshalOReleaseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputReleasePolicyWhereInput(ctx context.Context, obj interface{}) (ent.ReleasePolicyWhereInput, error) {
+	var it ent.ReleasePolicyWhereInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "not":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			it.Not, err = ec.unmarshalOReleasePolicyWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "and":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			it.And, err = ec.unmarshalOReleasePolicyWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "or":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			it.Or, err = ec.unmarshalOReleasePolicyWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_neq"))
+			it.NameNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_in"))
+			it.NameIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_not_in"))
+			it.NameNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_gt"))
+			it.NameGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_gte"))
+			it.NameGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_lt"))
+			it.NameLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_lte"))
+			it.NameLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_contains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_contains"))
+			it.NameContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_has_prefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_has_prefix"))
+			it.NameHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_has_suffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_has_suffix"))
+			it.NameHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_equal_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_equal_fold"))
+			it.NameEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name_contains_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_contains_fold"))
+			it.NameContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module"))
+			it.Module, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_neq"))
+			it.ModuleNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_in"))
+			it.ModuleIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_not_in"))
+			it.ModuleNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_gt"))
+			it.ModuleGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_gte"))
+			it.ModuleGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_lt"))
+			it.ModuleLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_lte"))
+			it.ModuleLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_contains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_contains"))
+			it.ModuleContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_has_prefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_has_prefix"))
+			it.ModuleHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_has_suffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_has_suffix"))
+			it.ModuleHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_equal_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_equal_fold"))
+			it.ModuleEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "module_contains_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("module_contains_fold"))
+			it.ModuleContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_neq"))
+			it.IDNEQ, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_in"))
+			it.IDIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_not_in"))
+			it.IDNotIn, err = ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_gt"))
+			it.IDGT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_gte"))
+			it.IDGTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lt"))
+			it.IDLT, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id_lte"))
+			it.IDLTE, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_projects":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_projects"))
+			it.HasProjects, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_projects_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_projects_with"))
+			it.HasProjectsWith, err = ec.unmarshalOProjectWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProjectWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_repos":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_repos"))
+			it.HasRepos, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_repos_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_repos_with"))
+			it.HasReposWith, err = ec.unmarshalORepoWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐRepoWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_violations":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_violations"))
+			it.HasViolations, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_violations_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_violations_with"))
+			it.HasViolationsWith, err = ec.unmarshalOReleasePolicyViolationWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -22880,19 +25430,19 @@ func (ec *executionContext) unmarshalInputReleaseVulnerabilityWhereInput(ctx con
 			if err != nil {
 				return it, err
 			}
-		case "has_components":
+		case "has_component":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_components"))
-			it.HasComponents, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_component"))
+			it.HasComponent, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "has_components_with":
+		case "has_component_with":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_components_with"))
-			it.HasComponentsWith, err = ec.unmarshalOReleaseComponentWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponentWhereInputᚄ(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_component_with"))
+			it.HasComponentWith, err = ec.unmarshalOReleaseComponentWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponentWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -22928,19 +25478,19 @@ func (ec *executionContext) unmarshalInputReleaseVulnerabilityWhereInput(ctx con
 			if err != nil {
 				return it, err
 			}
-		case "has_scans":
+		case "has_scan":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_scans"))
-			it.HasScans, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_scan"))
+			it.HasScan, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "has_scans_with":
+		case "has_scan_with":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_scans_with"))
-			it.HasScansWith, err = ec.unmarshalOCodeScanWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeScanWhereInputᚄ(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_scan_with"))
+			it.HasScanWith, err = ec.unmarshalOCodeScanWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeScanWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -23332,6 +25882,22 @@ func (ec *executionContext) unmarshalInputReleaseWhereInput(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
+		case "has_head_of":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_head_of"))
+			it.HasHeadOf, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_head_of_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_head_of_with"))
+			it.HasHeadOfWith, err = ec.unmarshalORepoWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐRepoWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "has_log":
 			var err error
 
@@ -23345,6 +25911,22 @@ func (ec *executionContext) unmarshalInputReleaseWhereInput(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_log_with"))
 			it.HasLogWith, err = ec.unmarshalOReleaseEntryWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseEntryWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_violations":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_violations"))
+			it.HasViolations, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_violations_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_violations_with"))
+			it.HasViolationsWith, err = ec.unmarshalOReleasePolicyViolationWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -23612,6 +26194,110 @@ func (ec *executionContext) unmarshalInputRepoWhereInput(ctx context.Context, ob
 			if err != nil {
 				return it, err
 			}
+		case "default_branch":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch"))
+			it.DefaultBranch, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_neq"))
+			it.DefaultBranchNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_in"))
+			it.DefaultBranchIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_not_in":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_not_in"))
+			it.DefaultBranchNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_gt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_gt"))
+			it.DefaultBranchGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_gte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_gte"))
+			it.DefaultBranchGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_lt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_lt"))
+			it.DefaultBranchLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_lte":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_lte"))
+			it.DefaultBranchLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_contains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_contains"))
+			it.DefaultBranchContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_has_prefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_has_prefix"))
+			it.DefaultBranchHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_has_suffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_has_suffix"))
+			it.DefaultBranchHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_equal_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_equal_fold"))
+			it.DefaultBranchEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "default_branch_contains_fold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("default_branch_contains_fold"))
+			it.DefaultBranchContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "id":
 			var err error
 
@@ -23676,19 +26362,35 @@ func (ec *executionContext) unmarshalInputRepoWhereInput(ctx context.Context, ob
 			if err != nil {
 				return it, err
 			}
-		case "has_projects":
+		case "has_project":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_projects"))
-			it.HasProjects, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_project"))
+			it.HasProject, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "has_projects_with":
+		case "has_project_with":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_projects_with"))
-			it.HasProjectsWith, err = ec.unmarshalOProjectWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProjectWhereInputᚄ(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_project_with"))
+			it.HasProjectWith, err = ec.unmarshalOProjectWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProjectWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_head":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_head"))
+			it.HasHead, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_head_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_head_with"))
+			it.HasHeadWith, err = ec.unmarshalOReleaseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -23721,6 +26423,22 @@ func (ec *executionContext) unmarshalInputRepoWhereInput(ctx context.Context, ob
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_vulnerability_reviews_with"))
 			it.HasVulnerabilityReviewsWith, err = ec.unmarshalOVulnerabilityReviewWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐVulnerabilityReviewWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_policies":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_policies"))
+			it.HasPolicies, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_policies_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_policies_with"))
+			it.HasPoliciesWith, err = ec.unmarshalOReleasePolicyWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -24680,22 +27398,6 @@ func (ec *executionContext) unmarshalInputVulnerabilityReviewWhereInput(ctx cont
 			if err != nil {
 				return it, err
 			}
-		case "name_is_nil":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_is_nil"))
-			it.NameIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "name_not_nil":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name_not_nil"))
-			it.NameNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "name_equal_fold":
 			var err error
 
@@ -25650,96 +28352,111 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case *ent.License:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._License(ctx, sel, obj)
-	case *ent.VulnerabilityReview:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._VulnerabilityReview(ctx, sel, obj)
-	case *ent.Component:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Component(ctx, sel, obj)
-	case *ent.LicenseUse:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._LicenseUse(ctx, sel, obj)
-	case *ent.TestCase:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._TestCase(ctx, sel, obj)
-	case *ent.CodeScan:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._CodeScan(ctx, sel, obj)
-	case *ent.GitCommit:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._GitCommit(ctx, sel, obj)
-	case *ent.CodeIssue:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._CodeIssue(ctx, sel, obj)
-	case *ent.Vulnerability:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Vulnerability(ctx, sel, obj)
-	case *ent.CWE:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._CWE(ctx, sel, obj)
-	case *ent.Project:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Project(ctx, sel, obj)
-	case *ent.ReleaseVulnerability:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleaseVulnerability(ctx, sel, obj)
-	case *ent.Repo:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Repo(ctx, sel, obj)
-	case *ent.Release:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Release(ctx, sel, obj)
-	case *ent.ReleaseComponent:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleaseComponent(ctx, sel, obj)
-	case *ent.TestRun:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._TestRun(ctx, sel, obj)
-	case *ent.ReleaseEntry:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleaseEntry(ctx, sel, obj)
 	case *ent.Artifact:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._Artifact(ctx, sel, obj)
+	case *ent.Release:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Release(ctx, sel, obj)
+	case *ent.LicenseUse:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._LicenseUse(ctx, sel, obj)
+	case *ent.TestRun:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TestRun(ctx, sel, obj)
+	case *ent.TestCase:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TestCase(ctx, sel, obj)
+	case *ent.Project:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Project(ctx, sel, obj)
+	case *ent.Component:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Component(ctx, sel, obj)
+	case *ent.Repo:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Repo(ctx, sel, obj)
+	case *ent.ReleasePolicyViolation:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleasePolicyViolation(ctx, sel, obj)
+	case *ent.CodeScan:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CodeScan(ctx, sel, obj)
+	case *ent.ReleaseComponent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleaseComponent(ctx, sel, obj)
+	case *ent.ReleaseEntry:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleaseEntry(ctx, sel, obj)
+	case *ent.CodeIssue:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CodeIssue(ctx, sel, obj)
+	case *ent.ReleasePolicy:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleasePolicy(ctx, sel, obj)
+	case *ent.VulnerabilityReview:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._VulnerabilityReview(ctx, sel, obj)
+	case *ent.License:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._License(ctx, sel, obj)
+	case *ent.Vulnerability:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Vulnerability(ctx, sel, obj)
+	case *ent.GitCommit:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._GitCommit(ctx, sel, obj)
+	case *ent.Adapter:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Adapter(ctx, sel, obj)
+	case *ent.ReleaseLicense:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleaseLicense(ctx, sel, obj)
+	case *ent.ReleaseVulnerability:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleaseVulnerability(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -25748,6 +28465,102 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var adapterImplementors = []string{"Adapter", "Node"}
+
+func (ec *executionContext) _Adapter(ctx context.Context, sel ast.SelectionSet, obj *ent.Adapter) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adapterImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Adapter")
+		case "id":
+			out.Values[i] = ec._Adapter_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "name":
+			out.Values[i] = ec._Adapter_name(ctx, field, obj)
+		case "tag":
+			out.Values[i] = ec._Adapter_tag(ctx, field, obj)
+		case "module":
+			out.Values[i] = ec._Adapter_module(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var adapterConnectionImplementors = []string{"AdapterConnection"}
+
+func (ec *executionContext) _AdapterConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.AdapterConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adapterConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdapterConnection")
+		case "totalCount":
+			out.Values[i] = ec._AdapterConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._AdapterConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "edges":
+			out.Values[i] = ec._AdapterConnection_edges(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var adapterEdgeImplementors = []string{"AdapterEdge"}
+
+func (ec *executionContext) _AdapterEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.AdapterEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adapterEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdapterEdge")
+		case "node":
+			out.Values[i] = ec._AdapterEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._AdapterEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var artifactImplementors = []string{"Artifact", "Node"}
 
@@ -25869,113 +28682,6 @@ func (ec *executionContext) _ArtifactEdge(ctx context.Context, sel ast.Selection
 	return out
 }
 
-var cWEImplementors = []string{"CWE", "Node"}
-
-func (ec *executionContext) _CWE(ctx context.Context, sel ast.SelectionSet, obj *ent.CWE) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, cWEImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("CWE")
-		case "id":
-			out.Values[i] = ec._CWE_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "cwe_id":
-			out.Values[i] = ec._CWE_cwe_id(ctx, field, obj)
-		case "description":
-			out.Values[i] = ec._CWE_description(ctx, field, obj)
-		case "url":
-			out.Values[i] = ec._CWE_url(ctx, field, obj)
-		case "issues":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._CWE_issues(ctx, field, obj)
-				return res
-			})
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var cWEConnectionImplementors = []string{"CWEConnection"}
-
-func (ec *executionContext) _CWEConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.CWEConnection) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, cWEConnectionImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("CWEConnection")
-		case "totalCount":
-			out.Values[i] = ec._CWEConnection_totalCount(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "pageInfo":
-			out.Values[i] = ec._CWEConnection_pageInfo(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "edges":
-			out.Values[i] = ec._CWEConnection_edges(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var cWEEdgeImplementors = []string{"CWEEdge"}
-
-func (ec *executionContext) _CWEEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.CWEEdge) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, cWEEdgeImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("CWEEdge")
-		case "node":
-			out.Values[i] = ec._CWEEdge_node(ctx, field, obj)
-		case "cursor":
-			out.Values[i] = ec._CWEEdge_cursor(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
 var codeIssueImplementors = []string{"CodeIssue", "Node"}
 
 func (ec *executionContext) _CodeIssue(ctx context.Context, sel ast.SelectionSet, obj *ent.CodeIssue) graphql.Marshaler {
@@ -26000,17 +28706,6 @@ func (ec *executionContext) _CodeIssue(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = ec._CodeIssue_severity(ctx, field, obj)
 		case "type":
 			out.Values[i] = ec._CodeIssue_type(ctx, field, obj)
-		case "cwe":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._CodeIssue_cwe(ctx, field, obj)
-				return res
-			})
 		case "scan":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -26809,6 +29504,17 @@ func (ec *executionContext) _Project(ctx context.Context, sel ast.SelectionSet, 
 				res = ec._Project_vulnerability_reviews(ctx, field, obj)
 				return res
 			})
+		case "policies":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Project_policies(ctx, field, obj)
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -26995,17 +29701,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_test_case(ctx, field)
-				return res
-			})
-		case "cwe_connection":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_cwe_connection(ctx, field)
 				return res
 			})
 		case "license_connection":
@@ -27217,17 +29912,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_release_entry(ctx, field)
 				return res
 			})
-		case "cwe":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_cwe(ctx, field)
-				return res
-			})
 		case "code_issue":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -27367,6 +30051,17 @@ func (ec *executionContext) _Release(ctx context.Context, sel ast.SelectionSet, 
 				}
 				return res
 			})
+		case "head_of":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Release_head_of(ctx, field, obj)
+				return res
+			})
 		case "log":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -27376,6 +30071,17 @@ func (ec *executionContext) _Release(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._Release_log(ctx, field, obj)
+				return res
+			})
+		case "violations":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Release_violations(ctx, field, obj)
 				return res
 			})
 		case "artifacts":
@@ -27471,6 +30177,8 @@ func (ec *executionContext) _ReleaseComponent(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "type":
+			out.Values[i] = ec._ReleaseComponent_type(ctx, field, obj)
 		case "release":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -27799,6 +30507,395 @@ func (ec *executionContext) _ReleaseEntryEdge(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var releaseLicenseImplementors = []string{"ReleaseLicense", "Node"}
+
+func (ec *executionContext) _ReleaseLicense(ctx context.Context, sel ast.SelectionSet, obj *ent.ReleaseLicense) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releaseLicenseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleaseLicense")
+		case "id":
+			out.Values[i] = ec._ReleaseLicense_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "license":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleaseLicense_license(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "component":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleaseLicense_component(ctx, field, obj)
+				return res
+			})
+		case "release":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleaseLicense_release(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "scans":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleaseLicense_scans(ctx, field, obj)
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var releaseLicenseConnectionImplementors = []string{"ReleaseLicenseConnection"}
+
+func (ec *executionContext) _ReleaseLicenseConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.ReleaseLicenseConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releaseLicenseConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleaseLicenseConnection")
+		case "totalCount":
+			out.Values[i] = ec._ReleaseLicenseConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._ReleaseLicenseConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "edges":
+			out.Values[i] = ec._ReleaseLicenseConnection_edges(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var releaseLicenseEdgeImplementors = []string{"ReleaseLicenseEdge"}
+
+func (ec *executionContext) _ReleaseLicenseEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.ReleaseLicenseEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releaseLicenseEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleaseLicenseEdge")
+		case "node":
+			out.Values[i] = ec._ReleaseLicenseEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._ReleaseLicenseEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var releasePolicyImplementors = []string{"ReleasePolicy", "Node"}
+
+func (ec *executionContext) _ReleasePolicy(ctx context.Context, sel ast.SelectionSet, obj *ent.ReleasePolicy) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releasePolicyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleasePolicy")
+		case "id":
+			out.Values[i] = ec._ReleasePolicy_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._ReleasePolicy_name(ctx, field, obj)
+		case "module":
+			out.Values[i] = ec._ReleasePolicy_module(ctx, field, obj)
+		case "projects":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleasePolicy_projects(ctx, field, obj)
+				return res
+			})
+		case "repos":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleasePolicy_repos(ctx, field, obj)
+				return res
+			})
+		case "violations":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleasePolicy_violations(ctx, field, obj)
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var releasePolicyConnectionImplementors = []string{"ReleasePolicyConnection"}
+
+func (ec *executionContext) _ReleasePolicyConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.ReleasePolicyConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releasePolicyConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleasePolicyConnection")
+		case "totalCount":
+			out.Values[i] = ec._ReleasePolicyConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._ReleasePolicyConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "edges":
+			out.Values[i] = ec._ReleasePolicyConnection_edges(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var releasePolicyEdgeImplementors = []string{"ReleasePolicyEdge"}
+
+func (ec *executionContext) _ReleasePolicyEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.ReleasePolicyEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releasePolicyEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleasePolicyEdge")
+		case "node":
+			out.Values[i] = ec._ReleasePolicyEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._ReleasePolicyEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var releasePolicyViolationImplementors = []string{"ReleasePolicyViolation", "Node"}
+
+func (ec *executionContext) _ReleasePolicyViolation(ctx context.Context, sel ast.SelectionSet, obj *ent.ReleasePolicyViolation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releasePolicyViolationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleasePolicyViolation")
+		case "id":
+			out.Values[i] = ec._ReleasePolicyViolation_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "message":
+			out.Values[i] = ec._ReleasePolicyViolation_message(ctx, field, obj)
+		case "severity":
+			out.Values[i] = ec._ReleasePolicyViolation_severity(ctx, field, obj)
+		case "policy":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleasePolicyViolation_policy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "release":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleasePolicyViolation_release(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var releasePolicyViolationConnectionImplementors = []string{"ReleasePolicyViolationConnection"}
+
+func (ec *executionContext) _ReleasePolicyViolationConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.ReleasePolicyViolationConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releasePolicyViolationConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleasePolicyViolationConnection")
+		case "totalCount":
+			out.Values[i] = ec._ReleasePolicyViolationConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pageInfo":
+			out.Values[i] = ec._ReleasePolicyViolationConnection_pageInfo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "edges":
+			out.Values[i] = ec._ReleasePolicyViolationConnection_edges(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var releasePolicyViolationEdgeImplementors = []string{"ReleasePolicyViolationEdge"}
+
+func (ec *executionContext) _ReleasePolicyViolationEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.ReleasePolicyViolationEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releasePolicyViolationEdgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleasePolicyViolationEdge")
+		case "node":
+			out.Values[i] = ec._ReleasePolicyViolationEdge_node(ctx, field, obj)
+		case "cursor":
+			out.Values[i] = ec._ReleasePolicyViolationEdge_cursor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var releaseVulnerabilityImplementors = []string{"ReleaseVulnerability", "Node"}
 
 func (ec *executionContext) _ReleaseVulnerability(ctx context.Context, sel ast.SelectionSet, obj *ent.ReleaseVulnerability) graphql.Marshaler {
@@ -27829,7 +30926,7 @@ func (ec *executionContext) _ReleaseVulnerability(ctx context.Context, sel ast.S
 				}
 				return res
 			})
-		case "components":
+		case "component":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -27837,7 +30934,7 @@ func (ec *executionContext) _ReleaseVulnerability(ctx context.Context, sel ast.S
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._ReleaseVulnerability_components(ctx, field, obj)
+				res = ec._ReleaseVulnerability_component(ctx, field, obj)
 				return res
 			})
 		case "release":
@@ -27865,7 +30962,7 @@ func (ec *executionContext) _ReleaseVulnerability(ctx context.Context, sel ast.S
 				res = ec._ReleaseVulnerability_reviews(ctx, field, obj)
 				return res
 			})
-		case "scans":
+		case "scan":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -27873,7 +30970,7 @@ func (ec *executionContext) _ReleaseVulnerability(ctx context.Context, sel ast.S
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._ReleaseVulnerability_scans(ctx, field, obj)
+				res = ec._ReleaseVulnerability_scan(ctx, field, obj)
 				return res
 			})
 		default:
@@ -27968,7 +31065,9 @@ func (ec *executionContext) _Repo(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "name":
 			out.Values[i] = ec._Repo_name(ctx, field, obj)
-		case "projects":
+		case "default_branch":
+			out.Values[i] = ec._Repo_default_branch(ctx, field, obj)
+		case "project":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -27976,7 +31075,21 @@ func (ec *executionContext) _Repo(ctx context.Context, sel ast.SelectionSet, obj
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Repo_projects(ctx, field, obj)
+				res = ec._Repo_project(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "head":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Repo_head(ctx, field, obj)
 				return res
 			})
 		case "commits":
@@ -27999,6 +31112,17 @@ func (ec *executionContext) _Repo(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Repo_vulnerability_reviews(ctx, field, obj)
+				return res
+			})
+		case "policies":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Repo_policies(ctx, field, obj)
 				return res
 			})
 		default:
@@ -28851,6 +31975,11 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAdapterWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterWhereInput(ctx context.Context, v interface{}) (*ent.AdapterWhereInput, error) {
+	res, err := ec.unmarshalInputAdapterWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNArtifactType2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋartifactᚐType(ctx context.Context, v interface{}) (artifact.Type, error) {
 	var res artifact.Type
 	err := res.UnmarshalGQL(v)
@@ -28879,11 +32008,6 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) unmarshalNCWEWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInput(ctx context.Context, v interface{}) (*ent.CWEWhereInput, error) {
-	res, err := ec.unmarshalInputCWEWhereInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNCodeIssueSeverity2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋcodeissueᚐSeverity(ctx context.Context, v interface{}) (codeissue.Severity, error) {
@@ -29045,6 +32169,16 @@ func (ec *executionContext) marshalNPageInfo2githubᚗcomᚋvalocodeᚋbubblyᚋ
 	return ec._PageInfo(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNProject2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProject(ctx context.Context, sel ast.SelectionSet, v *ent.Project) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Project(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNProjectWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐProjectWhereInput(ctx context.Context, v interface{}) (*ent.ProjectWhereInput, error) {
 	res, err := ec.unmarshalInputProjectWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -29058,6 +32192,16 @@ func (ec *executionContext) marshalNRelease2ᚖgithubᚗcomᚋvalocodeᚋbubbly�
 		return graphql.Null
 	}
 	return ec._Release(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNReleaseComponentType2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx context.Context, v interface{}) (releasecomponent.Type, error) {
+	var res releasecomponent.Type
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNReleaseComponentType2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx context.Context, sel ast.SelectionSet, v releasecomponent.Type) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNReleaseComponentWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponentWhereInput(ctx context.Context, v interface{}) (*ent.ReleaseComponentWhereInput, error) {
@@ -29077,6 +32221,41 @@ func (ec *executionContext) marshalNReleaseEntryType2githubᚗcomᚋvalocodeᚋb
 
 func (ec *executionContext) unmarshalNReleaseEntryWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseEntryWhereInput(ctx context.Context, v interface{}) (*ent.ReleaseEntryWhereInput, error) {
 	res, err := ec.unmarshalInputReleaseEntryWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNReleaseLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInput(ctx context.Context, v interface{}) (*ent.ReleaseLicenseWhereInput, error) {
+	res, err := ec.unmarshalInputReleaseLicenseWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNReleasePolicy2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicy(ctx context.Context, sel ast.SelectionSet, v *ent.ReleasePolicy) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._ReleasePolicy(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNReleasePolicyViolationSeverity2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx context.Context, v interface{}) (releasepolicyviolation.Severity, error) {
+	var res releasepolicyviolation.Severity
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNReleasePolicyViolationSeverity2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx context.Context, sel ast.SelectionSet, v releasepolicyviolation.Severity) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNReleasePolicyViolationWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInput(ctx context.Context, v interface{}) (*ent.ReleasePolicyViolationWhereInput, error) {
+	res, err := ec.unmarshalInputReleasePolicyViolationWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNReleasePolicyWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInput(ctx context.Context, v interface{}) (*ent.ReleasePolicyWhereInput, error) {
+	res, err := ec.unmarshalInputReleasePolicyWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -29434,6 +32613,108 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) marshalOAdapter2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapter(ctx context.Context, sel ast.SelectionSet, v *ent.Adapter) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Adapter(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdapterEdge2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.AdapterEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOAdapterEdge2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOAdapterEdge2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterEdge(ctx context.Context, sel ast.SelectionSet, v *ent.AdapterEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdapterEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOAdapterOrderField2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterOrderField(ctx context.Context, v interface{}) (*ent.AdapterOrderField, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(ent.AdapterOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOAdapterOrderField2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.AdapterOrderField) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOAdapterWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.AdapterWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*ent.AdapterWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNAdapterWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOAdapterWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐAdapterWhereInput(ctx context.Context, v interface{}) (*ent.AdapterWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAdapterWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalOArtifact2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐArtifact(ctx context.Context, sel ast.SelectionSet, v []*ent.Artifact) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -29703,163 +32984,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
-}
-
-func (ec *executionContext) marshalOCWE2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWE(ctx context.Context, sel ast.SelectionSet, v []*ent.CWE) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOCWE2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWE(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalOCWE2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWE(ctx context.Context, sel ast.SelectionSet, v *ent.CWE) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._CWE(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOCWEConnection2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEConnection(ctx context.Context, sel ast.SelectionSet, v *ent.CWEConnection) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._CWEConnection(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOCWEEdge2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.CWEEdge) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOCWEEdge2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEEdge(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalOCWEEdge2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEEdge(ctx context.Context, sel ast.SelectionSet, v *ent.CWEEdge) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._CWEEdge(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOCWEOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEOrder(ctx context.Context, v interface{}) (*ent.CWEOrder, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputCWEOrder(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalOCWEOrderField2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEOrderField(ctx context.Context, v interface{}) (*ent.CWEOrderField, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(ent.CWEOrderField)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOCWEOrderField2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.CWEOrderField) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
-}
-
-func (ec *executionContext) unmarshalOCWEWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.CWEWhereInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*ent.CWEWhereInput, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNCWEWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalOCWEWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCWEWhereInput(ctx context.Context, v interface{}) (*ent.CWEWhereInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputCWEWhereInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOCodeIssue2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐCodeIssue(ctx context.Context, sel ast.SelectionSet, v []*ent.CodeIssue) graphql.Marshaler {
@@ -31432,6 +34556,96 @@ func (ec *executionContext) marshalOReleaseComponentEdge2ᚖgithubᚗcomᚋvaloc
 	return ec._ReleaseComponentEdge(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOReleaseComponentType2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx context.Context, v interface{}) (releasecomponent.Type, error) {
+	var res releasecomponent.Type
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOReleaseComponentType2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx context.Context, sel ast.SelectionSet, v releasecomponent.Type) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalOReleaseComponentType2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐTypeᚄ(ctx context.Context, v interface{}) ([]releasecomponent.Type, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]releasecomponent.Type, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNReleaseComponentType2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOReleaseComponentType2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []releasecomponent.Type) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNReleaseComponentType2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) unmarshalOReleaseComponentType2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx context.Context, v interface{}) (*releasecomponent.Type, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(releasecomponent.Type)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOReleaseComponentType2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasecomponentᚐType(ctx context.Context, sel ast.SelectionSet, v *releasecomponent.Type) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) unmarshalOReleaseComponentWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponentWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.ReleaseComponentWhereInput, error) {
 	if v == nil {
 		return nil, nil
@@ -31765,6 +34979,92 @@ func (ec *executionContext) unmarshalOReleaseEntryWhereInput2ᚖgithubᚗcomᚋv
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalOReleaseLicense2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicense(ctx context.Context, sel ast.SelectionSet, v *ent.ReleaseLicense) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ReleaseLicense(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOReleaseLicenseEdge2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.ReleaseLicenseEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOReleaseLicenseEdge2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOReleaseLicenseEdge2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseEdge(ctx context.Context, sel ast.SelectionSet, v *ent.ReleaseLicenseEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ReleaseLicenseEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOReleaseLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.ReleaseLicenseWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*ent.ReleaseLicenseWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNReleaseLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOReleaseLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInput(ctx context.Context, v interface{}) (*ent.ReleaseLicenseWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputReleaseLicenseWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOReleaseOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseOrder(ctx context.Context, v interface{}) (*ent.ReleaseOrder, error) {
 	if v == nil {
 		return nil, nil
@@ -31787,6 +35087,372 @@ func (ec *executionContext) marshalOReleaseOrderField2ᚖgithubᚗcomᚋvalocode
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) marshalOReleasePolicy2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicy(ctx context.Context, sel ast.SelectionSet, v []*ent.ReleasePolicy) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOReleasePolicy2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicy(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOReleasePolicy2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicy(ctx context.Context, sel ast.SelectionSet, v *ent.ReleasePolicy) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ReleasePolicy(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOReleasePolicyEdge2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.ReleasePolicyEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOReleasePolicyEdge2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOReleasePolicyEdge2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyEdge(ctx context.Context, sel ast.SelectionSet, v *ent.ReleasePolicyEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ReleasePolicyEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOReleasePolicyOrder2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyOrder(ctx context.Context, v interface{}) (*ent.ReleasePolicyOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputReleasePolicyOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOReleasePolicyOrderField2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyOrderField(ctx context.Context, v interface{}) (*ent.ReleasePolicyOrderField, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(ent.ReleasePolicyOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOReleasePolicyOrderField2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.ReleasePolicyOrderField) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) marshalOReleasePolicyViolation2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolation(ctx context.Context, sel ast.SelectionSet, v []*ent.ReleasePolicyViolation) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOReleasePolicyViolation2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolation(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOReleasePolicyViolation2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolation(ctx context.Context, sel ast.SelectionSet, v *ent.ReleasePolicyViolation) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ReleasePolicyViolation(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOReleasePolicyViolationEdge2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationEdge(ctx context.Context, sel ast.SelectionSet, v []*ent.ReleasePolicyViolationEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOReleasePolicyViolationEdge2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOReleasePolicyViolationEdge2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationEdge(ctx context.Context, sel ast.SelectionSet, v *ent.ReleasePolicyViolationEdge) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ReleasePolicyViolationEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOReleasePolicyViolationSeverity2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx context.Context, v interface{}) (releasepolicyviolation.Severity, error) {
+	var res releasepolicyviolation.Severity
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOReleasePolicyViolationSeverity2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx context.Context, sel ast.SelectionSet, v releasepolicyviolation.Severity) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalOReleasePolicyViolationSeverity2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverityᚄ(ctx context.Context, v interface{}) ([]releasepolicyviolation.Severity, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]releasepolicyviolation.Severity, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNReleasePolicyViolationSeverity2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOReleasePolicyViolationSeverity2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverityᚄ(ctx context.Context, sel ast.SelectionSet, v []releasepolicyviolation.Severity) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNReleasePolicyViolationSeverity2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) unmarshalOReleasePolicyViolationSeverity2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx context.Context, v interface{}) (*releasepolicyviolation.Severity, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(releasepolicyviolation.Severity)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOReleasePolicyViolationSeverity2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleasepolicyviolationᚐSeverity(ctx context.Context, sel ast.SelectionSet, v *releasepolicyviolation.Severity) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOReleasePolicyViolationWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.ReleasePolicyViolationWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*ent.ReleasePolicyViolationWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNReleasePolicyViolationWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOReleasePolicyViolationWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyViolationWhereInput(ctx context.Context, v interface{}) (*ent.ReleasePolicyViolationWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputReleasePolicyViolationWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOReleasePolicyWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.ReleasePolicyWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*ent.ReleasePolicyWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNReleasePolicyWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOReleasePolicyWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInput(ctx context.Context, v interface{}) (*ent.ReleasePolicyWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputReleasePolicyWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOReleaseStatus2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx context.Context, v interface{}) (release.Status, error) {

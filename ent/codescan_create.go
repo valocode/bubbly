@@ -323,10 +323,10 @@ func (csc *CodeScanCreate) createSpec() (*CodeScan, *sqlgraph.CreateSpec) {
 	}
 	if nodes := csc.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   codescan.VulnerabilitiesTable,
-			Columns: codescan.VulnerabilitiesPrimaryKey,
+			Columns: []string{codescan.VulnerabilitiesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

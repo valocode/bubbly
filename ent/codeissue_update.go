@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/cwe"
 	"github.com/valocode/bubbly/ent/predicate"
 )
 
@@ -29,21 +28,6 @@ func (ciu *CodeIssueUpdate) Where(ps ...predicate.CodeIssue) *CodeIssueUpdate {
 	return ciu
 }
 
-// AddCweIDs adds the "cwe" edge to the CWE entity by IDs.
-func (ciu *CodeIssueUpdate) AddCweIDs(ids ...int) *CodeIssueUpdate {
-	ciu.mutation.AddCweIDs(ids...)
-	return ciu
-}
-
-// AddCwe adds the "cwe" edges to the CWE entity.
-func (ciu *CodeIssueUpdate) AddCwe(c ...*CWE) *CodeIssueUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ciu.AddCweIDs(ids...)
-}
-
 // SetScanID sets the "scan" edge to the CodeScan entity by ID.
 func (ciu *CodeIssueUpdate) SetScanID(id int) *CodeIssueUpdate {
 	ciu.mutation.SetScanID(id)
@@ -58,27 +42,6 @@ func (ciu *CodeIssueUpdate) SetScan(c *CodeScan) *CodeIssueUpdate {
 // Mutation returns the CodeIssueMutation object of the builder.
 func (ciu *CodeIssueUpdate) Mutation() *CodeIssueMutation {
 	return ciu.mutation
-}
-
-// ClearCwe clears all "cwe" edges to the CWE entity.
-func (ciu *CodeIssueUpdate) ClearCwe() *CodeIssueUpdate {
-	ciu.mutation.ClearCwe()
-	return ciu
-}
-
-// RemoveCweIDs removes the "cwe" edge to CWE entities by IDs.
-func (ciu *CodeIssueUpdate) RemoveCweIDs(ids ...int) *CodeIssueUpdate {
-	ciu.mutation.RemoveCweIDs(ids...)
-	return ciu
-}
-
-// RemoveCwe removes "cwe" edges to CWE entities.
-func (ciu *CodeIssueUpdate) RemoveCwe(c ...*CWE) *CodeIssueUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ciu.RemoveCweIDs(ids...)
 }
 
 // ClearScan clears the "scan" edge to the CodeScan entity.
@@ -173,60 +136,6 @@ func (ciu *CodeIssueUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if ciu.mutation.CweCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   codeissue.CweTable,
-			Columns: codeissue.CwePrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cwe.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ciu.mutation.RemovedCweIDs(); len(nodes) > 0 && !ciu.mutation.CweCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   codeissue.CweTable,
-			Columns: codeissue.CwePrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cwe.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ciu.mutation.CweIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   codeissue.CweTable,
-			Columns: codeissue.CwePrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cwe.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if ciu.mutation.ScanCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -281,21 +190,6 @@ type CodeIssueUpdateOne struct {
 	mutation *CodeIssueMutation
 }
 
-// AddCweIDs adds the "cwe" edge to the CWE entity by IDs.
-func (ciuo *CodeIssueUpdateOne) AddCweIDs(ids ...int) *CodeIssueUpdateOne {
-	ciuo.mutation.AddCweIDs(ids...)
-	return ciuo
-}
-
-// AddCwe adds the "cwe" edges to the CWE entity.
-func (ciuo *CodeIssueUpdateOne) AddCwe(c ...*CWE) *CodeIssueUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ciuo.AddCweIDs(ids...)
-}
-
 // SetScanID sets the "scan" edge to the CodeScan entity by ID.
 func (ciuo *CodeIssueUpdateOne) SetScanID(id int) *CodeIssueUpdateOne {
 	ciuo.mutation.SetScanID(id)
@@ -310,27 +204,6 @@ func (ciuo *CodeIssueUpdateOne) SetScan(c *CodeScan) *CodeIssueUpdateOne {
 // Mutation returns the CodeIssueMutation object of the builder.
 func (ciuo *CodeIssueUpdateOne) Mutation() *CodeIssueMutation {
 	return ciuo.mutation
-}
-
-// ClearCwe clears all "cwe" edges to the CWE entity.
-func (ciuo *CodeIssueUpdateOne) ClearCwe() *CodeIssueUpdateOne {
-	ciuo.mutation.ClearCwe()
-	return ciuo
-}
-
-// RemoveCweIDs removes the "cwe" edge to CWE entities by IDs.
-func (ciuo *CodeIssueUpdateOne) RemoveCweIDs(ids ...int) *CodeIssueUpdateOne {
-	ciuo.mutation.RemoveCweIDs(ids...)
-	return ciuo
-}
-
-// RemoveCwe removes "cwe" edges to CWE entities.
-func (ciuo *CodeIssueUpdateOne) RemoveCwe(c ...*CWE) *CodeIssueUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ciuo.RemoveCweIDs(ids...)
 }
 
 // ClearScan clears the "scan" edge to the CodeScan entity.
@@ -448,60 +321,6 @@ func (ciuo *CodeIssueUpdateOne) sqlSave(ctx context.Context) (_node *CodeIssue, 
 				ps[i](selector)
 			}
 		}
-	}
-	if ciuo.mutation.CweCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   codeissue.CweTable,
-			Columns: codeissue.CwePrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cwe.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ciuo.mutation.RemovedCweIDs(); len(nodes) > 0 && !ciuo.mutation.CweCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   codeissue.CweTable,
-			Columns: codeissue.CwePrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cwe.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ciuo.mutation.CweIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   codeissue.CweTable,
-			Columns: codeissue.CwePrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cwe.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if ciuo.mutation.ScanCleared() {
 		edge := &sqlgraph.EdgeSpec{

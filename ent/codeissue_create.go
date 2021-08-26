@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
-	"github.com/valocode/bubbly/ent/cwe"
 )
 
 // CodeIssueCreate is the builder for creating a CodeIssue entity.
@@ -43,21 +42,6 @@ func (cic *CodeIssueCreate) SetSeverity(c codeissue.Severity) *CodeIssueCreate {
 func (cic *CodeIssueCreate) SetType(c codeissue.Type) *CodeIssueCreate {
 	cic.mutation.SetType(c)
 	return cic
-}
-
-// AddCweIDs adds the "cwe" edge to the CWE entity by IDs.
-func (cic *CodeIssueCreate) AddCweIDs(ids ...int) *CodeIssueCreate {
-	cic.mutation.AddCweIDs(ids...)
-	return cic
-}
-
-// AddCwe adds the "cwe" edges to the CWE entity.
-func (cic *CodeIssueCreate) AddCwe(c ...*CWE) *CodeIssueCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return cic.AddCweIDs(ids...)
 }
 
 // SetScanID sets the "scan" edge to the CodeScan entity by ID.
@@ -234,25 +218,6 @@ func (cic *CodeIssueCreate) createSpec() (*CodeIssue, *sqlgraph.CreateSpec) {
 			Column: codeissue.FieldType,
 		})
 		_node.Type = value
-	}
-	if nodes := cic.mutation.CweIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   codeissue.CweTable,
-			Columns: codeissue.CwePrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: cwe.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := cic.mutation.ScanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

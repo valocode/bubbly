@@ -12,9 +12,6 @@ type Adapter func(*sql.Selector)
 // Artifact is the predicate function for artifact builders.
 type Artifact func(*sql.Selector)
 
-// CWE is the predicate function for cwe builders.
-type CWE func(*sql.Selector)
-
 // CodeIssue is the predicate function for codeissue builders.
 type CodeIssue func(*sql.Selector)
 
@@ -44,6 +41,15 @@ type ReleaseComponent func(*sql.Selector)
 
 // ReleaseEntry is the predicate function for releaseentry builders.
 type ReleaseEntry func(*sql.Selector)
+
+// ReleaseLicense is the predicate function for releaselicense builders.
+type ReleaseLicense func(*sql.Selector)
+
+// ReleasePolicy is the predicate function for releasepolicy builders.
+type ReleasePolicy func(*sql.Selector)
+
+// ReleasePolicyViolation is the predicate function for releasepolicyviolation builders.
+type ReleasePolicyViolation func(*sql.Selector)
 
 // ReleaseVulnerability is the predicate function for releasevulnerability builders.
 type ReleaseVulnerability func(*sql.Selector)

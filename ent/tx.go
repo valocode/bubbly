@@ -16,8 +16,6 @@ type Tx struct {
 	Adapter *AdapterClient
 	// Artifact is the client for interacting with the Artifact builders.
 	Artifact *ArtifactClient
-	// CWE is the client for interacting with the CWE builders.
-	CWE *CWEClient
 	// CodeIssue is the client for interacting with the CodeIssue builders.
 	CodeIssue *CodeIssueClient
 	// CodeScan is the client for interacting with the CodeScan builders.
@@ -38,6 +36,12 @@ type Tx struct {
 	ReleaseComponent *ReleaseComponentClient
 	// ReleaseEntry is the client for interacting with the ReleaseEntry builders.
 	ReleaseEntry *ReleaseEntryClient
+	// ReleaseLicense is the client for interacting with the ReleaseLicense builders.
+	ReleaseLicense *ReleaseLicenseClient
+	// ReleasePolicy is the client for interacting with the ReleasePolicy builders.
+	ReleasePolicy *ReleasePolicyClient
+	// ReleasePolicyViolation is the client for interacting with the ReleasePolicyViolation builders.
+	ReleasePolicyViolation *ReleasePolicyViolationClient
 	// ReleaseVulnerability is the client for interacting with the ReleaseVulnerability builders.
 	ReleaseVulnerability *ReleaseVulnerabilityClient
 	// Repo is the client for interacting with the Repo builders.
@@ -187,7 +191,6 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Adapter = NewAdapterClient(tx.config)
 	tx.Artifact = NewArtifactClient(tx.config)
-	tx.CWE = NewCWEClient(tx.config)
 	tx.CodeIssue = NewCodeIssueClient(tx.config)
 	tx.CodeScan = NewCodeScanClient(tx.config)
 	tx.Component = NewComponentClient(tx.config)
@@ -198,6 +201,9 @@ func (tx *Tx) init() {
 	tx.Release = NewReleaseClient(tx.config)
 	tx.ReleaseComponent = NewReleaseComponentClient(tx.config)
 	tx.ReleaseEntry = NewReleaseEntryClient(tx.config)
+	tx.ReleaseLicense = NewReleaseLicenseClient(tx.config)
+	tx.ReleasePolicy = NewReleasePolicyClient(tx.config)
+	tx.ReleasePolicyViolation = NewReleasePolicyViolationClient(tx.config)
 	tx.ReleaseVulnerability = NewReleaseVulnerabilityClient(tx.config)
 	tx.Repo = NewRepoClient(tx.config)
 	tx.TestCase = NewTestCaseClient(tx.config)

@@ -23,11 +23,11 @@ func (CodeIssue) Annotations() []schema.Annotation {
 
 func (CodeIssue) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("rule_id").Immutable().NotEmpty().
+		field.String("rule_id").Immutable().NotEmpty().
 			Annotations(
 				entgql.OrderField("rule_id"),
 			),
-		field.Text("message").Immutable().NotEmpty(),
+		field.String("message").Immutable().NotEmpty(),
 		field.Enum("severity").Immutable().
 			Values("low", "medium", "high").
 			Annotations(
@@ -43,11 +43,6 @@ func (CodeIssue) Fields() []ent.Field {
 
 func (CodeIssue) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("cwe", CWE.Type),
 		edge.To("scan", CodeScan.Type).Unique().Required(),
 	}
 }
-
-// func (CodeIssue) Indexes() []ent.Index {
-// 	return []ent.Index{}
-// }

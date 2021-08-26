@@ -28,9 +28,11 @@ type ProjectEdges struct {
 	Repos []*Repo `json:"repos,omitempty"`
 	// VulnerabilityReviews holds the value of the vulnerability_reviews edge.
 	VulnerabilityReviews []*VulnerabilityReview `json:"vulnerability_reviews,omitempty"`
+	// Policies holds the value of the policies edge.
+	Policies []*ReleasePolicy `json:"policies,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // ReposOrErr returns the Repos value or an error if the edge
@@ -49,6 +51,15 @@ func (e ProjectEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error
 		return e.VulnerabilityReviews, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
+}
+
+// PoliciesOrErr returns the Policies value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProjectEdges) PoliciesOrErr() ([]*ReleasePolicy, error) {
+	if e.loadedTypes[2] {
+		return e.Policies, nil
+	}
+	return nil, &NotLoadedError{edge: "policies"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -100,6 +111,11 @@ func (pr *Project) QueryRepos() *RepoQuery {
 // QueryVulnerabilityReviews queries the "vulnerability_reviews" edge of the Project entity.
 func (pr *Project) QueryVulnerabilityReviews() *VulnerabilityReviewQuery {
 	return (&ProjectClient{config: pr.config}).QueryVulnerabilityReviews(pr)
+}
+
+// QueryPolicies queries the "policies" edge of the Project entity.
+func (pr *Project) QueryPolicies() *ReleasePolicyQuery {
+	return (&ProjectClient{config: pr.config}).QueryPolicies(pr)
 }
 
 // Update returns a builder for updating this Project.

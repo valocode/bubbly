@@ -384,7 +384,7 @@ func HasVulnerabilities() predicate.CodeScan {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(VulnerabilitiesTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, VulnerabilitiesTable, VulnerabilitiesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, VulnerabilitiesTable, VulnerabilitiesColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -396,7 +396,7 @@ func HasVulnerabilitiesWith(preds ...predicate.ReleaseVulnerability) predicate.C
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(VulnerabilitiesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, VulnerabilitiesTable, VulnerabilitiesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, VulnerabilitiesTable, VulnerabilitiesColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

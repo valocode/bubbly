@@ -215,7 +215,7 @@ func HasRepos() predicate.Project {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(ReposTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, ReposTable, ReposPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, ReposTable, ReposColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -227,7 +227,7 @@ func HasReposWith(preds ...predicate.Repo) predicate.Project {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(ReposInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, ReposTable, ReposPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, ReposTable, ReposColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -256,6 +256,34 @@ func HasVulnerabilityReviewsWith(preds ...predicate.VulnerabilityReview) predica
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(VulnerabilityReviewsInverseTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, VulnerabilityReviewsTable, VulnerabilityReviewsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPolicies applies the HasEdge predicate on the "policies" edge.
+func HasPolicies() predicate.Project {
+	return predicate.Project(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoliciesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, PoliciesTable, PoliciesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPoliciesWith applies the HasEdge predicate on the "policies" edge with a given conditions (other predicates).
+func HasPoliciesWith(preds ...predicate.ReleasePolicy) predicate.Project {
+	return predicate.Project(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PoliciesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, PoliciesTable, PoliciesPrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
