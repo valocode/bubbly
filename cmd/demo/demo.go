@@ -53,18 +53,14 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			fmt.Println("")
 			fmt.Println("Populating the store with dummy data...")
 
-			fmt.Println("Creating dummy releases...")
+			fmt.Println("Creating dummy data...")
+			if err := store.PopulateStoreWithPolicies("."); err != nil {
+				return err
+			}
 			if err := store.PopulateStoreWithDummyData(); err != nil {
 				return err
 			}
 			fmt.Println("Done!")
-			fmt.Println("")
-
-			// fmt.Println("Evaluating releases...")
-			// if err := test.FailSomeRandomReleases(store); err != nil {
-			// 	log.Fatal("evaluating releases: ", err)
-			// }
-			// fmt.Println("Done!")
 			fmt.Println("")
 
 			fmt.Printf("Starting HTTP server on %s:%s\n", bCtx.ServerConfig.Host, bCtx.ServerConfig.Port)

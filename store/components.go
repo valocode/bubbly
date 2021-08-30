@@ -1,7 +1,6 @@
 package store
 
 import (
-	"github.com/hashicorp/go-multierror"
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/vulnerability"
 	"github.com/valocode/bubbly/store/api"
@@ -78,19 +77,12 @@ func (s *Store) GetComponentOrError(tx *ent.Tx, id int) (*ent.Component, error) 
 
 func (s *Store) GetVulnerabilityOrCreate(tx *ent.Tx, vuln *api.Vulnerability) (*ent.Vulnerability, error) {
 	client := s.clientOrTx(tx)
-	var (
-		vErr multierror.Error
-		vID  = *vuln.Vid
-	)
-	if vErr.ErrorOrNil() != nil {
-		return nil, HandleMultiVError(vErr)
-	}
 	dbVuln, err := client.Vulnerability.Query().
-		Where(vulnerability.Vid(vID)).
+		Where(vulnerability.Vid(*vuln.Vid)).
 		Only(s.ctx)
 	if err != nil {
 		if !ent.IsNotFound(err) {
-			return nil, NewNotFoundError(err, "vulnerability with ID %s", vID)
+			return nil, NewNotFoundError(err, "vulnerability with ID %s", *vuln.Vid)
 		}
 		// If not found, create it
 		dbVuln, err = client.Vulnerability.Create().

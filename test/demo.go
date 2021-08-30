@@ -56,7 +56,7 @@ type ReleaseData struct {
 var demoData = []DemoRepoOptions{
 	{
 		Name:          "demo",
-		Project:       "bubbly",
+		Project:       "demo",
 		Branch:        "main",
 		NumCommits:    30,
 		NumTests:      500,

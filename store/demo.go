@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 
+	"github.com/valocode/bubbly/store/api"
 	"github.com/valocode/bubbly/test"
 )
 
@@ -39,6 +40,9 @@ func (s *Store) PopulateStoreWithPolicies(basedir string) error {
 		return err
 	}
 	for _, req := range reqs {
+		req.Affects = &api.ReleasePolicyAffects{
+			Projects: []string{"demo"},
+		}
 		if _, err := s.SaveReleasePolicy(req); err != nil {
 			return err
 		}

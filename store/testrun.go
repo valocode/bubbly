@@ -44,5 +44,11 @@ func (s *Store) saveTestRun(release *ent.Release, run *api.TestRun) (*ent.TestRu
 		return nil, txErr
 	}
 
+	// Once transaction is complete, evaluate the release.
+	_, err := s.EvaluateReleasePolicies(release.ID)
+	if err != nil {
+		return nil, NewServerError(err, "evaluating release policies")
+	}
+
 	return testRun, nil
 }

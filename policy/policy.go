@@ -14,9 +14,17 @@ import (
 )
 
 const (
-	policyQuery   = "data.policy.violation"
+	// policyQuery = `
+	// {
+	// 	"deny"   : data.policy.deny,
+	// 	"require": data.policy.require,
+	// }`
+	policyQuery   = `data.policy`
 	policyModule  = "policy"
 	policyPackage = "data.policy"
+
+	denyResult    = "deny"
+	requireResult = "require"
 )
 
 type runOptions struct {
@@ -58,24 +66,29 @@ func EvaluatePolicy(module string, opts ...func(*runOptions)) (*PolicyResult, er
 	if len(rs) == 0 {
 		return nil, errors.New("policy result set is empty; check the policy query")
 	}
-	vResult := rs[0]
-	if len(vResult.Bindings) != 0 {
-		return nil, fmt.Errorf("violation result has variable bindings; check the policy query: %v", vResult.Bindings)
+	queryResult := rs[0]
+	if len(queryResult.Bindings) != 0 {
+		return nil, fmt.Errorf("result has variable bindings; check the policy query: %v", queryResult.Bindings)
 	}
-	if len(vResult.Expressions) == 0 {
-		return nil, fmt.Errorf("violation result has no expressions; check the policy query")
+	if len(queryResult.Expressions) == 0 {
+		return nil, fmt.Errorf("result has no expressions; check the policy query")
 	}
-	expr := vResult.Expressions[0]
-	rawViolations, ok := expr.Value.([]interface{})
+	expr := queryResult.Expressions[0]
+	obj, ok := expr.Value.(map[string]interface{})
 	if !ok {
-		return nil, errors.New("violation result should be a list of map values, e.g. [{msg: \"policy failed\", severity: \"error\"}, ...]")
+		return nil, fmt.Errorf("internal error: result is not a map[string]interface{}")
 	}
 	var violations []*Violation
-	if err := mapstructure.Decode(rawViolations, &violations); err != nil {
-		return nil, fmt.Errorf("error decoding policy violations: %w", err)
-	}
-	if err := validator.New().Var(violations, "required,dive"); err != nil {
-		return nil, err
+	for name, value := range obj {
+		switch name {
+		case denyResult, requireResult:
+			if err := mapstructure.Decode(value, &violations); err != nil {
+				return nil, fmt.Errorf("error decoding policy violations: %w", err)
+			}
+			if err := validator.New().Var(violations, "required,dive"); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return &PolicyResult{

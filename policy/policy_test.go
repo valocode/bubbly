@@ -72,6 +72,18 @@ func TestPolicy(t *testing.T) {
 			policy: "./testdata/code_issue_high_severity.rego",
 			want:   0,
 		},
+		{
+			name:   "release_checklist_failing",
+			input:  map[string][]map[string]interface{}{"release_entries": {{"type": "code_scan"}}},
+			policy: "./testdata/release_checklist.rego",
+			want:   1,
+		},
+		// {
+		// 	name:   "code_issues_high_severity_passing",
+		// 	input:  map[string][]map[string]interface{}{"code_issues": {{"severity": "low"}}},
+		// 	policy: "./testdata/code_issue_high_severity.rego",
+		// 	want:   0,
+		// },
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -79,7 +91,7 @@ func TestPolicy(t *testing.T) {
 			require.NoError(t, err)
 			result, err := EvaluatePolicy(string(b),
 				WithResolver(&fakeResolver{data: tc.input}),
-				// WithTracing(true),
+				WithTracing(true),
 			)
 			require.NoError(t, err)
 			assert.Len(t, result.Violations, tc.want)
