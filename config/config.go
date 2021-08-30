@@ -3,7 +3,24 @@ package config
 import "fmt"
 
 // ###########################################
-// Store
+// Release
+// ###########################################
+
+// ReleaseConfig is a struct storing local bubbly runtime configs, such as the
+// localtion of the .bubbly directory containing the release specification and
+// local adapters
+type ReleaseConfig struct {
+	// BubblyDir points to the .bubbly directory
+	BubblyDir string
+	// ReleaseSpec points to the release specification file explicitly
+	// (default $BUBBLY_DIR/release.json)
+	ReleaseSpec string
+	// Project defines the bubbly project
+	Project string
+}
+
+// ###########################################
+// Server
 // ###########################################
 
 // ServerConfig is a struct storing the server information.

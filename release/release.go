@@ -10,69 +10,115 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/hashicorp/hcl/v2/hclparse"
-	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
+	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/store/api"
 )
 
-type ReleaseOptions struct {
-	Filename string
-	RepoDir  string
-}
-
 type ReleaseSpec struct {
-	Project string `json:"project,omitempty" hcl:"project,optional" validate:"required"`
+	Project string `json:"project,omitempty" validate:"required"`
 	// Repo is the name of the repository. If not provided, the name is created
 	// from the git remote
-	Repo    string  `json:"repo,omitempty" hcl:"repo,optional"`
-	Name    string  `json:"name,omitempty" hcl:"name,optional"`
-	Version string  `json:"version,omitempty" hcl:"version,optional"`
-	GitSpec GitSpec `json:"git,omitempty" hcl:"git,block"`
+	Repo    string  `json:"repo,omitempty"`
+	Name    string  `json:"name,omitempty"`
+	Version string  `json:"version,omitempty"`
+	GitSpec GitSpec `json:"git,omitempty"`
+
+	// Location stores the location of the release spec
+	Location string
 }
 
 type ReleaseSpecWrap struct {
-	Release ReleaseSpec `json:"release" hcl:"release,block"`
+	Release ReleaseSpec `json:"release"`
 }
 
-func DefaultReleaseSpec() *ReleaseSpec {
+func DefaultReleaseSpec(bCtx *env.BubblyContext) *ReleaseSpec {
 	return &ReleaseSpec{
-		Project: config.DefaultEnvStr("BUBBLY_PROJECT", "default"),
+		Project: bCtx.ReleaseConfig.Project,
 	}
 }
 
-func CreateRelease(opts ReleaseOptions) (*api.ReleaseCreateRequest, error) {
-	var specFile = opts.Filename
-	if opts.Filename == "" {
-		file, err := defaultSpecFile()
-		if err != nil {
-			return nil, err
-		}
-		specFile = file
+// TODO: how to pass around release directory and spec file...
+func Commit(bCtx *env.BubblyContext) (string, error) {
+	spec, err := ParseReleaseSpec(bCtx)
+	if err != nil {
+		return "", err
 	}
 
-	release, err := decodeReleaseSpec(specFile)
+	commit, _, err := spec.GitSpec.version()
 	if err != nil {
-		return nil, fmt.Errorf("decoding release spec %s: %w", specFile, err)
+		return "", err
 	}
-	// Set the path to the git repository relative to the release spec
-	baseDir := filepath.Dir(opts.Filename)
-	release.GitSpec.Path = filepath.Join(baseDir, release.GitSpec.Path)
-	if err := release.Validate(); err != nil {
+	fmt.Println("commit! ", commit)
+	return commit, nil
+}
+
+func CreateRelease(bCtx *env.BubblyContext) (*api.ReleaseCreateRequest, error) {
+	spec, err := ParseReleaseSpec(bCtx)
+	if err != nil {
 		return nil, err
 	}
 
-	commit, err := release.commit()
+	commit, err := spec.commit()
 	if err != nil {
 		return nil, err
 	}
 
 	return &api.ReleaseCreateRequest{
-		Repo:    ent.NewRepoModelCreate().SetName(release.Repo),
-		Release: ent.NewReleaseModelCreate().SetName(release.Name).SetVersion(release.Version),
+		Project: ent.NewProjectModelCreate().SetName(spec.Project),
+		Repo:    ent.NewRepoModelCreate().SetName(spec.Repo),
+		Release: ent.NewReleaseModelCreate().SetName(spec.Name).SetVersion(spec.Version),
 		Commit:  commit,
 	}, nil
+}
+
+func ParseReleaseSpec(bCtx *env.BubblyContext) (*ReleaseSpec, error) {
+	release, err := decodeReleaseSpec(bCtx)
+	if err != nil {
+		return nil, fmt.Errorf("decoding release spec: %w", err)
+	}
+	baseDir := "."
+	// Set the path to the git repository relative to the release spec (if one exists)
+	if release.Location != "" {
+		baseDir = filepath.Dir(release.Location)
+	}
+	release.GitSpec.Path = filepath.Join(baseDir, release.GitSpec.Path)
+	// Validate the release spec and populate all the necessary data.
+	// This includes checking that a git repository exists and a version can be
+	// extracted.
+	if err := release.Validate(); err != nil {
+		return nil, err
+	}
+
+	return release, nil
+}
+
+func decodeReleaseSpec(bCtx *env.BubblyContext) (*ReleaseSpec, error) {
+	spec := DefaultReleaseSpec(bCtx)
+	var possiblePaths = []string{
+		".bubbly.json",
+		filepath.Join(bCtx.ReleaseConfig.BubblyDir, ".bubbly.json"),
+	}
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			file, err := os.Open(path)
+			if err != nil {
+				return nil, err
+			}
+			defer file.Close()
+			if err := json.NewDecoder(file).Decode(spec); err != nil {
+				return nil, err
+			}
+			spec.Location = path
+			return spec, nil
+		} else if os.IsNotExist(err) {
+			// If it doesn't exist, don't worry, just carry on
+			continue
+		} else {
+			return nil, fmt.Errorf("error checking for adapter existence: %s: %w", path, err)
+		}
+	}
+	return spec, nil
 }
 
 func (r *ReleaseSpec) commit() (*ent.GitCommitModelCreate, error) {
@@ -108,7 +154,7 @@ func (r *ReleaseSpec) commit() (*ent.GitCommitModelCreate, error) {
 		commit.SetBranch(ref.Name().Short())
 	}
 
-	tag, _, err := gs.version()
+	_, tag, err := gs.version()
 	if err != nil {
 		return nil, fmt.Errorf("error getting git tag: %w", err)
 	}
@@ -117,57 +163,6 @@ func (r *ReleaseSpec) commit() (*ent.GitCommitModelCreate, error) {
 	}
 
 	return commit, nil
-}
-
-func decodeReleaseSpec(filename string) (*ReleaseSpec, error) {
-	relWrap := ReleaseSpecWrap{
-		Release: *DefaultReleaseSpec(),
-	}
-	// If no spec file was found and no spec file was provided as an argument,
-	// return the default config
-	if filename == "" {
-		return &relWrap.Release, nil
-	}
-	switch {
-	case strings.HasSuffix(filename, ".json"):
-		file, err := os.Open(filename)
-		if err != nil {
-			return nil, err
-		}
-		if err := json.NewDecoder(file).Decode(&relWrap); err != nil {
-			return nil, err
-		}
-	case strings.HasSuffix(filename, ".hcl"):
-		hclFile, diags := hclparse.NewParser().ParseHCLFile(filename)
-		if diags.HasErrors() {
-			return nil, fmt.Errorf("parsing bubbly file: %s: %s", filename, diags.Error())
-		}
-
-		if diags := gohcl.DecodeBody(hclFile.Body, nil, &relWrap); diags.HasErrors() {
-			return nil, fmt.Errorf("decoding bubbly release from %s: %s", filename, diags.Error())
-		}
-	default:
-		return nil, fmt.Errorf("unknown bubbly release specification file type: %s", filename)
-	}
-	return &relWrap.Release, nil
-}
-
-func defaultSpecFile() (string, error) {
-	var exts = []string{
-		".json", ".hcl",
-	}
-	for _, ext := range exts {
-		f, err := os.Open(".bubbly" + ext)
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-			return "", err
-		}
-		defer f.Close()
-		return ".bubbly" + ext, nil
-	}
-	return "", nil
 }
 
 func (r *ReleaseSpec) Validate() error {
@@ -266,7 +261,9 @@ func (g *GitSpec) nameFromRemote() (string, error) {
 	return id, nil
 }
 
-// version returns <tag>, <commit>, <error>
+// version returns <commit>, <tag>, <error>
+// There will always be a commit, and a tag is returned if one exists for the commit.
+// An error is returned if something went wrong.
 func (g *GitSpec) version() (string, string, error) {
 	repo, err := g.openRepo(g.Path)
 	if err != nil {
@@ -282,8 +279,8 @@ func (g *GitSpec) version() (string, string, error) {
 		return "", "", fmt.Errorf("failed to read tags from repo %s, error %w", g.Path, err)
 	}
 	var (
-		tag    string
 		commit = ref.Hash().String()
+		tag    string
 	)
 	// Ignore the returned error, as it shouldn't be triggered
 	err = tagrefs.ForEach(func(t *plumbing.Reference) error {
@@ -311,5 +308,5 @@ func (g *GitSpec) version() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	return tag, commit, nil
+	return commit, tag, nil
 }

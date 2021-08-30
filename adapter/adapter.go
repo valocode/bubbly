@@ -1,109 +1,107 @@
 package adapter
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/mitchellh/mapstructure"
-	"github.com/open-policy-agent/opa/ast"
+	"github.com/open-policy-agent/conftest/parser"
 	"github.com/open-policy-agent/opa/rego"
-	"github.com/open-policy-agent/opa/types"
+	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/ent"
+	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/store/api"
 )
 
 const (
 	DefaultTag = "default"
 
-	adapterQuery   = "data.adapter"
+	adapterQuery = `
+	{
+		"code_scan": data.adapter.code_scan,
+		"code_issue": data.adapter.code_issue,
+	}`
+	// adapterQuery = `
+	// {
+	// 	"code_scan": data.adapter.code_scan,
+	// 	"code_issue": data.adapter.code_issue,
+	// 	"component": data.adapter.component,
+	// 	"test_run": data.adapter.test_run,
+	// 	"test_case": data.adapter.test_case,
+	// }`
 	adapterModule  = "adapter"
 	adapterPackage = "data.adapter"
 
 	codeScanResult  = "code_scan"
 	codeIssueResult = "code_issue"
+	componentResult = "component"
+
+	testRunResult  = "test_run"
+	testCaseResult = "test_case"
 )
 
 type (
 	AdapterResult struct {
 		CodeScan *api.CodeScan
 		TestRun  *api.TestRun
+		Traces   []string
+	}
+
+	runOptions struct {
+		trace      bool
+		inputFiles []string
 	}
 )
 
-func RunFromFile(path string) (*AdapterResult, error) {
+// RunFromID runs an adapter by the given id.
+// This will get the relevant adapter (from filesystem or remotely) and perform
+// the necessary rego queries and publish that data to the release.
+func RunFromID(bCtx *env.BubblyContext, id string, opts ...func(r *runOptions)) (*AdapterResult, error) {
+	//
+	// Get the adapter module to run
+	//
+	module, err := adapterFromID(bCtx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return Run(module, opts...)
+}
+
+func RunFromFile(path string, opts ...func(r *runOptions)) (*AdapterResult, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	return Run(string(b))
+	return Run(string(b), opts...)
 }
 
-func Run(module string) (*AdapterResult, error) {
+func Run(module string, opts ...func(r *runOptions)) (*AdapterResult, error) {
 	ctx := context.Background()
-	r := rego.New(
-		rego.Query(adapterQuery),
-		rego.Module(adapterModule, module),
-		rego.Function1(&rego.Function{
-			Name: "readfile",
-			Decl: types.NewFunction(
-				types.Args(types.S),
-				types.S,
-			),
-		}, func(bctx rego.BuiltinContext, op1 *ast.Term) (*ast.Term, error) {
-			path := op1.Value.(ast.String)
-			b, err := os.ReadFile(string(path))
-			if err != nil {
-				return nil, err
-			}
-			return ast.StringTerm(string(b)), nil
-		}),
-		rego.Function1(&rego.Function{
-			Name: "json",
-			Decl: types.NewFunction(
-				types.Args(types.S),
-				types.NewObject(nil, types.NewDynamicProperty(types.A, types.A)),
-			),
-		}, func(bctx rego.BuiltinContext, op1 *ast.Term) (*ast.Term, error) {
-			path := op1.Value.(ast.String)
-			file, err := os.Open(string(path))
-			if err != nil {
-				return nil, err
-			}
-			var result map[string]interface{}
-			if err := json.NewDecoder(file).Decode(&result); err != nil {
-				return nil, err
-			}
-			v, err := ast.InterfaceToValue(result)
-			if err != nil {
-				return nil, err
-			}
-			return ast.NewTerm(v), nil
-		}),
-	)
-	query, err := r.PrepareForEval(ctx)
+	regoInstance, err := newRego(module, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("error preparing adapter for evaluation: %w", err)
+		return nil, err
+	}
+	rs, err := regoInstance.Eval(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// Check that the module and such is correct
-	mod := query.Modules()[adapterModule]
-	pkg := mod.Package.Path.String()
-	if pkg != adapterPackage {
-		return nil, fmt.Errorf("package should be \"%s\", received \"%s\"", adapterPackage, pkg)
+	traceBuf := new(bytes.Buffer)
+	rego.PrintTrace(traceBuf, regoInstance)
+	var traces []string
+	for _, line := range strings.Split(traceBuf.String(), "\n") {
+		if len(line) > 0 {
+			traces = append(traces, line)
+		}
 	}
 
-	// Run evaluation
-	// TODO: add some inputs
-	rs, err := query.Eval(ctx)
-	// rs, err := r.Eval(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error evaluating adapter: %w", err)
-	}
 	// ResultSet should never be empty, but just to double check
 	if len(rs) == 0 {
 		return nil, errors.New("adapter result set is empty; check the adapter query")
@@ -115,16 +113,21 @@ func Run(module string) (*AdapterResult, error) {
 	if len(queryResult.Expressions) == 0 {
 		return nil, fmt.Errorf("result has no expressions; check the policy query")
 	}
+
 	expr := queryResult.Expressions[0]
 	obj, ok := expr.Value.(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("internal error: result is not a map[string]interface{}")
 	}
 	var (
-		codeScans  []*ent.CodeScanModelCreate
+		codeScans  []*api.CodeScan
 		codeIssues []*api.CodeScanIssue
+		components []*api.CodeScanComponent
+
+		testRuns  []*ent.TestRunModelCreate
+		testCases []*api.TestRun
 	)
-	validate := validator.New()
+
 	for name, value := range obj {
 		switch name {
 		case codeScanResult:
@@ -134,25 +137,38 @@ func Run(module string) (*AdapterResult, error) {
 			if len(codeScans) > 1 {
 				return nil, fmt.Errorf("multiple code scans detected: only one is allowed per adapter")
 			}
-			if err := validate.Var(codeScans, "required,dive"); err != nil {
-				return nil, err
-			}
 		case codeIssueResult:
 			if err := mapstructure.Decode(value, &codeIssues); err != nil {
 				return nil, fmt.Errorf("error decoding code issues: %w", err)
 			}
-			if err := validate.Var(codeIssues, "required,dive"); err != nil {
-				return nil, err
+		case componentResult:
+			if err := mapstructure.Decode(value, &components); err != nil {
+				return nil, fmt.Errorf("error decoding components: %w", err)
+			}
+		case testRunResult:
+			if err := mapstructure.Decode(value, &testRuns); err != nil {
+				return nil, fmt.Errorf("error decoding test run: %w", err)
+			}
+			if len(testRuns) > 1 {
+				return nil, fmt.Errorf("multiple test runs detected: only one is allowed per adapter")
+			}
+		case testCaseResult:
+			if err := mapstructure.Decode(value, &testCases); err != nil {
+				return nil, fmt.Errorf("error decoding test cases: %w", err)
 			}
 		}
 	}
 
-	var result AdapterResult
+	result := AdapterResult{
+		Traces: traces,
+	}
+	validate := validator.New()
 	// Check that the data seems appropriate
 	if codeScans != nil {
-		result.CodeScan = &api.CodeScan{
-			CodeScanModelCreate: codeScans[0],
-			Issues:              codeIssues,
+		result.CodeScan = codeScans[0]
+		result.CodeScan.Issues = codeIssues
+		if err := validate.Struct(result.CodeScan); err != nil {
+			return nil, err
 		}
 	} else {
 		// Check if there was no code_scan that there were no results to associate
@@ -165,13 +181,131 @@ func Run(module string) (*AdapterResult, error) {
 	return &result, nil
 }
 
+func Validate(module string, opts ...func(r *runOptions)) error {
+	ctx := context.Background()
+	regoInstance, err := newRego(module, opts...)
+	if err != nil {
+		return err
+	}
+	query, pErr := regoInstance.PrepareForEval(ctx)
+	if pErr != nil {
+		return pErr
+	}
+	// Check that the module and such is correct
+	mod := query.Modules()[adapterModule]
+	pkg := mod.Package.Path.String()
+	if pkg != adapterPackage {
+		return fmt.Errorf("package should be \"%s\", received \"%s\"", adapterPackage, pkg)
+	}
+	return nil
+}
+
+// WithTracing enables tracing for the run
+func WithTracing(trace bool) func(r *runOptions) {
+	return func(r *runOptions) {
+		r.trace = trace
+	}
+}
+
+// WithInputFiles adds the given file list (comma-separated) to the input files
+func WithInputFiles(files string) func(r *runOptions) {
+	return func(r *runOptions) {
+		r.inputFiles = append(r.inputFiles, strings.Split(files, ",")...)
+	}
+}
+
+// WithInputFileSlice adds the given file list to the input files
+func WithInputFileSlice(files []string) func(r *runOptions) {
+	return func(r *runOptions) {
+		r.inputFiles = append(r.inputFiles, files...)
+	}
+}
+
+func newRego(module string, opts ...func(*runOptions)) (*rego.Rego, error) {
+	r := runOptions{}
+	for _, opt := range opts {
+		opt(&r)
+	}
+	//
+	// Get the inputs by parsing the inputs
+	//
+	configurations, err := parser.ParseConfigurations(r.inputFiles)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing input files")
+	}
+
+	regoOptions := []func(*rego.Rego){
+		rego.Query(adapterQuery),
+		rego.Module(adapterModule, module),
+		rego.Trace(r.trace),
+		rego.Input(configurations),
+	}
+	return rego.New(regoOptions...), nil
+}
+
 func ParseAdpaterID(id string) (string, string, error) {
 	splitID := strings.Split(id, ":")
-	switch len(splitID) {
-	case 1:
-		return id, "", nil
-	case 2:
-		return splitID[0], splitID[1], nil
+	var (
+		adapterName = splitID[0]
+		adapterTag  = DefaultTag
+	)
+	if len(splitID) == 2 {
+		adapterTag = splitID[1]
 	}
-	return "", "", fmt.Errorf("adapter must be in the form \"name:tag\"")
+	if len(splitID) > 2 {
+		return "", "", fmt.Errorf("invalid adapter format, should be \"name:tag\": %s", id)
+	}
+	return adapterName, adapterTag, nil
+}
+
+// adapterFromID takes the (user provided) id of an adapter which can either be
+// a path to a local file, the name of an adapter (which could lead to a local
+// an adapter file in the bubbly directory), or a name:tag for which the adapter
+// is fetched remotely.
+func adapterFromID(bCtx *env.BubblyContext, id string) (string, error) {
+	switch strings.Count(id, ":") {
+	case 0:
+		// It could be a local adapter, or remote with a default tag.
+		// Create a list of possible paths and check them
+		possiblePaths := []string{
+			id, filepath.Join(bCtx.ReleaseConfig.BubblyDir, "adapter", id+".rego"),
+		}
+		for _, path := range possiblePaths {
+			if _, err := os.Stat(path); err == nil {
+				// We have a local file so read and return it
+				b, err := os.ReadFile(path)
+				if err != nil {
+					return "", fmt.Errorf("error reading adapter file: %w", err)
+				}
+				return string(b), nil
+			} else if os.IsNotExist(err) {
+				// If it doesn't exist, don't worry, just carry on
+				continue
+			} else {
+				return "", fmt.Errorf("error checking for adapter existence: %s: %w", path, err)
+			}
+		}
+		// If not found, and no errors, continue to fetch remotely
+	case 1:
+		// It is an adapter with a name:tag so fetch remotely
+	default:
+		return "", fmt.Errorf("invalid format of adapter: %s", id)
+	}
+
+	splitID := strings.Split(id, ":")
+	var (
+		adapterName = splitID[0]
+		adapterTag  = DefaultTag
+	)
+	if len(splitID) == 2 {
+		adapterTag = splitID[1]
+	}
+	resp, err := client.GetAdapter(bCtx, &api.AdapterGetRequest{
+		Name: &adapterName,
+		Tag:  &adapterTag,
+	})
+	if err != nil {
+		return "", fmt.Errorf("error getting adapter remotely: %s: %w", id, err)
+	}
+	return *resp.Module, nil
 }

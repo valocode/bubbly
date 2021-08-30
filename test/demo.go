@@ -357,7 +357,7 @@ func createRepoData(opt DemoRepoOptions) []ReleaseData {
 				rand.Intn(opt.IssueScanTimeMax-opt.IssueScanTimeMin+1)+opt.IssueScanTimeMin,
 			))
 			scan := api.CodeScan{
-				CodeScanModelCreate: ent.NewCodeScanModelCreate().
+				CodeScanModelCreate: *ent.NewCodeScanModelCreate().
 					SetTool("gosec").
 					SetTime(cTime),
 			}
@@ -387,7 +387,7 @@ func createRepoData(opt DemoRepoOptions) []ReleaseData {
 				rand.Intn(opt.CveScanTimeMax-opt.CveScanTimeMin+1)+opt.CveScanTimeMin,
 			))
 			scan := api.CodeScan{
-				CodeScanModelCreate: ent.NewCodeScanModelCreate().
+				CodeScanModelCreate: *ent.NewCodeScanModelCreate().
 					SetTool("spdx-sbom-generator").
 					SetTime(cTime),
 			}

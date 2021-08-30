@@ -15,9 +15,10 @@ import (
 )
 
 type Resolver interface {
-	CodeIssues() func(*rego.Rego)
-	TestCases() func(*rego.Rego)
+	Functions() []func(*rego.Rego)
 }
+
+var _ Resolver = (*EntResolver)(nil)
 
 type EntResolver struct {
 	Ctx       context.Context
@@ -25,6 +26,12 @@ type EntResolver struct {
 	ReleaseID int
 }
 
+func (r *EntResolver) Functions() []func(*rego.Rego) {
+	return []func(*rego.Rego){
+		r.CodeIssues(),
+		r.TestCases(),
+	}
+}
 func (r *EntResolver) CodeIssues() func(*rego.Rego) {
 	return rego.Function1(&rego.Function{
 		Name: "code_issues",

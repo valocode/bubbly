@@ -30,8 +30,6 @@ var (
 
 func New(bCtx *env.BubblyContext) *cobra.Command {
 
-	opts := release.ReleaseOptions{}
-
 	cmd := &cobra.Command{
 		Use:     "create [flags]",
 		Short:   "Create a bubbly release",
@@ -39,7 +37,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		Example: cmdExamples,
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			req, err := release.CreateRelease(opts)
+			req, err := release.CreateRelease(bCtx)
 			if err != nil {
 				return err
 			}

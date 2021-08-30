@@ -81,17 +81,19 @@ func (s *Store) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyViol
 		}
 		for _, p := range policies {
 			fmt.Println("Evaluate Policy: ", p.String())
-			violations, err := policy.EvaluatePolicy(p.Module, &policy.EntResolver{
-				Ctx:       s.ctx,
-				Client:    tx.Client(),
-				ReleaseID: releaseID,
-			})
+			result, err := policy.EvaluatePolicy(p.Module,
+				policy.WithResolver(&policy.EntResolver{
+					Ctx:       s.ctx,
+					Client:    tx.Client(),
+					ReleaseID: releaseID,
+				}),
+			)
 			if err != nil {
 				return fmt.Errorf("error evaluating policy %s: %w", p.Name, err)
 			}
-			for _, v := range violations {
+			for _, v := range result.Violations {
 				dbViolation, err := tx.ReleasePolicyViolation.Create().
-					SetModelCreate(v).
+					SetModelCreate(*v).
 					Save(s.ctx)
 				if err != nil {
 					return err

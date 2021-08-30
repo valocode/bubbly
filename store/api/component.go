@@ -16,7 +16,7 @@ type (
 	}
 
 	Vulnerability struct {
-		ent.VulnerabilityModelCreate `validate:"required"`
+		ent.VulnerabilityModelCreate `validate:"required" mapstructure:",squash"`
 	}
 
 	ComponentRead struct {
