@@ -111,7 +111,7 @@ func Run(module string, opts ...func(r *runOptions)) (*AdapterResult, error) {
 		return nil, fmt.Errorf("result has variable bindings; check the adapter query: %v", queryResult.Bindings)
 	}
 	if len(queryResult.Expressions) == 0 {
-		return nil, fmt.Errorf("result has no expressions; check the policy query")
+		return nil, fmt.Errorf("result has no expressions; check the adapter query")
 	}
 
 	expr := queryResult.Expressions[0]

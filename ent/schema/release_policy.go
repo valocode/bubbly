@@ -31,15 +31,6 @@ func (ReleasePolicy) Fields() []ent.Field {
 			Annotations(
 				entgql.OrderField("name"),
 			),
-		// field.Enum("input").
-		// 	Values(
-		// 		"code_issues", "test_cases", "licenses",
-		// 		"vulnerabilities", "components",
-		// 		// "query" for a graphql query
-		// 	),
-		// graphql stores the graphql query to execute and use the output as
-		// input for the rego module
-		// field.String("graphql").Optional(),
 		field.String("module").NotEmpty().
 			Comment("module stores the rego module defining the violation rules"),
 		// TODO: compiling the rego modules become more complicted with

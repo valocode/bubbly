@@ -6,17 +6,8 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/hashicorp/go-multierror"
 	"github.com/valocode/bubbly/ent"
 )
-
-func HandleMultiVError(vErr multierror.Error) error {
-	var ret = make([]string, 0, len(vErr.Errors))
-	for _, err := range vErr.Errors {
-		ret = append(ret, err.Error())
-	}
-	return NewValidationError(nil, strings.Join(ret, ", "))
-}
 
 func HandleValidatorError(err error, msg string) error {
 	if _, ok := err.(*validator.InvalidValidationError); ok {

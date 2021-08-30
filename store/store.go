@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -11,16 +10,11 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/99designs/gqlgen/graphql"
-	"github.com/99designs/gqlgen/graphql/executor"
 	"github.com/go-playground/validator/v10"
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/migrate"
-	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/env"
-	"github.com/valocode/bubbly/gql"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	_ "github.com/mattn/go-sqlite3"
@@ -88,11 +82,17 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 		return name
 	})
 
-	return &Store{
+	s := &Store{
 		client:    client,
 		ctx:       context.Background(),
 		validator: validate,
-	}, nil
+	}
+
+	if err := s.initDB(); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
 type (
@@ -109,56 +109,6 @@ func (s *Store) Client() *ent.Client {
 
 func (s *Store) Close() error {
 	return s.client.Close()
-}
-
-func (s *Store) EvaluateRelease(id int) error {
-	rel, err := s.client.Release.Get(s.ctx, id)
-	if err != nil {
-		return fmt.Errorf("error getting release with id %d: %w", id, err)
-	}
-
-	issues, err := rel.
-		QueryCodeScans().
-		QueryIssues().
-		Where(codeissue.SeverityEQ(codeissue.SeverityHigh)).
-		All(s.ctx)
-	if err != nil {
-		return fmt.Errorf("error getting issues for release: %w", err)
-	}
-	if len(issues) > 0 {
-		_, err := s.client.Release.UpdateOneID(id).
-			SetStatus(release.StatusBlocked).
-			Save(s.ctx)
-		if err != nil {
-			return fmt.Errorf("error updating release: %w", err)
-		}
-	}
-
-	// TODO: check test runs, CVEs, etc, etc
-	return nil
-}
-
-func (s *Store) Query(query string) (json.RawMessage, error) {
-	ctx := graphql.StartOperationTrace(context.Background())
-	now := graphql.Now()
-	exec := executor.New(gql.NewSchema(s.client))
-	rc, errs := exec.CreateOperationContext(ctx, &graphql.RawParams{
-		Query: query,
-		ReadTime: graphql.TraceTiming{
-			Start: now,
-			End:   now,
-		},
-	})
-	if errs != nil {
-		return nil, errs
-	}
-	handler, rctx := exec.DispatchOperation(ctx, rc)
-	response := handler(rctx)
-	if response.Errors != nil {
-		return nil, response.Errors
-	}
-	return response.Data, nil
-
 }
 
 func (s *Store) WithTx(fn func(tx *ent.Tx) error) error {
@@ -184,32 +134,24 @@ func (s *Store) WithTx(fn func(tx *ent.Tx) error) error {
 	return nil
 }
 
-// func (s *Store) SaveAdapterResult(result *adapter.Result) error {
-// 	if result.ReleaseID == nil {
-// 		return errors.New("must provide release id")
-// 	}
-// 	release, err := s.client.Release.Get(s.ctx, *result.ReleaseID)
-// 	if err != nil {
-// 		return fmt.Errorf("error getting release: %w", err)
-// 	}
+func (s *Store) initDB() error {
+	//
+	// Make sure default organisation exists: TODO
+	//
 
-// 	if result.CodeScan != nil {
-// 		rScan := result.CodeScan
-// 		scan, err := s.client.CodeScan.Create().
-// 			SetTool(*rScan.Tool).
-// 			SetRelease(release).
-// 			Save(s.ctx)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		for _, rIssue := range rScan.Issues {
-// 			s.client.CodeIssue.Create().
-// 				SetScan(scan).
-// 				SetRuleID(*rIssue.RuleID)
-// 		}
-// 	}
+	//
+	// Make sure default project exists
+	//
+	_, err := s.client.Project.Create().
+		SetName(config.DefaultReleaseProject).
+		Save(s.ctx)
+	// Constraint error is fine (in case it already exists). Everything else is not
+	if !ent.IsConstraintError(err) {
+		return err
+	}
 
-// }
+	return nil
+}
 
 func (s *Store) clientOrTx(tx *ent.Tx) *ent.Client {
 	var client = s.client

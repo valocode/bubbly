@@ -12,6 +12,7 @@ import (
 var policyFiles = []string{
 	"policy/testdata/code_issue_high_severity.rego",
 	"policy/testdata/test_case_fail.rego",
+	"policy/testdata/release_checklist.rego",
 }
 
 func ParsePolicies(basedir string) ([]*api.ReleasePolicySaveRequest, error) {
