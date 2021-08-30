@@ -11,6 +11,13 @@ const (
 	DefaultCLIDebugToggle   = false
 )
 
+// Default Bubbly Release configuration
+const (
+	DefaultBubblyDir      = ".bubbly"
+	DefaultReleaseSpec    = "" // default spec is under bubbly dir
+	DefaultReleaseProject = "default"
+)
+
 // Default Bubbly Server configuration
 const (
 	DefaultServerHost = ""
@@ -70,6 +77,16 @@ func DefaultEnvBool(key string, defaultValue bool) bool {
 		return val
 	}
 	return defaultValue
+}
+
+// DefaultReleaseConfig creates a ReleaseConfig struct from defaults
+// or, preferentially, from provided environment variables.
+func DefaultReleaseConfig() *ReleaseConfig {
+	return &ReleaseConfig{
+		BubblyDir:   DefaultEnvStr("BUBBLY_DIR", DefaultBubblyDir),
+		ReleaseSpec: DefaultEnvStr("BUBBLY_RELEASE", DefaultBubblyDir),
+		Project:     DefaultEnvStr("BUBBLY_PROJECT", DefaultReleaseProject),
+	}
 }
 
 // DefaultServerConfig creates a ServerConfig struct from defaults

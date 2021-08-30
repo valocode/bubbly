@@ -1,57 +1,92 @@
 package policy
 
 import (
+	"fmt"
+	"os"
 	"testing"
+
+	"github.com/open-policy-agent/opa/ast"
+	"github.com/open-policy-agent/opa/rego"
+	"github.com/open-policy-agent/opa/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-type fakeResolver struct{}
+var _ Resolver = (*fakeResolver)(nil)
 
-// TODO: implement the resolver to work with tests...
+type fakeResolver struct {
+	data map[string][]map[string]interface{}
+}
 
-func TestEvaluate(t *testing.T) {
-	// ctx := context.Background()
-	// bCtx := env.NewBubblyContext()
-	// s, err := store.New(bCtx)
-	// require.NoError(t, err)
-	// client := s.Client()
-	// {
-	// 	err := s.PopulateStoreWithDummyData()
-	// 	require.NoError(t, err)
-	// }
-	// dbRelease, err := client.Release.Query().Where(release.HasHeadOf()).WithHeadOf().Only(ctx)
-	// require.NoError(t, err)
+func (r *fakeResolver) Functions() []func(*rego.Rego) {
+	var funcs = make([]func(*rego.Rego), 0, len(r.data))
+	for name, value := range r.data {
+		funcs = append(funcs,
+			rego.Function1(&rego.Function{
+				Name: name,
+				Decl: types.NewFunction(
+					nil,
+					types.NewArray(nil, types.NewObject(nil, types.NewDynamicProperty(types.A, types.A))),
+				),
+			}, func(bctx rego.BuiltinContext, op1 *ast.Term) (*ast.Term, error) {
+				v, err := ast.InterfaceToValue(value)
+				if err != nil {
+					return nil, err
+				}
+				return ast.NewTerm(v), nil
+			}),
+		)
+	}
+	return funcs
+}
 
-	// module := `
-	// package bubbly
+func TestPolicy(t *testing.T) {
+	type test struct {
+		name   string
+		input  map[string][]map[string]interface{}
+		policy string
+		want   int
+	}
+	tests := []test{
+		{
+			name:   "test_case_policy_failing",
+			input:  map[string][]map[string]interface{}{"test_cases": {{"result": false}}},
+			policy: "./testdata/test_case_fail.rego",
+			want:   1,
+		},
+		{
+			name:   "test_case_policy_passing",
+			input:  map[string][]map[string]interface{}{"test_cases": {{"result": true}}},
+			policy: "./testdata/test_case_fail.rego",
+			want:   0,
+		},
+		{
+			name:   "code_issues_high_severity_failing",
+			input:  map[string][]map[string]interface{}{"code_issues": {{"severity": "high"}}},
+			policy: "./testdata/code_issue_high_severity.rego",
+			want:   1,
+		},
+		{
+			name:   "code_issues_high_severity_passing",
+			input:  map[string][]map[string]interface{}{"code_issues": {{"severity": "low"}}},
+			policy: "./testdata/code_issue_high_severity.rego",
+			want:   0,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := os.ReadFile(tc.policy)
+			require.NoError(t, err)
+			result, err := EvaluatePolicy(string(b),
+				WithResolver(&fakeResolver{data: tc.input}),
+				// WithTracing(true),
+			)
+			require.NoError(t, err)
+			assert.Len(t, result.Violations, tc.want)
 
-	// violation[{"msg": msg, "severity": severity}] {
-	// 	# high_issues := get_severity_high_issues(input.issues)
-	// 	high_issues := [issue | issue := input.issues[i]; issue.severity == "high"]
-	// 	count(high_issues) > 0
-	// 	msg := sprintf("%d high issue(s)", [count(high_issues)])
-	// 	severity := "error"
-	// 	# some i
-	// 	# input.issues[i].severity == "high"
-	// 	# msg := input.issues[i].id
-	// 	# severity := sprintf("warning %d", [i])
-	// }
-
-	// get_severity_high_issues(issues) = result {
-	// 	result = [issue | issue := issues[i]; issue.severity == "high"]
-	// }
-
-	// `
-
-	// dbPolicy, err := client.ReleasePolicy.Create().
-	// 	AddRepoIDs(dbRelease.Edges.HeadOf.ID).
-	// 	SetName("code_issues_severity_high-asd asdasd").
-	// 	SetInput(releasepolicy.InputCodeIssues).
-	// 	SetModule(module).
-	// 	Save(ctx)
-	// require.NoError(t, err)
-
-	// p := ent.NewReleasePolicyModelRead().FromEnt(dbPolicy)
-
-	// evalErr := EvaluatePolicy(client, dbRelease.ID, p)
-	// require.NoError(t, evalErr)
+			for _, t := range result.Traces {
+				fmt.Println(t)
+			}
+		})
+	}
 }

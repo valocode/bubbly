@@ -25,7 +25,7 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 
 		var err error
 		codeScan, err = tx.CodeScan.Create().
-			SetModelCreate(scan.CodeScanModelCreate).
+			SetModelCreate(&scan.CodeScanModelCreate).
 			SetRelease(release).
 			Save(s.ctx)
 		if err != nil {

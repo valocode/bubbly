@@ -55,11 +55,15 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 				fname := filepath.Base(filename)
 				name = strings.TrimSuffix(fname, filepath.Ext(fname))
 			}
+			module := string(b)
+			if err := adapter.Validate(module); err != nil {
+				return fmt.Errorf("validating adapter module: %w", err)
+			}
 			if err := client.SaveAdapter(bCtx, &api.AdapterSaveRequest{
 				Adapter: ent.NewAdapterModelCreate().
 					SetName(name).
 					SetTag(tag).
-					SetModule(string(b)),
+					SetModule(module),
 			}); err != nil {
 				return err
 			}

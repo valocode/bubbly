@@ -26,9 +26,9 @@ type (
 	}
 
 	CodeScan struct {
-		*ent.CodeScanModelCreate `json:"code_scan" validate:"required"`
-		Issues                   []*CodeScanIssue     `json:"issues,omitempty"`
-		Components               []*CodeScanComponent `json:"components,omitempty"`
+		ent.CodeScanModelCreate `json:"code_scan" validate:"required" mapstructure:",squash"`
+		Issues                  []*CodeScanIssue     `json:"issues,omitempty" validate:"dive,required"`
+		Components              []*CodeScanComponent `json:"components,omitempty" validate:"dive,required"`
 	}
 
 	CodeScanIssue struct {
@@ -36,8 +36,8 @@ type (
 	}
 
 	CodeScanComponent struct {
-		ent.ComponentModelCreate `validate:"required"`
-		Vulnerabilities          []*Vulnerability `json:"vulnerabilities"`
+		ent.ComponentModelCreate `validate:"required" mapstructure:",squash"`
+		Vulnerabilities          []*Vulnerability `json:"vulnerabilities" mapstructure:"vulnerabilities"`
 	}
 )
 
@@ -48,8 +48,8 @@ type (
 	}
 
 	TestRun struct {
-		ent.TestRunModelCreate
-		TestCases []*TestRunCase `json:"test_cases,omitempty" validate:"dive,required"`
+		ent.TestRunModelCreate `mapstructure:",squash"`
+		TestCases              []*TestRunCase `json:"test_cases,omitempty" validate:"dive,required"`
 	}
 
 	TestRunCase struct {

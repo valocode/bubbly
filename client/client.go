@@ -12,24 +12,6 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-// type RequestBuilder interface {
-// 	NewRequest(method, url string, body io.Reader) (*http.Request, error)
-// }
-
-// var (
-// 	Request RequestBuilder
-// )
-
-// type HTTPRequestBuilder struct{}
-
-// func (h HTTPRequestBuilder) NewRequest(method, url string, body io.Reader) (*http.Request, error) {
-// 	return http.NewRequest(method, url, body)
-// }
-
-// func init() {
-// 	Request = &HTTPRequestBuilder{}
-// }
-
 func CreateRelease(bCtx *env.BubblyContext, req *api.ReleaseCreateRequest) error {
 	return handlePushRequest(bCtx, req, "releases")
 }

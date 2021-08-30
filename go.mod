@@ -6,29 +6,29 @@ require (
 	entgo.io/contrib v0.0.0-20210701194530-6b9b6b0bd76c
 	entgo.io/ent v0.9.1
 	github.com/99designs/gqlgen v0.13.0
+	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/Microsoft/go-winio v0.5.0 // indirect
-	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/bytecodealliance/wasmtime-go v0.29.0 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
-	github.com/containerd/continuity v0.1.0 // indirect
+	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
+	github.com/docker/docker v20.10.8+incompatible // indirect
 	github.com/fatih/color v1.12.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/hashicorp/hcl/v2 v2.10.1
+	github.com/hashicorp/hcl/v2 v2.10.1 // indirect
 	github.com/jackc/pgproto3/v2 v2.1.0 // indirect
 	github.com/jackc/pgx/v4 v4.11.0
-	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/labstack/gommon v0.3.0
 	github.com/mattn/go-isatty v0.0.13 // indirect
 	github.com/mattn/go-sqlite3 v1.14.8
-	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.4.1
+	github.com/moby/buildkit v0.9.0 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
+	github.com/open-policy-agent/conftest v0.27.0
 	github.com/open-policy-agent/opa v0.31.0
 	github.com/opencontainers/runc v1.0.0-rc95 // indirect
 	github.com/ory/dockertest/v3 v3.7.0
@@ -37,12 +37,13 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/swag v1.7.0
+	github.com/tmccombs/hcl2json v0.3.3 // indirect
 	github.com/vektah/gqlparser/v2 v2.1.0
 	github.com/vmihailenco/msgpack/v5 v5.3.4
-	github.com/zclconf/go-cty v1.9.0 // indirect
+	github.com/zclconf/go-cty v1.9.1 // indirect
 	github.com/ziflex/lecho/v2 v2.5.0
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
+	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect

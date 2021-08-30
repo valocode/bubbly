@@ -1,15 +1,12 @@
 package adapter
 
-somevar := "asd"
-
 code_scan[scan] {
 	scan := {"tool": "gosec"}
 }
 
 code_issue[issue] {
-	results = json("./testdata/adapters/gosec.json")
 	some i
-	iss := results.Issues[i]
+	iss := input[_].Issues[i]
 	issue := {
 		# providing the i is necessary so that we get all unique code_issues
 		"i": i,

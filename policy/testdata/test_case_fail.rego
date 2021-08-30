@@ -1,9 +1,13 @@
-package bubbly
+package policy
 
-violation[{"msg": msg, "severity": severity}] {
+violation[item] {
 	tests := test_cases()
-	failed_tests := [test | not tests[i].result; test := tests[i]]
+
+	failed_tests = [test | test := tests[_]; not test.result]
+
 	count(failed_tests) > 0
-	msg := sprintf("%d failing tests(s)", [count(failed_tests)])
-	severity := "error"
+	item = {
+		"message": sprintf("%d failing tests(s)", [count(failed_tests)]),
+		"severity": "error",
+	}
 }
