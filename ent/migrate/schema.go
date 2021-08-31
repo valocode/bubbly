@@ -36,6 +36,7 @@ var (
 		{Name: "sha256", Type: field.TypeString},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"docker", "file"}},
 		{Name: "time", Type: field.TypeTime},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "artifact_release", Type: field.TypeInt, Nullable: true},
 		{Name: "release_entry_artifact", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
@@ -47,13 +48,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "artifact_release_release",
-				Columns:    []*schema.Column{ArtifactColumns[5]},
+				Columns:    []*schema.Column{ArtifactColumns[6]},
 				RefColumns: []*schema.Column{ReleaseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "artifact_release_entry_artifact",
-				Columns:    []*schema.Column{ArtifactColumns[6]},
+				Columns:    []*schema.Column{ArtifactColumns[7]},
 				RefColumns: []*schema.Column{ReleaseEntryColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -73,6 +74,7 @@ var (
 		{Name: "message", Type: field.TypeString},
 		{Name: "severity", Type: field.TypeEnum, Enums: []string{"low", "medium", "high"}},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"style", "security", "bug"}},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "code_issue_scan", Type: field.TypeInt, Nullable: true},
 	}
 	// CodeIssueTable holds the schema information for the "code_issue" table.
@@ -83,7 +85,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "code_issue_code_scan_scan",
-				Columns:    []*schema.Column{CodeIssueColumns[5]},
+				Columns:    []*schema.Column{CodeIssueColumns[6]},
 				RefColumns: []*schema.Column{CodeScanColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -94,6 +96,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "tool", Type: field.TypeString},
 		{Name: "time", Type: field.TypeTime},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "code_scan_release", Type: field.TypeInt, Nullable: true},
 		{Name: "release_entry_code_scan", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "release_license_scans", Type: field.TypeInt, Nullable: true},
@@ -106,19 +109,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "code_scan_release_release",
-				Columns:    []*schema.Column{CodeScanColumns[3]},
+				Columns:    []*schema.Column{CodeScanColumns[4]},
 				RefColumns: []*schema.Column{ReleaseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "code_scan_release_entry_code_scan",
-				Columns:    []*schema.Column{CodeScanColumns[4]},
+				Columns:    []*schema.Column{CodeScanColumns[5]},
 				RefColumns: []*schema.Column{ReleaseEntryColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "code_scan_release_license_scans",
-				Columns:    []*schema.Column{CodeScanColumns[5]},
+				Columns:    []*schema.Column{CodeScanColumns[6]},
 				RefColumns: []*schema.Column{ReleaseLicenseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -132,6 +135,7 @@ var (
 		{Name: "version", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "url", Type: field.TypeString, Nullable: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 	}
 	// ComponentTable holds the schema information for the "component" table.
 	ComponentTable = &schema.Table{
@@ -501,6 +505,7 @@ var (
 		{Name: "result", Type: field.TypeBool},
 		{Name: "message", Type: field.TypeString},
 		{Name: "elapsed", Type: field.TypeFloat64, Default: 0},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "test_case_run", Type: field.TypeInt, Nullable: true},
 	}
 	// TestCaseTable holds the schema information for the "test_case" table.
@@ -511,7 +516,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "test_case_test_run_run",
-				Columns:    []*schema.Column{TestCaseColumns[5]},
+				Columns:    []*schema.Column{TestCaseColumns[6]},
 				RefColumns: []*schema.Column{TestRunColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -522,6 +527,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "tool", Type: field.TypeString},
 		{Name: "time", Type: field.TypeTime},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "release_entry_test_run", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "test_run_release", Type: field.TypeInt, Nullable: true},
 	}
@@ -533,13 +539,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "test_run_release_entry_test_run",
-				Columns:    []*schema.Column{TestRunColumns[3]},
+				Columns:    []*schema.Column{TestRunColumns[4]},
 				RefColumns: []*schema.Column{ReleaseEntryColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "test_run_release_release",
-				Columns:    []*schema.Column{TestRunColumns[4]},
+				Columns:    []*schema.Column{TestRunColumns[5]},
 				RefColumns: []*schema.Column{ReleaseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -555,6 +561,7 @@ var (
 		{Name: "severity", Type: field.TypeEnum, Enums: []string{"None", "Low", "Medium", "High", "Critical"}, Default: "None"},
 		{Name: "published", Type: field.TypeTime, Nullable: true},
 		{Name: "modified", Type: field.TypeTime, Nullable: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 	}
 	// VulnerabilityTable holds the schema information for the "vulnerability" table.
 	VulnerabilityTable = &schema.Table{

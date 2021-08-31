@@ -13,6 +13,7 @@ import (
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // ArtifactCreate is the builder for creating a Artifact entity.
@@ -51,6 +52,12 @@ func (ac *ArtifactCreate) SetNillableTime(t *time.Time) *ArtifactCreate {
 	if t != nil {
 		ac.SetTime(*t)
 	}
+	return ac
+}
+
+// SetMetadata sets the "metadata" field.
+func (ac *ArtifactCreate) SetMetadata(s schema.Metadata) *ArtifactCreate {
+	ac.mutation.SetMetadata(s)
 	return ac
 }
 
@@ -262,6 +269,14 @@ func (ac *ArtifactCreate) createSpec() (*Artifact, *sqlgraph.CreateSpec) {
 			Column: artifact.FieldTime,
 		})
 		_node.Time = value
+	}
+	if value, ok := ac.mutation.Metadata(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: artifact.FieldMetadata,
+		})
+		_node.Metadata = value
 	}
 	if nodes := ac.mutation.ReleaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

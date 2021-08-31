@@ -460,6 +460,20 @@ func TimeLTE(v time.Time) predicate.Artifact {
 	})
 }
 
+// MetadataIsNil applies the IsNil predicate on the "metadata" field.
+func MetadataIsNil() predicate.Artifact {
+	return predicate.Artifact(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldMetadata)))
+	})
+}
+
+// MetadataNotNil applies the NotNil predicate on the "metadata" field.
+func MetadataNotNil() predicate.Artifact {
+	return predicate.Artifact(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldMetadata)))
+	})
+}
+
 // HasRelease applies the HasEdge predicate on the "release" edge.
 func HasRelease() predicate.Artifact {
 	return predicate.Artifact(func(s *sql.Selector) {

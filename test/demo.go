@@ -6,11 +6,13 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/vulnerability"
 	"github.com/valocode/bubbly/integrations"
 	"github.com/valocode/bubbly/store/api"
@@ -131,122 +133,6 @@ func SaveCVEData(client *ent.Client) error {
 	return nil
 }
 
-// func FailSomeRandomReleases(db *store.Store) error {
-// 	client := db.Client()
-// 	releases, err := client.Release.Query().All(context.Background())
-// 	if err != nil {
-// 		log.Fatal("getting releases: ", err)
-// 	}
-// 	// Fail some release within the first 10
-// 	nextEval := rand.Intn(10)
-// 	for i := 0; i < len(releases); i++ {
-// 		if i == nextEval {
-// 			if err := db.EvaluateRelease(releases[i].ID); err != nil {
-// 				return fmt.Errorf("evaluating release: %w", err)
-// 			}
-// 			// every ~5 releases should be failed
-// 			nextEval += rand.Intn(10)
-// 			continue
-// 		}
-// 		_, err := client.Release.UpdateOneID(releases[i].ID).
-// 			SetStatus(release.StatusReady).
-// 			Save(context.Background())
-// 		if err != nil {
-// 			return fmt.Errorf("setting release ready: %w", err)
-// 		}
-// 	}
-// 	return nil
-// }
-
-// func CreateDummyDataOLD(bCtx *env.BubblyContext, store *store.Store) error {
-
-// 	var (
-// 		client = store.Client()
-// 		vulns  []*ent.Vulnerability
-// 		// components []*ent.Component
-// 		// licenses   []*ent.License
-// 		// licenseIDs = []string{"MIT", "GPL-3.0", "MPL-2.0", "Apache-2.0"}
-// 		ctx = context.Background()
-// 	)
-// 	{
-// 		var err error
-// 		_, err = client.License.Query().All(ctx)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		vulns, err = client.Vulnerability.Query().All(ctx)
-// 		if err != nil {
-// 			return fmt.Errorf("error getting the Vulnerability list: %w", err)
-// 		}
-// 	}
-
-// 	// Create some components
-// 	{
-// 		mods, err := integrations.ParseSBOM("../adapter/testdata/spdx-sbom-generator.json")
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		var compVulns = make([]*api.ComponentVulnerability, 0, len(mods))
-// 		for i := 0; i < len(mods); i++ {
-// 			mod := mods[i]
-
-// 			// This  *should* only be true for the first/root module
-// 			if mod.Version == "" {
-// 				continue
-// 			}
-// 			dbComp, err := client.Component.Create().
-// 				SetName(mod.Name).
-// 				SetVendor(mod.Supplier.Name).
-// 				SetVersion(mod.Version).SetURL(mod.PackageURL).
-// 				Save(ctx)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			// components = append(components, dbComp)
-// 			compVuln := api.ComponentVulnerability{
-// 				ComponentID: &dbComp.ID,
-// 			}
-
-// 			vulnID := fmt.Sprintf("CVE-%d", i)
-// 			if len(vulns) > 0 {
-// 				vulnID = vulns[i].Vid
-// 			}
-
-// 			compVuln.Vulnerabilities = append(compVuln.Vulnerabilities,
-// 				&api.Vulnerability{
-// 					VulnerabilityModelCreate: *ent.NewVulnerabilityModelCreate().SetVid(vulnID),
-// 				},
-// 			)
-// 			compVulns = append(compVulns, &compVuln)
-
-// 			// Demo review - TODO...
-// 			// project := ent.NewProjectNode().SetName("bubbly")
-// 			// ent.NewVulnerabilityReviewNode().
-// 			// 	SetName("My demo review...").
-// 			// 	SetDecision(vulnerabilityreview.DecisionInProgress).
-// 			// 	SetVulnerability(vuln).
-// 			// 	AddProjects(project)
-// 			// end TODO
-// 			// spdxID := fmt.Sprintf("GPL-%d", i)
-// 			// if len(licenses) > 0 {
-// 			// 	spdxID = licenseIDs[i%len(licenseIDs)]
-// 			// }
-// 			// license := ent.NewLicenseNode().SetSpdxID(spdxID)
-
-// 		}
-// 		var dataSource = "demo"
-// 		if err := store.SaveComponentVulnerabilities(&api.ComponentVulnerabilityRequest{
-// 			DataSource: &dataSource,
-// 			Components: compVulns,
-// 		}); err != nil {
-// 			return fmt.Errorf("error saving component vulnerabilities: %w", err)
-// 		}
-// 	}
-
-// 	return nil
-// }
-
 func CreateDummyData() []RepoData {
 	var repos []RepoData
 	for _, opt := range demoData {
@@ -319,10 +205,15 @@ func createRepoData(opt DemoRepoOptions) []ReleaseData {
 			cTime = cTime.Add(time.Minute * time.Duration(
 				rand.Intn(opt.TestRunTimeMax-opt.TestRunTimeMin+1)+opt.TestRunTimeMin,
 			))
-
+			hostname, _ := os.Hostname()
 			run := api.TestRun{
 				TestRunModelCreate: *ent.NewTestRunModelCreate().
 					SetTool("gotest").
+					SetMetadata(schema.Metadata{
+						"env": map[string]interface{}{
+							"hostname": hostname,
+						},
+					}).
 					SetTime(cTime),
 			}
 

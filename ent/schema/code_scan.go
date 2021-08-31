@@ -13,6 +13,7 @@ import (
 	gen "github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/extensions/entmodel"
 	"github.com/valocode/bubbly/ent/hook"
+	types "github.com/valocode/bubbly/ent/schema/types"
 )
 
 type CodeScan struct {
@@ -38,6 +39,7 @@ func (CodeScan) Fields() []ent.Field {
 			Annotations(
 				entgql.OrderField("time"),
 			),
+		field.JSON("metadata", types.Metadata{}).Optional(),
 	}
 }
 

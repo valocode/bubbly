@@ -10,6 +10,18 @@ import (
 	"github.com/valocode/bubbly/ent"
 )
 
+func (r *artifactResolver) Metadata(ctx context.Context, obj *ent.Artifact) (map[string]interface{}, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *codeIssueResolver) Metadata(ctx context.Context, obj *ent.CodeIssue) (map[string]interface{}, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *codeScanResolver) Metadata(ctx context.Context, obj *ent.CodeScan) (map[string]interface{}, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *codeScanResolver) Issues(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.CodeIssueWhereInput, orderBy *ent.CodeIssueOrder) ([]*ent.CodeIssue, error) {
 	result, err := obj.Edges.IssuesOrErr()
 	if ent.IsNotLoaded(err) {
@@ -32,6 +44,10 @@ func (r *codeScanResolver) Components(ctx context.Context, obj *ent.CodeScan, fi
 		result, err = obj.QueryComponents().Filter(ctx, first, last, nil, where)
 	}
 	return result, err
+}
+
+func (r *componentResolver) Metadata(ctx context.Context, obj *ent.Component) (map[string]interface{}, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *componentResolver) Vulnerabilities(ctx context.Context, obj *ent.Component, first *int, last *int, where *ent.VulnerabilityWhereInput, orderBy *ent.VulnerabilityOrder) ([]*ent.Vulnerability, error) {
@@ -414,12 +430,24 @@ func (r *repoResolver) Policies(ctx context.Context, obj *ent.Repo, first *int, 
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *testCaseResolver) Metadata(ctx context.Context, obj *ent.TestCase) (map[string]interface{}, error) {
+	return obj.Metadata, nil
+}
+
+func (r *testRunResolver) Metadata(ctx context.Context, obj *ent.TestRun) (map[string]interface{}, error) {
+	return obj.Metadata, nil
+}
+
 func (r *testRunResolver) Tests(ctx context.Context, obj *ent.TestRun, first *int, last *int, where *ent.TestCaseWhereInput, orderBy *ent.TestCaseOrder) ([]*ent.TestCase, error) {
 	result, err := obj.Edges.TestsOrErr()
 	if ent.IsNotLoaded(err) {
 		result, err = obj.QueryTests().Filter(ctx, first, last, orderBy, where)
 	}
 	return result, err
+}
+
+func (r *vulnerabilityResolver) Metadata(ctx context.Context, obj *ent.Vulnerability) (map[string]interface{}, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *vulnerabilityResolver) Components(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.ComponentWhereInput, orderBy *ent.ComponentOrder) ([]*ent.Component, error) {
@@ -478,6 +506,12 @@ func (r *vulnerabilityReviewResolver) Instances(ctx context.Context, obj *ent.Vu
 	return result, err
 }
 
+// Artifact returns ArtifactResolver implementation.
+func (r *Resolver) Artifact() ArtifactResolver { return &artifactResolver{r} }
+
+// CodeIssue returns CodeIssueResolver implementation.
+func (r *Resolver) CodeIssue() CodeIssueResolver { return &codeIssueResolver{r} }
+
 // CodeScan returns CodeScanResolver implementation.
 func (r *Resolver) CodeScan() CodeScanResolver { return &codeScanResolver{r} }
 
@@ -516,6 +550,9 @@ func (r *Resolver) ReleaseVulnerability() ReleaseVulnerabilityResolver {
 // Repo returns RepoResolver implementation.
 func (r *Resolver) Repo() RepoResolver { return &repoResolver{r} }
 
+// TestCase returns TestCaseResolver implementation.
+func (r *Resolver) TestCase() TestCaseResolver { return &testCaseResolver{r} }
+
 // TestRun returns TestRunResolver implementation.
 func (r *Resolver) TestRun() TestRunResolver { return &testRunResolver{r} }
 
@@ -527,6 +564,8 @@ func (r *Resolver) VulnerabilityReview() VulnerabilityReviewResolver {
 	return &vulnerabilityReviewResolver{r}
 }
 
+type artifactResolver struct{ *Resolver }
+type codeIssueResolver struct{ *Resolver }
 type codeScanResolver struct{ *Resolver }
 type componentResolver struct{ *Resolver }
 type licenseResolver struct{ *Resolver }
@@ -539,6 +578,7 @@ type releaseLicenseResolver struct{ *Resolver }
 type releasePolicyResolver struct{ *Resolver }
 type releaseVulnerabilityResolver struct{ *Resolver }
 type repoResolver struct{ *Resolver }
+type testCaseResolver struct{ *Resolver }
 type testRunResolver struct{ *Resolver }
 type vulnerabilityResolver struct{ *Resolver }
 type vulnerabilityReviewResolver struct{ *Resolver }

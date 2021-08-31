@@ -3,14 +3,17 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/codescan"
+
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // CodeScan is the model entity for the CodeScan schema.
@@ -22,6 +25,8 @@ type CodeScan struct {
 	Tool string `json:"tool,omitempty"`
 	// Time holds the value of the "time" field.
 	Time time.Time `json:"time,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata schema.Metadata `json:"metadata,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CodeScanQuery when eager-loading is set.
 	Edges                   CodeScanEdges `json:"edges"`
@@ -107,6 +112,8 @@ func (*CodeScan) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case codescan.FieldMetadata:
+			values[i] = new([]byte)
 		case codescan.FieldID:
 			values[i] = new(sql.NullInt64)
 		case codescan.FieldTool:
@@ -151,6 +158,14 @@ func (cs *CodeScan) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field time", values[i])
 			} else if value.Valid {
 				cs.Time = value.Time
+			}
+		case codescan.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &cs.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
 			}
 		case codescan.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -230,6 +245,8 @@ func (cs *CodeScan) String() string {
 	builder.WriteString(cs.Tool)
 	builder.WriteString(", time=")
 	builder.WriteString(cs.Time.Format(time.ANSIC))
+	builder.WriteString(", metadata=")
+	builder.WriteString(fmt.Sprintf("%v", cs.Metadata))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -45,6 +45,8 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Artifact() ArtifactResolver
+	CodeIssue() CodeIssueResolver
 	CodeScan() CodeScanResolver
 	Component() ComponentResolver
 	License() LicenseResolver
@@ -57,6 +59,7 @@ type ResolverRoot interface {
 	ReleasePolicy() ReleasePolicyResolver
 	ReleaseVulnerability() ReleaseVulnerabilityResolver
 	Repo() RepoResolver
+	TestCase() TestCaseResolver
 	TestRun() TestRunResolver
 	Vulnerability() VulnerabilityResolver
 	VulnerabilityReview() VulnerabilityReviewResolver
@@ -85,13 +88,14 @@ type ComplexityRoot struct {
 	}
 
 	Artifact struct {
-		Entry   func(childComplexity int) int
-		ID      func(childComplexity int) int
-		Name    func(childComplexity int) int
-		Release func(childComplexity int) int
-		Sha256  func(childComplexity int) int
-		Time    func(childComplexity int) int
-		Type    func(childComplexity int) int
+		Entry    func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Metadata func(childComplexity int) int
+		Name     func(childComplexity int) int
+		Release  func(childComplexity int) int
+		Sha256   func(childComplexity int) int
+		Time     func(childComplexity int) int
+		Type     func(childComplexity int) int
 	}
 
 	ArtifactConnection struct {
@@ -108,6 +112,7 @@ type ComplexityRoot struct {
 	CodeIssue struct {
 		ID       func(childComplexity int) int
 		Message  func(childComplexity int) int
+		Metadata func(childComplexity int) int
 		RuleID   func(childComplexity int) int
 		Scan     func(childComplexity int) int
 		Severity func(childComplexity int) int
@@ -130,6 +135,7 @@ type ComplexityRoot struct {
 		Entry           func(childComplexity int) int
 		ID              func(childComplexity int) int
 		Issues          func(childComplexity int, first *int, last *int, where *ent.CodeIssueWhereInput, orderBy *ent.CodeIssueOrder) int
+		Metadata        func(childComplexity int) int
 		Release         func(childComplexity int) int
 		Time            func(childComplexity int) int
 		Tool            func(childComplexity int) int
@@ -151,6 +157,7 @@ type ComplexityRoot struct {
 		Description     func(childComplexity int) int
 		ID              func(childComplexity int) int
 		Licenses        func(childComplexity int, first *int, last *int, where *ent.LicenseWhereInput, orderBy *ent.LicenseOrder) int
+		Metadata        func(childComplexity int) int
 		Name            func(childComplexity int) int
 		URL             func(childComplexity int) int
 		Uses            func(childComplexity int, first *int, last *int, where *ent.ReleaseComponentWhereInput) int
@@ -484,12 +491,13 @@ type ComplexityRoot struct {
 	}
 
 	TestCase struct {
-		Elapsed func(childComplexity int) int
-		ID      func(childComplexity int) int
-		Message func(childComplexity int) int
-		Name    func(childComplexity int) int
-		Result  func(childComplexity int) int
-		Run     func(childComplexity int) int
+		Elapsed  func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Message  func(childComplexity int) int
+		Metadata func(childComplexity int) int
+		Name     func(childComplexity int) int
+		Result   func(childComplexity int) int
+		Run      func(childComplexity int) int
 	}
 
 	TestCaseConnection struct {
@@ -504,12 +512,13 @@ type ComplexityRoot struct {
 	}
 
 	TestRun struct {
-		Entry   func(childComplexity int) int
-		ID      func(childComplexity int) int
-		Release func(childComplexity int) int
-		Tests   func(childComplexity int, first *int, last *int, where *ent.TestCaseWhereInput, orderBy *ent.TestCaseOrder) int
-		Time    func(childComplexity int) int
-		Tool    func(childComplexity int) int
+		Entry    func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Metadata func(childComplexity int) int
+		Release  func(childComplexity int) int
+		Tests    func(childComplexity int, first *int, last *int, where *ent.TestCaseWhereInput, orderBy *ent.TestCaseOrder) int
+		Time     func(childComplexity int) int
+		Tool     func(childComplexity int) int
 	}
 
 	TestRunConnection struct {
@@ -528,6 +537,7 @@ type ComplexityRoot struct {
 		Description   func(childComplexity int) int
 		ID            func(childComplexity int) int
 		Instances     func(childComplexity int, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) int
+		Metadata      func(childComplexity int) int
 		Modified      func(childComplexity int) int
 		Published     func(childComplexity int) int
 		Reviews       func(childComplexity int, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) int
@@ -571,12 +581,21 @@ type ComplexityRoot struct {
 	}
 }
 
+type ArtifactResolver interface {
+	Metadata(ctx context.Context, obj *ent.Artifact) (map[string]interface{}, error)
+}
+type CodeIssueResolver interface {
+	Metadata(ctx context.Context, obj *ent.CodeIssue) (map[string]interface{}, error)
+}
 type CodeScanResolver interface {
+	Metadata(ctx context.Context, obj *ent.CodeScan) (map[string]interface{}, error)
+
 	Issues(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.CodeIssueWhereInput, orderBy *ent.CodeIssueOrder) ([]*ent.CodeIssue, error)
 	Vulnerabilities(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
 	Components(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error)
 }
 type ComponentResolver interface {
+	Metadata(ctx context.Context, obj *ent.Component) (map[string]interface{}, error)
 	Vulnerabilities(ctx context.Context, obj *ent.Component, first *int, last *int, where *ent.VulnerabilityWhereInput, orderBy *ent.VulnerabilityOrder) ([]*ent.Vulnerability, error)
 	Licenses(ctx context.Context, obj *ent.Component, first *int, last *int, where *ent.LicenseWhereInput, orderBy *ent.LicenseOrder) ([]*ent.License, error)
 	Uses(ctx context.Context, obj *ent.Component, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error)
@@ -664,10 +683,16 @@ type RepoResolver interface {
 	VulnerabilityReviews(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error)
 	Policies(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) ([]*ent.ReleasePolicy, error)
 }
+type TestCaseResolver interface {
+	Metadata(ctx context.Context, obj *ent.TestCase) (map[string]interface{}, error)
+}
 type TestRunResolver interface {
+	Metadata(ctx context.Context, obj *ent.TestRun) (map[string]interface{}, error)
+
 	Tests(ctx context.Context, obj *ent.TestRun, first *int, last *int, where *ent.TestCaseWhereInput, orderBy *ent.TestCaseOrder) ([]*ent.TestCase, error)
 }
 type VulnerabilityResolver interface {
+	Metadata(ctx context.Context, obj *ent.Vulnerability) (map[string]interface{}, error)
 	Components(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.ComponentWhereInput, orderBy *ent.ComponentOrder) ([]*ent.Component, error)
 	Reviews(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error)
 	Instances(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
@@ -771,6 +796,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Artifact.ID(childComplexity), true
 
+	case "Artifact.metadata":
+		if e.complexity.Artifact.Metadata == nil {
+			break
+		}
+
+		return e.complexity.Artifact.Metadata(childComplexity), true
+
 	case "Artifact.name":
 		if e.complexity.Artifact.Name == nil {
 			break
@@ -854,6 +886,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CodeIssue.Message(childComplexity), true
+
+	case "CodeIssue.metadata":
+		if e.complexity.CodeIssue.Metadata == nil {
+			break
+		}
+
+		return e.complexity.CodeIssue.Metadata(childComplexity), true
 
 	case "CodeIssue.rule_id":
 		if e.complexity.CodeIssue.RuleID == nil {
@@ -956,6 +995,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CodeScan.Issues(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.CodeIssueWhereInput), args["order_by"].(*ent.CodeIssueOrder)), true
 
+	case "CodeScan.metadata":
+		if e.complexity.CodeScan.Metadata == nil {
+			break
+		}
+
+		return e.complexity.CodeScan.Metadata(childComplexity), true
+
 	case "CodeScan.release":
 		if e.complexity.CodeScan.Release == nil {
 			break
@@ -1049,6 +1095,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Component.Licenses(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.LicenseWhereInput), args["order_by"].(*ent.LicenseOrder)), true
+
+	case "Component.metadata":
+		if e.complexity.Component.Metadata == nil {
+			break
+		}
+
+		return e.complexity.Component.Metadata(childComplexity), true
 
 	case "Component.name":
 		if e.complexity.Component.Name == nil {
@@ -2793,6 +2846,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.TestCase.Message(childComplexity), true
 
+	case "TestCase.metadata":
+		if e.complexity.TestCase.Metadata == nil {
+			break
+		}
+
+		return e.complexity.TestCase.Metadata(childComplexity), true
+
 	case "TestCase.name":
 		if e.complexity.TestCase.Name == nil {
 			break
@@ -2862,6 +2922,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.TestRun.ID(childComplexity), true
+
+	case "TestRun.metadata":
+		if e.complexity.TestRun.Metadata == nil {
+			break
+		}
+
+		return e.complexity.TestRun.Metadata(childComplexity), true
 
 	case "TestRun.release":
 		if e.complexity.TestRun.Release == nil {
@@ -2968,6 +3035,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Vulnerability.Instances(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseVulnerabilityWhereInput)), true
+
+	case "Vulnerability.metadata":
+		if e.complexity.Vulnerability.Metadata == nil {
+			break
+		}
+
+		return e.complexity.Vulnerability.Metadata(childComplexity), true
 
 	case "Vulnerability.modified":
 		if e.complexity.Vulnerability.Modified == nil {
@@ -3223,6 +3297,8 @@ var sources = []*ast.Source{
 directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
     | FIELD_DEFINITION
 
+scalar Map
+
 """Query generated by ent."""
 type Query {
   artifact_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: ArtifactOrder, where: ArtifactWhereInput): ArtifactConnection
@@ -3278,6 +3354,38 @@ interface Node {
   id: ID!
 }
 
+enum VulnerabilityOrderField {
+  vid
+  severity_score
+  severity
+  published
+  modified
+}
+
+enum AdapterOrderField {
+  name
+  tag
+}
+
+enum ComponentOrderField {
+  name
+  vendor
+  version
+}
+
+enum GitCommitOrderField {
+  hash
+  branch
+  tag
+  time
+}
+
+enum ReleaseStatus {
+  pending
+  ready
+  blocked
+}
+
 enum ReleaseComponentType {
   embedded
   distributed
@@ -3296,43 +3404,10 @@ enum ReleaseEntryOrderField {
   time
 }
 
-enum RepoOrderField {
-  name
-}
-
-enum VulnerabilityOrderField {
-  vid
-  severity_score
-  severity
-  published
-  modified
-}
-
-enum VulnerabilityReviewOrderField {
-  name
-}
-
 enum CodeIssueSeverity {
   low
   medium
   high
-}
-
-enum CodeIssueType {
-  style
-  security
-  bug
-}
-
-enum ReleaseStatus {
-  pending
-  ready
-  blocked
-}
-
-enum TestRunOrderField {
-  tool
-  time
 }
 
 enum VulnerabilitySeverity {
@@ -3343,36 +3418,36 @@ enum VulnerabilitySeverity {
   Critical
 }
 
-enum GitCommitOrderField {
-  hash
-  branch
-  tag
-  time
+enum VulnerabilityReviewOrderField {
+  name
+}
+
+enum TestCaseOrderField {
+  name
+}
+
+enum ArtifactType {
+  docker
+  file
+}
+
+enum CodeIssueOrderField {
+  rule_id
+  severity
+  type
 }
 
 enum ProjectOrderField {
   name
 }
 
-enum CodeScanOrderField {
-  tool
-  time
-}
-
-enum ComponentOrderField {
-  name
-  vendor
-  version
-}
-
-enum LicenseOrderField {
-  spdx_id
-  name
-}
-
 enum ReleaseOrderField {
   name
   version
+}
+
+enum ReleasePolicyOrderField {
+  name
 }
 
 enum ReleasePolicyViolationSeverity {
@@ -3382,8 +3457,13 @@ enum ReleasePolicyViolationSeverity {
   blocking
 }
 
-enum TestCaseOrderField {
+enum RepoOrderField {
   name
+}
+
+enum OrderDirection {
+  ASC
+  DESC
 }
 
 enum ArtifactOrderField {
@@ -3393,10 +3473,25 @@ enum ArtifactOrderField {
   time
 }
 
-enum CodeIssueOrderField {
-  rule_id
-  severity
-  type
+enum CodeIssueType {
+  style
+  security
+  bug
+}
+
+enum CodeScanOrderField {
+  tool
+  time
+}
+
+enum LicenseOrderField {
+  spdx_id
+  name
+}
+
+enum TestRunOrderField {
+  tool
+  time
 }
 
 enum VulnerabilityReviewDecision {
@@ -3407,23 +3502,195 @@ enum VulnerabilityReviewDecision {
   ineffective
 }
 
-enum ReleasePolicyOrderField {
-  name
+"""
+LicenseUseConnection supports the relay connection specification for node LicenseUse in the ent schema.
+Generated by ent.
+"""
+type LicenseUseConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [LicenseUseEdge]
 }
 
-enum OrderDirection {
-  ASC
-  DESC
+"""
+OrganizationConnection supports the relay connection specification for node Organization in the ent schema.
+Generated by ent.
+"""
+type OrganizationConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [OrganizationEdge]
 }
 
-enum AdapterOrderField {
-  name
-  tag
+"""
+ReleaseEntry represents the node ReleaseEntry in the ent schema.
+Generated by ent.
+"""
+type ReleaseEntry implements Node {
+  id: ID!
+  type: ReleaseEntryType
+  time: Time
+  artifact: Artifact
+  code_scan: CodeScan
+  test_run: TestRun
+  release: Release!
 }
 
-enum ArtifactType {
-  docker
-  file
+"""
+ReleasePolicyConnection supports the relay connection specification for node ReleasePolicy in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicyConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleasePolicyEdge]
+}
+
+"""
+Repo represents the node Repo in the ent schema.
+Generated by ent.
+"""
+type Repo implements Node {
+  id: ID!
+  name: String
+  default_branch: String
+  owner: Organization!
+  project: Project!
+  head: Release
+  commits(first: Int, last: Int, where: GitCommitWhereInput, order_by: GitCommitOrder): [GitCommit] @goField(forceResolver: true)
+  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  policies(first: Int, last: Int, where: ReleasePolicyWhereInput, order_by: ReleasePolicyOrder): [ReleasePolicy] @goField(forceResolver: true)
+}
+
+"""
+GitCommitConnection supports the relay connection specification for node GitCommit in the ent schema.
+Generated by ent.
+"""
+type GitCommitConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [GitCommitEdge]
+}
+
+"""
+ReleaseLicenseConnection supports the relay edge specification for node ReleaseLicense in the ent schema.
+Generated by ent.
+"""
+type ReleaseLicenseEdge {
+  node: ReleaseLicense
+  cursor: Cursor!
+}
+
+"""
+ReleaseLicense represents the node ReleaseLicense in the ent schema.
+Generated by ent.
+"""
+type ReleaseLicense implements Node {
+  id: ID!
+  license: License!
+  component: ReleaseComponent
+  release: Release!
+  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
+}
+
+"""
+TestCase represents the node TestCase in the ent schema.
+Generated by ent.
+"""
+type TestCase implements Node {
+  id: ID!
+  name: String
+  result: Boolean
+  message: String
+  elapsed: Float
+  metadata: Map
+  run: TestRun!
+}
+
+"""
+TestCaseConnection supports the relay edge specification for node TestCase in the ent schema.
+Generated by ent.
+"""
+type TestCaseEdge {
+  node: TestCase
+  cursor: Cursor!
+}
+
+"""
+TestRunConnection supports the relay connection specification for node TestRun in the ent schema.
+Generated by ent.
+"""
+type TestRunConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [TestRunEdge]
+}
+
+"""
+VulnerabilityConnection supports the relay edge specification for node Vulnerability in the ent schema.
+Generated by ent.
+"""
+type VulnerabilityEdge {
+  node: Vulnerability
+  cursor: Cursor!
+}
+
+"""
+VulnerabilityReviewConnection supports the relay edge specification for node VulnerabilityReview in the ent schema.
+Generated by ent.
+"""
+type VulnerabilityReviewEdge {
+  node: VulnerabilityReview
+  cursor: Cursor!
+}
+
+"""
+License represents the node License in the ent schema.
+Generated by ent.
+"""
+type License implements Node {
+  id: ID!
+  spdx_id: String
+  name: String
+  reference: String
+  details_url: String
+  is_osi_approved: Boolean
+  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
+  uses(first: Int, last: Int, where: LicenseUseWhereInput): [LicenseUse] @goField(forceResolver: true)
+}
+
+"""
+AdapterConnection supports the relay edge specification for node Adapter in the ent schema.
+Generated by ent.
+"""
+type AdapterEdge {
+  node: Adapter
+  cursor: Cursor!
+}
+
+"""
+ReleasePolicy represents the node ReleasePolicy in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicy implements Node {
+  id: ID!
+  name: String
+  module: String
+  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
+  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
+  violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
+}
+
+"""
+ReleasePolicyViolation represents the node ReleasePolicyViolation in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicyViolation implements Node {
+  id: ID!
+  message: String
+  severity: ReleasePolicyViolationSeverity
+  policy: ReleasePolicy!
+  release: Release!
 }
 
 """
@@ -3441,41 +3708,148 @@ type VulnerabilityReview implements Node {
   instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
 }
 
-type PageInfo {
-  hasNextPage: Boolean!
-  hasPreviousPage: Boolean!
-  startCursor: Cursor
-  endCursor: Cursor
+"""
+Adapter represents the node Adapter in the ent schema.
+Generated by ent.
+"""
+type Adapter implements Node {
+  id: ID!
+  name: String
+  tag: String
+  module: String
 }
 
 """
-ProjectConnection supports the relay connection specification for node Project in the ent schema.
+LicenseConnection supports the relay edge specification for node License in the ent schema.
 Generated by ent.
 """
-type ProjectConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ProjectEdge]
+type LicenseEdge {
+  node: License
+  cursor: Cursor!
 }
 
 """
-ReleaseConnection supports the relay connection specification for node Release in the ent schema.
+ReleasePolicyViolationConnection supports the relay edge specification for node ReleasePolicyViolation in the ent schema.
 Generated by ent.
 """
-type ReleaseConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleaseEdge]
+type ReleasePolicyViolationEdge {
+  node: ReleasePolicyViolation
+  cursor: Cursor!
 }
 
 """
-ReleasePolicyConnection supports the relay connection specification for node ReleasePolicy in the ent schema.
+VulnerabilityConnection supports the relay connection specification for node Vulnerability in the ent schema.
 Generated by ent.
 """
-type ReleasePolicyConnection {
+type VulnerabilityConnection {
   totalCount: Int!
   pageInfo: PageInfo!
-  edges: [ReleasePolicyEdge]
+  edges: [VulnerabilityEdge]
+}
+
+"""
+CodeIssueConnection supports the relay edge specification for node CodeIssue in the ent schema.
+Generated by ent.
+"""
+type CodeIssueEdge {
+  node: CodeIssue
+  cursor: Cursor!
+}
+
+"""
+Organization represents the node Organization in the ent schema.
+Generated by ent.
+"""
+type Organization implements Node {
+  id: ID!
+  name: String
+  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
+  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
+}
+
+"""
+ReleasePolicyConnection supports the relay edge specification for node ReleasePolicy in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicyEdge {
+  node: ReleasePolicy
+  cursor: Cursor!
+}
+
+"""
+ReleaseVulnerability represents the node ReleaseVulnerability in the ent schema.
+Generated by ent.
+"""
+type ReleaseVulnerability implements Node {
+  id: ID!
+  vulnerability: Vulnerability!
+  component: ReleaseComponent
+  release: Release!
+  reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  scan: CodeScan
+}
+
+"""
+RepoConnection supports the relay edge specification for node Repo in the ent schema.
+Generated by ent.
+"""
+type RepoEdge {
+  node: Repo
+  cursor: Cursor!
+}
+
+"""
+AdapterConnection supports the relay connection specification for node Adapter in the ent schema.
+Generated by ent.
+"""
+type AdapterConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [AdapterEdge]
+}
+
+"""
+GitCommitConnection supports the relay edge specification for node GitCommit in the ent schema.
+Generated by ent.
+"""
+type GitCommitEdge {
+  node: GitCommit
+  cursor: Cursor!
+}
+
+"""
+CodeScan represents the node CodeScan in the ent schema.
+Generated by ent.
+"""
+type CodeScan implements Node {
+  id: ID!
+  tool: String
+  time: Time
+  metadata: Map
+  release: Release!
+  entry: ReleaseEntry
+  issues(first: Int, last: Int, where: CodeIssueWhereInput, order_by: CodeIssueOrder): [CodeIssue] @goField(forceResolver: true)
+  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+  components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
+}
+
+"""
+ReleaseEntryConnection supports the relay edge specification for node ReleaseEntry in the ent schema.
+Generated by ent.
+"""
+type ReleaseEntryEdge {
+  node: ReleaseEntry
+  cursor: Cursor!
+}
+
+"""
+ReleasePolicyViolationConnection supports the relay connection specification for node ReleasePolicyViolation in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicyViolationConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleasePolicyViolationEdge]
 }
 
 """
@@ -3492,12 +3866,117 @@ type ReleaseComponent implements Node {
 }
 
 """
-RepoConnection supports the relay edge specification for node Repo in the ent schema.
+TestRunConnection supports the relay edge specification for node TestRun in the ent schema.
 Generated by ent.
 """
-type RepoEdge {
-  node: Repo
+type TestRunEdge {
+  node: TestRun
   cursor: Cursor!
+}
+
+"""
+CodeIssueConnection supports the relay connection specification for node CodeIssue in the ent schema.
+Generated by ent.
+"""
+type CodeIssueConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [CodeIssueEdge]
+}
+
+"""
+Component represents the node Component in the ent schema.
+Generated by ent.
+"""
+type Component implements Node {
+  id: ID!
+  name: String
+  vendor: String
+  version: String
+  description: String
+  url: String
+  metadata: Map
+  vulnerabilities(first: Int, last: Int, where: VulnerabilityWhereInput, order_by: VulnerabilityOrder): [Vulnerability] @goField(forceResolver: true)
+  licenses(first: Int, last: Int, where: LicenseWhereInput, order_by: LicenseOrder): [License] @goField(forceResolver: true)
+  uses(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
+}
+
+"""
+ComponentConnection supports the relay edge specification for node Component in the ent schema.
+Generated by ent.
+"""
+type ComponentEdge {
+  node: Component
+  cursor: Cursor!
+}
+
+"""
+GitCommit represents the node GitCommit in the ent schema.
+Generated by ent.
+"""
+type GitCommit implements Node {
+  id: ID!
+  hash: String
+  branch: String
+  tag: String
+  time: Time
+  repo: Repo!
+  release: Release
+}
+
+"""
+LicenseConnection supports the relay connection specification for node License in the ent schema.
+Generated by ent.
+"""
+type LicenseConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [LicenseEdge]
+}
+
+"""
+ProjectConnection supports the relay edge specification for node Project in the ent schema.
+Generated by ent.
+"""
+type ProjectEdge {
+  node: Project
+  cursor: Cursor!
+}
+
+"""
+ReleaseComponentConnection supports the relay connection specification for node ReleaseComponent in the ent schema.
+Generated by ent.
+"""
+type ReleaseComponentConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleaseComponentEdge]
+}
+
+"""
+TestCaseConnection supports the relay connection specification for node TestCase in the ent schema.
+Generated by ent.
+"""
+type TestCaseConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [TestCaseEdge]
+}
+
+"""
+CodeScanConnection supports the relay edge specification for node CodeScan in the ent schema.
+Generated by ent.
+"""
+type CodeScanEdge {
+  node: CodeScan
+  cursor: Cursor!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: Cursor
+  endCursor: Cursor
 }
 
 """
@@ -3508,9 +3987,185 @@ type TestRun implements Node {
   id: ID!
   tool: String
   time: Time
+  metadata: Map
   release: Release!
   entry: ReleaseEntry
   tests(first: Int, last: Int, where: TestCaseWhereInput, order_by: TestCaseOrder): [TestCase] @goField(forceResolver: true)
+}
+
+"""
+ProjectConnection supports the relay connection specification for node Project in the ent schema.
+Generated by ent.
+"""
+type ProjectConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ProjectEdge]
+}
+
+"""
+ReleaseConnection supports the relay edge specification for node Release in the ent schema.
+Generated by ent.
+"""
+type ReleaseEdge {
+  node: Release
+  cursor: Cursor!
+}
+
+"""
+ReleaseComponentConnection supports the relay edge specification for node ReleaseComponent in the ent schema.
+Generated by ent.
+"""
+type ReleaseComponentEdge {
+  node: ReleaseComponent
+  cursor: Cursor!
+}
+
+"""
+ReleaseLicenseConnection supports the relay connection specification for node ReleaseLicense in the ent schema.
+Generated by ent.
+"""
+type ReleaseLicenseConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleaseLicenseEdge]
+}
+
+"""
+LicenseUse represents the node LicenseUse in the ent schema.
+Generated by ent.
+"""
+type LicenseUse implements Node {
+  id: ID!
+  license: License!
+}
+
+"""
+CodeScanConnection supports the relay connection specification for node CodeScan in the ent schema.
+Generated by ent.
+"""
+type CodeScanConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [CodeScanEdge]
+}
+
+"""
+Project represents the node Project in the ent schema.
+Generated by ent.
+"""
+type Project implements Node {
+  id: ID!
+  name: String
+  owner: Organization!
+  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
+  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  policies(first: Int, last: Int, where: ReleasePolicyWhereInput, order_by: ReleasePolicyOrder): [ReleasePolicy] @goField(forceResolver: true)
+}
+
+"""
+RepoConnection supports the relay connection specification for node Repo in the ent schema.
+Generated by ent.
+"""
+type RepoConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [RepoEdge]
+}
+
+"""
+ArtifactConnection supports the relay edge specification for node Artifact in the ent schema.
+Generated by ent.
+"""
+type ArtifactEdge {
+  node: Artifact
+  cursor: Cursor!
+}
+
+"""
+ArtifactConnection supports the relay connection specification for node Artifact in the ent schema.
+Generated by ent.
+"""
+type ArtifactConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ArtifactEdge]
+}
+
+"""
+ReleaseEntryConnection supports the relay connection specification for node ReleaseEntry in the ent schema.
+Generated by ent.
+"""
+type ReleaseEntryConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleaseEntryEdge]
+}
+
+"""
+Vulnerability represents the node Vulnerability in the ent schema.
+Generated by ent.
+"""
+type Vulnerability implements Node {
+  id: ID!
+  vid: String
+  summary: String
+  description: String
+  severity_score: Float
+  severity: VulnerabilitySeverity
+  published: Time
+  modified: Time
+  metadata: Map
+  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
+  reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+}
+
+"""
+Artifact represents the node Artifact in the ent schema.
+Generated by ent.
+"""
+type Artifact implements Node {
+  id: ID!
+  name: String
+  sha256: String
+  type: ArtifactType
+  time: Time
+  metadata: Map
+  release: Release
+  entry: ReleaseEntry
+}
+
+"""
+LicenseUseConnection supports the relay edge specification for node LicenseUse in the ent schema.
+Generated by ent.
+"""
+type LicenseUseEdge {
+  node: LicenseUse
+  cursor: Cursor!
+}
+
+"""
+ReleaseVulnerabilityConnection supports the relay edge specification for node ReleaseVulnerability in the ent schema.
+Generated by ent.
+"""
+type ReleaseVulnerabilityEdge {
+  node: ReleaseVulnerability
+  cursor: Cursor!
+}
+
+"""
+CodeIssue represents the node CodeIssue in the ent schema.
+Generated by ent.
+"""
+type CodeIssue implements Node {
+  id: ID!
+  rule_id: String
+  message: String
+  severity: CodeIssueSeverity
+  type: CodeIssueType
+  metadata: Map
+  scan: CodeScan!
 }
 
 """
@@ -3537,126 +4192,6 @@ type Release implements Node {
 }
 
 """
-ReleasePolicyViolationConnection supports the relay edge specification for node ReleasePolicyViolation in the ent schema.
-Generated by ent.
-"""
-type ReleasePolicyViolationEdge {
-  node: ReleasePolicyViolation
-  cursor: Cursor!
-}
-
-"""
-TestCaseConnection supports the relay edge specification for node TestCase in the ent schema.
-Generated by ent.
-"""
-type TestCaseEdge {
-  node: TestCase
-  cursor: Cursor!
-}
-
-"""
-Vulnerability represents the node Vulnerability in the ent schema.
-Generated by ent.
-"""
-type Vulnerability implements Node {
-  id: ID!
-  vid: String
-  summary: String
-  description: String
-  severity_score: Float
-  severity: VulnerabilitySeverity
-  published: Time
-  modified: Time
-  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
-  reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-  instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
-}
-
-"""
-Project represents the node Project in the ent schema.
-Generated by ent.
-"""
-type Project implements Node {
-  id: ID!
-  name: String
-  owner: Organization!
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-  policies(first: Int, last: Int, where: ReleasePolicyWhereInput, order_by: ReleasePolicyOrder): [ReleasePolicy] @goField(forceResolver: true)
-}
-
-"""
-ReleaseEntry represents the node ReleaseEntry in the ent schema.
-Generated by ent.
-"""
-type ReleaseEntry implements Node {
-  id: ID!
-  type: ReleaseEntryType
-  time: Time
-  artifact: Artifact
-  code_scan: CodeScan
-  test_run: TestRun
-  release: Release!
-}
-
-"""
-ReleaseEntryConnection supports the relay edge specification for node ReleaseEntry in the ent schema.
-Generated by ent.
-"""
-type ReleaseEntryEdge {
-  node: ReleaseEntry
-  cursor: Cursor!
-}
-
-"""
-LicenseUseConnection supports the relay connection specification for node LicenseUse in the ent schema.
-Generated by ent.
-"""
-type LicenseUseConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [LicenseUseEdge]
-}
-
-"""
-VulnerabilityConnection supports the relay edge specification for node Vulnerability in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityEdge {
-  node: Vulnerability
-  cursor: Cursor!
-}
-
-"""
-RepoConnection supports the relay connection specification for node Repo in the ent schema.
-Generated by ent.
-"""
-type RepoConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [RepoEdge]
-}
-
-"""
-CodeIssueConnection supports the relay connection specification for node CodeIssue in the ent schema.
-Generated by ent.
-"""
-type CodeIssueConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [CodeIssueEdge]
-}
-
-"""
-LicenseConnection supports the relay edge specification for node License in the ent schema.
-Generated by ent.
-"""
-type LicenseEdge {
-  node: License
-  cursor: Cursor!
-}
-
-"""
 ReleaseVulnerabilityConnection supports the relay connection specification for node ReleaseVulnerability in the ent schema.
 Generated by ent.
 """
@@ -3664,306 +4199,6 @@ type ReleaseVulnerabilityConnection {
   totalCount: Int!
   pageInfo: PageInfo!
   edges: [ReleaseVulnerabilityEdge]
-}
-
-"""
-ReleasePolicyViolationConnection supports the relay connection specification for node ReleasePolicyViolation in the ent schema.
-Generated by ent.
-"""
-type ReleasePolicyViolationConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleasePolicyViolationEdge]
-}
-
-"""
-TestRunConnection supports the relay edge specification for node TestRun in the ent schema.
-Generated by ent.
-"""
-type TestRunEdge {
-  node: TestRun
-  cursor: Cursor!
-}
-
-"""
-ArtifactConnection supports the relay edge specification for node Artifact in the ent schema.
-Generated by ent.
-"""
-type ArtifactEdge {
-  node: Artifact
-  cursor: Cursor!
-}
-
-"""
-ProjectConnection supports the relay edge specification for node Project in the ent schema.
-Generated by ent.
-"""
-type ProjectEdge {
-  node: Project
-  cursor: Cursor!
-}
-
-"""
-ReleasePolicyConnection supports the relay edge specification for node ReleasePolicy in the ent schema.
-Generated by ent.
-"""
-type ReleasePolicyEdge {
-  node: ReleasePolicy
-  cursor: Cursor!
-}
-
-"""
-GitCommitConnection supports the relay connection specification for node GitCommit in the ent schema.
-Generated by ent.
-"""
-type GitCommitConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [GitCommitEdge]
-}
-
-"""
-ReleaseConnection supports the relay edge specification for node Release in the ent schema.
-Generated by ent.
-"""
-type ReleaseEdge {
-  node: Release
-  cursor: Cursor!
-}
-
-"""
-ReleaseComponentConnection supports the relay edge specification for node ReleaseComponent in the ent schema.
-Generated by ent.
-"""
-type ReleaseComponentEdge {
-  node: ReleaseComponent
-  cursor: Cursor!
-}
-
-"""
-ReleaseVulnerability represents the node ReleaseVulnerability in the ent schema.
-Generated by ent.
-"""
-type ReleaseVulnerability implements Node {
-  id: ID!
-  vulnerability: Vulnerability!
-  component: ReleaseComponent
-  release: Release!
-  reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-  scan: CodeScan
-}
-
-"""
-TestRunConnection supports the relay connection specification for node TestRun in the ent schema.
-Generated by ent.
-"""
-type TestRunConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [TestRunEdge]
-}
-
-"""
-AdapterConnection supports the relay edge specification for node Adapter in the ent schema.
-Generated by ent.
-"""
-type AdapterEdge {
-  node: Adapter
-  cursor: Cursor!
-}
-
-"""
-ArtifactConnection supports the relay connection specification for node Artifact in the ent schema.
-Generated by ent.
-"""
-type ArtifactConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ArtifactEdge]
-}
-
-"""
-CodeScanConnection supports the relay connection specification for node CodeScan in the ent schema.
-Generated by ent.
-"""
-type CodeScanConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [CodeScanEdge]
-}
-
-"""
-GitCommitConnection supports the relay edge specification for node GitCommit in the ent schema.
-Generated by ent.
-"""
-type GitCommitEdge {
-  node: GitCommit
-  cursor: Cursor!
-}
-
-"""
-ReleaseLicense represents the node ReleaseLicense in the ent schema.
-Generated by ent.
-"""
-type ReleaseLicense implements Node {
-  id: ID!
-  license: License!
-  component: ReleaseComponent
-  release: Release!
-  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
-}
-
-"""
-ReleasePolicy represents the node ReleasePolicy in the ent schema.
-Generated by ent.
-"""
-type ReleasePolicy implements Node {
-  id: ID!
-  name: String
-  module: String
-  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-  violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
-}
-
-"""
-AdapterConnection supports the relay connection specification for node Adapter in the ent schema.
-Generated by ent.
-"""
-type AdapterConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [AdapterEdge]
-}
-
-"""
-CodeIssue represents the node CodeIssue in the ent schema.
-Generated by ent.
-"""
-type CodeIssue implements Node {
-  id: ID!
-  rule_id: String
-  message: String
-  severity: CodeIssueSeverity
-  type: CodeIssueType
-  scan: CodeScan!
-}
-
-"""
-GitCommit represents the node GitCommit in the ent schema.
-Generated by ent.
-"""
-type GitCommit implements Node {
-  id: ID!
-  hash: String
-  branch: String
-  tag: String
-  time: Time
-  repo: Repo!
-  release: Release
-}
-
-"""
-CodeScan represents the node CodeScan in the ent schema.
-Generated by ent.
-"""
-type CodeScan implements Node {
-  id: ID!
-  tool: String
-  time: Time
-  release: Release!
-  entry: ReleaseEntry
-  issues(first: Int, last: Int, where: CodeIssueWhereInput, order_by: CodeIssueOrder): [CodeIssue] @goField(forceResolver: true)
-  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
-  components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
-}
-
-"""
-TestCase represents the node TestCase in the ent schema.
-Generated by ent.
-"""
-type TestCase implements Node {
-  id: ID!
-  name: String
-  result: Boolean
-  message: String
-  elapsed: Float
-  run: TestRun!
-}
-
-"""
-ReleaseComponentConnection supports the relay connection specification for node ReleaseComponent in the ent schema.
-Generated by ent.
-"""
-type ReleaseComponentConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleaseComponentEdge]
-}
-
-"""
-VulnerabilityConnection supports the relay connection specification for node Vulnerability in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [VulnerabilityEdge]
-}
-
-"""
-LicenseConnection supports the relay connection specification for node License in the ent schema.
-Generated by ent.
-"""
-type LicenseConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [LicenseEdge]
-}
-
-"""
-LicenseUseConnection supports the relay edge specification for node LicenseUse in the ent schema.
-Generated by ent.
-"""
-type LicenseUseEdge {
-  node: LicenseUse
-  cursor: Cursor!
-}
-
-"""
-Organization represents the node Organization in the ent schema.
-Generated by ent.
-"""
-type Organization implements Node {
-  id: ID!
-  name: String
-  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-}
-
-"""
-ReleaseVulnerabilityConnection supports the relay edge specification for node ReleaseVulnerability in the ent schema.
-Generated by ent.
-"""
-type ReleaseVulnerabilityEdge {
-  node: ReleaseVulnerability
-  cursor: Cursor!
-}
-
-"""
-Repo represents the node Repo in the ent schema.
-Generated by ent.
-"""
-type Repo implements Node {
-  id: ID!
-  name: String
-  default_branch: String
-  owner: Organization!
-  project: Project!
-  head: Release
-  commits(first: Int, last: Int, where: GitCommitWhereInput, order_by: GitCommitOrder): [GitCommit] @goField(forceResolver: true)
-  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-  policies(first: Int, last: Int, where: ReleasePolicyWhereInput, order_by: ReleasePolicyOrder): [ReleasePolicy] @goField(forceResolver: true)
 }
 
 """
@@ -3977,69 +4212,6 @@ type VulnerabilityReviewConnection {
 }
 
 """
-Component represents the node Component in the ent schema.
-Generated by ent.
-"""
-type Component implements Node {
-  id: ID!
-  name: String
-  vendor: String
-  version: String
-  description: String
-  url: String
-  vulnerabilities(first: Int, last: Int, where: VulnerabilityWhereInput, order_by: VulnerabilityOrder): [Vulnerability] @goField(forceResolver: true)
-  licenses(first: Int, last: Int, where: LicenseWhereInput, order_by: LicenseOrder): [License] @goField(forceResolver: true)
-  uses(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
-}
-
-"""
-License represents the node License in the ent schema.
-Generated by ent.
-"""
-type License implements Node {
-  id: ID!
-  spdx_id: String
-  name: String
-  reference: String
-  details_url: String
-  is_osi_approved: Boolean
-  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
-  uses(first: Int, last: Int, where: LicenseUseWhereInput): [LicenseUse] @goField(forceResolver: true)
-}
-
-"""
-LicenseUse represents the node LicenseUse in the ent schema.
-Generated by ent.
-"""
-type LicenseUse implements Node {
-  id: ID!
-  license: License!
-}
-
-"""
-ReleasePolicyViolation represents the node ReleasePolicyViolation in the ent schema.
-Generated by ent.
-"""
-type ReleasePolicyViolation implements Node {
-  id: ID!
-  message: String
-  severity: ReleasePolicyViolationSeverity
-  policy: ReleasePolicy!
-  release: Release!
-}
-
-"""
-Adapter represents the node Adapter in the ent schema.
-Generated by ent.
-"""
-type Adapter implements Node {
-  id: ID!
-  name: String
-  tag: String
-  module: String
-}
-
-"""
 ComponentConnection supports the relay connection specification for node Component in the ent schema.
 Generated by ent.
 """
@@ -4050,64 +4222,13 @@ type ComponentConnection {
 }
 
 """
-ReleaseLicenseConnection supports the relay connection specification for node ReleaseLicense in the ent schema.
+ReleaseConnection supports the relay connection specification for node Release in the ent schema.
 Generated by ent.
 """
-type ReleaseLicenseConnection {
+type ReleaseConnection {
   totalCount: Int!
   pageInfo: PageInfo!
-  edges: [ReleaseLicenseEdge]
-}
-
-"""
-OrganizationConnection supports the relay connection specification for node Organization in the ent schema.
-Generated by ent.
-"""
-type OrganizationConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [OrganizationEdge]
-}
-
-"""
-ReleaseLicenseConnection supports the relay edge specification for node ReleaseLicense in the ent schema.
-Generated by ent.
-"""
-type ReleaseLicenseEdge {
-  node: ReleaseLicense
-  cursor: Cursor!
-}
-
-"""
-VulnerabilityReviewConnection supports the relay edge specification for node VulnerabilityReview in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityReviewEdge {
-  node: VulnerabilityReview
-  cursor: Cursor!
-}
-
-"""
-Artifact represents the node Artifact in the ent schema.
-Generated by ent.
-"""
-type Artifact implements Node {
-  id: ID!
-  name: String
-  sha256: String
-  type: ArtifactType
-  time: Time
-  release: Release
-  entry: ReleaseEntry
-}
-
-"""
-CodeIssueConnection supports the relay edge specification for node CodeIssue in the ent schema.
-Generated by ent.
-"""
-type CodeIssueEdge {
-  node: CodeIssue
-  cursor: Cursor!
+  edges: [ReleaseEdge]
 }
 
 """
@@ -4119,47 +4240,19 @@ type OrganizationEdge {
   cursor: Cursor!
 }
 
-"""
-TestCaseConnection supports the relay connection specification for node TestCase in the ent schema.
-Generated by ent.
-"""
-type TestCaseConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [TestCaseEdge]
-}
-
-"""
-CodeScanConnection supports the relay edge specification for node CodeScan in the ent schema.
-Generated by ent.
-"""
-type CodeScanEdge {
-  node: CodeScan
-  cursor: Cursor!
-}
-
-"""
-ComponentConnection supports the relay edge specification for node Component in the ent schema.
-Generated by ent.
-"""
-type ComponentEdge {
-  node: Component
-  cursor: Cursor!
-}
-
-"""
-ReleaseEntryConnection supports the relay connection specification for node ReleaseEntry in the ent schema.
-Generated by ent.
-"""
-type ReleaseEntryConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleaseEntryEdge]
-}
-
-input ComponentOrder {
+input RepoOrder {
   direction: OrderDirection!
-  field: ComponentOrderField
+  field: RepoOrderField
+}
+
+input VulnerabilityOrder {
+  direction: OrderDirection!
+  field: VulnerabilityOrderField
+}
+
+input CodeIssueOrder {
+  direction: OrderDirection!
+  field: CodeIssueOrderField
 }
 
 """
@@ -4273,6 +4366,251 @@ input ComponentWhereInput {
   has_uses_with: [ReleaseComponentWhereInput!]
 }
 
+input ReleaseOrder {
+  direction: OrderDirection!
+  field: ReleaseOrderField
+}
+
+"""
+ReleaseEntryWhereInput is used for filtering ReleaseEntry objects.
+Input was generated by ent.
+"""
+input ReleaseEntryWhereInput {
+  not: ReleaseEntryWhereInput
+  and: [ReleaseEntryWhereInput!]
+  or: [ReleaseEntryWhereInput!]
+  
+  """type field predicates"""
+  type: ReleaseEntryType
+  type_neq: ReleaseEntryType
+  type_in: [ReleaseEntryType!]
+  type_not_in: [ReleaseEntryType!]
+  
+  """time field predicates"""
+  time: Time
+  time_neq: Time
+  time_in: [Time!]
+  time_not_in: [Time!]
+  time_gt: Time
+  time_gte: Time
+  time_lt: Time
+  time_lte: Time
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """artifact edge predicates"""
+  has_artifact: Boolean
+  has_artifact_with: [ArtifactWhereInput!]
+  
+  """code_scan edge predicates"""
+  has_code_scan: Boolean
+  has_code_scan_with: [CodeScanWhereInput!]
+  
+  """test_run edge predicates"""
+  has_test_run: Boolean
+  has_test_run_with: [TestRunWhereInput!]
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+}
+
+"""
+ReleaseLicenseWhereInput is used for filtering ReleaseLicense objects.
+Input was generated by ent.
+"""
+input ReleaseLicenseWhereInput {
+  not: ReleaseLicenseWhereInput
+  and: [ReleaseLicenseWhereInput!]
+  or: [ReleaseLicenseWhereInput!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """license edge predicates"""
+  has_license: Boolean
+  has_license_with: [LicenseWhereInput!]
+  
+  """component edge predicates"""
+  has_component: Boolean
+  has_component_with: [ReleaseComponentWhereInput!]
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+  
+  """scans edge predicates"""
+  has_scans: Boolean
+  has_scans_with: [CodeScanWhereInput!]
+}
+
+input CodeScanOrder {
+  direction: OrderDirection!
+  field: CodeScanOrderField
+}
+
+"""
+OrganizationWhereInput is used for filtering Organization objects.
+Input was generated by ent.
+"""
+input OrganizationWhereInput {
+  not: OrganizationWhereInput
+  and: [OrganizationWhereInput!]
+  or: [OrganizationWhereInput!]
+  
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """projects edge predicates"""
+  has_projects: Boolean
+  has_projects_with: [ProjectWhereInput!]
+  
+  """repos edge predicates"""
+  has_repos: Boolean
+  has_repos_with: [RepoWhereInput!]
+}
+
+"""
+ReleaseComponentWhereInput is used for filtering ReleaseComponent objects.
+Input was generated by ent.
+"""
+input ReleaseComponentWhereInput {
+  not: ReleaseComponentWhereInput
+  and: [ReleaseComponentWhereInput!]
+  or: [ReleaseComponentWhereInput!]
+  
+  """type field predicates"""
+  type: ReleaseComponentType
+  type_neq: ReleaseComponentType
+  type_in: [ReleaseComponentType!]
+  type_not_in: [ReleaseComponentType!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+  
+  """scans edge predicates"""
+  has_scans: Boolean
+  has_scans_with: [CodeScanWhereInput!]
+  
+  """component edge predicates"""
+  has_component: Boolean
+  has_component_with: [ComponentWhereInput!]
+  
+  """vulnerabilities edge predicates"""
+  has_vulnerabilities: Boolean
+  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
+}
+
+"""
+ReleasePolicyWhereInput is used for filtering ReleasePolicy objects.
+Input was generated by ent.
+"""
+input ReleasePolicyWhereInput {
+  not: ReleasePolicyWhereInput
+  and: [ReleasePolicyWhereInput!]
+  or: [ReleasePolicyWhereInput!]
+  
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+  
+  """module field predicates"""
+  module: String
+  module_neq: String
+  module_in: [String!]
+  module_not_in: [String!]
+  module_gt: String
+  module_gte: String
+  module_lt: String
+  module_lte: String
+  module_contains: String
+  module_has_prefix: String
+  module_has_suffix: String
+  module_equal_fold: String
+  module_contains_fold: String
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """projects edge predicates"""
+  has_projects: Boolean
+  has_projects_with: [ProjectWhereInput!]
+  
+  """repos edge predicates"""
+  has_repos: Boolean
+  has_repos_with: [RepoWhereInput!]
+  
+  """violations edge predicates"""
+  has_violations: Boolean
+  has_violations_with: [ReleasePolicyViolationWhereInput!]
+}
+
 """
 ReleaseWhereInput is used for filtering Release objects.
 Input was generated by ent.
@@ -4378,585 +4716,6 @@ input ReleaseWhereInput {
 }
 
 """
-AdapterWhereInput is used for filtering Adapter objects.
-Input was generated by ent.
-"""
-input AdapterWhereInput {
-  not: AdapterWhereInput
-  and: [AdapterWhereInput!]
-  or: [AdapterWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """tag field predicates"""
-  tag: String
-  tag_neq: String
-  tag_in: [String!]
-  tag_not_in: [String!]
-  tag_gt: String
-  tag_gte: String
-  tag_lt: String
-  tag_lte: String
-  tag_contains: String
-  tag_has_prefix: String
-  tag_has_suffix: String
-  tag_equal_fold: String
-  tag_contains_fold: String
-  
-  """module field predicates"""
-  module: String
-  module_neq: String
-  module_in: [String!]
-  module_not_in: [String!]
-  module_gt: String
-  module_gte: String
-  module_lt: String
-  module_lte: String
-  module_contains: String
-  module_has_prefix: String
-  module_has_suffix: String
-  module_equal_fold: String
-  module_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-}
-
-"""
-OrganizationWhereInput is used for filtering Organization objects.
-Input was generated by ent.
-"""
-input OrganizationWhereInput {
-  not: OrganizationWhereInput
-  and: [OrganizationWhereInput!]
-  or: [OrganizationWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """projects edge predicates"""
-  has_projects: Boolean
-  has_projects_with: [ProjectWhereInput!]
-  
-  """repos edge predicates"""
-  has_repos: Boolean
-  has_repos_with: [RepoWhereInput!]
-}
-
-"""
-ProjectWhereInput is used for filtering Project objects.
-Input was generated by ent.
-"""
-input ProjectWhereInput {
-  not: ProjectWhereInput
-  and: [ProjectWhereInput!]
-  or: [ProjectWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """owner edge predicates"""
-  has_owner: Boolean
-  has_owner_with: [OrganizationWhereInput!]
-  
-  """repos edge predicates"""
-  has_repos: Boolean
-  has_repos_with: [RepoWhereInput!]
-  
-  """vulnerability_reviews edge predicates"""
-  has_vulnerability_reviews: Boolean
-  has_vulnerability_reviews_with: [VulnerabilityReviewWhereInput!]
-  
-  """policies edge predicates"""
-  has_policies: Boolean
-  has_policies_with: [ReleasePolicyWhereInput!]
-}
-
-"""
-ReleaseLicenseWhereInput is used for filtering ReleaseLicense objects.
-Input was generated by ent.
-"""
-input ReleaseLicenseWhereInput {
-  not: ReleaseLicenseWhereInput
-  and: [ReleaseLicenseWhereInput!]
-  or: [ReleaseLicenseWhereInput!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """license edge predicates"""
-  has_license: Boolean
-  has_license_with: [LicenseWhereInput!]
-  
-  """component edge predicates"""
-  has_component: Boolean
-  has_component_with: [ReleaseComponentWhereInput!]
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """scans edge predicates"""
-  has_scans: Boolean
-  has_scans_with: [CodeScanWhereInput!]
-}
-
-input TestCaseOrder {
-  direction: OrderDirection!
-  field: TestCaseOrderField
-}
-
-input CodeScanOrder {
-  direction: OrderDirection!
-  field: CodeScanOrderField
-}
-
-input GitCommitOrder {
-  direction: OrderDirection!
-  field: GitCommitOrderField
-}
-
-"""
-GitCommitWhereInput is used for filtering GitCommit objects.
-Input was generated by ent.
-"""
-input GitCommitWhereInput {
-  not: GitCommitWhereInput
-  and: [GitCommitWhereInput!]
-  or: [GitCommitWhereInput!]
-  
-  """hash field predicates"""
-  hash: String
-  hash_neq: String
-  hash_in: [String!]
-  hash_not_in: [String!]
-  hash_gt: String
-  hash_gte: String
-  hash_lt: String
-  hash_lte: String
-  hash_contains: String
-  hash_has_prefix: String
-  hash_has_suffix: String
-  hash_equal_fold: String
-  hash_contains_fold: String
-  
-  """branch field predicates"""
-  branch: String
-  branch_neq: String
-  branch_in: [String!]
-  branch_not_in: [String!]
-  branch_gt: String
-  branch_gte: String
-  branch_lt: String
-  branch_lte: String
-  branch_contains: String
-  branch_has_prefix: String
-  branch_has_suffix: String
-  branch_equal_fold: String
-  branch_contains_fold: String
-  
-  """tag field predicates"""
-  tag: String
-  tag_neq: String
-  tag_in: [String!]
-  tag_not_in: [String!]
-  tag_gt: String
-  tag_gte: String
-  tag_lt: String
-  tag_lte: String
-  tag_contains: String
-  tag_has_prefix: String
-  tag_has_suffix: String
-  tag_is_nil: Boolean
-  tag_not_nil: Boolean
-  tag_equal_fold: String
-  tag_contains_fold: String
-  
-  """time field predicates"""
-  time: Time
-  time_neq: Time
-  time_in: [Time!]
-  time_not_in: [Time!]
-  time_gt: Time
-  time_gte: Time
-  time_lt: Time
-  time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """repo edge predicates"""
-  has_repo: Boolean
-  has_repo_with: [RepoWhereInput!]
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-}
-
-"""
-ReleaseEntryWhereInput is used for filtering ReleaseEntry objects.
-Input was generated by ent.
-"""
-input ReleaseEntryWhereInput {
-  not: ReleaseEntryWhereInput
-  and: [ReleaseEntryWhereInput!]
-  or: [ReleaseEntryWhereInput!]
-  
-  """type field predicates"""
-  type: ReleaseEntryType
-  type_neq: ReleaseEntryType
-  type_in: [ReleaseEntryType!]
-  type_not_in: [ReleaseEntryType!]
-  
-  """time field predicates"""
-  time: Time
-  time_neq: Time
-  time_in: [Time!]
-  time_not_in: [Time!]
-  time_gt: Time
-  time_gte: Time
-  time_lt: Time
-  time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """artifact edge predicates"""
-  has_artifact: Boolean
-  has_artifact_with: [ArtifactWhereInput!]
-  
-  """code_scan edge predicates"""
-  has_code_scan: Boolean
-  has_code_scan_with: [CodeScanWhereInput!]
-  
-  """test_run edge predicates"""
-  has_test_run: Boolean
-  has_test_run_with: [TestRunWhereInput!]
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-}
-
-input TestRunOrder {
-  direction: OrderDirection!
-  field: TestRunOrderField
-}
-
-input ArtifactOrder {
-  direction: OrderDirection!
-  field: ArtifactOrderField
-}
-
-input CodeIssueOrder {
-  direction: OrderDirection!
-  field: CodeIssueOrderField
-}
-
-"""
-CodeIssueWhereInput is used for filtering CodeIssue objects.
-Input was generated by ent.
-"""
-input CodeIssueWhereInput {
-  not: CodeIssueWhereInput
-  and: [CodeIssueWhereInput!]
-  or: [CodeIssueWhereInput!]
-  
-  """rule_id field predicates"""
-  rule_id: String
-  rule_id_neq: String
-  rule_id_in: [String!]
-  rule_id_not_in: [String!]
-  rule_id_gt: String
-  rule_id_gte: String
-  rule_id_lt: String
-  rule_id_lte: String
-  rule_id_contains: String
-  rule_id_has_prefix: String
-  rule_id_has_suffix: String
-  rule_id_equal_fold: String
-  rule_id_contains_fold: String
-  
-  """message field predicates"""
-  message: String
-  message_neq: String
-  message_in: [String!]
-  message_not_in: [String!]
-  message_gt: String
-  message_gte: String
-  message_lt: String
-  message_lte: String
-  message_contains: String
-  message_has_prefix: String
-  message_has_suffix: String
-  message_equal_fold: String
-  message_contains_fold: String
-  
-  """severity field predicates"""
-  severity: CodeIssueSeverity
-  severity_neq: CodeIssueSeverity
-  severity_in: [CodeIssueSeverity!]
-  severity_not_in: [CodeIssueSeverity!]
-  
-  """type field predicates"""
-  type: CodeIssueType
-  type_neq: CodeIssueType
-  type_in: [CodeIssueType!]
-  type_not_in: [CodeIssueType!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """scan edge predicates"""
-  has_scan: Boolean
-  has_scan_with: [CodeScanWhereInput!]
-}
-
-"""
-LicenseWhereInput is used for filtering License objects.
-Input was generated by ent.
-"""
-input LicenseWhereInput {
-  not: LicenseWhereInput
-  and: [LicenseWhereInput!]
-  or: [LicenseWhereInput!]
-  
-  """spdx_id field predicates"""
-  spdx_id: String
-  spdx_id_neq: String
-  spdx_id_in: [String!]
-  spdx_id_not_in: [String!]
-  spdx_id_gt: String
-  spdx_id_gte: String
-  spdx_id_lt: String
-  spdx_id_lte: String
-  spdx_id_contains: String
-  spdx_id_has_prefix: String
-  spdx_id_has_suffix: String
-  spdx_id_equal_fold: String
-  spdx_id_contains_fold: String
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """reference field predicates"""
-  reference: String
-  reference_neq: String
-  reference_in: [String!]
-  reference_not_in: [String!]
-  reference_gt: String
-  reference_gte: String
-  reference_lt: String
-  reference_lte: String
-  reference_contains: String
-  reference_has_prefix: String
-  reference_has_suffix: String
-  reference_is_nil: Boolean
-  reference_not_nil: Boolean
-  reference_equal_fold: String
-  reference_contains_fold: String
-  
-  """details_url field predicates"""
-  details_url: String
-  details_url_neq: String
-  details_url_in: [String!]
-  details_url_not_in: [String!]
-  details_url_gt: String
-  details_url_gte: String
-  details_url_lt: String
-  details_url_lte: String
-  details_url_contains: String
-  details_url_has_prefix: String
-  details_url_has_suffix: String
-  details_url_is_nil: Boolean
-  details_url_not_nil: Boolean
-  details_url_equal_fold: String
-  details_url_contains_fold: String
-  
-  """is_osi_approved field predicates"""
-  is_osi_approved: Boolean
-  is_osi_approved_neq: Boolean
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """components edge predicates"""
-  has_components: Boolean
-  has_components_with: [ComponentWhereInput!]
-  
-  """uses edge predicates"""
-  has_uses: Boolean
-  has_uses_with: [LicenseUseWhereInput!]
-}
-
-input ProjectOrder {
-  direction: OrderDirection!
-  field: ProjectOrderField
-}
-
-input ReleaseEntryOrder {
-  direction: OrderDirection!
-  field: ReleaseEntryOrderField
-}
-
-"""
-ReleaseVulnerabilityWhereInput is used for filtering ReleaseVulnerability objects.
-Input was generated by ent.
-"""
-input ReleaseVulnerabilityWhereInput {
-  not: ReleaseVulnerabilityWhereInput
-  and: [ReleaseVulnerabilityWhereInput!]
-  or: [ReleaseVulnerabilityWhereInput!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """vulnerability edge predicates"""
-  has_vulnerability: Boolean
-  has_vulnerability_with: [VulnerabilityWhereInput!]
-  
-  """component edge predicates"""
-  has_component: Boolean
-  has_component_with: [ReleaseComponentWhereInput!]
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """reviews edge predicates"""
-  has_reviews: Boolean
-  has_reviews_with: [VulnerabilityReviewWhereInput!]
-  
-  """scan edge predicates"""
-  has_scan: Boolean
-  has_scan_with: [CodeScanWhereInput!]
-}
-
-input RepoOrder {
-  direction: OrderDirection!
-  field: RepoOrderField
-}
-
-"""
 TestCaseWhereInput is used for filtering TestCase objects.
 Input was generated by ent.
 """
@@ -5022,6 +4781,90 @@ input TestCaseWhereInput {
   """run edge predicates"""
   has_run: Boolean
   has_run_with: [TestRunWhereInput!]
+}
+
+input VulnerabilityReviewOrder {
+  direction: OrderDirection!
+  field: VulnerabilityReviewOrderField
+}
+
+"""
+ArtifactWhereInput is used for filtering Artifact objects.
+Input was generated by ent.
+"""
+input ArtifactWhereInput {
+  not: ArtifactWhereInput
+  and: [ArtifactWhereInput!]
+  or: [ArtifactWhereInput!]
+  
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+  
+  """sha256 field predicates"""
+  sha256: String
+  sha256_neq: String
+  sha256_in: [String!]
+  sha256_not_in: [String!]
+  sha256_gt: String
+  sha256_gte: String
+  sha256_lt: String
+  sha256_lte: String
+  sha256_contains: String
+  sha256_has_prefix: String
+  sha256_has_suffix: String
+  sha256_equal_fold: String
+  sha256_contains_fold: String
+  
+  """type field predicates"""
+  type: ArtifactType
+  type_neq: ArtifactType
+  type_in: [ArtifactType!]
+  type_not_in: [ArtifactType!]
+  
+  """time field predicates"""
+  time: Time
+  time_neq: Time
+  time_in: [Time!]
+  time_not_in: [Time!]
+  time_gt: Time
+  time_gte: Time
+  time_lt: Time
+  time_lte: Time
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+  
+  """entry edge predicates"""
+  has_entry: Boolean
+  has_entry_with: [ReleaseEntryWhereInput!]
+}
+
+input GitCommitOrder {
+  direction: OrderDirection!
+  field: GitCommitOrderField
 }
 
 """
@@ -5145,6 +4988,36 @@ input VulnerabilityWhereInput {
   has_instances_with: [ReleaseVulnerabilityWhereInput!]
 }
 
+input ArtifactOrder {
+  direction: OrderDirection!
+  field: ArtifactOrderField
+}
+
+input LicenseOrder {
+  direction: OrderDirection!
+  field: LicenseOrderField
+}
+
+input ReleaseEntryOrder {
+  direction: OrderDirection!
+  field: ReleaseEntryOrderField
+}
+
+input ReleasePolicyOrder {
+  direction: OrderDirection!
+  field: ReleasePolicyOrderField
+}
+
+input TestCaseOrder {
+  direction: OrderDirection!
+  field: TestCaseOrderField
+}
+
+input TestRunOrder {
+  direction: OrderDirection!
+  field: TestRunOrderField
+}
+
 """
 VulnerabilityReviewWhereInput is used for filtering VulnerabilityReview objects.
 Input was generated by ent.
@@ -5207,13 +5080,13 @@ input VulnerabilityReviewWhereInput {
 }
 
 """
-ArtifactWhereInput is used for filtering Artifact objects.
+AdapterWhereInput is used for filtering Adapter objects.
 Input was generated by ent.
 """
-input ArtifactWhereInput {
-  not: ArtifactWhereInput
-  and: [ArtifactWhereInput!]
-  or: [ArtifactWhereInput!]
+input AdapterWhereInput {
+  not: AdapterWhereInput
+  and: [AdapterWhereInput!]
+  or: [AdapterWhereInput!]
   
   """name field predicates"""
   name: String
@@ -5230,26 +5103,70 @@ input ArtifactWhereInput {
   name_equal_fold: String
   name_contains_fold: String
   
-  """sha256 field predicates"""
-  sha256: String
-  sha256_neq: String
-  sha256_in: [String!]
-  sha256_not_in: [String!]
-  sha256_gt: String
-  sha256_gte: String
-  sha256_lt: String
-  sha256_lte: String
-  sha256_contains: String
-  sha256_has_prefix: String
-  sha256_has_suffix: String
-  sha256_equal_fold: String
-  sha256_contains_fold: String
+  """tag field predicates"""
+  tag: String
+  tag_neq: String
+  tag_in: [String!]
+  tag_not_in: [String!]
+  tag_gt: String
+  tag_gte: String
+  tag_lt: String
+  tag_lte: String
+  tag_contains: String
+  tag_has_prefix: String
+  tag_has_suffix: String
+  tag_equal_fold: String
+  tag_contains_fold: String
   
-  """type field predicates"""
-  type: ArtifactType
-  type_neq: ArtifactType
-  type_in: [ArtifactType!]
-  type_not_in: [ArtifactType!]
+  """module field predicates"""
+  module: String
+  module_neq: String
+  module_in: [String!]
+  module_not_in: [String!]
+  module_gt: String
+  module_gte: String
+  module_lt: String
+  module_lte: String
+  module_contains: String
+  module_has_prefix: String
+  module_has_suffix: String
+  module_equal_fold: String
+  module_contains_fold: String
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+}
+
+"""
+CodeScanWhereInput is used for filtering CodeScan objects.
+Input was generated by ent.
+"""
+input CodeScanWhereInput {
+  not: CodeScanWhereInput
+  and: [CodeScanWhereInput!]
+  or: [CodeScanWhereInput!]
+  
+  """tool field predicates"""
+  tool: String
+  tool_neq: String
+  tool_in: [String!]
+  tool_not_in: [String!]
+  tool_gt: String
+  tool_gte: String
+  tool_lt: String
+  tool_lte: String
+  tool_contains: String
+  tool_has_prefix: String
+  tool_has_suffix: String
+  tool_equal_fold: String
+  tool_contains_fold: String
   
   """time field predicates"""
   time: Time
@@ -5278,11 +5195,23 @@ input ArtifactWhereInput {
   """entry edge predicates"""
   has_entry: Boolean
   has_entry_with: [ReleaseEntryWhereInput!]
+  
+  """issues edge predicates"""
+  has_issues: Boolean
+  has_issues_with: [CodeIssueWhereInput!]
+  
+  """vulnerabilities edge predicates"""
+  has_vulnerabilities: Boolean
+  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
+  
+  """components edge predicates"""
+  has_components: Boolean
+  has_components_with: [ReleaseComponentWhereInput!]
 }
 
-input LicenseOrder {
+input ComponentOrder {
   direction: OrderDirection!
-  field: LicenseOrderField
+  field: ComponentOrderField
 }
 
 """
@@ -5309,14 +5238,166 @@ input LicenseUseWhereInput {
   has_license_with: [LicenseWhereInput!]
 }
 
-input ReleaseOrder {
-  direction: OrderDirection!
-  field: ReleaseOrderField
+"""
+ProjectWhereInput is used for filtering Project objects.
+Input was generated by ent.
+"""
+input ProjectWhereInput {
+  not: ProjectWhereInput
+  and: [ProjectWhereInput!]
+  or: [ProjectWhereInput!]
+  
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """owner edge predicates"""
+  has_owner: Boolean
+  has_owner_with: [OrganizationWhereInput!]
+  
+  """repos edge predicates"""
+  has_repos: Boolean
+  has_repos_with: [RepoWhereInput!]
+  
+  """vulnerability_reviews edge predicates"""
+  has_vulnerability_reviews: Boolean
+  has_vulnerability_reviews_with: [VulnerabilityReviewWhereInput!]
+  
+  """policies edge predicates"""
+  has_policies: Boolean
+  has_policies_with: [ReleasePolicyWhereInput!]
 }
 
-input ReleasePolicyOrder {
+input AdapterOrder {
   direction: OrderDirection!
-  field: ReleasePolicyOrderField
+  field: AdapterOrderField
+}
+
+"""
+CodeIssueWhereInput is used for filtering CodeIssue objects.
+Input was generated by ent.
+"""
+input CodeIssueWhereInput {
+  not: CodeIssueWhereInput
+  and: [CodeIssueWhereInput!]
+  or: [CodeIssueWhereInput!]
+  
+  """rule_id field predicates"""
+  rule_id: String
+  rule_id_neq: String
+  rule_id_in: [String!]
+  rule_id_not_in: [String!]
+  rule_id_gt: String
+  rule_id_gte: String
+  rule_id_lt: String
+  rule_id_lte: String
+  rule_id_contains: String
+  rule_id_has_prefix: String
+  rule_id_has_suffix: String
+  rule_id_equal_fold: String
+  rule_id_contains_fold: String
+  
+  """message field predicates"""
+  message: String
+  message_neq: String
+  message_in: [String!]
+  message_not_in: [String!]
+  message_gt: String
+  message_gte: String
+  message_lt: String
+  message_lte: String
+  message_contains: String
+  message_has_prefix: String
+  message_has_suffix: String
+  message_equal_fold: String
+  message_contains_fold: String
+  
+  """severity field predicates"""
+  severity: CodeIssueSeverity
+  severity_neq: CodeIssueSeverity
+  severity_in: [CodeIssueSeverity!]
+  severity_not_in: [CodeIssueSeverity!]
+  
+  """type field predicates"""
+  type: CodeIssueType
+  type_neq: CodeIssueType
+  type_in: [CodeIssueType!]
+  type_not_in: [CodeIssueType!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """scan edge predicates"""
+  has_scan: Boolean
+  has_scan_with: [CodeScanWhereInput!]
+}
+
+"""
+ReleaseVulnerabilityWhereInput is used for filtering ReleaseVulnerability objects.
+Input was generated by ent.
+"""
+input ReleaseVulnerabilityWhereInput {
+  not: ReleaseVulnerabilityWhereInput
+  and: [ReleaseVulnerabilityWhereInput!]
+  or: [ReleaseVulnerabilityWhereInput!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """vulnerability edge predicates"""
+  has_vulnerability: Boolean
+  has_vulnerability_with: [VulnerabilityWhereInput!]
+  
+  """component edge predicates"""
+  has_component: Boolean
+  has_component_with: [ReleaseComponentWhereInput!]
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+  
+  """reviews edge predicates"""
+  has_reviews: Boolean
+  has_reviews_with: [VulnerabilityReviewWhereInput!]
+  
+  """scan edge predicates"""
+  has_scan: Boolean
+  has_scan_with: [CodeScanWhereInput!]
 }
 
 """
@@ -5394,6 +5475,241 @@ input RepoWhereInput {
 }
 
 """
+GitCommitWhereInput is used for filtering GitCommit objects.
+Input was generated by ent.
+"""
+input GitCommitWhereInput {
+  not: GitCommitWhereInput
+  and: [GitCommitWhereInput!]
+  or: [GitCommitWhereInput!]
+  
+  """hash field predicates"""
+  hash: String
+  hash_neq: String
+  hash_in: [String!]
+  hash_not_in: [String!]
+  hash_gt: String
+  hash_gte: String
+  hash_lt: String
+  hash_lte: String
+  hash_contains: String
+  hash_has_prefix: String
+  hash_has_suffix: String
+  hash_equal_fold: String
+  hash_contains_fold: String
+  
+  """branch field predicates"""
+  branch: String
+  branch_neq: String
+  branch_in: [String!]
+  branch_not_in: [String!]
+  branch_gt: String
+  branch_gte: String
+  branch_lt: String
+  branch_lte: String
+  branch_contains: String
+  branch_has_prefix: String
+  branch_has_suffix: String
+  branch_equal_fold: String
+  branch_contains_fold: String
+  
+  """tag field predicates"""
+  tag: String
+  tag_neq: String
+  tag_in: [String!]
+  tag_not_in: [String!]
+  tag_gt: String
+  tag_gte: String
+  tag_lt: String
+  tag_lte: String
+  tag_contains: String
+  tag_has_prefix: String
+  tag_has_suffix: String
+  tag_is_nil: Boolean
+  tag_not_nil: Boolean
+  tag_equal_fold: String
+  tag_contains_fold: String
+  
+  """time field predicates"""
+  time: Time
+  time_neq: Time
+  time_in: [Time!]
+  time_not_in: [Time!]
+  time_gt: Time
+  time_gte: Time
+  time_lt: Time
+  time_lte: Time
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """repo edge predicates"""
+  has_repo: Boolean
+  has_repo_with: [RepoWhereInput!]
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+}
+
+"""
+LicenseWhereInput is used for filtering License objects.
+Input was generated by ent.
+"""
+input LicenseWhereInput {
+  not: LicenseWhereInput
+  and: [LicenseWhereInput!]
+  or: [LicenseWhereInput!]
+  
+  """spdx_id field predicates"""
+  spdx_id: String
+  spdx_id_neq: String
+  spdx_id_in: [String!]
+  spdx_id_not_in: [String!]
+  spdx_id_gt: String
+  spdx_id_gte: String
+  spdx_id_lt: String
+  spdx_id_lte: String
+  spdx_id_contains: String
+  spdx_id_has_prefix: String
+  spdx_id_has_suffix: String
+  spdx_id_equal_fold: String
+  spdx_id_contains_fold: String
+  
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+  
+  """reference field predicates"""
+  reference: String
+  reference_neq: String
+  reference_in: [String!]
+  reference_not_in: [String!]
+  reference_gt: String
+  reference_gte: String
+  reference_lt: String
+  reference_lte: String
+  reference_contains: String
+  reference_has_prefix: String
+  reference_has_suffix: String
+  reference_is_nil: Boolean
+  reference_not_nil: Boolean
+  reference_equal_fold: String
+  reference_contains_fold: String
+  
+  """details_url field predicates"""
+  details_url: String
+  details_url_neq: String
+  details_url_in: [String!]
+  details_url_not_in: [String!]
+  details_url_gt: String
+  details_url_gte: String
+  details_url_lt: String
+  details_url_lte: String
+  details_url_contains: String
+  details_url_has_prefix: String
+  details_url_has_suffix: String
+  details_url_is_nil: Boolean
+  details_url_not_nil: Boolean
+  details_url_equal_fold: String
+  details_url_contains_fold: String
+  
+  """is_osi_approved field predicates"""
+  is_osi_approved: Boolean
+  is_osi_approved_neq: Boolean
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """components edge predicates"""
+  has_components: Boolean
+  has_components_with: [ComponentWhereInput!]
+  
+  """uses edge predicates"""
+  has_uses: Boolean
+  has_uses_with: [LicenseUseWhereInput!]
+}
+
+input ProjectOrder {
+  direction: OrderDirection!
+  field: ProjectOrderField
+}
+
+"""
+ReleasePolicyViolationWhereInput is used for filtering ReleasePolicyViolation objects.
+Input was generated by ent.
+"""
+input ReleasePolicyViolationWhereInput {
+  not: ReleasePolicyViolationWhereInput
+  and: [ReleasePolicyViolationWhereInput!]
+  or: [ReleasePolicyViolationWhereInput!]
+  
+  """message field predicates"""
+  message: String
+  message_neq: String
+  message_in: [String!]
+  message_not_in: [String!]
+  message_gt: String
+  message_gte: String
+  message_lt: String
+  message_lte: String
+  message_contains: String
+  message_has_prefix: String
+  message_has_suffix: String
+  message_equal_fold: String
+  message_contains_fold: String
+  
+  """severity field predicates"""
+  severity: ReleasePolicyViolationSeverity
+  severity_neq: ReleasePolicyViolationSeverity
+  severity_in: [ReleasePolicyViolationSeverity!]
+  severity_not_in: [ReleasePolicyViolationSeverity!]
+  
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+  
+  """policy edge predicates"""
+  has_policy: Boolean
+  has_policy_with: [ReleasePolicyWhereInput!]
+  
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+}
+
+"""
 TestRunWhereInput is used for filtering TestRun objects.
 Input was generated by ent.
 """
@@ -5448,239 +5764,6 @@ input TestRunWhereInput {
   """tests edge predicates"""
   has_tests: Boolean
   has_tests_with: [TestCaseWhereInput!]
-}
-
-input VulnerabilityReviewOrder {
-  direction: OrderDirection!
-  field: VulnerabilityReviewOrderField
-}
-
-"""
-ReleasePolicyViolationWhereInput is used for filtering ReleasePolicyViolation objects.
-Input was generated by ent.
-"""
-input ReleasePolicyViolationWhereInput {
-  not: ReleasePolicyViolationWhereInput
-  and: [ReleasePolicyViolationWhereInput!]
-  or: [ReleasePolicyViolationWhereInput!]
-  
-  """message field predicates"""
-  message: String
-  message_neq: String
-  message_in: [String!]
-  message_not_in: [String!]
-  message_gt: String
-  message_gte: String
-  message_lt: String
-  message_lte: String
-  message_contains: String
-  message_has_prefix: String
-  message_has_suffix: String
-  message_equal_fold: String
-  message_contains_fold: String
-  
-  """severity field predicates"""
-  severity: ReleasePolicyViolationSeverity
-  severity_neq: ReleasePolicyViolationSeverity
-  severity_in: [ReleasePolicyViolationSeverity!]
-  severity_not_in: [ReleasePolicyViolationSeverity!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """policy edge predicates"""
-  has_policy: Boolean
-  has_policy_with: [ReleasePolicyWhereInput!]
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-}
-
-input AdapterOrder {
-  direction: OrderDirection!
-  field: AdapterOrderField
-}
-
-"""
-ReleasePolicyWhereInput is used for filtering ReleasePolicy objects.
-Input was generated by ent.
-"""
-input ReleasePolicyWhereInput {
-  not: ReleasePolicyWhereInput
-  and: [ReleasePolicyWhereInput!]
-  or: [ReleasePolicyWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """module field predicates"""
-  module: String
-  module_neq: String
-  module_in: [String!]
-  module_not_in: [String!]
-  module_gt: String
-  module_gte: String
-  module_lt: String
-  module_lte: String
-  module_contains: String
-  module_has_prefix: String
-  module_has_suffix: String
-  module_equal_fold: String
-  module_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """projects edge predicates"""
-  has_projects: Boolean
-  has_projects_with: [ProjectWhereInput!]
-  
-  """repos edge predicates"""
-  has_repos: Boolean
-  has_repos_with: [RepoWhereInput!]
-  
-  """violations edge predicates"""
-  has_violations: Boolean
-  has_violations_with: [ReleasePolicyViolationWhereInput!]
-}
-
-input VulnerabilityOrder {
-  direction: OrderDirection!
-  field: VulnerabilityOrderField
-}
-
-"""
-CodeScanWhereInput is used for filtering CodeScan objects.
-Input was generated by ent.
-"""
-input CodeScanWhereInput {
-  not: CodeScanWhereInput
-  and: [CodeScanWhereInput!]
-  or: [CodeScanWhereInput!]
-  
-  """tool field predicates"""
-  tool: String
-  tool_neq: String
-  tool_in: [String!]
-  tool_not_in: [String!]
-  tool_gt: String
-  tool_gte: String
-  tool_lt: String
-  tool_lte: String
-  tool_contains: String
-  tool_has_prefix: String
-  tool_has_suffix: String
-  tool_equal_fold: String
-  tool_contains_fold: String
-  
-  """time field predicates"""
-  time: Time
-  time_neq: Time
-  time_in: [Time!]
-  time_not_in: [Time!]
-  time_gt: Time
-  time_gte: Time
-  time_lt: Time
-  time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """entry edge predicates"""
-  has_entry: Boolean
-  has_entry_with: [ReleaseEntryWhereInput!]
-  
-  """issues edge predicates"""
-  has_issues: Boolean
-  has_issues_with: [CodeIssueWhereInput!]
-  
-  """vulnerabilities edge predicates"""
-  has_vulnerabilities: Boolean
-  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
-  
-  """components edge predicates"""
-  has_components: Boolean
-  has_components_with: [ReleaseComponentWhereInput!]
-}
-
-"""
-ReleaseComponentWhereInput is used for filtering ReleaseComponent objects.
-Input was generated by ent.
-"""
-input ReleaseComponentWhereInput {
-  not: ReleaseComponentWhereInput
-  and: [ReleaseComponentWhereInput!]
-  or: [ReleaseComponentWhereInput!]
-  
-  """type field predicates"""
-  type: ReleaseComponentType
-  type_neq: ReleaseComponentType
-  type_in: [ReleaseComponentType!]
-  type_not_in: [ReleaseComponentType!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """scans edge predicates"""
-  has_scans: Boolean
-  has_scans_with: [CodeScanWhereInput!]
-  
-  """component edge predicates"""
-  has_component: Boolean
-  has_component_with: [ComponentWhereInput!]
-  
-  """vulnerabilities edge predicates"""
-  has_vulnerabilities: Boolean
-  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
 }
 `, BuiltIn: false},
 }
@@ -9509,6 +9592,38 @@ func (ec *executionContext) _Artifact_time(ctx context.Context, field graphql.Co
 	return ec.marshalOTime2timeᚐTime(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Artifact_metadata(ctx context.Context, field graphql.CollectedField, obj *ent.Artifact) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Artifact",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Artifact().Metadata(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalOMap2map(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Artifact_release(ctx context.Context, field graphql.CollectedField, obj *ent.Artifact) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -9905,6 +10020,38 @@ func (ec *executionContext) _CodeIssue_type(ctx context.Context, field graphql.C
 	return ec.marshalOCodeIssueType2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋcodeissueᚐType(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _CodeIssue_metadata(ctx context.Context, field graphql.CollectedField, obj *ent.CodeIssue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CodeIssue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CodeIssue().Metadata(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalOMap2map(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _CodeIssue_scan(ctx context.Context, field graphql.CollectedField, obj *ent.CodeIssue) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -10206,6 +10353,38 @@ func (ec *executionContext) _CodeScan_time(ctx context.Context, field graphql.Co
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalOTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CodeScan_metadata(ctx context.Context, field graphql.CollectedField, obj *ent.CodeScan) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CodeScan",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CodeScan().Metadata(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalOMap2map(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CodeScan_release(ctx context.Context, field graphql.CollectedField, obj *ent.CodeScan) (ret graphql.Marshaler) {
@@ -10754,6 +10933,38 @@ func (ec *executionContext) _Component_url(ctx context.Context, field graphql.Co
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Component_metadata(ctx context.Context, field graphql.CollectedField, obj *ent.Component) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Component",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Component().Metadata(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalOMap2map(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Component_vulnerabilities(ctx context.Context, field graphql.CollectedField, obj *ent.Component) (ret graphql.Marshaler) {
@@ -17990,6 +18201,38 @@ func (ec *executionContext) _TestCase_elapsed(ctx context.Context, field graphql
 	return ec.marshalOFloat2float64(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _TestCase_metadata(ctx context.Context, field graphql.CollectedField, obj *ent.TestCase) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TestCase",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TestCase().Metadata(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalOMap2map(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _TestCase_run(ctx context.Context, field graphql.CollectedField, obj *ent.TestCase) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -18291,6 +18534,38 @@ func (ec *executionContext) _TestRun_time(ctx context.Context, field graphql.Col
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalOTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TestRun_metadata(ctx context.Context, field graphql.CollectedField, obj *ent.TestRun) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TestRun",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TestRun().Metadata(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalOMap2map(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TestRun_release(ctx context.Context, field graphql.CollectedField, obj *ent.TestRun) (ret graphql.Marshaler) {
@@ -18825,6 +19100,38 @@ func (ec *executionContext) _Vulnerability_modified(ctx context.Context, field g
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalOTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Vulnerability_metadata(ctx context.Context, field graphql.CollectedField, obj *ent.Vulnerability) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Vulnerability",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Vulnerability().Metadata(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(map[string]interface{})
+	fc.Result = res
+	return ec.marshalOMap2map(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Vulnerability_components(ctx context.Context, field graphql.CollectedField, obj *ent.Vulnerability) (ret graphql.Marshaler) {
@@ -29283,116 +29590,116 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case *ent.VulnerabilityReview:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._VulnerabilityReview(ctx, sel, obj)
-	case *ent.ReleaseComponent:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleaseComponent(ctx, sel, obj)
-	case *ent.TestRun:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._TestRun(ctx, sel, obj)
-	case *ent.Release:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Release(ctx, sel, obj)
-	case *ent.Vulnerability:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Vulnerability(ctx, sel, obj)
-	case *ent.Project:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Project(ctx, sel, obj)
 	case *ent.ReleaseEntry:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._ReleaseEntry(ctx, sel, obj)
-	case *ent.ReleaseVulnerability:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleaseVulnerability(ctx, sel, obj)
-	case *ent.ReleaseLicense:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleaseLicense(ctx, sel, obj)
-	case *ent.ReleasePolicy:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleasePolicy(ctx, sel, obj)
-	case *ent.CodeIssue:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._CodeIssue(ctx, sel, obj)
-	case *ent.GitCommit:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._GitCommit(ctx, sel, obj)
-	case *ent.CodeScan:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._CodeScan(ctx, sel, obj)
-	case *ent.TestCase:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._TestCase(ctx, sel, obj)
-	case *ent.Organization:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Organization(ctx, sel, obj)
 	case *ent.Repo:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._Repo(ctx, sel, obj)
-	case *ent.Component:
+	case *ent.ReleaseLicense:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._Component(ctx, sel, obj)
+		return ec._ReleaseLicense(ctx, sel, obj)
+	case *ent.TestCase:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TestCase(ctx, sel, obj)
 	case *ent.License:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._License(ctx, sel, obj)
-	case *ent.LicenseUse:
+	case *ent.ReleasePolicy:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._LicenseUse(ctx, sel, obj)
+		return ec._ReleasePolicy(ctx, sel, obj)
 	case *ent.ReleasePolicyViolation:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._ReleasePolicyViolation(ctx, sel, obj)
+	case *ent.VulnerabilityReview:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._VulnerabilityReview(ctx, sel, obj)
 	case *ent.Adapter:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._Adapter(ctx, sel, obj)
+	case *ent.Organization:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Organization(ctx, sel, obj)
+	case *ent.ReleaseVulnerability:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleaseVulnerability(ctx, sel, obj)
+	case *ent.CodeScan:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CodeScan(ctx, sel, obj)
+	case *ent.ReleaseComponent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleaseComponent(ctx, sel, obj)
+	case *ent.Component:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Component(ctx, sel, obj)
+	case *ent.GitCommit:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._GitCommit(ctx, sel, obj)
+	case *ent.TestRun:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TestRun(ctx, sel, obj)
+	case *ent.LicenseUse:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._LicenseUse(ctx, sel, obj)
+	case *ent.Project:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Project(ctx, sel, obj)
+	case *ent.Vulnerability:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Vulnerability(ctx, sel, obj)
 	case *ent.Artifact:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._Artifact(ctx, sel, obj)
+	case *ent.CodeIssue:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CodeIssue(ctx, sel, obj)
+	case *ent.Release:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Release(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -29522,6 +29829,17 @@ func (ec *executionContext) _Artifact(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._Artifact_type(ctx, field, obj)
 		case "time":
 			out.Values[i] = ec._Artifact_time(ctx, field, obj)
+		case "metadata":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Artifact_metadata(ctx, field, obj)
+				return res
+			})
 		case "release":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -29642,6 +29960,17 @@ func (ec *executionContext) _CodeIssue(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = ec._CodeIssue_severity(ctx, field, obj)
 		case "type":
 			out.Values[i] = ec._CodeIssue_type(ctx, field, obj)
+		case "metadata":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CodeIssue_metadata(ctx, field, obj)
+				return res
+			})
 		case "scan":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -29750,6 +30079,17 @@ func (ec *executionContext) _CodeScan(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._CodeScan_tool(ctx, field, obj)
 		case "time":
 			out.Values[i] = ec._CodeScan_time(ctx, field, obj)
+		case "metadata":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CodeScan_metadata(ctx, field, obj)
+				return res
+			})
 		case "release":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -29908,6 +30248,17 @@ func (ec *executionContext) _Component(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = ec._Component_description(ctx, field, obj)
 		case "url":
 			out.Values[i] = ec._Component_url(ctx, field, obj)
+		case "metadata":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Component_metadata(ctx, field, obj)
+				return res
+			})
 		case "vulnerabilities":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -32301,6 +32652,17 @@ func (ec *executionContext) _TestCase(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._TestCase_message(ctx, field, obj)
 		case "elapsed":
 			out.Values[i] = ec._TestCase_elapsed(ctx, field, obj)
+		case "metadata":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TestCase_metadata(ctx, field, obj)
+				return res
+			})
 		case "run":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -32409,6 +32771,17 @@ func (ec *executionContext) _TestRun(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._TestRun_tool(ctx, field, obj)
 		case "time":
 			out.Values[i] = ec._TestRun_time(ctx, field, obj)
+		case "metadata":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TestRun_metadata(ctx, field, obj)
+				return res
+			})
 		case "release":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -32549,6 +32922,17 @@ func (ec *executionContext) _Vulnerability(ctx context.Context, sel ast.Selectio
 			out.Values[i] = ec._Vulnerability_published(ctx, field, obj)
 		case "modified":
 			out.Values[i] = ec._Vulnerability_modified(ctx, field, obj)
+		case "metadata":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Vulnerability_metadata(ctx, field, obj)
+				return res
+			})
 		case "components":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -35342,6 +35726,21 @@ func (ec *executionContext) unmarshalOLicenseWhereInput2ᚖgithubᚗcomᚋvaloco
 	}
 	res, err := ec.unmarshalInputLicenseWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOMap2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalMap(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMap2map(ctx context.Context, sel ast.SelectionSet, v map[string]interface{}) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalMap(v)
 }
 
 func (ec *executionContext) marshalOOrganization2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrganization(ctx context.Context, sel ast.SelectionSet, v *ent.Organization) graphql.Marshaler {

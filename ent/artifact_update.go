@@ -13,6 +13,7 @@ import (
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // ArtifactUpdate is the builder for updating Artifact entities.
@@ -25,6 +26,18 @@ type ArtifactUpdate struct {
 // Where appends a list predicates to the ArtifactUpdate builder.
 func (au *ArtifactUpdate) Where(ps ...predicate.Artifact) *ArtifactUpdate {
 	au.mutation.Where(ps...)
+	return au
+}
+
+// SetMetadata sets the "metadata" field.
+func (au *ArtifactUpdate) SetMetadata(s schema.Metadata) *ArtifactUpdate {
+	au.mutation.SetMetadata(s)
+	return au
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (au *ArtifactUpdate) ClearMetadata() *ArtifactUpdate {
+	au.mutation.ClearMetadata()
 	return au
 }
 
@@ -155,6 +168,19 @@ func (au *ArtifactUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := au.mutation.Metadata(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: artifact.FieldMetadata,
+		})
+	}
+	if au.mutation.MetadataCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: artifact.FieldMetadata,
+		})
+	}
 	if au.mutation.ReleaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -242,6 +268,18 @@ type ArtifactUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *ArtifactMutation
+}
+
+// SetMetadata sets the "metadata" field.
+func (auo *ArtifactUpdateOne) SetMetadata(s schema.Metadata) *ArtifactUpdateOne {
+	auo.mutation.SetMetadata(s)
+	return auo
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (auo *ArtifactUpdateOne) ClearMetadata() *ArtifactUpdateOne {
+	auo.mutation.ClearMetadata()
+	return auo
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by ID.
@@ -394,6 +432,19 @@ func (auo *ArtifactUpdateOne) sqlSave(ctx context.Context) (_node *Artifact, err
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := auo.mutation.Metadata(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: artifact.FieldMetadata,
+		})
+	}
+	if auo.mutation.MetadataCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: artifact.FieldMetadata,
+		})
 	}
 	if auo.mutation.ReleaseCleared() {
 		edge := &sqlgraph.EdgeSpec{

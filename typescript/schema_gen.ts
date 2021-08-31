@@ -45,6 +45,7 @@ export interface Artifact {
 	sha256?: string;
 	type?: ArtifactType;
 	time?: Date;
+	metadata?: UNKNOWN_TYPE_schema.Metadata;
 	release?: Release;
 	entry?: ReleaseEntry;
 }
@@ -81,6 +82,7 @@ export interface CodeIssue {
 	message?: string;
 	severity?: CodeIssueSeverity;
 	type?: CodeIssueType;
+	metadata?: UNKNOWN_TYPE_schema.Metadata;
 	scan?: CodeScan;
 }
 
@@ -121,6 +123,7 @@ export interface CodeScan {
 	id?: number;
 	tool?: string;
 	time?: Date;
+	metadata?: UNKNOWN_TYPE_schema.Metadata;
 	release?: Release;
 	entry?: ReleaseEntry;
 	issues?: CodeIssue[];
@@ -156,6 +159,7 @@ export interface Component {
 	version?: string;
 	description?: string;
 	url?: string;
+	metadata?: UNKNOWN_TYPE_schema.Metadata;
 	vulnerabilities?: Vulnerability[];
 	licenses?: License[];
 	uses?: ReleaseComponent[];
@@ -613,6 +617,7 @@ export interface TestCase {
 	result?: boolean;
 	message?: string;
 	elapsed?: number;
+	metadata?: UNKNOWN_TYPE_schema.Metadata;
 	run?: TestRun;
 }
 
@@ -641,6 +646,7 @@ export interface TestRun {
 	id?: number;
 	tool?: string;
 	time?: Date;
+	metadata?: UNKNOWN_TYPE_schema.Metadata;
 	release?: Release;
 	entry?: ReleaseEntry;
 	tests?: TestCase[];
@@ -676,6 +682,7 @@ export interface Vulnerability {
 	severity?: VulnerabilitySeverity;
 	published?: Date;
 	modified?: Date;
+	metadata?: UNKNOWN_TYPE_schema.Metadata;
 	components?: Component[];
 	reviews?: VulnerabilityReview[];
 	instances?: ReleaseVulnerability[];

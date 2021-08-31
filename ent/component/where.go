@@ -709,6 +709,20 @@ func URLContainsFold(v string) predicate.Component {
 	})
 }
 
+// MetadataIsNil applies the IsNil predicate on the "metadata" field.
+func MetadataIsNil() predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldMetadata)))
+	})
+}
+
+// MetadataNotNil applies the NotNil predicate on the "metadata" field.
+func MetadataNotNil() predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldMetadata)))
+	})
+}
+
 // HasVulnerabilities applies the HasEdge predicate on the "vulnerabilities" edge.
 func HasVulnerabilities() predicate.Component {
 	return predicate.Component(func(s *sql.Selector) {

@@ -10,7 +10,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/codeissue"
+
 	"github.com/valocode/bubbly/ent/codescan"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // CodeIssueCreate is the builder for creating a CodeIssue entity.
@@ -41,6 +43,12 @@ func (cic *CodeIssueCreate) SetSeverity(c codeissue.Severity) *CodeIssueCreate {
 // SetType sets the "type" field.
 func (cic *CodeIssueCreate) SetType(c codeissue.Type) *CodeIssueCreate {
 	cic.mutation.SetType(c)
+	return cic
+}
+
+// SetMetadata sets the "metadata" field.
+func (cic *CodeIssueCreate) SetMetadata(s schema.Metadata) *CodeIssueCreate {
+	cic.mutation.SetMetadata(s)
 	return cic
 }
 
@@ -218,6 +226,14 @@ func (cic *CodeIssueCreate) createSpec() (*CodeIssue, *sqlgraph.CreateSpec) {
 			Column: codeissue.FieldType,
 		})
 		_node.Type = value
+	}
+	if value, ok := cic.mutation.Metadata(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: codeissue.FieldMetadata,
+		})
+		_node.Metadata = value
 	}
 	if nodes := cic.mutation.ScanIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

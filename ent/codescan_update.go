@@ -17,6 +17,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // CodeScanUpdate is the builder for updating CodeScan entities.
@@ -29,6 +30,18 @@ type CodeScanUpdate struct {
 // Where appends a list predicates to the CodeScanUpdate builder.
 func (csu *CodeScanUpdate) Where(ps ...predicate.CodeScan) *CodeScanUpdate {
 	csu.mutation.Where(ps...)
+	return csu
+}
+
+// SetMetadata sets the "metadata" field.
+func (csu *CodeScanUpdate) SetMetadata(s schema.Metadata) *CodeScanUpdate {
+	csu.mutation.SetMetadata(s)
+	return csu
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (csu *CodeScanUpdate) ClearMetadata() *CodeScanUpdate {
+	csu.mutation.ClearMetadata()
 	return csu
 }
 
@@ -272,6 +285,19 @@ func (csu *CodeScanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := csu.mutation.Metadata(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: codescan.FieldMetadata,
+		})
+	}
+	if csu.mutation.MetadataCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: codescan.FieldMetadata,
+		})
 	}
 	if csu.mutation.ReleaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -522,6 +548,18 @@ type CodeScanUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *CodeScanMutation
+}
+
+// SetMetadata sets the "metadata" field.
+func (csuo *CodeScanUpdateOne) SetMetadata(s schema.Metadata) *CodeScanUpdateOne {
+	csuo.mutation.SetMetadata(s)
+	return csuo
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (csuo *CodeScanUpdateOne) ClearMetadata() *CodeScanUpdateOne {
+	csuo.mutation.ClearMetadata()
+	return csuo
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by ID.
@@ -788,6 +826,19 @@ func (csuo *CodeScanUpdateOne) sqlSave(ctx context.Context) (_node *CodeScan, er
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := csuo.mutation.Metadata(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: codescan.FieldMetadata,
+		})
+	}
+	if csuo.mutation.MetadataCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: codescan.FieldMetadata,
+		})
 	}
 	if csuo.mutation.ReleaseCleared() {
 		edge := &sqlgraph.EdgeSpec{

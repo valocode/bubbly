@@ -17,6 +17,8 @@ const (
 	FieldDescription = "description"
 	// FieldURL holds the string denoting the url field in the database.
 	FieldURL = "url"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
 	// EdgeVulnerabilities holds the string denoting the vulnerabilities edge name in mutations.
 	EdgeVulnerabilities = "vulnerabilities"
 	// EdgeLicenses holds the string denoting the licenses edge name in mutations.
@@ -52,6 +54,7 @@ var Columns = []string{
 	FieldVersion,
 	FieldDescription,
 	FieldURL,
+	FieldMetadata,
 }
 
 var (

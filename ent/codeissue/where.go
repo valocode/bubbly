@@ -423,6 +423,20 @@ func TypeNotIn(vs ...Type) predicate.CodeIssue {
 	})
 }
 
+// MetadataIsNil applies the IsNil predicate on the "metadata" field.
+func MetadataIsNil() predicate.CodeIssue {
+	return predicate.CodeIssue(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldMetadata)))
+	})
+}
+
+// MetadataNotNil applies the NotNil predicate on the "metadata" field.
+func MetadataNotNil() predicate.CodeIssue {
+	return predicate.CodeIssue(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldMetadata)))
+	})
+}
+
 // HasScan applies the HasEdge predicate on the "scan" edge.
 func HasScan() predicate.CodeIssue {
 	return predicate.CodeIssue(func(s *sql.Selector) {

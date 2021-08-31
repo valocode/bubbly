@@ -9,6 +9,7 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/vulnerability"
 )
 
@@ -91,10 +92,11 @@ func (a *AdapterModelUpdate) SetID(value int) *AdapterModelUpdate {
 }
 
 type ArtifactModelCreate struct {
-	Name   *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Sha256 *string        `json:"sha256,omitempty" validate:"required" mapstructure:"sha256"`
-	Type   *artifact.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
-	Time   *time.Time     `json:"time,omitempty"  mapstructure:"time"`
+	Name     *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Sha256   *string          `json:"sha256,omitempty" validate:"required" mapstructure:"sha256"`
+	Type     *artifact.Type   `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time     *time.Time       `json:"time,omitempty"  mapstructure:"time"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewArtifactModelCreate() *ArtifactModelCreate {
@@ -115,6 +117,10 @@ func (a *ArtifactModelCreate) SetType(value artifact.Type) *ArtifactModelCreate 
 }
 func (a *ArtifactModelCreate) SetTime(value time.Time) *ArtifactModelCreate {
 	a.Time = &value
+	return a
+}
+func (a *ArtifactModelCreate) SetMetadata(value schema.Metadata) *ArtifactModelCreate {
+	a.Metadata = &value
 	return a
 }
 
@@ -141,15 +147,19 @@ func (a *ArtifactMutation) SetModelCreate(model *ArtifactModelCreate) *ArtifactM
 	if model.Time != nil {
 		a.SetTime(*model.Time)
 	}
+	if model.Metadata != nil {
+		a.SetMetadata(*model.Metadata)
+	}
 	return a
 }
 
 type ArtifactModelRead struct {
-	Name   *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Sha256 *string        `json:"sha256,omitempty" validate:"required" mapstructure:"sha256"`
-	Type   *artifact.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
-	Time   *time.Time     `json:"time,omitempty"  mapstructure:"time"`
-	ID     *int           `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name     *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Sha256   *string          `json:"sha256,omitempty" validate:"required" mapstructure:"sha256"`
+	Type     *artifact.Type   `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time     *time.Time       `json:"time,omitempty"  mapstructure:"time"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
+	ID       *int             `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewArtifactModelRead() *ArtifactModelRead {
@@ -161,6 +171,7 @@ func (a *ArtifactModelRead) FromEnt(value *Artifact) *ArtifactModelRead {
 	a.Sha256 = &value.Sha256
 	a.Type = &value.Type
 	a.Time = &value.Time
+	a.Metadata = &value.Metadata
 	a.ID = &value.ID
 	return a
 }
@@ -183,6 +194,7 @@ type CodeIssueModelCreate struct {
 	Message  *string             `json:"message,omitempty" validate:"required" mapstructure:"message"`
 	Severity *codeissue.Severity `json:"severity,omitempty" validate:"required" mapstructure:"severity"`
 	Type     *codeissue.Type     `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Metadata *schema.Metadata    `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewCodeIssueModelCreate() *CodeIssueModelCreate {
@@ -203,6 +215,10 @@ func (ci *CodeIssueModelCreate) SetSeverity(value codeissue.Severity) *CodeIssue
 }
 func (ci *CodeIssueModelCreate) SetType(value codeissue.Type) *CodeIssueModelCreate {
 	ci.Type = &value
+	return ci
+}
+func (ci *CodeIssueModelCreate) SetMetadata(value schema.Metadata) *CodeIssueModelCreate {
+	ci.Metadata = &value
 	return ci
 }
 
@@ -229,6 +245,9 @@ func (ci *CodeIssueMutation) SetModelCreate(model *CodeIssueModelCreate) *CodeIs
 	if model.Type != nil {
 		ci.SetType(*model.Type)
 	}
+	if model.Metadata != nil {
+		ci.SetMetadata(*model.Metadata)
+	}
 	return ci
 }
 
@@ -237,6 +256,7 @@ type CodeIssueModelRead struct {
 	Message  *string             `json:"message,omitempty" validate:"required" mapstructure:"message"`
 	Severity *codeissue.Severity `json:"severity,omitempty" validate:"required" mapstructure:"severity"`
 	Type     *codeissue.Type     `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Metadata *schema.Metadata    `json:"metadata,omitempty"  mapstructure:"metadata"`
 	ID       *int                `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
@@ -249,6 +269,7 @@ func (ci *CodeIssueModelRead) FromEnt(value *CodeIssue) *CodeIssueModelRead {
 	ci.Message = &value.Message
 	ci.Severity = &value.Severity
 	ci.Type = &value.Type
+	ci.Metadata = &value.Metadata
 	ci.ID = &value.ID
 	return ci
 }
@@ -267,8 +288,9 @@ func (ci *CodeIssueModelUpdate) SetID(value int) *CodeIssueModelUpdate {
 }
 
 type CodeScanModelCreate struct {
-	Tool *string    `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
-	Time *time.Time `json:"time,omitempty"  mapstructure:"time"`
+	Tool     *string          `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
+	Time     *time.Time       `json:"time,omitempty"  mapstructure:"time"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewCodeScanModelCreate() *CodeScanModelCreate {
@@ -281,6 +303,10 @@ func (cs *CodeScanModelCreate) SetTool(value string) *CodeScanModelCreate {
 }
 func (cs *CodeScanModelCreate) SetTime(value time.Time) *CodeScanModelCreate {
 	cs.Time = &value
+	return cs
+}
+func (cs *CodeScanModelCreate) SetMetadata(value schema.Metadata) *CodeScanModelCreate {
+	cs.Metadata = &value
 	return cs
 }
 
@@ -301,13 +327,17 @@ func (cs *CodeScanMutation) SetModelCreate(model *CodeScanModelCreate) *CodeScan
 	if model.Time != nil {
 		cs.SetTime(*model.Time)
 	}
+	if model.Metadata != nil {
+		cs.SetMetadata(*model.Metadata)
+	}
 	return cs
 }
 
 type CodeScanModelRead struct {
-	Tool *string    `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
-	Time *time.Time `json:"time,omitempty"  mapstructure:"time"`
-	ID   *int       `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Tool     *string          `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
+	Time     *time.Time       `json:"time,omitempty"  mapstructure:"time"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
+	ID       *int             `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewCodeScanModelRead() *CodeScanModelRead {
@@ -317,6 +347,7 @@ func NewCodeScanModelRead() *CodeScanModelRead {
 func (cs *CodeScanModelRead) FromEnt(value *CodeScan) *CodeScanModelRead {
 	cs.Tool = &value.Tool
 	cs.Time = &value.Time
+	cs.Metadata = &value.Metadata
 	cs.ID = &value.ID
 	return cs
 }
@@ -335,11 +366,12 @@ func (cs *CodeScanModelUpdate) SetID(value int) *CodeScanModelUpdate {
 }
 
 type ComponentModelCreate struct {
-	Name        *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Vendor      *string `json:"vendor,omitempty"  mapstructure:"vendor"`
-	Version     *string `json:"version,omitempty" validate:"required" mapstructure:"version"`
-	Description *string `json:"description,omitempty"  mapstructure:"description"`
-	URL         *string `json:"url,omitempty"  mapstructure:"url"`
+	Name        *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Vendor      *string          `json:"vendor,omitempty"  mapstructure:"vendor"`
+	Version     *string          `json:"version,omitempty" validate:"required" mapstructure:"version"`
+	Description *string          `json:"description,omitempty"  mapstructure:"description"`
+	URL         *string          `json:"url,omitempty"  mapstructure:"url"`
+	Metadata    *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewComponentModelCreate() *ComponentModelCreate {
@@ -364,6 +396,10 @@ func (c *ComponentModelCreate) SetDescription(value string) *ComponentModelCreat
 }
 func (c *ComponentModelCreate) SetURL(value string) *ComponentModelCreate {
 	c.URL = &value
+	return c
+}
+func (c *ComponentModelCreate) SetMetadata(value schema.Metadata) *ComponentModelCreate {
+	c.Metadata = &value
 	return c
 }
 
@@ -393,16 +429,20 @@ func (c *ComponentMutation) SetModelCreate(model *ComponentModelCreate) *Compone
 	if model.URL != nil {
 		c.SetURL(*model.URL)
 	}
+	if model.Metadata != nil {
+		c.SetMetadata(*model.Metadata)
+	}
 	return c
 }
 
 type ComponentModelRead struct {
-	Name        *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Vendor      *string `json:"vendor,omitempty"  mapstructure:"vendor"`
-	Version     *string `json:"version,omitempty" validate:"required" mapstructure:"version"`
-	Description *string `json:"description,omitempty"  mapstructure:"description"`
-	URL         *string `json:"url,omitempty"  mapstructure:"url"`
-	ID          *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name        *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Vendor      *string          `json:"vendor,omitempty"  mapstructure:"vendor"`
+	Version     *string          `json:"version,omitempty" validate:"required" mapstructure:"version"`
+	Description *string          `json:"description,omitempty"  mapstructure:"description"`
+	URL         *string          `json:"url,omitempty"  mapstructure:"url"`
+	Metadata    *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
+	ID          *int             `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewComponentModelRead() *ComponentModelRead {
@@ -415,6 +455,7 @@ func (c *ComponentModelRead) FromEnt(value *Component) *ComponentModelRead {
 	c.Version = &value.Version
 	c.Description = &value.Description
 	c.URL = &value.URL
+	c.Metadata = &value.Metadata
 	c.ID = &value.ID
 	return c
 }
@@ -911,10 +952,11 @@ func (r *RepoModelUpdate) SetID(value int) *RepoModelUpdate {
 }
 
 type TestCaseModelCreate struct {
-	Name    *string  `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Result  *bool    `json:"result,omitempty" validate:"required" mapstructure:"result"`
-	Message *string  `json:"message,omitempty" validate:"required" mapstructure:"message"`
-	Elapsed *float64 `json:"elapsed,omitempty"  mapstructure:"elapsed"`
+	Name     *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Result   *bool            `json:"result,omitempty" validate:"required" mapstructure:"result"`
+	Message  *string          `json:"message,omitempty" validate:"required" mapstructure:"message"`
+	Elapsed  *float64         `json:"elapsed,omitempty"  mapstructure:"elapsed"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewTestCaseModelCreate() *TestCaseModelCreate {
@@ -935,6 +977,10 @@ func (tc *TestCaseModelCreate) SetMessage(value string) *TestCaseModelCreate {
 }
 func (tc *TestCaseModelCreate) SetElapsed(value float64) *TestCaseModelCreate {
 	tc.Elapsed = &value
+	return tc
+}
+func (tc *TestCaseModelCreate) SetMetadata(value schema.Metadata) *TestCaseModelCreate {
+	tc.Metadata = &value
 	return tc
 }
 
@@ -961,15 +1007,19 @@ func (tc *TestCaseMutation) SetModelCreate(model *TestCaseModelCreate) *TestCase
 	if model.Elapsed != nil {
 		tc.SetElapsed(*model.Elapsed)
 	}
+	if model.Metadata != nil {
+		tc.SetMetadata(*model.Metadata)
+	}
 	return tc
 }
 
 type TestCaseModelRead struct {
-	Name    *string  `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Result  *bool    `json:"result,omitempty" validate:"required" mapstructure:"result"`
-	Message *string  `json:"message,omitempty" validate:"required" mapstructure:"message"`
-	Elapsed *float64 `json:"elapsed,omitempty"  mapstructure:"elapsed"`
-	ID      *int     `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name     *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Result   *bool            `json:"result,omitempty" validate:"required" mapstructure:"result"`
+	Message  *string          `json:"message,omitempty" validate:"required" mapstructure:"message"`
+	Elapsed  *float64         `json:"elapsed,omitempty"  mapstructure:"elapsed"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
+	ID       *int             `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewTestCaseModelRead() *TestCaseModelRead {
@@ -981,6 +1031,7 @@ func (tc *TestCaseModelRead) FromEnt(value *TestCase) *TestCaseModelRead {
 	tc.Result = &value.Result
 	tc.Message = &value.Message
 	tc.Elapsed = &value.Elapsed
+	tc.Metadata = &value.Metadata
 	tc.ID = &value.ID
 	return tc
 }
@@ -999,8 +1050,9 @@ func (tc *TestCaseModelUpdate) SetID(value int) *TestCaseModelUpdate {
 }
 
 type TestRunModelCreate struct {
-	Tool *string    `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
-	Time *time.Time `json:"time,omitempty"  mapstructure:"time"`
+	Tool     *string          `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
+	Time     *time.Time       `json:"time,omitempty"  mapstructure:"time"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewTestRunModelCreate() *TestRunModelCreate {
@@ -1013,6 +1065,10 @@ func (tr *TestRunModelCreate) SetTool(value string) *TestRunModelCreate {
 }
 func (tr *TestRunModelCreate) SetTime(value time.Time) *TestRunModelCreate {
 	tr.Time = &value
+	return tr
+}
+func (tr *TestRunModelCreate) SetMetadata(value schema.Metadata) *TestRunModelCreate {
+	tr.Metadata = &value
 	return tr
 }
 
@@ -1033,13 +1089,17 @@ func (tr *TestRunMutation) SetModelCreate(model *TestRunModelCreate) *TestRunMut
 	if model.Time != nil {
 		tr.SetTime(*model.Time)
 	}
+	if model.Metadata != nil {
+		tr.SetMetadata(*model.Metadata)
+	}
 	return tr
 }
 
 type TestRunModelRead struct {
-	Tool *string    `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
-	Time *time.Time `json:"time,omitempty"  mapstructure:"time"`
-	ID   *int       `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Tool     *string          `json:"tool,omitempty" validate:"required" mapstructure:"tool"`
+	Time     *time.Time       `json:"time,omitempty"  mapstructure:"time"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
+	ID       *int             `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewTestRunModelRead() *TestRunModelRead {
@@ -1049,6 +1109,7 @@ func NewTestRunModelRead() *TestRunModelRead {
 func (tr *TestRunModelRead) FromEnt(value *TestRun) *TestRunModelRead {
 	tr.Tool = &value.Tool
 	tr.Time = &value.Time
+	tr.Metadata = &value.Metadata
 	tr.ID = &value.ID
 	return tr
 }
@@ -1074,6 +1135,7 @@ type VulnerabilityModelCreate struct {
 	Severity      *vulnerability.Severity `json:"severity,omitempty"  mapstructure:"severity"`
 	Published     *time.Time              `json:"published,omitempty"  mapstructure:"published"`
 	Modified      *time.Time              `json:"modified,omitempty"  mapstructure:"modified"`
+	Metadata      *schema.Metadata        `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewVulnerabilityModelCreate() *VulnerabilityModelCreate {
@@ -1106,6 +1168,10 @@ func (v *VulnerabilityModelCreate) SetPublished(value time.Time) *VulnerabilityM
 }
 func (v *VulnerabilityModelCreate) SetModified(value time.Time) *VulnerabilityModelCreate {
 	v.Modified = &value
+	return v
+}
+func (v *VulnerabilityModelCreate) SetMetadata(value schema.Metadata) *VulnerabilityModelCreate {
+	v.Metadata = &value
 	return v
 }
 
@@ -1141,6 +1207,9 @@ func (v *VulnerabilityMutation) SetModelCreate(model *VulnerabilityModelCreate) 
 	if model.Modified != nil {
 		v.SetModified(*model.Modified)
 	}
+	if model.Metadata != nil {
+		v.SetMetadata(*model.Metadata)
+	}
 	return v
 }
 
@@ -1152,6 +1221,7 @@ type VulnerabilityModelRead struct {
 	Severity      *vulnerability.Severity `json:"severity,omitempty"  mapstructure:"severity"`
 	Published     *time.Time              `json:"published,omitempty"  mapstructure:"published"`
 	Modified      *time.Time              `json:"modified,omitempty"  mapstructure:"modified"`
+	Metadata      *schema.Metadata        `json:"metadata,omitempty"  mapstructure:"metadata"`
 	ID            *int                    `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
@@ -1167,6 +1237,7 @@ func (v *VulnerabilityModelRead) FromEnt(value *Vulnerability) *VulnerabilityMod
 	v.Severity = &value.Severity
 	v.Published = &value.Published
 	v.Modified = &value.Modified
+	v.Metadata = &value.Metadata
 	v.ID = &value.ID
 	return v
 }

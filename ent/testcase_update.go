@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/predicate"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 )
@@ -58,6 +59,18 @@ func (tcu *TestCaseUpdate) SetNillableElapsed(f *float64) *TestCaseUpdate {
 // AddElapsed adds f to the "elapsed" field.
 func (tcu *TestCaseUpdate) AddElapsed(f float64) *TestCaseUpdate {
 	tcu.mutation.AddElapsed(f)
+	return tcu
+}
+
+// SetMetadata sets the "metadata" field.
+func (tcu *TestCaseUpdate) SetMetadata(s schema.Metadata) *TestCaseUpdate {
+	tcu.mutation.SetMetadata(s)
+	return tcu
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (tcu *TestCaseUpdate) ClearMetadata() *TestCaseUpdate {
+	tcu.mutation.ClearMetadata()
 	return tcu
 }
 
@@ -207,6 +220,19 @@ func (tcu *TestCaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: testcase.FieldElapsed,
 		})
 	}
+	if value, ok := tcu.mutation.Metadata(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: testcase.FieldMetadata,
+		})
+	}
+	if tcu.mutation.MetadataCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: testcase.FieldMetadata,
+		})
+	}
 	if tcu.mutation.RunCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -291,6 +317,18 @@ func (tcuo *TestCaseUpdateOne) SetNillableElapsed(f *float64) *TestCaseUpdateOne
 // AddElapsed adds f to the "elapsed" field.
 func (tcuo *TestCaseUpdateOne) AddElapsed(f float64) *TestCaseUpdateOne {
 	tcuo.mutation.AddElapsed(f)
+	return tcuo
+}
+
+// SetMetadata sets the "metadata" field.
+func (tcuo *TestCaseUpdateOne) SetMetadata(s schema.Metadata) *TestCaseUpdateOne {
+	tcuo.mutation.SetMetadata(s)
+	return tcuo
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (tcuo *TestCaseUpdateOne) ClearMetadata() *TestCaseUpdateOne {
+	tcuo.mutation.ClearMetadata()
 	return tcuo
 }
 
@@ -462,6 +500,19 @@ func (tcuo *TestCaseUpdateOne) sqlSave(ctx context.Context) (_node *TestCase, er
 			Type:   field.TypeFloat64,
 			Value:  value,
 			Column: testcase.FieldElapsed,
+		})
+	}
+	if value, ok := tcuo.mutation.Metadata(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: testcase.FieldMetadata,
+		})
+	}
+	if tcuo.mutation.MetadataCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: testcase.FieldMetadata,
 		})
 	}
 	if tcuo.mutation.RunCleared() {
