@@ -22,6 +22,7 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
@@ -2548,6 +2549,233 @@ func (lu *LicenseUse) ToEdge(order *LicenseUseOrder) *LicenseUseEdge {
 	return &LicenseUseEdge{
 		Node:   lu,
 		Cursor: order.Field.toCursor(lu),
+	}
+}
+
+// OrganizationEdge is the edge representation of Organization.
+type OrganizationEdge struct {
+	Node   *Organization `json:"node"`
+	Cursor Cursor        `json:"cursor"`
+}
+
+// OrganizationConnection is the connection containing edges to Organization.
+type OrganizationConnection struct {
+	Edges      []*OrganizationEdge `json:"edges"`
+	PageInfo   PageInfo            `json:"pageInfo"`
+	TotalCount int                 `json:"totalCount"`
+}
+
+// OrganizationPaginateOption enables pagination customization.
+type OrganizationPaginateOption func(*organizationPager) error
+
+// WithOrganizationOrder configures pagination ordering.
+func WithOrganizationOrder(order *OrganizationOrder) OrganizationPaginateOption {
+	if order == nil {
+		order = DefaultOrganizationOrder
+	}
+	o := *order
+	return func(pager *organizationPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultOrganizationOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithOrganizationFilter configures pagination filter.
+func WithOrganizationFilter(filter func(*OrganizationQuery) (*OrganizationQuery, error)) OrganizationPaginateOption {
+	return func(pager *organizationPager) error {
+		if filter == nil {
+			return errors.New("OrganizationQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type organizationPager struct {
+	order  *OrganizationOrder
+	filter func(*OrganizationQuery) (*OrganizationQuery, error)
+}
+
+func newOrganizationPager(opts []OrganizationPaginateOption) (*organizationPager, error) {
+	pager := &organizationPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultOrganizationOrder
+	}
+	return pager, nil
+}
+
+func (p *organizationPager) applyFilter(query *OrganizationQuery) (*OrganizationQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *organizationPager) toCursor(o *Organization) Cursor {
+	return p.order.Field.toCursor(o)
+}
+
+func (p *organizationPager) applyCursors(query *OrganizationQuery, after, before *Cursor) *OrganizationQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultOrganizationOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *organizationPager) applyOrder(query *OrganizationQuery, reverse bool) *OrganizationQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultOrganizationOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultOrganizationOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Organization.
+func (o *OrganizationQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...OrganizationPaginateOption,
+) (*OrganizationConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newOrganizationPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if o, err = pager.applyFilter(o); err != nil {
+		return nil, err
+	}
+
+	conn := &OrganizationConnection{Edges: []*OrganizationEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := o.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := o.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	o = pager.applyCursors(o, after, before)
+	o = pager.applyOrder(o, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		o = o.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		o = o.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := o.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *Organization
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Organization {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Organization {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*OrganizationEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &OrganizationEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+// OrganizationOrderField defines the ordering field of Organization.
+type OrganizationOrderField struct {
+	field    string
+	toCursor func(*Organization) Cursor
+}
+
+// OrganizationOrder defines the ordering of Organization.
+type OrganizationOrder struct {
+	Direction OrderDirection          `json:"direction"`
+	Field     *OrganizationOrderField `json:"field"`
+}
+
+// DefaultOrganizationOrder is the default ordering of Organization.
+var DefaultOrganizationOrder = &OrganizationOrder{
+	Direction: OrderDirectionAsc,
+	Field: &OrganizationOrderField{
+		field: organization.FieldID,
+		toCursor: func(o *Organization) Cursor {
+			return Cursor{ID: o.ID}
+		},
+	},
+}
+
+// ToEdge converts Organization into OrganizationEdge.
+func (o *Organization) ToEdge(order *OrganizationOrder) *OrganizationEdge {
+	if order == nil {
+		order = DefaultOrganizationOrder
+	}
+	return &OrganizationEdge{
+		Node:   o,
+		Cursor: order.Field.toCursor(o),
 	}
 }
 

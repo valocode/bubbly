@@ -28,6 +28,8 @@ type Tx struct {
 	License *LicenseClient
 	// LicenseUse is the client for interacting with the LicenseUse builders.
 	LicenseUse *LicenseUseClient
+	// Organization is the client for interacting with the Organization builders.
+	Organization *OrganizationClient
 	// Project is the client for interacting with the Project builders.
 	Project *ProjectClient
 	// Release is the client for interacting with the Release builders.
@@ -197,6 +199,7 @@ func (tx *Tx) init() {
 	tx.GitCommit = NewGitCommitClient(tx.config)
 	tx.License = NewLicenseClient(tx.config)
 	tx.LicenseUse = NewLicenseUseClient(tx.config)
+	tx.Organization = NewOrganizationClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
 	tx.Release = NewReleaseClient(tx.config)
 	tx.ReleaseComponent = NewReleaseComponentClient(tx.config)

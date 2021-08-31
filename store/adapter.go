@@ -9,28 +9,28 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-func (s *Store) SaveAdapter(req *api.AdapterSaveRequest) (*ent.Adapter, error) {
-	if err := s.validator.Struct(req); err != nil {
+func (h *Handler) SaveAdapter(req *api.AdapterSaveRequest) (*ent.Adapter, error) {
+	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "adapter create")
 	}
 
-	dbAdapter, err := s.client.Adapter.Query().Where(
+	dbAdapter, err := h.client.Adapter.Query().Where(
 		adapter.Name(*req.Adapter.Name), adapter.Tag(*req.Adapter.Tag),
-	).Only(s.ctx)
+	).Only(h.ctx)
 	if err != nil {
 		if !ent.IsNotFound(err) {
 			return nil, HandleEntError(err, "adapter query")
 		}
-		dbAdapter, err = s.client.Adapter.Create().
+		dbAdapter, err = h.client.Adapter.Create().
 			SetModelCreate(req.Adapter).
-			Save(s.ctx)
+			Save(h.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "adapter create")
 		}
 	} else {
-		dbAdapter, err = s.client.Adapter.UpdateOne(dbAdapter).
+		dbAdapter, err = h.client.Adapter.UpdateOne(dbAdapter).
 			SetModelCreate(req.Adapter).
-			Save(s.ctx)
+			Save(h.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "adater update")
 		}
@@ -38,8 +38,8 @@ func (s *Store) SaveAdapter(req *api.AdapterSaveRequest) (*ent.Adapter, error) {
 	return dbAdapter, nil
 }
 
-func (s *Store) GetAdapter(req *api.AdapterGetRequest) (*api.AdapterGetResponse, error) {
-	if err := s.validator.Struct(req); err != nil {
+func (h *Handler) GetAdapter(req *api.AdapterGetRequest) (*api.AdapterGetResponse, error) {
+	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "adapter read")
 	}
 	var tag = bubblyadapter.DefaultTag
@@ -47,10 +47,10 @@ func (s *Store) GetAdapter(req *api.AdapterGetRequest) (*api.AdapterGetResponse,
 		tag = *req.Tag
 	}
 
-	query := s.client.Adapter.Query().Where(
+	query := h.client.Adapter.Query().Where(
 		adapter.Name(*req.Name), adapter.Tag(tag),
 	)
-	dbAdapter, err := query.Only(s.ctx)
+	dbAdapter, err := query.Only(h.ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, NewNotFoundError(err, "adapter")

@@ -17,6 +17,7 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
@@ -57,6 +58,8 @@ type Client struct {
 	License *LicenseClient
 	// LicenseUse is the client for interacting with the LicenseUse builders.
 	LicenseUse *LicenseUseClient
+	// Organization is the client for interacting with the Organization builders.
+	Organization *OrganizationClient
 	// Project is the client for interacting with the Project builders.
 	Project *ProjectClient
 	// Release is the client for interacting with the Release builders.
@@ -106,6 +109,7 @@ func (c *Client) init() {
 	c.GitCommit = NewGitCommitClient(c.config)
 	c.License = NewLicenseClient(c.config)
 	c.LicenseUse = NewLicenseUseClient(c.config)
+	c.Organization = NewOrganizationClient(c.config)
 	c.Project = NewProjectClient(c.config)
 	c.Release = NewReleaseClient(c.config)
 	c.ReleaseComponent = NewReleaseComponentClient(c.config)
@@ -160,6 +164,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		GitCommit:              NewGitCommitClient(cfg),
 		License:                NewLicenseClient(cfg),
 		LicenseUse:             NewLicenseUseClient(cfg),
+		Organization:           NewOrganizationClient(cfg),
 		Project:                NewProjectClient(cfg),
 		Release:                NewReleaseClient(cfg),
 		ReleaseComponent:       NewReleaseComponentClient(cfg),
@@ -199,6 +204,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		GitCommit:              NewGitCommitClient(cfg),
 		License:                NewLicenseClient(cfg),
 		LicenseUse:             NewLicenseUseClient(cfg),
+		Organization:           NewOrganizationClient(cfg),
 		Project:                NewProjectClient(cfg),
 		Release:                NewReleaseClient(cfg),
 		ReleaseComponent:       NewReleaseComponentClient(cfg),
@@ -249,6 +255,7 @@ func (c *Client) Use(hooks ...Hook) {
 	c.GitCommit.Use(hooks...)
 	c.License.Use(hooks...)
 	c.LicenseUse.Use(hooks...)
+	c.Organization.Use(hooks...)
 	c.Project.Use(hooks...)
 	c.Release.Use(hooks...)
 	c.ReleaseComponent.Use(hooks...)
@@ -1242,6 +1249,128 @@ func (c *LicenseUseClient) Hooks() []Hook {
 	return c.hooks.LicenseUse
 }
 
+// OrganizationClient is a client for the Organization schema.
+type OrganizationClient struct {
+	config
+}
+
+// NewOrganizationClient returns a client for the Organization from the given config.
+func NewOrganizationClient(c config) *OrganizationClient {
+	return &OrganizationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `organization.Hooks(f(g(h())))`.
+func (c *OrganizationClient) Use(hooks ...Hook) {
+	c.hooks.Organization = append(c.hooks.Organization, hooks...)
+}
+
+// Create returns a create builder for Organization.
+func (c *OrganizationClient) Create() *OrganizationCreate {
+	mutation := newOrganizationMutation(c.config, OpCreate)
+	return &OrganizationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Organization entities.
+func (c *OrganizationClient) CreateBulk(builders ...*OrganizationCreate) *OrganizationCreateBulk {
+	return &OrganizationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Organization.
+func (c *OrganizationClient) Update() *OrganizationUpdate {
+	mutation := newOrganizationMutation(c.config, OpUpdate)
+	return &OrganizationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *OrganizationClient) UpdateOne(o *Organization) *OrganizationUpdateOne {
+	mutation := newOrganizationMutation(c.config, OpUpdateOne, withOrganization(o))
+	return &OrganizationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *OrganizationClient) UpdateOneID(id int) *OrganizationUpdateOne {
+	mutation := newOrganizationMutation(c.config, OpUpdateOne, withOrganizationID(id))
+	return &OrganizationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Organization.
+func (c *OrganizationClient) Delete() *OrganizationDelete {
+	mutation := newOrganizationMutation(c.config, OpDelete)
+	return &OrganizationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *OrganizationClient) DeleteOne(o *Organization) *OrganizationDeleteOne {
+	return c.DeleteOneID(o.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *OrganizationClient) DeleteOneID(id int) *OrganizationDeleteOne {
+	builder := c.Delete().Where(organization.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &OrganizationDeleteOne{builder}
+}
+
+// Query returns a query builder for Organization.
+func (c *OrganizationClient) Query() *OrganizationQuery {
+	return &OrganizationQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Organization entity by its id.
+func (c *OrganizationClient) Get(ctx context.Context, id int) (*Organization, error) {
+	return c.Query().Where(organization.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *OrganizationClient) GetX(ctx context.Context, id int) *Organization {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryProjects queries the projects edge of a Organization.
+func (c *OrganizationClient) QueryProjects(o *Organization) *ProjectQuery {
+	query := &ProjectQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := o.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(organization.Table, organization.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, organization.ProjectsTable, organization.ProjectsColumn),
+		)
+		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRepos queries the repos edge of a Organization.
+func (c *OrganizationClient) QueryRepos(o *Organization) *RepoQuery {
+	query := &RepoQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := o.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(organization.Table, organization.FieldID, id),
+			sqlgraph.To(repo.Table, repo.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, organization.ReposTable, organization.ReposColumn),
+		)
+		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *OrganizationClient) Hooks() []Hook {
+	return c.hooks.Organization
+}
+
 // ProjectClient is a client for the Project schema.
 type ProjectClient struct {
 	config
@@ -1325,6 +1454,22 @@ func (c *ProjectClient) GetX(ctx context.Context, id int) *Project {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryOwner queries the owner edge of a Project.
+func (c *ProjectClient) QueryOwner(pr *Project) *OrganizationQuery {
+	query := &OrganizationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, project.OwnerTable, project.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryRepos queries the repos edge of a Project.
@@ -2639,6 +2784,22 @@ func (c *RepoClient) GetX(ctx context.Context, id int) *Repo {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryOwner queries the owner edge of a Repo.
+func (c *RepoClient) QueryOwner(r *Repo) *OrganizationQuery {
+	query := &OrganizationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repo.Table, repo.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, repo.OwnerTable, repo.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryProject queries the project edge of a Repo.

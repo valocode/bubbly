@@ -265,6 +265,34 @@ export interface LicenseUse_Edge {
 }
 
 // #######################################
+// Organization
+// #######################################
+export interface Organization_Json {
+	organization?: Organization[];
+}
+
+export interface Organization {
+	id?: number;
+	name?: string;
+	projects?: Project[];
+	repos?: Repo[];
+}
+
+export interface Organization_Relay {
+	organization_connection?: Organization_Conn;
+}
+
+export interface Organization_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: Organization_Edge[];
+}
+
+export interface Organization_Edge {
+	node?: Organization;
+}
+
+// #######################################
 // Project
 // #######################################
 export interface Project_Json {
@@ -274,6 +302,7 @@ export interface Project_Json {
 export interface Project {
 	id?: number;
 	name?: string;
+	owner?: Organization;
 	repos?: Repo[];
 	vulnerability_reviews?: VulnerabilityReview[];
 	policies?: ReleasePolicy[];
@@ -549,6 +578,7 @@ export interface Repo {
 	id?: number;
 	name?: string;
 	default_branch?: string;
+	owner?: Organization;
 	project?: Project;
 	head?: Release;
 	commits?: GitCommit[];

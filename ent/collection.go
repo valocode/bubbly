@@ -105,6 +105,18 @@ func (lu *LicenseUseQuery) collectField(ctx *graphql.OperationContext, field gra
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (o *OrganizationQuery) CollectFields(ctx context.Context, satisfies ...string) *OrganizationQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		o = o.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return o
+}
+
+func (o *OrganizationQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *OrganizationQuery {
+	return o
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (pr *ProjectQuery) CollectFields(ctx context.Context, satisfies ...string) *ProjectQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		pr = pr.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)

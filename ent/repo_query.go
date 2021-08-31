@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/gitcommit"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
@@ -31,6 +32,7 @@ type RepoQuery struct {
 	fields     []string
 	predicates []predicate.Repo
 	// eager-loading edges.
+	withOwner                *OrganizationQuery
 	withProject              *ProjectQuery
 	withHead                 *ReleaseQuery
 	withCommits              *GitCommitQuery
@@ -71,6 +73,28 @@ func (rq *RepoQuery) Unique(unique bool) *RepoQuery {
 func (rq *RepoQuery) Order(o ...OrderFunc) *RepoQuery {
 	rq.order = append(rq.order, o...)
 	return rq
+}
+
+// QueryOwner chains the current query on the "owner" edge.
+func (rq *RepoQuery) QueryOwner() *OrganizationQuery {
+	query := &OrganizationQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(repo.Table, repo.FieldID, selector),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, repo.OwnerTable, repo.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryProject chains the current query on the "project" edge.
@@ -364,6 +388,7 @@ func (rq *RepoQuery) Clone() *RepoQuery {
 		offset:                   rq.offset,
 		order:                    append([]OrderFunc{}, rq.order...),
 		predicates:               append([]predicate.Repo{}, rq.predicates...),
+		withOwner:                rq.withOwner.Clone(),
 		withProject:              rq.withProject.Clone(),
 		withHead:                 rq.withHead.Clone(),
 		withCommits:              rq.withCommits.Clone(),
@@ -373,6 +398,17 @@ func (rq *RepoQuery) Clone() *RepoQuery {
 		sql:  rq.sql.Clone(),
 		path: rq.path,
 	}
+}
+
+// WithOwner tells the query-builder to eager-load the nodes that are connected to
+// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RepoQuery) WithOwner(opts ...func(*OrganizationQuery)) *RepoQuery {
+	query := &OrganizationQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withOwner = query
+	return rq
 }
 
 // WithProject tells the query-builder to eager-load the nodes that are connected to
@@ -496,7 +532,8 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 		nodes       = []*Repo{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
+			rq.withOwner != nil,
 			rq.withProject != nil,
 			rq.withHead != nil,
 			rq.withCommits != nil,
@@ -504,7 +541,7 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 			rq.withPolicies != nil,
 		}
 	)
-	if rq.withProject != nil {
+	if rq.withOwner != nil || rq.withProject != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -528,6 +565,35 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+
+	if query := rq.withOwner; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Repo)
+		for i := range nodes {
+			if nodes[i].repo_owner == nil {
+				continue
+			}
+			fk := *nodes[i].repo_owner
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(organization.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "repo_owner" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Owner = n
+			}
+		}
 	}
 
 	if query := rq.withProject; query != nil {

@@ -15,16 +15,16 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-func (s *Store) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.ReleasePolicy, error) {
-	if err := s.validator.Struct(req); err != nil {
+func (h *Handler) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.ReleasePolicy, error) {
+	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "release policy create")
 	}
 	var dbPolicy *ent.ReleasePolicy
-	txErr := s.WithTx(func(tx *ent.Tx) error {
+	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
 		var err error
 		dbPolicy, err = tx.ReleasePolicy.Query().
 			Where(releasepolicy.Name(*req.Policy.Name)).
-			Only(s.ctx)
+			Only(h.ctx)
 		if err != nil {
 			if !ent.IsNotFound(err) {
 				return HandleEntError(err, "release policy query")
@@ -32,7 +32,7 @@ func (s *Store) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.Relea
 			// If not found, then create the policy
 			dbPolicy, err = tx.ReleasePolicy.Create().
 				SetModelCreate(req.Policy).
-				Save(s.ctx)
+				Save(h.ctx)
 			if err != nil {
 				return HandleEntError(err, "release policy create")
 			}
@@ -40,13 +40,13 @@ func (s *Store) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.Relea
 			// If the policy did exist, then we should update it
 			dbPolicy, err = tx.ReleasePolicy.UpdateOne(dbPolicy).
 				SetModelCreate(req.Policy).
-				Save(s.ctx)
+				Save(h.ctx)
 			if err != nil {
 				return HandleEntError(err, "release policy update")
 			}
 		}
 
-		dbPolicy, err = s.updatePolicyAffects(tx.Client(), dbPolicy, req.Affects)
+		dbPolicy, err = h.updatePolicyAffects(tx.Client(), dbPolicy, req.Affects)
 		if err != nil {
 			return err
 		}
@@ -60,20 +60,20 @@ func (s *Store) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.Relea
 	return dbPolicy, nil
 }
 
-func (s *Store) SetReleasePolicyAffects(req *api.ReleasePolicySetRequest) (*ent.ReleasePolicy, error) {
-	if err := s.validator.Struct(req); err != nil {
+func (h *Handler) SetReleasePolicyAffects(req *api.ReleasePolicySetRequest) (*ent.ReleasePolicy, error) {
+	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "release policy set affects")
 	}
 	var dbPolicy *ent.ReleasePolicy
 	var err error
-	dbPolicy, err = s.client.ReleasePolicy.Query().
+	dbPolicy, err = h.client.ReleasePolicy.Query().
 		Where(releasepolicy.Name(*req.Policy)).
-		Only(s.ctx)
+		Only(h.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "release policy query")
 	}
 
-	dbPolicy, err = s.updatePolicyAffects(s.client, dbPolicy, req.Affects)
+	dbPolicy, err = h.updatePolicyAffects(h.client, dbPolicy, req.Affects)
 	if err != nil {
 		return nil, err
 	}
@@ -81,9 +81,9 @@ func (s *Store) SetReleasePolicyAffects(req *api.ReleasePolicySetRequest) (*ent.
 	return dbPolicy, nil
 }
 
-func (s *Store) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyViolation, error) {
+func (h *Handler) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyViolation, error) {
 	var dbViolations []*ent.ReleasePolicyViolation
-	txErr := s.WithTx(func(tx *ent.Tx) error {
+	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
 		dbPolicies, err := tx.ReleasePolicy.Query().
 			Where(
 				releasepolicy.Or(
@@ -104,14 +104,14 @@ func (s *Store) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyViol
 						),
 					),
 				),
-			).All(s.ctx)
+			).All(h.ctx)
 		if err != nil {
 			return fmt.Errorf("error getting policies for release: %w", err)
 		}
 		for _, dbPolicy := range dbPolicies {
 			result, err := policy.EvaluatePolicy(dbPolicy.Module,
 				policy.WithResolver(&policy.EntResolver{
-					Ctx:       s.ctx,
+					Ctx:       h.ctx,
 					Client:    tx.Client(),
 					ReleaseID: releaseID,
 				}),
@@ -124,7 +124,7 @@ func (s *Store) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyViol
 			_, deleteErr := tx.ReleasePolicyViolation.Delete().Where(
 				releasepolicyviolation.HasPolicyWith(releasepolicy.ID(dbPolicy.ID)),
 				releasepolicyviolation.HasReleaseWith(release.ID(releaseID)),
-			).Exec(s.ctx)
+			).Exec(h.ctx)
 			if deleteErr != nil {
 				return NewServerError(deleteErr, "deleteing release violations")
 			}
@@ -133,7 +133,7 @@ func (s *Store) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyViol
 					SetModelCreate(*v).
 					SetPolicy(dbPolicy).
 					SetReleaseID(releaseID).
-					Save(s.ctx)
+					Save(h.ctx)
 				if err != nil {
 					return err
 				}
@@ -148,24 +148,24 @@ func (s *Store) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyViol
 	return dbViolations, nil
 }
 
-func (s *Store) updatePolicyAffects(client *ent.Client, dbPolicy *ent.ReleasePolicy, affects *api.ReleasePolicyAffects) (*ent.ReleasePolicy, error) {
+func (h *Handler) updatePolicyAffects(client *ent.Client, dbPolicy *ent.ReleasePolicy, affects *api.ReleasePolicyAffects) (*ent.ReleasePolicy, error) {
 	if affects == nil {
 		return dbPolicy, nil
 	}
 
-	projectSetIDs, err := s.policyAffectsProjectIDs(client, affects.Projects)
+	projectSetIDs, err := h.policyAffectsProjectIDs(client, affects.Projects)
 	if err != nil {
 		return nil, err
 	}
-	projectSetNotIDs, err := s.policyAffectsProjectIDs(client, affects.NotProjects)
+	projectSetNotIDs, err := h.policyAffectsProjectIDs(client, affects.NotProjects)
 	if err != nil {
 		return nil, err
 	}
-	repoSetIDs, err := s.policyAffectsReposIDs(client, affects.Repos)
+	repoSetIDs, err := h.policyAffectsReposIDs(client, affects.Repos)
 	if err != nil {
 		return nil, err
 	}
-	repoSetNotIDs, err := s.policyAffectsReposIDs(client, affects.NotRepos)
+	repoSetNotIDs, err := h.policyAffectsReposIDs(client, affects.NotRepos)
 	if err != nil {
 		return nil, err
 	}
@@ -176,14 +176,14 @@ func (s *Store) updatePolicyAffects(client *ent.Client, dbPolicy *ent.ReleasePol
 		RemoveProjectIDs(projectSetNotIDs...).
 		AddRepoIDs(repoSetIDs...).
 		RemoveRepoIDs(repoSetNotIDs...).
-		Save(s.ctx)
+		Save(h.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "set policy affects")
 	}
 	return dbPolicy, nil
 }
 
-func (s *Store) policyAffectsProjectIDs(client *ent.Client, projects []string) ([]int, error) {
+func (h *Handler) policyAffectsProjectIDs(client *ent.Client, projects []string) ([]int, error) {
 	var (
 		projectSetIDs   []int
 		projectSetNames []predicate.Project
@@ -200,14 +200,14 @@ func (s *Store) policyAffectsProjectIDs(client *ent.Client, projects []string) (
 
 	projectSetIDs, err = client.Project.Query().Where(
 		project.Or(projectSetNames...),
-	).IDs(s.ctx)
+	).IDs(h.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "policy project IDs")
 	}
 	return projectSetIDs, nil
 }
 
-func (s *Store) policyAffectsReposIDs(client *ent.Client, repos []string) ([]int, error) {
+func (h *Handler) policyAffectsReposIDs(client *ent.Client, repos []string) ([]int, error) {
 	var (
 		repoSetIDs   []int
 		repoSetNames []predicate.Repo
@@ -224,7 +224,7 @@ func (s *Store) policyAffectsReposIDs(client *ent.Client, repos []string) ([]int
 
 	repoSetIDs, err = client.Repo.Query().Where(
 		repo.Or(repoSetNames...),
-	).IDs(s.ctx)
+	).IDs(h.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "policy repo IDs")
 	}

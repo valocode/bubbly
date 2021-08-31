@@ -16,6 +16,7 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
@@ -57,6 +58,7 @@ func columnChecker(table string) func(string) error {
 		gitcommit.Table:              gitcommit.ValidColumn,
 		license.Table:                license.ValidColumn,
 		licenseuse.Table:             licenseuse.ValidColumn,
+		organization.Table:           organization.ValidColumn,
 		project.Table:                project.ValidColumn,
 		release.Table:                release.ValidColumn,
 		releasecomponent.Table:       releasecomponent.ValidColumn,

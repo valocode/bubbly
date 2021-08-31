@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/gitcommit"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasepolicy"
@@ -42,6 +43,17 @@ func (rc *RepoCreate) SetNillableDefaultBranch(s *string) *RepoCreate {
 		rc.SetDefaultBranch(*s)
 	}
 	return rc
+}
+
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (rc *RepoCreate) SetOwnerID(id int) *RepoCreate {
+	rc.mutation.SetOwnerID(id)
+	return rc
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (rc *RepoCreate) SetOwner(o *Organization) *RepoCreate {
+	return rc.SetOwnerID(o.ID)
 }
 
 // SetProjectID sets the "project" edge to the Project entity by ID.
@@ -214,6 +226,9 @@ func (rc *RepoCreate) check() error {
 			return &ValidationError{Name: "default_branch", err: fmt.Errorf(`ent: validator failed for field "default_branch": %w`, err)}
 		}
 	}
+	if _, ok := rc.mutation.OwnerID(); !ok {
+		return &ValidationError{Name: "owner", err: errors.New("ent: missing required edge \"owner\"")}
+	}
 	if _, ok := rc.mutation.ProjectID(); !ok {
 		return &ValidationError{Name: "project", err: errors.New("ent: missing required edge \"project\"")}
 	}
@@ -259,6 +274,26 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 			Column: repo.FieldDefaultBranch,
 		})
 		_node.DefaultBranch = value
+	}
+	if nodes := rc.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   repo.OwnerTable,
+			Columns: []string{repo.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.repo_owner = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

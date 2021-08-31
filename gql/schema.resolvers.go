@@ -70,6 +70,14 @@ func (r *licenseResolver) Uses(ctx context.Context, obj *ent.License, first *int
 	return obj.QueryUses().Filter(ctx, first, last, nil, where)
 }
 
+func (r *organizationResolver) Projects(ctx context.Context, obj *ent.Organization, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *organizationResolver) Repos(ctx context.Context, obj *ent.Organization, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *projectResolver) Repos(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error) {
 	result, err := obj.Edges.ReposOrErr()
 	if ent.IsNotLoaded(err) {
@@ -479,6 +487,9 @@ func (r *Resolver) Component() ComponentResolver { return &componentResolver{r} 
 // License returns LicenseResolver implementation.
 func (r *Resolver) License() LicenseResolver { return &licenseResolver{r} }
 
+// Organization returns OrganizationResolver implementation.
+func (r *Resolver) Organization() OrganizationResolver { return &organizationResolver{r} }
+
 // Project returns ProjectResolver implementation.
 func (r *Resolver) Project() ProjectResolver { return &projectResolver{r} }
 
@@ -519,6 +530,7 @@ func (r *Resolver) VulnerabilityReview() VulnerabilityReviewResolver {
 type codeScanResolver struct{ *Resolver }
 type componentResolver struct{ *Resolver }
 type licenseResolver struct{ *Resolver }
+type organizationResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type releaseResolver struct{ *Resolver }

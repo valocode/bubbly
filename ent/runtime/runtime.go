@@ -12,6 +12,7 @@ import (
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
@@ -134,6 +135,12 @@ func init() {
 	licenseDescIsOsiApproved := licenseFields[4].Descriptor()
 	// license.DefaultIsOsiApproved holds the default value on creation for the is_osi_approved field.
 	license.DefaultIsOsiApproved = licenseDescIsOsiApproved.Default.(bool)
+	organizationFields := schema.Organization{}.Fields()
+	_ = organizationFields
+	// organizationDescName is the schema descriptor for name field.
+	organizationDescName := organizationFields[0].Descriptor()
+	// organization.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	organization.NameValidator = organizationDescName.Validators[0].(func(string) error)
 	projectFields := schema.Project{}.Fields()
 	_ = projectFields
 	// projectDescName is the schema descriptor for name field.

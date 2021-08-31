@@ -32,6 +32,7 @@ type hooks struct {
 	GitCommit              []ent.Hook
 	License                []ent.Hook
 	LicenseUse             []ent.Hook
+	Organization           []ent.Hook
 	Project                []ent.Hook
 	Release                []ent.Hook
 	ReleaseComponent       []ent.Hook

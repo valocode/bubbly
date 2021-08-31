@@ -217,21 +217,41 @@ var (
 			},
 		},
 	}
+	// OrganizationColumns holds the columns for the "organization" table.
+	OrganizationColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString, Unique: true},
+	}
+	// OrganizationTable holds the schema information for the "organization" table.
+	OrganizationTable = &schema.Table{
+		Name:       "organization",
+		Columns:    OrganizationColumns,
+		PrimaryKey: []*schema.Column{OrganizationColumns[0]},
+	}
 	// ProjectColumns holds the columns for the "project" table.
 	ProjectColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "project_owner", Type: field.TypeInt, Nullable: true},
 	}
 	// ProjectTable holds the schema information for the "project" table.
 	ProjectTable = &schema.Table{
 		Name:       "project",
 		Columns:    ProjectColumns,
 		PrimaryKey: []*schema.Column{ProjectColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "project_organization_owner",
+				Columns:    []*schema.Column{ProjectColumns[2]},
+				RefColumns: []*schema.Column{OrganizationColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "project_name",
+				Name:    "project_name_project_owner",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectColumns[1]},
+				Columns: []*schema.Column{ProjectColumns[1], ProjectColumns[2]},
 			},
 		},
 	}
@@ -444,6 +464,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "default_branch", Type: field.TypeString, Default: "main"},
+		{Name: "repo_owner", Type: field.TypeInt, Nullable: true},
 		{Name: "repo_project", Type: field.TypeInt, Nullable: true},
 	}
 	// RepoTable holds the schema information for the "repo" table.
@@ -453,17 +474,23 @@ var (
 		PrimaryKey: []*schema.Column{RepoColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "repo_project_project",
+				Symbol:     "repo_organization_owner",
 				Columns:    []*schema.Column{RepoColumns[3]},
+				RefColumns: []*schema.Column{OrganizationColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "repo_project_project",
+				Columns:    []*schema.Column{RepoColumns[4]},
 				RefColumns: []*schema.Column{ProjectColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "repo_name",
+				Name:    "repo_name_repo_owner",
 				Unique:  true,
-				Columns: []*schema.Column{RepoColumns[1]},
+				Columns: []*schema.Column{RepoColumns[1], RepoColumns[3]},
 			},
 		},
 	}
@@ -823,6 +850,7 @@ var (
 		CommitTable,
 		LicenseTable,
 		LicenseUseTable,
+		OrganizationTable,
 		ProjectTable,
 		ReleaseTable,
 		ReleaseComponentTable,
@@ -882,6 +910,10 @@ func init() {
 	LicenseUseTable.Annotation = &entsql.Annotation{
 		Table: "license_use",
 	}
+	OrganizationTable.Annotation = &entsql.Annotation{
+		Table: "organization",
+	}
+	ProjectTable.ForeignKeys[0].RefTable = OrganizationTable
 	ProjectTable.Annotation = &entsql.Annotation{
 		Table: "project",
 	}
@@ -920,7 +952,8 @@ func init() {
 	ReleaseVulnerabilityTable.Annotation = &entsql.Annotation{
 		Table: "release_vulnerability",
 	}
-	RepoTable.ForeignKeys[0].RefTable = ProjectTable
+	RepoTable.ForeignKeys[0].RefTable = OrganizationTable
+	RepoTable.ForeignKeys[1].RefTable = ProjectTable
 	RepoTable.Annotation = &entsql.Annotation{
 		Table: "repo",
 	}

@@ -36,6 +36,7 @@ func (Repo) Fields() []ent.Field {
 
 func (Repo) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("owner", Organization.Type).Unique().Required(),
 		edge.To("project", Project.Type).Unique().Required(),
 		edge.To("head", Release.Type).Unique(),
 		edge.From("commits", GitCommit.Type).Ref("repo"),
@@ -47,6 +48,7 @@ func (Repo) Edges() []ent.Edge {
 func (Repo) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("name").
+			Edges("owner").
 			Unique(),
 	}
 }
