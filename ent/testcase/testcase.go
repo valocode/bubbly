@@ -15,6 +15,8 @@ const (
 	FieldMessage = "message"
 	// FieldElapsed holds the string denoting the elapsed field in the database.
 	FieldElapsed = "elapsed"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
 	// EdgeRun holds the string denoting the run edge name in mutations.
 	EdgeRun = "run"
 	// Table holds the table name of the testcase in the database.
@@ -35,6 +37,7 @@ var Columns = []string{
 	FieldResult,
 	FieldMessage,
 	FieldElapsed,
+	FieldMetadata,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "test_case"

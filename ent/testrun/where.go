@@ -294,6 +294,20 @@ func TimeLTE(v time.Time) predicate.TestRun {
 	})
 }
 
+// MetadataIsNil applies the IsNil predicate on the "metadata" field.
+func MetadataIsNil() predicate.TestRun {
+	return predicate.TestRun(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldMetadata)))
+	})
+}
+
+// MetadataNotNil applies the NotNil predicate on the "metadata" field.
+func MetadataNotNil() predicate.TestRun {
+	return predicate.TestRun(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldMetadata)))
+	})
+}
+
 // HasRelease applies the HasEdge predicate on the "release" edge.
 func HasRelease() predicate.TestRun {
 	return predicate.TestRun(func(s *sql.Selector) {

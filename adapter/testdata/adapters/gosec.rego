@@ -1,7 +1,10 @@
 package adapter
 
 code_scan[scan] {
-	scan := {"tool": "gosec"}
+	scan := {
+		"tool": "gosec",
+		"metadata": {"env": {"some_var": "some_value"}},
+	}
 }
 
 code_issue[issue] {

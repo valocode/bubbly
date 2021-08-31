@@ -10,6 +10,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/testcase"
+
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testrun"
 )
 
@@ -49,6 +51,12 @@ func (tcc *TestCaseCreate) SetNillableElapsed(f *float64) *TestCaseCreate {
 	if f != nil {
 		tcc.SetElapsed(*f)
 	}
+	return tcc
+}
+
+// SetMetadata sets the "metadata" field.
+func (tcc *TestCaseCreate) SetMetadata(s schema.Metadata) *TestCaseCreate {
+	tcc.mutation.SetMetadata(s)
 	return tcc
 }
 
@@ -230,6 +238,14 @@ func (tcc *TestCaseCreate) createSpec() (*TestCase, *sqlgraph.CreateSpec) {
 			Column: testcase.FieldElapsed,
 		})
 		_node.Elapsed = value
+	}
+	if value, ok := tcc.mutation.Metadata(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: testcase.FieldMetadata,
+		})
+		_node.Metadata = value
 	}
 	if nodes := tcc.mutation.RunIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -3,11 +3,13 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/component"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // Component is the model entity for the Component schema.
@@ -25,6 +27,8 @@ type Component struct {
 	Description string `json:"description,omitempty"`
 	// URL holds the value of the "url" field.
 	URL string `json:"url,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata schema.Metadata `json:"metadata,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ComponentQuery when eager-loading is set.
 	Edges ComponentEdges `json:"edges"`
@@ -75,6 +79,8 @@ func (*Component) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case component.FieldMetadata:
+			values[i] = new([]byte)
 		case component.FieldID:
 			values[i] = new(sql.NullInt64)
 		case component.FieldName, component.FieldVendor, component.FieldVersion, component.FieldDescription, component.FieldURL:
@@ -130,6 +136,14 @@ func (c *Component) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				c.URL = value.String
 			}
+		case component.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &c.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
+			}
 		}
 	}
 	return nil
@@ -183,6 +197,8 @@ func (c *Component) String() string {
 	builder.WriteString(c.Description)
 	builder.WriteString(", url=")
 	builder.WriteString(c.URL)
+	builder.WriteString(", metadata=")
+	builder.WriteString(fmt.Sprintf("%v", c.Metadata))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/releasecomponent"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/vulnerability"
 )
 
@@ -92,6 +93,18 @@ func (cu *ComponentUpdate) SetNillableURL(s *string) *ComponentUpdate {
 // ClearURL clears the value of the "url" field.
 func (cu *ComponentUpdate) ClearURL() *ComponentUpdate {
 	cu.mutation.ClearURL()
+	return cu
+}
+
+// SetMetadata sets the "metadata" field.
+func (cu *ComponentUpdate) SetMetadata(s schema.Metadata) *ComponentUpdate {
+	cu.mutation.SetMetadata(s)
+	return cu
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (cu *ComponentUpdate) ClearMetadata() *ComponentUpdate {
+	cu.mutation.ClearMetadata()
 	return cu
 }
 
@@ -348,6 +361,19 @@ func (cu *ComponentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: component.FieldURL,
 		})
 	}
+	if value, ok := cu.mutation.Metadata(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: component.FieldMetadata,
+		})
+	}
+	if cu.mutation.MetadataCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: component.FieldMetadata,
+		})
+	}
 	if cu.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -592,6 +618,18 @@ func (cuo *ComponentUpdateOne) SetNillableURL(s *string) *ComponentUpdateOne {
 // ClearURL clears the value of the "url" field.
 func (cuo *ComponentUpdateOne) ClearURL() *ComponentUpdateOne {
 	cuo.mutation.ClearURL()
+	return cuo
+}
+
+// SetMetadata sets the "metadata" field.
+func (cuo *ComponentUpdateOne) SetMetadata(s schema.Metadata) *ComponentUpdateOne {
+	cuo.mutation.SetMetadata(s)
+	return cuo
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (cuo *ComponentUpdateOne) ClearMetadata() *ComponentUpdateOne {
+	cuo.mutation.ClearMetadata()
 	return cuo
 }
 
@@ -870,6 +908,19 @@ func (cuo *ComponentUpdateOne) sqlSave(ctx context.Context) (_node *Component, e
 		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Column: component.FieldURL,
+		})
+	}
+	if value, ok := cuo.mutation.Metadata(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: component.FieldMetadata,
+		})
+	}
+	if cuo.mutation.MetadataCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: component.FieldMetadata,
 		})
 	}
 	if cuo.mutation.VulnerabilitiesCleared() {

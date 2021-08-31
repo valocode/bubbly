@@ -10,12 +10,14 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
+
+	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // CodeScanCreate is the builder for creating a CodeScan entity.
@@ -42,6 +44,12 @@ func (csc *CodeScanCreate) SetNillableTime(t *time.Time) *CodeScanCreate {
 	if t != nil {
 		csc.SetTime(*t)
 	}
+	return csc
+}
+
+// SetMetadata sets the "metadata" field.
+func (csc *CodeScanCreate) SetMetadata(s schema.Metadata) *CodeScanCreate {
+	csc.mutation.SetMetadata(s)
 	return csc
 }
 
@@ -261,6 +269,14 @@ func (csc *CodeScanCreate) createSpec() (*CodeScan, *sqlgraph.CreateSpec) {
 			Column: codescan.FieldTime,
 		})
 		_node.Time = value
+	}
+	if value, ok := csc.mutation.Metadata(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: codescan.FieldMetadata,
+		})
+		_node.Metadata = value
 	}
 	if nodes := csc.mutation.ReleaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

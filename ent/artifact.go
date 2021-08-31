@@ -3,14 +3,17 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/artifact"
+
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // Artifact is the model entity for the Artifact schema.
@@ -26,6 +29,8 @@ type Artifact struct {
 	Type artifact.Type `json:"type,omitempty"`
 	// Time holds the value of the "time" field.
 	Time time.Time `json:"time,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata schema.Metadata `json:"metadata,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ArtifactQuery when eager-loading is set.
 	Edges                  ArtifactEdges `json:"edges"`
@@ -77,6 +82,8 @@ func (*Artifact) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case artifact.FieldMetadata:
+			values[i] = new([]byte)
 		case artifact.FieldID:
 			values[i] = new(sql.NullInt64)
 		case artifact.FieldName, artifact.FieldSha256, artifact.FieldType:
@@ -131,6 +138,14 @@ func (a *Artifact) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field time", values[i])
 			} else if value.Valid {
 				a.Time = value.Time
+			}
+		case artifact.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &a.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
 			}
 		case artifact.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -192,6 +207,8 @@ func (a *Artifact) String() string {
 	builder.WriteString(fmt.Sprintf("%v", a.Type))
 	builder.WriteString(", time=")
 	builder.WriteString(a.Time.Format(time.ANSIC))
+	builder.WriteString(", metadata=")
+	builder.WriteString(fmt.Sprintf("%v", a.Metadata))
 	builder.WriteByte(')')
 	return builder.String()
 }

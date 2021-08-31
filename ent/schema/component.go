@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/valocode/bubbly/ent/extensions/entmodel"
+	types "github.com/valocode/bubbly/ent/schema/types"
 )
 
 type Component struct {
@@ -38,6 +39,7 @@ func (Component) Fields() []ent.Field {
 			),
 		field.String("description").Optional(),
 		field.String("url").Optional(),
+		field.JSON("metadata", types.Metadata{}).Optional(),
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/extensions/entmodel"
+	types "github.com/valocode/bubbly/ent/schema/types"
 )
 
 type CodeIssue struct {
@@ -38,6 +39,7 @@ func (CodeIssue) Fields() []ent.Field {
 			Annotations(
 				entgql.OrderField("type"),
 			),
+		field.JSON("metadata", types.Metadata{}).Optional(),
 	}
 }
 

@@ -17,6 +17,8 @@ const (
 	FieldTool = "tool"
 	// FieldTime holds the string denoting the time field in the database.
 	FieldTime = "time"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
 	// EdgeRelease holds the string denoting the release edge name in mutations.
 	EdgeRelease = "release"
 	// EdgeEntry holds the string denoting the entry edge name in mutations.
@@ -69,6 +71,7 @@ var Columns = []string{
 	FieldID,
 	FieldTool,
 	FieldTime,
+	FieldMetadata,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "code_scan"

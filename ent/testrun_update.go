@@ -13,6 +13,7 @@ import (
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 )
@@ -27,6 +28,18 @@ type TestRunUpdate struct {
 // Where appends a list predicates to the TestRunUpdate builder.
 func (tru *TestRunUpdate) Where(ps ...predicate.TestRun) *TestRunUpdate {
 	tru.mutation.Where(ps...)
+	return tru
+}
+
+// SetMetadata sets the "metadata" field.
+func (tru *TestRunUpdate) SetMetadata(s schema.Metadata) *TestRunUpdate {
+	tru.mutation.SetMetadata(s)
+	return tru
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (tru *TestRunUpdate) ClearMetadata() *TestRunUpdate {
+	tru.mutation.ClearMetadata()
 	return tru
 }
 
@@ -199,6 +212,19 @@ func (tru *TestRunUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := tru.mutation.Metadata(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: testrun.FieldMetadata,
+		})
+	}
+	if tru.mutation.MetadataCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: testrun.FieldMetadata,
+		})
+	}
 	if tru.mutation.ReleaseCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -340,6 +366,18 @@ type TestRunUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *TestRunMutation
+}
+
+// SetMetadata sets the "metadata" field.
+func (truo *TestRunUpdateOne) SetMetadata(s schema.Metadata) *TestRunUpdateOne {
+	truo.mutation.SetMetadata(s)
+	return truo
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (truo *TestRunUpdateOne) ClearMetadata() *TestRunUpdateOne {
+	truo.mutation.ClearMetadata()
+	return truo
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by ID.
@@ -534,6 +572,19 @@ func (truo *TestRunUpdateOne) sqlSave(ctx context.Context) (_node *TestRun, err 
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := truo.mutation.Metadata(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: testrun.FieldMetadata,
+		})
+	}
+	if truo.mutation.MetadataCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: testrun.FieldMetadata,
+		})
 	}
 	if truo.mutation.ReleaseCleared() {
 		edge := &sqlgraph.EdgeSpec{

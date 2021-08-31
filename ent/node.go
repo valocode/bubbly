@@ -114,7 +114,7 @@ func (a *Artifact) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     a.ID,
 		Type:   "Artifact",
-		Fields: make([]*Field, 4),
+		Fields: make([]*Field, 5),
 		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
@@ -150,10 +150,18 @@ func (a *Artifact) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "time",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(a.ID); err != nil {
+	if buf, err = json.Marshal(a.Metadata); err != nil {
 		return nil, err
 	}
 	node.Fields[4] = &Field{
+		Type:  "schema.Metadata",
+		Name:  "metadata",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(a.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
@@ -185,7 +193,7 @@ func (ci *CodeIssue) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     ci.ID,
 		Type:   "CodeIssue",
-		Fields: make([]*Field, 4),
+		Fields: make([]*Field, 5),
 		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
@@ -221,10 +229,18 @@ func (ci *CodeIssue) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "type",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(ci.ID); err != nil {
+	if buf, err = json.Marshal(ci.Metadata); err != nil {
 		return nil, err
 	}
 	node.Fields[4] = &Field{
+		Type:  "schema.Metadata",
+		Name:  "metadata",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(ci.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
@@ -246,7 +262,7 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     cs.ID,
 		Type:   "CodeScan",
-		Fields: make([]*Field, 2),
+		Fields: make([]*Field, 3),
 		Edges:  make([]*Edge, 5),
 	}
 	var buf []byte
@@ -266,10 +282,18 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "time",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(cs.ID); err != nil {
+	if buf, err = json.Marshal(cs.Metadata); err != nil {
 		return nil, err
 	}
 	node.Fields[2] = &Field{
+		Type:  "schema.Metadata",
+		Name:  "metadata",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(cs.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
@@ -331,7 +355,7 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     c.ID,
 		Type:   "Component",
-		Fields: make([]*Field, 5),
+		Fields: make([]*Field, 6),
 		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
@@ -375,10 +399,18 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "url",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(c.ID); err != nil {
+	if buf, err = json.Marshal(c.Metadata); err != nil {
 		return nil, err
 	}
 	node.Fields[5] = &Field{
+		Type:  "schema.Metadata",
+		Name:  "metadata",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(c.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[6] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
@@ -1361,7 +1393,7 @@ func (tc *TestCase) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     tc.ID,
 		Type:   "TestCase",
-		Fields: make([]*Field, 4),
+		Fields: make([]*Field, 5),
 		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
@@ -1397,10 +1429,18 @@ func (tc *TestCase) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "elapsed",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(tc.ID); err != nil {
+	if buf, err = json.Marshal(tc.Metadata); err != nil {
 		return nil, err
 	}
 	node.Fields[4] = &Field{
+		Type:  "schema.Metadata",
+		Name:  "metadata",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(tc.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[5] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
@@ -1422,7 +1462,7 @@ func (tr *TestRun) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     tr.ID,
 		Type:   "TestRun",
-		Fields: make([]*Field, 2),
+		Fields: make([]*Field, 3),
 		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
@@ -1442,10 +1482,18 @@ func (tr *TestRun) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "time",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(tr.ID); err != nil {
+	if buf, err = json.Marshal(tr.Metadata); err != nil {
 		return nil, err
 	}
 	node.Fields[2] = &Field{
+		Type:  "schema.Metadata",
+		Name:  "metadata",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(tr.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
@@ -1487,7 +1535,7 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     v.ID,
 		Type:   "Vulnerability",
-		Fields: make([]*Field, 7),
+		Fields: make([]*Field, 8),
 		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
@@ -1547,10 +1595,18 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "modified",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(v.ID); err != nil {
+	if buf, err = json.Marshal(v.Metadata); err != nil {
 		return nil, err
 	}
 	node.Fields[7] = &Field{
+		Type:  "schema.Metadata",
+		Name:  "metadata",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(v.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[8] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),

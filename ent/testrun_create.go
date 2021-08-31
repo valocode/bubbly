@@ -10,10 +10,12 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/testrun"
+
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testcase"
-	"github.com/valocode/bubbly/ent/testrun"
 )
 
 // TestRunCreate is the builder for creating a TestRun entity.
@@ -40,6 +42,12 @@ func (trc *TestRunCreate) SetNillableTime(t *time.Time) *TestRunCreate {
 	if t != nil {
 		trc.SetTime(*t)
 	}
+	return trc
+}
+
+// SetMetadata sets the "metadata" field.
+func (trc *TestRunCreate) SetMetadata(s schema.Metadata) *TestRunCreate {
+	trc.mutation.SetMetadata(s)
 	return trc
 }
 
@@ -229,6 +237,14 @@ func (trc *TestRunCreate) createSpec() (*TestRun, *sqlgraph.CreateSpec) {
 			Column: testrun.FieldTime,
 		})
 		_node.Time = value
+	}
+	if value, ok := trc.mutation.Metadata(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: testrun.FieldMetadata,
+		})
+		_node.Metadata = value
 	}
 	if nodes := trc.mutation.ReleaseIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/extensions/entmodel"
+	types "github.com/valocode/bubbly/ent/schema/types"
 )
 
 type TestCase struct {
@@ -37,6 +38,7 @@ func (TestCase) Fields() []ent.Field {
 			}
 			return nil
 		}).Default(0),
+		field.JSON("metadata", types.Metadata{}).Optional(),
 	}
 }
 

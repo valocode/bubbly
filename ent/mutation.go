@@ -27,6 +27,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -478,6 +479,7 @@ type ArtifactMutation struct {
 	sha256         *string
 	_type          *artifact.Type
 	time           *time.Time
+	metadata       *schema.Metadata
 	clearedFields  map[string]struct{}
 	release        *int
 	clearedrelease bool
@@ -711,6 +713,55 @@ func (m *ArtifactMutation) ResetTime() {
 	m.time = nil
 }
 
+// SetMetadata sets the "metadata" field.
+func (m *ArtifactMutation) SetMetadata(s schema.Metadata) {
+	m.metadata = &s
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *ArtifactMutation) Metadata() (r schema.Metadata, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the Artifact entity.
+// If the Artifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ArtifactMutation) OldMetadata(ctx context.Context) (v schema.Metadata, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *ArtifactMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[artifact.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *ArtifactMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[artifact.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *ArtifactMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, artifact.FieldMetadata)
+}
+
 // SetReleaseID sets the "release" edge to the Release entity by id.
 func (m *ArtifactMutation) SetReleaseID(id int) {
 	m.release = &id
@@ -808,7 +859,7 @@ func (m *ArtifactMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ArtifactMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, artifact.FieldName)
 	}
@@ -820,6 +871,9 @@ func (m *ArtifactMutation) Fields() []string {
 	}
 	if m.time != nil {
 		fields = append(fields, artifact.FieldTime)
+	}
+	if m.metadata != nil {
+		fields = append(fields, artifact.FieldMetadata)
 	}
 	return fields
 }
@@ -837,6 +891,8 @@ func (m *ArtifactMutation) Field(name string) (ent.Value, bool) {
 		return m.GetType()
 	case artifact.FieldTime:
 		return m.Time()
+	case artifact.FieldMetadata:
+		return m.Metadata()
 	}
 	return nil, false
 }
@@ -854,6 +910,8 @@ func (m *ArtifactMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldType(ctx)
 	case artifact.FieldTime:
 		return m.OldTime(ctx)
+	case artifact.FieldMetadata:
+		return m.OldMetadata(ctx)
 	}
 	return nil, fmt.Errorf("unknown Artifact field %s", name)
 }
@@ -891,6 +949,13 @@ func (m *ArtifactMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTime(v)
 		return nil
+	case artifact.FieldMetadata:
+		v, ok := value.(schema.Metadata)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Artifact field %s", name)
 }
@@ -920,7 +985,11 @@ func (m *ArtifactMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ArtifactMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(artifact.FieldMetadata) {
+		fields = append(fields, artifact.FieldMetadata)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -933,6 +1002,11 @@ func (m *ArtifactMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ArtifactMutation) ClearField(name string) error {
+	switch name {
+	case artifact.FieldMetadata:
+		m.ClearMetadata()
+		return nil
+	}
 	return fmt.Errorf("unknown Artifact nullable field %s", name)
 }
 
@@ -951,6 +1025,9 @@ func (m *ArtifactMutation) ResetField(name string) error {
 		return nil
 	case artifact.FieldTime:
 		m.ResetTime()
+		return nil
+	case artifact.FieldMetadata:
+		m.ResetMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown Artifact field %s", name)
@@ -1060,6 +1137,7 @@ type CodeIssueMutation struct {
 	message       *string
 	severity      *codeissue.Severity
 	_type         *codeissue.Type
+	metadata      *schema.Metadata
 	clearedFields map[string]struct{}
 	scan          *int
 	clearedscan   bool
@@ -1291,6 +1369,55 @@ func (m *CodeIssueMutation) ResetType() {
 	m._type = nil
 }
 
+// SetMetadata sets the "metadata" field.
+func (m *CodeIssueMutation) SetMetadata(s schema.Metadata) {
+	m.metadata = &s
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *CodeIssueMutation) Metadata() (r schema.Metadata, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the CodeIssue entity.
+// If the CodeIssue object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CodeIssueMutation) OldMetadata(ctx context.Context) (v schema.Metadata, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *CodeIssueMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[codeissue.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *CodeIssueMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[codeissue.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *CodeIssueMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, codeissue.FieldMetadata)
+}
+
 // SetScanID sets the "scan" edge to the CodeScan entity by id.
 func (m *CodeIssueMutation) SetScanID(id int) {
 	m.scan = &id
@@ -1349,7 +1476,7 @@ func (m *CodeIssueMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CodeIssueMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.rule_id != nil {
 		fields = append(fields, codeissue.FieldRuleID)
 	}
@@ -1361,6 +1488,9 @@ func (m *CodeIssueMutation) Fields() []string {
 	}
 	if m._type != nil {
 		fields = append(fields, codeissue.FieldType)
+	}
+	if m.metadata != nil {
+		fields = append(fields, codeissue.FieldMetadata)
 	}
 	return fields
 }
@@ -1378,6 +1508,8 @@ func (m *CodeIssueMutation) Field(name string) (ent.Value, bool) {
 		return m.Severity()
 	case codeissue.FieldType:
 		return m.GetType()
+	case codeissue.FieldMetadata:
+		return m.Metadata()
 	}
 	return nil, false
 }
@@ -1395,6 +1527,8 @@ func (m *CodeIssueMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldSeverity(ctx)
 	case codeissue.FieldType:
 		return m.OldType(ctx)
+	case codeissue.FieldMetadata:
+		return m.OldMetadata(ctx)
 	}
 	return nil, fmt.Errorf("unknown CodeIssue field %s", name)
 }
@@ -1432,6 +1566,13 @@ func (m *CodeIssueMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetType(v)
 		return nil
+	case codeissue.FieldMetadata:
+		v, ok := value.(schema.Metadata)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
 	}
 	return fmt.Errorf("unknown CodeIssue field %s", name)
 }
@@ -1461,7 +1602,11 @@ func (m *CodeIssueMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *CodeIssueMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(codeissue.FieldMetadata) {
+		fields = append(fields, codeissue.FieldMetadata)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1474,6 +1619,11 @@ func (m *CodeIssueMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *CodeIssueMutation) ClearField(name string) error {
+	switch name {
+	case codeissue.FieldMetadata:
+		m.ClearMetadata()
+		return nil
+	}
 	return fmt.Errorf("unknown CodeIssue nullable field %s", name)
 }
 
@@ -1492,6 +1642,9 @@ func (m *CodeIssueMutation) ResetField(name string) error {
 		return nil
 	case codeissue.FieldType:
 		m.ResetType()
+		return nil
+	case codeissue.FieldMetadata:
+		m.ResetMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown CodeIssue field %s", name)
@@ -1581,6 +1734,7 @@ type CodeScanMutation struct {
 	id                     *int
 	tool                   *string
 	time                   *time.Time
+	metadata               *schema.Metadata
 	clearedFields          map[string]struct{}
 	release                *int
 	clearedrelease         bool
@@ -1749,6 +1903,55 @@ func (m *CodeScanMutation) OldTime(ctx context.Context) (v time.Time, err error)
 // ResetTime resets all changes to the "time" field.
 func (m *CodeScanMutation) ResetTime() {
 	m.time = nil
+}
+
+// SetMetadata sets the "metadata" field.
+func (m *CodeScanMutation) SetMetadata(s schema.Metadata) {
+	m.metadata = &s
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *CodeScanMutation) Metadata() (r schema.Metadata, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the CodeScan entity.
+// If the CodeScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CodeScanMutation) OldMetadata(ctx context.Context) (v schema.Metadata, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *CodeScanMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[codescan.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *CodeScanMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[codescan.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *CodeScanMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, codescan.FieldMetadata)
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by id.
@@ -2010,12 +2213,15 @@ func (m *CodeScanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CodeScanMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.tool != nil {
 		fields = append(fields, codescan.FieldTool)
 	}
 	if m.time != nil {
 		fields = append(fields, codescan.FieldTime)
+	}
+	if m.metadata != nil {
+		fields = append(fields, codescan.FieldMetadata)
 	}
 	return fields
 }
@@ -2029,6 +2235,8 @@ func (m *CodeScanMutation) Field(name string) (ent.Value, bool) {
 		return m.Tool()
 	case codescan.FieldTime:
 		return m.Time()
+	case codescan.FieldMetadata:
+		return m.Metadata()
 	}
 	return nil, false
 }
@@ -2042,6 +2250,8 @@ func (m *CodeScanMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldTool(ctx)
 	case codescan.FieldTime:
 		return m.OldTime(ctx)
+	case codescan.FieldMetadata:
+		return m.OldMetadata(ctx)
 	}
 	return nil, fmt.Errorf("unknown CodeScan field %s", name)
 }
@@ -2064,6 +2274,13 @@ func (m *CodeScanMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTime(v)
+		return nil
+	case codescan.FieldMetadata:
+		v, ok := value.(schema.Metadata)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
 		return nil
 	}
 	return fmt.Errorf("unknown CodeScan field %s", name)
@@ -2094,7 +2311,11 @@ func (m *CodeScanMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *CodeScanMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(codescan.FieldMetadata) {
+		fields = append(fields, codescan.FieldMetadata)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -2107,6 +2328,11 @@ func (m *CodeScanMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *CodeScanMutation) ClearField(name string) error {
+	switch name {
+	case codescan.FieldMetadata:
+		m.ClearMetadata()
+		return nil
+	}
 	return fmt.Errorf("unknown CodeScan nullable field %s", name)
 }
 
@@ -2119,6 +2345,9 @@ func (m *CodeScanMutation) ResetField(name string) error {
 		return nil
 	case codescan.FieldTime:
 		m.ResetTime()
+		return nil
+	case codescan.FieldMetadata:
+		m.ResetMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown CodeScan field %s", name)
@@ -2307,6 +2536,7 @@ type ComponentMutation struct {
 	version                *string
 	description            *string
 	url                    *string
+	metadata               *schema.Metadata
 	clearedFields          map[string]struct{}
 	vulnerabilities        map[int]struct{}
 	removedvulnerabilities map[int]struct{}
@@ -2607,6 +2837,55 @@ func (m *ComponentMutation) ResetURL() {
 	delete(m.clearedFields, component.FieldURL)
 }
 
+// SetMetadata sets the "metadata" field.
+func (m *ComponentMutation) SetMetadata(s schema.Metadata) {
+	m.metadata = &s
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *ComponentMutation) Metadata() (r schema.Metadata, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the Component entity.
+// If the Component object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ComponentMutation) OldMetadata(ctx context.Context) (v schema.Metadata, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *ComponentMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[component.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *ComponentMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[component.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *ComponentMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, component.FieldMetadata)
+}
+
 // AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by ids.
 func (m *ComponentMutation) AddVulnerabilityIDs(ids ...int) {
 	if m.vulnerabilities == nil {
@@ -2788,7 +3067,7 @@ func (m *ComponentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ComponentMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, component.FieldName)
 	}
@@ -2803,6 +3082,9 @@ func (m *ComponentMutation) Fields() []string {
 	}
 	if m.url != nil {
 		fields = append(fields, component.FieldURL)
+	}
+	if m.metadata != nil {
+		fields = append(fields, component.FieldMetadata)
 	}
 	return fields
 }
@@ -2822,6 +3104,8 @@ func (m *ComponentMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case component.FieldURL:
 		return m.URL()
+	case component.FieldMetadata:
+		return m.Metadata()
 	}
 	return nil, false
 }
@@ -2841,6 +3125,8 @@ func (m *ComponentMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldDescription(ctx)
 	case component.FieldURL:
 		return m.OldURL(ctx)
+	case component.FieldMetadata:
+		return m.OldMetadata(ctx)
 	}
 	return nil, fmt.Errorf("unknown Component field %s", name)
 }
@@ -2885,6 +3171,13 @@ func (m *ComponentMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetURL(v)
 		return nil
+	case component.FieldMetadata:
+		v, ok := value.(schema.Metadata)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Component field %s", name)
 }
@@ -2921,6 +3214,9 @@ func (m *ComponentMutation) ClearedFields() []string {
 	if m.FieldCleared(component.FieldURL) {
 		fields = append(fields, component.FieldURL)
 	}
+	if m.FieldCleared(component.FieldMetadata) {
+		fields = append(fields, component.FieldMetadata)
+	}
 	return fields
 }
 
@@ -2940,6 +3236,9 @@ func (m *ComponentMutation) ClearField(name string) error {
 		return nil
 	case component.FieldURL:
 		m.ClearURL()
+		return nil
+	case component.FieldMetadata:
+		m.ClearMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown Component nullable field %s", name)
@@ -2963,6 +3262,9 @@ func (m *ComponentMutation) ResetField(name string) error {
 		return nil
 	case component.FieldURL:
 		m.ResetURL()
+		return nil
+	case component.FieldMetadata:
+		m.ResetMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown Component field %s", name)
@@ -11277,6 +11579,7 @@ type TestCaseMutation struct {
 	message       *string
 	elapsed       *float64
 	addelapsed    *float64
+	metadata      *schema.Metadata
 	clearedFields map[string]struct{}
 	run           *int
 	clearedrun    bool
@@ -11528,6 +11831,55 @@ func (m *TestCaseMutation) ResetElapsed() {
 	m.addelapsed = nil
 }
 
+// SetMetadata sets the "metadata" field.
+func (m *TestCaseMutation) SetMetadata(s schema.Metadata) {
+	m.metadata = &s
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *TestCaseMutation) Metadata() (r schema.Metadata, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the TestCase entity.
+// If the TestCase object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TestCaseMutation) OldMetadata(ctx context.Context) (v schema.Metadata, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *TestCaseMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[testcase.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *TestCaseMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[testcase.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *TestCaseMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, testcase.FieldMetadata)
+}
+
 // SetRunID sets the "run" edge to the TestRun entity by id.
 func (m *TestCaseMutation) SetRunID(id int) {
 	m.run = &id
@@ -11586,7 +11938,7 @@ func (m *TestCaseMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TestCaseMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, testcase.FieldName)
 	}
@@ -11598,6 +11950,9 @@ func (m *TestCaseMutation) Fields() []string {
 	}
 	if m.elapsed != nil {
 		fields = append(fields, testcase.FieldElapsed)
+	}
+	if m.metadata != nil {
+		fields = append(fields, testcase.FieldMetadata)
 	}
 	return fields
 }
@@ -11615,6 +11970,8 @@ func (m *TestCaseMutation) Field(name string) (ent.Value, bool) {
 		return m.Message()
 	case testcase.FieldElapsed:
 		return m.Elapsed()
+	case testcase.FieldMetadata:
+		return m.Metadata()
 	}
 	return nil, false
 }
@@ -11632,6 +11989,8 @@ func (m *TestCaseMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldMessage(ctx)
 	case testcase.FieldElapsed:
 		return m.OldElapsed(ctx)
+	case testcase.FieldMetadata:
+		return m.OldMetadata(ctx)
 	}
 	return nil, fmt.Errorf("unknown TestCase field %s", name)
 }
@@ -11668,6 +12027,13 @@ func (m *TestCaseMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetElapsed(v)
+		return nil
+	case testcase.FieldMetadata:
+		v, ok := value.(schema.Metadata)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
 		return nil
 	}
 	return fmt.Errorf("unknown TestCase field %s", name)
@@ -11713,7 +12079,11 @@ func (m *TestCaseMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *TestCaseMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(testcase.FieldMetadata) {
+		fields = append(fields, testcase.FieldMetadata)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -11726,6 +12096,11 @@ func (m *TestCaseMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *TestCaseMutation) ClearField(name string) error {
+	switch name {
+	case testcase.FieldMetadata:
+		m.ClearMetadata()
+		return nil
+	}
 	return fmt.Errorf("unknown TestCase nullable field %s", name)
 }
 
@@ -11744,6 +12119,9 @@ func (m *TestCaseMutation) ResetField(name string) error {
 		return nil
 	case testcase.FieldElapsed:
 		m.ResetElapsed()
+		return nil
+	case testcase.FieldMetadata:
+		m.ResetMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown TestCase field %s", name)
@@ -11833,6 +12211,7 @@ type TestRunMutation struct {
 	id             *int
 	tool           *string
 	time           *time.Time
+	metadata       *schema.Metadata
 	clearedFields  map[string]struct{}
 	release        *int
 	clearedrelease bool
@@ -11997,6 +12376,55 @@ func (m *TestRunMutation) ResetTime() {
 	m.time = nil
 }
 
+// SetMetadata sets the "metadata" field.
+func (m *TestRunMutation) SetMetadata(s schema.Metadata) {
+	m.metadata = &s
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *TestRunMutation) Metadata() (r schema.Metadata, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the TestRun entity.
+// If the TestRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TestRunMutation) OldMetadata(ctx context.Context) (v schema.Metadata, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *TestRunMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[testrun.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *TestRunMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[testrun.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *TestRunMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, testrun.FieldMetadata)
+}
+
 // SetReleaseID sets the "release" edge to the Release entity by id.
 func (m *TestRunMutation) SetReleaseID(id int) {
 	m.release = &id
@@ -12148,12 +12576,15 @@ func (m *TestRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TestRunMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.tool != nil {
 		fields = append(fields, testrun.FieldTool)
 	}
 	if m.time != nil {
 		fields = append(fields, testrun.FieldTime)
+	}
+	if m.metadata != nil {
+		fields = append(fields, testrun.FieldMetadata)
 	}
 	return fields
 }
@@ -12167,6 +12598,8 @@ func (m *TestRunMutation) Field(name string) (ent.Value, bool) {
 		return m.Tool()
 	case testrun.FieldTime:
 		return m.Time()
+	case testrun.FieldMetadata:
+		return m.Metadata()
 	}
 	return nil, false
 }
@@ -12180,6 +12613,8 @@ func (m *TestRunMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldTool(ctx)
 	case testrun.FieldTime:
 		return m.OldTime(ctx)
+	case testrun.FieldMetadata:
+		return m.OldMetadata(ctx)
 	}
 	return nil, fmt.Errorf("unknown TestRun field %s", name)
 }
@@ -12202,6 +12637,13 @@ func (m *TestRunMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTime(v)
+		return nil
+	case testrun.FieldMetadata:
+		v, ok := value.(schema.Metadata)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
 		return nil
 	}
 	return fmt.Errorf("unknown TestRun field %s", name)
@@ -12232,7 +12674,11 @@ func (m *TestRunMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *TestRunMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(testrun.FieldMetadata) {
+		fields = append(fields, testrun.FieldMetadata)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -12245,6 +12691,11 @@ func (m *TestRunMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *TestRunMutation) ClearField(name string) error {
+	switch name {
+	case testrun.FieldMetadata:
+		m.ClearMetadata()
+		return nil
+	}
 	return fmt.Errorf("unknown TestRun nullable field %s", name)
 }
 
@@ -12257,6 +12708,9 @@ func (m *TestRunMutation) ResetField(name string) error {
 		return nil
 	case testrun.FieldTime:
 		m.ResetTime()
+		return nil
+	case testrun.FieldMetadata:
+		m.ResetMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown TestRun field %s", name)
@@ -12396,6 +12850,7 @@ type VulnerabilityMutation struct {
 	severity          *vulnerability.Severity
 	published         *time.Time
 	modified          *time.Time
+	metadata          *schema.Metadata
 	clearedFields     map[string]struct{}
 	components        map[int]struct{}
 	removedcomponents map[int]struct{}
@@ -12814,6 +13269,55 @@ func (m *VulnerabilityMutation) ResetModified() {
 	delete(m.clearedFields, vulnerability.FieldModified)
 }
 
+// SetMetadata sets the "metadata" field.
+func (m *VulnerabilityMutation) SetMetadata(s schema.Metadata) {
+	m.metadata = &s
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *VulnerabilityMutation) Metadata() (r schema.Metadata, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the Vulnerability entity.
+// If the Vulnerability object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VulnerabilityMutation) OldMetadata(ctx context.Context) (v schema.Metadata, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (m *VulnerabilityMutation) ClearMetadata() {
+	m.metadata = nil
+	m.clearedFields[vulnerability.FieldMetadata] = struct{}{}
+}
+
+// MetadataCleared returns if the "metadata" field was cleared in this mutation.
+func (m *VulnerabilityMutation) MetadataCleared() bool {
+	_, ok := m.clearedFields[vulnerability.FieldMetadata]
+	return ok
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *VulnerabilityMutation) ResetMetadata() {
+	m.metadata = nil
+	delete(m.clearedFields, vulnerability.FieldMetadata)
+}
+
 // AddComponentIDs adds the "components" edge to the Component entity by ids.
 func (m *VulnerabilityMutation) AddComponentIDs(ids ...int) {
 	if m.components == nil {
@@ -12995,7 +13499,7 @@ func (m *VulnerabilityMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *VulnerabilityMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.vid != nil {
 		fields = append(fields, vulnerability.FieldVid)
 	}
@@ -13016,6 +13520,9 @@ func (m *VulnerabilityMutation) Fields() []string {
 	}
 	if m.modified != nil {
 		fields = append(fields, vulnerability.FieldModified)
+	}
+	if m.metadata != nil {
+		fields = append(fields, vulnerability.FieldMetadata)
 	}
 	return fields
 }
@@ -13039,6 +13546,8 @@ func (m *VulnerabilityMutation) Field(name string) (ent.Value, bool) {
 		return m.Published()
 	case vulnerability.FieldModified:
 		return m.Modified()
+	case vulnerability.FieldMetadata:
+		return m.Metadata()
 	}
 	return nil, false
 }
@@ -13062,6 +13571,8 @@ func (m *VulnerabilityMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldPublished(ctx)
 	case vulnerability.FieldModified:
 		return m.OldModified(ctx)
+	case vulnerability.FieldMetadata:
+		return m.OldMetadata(ctx)
 	}
 	return nil, fmt.Errorf("unknown Vulnerability field %s", name)
 }
@@ -13120,6 +13631,13 @@ func (m *VulnerabilityMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetModified(v)
 		return nil
+	case vulnerability.FieldMetadata:
+		v, ok := value.(schema.Metadata)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Vulnerability field %s", name)
 }
@@ -13177,6 +13695,9 @@ func (m *VulnerabilityMutation) ClearedFields() []string {
 	if m.FieldCleared(vulnerability.FieldModified) {
 		fields = append(fields, vulnerability.FieldModified)
 	}
+	if m.FieldCleared(vulnerability.FieldMetadata) {
+		fields = append(fields, vulnerability.FieldMetadata)
+	}
 	return fields
 }
 
@@ -13202,6 +13723,9 @@ func (m *VulnerabilityMutation) ClearField(name string) error {
 		return nil
 	case vulnerability.FieldModified:
 		m.ClearModified()
+		return nil
+	case vulnerability.FieldMetadata:
+		m.ClearMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown Vulnerability nullable field %s", name)
@@ -13231,6 +13755,9 @@ func (m *VulnerabilityMutation) ResetField(name string) error {
 		return nil
 	case vulnerability.FieldModified:
 		m.ResetModified()
+		return nil
+	case vulnerability.FieldMetadata:
+		m.ResetMetadata()
 		return nil
 	}
 	return fmt.Errorf("unknown Vulnerability field %s", name)

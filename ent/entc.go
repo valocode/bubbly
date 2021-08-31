@@ -31,6 +31,12 @@ func main() {
 		entgql.WithNaming("snake"),
 		entgql.WithWhereFilters(true),
 		entgql.WithOrderBy(true),
+		entgql.WithMapScalarFunc(func(f *gen.Field, o gen.Op) string {
+			if f.StructField() == "Metadata" {
+				return "Map"
+			}
+			return ""
+		}),
 	)
 	if err != nil {
 		log.Fatalf("creating entgql extension: %v", err)

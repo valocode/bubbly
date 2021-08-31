@@ -10,8 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
+
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/releasecomponent"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/vulnerability"
 )
 
@@ -73,6 +75,12 @@ func (cc *ComponentCreate) SetNillableURL(s *string) *ComponentCreate {
 	if s != nil {
 		cc.SetURL(*s)
 	}
+	return cc
+}
+
+// SetMetadata sets the "metadata" field.
+func (cc *ComponentCreate) SetMetadata(s schema.Metadata) *ComponentCreate {
+	cc.mutation.SetMetadata(s)
 	return cc
 }
 
@@ -285,6 +293,14 @@ func (cc *ComponentCreate) createSpec() (*Component, *sqlgraph.CreateSpec) {
 			Column: component.FieldURL,
 		})
 		_node.URL = value
+	}
+	if value, ok := cc.mutation.Metadata(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: component.FieldMetadata,
+		})
+		_node.Metadata = value
 	}
 	if nodes := cc.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -3,10 +3,12 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 )
@@ -24,6 +26,8 @@ type TestCase struct {
 	Message string `json:"message,omitempty"`
 	// Elapsed holds the value of the "elapsed" field.
 	Elapsed float64 `json:"elapsed,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata schema.Metadata `json:"metadata,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the TestCaseQuery when eager-loading is set.
 	Edges         TestCaseEdges `json:"edges"`
@@ -58,6 +62,8 @@ func (*TestCase) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case testcase.FieldMetadata:
+			values[i] = new([]byte)
 		case testcase.FieldResult:
 			values[i] = new(sql.NullBool)
 		case testcase.FieldElapsed:
@@ -113,6 +119,14 @@ func (tc *TestCase) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				tc.Elapsed = value.Float64
 			}
+		case testcase.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &tc.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
+			}
 		case testcase.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field test_case_run", value)
@@ -161,6 +175,8 @@ func (tc *TestCase) String() string {
 	builder.WriteString(tc.Message)
 	builder.WriteString(", elapsed=")
 	builder.WriteString(fmt.Sprintf("%v", tc.Elapsed))
+	builder.WriteString(", metadata=")
+	builder.WriteString(fmt.Sprintf("%v", tc.Metadata))
 	builder.WriteByte(')')
 	return builder.String()
 }

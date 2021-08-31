@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testrun"
 )
 
@@ -22,6 +24,8 @@ type TestRun struct {
 	Tool string `json:"tool,omitempty"`
 	// Time holds the value of the "time" field.
 	Time time.Time `json:"time,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata schema.Metadata `json:"metadata,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the TestRunQuery when eager-loading is set.
 	Edges                  TestRunEdges `json:"edges"`
@@ -84,6 +88,8 @@ func (*TestRun) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case testrun.FieldMetadata:
+			values[i] = new([]byte)
 		case testrun.FieldID:
 			values[i] = new(sql.NullInt64)
 		case testrun.FieldTool:
@@ -126,6 +132,14 @@ func (tr *TestRun) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field time", values[i])
 			} else if value.Valid {
 				tr.Time = value.Time
+			}
+		case testrun.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &tr.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
 			}
 		case testrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -188,6 +202,8 @@ func (tr *TestRun) String() string {
 	builder.WriteString(tr.Tool)
 	builder.WriteString(", time=")
 	builder.WriteString(tr.Time.Format(time.ANSIC))
+	builder.WriteString(", metadata=")
+	builder.WriteString(fmt.Sprintf("%v", tr.Metadata))
 	builder.WriteByte(')')
 	return builder.String()
 }

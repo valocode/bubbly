@@ -21,6 +21,8 @@ const (
 	FieldSeverity = "severity"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
 	// EdgeScan holds the string denoting the scan edge name in mutations.
 	EdgeScan = "scan"
 	// Table holds the table name of the codeissue in the database.
@@ -41,6 +43,7 @@ var Columns = []string{
 	FieldMessage,
 	FieldSeverity,
 	FieldType,
+	FieldMetadata,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "code_issue"

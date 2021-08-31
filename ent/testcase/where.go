@@ -431,6 +431,20 @@ func ElapsedLTE(v float64) predicate.TestCase {
 	})
 }
 
+// MetadataIsNil applies the IsNil predicate on the "metadata" field.
+func MetadataIsNil() predicate.TestCase {
+	return predicate.TestCase(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldMetadata)))
+	})
+}
+
+// MetadataNotNil applies the NotNil predicate on the "metadata" field.
+func MetadataNotNil() predicate.TestCase {
+	return predicate.TestCase(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldMetadata)))
+	})
+}
+
 // HasRun applies the HasEdge predicate on the "run" edge.
 func HasRun() predicate.TestCase {
 	return predicate.TestCase(func(s *sql.Selector) {

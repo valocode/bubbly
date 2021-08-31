@@ -3,12 +3,15 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/codeissue"
+
 	"github.com/valocode/bubbly/ent/codescan"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // CodeIssue is the model entity for the CodeIssue schema.
@@ -24,6 +27,8 @@ type CodeIssue struct {
 	Severity codeissue.Severity `json:"severity,omitempty"`
 	// Type holds the value of the "type" field.
 	Type codeissue.Type `json:"type,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata schema.Metadata `json:"metadata,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CodeIssueQuery when eager-loading is set.
 	Edges           CodeIssueEdges `json:"edges"`
@@ -58,6 +63,8 @@ func (*CodeIssue) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case codeissue.FieldMetadata:
+			values[i] = new([]byte)
 		case codeissue.FieldID:
 			values[i] = new(sql.NullInt64)
 		case codeissue.FieldRuleID, codeissue.FieldMessage, codeissue.FieldSeverity, codeissue.FieldType:
@@ -109,6 +116,14 @@ func (ci *CodeIssue) assignValues(columns []string, values []interface{}) error 
 			} else if value.Valid {
 				ci.Type = codeissue.Type(value.String)
 			}
+		case codeissue.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &ci.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
+			}
 		case codeissue.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field code_issue_scan", value)
@@ -157,6 +172,8 @@ func (ci *CodeIssue) String() string {
 	builder.WriteString(fmt.Sprintf("%v", ci.Severity))
 	builder.WriteString(", type=")
 	builder.WriteString(fmt.Sprintf("%v", ci.Type))
+	builder.WriteString(", metadata=")
+	builder.WriteString(fmt.Sprintf("%v", ci.Metadata))
 	builder.WriteByte(')')
 	return builder.String()
 }
