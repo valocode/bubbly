@@ -142,8 +142,11 @@ func (s *Server) postRelease(c echo.Context) error {
 	if err := binder.BindBody(c, &req); err != nil {
 		return err
 	}
-	_, err := s.store.CreateRelease(&req)
+	h, err := store.NewHandler(store.WithStore(s.store))
 	if err != nil {
+		return err
+	}
+	if _, err := h.CreateRelease(&req); err != nil {
 		return err
 	}
 	return nil
@@ -155,8 +158,11 @@ func (s *Server) postArtifact(c echo.Context) error {
 	if err := binder.BindBody(c, &req); err != nil {
 		return err
 	}
-	_, err := s.store.LogArtifact(&req)
+	h, err := store.NewHandler(store.WithStore(s.store))
 	if err != nil {
+		return err
+	}
+	if _, err := h.LogArtifact(&req); err != nil {
 		return err
 	}
 	return nil
@@ -168,8 +174,11 @@ func (s *Server) postCodeScan(c echo.Context) error {
 	if err := binder.BindBody(c, &req); err != nil {
 		return err
 	}
-	_, err := s.store.SaveCodeScan(&req)
+	h, err := store.NewHandler(store.WithStore(s.store))
 	if err != nil {
+		return err
+	}
+	if _, err := h.SaveCodeScan(&req); err != nil {
 		return err
 	}
 	return nil
@@ -181,8 +190,11 @@ func (s *Server) postTestRun(c echo.Context) error {
 	if err := binder.BindBody(c, &req); err != nil {
 		return err
 	}
-	_, err := s.store.SaveTestRun(&req)
+	h, err := store.NewHandler(store.WithStore(s.store))
 	if err != nil {
+		return err
+	}
+	if _, err := h.SaveTestRun(&req); err != nil {
 		return err
 	}
 	return nil
@@ -200,7 +212,11 @@ func (s *Server) getAdapter(c echo.Context) error {
 	if tag != "" {
 		req.Tag = &tag
 	}
-	adapter, err := s.store.GetAdapter(&req)
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	adapter, err := h.GetAdapter(&req)
 	if err != nil {
 		return err
 	}
@@ -213,8 +229,11 @@ func (s *Server) postAdapter(c echo.Context) error {
 	if err := binder.BindBody(c, &req); err != nil {
 		return err
 	}
-	_, err := s.store.SaveAdapter(&req)
+	h, err := store.NewHandler(store.WithStore(s.store))
 	if err != nil {
+		return err
+	}
+	if _, err := h.SaveAdapter(&req); err != nil {
 		return err
 	}
 	return nil

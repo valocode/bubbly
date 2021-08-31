@@ -16,6 +16,7 @@ const (
 	DefaultBubblyDir      = ".bubbly"
 	DefaultReleaseSpec    = "" // default spec is under bubbly dir
 	DefaultReleaseProject = "default"
+	DefaultOrganization   = "bubbly"
 )
 
 // Default Bubbly Server configuration

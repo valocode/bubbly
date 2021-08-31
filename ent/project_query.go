@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/releasepolicy"
@@ -29,9 +30,11 @@ type ProjectQuery struct {
 	fields     []string
 	predicates []predicate.Project
 	// eager-loading edges.
+	withOwner                *OrganizationQuery
 	withRepos                *RepoQuery
 	withVulnerabilityReviews *VulnerabilityReviewQuery
 	withPolicies             *ReleasePolicyQuery
+	withFKs                  bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -66,6 +69,28 @@ func (pq *ProjectQuery) Unique(unique bool) *ProjectQuery {
 func (pq *ProjectQuery) Order(o ...OrderFunc) *ProjectQuery {
 	pq.order = append(pq.order, o...)
 	return pq
+}
+
+// QueryOwner chains the current query on the "owner" edge.
+func (pq *ProjectQuery) QueryOwner() *OrganizationQuery {
+	query := &OrganizationQuery{config: pq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, selector),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, project.OwnerTable, project.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryRepos chains the current query on the "repos" edge.
@@ -315,6 +340,7 @@ func (pq *ProjectQuery) Clone() *ProjectQuery {
 		offset:                   pq.offset,
 		order:                    append([]OrderFunc{}, pq.order...),
 		predicates:               append([]predicate.Project{}, pq.predicates...),
+		withOwner:                pq.withOwner.Clone(),
 		withRepos:                pq.withRepos.Clone(),
 		withVulnerabilityReviews: pq.withVulnerabilityReviews.Clone(),
 		withPolicies:             pq.withPolicies.Clone(),
@@ -322,6 +348,17 @@ func (pq *ProjectQuery) Clone() *ProjectQuery {
 		sql:  pq.sql.Clone(),
 		path: pq.path,
 	}
+}
+
+// WithOwner tells the query-builder to eager-load the nodes that are connected to
+// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *ProjectQuery) WithOwner(opts ...func(*OrganizationQuery)) *ProjectQuery {
+	query := &OrganizationQuery{config: pq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withOwner = query
+	return pq
 }
 
 // WithRepos tells the query-builder to eager-load the nodes that are connected to
@@ -421,13 +458,21 @@ func (pq *ProjectQuery) prepareQuery(ctx context.Context) error {
 func (pq *ProjectQuery) sqlAll(ctx context.Context) ([]*Project, error) {
 	var (
 		nodes       = []*Project{}
+		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
+			pq.withOwner != nil,
 			pq.withRepos != nil,
 			pq.withVulnerabilityReviews != nil,
 			pq.withPolicies != nil,
 		}
 	)
+	if pq.withOwner != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, project.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Project{config: pq.config}
 		nodes = append(nodes, node)
@@ -446,6 +491,35 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context) ([]*Project, error) {
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+
+	if query := pq.withOwner; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Project)
+		for i := range nodes {
+			if nodes[i].project_owner == nil {
+				continue
+			}
+			fk := *nodes[i].project_owner
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(organization.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "project_owner" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Owner = n
+			}
+		}
 	}
 
 	if query := pq.withRepos; query != nil {

@@ -7,25 +7,25 @@ import (
 	"github.com/valocode/bubbly/test"
 )
 
-func (s *Store) PopulateStoreWithDummyData() error {
+func (h *Handler) PopulateStoreWithDummyData() error {
 	data := test.CreateDummyData()
 	for _, repo := range data {
 		for _, release := range repo.Releases {
-			if _, err := s.CreateRelease(release.Release); err != nil {
+			if _, err := h.CreateRelease(release.Release); err != nil {
 				return err
 			}
 			for _, art := range release.Artifacts {
-				if _, err := s.LogArtifact(art); err != nil {
+				if _, err := h.LogArtifact(art); err != nil {
 					return err
 				}
 			}
 			for _, scan := range release.CodeScans {
-				if _, err := s.SaveCodeScan(scan); err != nil {
+				if _, err := h.SaveCodeScan(scan); err != nil {
 					return err
 				}
 			}
 			for _, run := range release.TestRuns {
-				if _, err := s.SaveTestRun(run); err != nil {
+				if _, err := h.SaveTestRun(run); err != nil {
 					return err
 				}
 			}
@@ -34,7 +34,7 @@ func (s *Store) PopulateStoreWithDummyData() error {
 	return nil
 }
 
-func (s *Store) PopulateStoreWithPolicies(basedir string) error {
+func (h *Handler) PopulateStoreWithPolicies(basedir string) error {
 	reqs, err := test.ParsePolicies(basedir)
 	if err != nil {
 		return err
@@ -43,7 +43,7 @@ func (s *Store) PopulateStoreWithPolicies(basedir string) error {
 		req.Affects = &api.ReleasePolicyAffects{
 			Projects: []string{"demo"},
 		}
-		if _, err := s.SaveReleasePolicy(req); err != nil {
+		if _, err := h.SaveReleasePolicy(req); err != nil {
 			return err
 		}
 		fmt.Println("saved policy: ", *req.Policy.Name)

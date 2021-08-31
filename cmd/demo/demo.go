@@ -44,7 +44,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			fmt.Println("Initializing store...")
-			store, err := store.New(bCtx)
+			s, err := store.New(bCtx)
 			if err != nil {
 				return fmt.Errorf("error initializing store: %w", err)
 			}
@@ -54,17 +54,21 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			fmt.Println("Populating the store with dummy data...")
 
 			fmt.Println("Creating dummy data...")
-			if err := store.PopulateStoreWithPolicies("."); err != nil {
+			h, err := store.NewHandler(store.WithStore(s))
+			if err != nil {
 				return err
 			}
-			if err := store.PopulateStoreWithDummyData(); err != nil {
+			if err := h.PopulateStoreWithPolicies("."); err != nil {
+				return err
+			}
+			if err := h.PopulateStoreWithDummyData(); err != nil {
 				return err
 			}
 			fmt.Println("Done!")
 			fmt.Println("")
 
 			fmt.Printf("Starting HTTP server on %s:%s\n", bCtx.ServerConfig.Host, bCtx.ServerConfig.Port)
-			if err := server.NewWithStore(bCtx, store).Start(); err != nil {
+			if err := server.NewWithStore(bCtx, s).Start(); err != nil {
 				return err
 			}
 			return nil

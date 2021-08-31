@@ -520,6 +520,64 @@ func (gc *GitCommitModelUpdate) SetID(value int) *GitCommitModelUpdate {
 	return gc
 }
 
+type OrganizationModelCreate struct {
+	Name *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+}
+
+func NewOrganizationModelCreate() *OrganizationModelCreate {
+	return &OrganizationModelCreate{}
+}
+
+func (o *OrganizationModelCreate) SetName(value string) *OrganizationModelCreate {
+	o.Name = &value
+	return o
+}
+
+func (o *OrganizationCreate) SetModelCreate(model *OrganizationModelCreate) *OrganizationCreate {
+	o.mutation.SetModelCreate(model)
+	return o
+}
+
+func (o *OrganizationUpdateOne) SetModelCreate(model *OrganizationModelCreate) *OrganizationUpdateOne {
+	o.mutation.SetModelCreate(model)
+	return o
+}
+
+func (o *OrganizationMutation) SetModelCreate(model *OrganizationModelCreate) *OrganizationMutation {
+	if model.Name != nil {
+		o.SetName(*model.Name)
+	}
+	return o
+}
+
+type OrganizationModelRead struct {
+	Name *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	ID   *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewOrganizationModelRead() *OrganizationModelRead {
+	return &OrganizationModelRead{}
+}
+
+func (o *OrganizationModelRead) FromEnt(value *Organization) *OrganizationModelRead {
+	o.Name = &value.Name
+	o.ID = &value.ID
+	return o
+}
+
+type OrganizationModelUpdate struct {
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewOrganizationModelUpdate() *OrganizationModelUpdate {
+	return &OrganizationModelUpdate{}
+}
+
+func (o *OrganizationModelUpdate) SetID(value int) *OrganizationModelUpdate {
+	o.ID = &value
+	return o
+}
+
 type ProjectModelCreate struct {
 	Name *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 )
 
@@ -19,11 +20,14 @@ type Project struct {
 	Name string `json:"name,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ProjectQuery when eager-loading is set.
-	Edges ProjectEdges `json:"edges"`
+	Edges         ProjectEdges `json:"edges"`
+	project_owner *int
 }
 
 // ProjectEdges holds the relations/edges for other nodes in the graph.
 type ProjectEdges struct {
+	// Owner holds the value of the owner edge.
+	Owner *Organization `json:"owner,omitempty"`
 	// Repos holds the value of the repos edge.
 	Repos []*Repo `json:"repos,omitempty"`
 	// VulnerabilityReviews holds the value of the vulnerability_reviews edge.
@@ -32,13 +36,27 @@ type ProjectEdges struct {
 	Policies []*ReleasePolicy `json:"policies,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
+}
+
+// OwnerOrErr returns the Owner value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ProjectEdges) OwnerOrErr() (*Organization, error) {
+	if e.loadedTypes[0] {
+		if e.Owner == nil {
+			// The edge owner was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: organization.Label}
+		}
+		return e.Owner, nil
+	}
+	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // ReposOrErr returns the Repos value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) ReposOrErr() ([]*Repo, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.Repos, nil
 	}
 	return nil, &NotLoadedError{edge: "repos"}
@@ -47,7 +65,7 @@ func (e ProjectEdges) ReposOrErr() ([]*Repo, error) {
 // VulnerabilityReviewsOrErr returns the VulnerabilityReviews value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.VulnerabilityReviews, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
@@ -56,7 +74,7 @@ func (e ProjectEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error
 // PoliciesOrErr returns the Policies value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) PoliciesOrErr() ([]*ReleasePolicy, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.Policies, nil
 	}
 	return nil, &NotLoadedError{edge: "policies"}
@@ -71,6 +89,8 @@ func (*Project) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case project.FieldName:
 			values[i] = new(sql.NullString)
+		case project.ForeignKeys[0]: // project_owner
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Project", columns[i])
 		}
@@ -98,9 +118,21 @@ func (pr *Project) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				pr.Name = value.String
 			}
+		case project.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field project_owner", value)
+			} else if value.Valid {
+				pr.project_owner = new(int)
+				*pr.project_owner = int(value.Int64)
+			}
 		}
 	}
 	return nil
+}
+
+// QueryOwner queries the "owner" edge of the Project entity.
+func (pr *Project) QueryOwner() *OrganizationQuery {
+	return (&ProjectClient{config: pr.config}).QueryOwner(pr)
 }
 
 // QueryRepos queries the "repos" edge of the Project entity.

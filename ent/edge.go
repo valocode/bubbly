@@ -132,6 +132,30 @@ func (lu *LicenseUse) License(ctx context.Context) (*License, error) {
 	return result, err
 }
 
+func (o *Organization) Projects(ctx context.Context) ([]*Project, error) {
+	result, err := o.Edges.ProjectsOrErr()
+	if IsNotLoaded(err) {
+		result, err = o.QueryProjects().All(ctx)
+	}
+	return result, err
+}
+
+func (o *Organization) Repos(ctx context.Context) ([]*Repo, error) {
+	result, err := o.Edges.ReposOrErr()
+	if IsNotLoaded(err) {
+		result, err = o.QueryRepos().All(ctx)
+	}
+	return result, err
+}
+
+func (pr *Project) Owner(ctx context.Context) (*Organization, error) {
+	result, err := pr.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = pr.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
 func (pr *Project) Repos(ctx context.Context) ([]*Repo, error) {
 	result, err := pr.Edges.ReposOrErr()
 	if IsNotLoaded(err) {
@@ -426,6 +450,14 @@ func (rv *ReleaseVulnerability) Scan(ctx context.Context) (*CodeScan, error) {
 		result, err = rv.QueryScan().Only(ctx)
 	}
 	return result, MaskNotFound(err)
+}
+
+func (r *Repo) Owner(ctx context.Context) (*Organization, error) {
+	result, err := r.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = r.QueryOwner().Only(ctx)
+	}
+	return result, err
 }
 
 func (r *Repo) Project(ctx context.Context) (*Project, error) {

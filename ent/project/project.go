@@ -9,6 +9,8 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// EdgeRepos holds the string denoting the repos edge name in mutations.
 	EdgeRepos = "repos"
 	// EdgeVulnerabilityReviews holds the string denoting the vulnerability_reviews edge name in mutations.
@@ -17,6 +19,13 @@ const (
 	EdgePolicies = "policies"
 	// Table holds the table name of the project in the database.
 	Table = "project"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "project"
+	// OwnerInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OwnerInverseTable = "organization"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "project_owner"
 	// ReposTable is the table that holds the repos relation/edge.
 	ReposTable = "repo"
 	// ReposInverseTable is the table name for the Repo entity.
@@ -42,6 +51,12 @@ var Columns = []string{
 	FieldName,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "project"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"project_owner",
+}
+
 var (
 	// VulnerabilityReviewsPrimaryKey and VulnerabilityReviewsColumn2 are the table columns denoting the
 	// primary key for the vulnerability_reviews relation (M2M).
@@ -55,6 +70,11 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}

@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/repo"
@@ -26,6 +27,17 @@ type ProjectCreate struct {
 func (pc *ProjectCreate) SetName(s string) *ProjectCreate {
 	pc.mutation.SetName(s)
 	return pc
+}
+
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (pc *ProjectCreate) SetOwnerID(id int) *ProjectCreate {
+	pc.mutation.SetOwnerID(id)
+	return pc
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (pc *ProjectCreate) SetOwner(o *Organization) *ProjectCreate {
+	return pc.SetOwnerID(o.ID)
 }
 
 // AddRepoIDs adds the "repos" edge to the Repo entity by IDs.
@@ -151,6 +163,9 @@ func (pc *ProjectCreate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
 		}
 	}
+	if _, ok := pc.mutation.OwnerID(); !ok {
+		return &ValidationError{Name: "owner", err: errors.New("ent: missing required edge \"owner\"")}
+	}
 	return nil
 }
 
@@ -185,6 +200,26 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 			Column: project.FieldName,
 		})
 		_node.Name = value
+	}
+	if nodes := pc.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   project.OwnerTable,
+			Columns: []string{project.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.project_owner = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.ReposIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

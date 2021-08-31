@@ -11,6 +11,8 @@ const (
 	FieldName = "name"
 	// FieldDefaultBranch holds the string denoting the default_branch field in the database.
 	FieldDefaultBranch = "default_branch"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// EdgeProject holds the string denoting the project edge name in mutations.
 	EdgeProject = "project"
 	// EdgeHead holds the string denoting the head edge name in mutations.
@@ -23,6 +25,13 @@ const (
 	EdgePolicies = "policies"
 	// Table holds the table name of the repo in the database.
 	Table = "repo"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "repo"
+	// OwnerInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OwnerInverseTable = "organization"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "repo_owner"
 	// ProjectTable is the table that holds the project relation/edge.
 	ProjectTable = "repo"
 	// ProjectInverseTable is the table name for the Project entity.
@@ -66,6 +75,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "repo"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
+	"repo_owner",
 	"repo_project",
 }
 

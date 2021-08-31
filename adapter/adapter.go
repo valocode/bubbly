@@ -22,19 +22,7 @@ import (
 const (
 	DefaultTag = "default"
 
-	adapterQuery = `
-	{
-		"code_scan": data.adapter.code_scan,
-		"code_issue": data.adapter.code_issue,
-	}`
-	// adapterQuery = `
-	// {
-	// 	"code_scan": data.adapter.code_scan,
-	// 	"code_issue": data.adapter.code_issue,
-	// 	"component": data.adapter.component,
-	// 	"test_run": data.adapter.test_run,
-	// 	"test_case": data.adapter.test_case,
-	// }`
+	adapterQuery   = "data.adapter"
 	adapterModule  = "adapter"
 	adapterPackage = "data.adapter"
 

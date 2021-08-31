@@ -9,16 +9,16 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-func (s *Store) CreateRelease(req *api.ReleaseCreateRequest) (*ent.Release, error) {
-	return s.createRelease(req)
+func (h *Handler) CreateRelease(req *api.ReleaseCreateRequest) (*ent.Release, error) {
+	return h.createRelease(req)
 }
 
-func (s *Store) LogArtifact(req *api.ArtifactLogRequest) (*ent.Artifact, error) {
-	return s.logArtifact(req)
+func (h *Handler) LogArtifact(req *api.ArtifactLogRequest) (*ent.Artifact, error) {
+	return h.logArtifact(req)
 }
 
-func (s *Store) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, error) {
-	if err := s.validator.Struct(req); err != nil {
+func (h *Handler) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, error) {
+	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "release")
 	}
 
@@ -30,12 +30,12 @@ func (s *Store) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, erro
 		commitTag = *req.Commit.Tag
 	}
 	// Check if the release exists already
-	dbRelease, err := s.client.Release.Query().Where(
+	dbRelease, err := h.client.Release.Query().Where(
 		release.Name(*req.Release.Name), release.Version(*req.Release.Version),
 		release.HasCommitWith(
 			gitcommit.Hash(*req.Commit.Hash),
 		),
-	).Only(s.ctx)
+	).Only(h.ctx)
 	if err != nil {
 		if !ent.IsNotFound(err) {
 			return nil, HandleEntError(err, "release")
@@ -49,41 +49,43 @@ func (s *Store) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, erro
 	//
 	// Create the release, first the project, then repo, then commit
 	//
-	dbProject, err := s.client.Project.Query().Where(
+	dbProject, err := h.client.Project.Query().Where(
 		project.Name(*req.Project.Name),
-	).Only(s.ctx)
+	).Only(h.ctx)
 	if err != nil {
 		if !ent.IsNotFound(err) {
 			return nil, HandleEntError(err, "repo")
 		}
-		dbProject, err = s.client.Project.Create().
+		dbProject, err = h.client.Project.Create().
 			SetModelCreate(req.Project).
-			Save(s.ctx)
+			SetOwnerID(h.orgID).
+			Save(h.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "repo")
 		}
 	}
 
-	dbRepo, err := s.client.Repo.Query().Where(
+	dbRepo, err := h.client.Repo.Query().Where(
 		repo.Name(*req.Repo.Name),
-	).Only(s.ctx)
+	).Only(h.ctx)
 	if err != nil {
 		if !ent.IsNotFound(err) {
 			return nil, HandleEntError(err, "repo")
 		}
-		dbRepo, err = s.client.Repo.Create().
+		dbRepo, err = h.client.Repo.Create().
 			SetModelCreate(req.Repo).
+			SetOwnerID(h.orgID).
 			SetProject(dbProject).
-			Save(s.ctx)
+			Save(h.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "repo")
 		}
 	}
 
-	dbCommit, err := s.client.GitCommit.Query().Where(
+	dbCommit, err := h.client.GitCommit.Query().Where(
 		gitcommit.Hash(*req.Commit.Hash),
 		gitcommit.HasRepoWith(repo.ID(dbRepo.ID)),
-	).Only(s.ctx)
+	).Only(h.ctx)
 	if err != nil {
 		if !ent.IsNotFound(err) {
 			return nil, HandleEntError(err, "commit")
@@ -91,23 +93,23 @@ func (s *Store) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, erro
 		if req.Commit.Tag != nil {
 			commitTag = *req.Commit.Tag
 		}
-		dbCommit, err = s.client.GitCommit.Create().
+		dbCommit, err = h.client.GitCommit.Create().
 			SetHash(*req.Commit.Hash).
 			SetBranch(*req.Commit.Branch).
 			SetTime(*req.Commit.Time).
 			SetTag(commitTag).
 			SetRepo(dbRepo).
-			Save(s.ctx)
+			Save(h.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "commit")
 		}
 	}
 
-	dbRelease, err = s.client.Release.Create().
+	dbRelease, err = h.client.Release.Create().
 		SetCommit(dbCommit).
 		SetName(*req.Release.Name).
 		SetVersion(*req.Release.Version).
-		Save(s.ctx)
+		Save(h.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "release")
 	}
@@ -115,18 +117,18 @@ func (s *Store) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, erro
 	return dbRelease, nil
 }
 
-func (s *Store) logArtifact(req *api.ArtifactLogRequest) (*ent.Artifact, error) {
-	if err := s.validator.Struct(req); err != nil {
+func (h *Handler) logArtifact(req *api.ArtifactLogRequest) (*ent.Artifact, error) {
+	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "artifact")
 	}
-	dbRelease, err := s.releaseFromCommit(req.Commit)
+	dbRelease, err := h.releaseFromCommit(req.Commit)
 	if err != nil {
 		return nil, err
 	}
-	dbArtifact, err := s.client.Artifact.Create().
+	dbArtifact, err := h.client.Artifact.Create().
 		SetModelCreate(req.Artifact).
 		SetRelease(dbRelease).
-		Save(s.ctx)
+		Save(h.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "artifact")
 	}

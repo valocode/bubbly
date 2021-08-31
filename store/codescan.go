@@ -8,26 +8,26 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-func (s *Store) SaveCodeScan(req *api.CodeScanRequest) (*ent.CodeScan, error) {
-	if err := s.validator.Struct(req); err != nil {
+func (h *Handler) SaveCodeScan(req *api.CodeScanRequest) (*ent.CodeScan, error) {
+	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "code scan create")
 	}
-	release, err := s.releaseFromCommit(req.Commit)
+	release, err := h.releaseFromCommit(req.Commit)
 	if err != nil {
 		return nil, err
 	}
-	return s.saveCodeScan(release, req.CodeScan)
+	return h.saveCodeScan(release, req.CodeScan)
 }
 
-func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.CodeScan, error) {
+func (h *Handler) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.CodeScan, error) {
 	var codeScan *ent.CodeScan
-	txErr := s.WithTx(func(tx *ent.Tx) error {
+	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
 
 		var err error
 		codeScan, err = tx.CodeScan.Create().
 			SetModelCreate(&scan.CodeScanModelCreate).
 			SetRelease(release).
-			Save(s.ctx)
+			Save(h.ctx)
 		if err != nil {
 			return HandleEntError(err, "code scan")
 		}
@@ -36,7 +36,7 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 			_, err := tx.CodeIssue.Create().
 				SetModelCreate(&issue.CodeIssueModelCreate).
 				SetScan(codeScan).
-				Save(s.ctx)
+				Save(h.ctx)
 			if err != nil {
 				return HandleEntError(err, "code issue")
 			}
@@ -49,14 +49,14 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 				existingComp *ent.Component
 				err          error
 			)
-			if err := s.validator.Struct(comp); err != nil {
+			if err := h.validator.Struct(comp); err != nil {
 				return HandleValidatorError(err, "release component create")
 			}
 			existingComp, err = tx.Component.Query().Where(
 				component.Vendor(*comp.Vendor),
 				component.Name(*comp.Name),
 				component.Version(*comp.Version),
-			).Only(s.ctx)
+			).Only(h.ctx)
 			if err != nil {
 				if !ent.IsNotFound(err) {
 					return HandleEntError(err, "component")
@@ -64,7 +64,7 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 				// It is not found, so create the component...
 				existingComp, err = tx.Component.Create().
 					SetModelCreate(&comp.ComponentModelCreate).
-					Save(s.ctx)
+					Save(h.ctx)
 				if err != nil {
 					return HandleEntError(err, "component")
 				}
@@ -73,7 +73,7 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 				SetComponent(existingComp).
 				AddScans(codeScan).
 				SetRelease(release).
-				Save(s.ctx)
+				Save(h.ctx)
 			if err != nil {
 				return HandleEntError(err, "release component")
 			}
@@ -85,19 +85,19 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 					existingVuln *ent.Vulnerability
 					err          error
 				)
-				if err := s.validator.Struct(comp); err != nil {
+				if err := h.validator.Struct(comp); err != nil {
 					return HandleValidatorError(err, "release vulnerability create")
 				}
 				existingVuln, err = tx.Vulnerability.Query().Where(
 					vulnerability.Vid(*vuln.Vid),
-				).Only(s.ctx)
+				).Only(h.ctx)
 				if err != nil {
 					if !ent.IsNotFound(err) {
 						return HandleEntError(err, "vulnerability")
 					}
 					// If not found, create!
 					existingVuln, err = tx.Vulnerability.Create().
-						SetModelCreate(&vuln.VulnerabilityModelCreate).Save(s.ctx)
+						SetModelCreate(&vuln.VulnerabilityModelCreate).Save(h.ctx)
 					if err != nil {
 						return HandleEntError(err, "vulnerability")
 					}
@@ -107,7 +107,7 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 					SetVulnerability(existingVuln).
 					SetScan(codeScan).
 					SetComponent(relComp).
-					Save(s.ctx)
+					Save(h.ctx)
 				if err != nil {
 					return HandleEntError(err, "release vulnerability")
 				}
@@ -119,7 +119,7 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 		return nil, txErr
 	}
 	// Once transaction is complete, evaluate the release.
-	_, err := s.EvaluateReleasePolicies(release.ID)
+	_, err := h.EvaluateReleasePolicies(release.ID)
 	if err != nil {
 		return nil, NewServerError(err, "evaluating release policies")
 	}
@@ -127,14 +127,14 @@ func (s *Store) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.Cod
 	return codeScan, nil
 }
 
-func (s *Store) releaseFromCommit(commitHash *string) (*ent.Release, error) {
+func (h *Handler) releaseFromCommit(commitHash *string) (*ent.Release, error) {
 	if commitHash == nil {
 		return nil, NewValidationError(nil, "commit is required")
 	}
-	commit, err := s.client.GitCommit.Query().
+	commit, err := h.client.GitCommit.Query().
 		Where(gitcommit.Hash(*commitHash)).
 		WithRelease().
-		Only(s.ctx)
+		Only(h.ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, NewNotFoundError(nil, "no release for commit %s. Please create one.", *commitHash)

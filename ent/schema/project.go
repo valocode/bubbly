@@ -25,7 +25,6 @@ func (Project) Annotations() []schema.Annotation {
 func (Project) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").NotEmpty().
-			Unique().
 			Annotations(
 				entgql.OrderField("name"),
 			),
@@ -34,6 +33,7 @@ func (Project) Fields() []ent.Field {
 
 func (Project) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("owner", Organization.Type).Unique().Required(),
 		edge.From("repos", Repo.Type).Ref("project"),
 		edge.From("vulnerability_reviews", VulnerabilityReview.Type).Ref("projects"),
 		edge.From("policies", ReleasePolicy.Type).Ref("projects"),
@@ -43,6 +43,7 @@ func (Project) Edges() []ent.Edge {
 func (Project) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("name").
+			Edges("owner").
 			Unique(),
 	}
 }

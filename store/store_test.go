@@ -15,17 +15,19 @@ func TestStore(t *testing.T) {
 	bCtx := env.NewBubblyContext()
 	s, err := New(bCtx)
 	require.NoError(t, err)
+	h, err := NewHandler(WithStore(s))
+	require.NoError(t, err)
 	// Create the "demo" project
-	_, projectErr := s.client.Project.Create().SetName("demo").Save(s.ctx)
+	_, projectErr := h.client.Project.Create().SetName("demo").SetOwnerID(h.orgID).Save(h.ctx)
 	require.NoError(t, projectErr)
 	{
-		pErr := s.PopulateStoreWithPolicies("..")
+		pErr := h.PopulateStoreWithPolicies("..")
 		require.NoError(t, pErr)
-		dErr := s.PopulateStoreWithDummyData()
+		dErr := h.PopulateStoreWithDummyData()
 		require.NoError(t, dErr)
 	}
 	ctx := context.Background()
-	client := s.Client()
+	client := h.Client()
 
 	//
 	// Get the head of the demo repo

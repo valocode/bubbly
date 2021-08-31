@@ -23,6 +23,7 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
@@ -594,12 +595,59 @@ func (lu *LicenseUse) Node(ctx context.Context) (node *Node, err error) {
 	return node, nil
 }
 
+func (o *Organization) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     o.ID,
+		Type:   "Organization",
+		Fields: make([]*Field, 1),
+		Edges:  make([]*Edge, 2),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(o.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(o.ID); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "int",
+		Name:  "id",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Project",
+		Name: "projects",
+	}
+	node.Edges[0].IDs, err = o.QueryProjects().
+		Select(project.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Repo",
+		Name: "repos",
+	}
+	node.Edges[1].IDs, err = o.QueryRepos().
+		Select(repo.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
 func (pr *Project) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     pr.ID,
 		Type:   "Project",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(pr.Name); err != nil {
@@ -619,30 +667,40 @@ func (pr *Project) Node(ctx context.Context) (node *Node, err error) {
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
-		Type: "Repo",
-		Name: "repos",
+		Type: "Organization",
+		Name: "owner",
 	}
-	node.Edges[0].IDs, err = pr.QueryRepos().
-		Select(repo.FieldID).
+	node.Edges[0].IDs, err = pr.QueryOwner().
+		Select(organization.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "VulnerabilityReview",
-		Name: "vulnerability_reviews",
+		Type: "Repo",
+		Name: "repos",
 	}
-	node.Edges[1].IDs, err = pr.QueryVulnerabilityReviews().
-		Select(vulnerabilityreview.FieldID).
+	node.Edges[1].IDs, err = pr.QueryRepos().
+		Select(repo.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
+		Type: "VulnerabilityReview",
+		Name: "vulnerability_reviews",
+	}
+	node.Edges[2].IDs, err = pr.QueryVulnerabilityReviews().
+		Select(vulnerabilityreview.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
 		Type: "ReleasePolicy",
 		Name: "policies",
 	}
-	node.Edges[2].IDs, err = pr.QueryPolicies().
+	node.Edges[3].IDs, err = pr.QueryPolicies().
 		Select(releasepolicy.FieldID).
 		Ints(ctx)
 	if err != nil {
@@ -1209,7 +1267,7 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 		ID:     r.ID,
 		Type:   "Repo",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 5),
+		Edges:  make([]*Edge, 6),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(r.Name); err != nil {
@@ -1237,50 +1295,60 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
-		Type: "Project",
-		Name: "project",
+		Type: "Organization",
+		Name: "owner",
 	}
-	node.Edges[0].IDs, err = r.QueryProject().
-		Select(project.FieldID).
+	node.Edges[0].IDs, err = r.QueryOwner().
+		Select(organization.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "Release",
-		Name: "head",
+		Type: "Project",
+		Name: "project",
 	}
-	node.Edges[1].IDs, err = r.QueryHead().
-		Select(release.FieldID).
+	node.Edges[1].IDs, err = r.QueryProject().
+		Select(project.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
-		Type: "GitCommit",
-		Name: "commits",
+		Type: "Release",
+		Name: "head",
 	}
-	node.Edges[2].IDs, err = r.QueryCommits().
-		Select(gitcommit.FieldID).
+	node.Edges[2].IDs, err = r.QueryHead().
+		Select(release.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[3] = &Edge{
-		Type: "VulnerabilityReview",
-		Name: "vulnerability_reviews",
+		Type: "GitCommit",
+		Name: "commits",
 	}
-	node.Edges[3].IDs, err = r.QueryVulnerabilityReviews().
-		Select(vulnerabilityreview.FieldID).
+	node.Edges[3].IDs, err = r.QueryCommits().
+		Select(gitcommit.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[4] = &Edge{
+		Type: "VulnerabilityReview",
+		Name: "vulnerability_reviews",
+	}
+	node.Edges[4].IDs, err = r.QueryVulnerabilityReviews().
+		Select(vulnerabilityreview.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[5] = &Edge{
 		Type: "ReleasePolicy",
 		Name: "policies",
 	}
-	node.Edges[4].IDs, err = r.QueryPolicies().
+	node.Edges[5].IDs, err = r.QueryPolicies().
 		Select(releasepolicy.FieldID).
 		Ints(ctx)
 	if err != nil {
@@ -1744,6 +1812,15 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			return nil, err
 		}
 		return n, nil
+	case organization.Table:
+		n, err := c.Organization.Query().
+			Where(organization.ID(id)).
+			CollectFields(ctx, "Organization").
+			Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case project.Table:
 		n, err := c.Project.Query().
 			Where(project.ID(id)).
@@ -2029,6 +2106,19 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 		nodes, err := c.LicenseUse.Query().
 			Where(licenseuse.IDIn(ids...)).
 			CollectFields(ctx, "LicenseUse").
+			All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case organization.Table:
+		nodes, err := c.Organization.Query().
+			Where(organization.IDIn(ids...)).
+			CollectFields(ctx, "Organization").
 			All(ctx)
 		if err != nil {
 			return nil, err

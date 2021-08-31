@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/gitcommit"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
@@ -50,6 +51,17 @@ func (ru *RepoUpdate) SetNillableDefaultBranch(s *string) *RepoUpdate {
 		ru.SetDefaultBranch(*s)
 	}
 	return ru
+}
+
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (ru *RepoUpdate) SetOwnerID(id int) *RepoUpdate {
+	ru.mutation.SetOwnerID(id)
+	return ru
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (ru *RepoUpdate) SetOwner(o *Organization) *RepoUpdate {
+	return ru.SetOwnerID(o.ID)
 }
 
 // SetProjectID sets the "project" edge to the Project entity by ID.
@@ -130,6 +142,12 @@ func (ru *RepoUpdate) AddPolicies(r ...*ReleasePolicy) *RepoUpdate {
 // Mutation returns the RepoMutation object of the builder.
 func (ru *RepoUpdate) Mutation() *RepoMutation {
 	return ru.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (ru *RepoUpdate) ClearOwner() *RepoUpdate {
+	ru.mutation.ClearOwner()
+	return ru
 }
 
 // ClearProject clears the "project" edge to the Project entity.
@@ -279,6 +297,9 @@ func (ru *RepoUpdate) check() error {
 			return &ValidationError{Name: "default_branch", err: fmt.Errorf("ent: validator failed for field \"default_branch\": %w", err)}
 		}
 	}
+	if _, ok := ru.mutation.OwnerID(); ru.mutation.OwnerCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"owner\"")
+	}
 	if _, ok := ru.mutation.ProjectID(); ru.mutation.ProjectCleared() && !ok {
 		return errors.New("ent: clearing a required unique edge \"project\"")
 	}
@@ -316,6 +337,41 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Value:  value,
 			Column: repo.FieldDefaultBranch,
 		})
+	}
+	if ru.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   repo.OwnerTable,
+			Columns: []string{repo.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   repo.OwnerTable,
+			Columns: []string{repo.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if ru.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -588,6 +644,17 @@ func (ruo *RepoUpdateOne) SetNillableDefaultBranch(s *string) *RepoUpdateOne {
 	return ruo
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (ruo *RepoUpdateOne) SetOwnerID(id int) *RepoUpdateOne {
+	ruo.mutation.SetOwnerID(id)
+	return ruo
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (ruo *RepoUpdateOne) SetOwner(o *Organization) *RepoUpdateOne {
+	return ruo.SetOwnerID(o.ID)
+}
+
 // SetProjectID sets the "project" edge to the Project entity by ID.
 func (ruo *RepoUpdateOne) SetProjectID(id int) *RepoUpdateOne {
 	ruo.mutation.SetProjectID(id)
@@ -666,6 +733,12 @@ func (ruo *RepoUpdateOne) AddPolicies(r ...*ReleasePolicy) *RepoUpdateOne {
 // Mutation returns the RepoMutation object of the builder.
 func (ruo *RepoUpdateOne) Mutation() *RepoMutation {
 	return ruo.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (ruo *RepoUpdateOne) ClearOwner() *RepoUpdateOne {
+	ruo.mutation.ClearOwner()
+	return ruo
 }
 
 // ClearProject clears the "project" edge to the Project entity.
@@ -822,6 +895,9 @@ func (ruo *RepoUpdateOne) check() error {
 			return &ValidationError{Name: "default_branch", err: fmt.Errorf("ent: validator failed for field \"default_branch\": %w", err)}
 		}
 	}
+	if _, ok := ruo.mutation.OwnerID(); ruo.mutation.OwnerCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"owner\"")
+	}
 	if _, ok := ruo.mutation.ProjectID(); ruo.mutation.ProjectCleared() && !ok {
 		return errors.New("ent: clearing a required unique edge \"project\"")
 	}
@@ -876,6 +952,41 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 			Value:  value,
 			Column: repo.FieldDefaultBranch,
 		})
+	}
+	if ruo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   repo.OwnerTable,
+			Columns: []string{repo.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   repo.OwnerTable,
+			Columns: []string{repo.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if ruo.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

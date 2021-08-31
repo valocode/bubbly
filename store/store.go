@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"reflect"
-	"strings"
 	"time"
 
 	"entgo.io/ent/dialect"
@@ -65,27 +63,12 @@ func New(bCtx *env.BubblyContext) (*Store, error) {
 		return nil, fmt.Errorf("failed creating schema resources: %w", err)
 	}
 
-	validate := validator.New()
-	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
-		// If the struct field is another struct embedded, then check if there
-		// is an alias tag attached so that we can get a nicer name than the
-		// horrible struct names, e.g. MyTypeModelCreate `alias:"type"`
-		if name == "" && fld.Anonymous {
-			return strings.SplitN(fld.Tag.Get("alias"), ",", 2)[0]
-		}
-
-		if name == "-" {
-			return ""
-		}
-
-		return name
-	})
+	validator := newValidator()
 
 	s := &Store{
 		client:    client,
 		ctx:       context.Background(),
-		validator: validate,
+		validator: validator,
 	}
 
 	if err := s.initDB(); err != nil {
@@ -111,52 +94,28 @@ func (s *Store) Close() error {
 	return s.client.Close()
 }
 
-func (s *Store) WithTx(fn func(tx *ent.Tx) error) error {
-	tx, err := s.client.Tx(s.ctx)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if v := recover(); v != nil {
-			tx.Rollback()
-			panic(v)
-		}
-	}()
-	if err := fn(tx); err != nil {
-		if rerr := tx.Rollback(); rerr != nil {
-			return fmt.Errorf("error rolling back transaction: %w: %v", err, rerr)
-		}
-		return err
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("error committing transaction: %w", err)
-	}
-	return nil
-}
-
 func (s *Store) initDB() error {
 	//
 	// Make sure default organisation exists: TODO
 	//
+	_, orgErr := s.client.Organization.Create().
+		SetName(config.DefaultOrganization).
+		Save(s.ctx)
+	// Constraint error is fine (in case it already exists). Everything else is not
+	if !ent.IsConstraintError(orgErr) {
+		return orgErr
+	}
 
 	//
 	// Make sure default project exists
 	//
-	_, err := s.client.Project.Create().
+	_, projErr := s.client.Project.Create().
 		SetName(config.DefaultReleaseProject).
 		Save(s.ctx)
 	// Constraint error is fine (in case it already exists). Everything else is not
-	if !ent.IsConstraintError(err) {
-		return err
+	if !ent.IsConstraintError(projErr) {
+		return projErr
 	}
 
 	return nil
-}
-
-func (s *Store) clientOrTx(tx *ent.Tx) *ent.Client {
-	var client = s.client
-	if tx != nil {
-		client = tx.Client()
-	}
-	return client
 }

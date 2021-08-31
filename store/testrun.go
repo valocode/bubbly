@@ -8,24 +8,24 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-func (s *Store) SaveTestRun(req *api.TestRunRequest) (*ent.TestRun, error) {
-	release, err := s.releaseFromCommit(req.Commit)
+func (h *Handler) SaveTestRun(req *api.TestRunRequest) (*ent.TestRun, error) {
+	release, err := h.releaseFromCommit(req.Commit)
 	if err != nil {
 		return nil, err
 	}
-	return s.saveTestRun(release, req.TestRun)
+	return h.saveTestRun(release, req.TestRun)
 }
 
-func (s *Store) saveTestRun(release *ent.Release, run *api.TestRun) (*ent.TestRun, error) {
+func (h *Handler) saveTestRun(release *ent.Release, run *api.TestRun) (*ent.TestRun, error) {
 	var testRun *ent.TestRun
-	txErr := s.WithTx(func(tx *ent.Tx) error {
+	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
 		if run.Tool == nil {
 			return errors.New("tool is required")
 		}
 		dbRun, err := tx.TestRun.Create().
 			SetModelCreate(&run.TestRunModelCreate).
 			SetRelease(release).
-			Save(s.ctx)
+			Save(h.ctx)
 		if err != nil {
 			return fmt.Errorf("error creating test run: %w", err)
 		}
@@ -33,7 +33,7 @@ func (s *Store) saveTestRun(release *ent.Release, run *api.TestRun) (*ent.TestRu
 			_, err := tx.TestCase.Create().
 				SetRun(dbRun).
 				SetModelCreate(&tc.TestCaseModelCreate).
-				Save(s.ctx)
+				Save(h.ctx)
 			if err != nil {
 				return fmt.Errorf("error creating test case: %w", err)
 			}
@@ -45,7 +45,7 @@ func (s *Store) saveTestRun(release *ent.Release, run *api.TestRun) (*ent.TestRu
 	}
 
 	// Once transaction is complete, evaluate the release.
-	_, err := s.EvaluateReleasePolicies(release.ID)
+	_, err := h.EvaluateReleasePolicies(release.ID)
 	if err != nil {
 		return nil, NewServerError(err, "evaluating release policies")
 	}
