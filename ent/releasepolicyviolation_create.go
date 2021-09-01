@@ -27,6 +27,12 @@ func (rpvc *ReleasePolicyViolationCreate) SetMessage(s string) *ReleasePolicyVio
 	return rpvc
 }
 
+// SetType sets the "type" field.
+func (rpvc *ReleasePolicyViolationCreate) SetType(r releasepolicyviolation.Type) *ReleasePolicyViolationCreate {
+	rpvc.mutation.SetType(r)
+	return rpvc
+}
+
 // SetSeverity sets the "severity" field.
 func (rpvc *ReleasePolicyViolationCreate) SetSeverity(r releasepolicyviolation.Severity) *ReleasePolicyViolationCreate {
 	rpvc.mutation.SetSeverity(r)
@@ -133,6 +139,14 @@ func (rpvc *ReleasePolicyViolationCreate) check() error {
 			return &ValidationError{Name: "message", err: fmt.Errorf(`ent: validator failed for field "message": %w`, err)}
 		}
 	}
+	if _, ok := rpvc.mutation.GetType(); !ok {
+		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "type"`)}
+	}
+	if v, ok := rpvc.mutation.GetType(); ok {
+		if err := releasepolicyviolation.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "type": %w`, err)}
+		}
+	}
 	if _, ok := rpvc.mutation.Severity(); !ok {
 		return &ValidationError{Name: "severity", err: errors.New(`ent: missing required field "severity"`)}
 	}
@@ -181,6 +195,14 @@ func (rpvc *ReleasePolicyViolationCreate) createSpec() (*ReleasePolicyViolation,
 			Column: releasepolicyviolation.FieldMessage,
 		})
 		_node.Message = value
+	}
+	if value, ok := rpvc.mutation.GetType(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: releasepolicyviolation.FieldType,
+		})
+		_node.Type = value
 	}
 	if value, ok := rpvc.mutation.Severity(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{

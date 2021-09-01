@@ -24,8 +24,8 @@ func (ReleasePolicyViolation) Annotations() []schema.Annotation {
 func (ReleasePolicyViolation) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("message").NotEmpty(),
-		// field.Enum("type").
-		// 	Values("require", "deny"),
+		field.Enum("type").
+			Values("require", "deny"),
 		field.Enum("severity").
 			Values("suggestion", "warning", "error", "blocking"),
 	}

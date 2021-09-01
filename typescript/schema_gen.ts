@@ -515,6 +515,7 @@ export interface ReleasePolicyViolation_Json {
 export interface ReleasePolicyViolation {
 	id?: number;
 	message?: string;
+	type?: ReleasePolicyViolationType;
 	severity?: ReleasePolicyViolationSeverity;
 	policy?: ReleasePolicy;
 	release?: Release;
@@ -532,6 +533,11 @@ export interface ReleasePolicyViolation_Conn {
 
 export interface ReleasePolicyViolation_Edge {
 	node?: ReleasePolicyViolation;
+}
+
+export enum ReleasePolicyViolationType {
+	require = "require",
+	deny = "deny",
 }
 
 export enum ReleasePolicyViolationSeverity {

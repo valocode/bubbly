@@ -35,6 +35,12 @@ func (rpvu *ReleasePolicyViolationUpdate) SetMessage(s string) *ReleasePolicyVio
 	return rpvu
 }
 
+// SetType sets the "type" field.
+func (rpvu *ReleasePolicyViolationUpdate) SetType(r releasepolicyviolation.Type) *ReleasePolicyViolationUpdate {
+	rpvu.mutation.SetType(r)
+	return rpvu
+}
+
 // SetSeverity sets the "severity" field.
 func (rpvu *ReleasePolicyViolationUpdate) SetSeverity(r releasepolicyviolation.Severity) *ReleasePolicyViolationUpdate {
 	rpvu.mutation.SetSeverity(r)
@@ -147,6 +153,11 @@ func (rpvu *ReleasePolicyViolationUpdate) check() error {
 			return &ValidationError{Name: "message", err: fmt.Errorf("ent: validator failed for field \"message\": %w", err)}
 		}
 	}
+	if v, ok := rpvu.mutation.GetType(); ok {
+		if err := releasepolicyviolation.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+		}
+	}
 	if v, ok := rpvu.mutation.Severity(); ok {
 		if err := releasepolicyviolation.SeverityValidator(v); err != nil {
 			return &ValidationError{Name: "severity", err: fmt.Errorf("ent: validator failed for field \"severity\": %w", err)}
@@ -184,6 +195,13 @@ func (rpvu *ReleasePolicyViolationUpdate) sqlSave(ctx context.Context) (n int, e
 			Type:   field.TypeString,
 			Value:  value,
 			Column: releasepolicyviolation.FieldMessage,
+		})
+	}
+	if value, ok := rpvu.mutation.GetType(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: releasepolicyviolation.FieldType,
 		})
 	}
 	if value, ok := rpvu.mutation.Severity(); ok {
@@ -285,6 +303,12 @@ type ReleasePolicyViolationUpdateOne struct {
 // SetMessage sets the "message" field.
 func (rpvuo *ReleasePolicyViolationUpdateOne) SetMessage(s string) *ReleasePolicyViolationUpdateOne {
 	rpvuo.mutation.SetMessage(s)
+	return rpvuo
+}
+
+// SetType sets the "type" field.
+func (rpvuo *ReleasePolicyViolationUpdateOne) SetType(r releasepolicyviolation.Type) *ReleasePolicyViolationUpdateOne {
+	rpvuo.mutation.SetType(r)
 	return rpvuo
 }
 
@@ -407,6 +431,11 @@ func (rpvuo *ReleasePolicyViolationUpdateOne) check() error {
 			return &ValidationError{Name: "message", err: fmt.Errorf("ent: validator failed for field \"message\": %w", err)}
 		}
 	}
+	if v, ok := rpvuo.mutation.GetType(); ok {
+		if err := releasepolicyviolation.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf("ent: validator failed for field \"type\": %w", err)}
+		}
+	}
 	if v, ok := rpvuo.mutation.Severity(); ok {
 		if err := releasepolicyviolation.SeverityValidator(v); err != nil {
 			return &ValidationError{Name: "severity", err: fmt.Errorf("ent: validator failed for field \"severity\": %w", err)}
@@ -461,6 +490,13 @@ func (rpvuo *ReleasePolicyViolationUpdateOne) sqlSave(ctx context.Context) (_nod
 			Type:   field.TypeString,
 			Value:  value,
 			Column: releasepolicyviolation.FieldMessage,
+		})
+	}
+	if value, ok := rpvuo.mutation.GetType(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: releasepolicyviolation.FieldType,
 		})
 	}
 	if value, ok := rpvuo.mutation.Severity(); ok {

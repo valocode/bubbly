@@ -10,7 +10,16 @@ import (
 )
 
 func (h *Handler) CreateRelease(req *api.ReleaseCreateRequest) (*ent.Release, error) {
-	return h.createRelease(req)
+	dbRelease, err := h.createRelease(req)
+	if err != nil {
+		return nil, err
+	}
+	// Once transaction is complete, evaluate the release.
+	_, evalErr := h.EvaluateReleasePolicies(dbRelease.ID)
+	if evalErr != nil {
+		return nil, NewServerError(evalErr, "evaluating release policies")
+	}
+	return dbRelease, nil
 }
 
 func (h *Handler) GetReleases(req *api.ReleaseGetRequest) (*api.ReleaseGetResponse, error) {
@@ -39,6 +48,7 @@ func (h *Handler) GetReleases(req *api.ReleaseGetRequest) (*api.ReleaseGetRespon
 			Commit:  ent.NewGitCommitModelRead().FromEnt(commit),
 			Release: ent.NewReleaseModelRead().FromEnt(dbRelease),
 		}
+		// If the request said to get policies, then fetch the policies for the release.
 		if req.Policies {
 			dbPolicies, err := h.policiesForRelease(h.client, dbRelease.ID)
 			if err != nil {
@@ -50,16 +60,6 @@ func (h *Handler) GetReleases(req *api.ReleaseGetRequest) (*api.ReleaseGetRespon
 			}
 			r.Policies = policies
 		}
-		// // Getting the policies that apply to a release is a bit trickier, as they
-		// // are actually applied to projects and repos that the release belongs to.
-		// // TODO: this will produce duplicate policies if a policy is joined to both
-		// // the project and repo
-		// for _, dbPolicy := range repo.Edges.Policies {
-		// 	r.Policies = append(r.Policies, ent.NewReleasePolicyModelRead().FromEnt(dbPolicy))
-		// }
-		// for _, dbPolicy := range project.Edges.Policies {
-		// 	r.Policies = append(r.Policies, ent.NewReleasePolicyModelRead().FromEnt(dbPolicy))
-		// }
 		// Append the release violation
 		for _, dbViolation := range dbRelease.Edges.Violations {
 			r.Violations = append(r.Violations, ent.NewReleasePolicyViolationModelRead().FromEnt(dbViolation))

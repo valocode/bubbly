@@ -15,6 +15,8 @@ const (
 	FieldID = "id"
 	// FieldMessage holds the string denoting the message field in the database.
 	FieldMessage = "message"
+	// FieldType holds the string denoting the type field in the database.
+	FieldType = "type"
 	// FieldSeverity holds the string denoting the severity field in the database.
 	FieldSeverity = "severity"
 	// EdgePolicy holds the string denoting the policy edge name in mutations.
@@ -43,6 +45,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldMessage,
+	FieldType,
 	FieldSeverity,
 }
 
@@ -73,6 +76,29 @@ var (
 	MessageValidator func(string) error
 )
 
+// Type defines the type for the "type" enum field.
+type Type string
+
+// Type values.
+const (
+	TypeRequire Type = "require"
+	TypeDeny    Type = "deny"
+)
+
+func (_type Type) String() string {
+	return string(_type)
+}
+
+// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
+func TypeValidator(_type Type) error {
+	switch _type {
+	case TypeRequire, TypeDeny:
+		return nil
+	default:
+		return fmt.Errorf("releasepolicyviolation: invalid enum value for type field: %q", _type)
+	}
+}
+
 // Severity defines the type for the "severity" enum field.
 type Severity string
 
@@ -96,6 +122,24 @@ func SeverityValidator(s Severity) error {
 	default:
 		return fmt.Errorf("releasepolicyviolation: invalid enum value for severity field: %q", s)
 	}
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (_type Type) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(_type.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (_type *Type) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*_type = Type(str)
+	if err := TypeValidator(*_type); err != nil {
+		return fmt.Errorf("%s is not a valid Type", str)
+	}
+	return nil
 }
 
 // MarshalGQL implements graphql.Marshaler interface.

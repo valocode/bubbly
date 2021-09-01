@@ -399,6 +399,7 @@ var (
 	ReleasePolicyViolationColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "message", Type: field.TypeString},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"require", "deny"}},
 		{Name: "severity", Type: field.TypeEnum, Enums: []string{"suggestion", "warning", "error", "blocking"}},
 		{Name: "release_policy_violation_policy", Type: field.TypeInt, Nullable: true},
 		{Name: "release_policy_violation_release", Type: field.TypeInt, Nullable: true},
@@ -411,13 +412,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "release_policy_violation_release_policy_policy",
-				Columns:    []*schema.Column{ReleasePolicyViolationColumns[3]},
+				Columns:    []*schema.Column{ReleasePolicyViolationColumns[4]},
 				RefColumns: []*schema.Column{ReleasePolicyColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "release_policy_violation_release_release",
-				Columns:    []*schema.Column{ReleasePolicyViolationColumns[4]},
+				Columns:    []*schema.Column{ReleasePolicyViolationColumns[5]},
 				RefColumns: []*schema.Column{ReleaseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

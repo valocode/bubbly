@@ -9760,6 +9760,7 @@ type ReleasePolicyViolationMutation struct {
 	typ            string
 	id             *int
 	message        *string
+	_type          *releasepolicyviolation.Type
 	severity       *releasepolicyviolation.Severity
 	clearedFields  map[string]struct{}
 	policy         *int
@@ -9884,6 +9885,42 @@ func (m *ReleasePolicyViolationMutation) OldMessage(ctx context.Context) (v stri
 // ResetMessage resets all changes to the "message" field.
 func (m *ReleasePolicyViolationMutation) ResetMessage() {
 	m.message = nil
+}
+
+// SetType sets the "type" field.
+func (m *ReleasePolicyViolationMutation) SetType(r releasepolicyviolation.Type) {
+	m._type = &r
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *ReleasePolicyViolationMutation) GetType() (r releasepolicyviolation.Type, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the ReleasePolicyViolation entity.
+// If the ReleasePolicyViolation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReleasePolicyViolationMutation) OldType(ctx context.Context) (v releasepolicyviolation.Type, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *ReleasePolicyViolationMutation) ResetType() {
+	m._type = nil
 }
 
 // SetSeverity sets the "severity" field.
@@ -10019,9 +10056,12 @@ func (m *ReleasePolicyViolationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ReleasePolicyViolationMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.message != nil {
 		fields = append(fields, releasepolicyviolation.FieldMessage)
+	}
+	if m._type != nil {
+		fields = append(fields, releasepolicyviolation.FieldType)
 	}
 	if m.severity != nil {
 		fields = append(fields, releasepolicyviolation.FieldSeverity)
@@ -10036,6 +10076,8 @@ func (m *ReleasePolicyViolationMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case releasepolicyviolation.FieldMessage:
 		return m.Message()
+	case releasepolicyviolation.FieldType:
+		return m.GetType()
 	case releasepolicyviolation.FieldSeverity:
 		return m.Severity()
 	}
@@ -10049,6 +10091,8 @@ func (m *ReleasePolicyViolationMutation) OldField(ctx context.Context, name stri
 	switch name {
 	case releasepolicyviolation.FieldMessage:
 		return m.OldMessage(ctx)
+	case releasepolicyviolation.FieldType:
+		return m.OldType(ctx)
 	case releasepolicyviolation.FieldSeverity:
 		return m.OldSeverity(ctx)
 	}
@@ -10066,6 +10110,13 @@ func (m *ReleasePolicyViolationMutation) SetField(name string, value ent.Value) 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMessage(v)
+		return nil
+	case releasepolicyviolation.FieldType:
+		v, ok := value.(releasepolicyviolation.Type)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
 		return nil
 	case releasepolicyviolation.FieldSeverity:
 		v, ok := value.(releasepolicyviolation.Severity)
@@ -10125,6 +10176,9 @@ func (m *ReleasePolicyViolationMutation) ResetField(name string) error {
 	switch name {
 	case releasepolicyviolation.FieldMessage:
 		m.ResetMessage()
+		return nil
+	case releasepolicyviolation.FieldType:
+		m.ResetType()
 		return nil
 	case releasepolicyviolation.FieldSeverity:
 		m.ResetSeverity()

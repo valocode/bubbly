@@ -4493,6 +4493,12 @@ type ReleasePolicyViolationWhereInput struct {
 	MessageEqualFold    *string  `json:"messageEqualFold,omitempty"`
 	MessageContainsFold *string  `json:"messageContainsFold,omitempty"`
 
+	// "type" field predicates.
+	Type      *releasepolicyviolation.Type  `json:"type,omitempty"`
+	TypeNEQ   *releasepolicyviolation.Type  `json:"typeNEQ,omitempty"`
+	TypeIn    []releasepolicyviolation.Type `json:"typeIn,omitempty"`
+	TypeNotIn []releasepolicyviolation.Type `json:"typeNotIn,omitempty"`
+
 	// "severity" field predicates.
 	Severity      *releasepolicyviolation.Severity  `json:"severity,omitempty"`
 	SeverityNEQ   *releasepolicyviolation.Severity  `json:"severityNEQ,omitempty"`
@@ -4615,6 +4621,18 @@ func (i *ReleasePolicyViolationWhereInput) P() (predicate.ReleasePolicyViolation
 	}
 	if i.MessageContainsFold != nil {
 		predicates = append(predicates, releasepolicyviolation.MessageContainsFold(*i.MessageContainsFold))
+	}
+	if i.Type != nil {
+		predicates = append(predicates, releasepolicyviolation.TypeEQ(*i.Type))
+	}
+	if i.TypeNEQ != nil {
+		predicates = append(predicates, releasepolicyviolation.TypeNEQ(*i.TypeNEQ))
+	}
+	if len(i.TypeIn) > 0 {
+		predicates = append(predicates, releasepolicyviolation.TypeIn(i.TypeIn...))
+	}
+	if len(i.TypeNotIn) > 0 {
+		predicates = append(predicates, releasepolicyviolation.TypeNotIn(i.TypeNotIn...))
 	}
 	if i.Severity != nil {
 		predicates = append(predicates, releasepolicyviolation.SeverityEQ(*i.Severity))
