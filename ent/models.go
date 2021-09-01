@@ -886,6 +886,7 @@ func (rp *ReleasePolicyModelUpdate) SetID(value int) *ReleasePolicyModelUpdate {
 
 type ReleasePolicyViolationModelCreate struct {
 	Message  *string                          `json:"message,omitempty" validate:"required" mapstructure:"message"`
+	Type     *releasepolicyviolation.Type     `json:"type,omitempty" validate:"required" mapstructure:"type"`
 	Severity *releasepolicyviolation.Severity `json:"severity,omitempty" validate:"required" mapstructure:"severity"`
 }
 
@@ -895,6 +896,10 @@ func NewReleasePolicyViolationModelCreate() *ReleasePolicyViolationModelCreate {
 
 func (rpv *ReleasePolicyViolationModelCreate) SetMessage(value string) *ReleasePolicyViolationModelCreate {
 	rpv.Message = &value
+	return rpv
+}
+func (rpv *ReleasePolicyViolationModelCreate) SetType(value releasepolicyviolation.Type) *ReleasePolicyViolationModelCreate {
+	rpv.Type = &value
 	return rpv
 }
 func (rpv *ReleasePolicyViolationModelCreate) SetSeverity(value releasepolicyviolation.Severity) *ReleasePolicyViolationModelCreate {
@@ -916,6 +921,9 @@ func (rpv *ReleasePolicyViolationMutation) SetModelCreate(model *ReleasePolicyVi
 	if model.Message != nil {
 		rpv.SetMessage(*model.Message)
 	}
+	if model.Type != nil {
+		rpv.SetType(*model.Type)
+	}
 	if model.Severity != nil {
 		rpv.SetSeverity(*model.Severity)
 	}
@@ -924,6 +932,7 @@ func (rpv *ReleasePolicyViolationMutation) SetModelCreate(model *ReleasePolicyVi
 
 type ReleasePolicyViolationModelRead struct {
 	Message  *string                          `json:"message,omitempty" validate:"required" mapstructure:"message"`
+	Type     *releasepolicyviolation.Type     `json:"type,omitempty" validate:"required" mapstructure:"type"`
 	Severity *releasepolicyviolation.Severity `json:"severity,omitempty" validate:"required" mapstructure:"severity"`
 	ID       *int                             `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
@@ -934,6 +943,7 @@ func NewReleasePolicyViolationModelRead() *ReleasePolicyViolationModelRead {
 
 func (rpv *ReleasePolicyViolationModelRead) FromEnt(value *ReleasePolicyViolation) *ReleasePolicyViolationModelRead {
 	rpv.Message = &value.Message
+	rpv.Type = &value.Type
 	rpv.Severity = &value.Severity
 	rpv.ID = &value.ID
 	return rpv

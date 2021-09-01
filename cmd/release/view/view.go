@@ -105,7 +105,7 @@ func printRelease(rel *api.ReleaseRead, policies bool) {
 	violationLines = append(violationLines, "Message | Severity | Type")
 	for _, v := range rel.Violations {
 		violationLines = append(violationLines, fmt.Sprintf(
-			"%s | %s | %s", *v.Message, *v.Severity, "TODO",
+			"%s | %s | %s", *v.Message, *v.Severity, *v.Type,
 		))
 	}
 	if len(rel.Violations) == 0 {

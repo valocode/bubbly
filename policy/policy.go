@@ -11,6 +11,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/open-policy-agent/opa/rego"
 	"github.com/valocode/bubbly/ent"
+	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 )
 
 const (
@@ -32,11 +33,8 @@ type runOptions struct {
 	resolver Resolver
 }
 
-// Violation is just an alias for a very long struct name
-type Violation *ent.ReleasePolicyViolationModelCreate
-
 type PolicyResult struct {
-	Violations []*Violation
+	Violations []*ent.ReleasePolicyViolationModelCreate
 	Traces     []string
 }
 
@@ -78,15 +76,28 @@ func EvaluatePolicy(module string, opts ...func(*runOptions)) (*PolicyResult, er
 	if !ok {
 		return nil, fmt.Errorf("internal error: result is not a map[string]interface{}")
 	}
-	var violations []*Violation
+	var violations []*ent.ReleasePolicyViolationModelCreate
 	for name, value := range obj {
 		switch name {
 		case denyResult, requireResult:
-			if err := mapstructure.Decode(value, &violations); err != nil {
-				return nil, fmt.Errorf("error decoding policy violations: %w", err)
+			rawViolations, ok := value.([]interface{})
+			if !ok {
+				return nil, fmt.Errorf("expected expression result to be a list")
 			}
-			if err := validator.New().Var(violations, "required,dive"); err != nil {
-				return nil, err
+			// Iterate over each violation as we need to set the type based on the
+			// rule. E.g. For a deny rule, a deny violation.
+			for _, v := range rawViolations {
+				var violation ent.ReleasePolicyViolationModelCreate
+				if err := mapstructure.Decode(v, &violation); err != nil {
+					return nil, fmt.Errorf("error decoding policy violations: %w", err)
+				}
+				if violation.Type == nil {
+					violation.SetType(releasepolicyviolation.Type(name))
+				}
+				if err := validator.New().Struct(violation); err != nil {
+					return nil, err
+				}
+				violations = append(violations, &violation)
 			}
 		}
 	}

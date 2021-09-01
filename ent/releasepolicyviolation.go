@@ -19,6 +19,8 @@ type ReleasePolicyViolation struct {
 	ID int `json:"id,omitempty"`
 	// Message holds the value of the "message" field.
 	Message string `json:"message,omitempty"`
+	// Type holds the value of the "type" field.
+	Type releasepolicyviolation.Type `json:"type,omitempty"`
 	// Severity holds the value of the "severity" field.
 	Severity releasepolicyviolation.Severity `json:"severity,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -74,7 +76,7 @@ func (*ReleasePolicyViolation) scanValues(columns []string) ([]interface{}, erro
 		switch columns[i] {
 		case releasepolicyviolation.FieldID:
 			values[i] = new(sql.NullInt64)
-		case releasepolicyviolation.FieldMessage, releasepolicyviolation.FieldSeverity:
+		case releasepolicyviolation.FieldMessage, releasepolicyviolation.FieldType, releasepolicyviolation.FieldSeverity:
 			values[i] = new(sql.NullString)
 		case releasepolicyviolation.ForeignKeys[0]: // release_policy_violation_policy
 			values[i] = new(sql.NullInt64)
@@ -106,6 +108,12 @@ func (rpv *ReleasePolicyViolation) assignValues(columns []string, values []inter
 				return fmt.Errorf("unexpected type %T for field message", values[i])
 			} else if value.Valid {
 				rpv.Message = value.String
+			}
+		case releasepolicyviolation.FieldType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field type", values[i])
+			} else if value.Valid {
+				rpv.Type = releasepolicyviolation.Type(value.String)
 			}
 		case releasepolicyviolation.FieldSeverity:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -167,6 +175,8 @@ func (rpv *ReleasePolicyViolation) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v", rpv.ID))
 	builder.WriteString(", message=")
 	builder.WriteString(rpv.Message)
+	builder.WriteString(", type=")
+	builder.WriteString(fmt.Sprintf("%v", rpv.Type))
 	builder.WriteString(", severity=")
 	builder.WriteString(fmt.Sprintf("%v", rpv.Severity))
 	builder.WriteByte(')')

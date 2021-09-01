@@ -109,7 +109,7 @@ func (h *Handler) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyVi
 			}
 			for _, v := range result.Violations {
 				dbViolation, err := tx.ReleasePolicyViolation.Create().
-					SetModelCreate(*v).
+					SetModelCreate(v).
 					SetPolicy(dbPolicy).
 					SetReleaseID(releaseID).
 					Save(h.ctx)

@@ -1174,7 +1174,7 @@ func (rpv *ReleasePolicyViolation) Node(ctx context.Context) (node *Node, err er
 	node = &Node{
 		ID:     rpv.ID,
 		Type:   "ReleasePolicyViolation",
-		Fields: make([]*Field, 2),
+		Fields: make([]*Field, 3),
 		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
@@ -1186,10 +1186,18 @@ func (rpv *ReleasePolicyViolation) Node(ctx context.Context) (node *Node, err er
 		Name:  "message",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(rpv.Severity); err != nil {
+	if buf, err = json.Marshal(rpv.Type); err != nil {
 		return nil, err
 	}
 	node.Fields[1] = &Field{
+		Type:  "releasepolicyviolation.Type",
+		Name:  "type",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(rpv.Severity); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
 		Type:  "releasepolicyviolation.Severity",
 		Name:  "severity",
 		Value: string(buf),
@@ -1197,7 +1205,7 @@ func (rpv *ReleasePolicyViolation) Node(ctx context.Context) (node *Node, err er
 	if buf, err = json.Marshal(rpv.ID); err != nil {
 		return nil, err
 	}
-	node.Fields[2] = &Field{
+	node.Fields[3] = &Field{
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),

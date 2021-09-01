@@ -31,6 +31,9 @@ models:
   ReleasePolicyViolationSeverity:
     model:
       - github.com/valocode/bubbly/ent/releasepolicyviolation.Severity
+  ReleasePolicyViolationType:
+    model:
+      - github.com/valocode/bubbly/ent/releasepolicyviolation.Type
   ReleaseComponentType:
     model:
       - github.com/valocode/bubbly/ent/releasecomponent.Type
