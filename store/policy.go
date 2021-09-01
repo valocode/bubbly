@@ -5,7 +5,6 @@ import (
 
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/gitcommit"
-	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasepolicy"
@@ -84,29 +83,9 @@ func (h *Handler) SetReleasePolicyAffects(req *api.ReleasePolicySetRequest) (*en
 func (h *Handler) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyViolation, error) {
 	var dbViolations []*ent.ReleasePolicyViolation
 	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
-		dbPolicies, err := tx.ReleasePolicy.Query().
-			Where(
-				releasepolicy.Or(
-					releasepolicy.HasProjectsWith(
-						project.HasReposWith(
-							repo.HasCommitsWith(
-								gitcommit.HasReleaseWith(
-									release.ID(releaseID),
-								),
-							),
-						),
-					),
-					releasepolicy.HasReposWith(
-						repo.HasCommitsWith(
-							gitcommit.HasReleaseWith(
-								release.ID(releaseID),
-							),
-						),
-					),
-				),
-			).All(h.ctx)
+		dbPolicies, err := h.policiesForRelease(tx.Client(), releaseID)
 		if err != nil {
-			return fmt.Errorf("error getting policies for release: %w", err)
+			return err
 		}
 		for _, dbPolicy := range dbPolicies {
 			result, err := policy.EvaluatePolicy(dbPolicy.Module,
@@ -148,24 +127,52 @@ func (h *Handler) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyVi
 	return dbViolations, nil
 }
 
+func (h *Handler) policiesForRelease(client *ent.Client, releaseID int) ([]*ent.ReleasePolicy, error) {
+	dbPolicies, err := client.ReleasePolicy.Query().
+		Where(
+			releasepolicy.Or(
+				releasepolicy.HasProjectsWith(
+					project.HasReposWith(
+						repo.HasCommitsWith(
+							gitcommit.HasReleaseWith(
+								release.ID(releaseID),
+							),
+						),
+					),
+				),
+				releasepolicy.HasReposWith(
+					repo.HasCommitsWith(
+						gitcommit.HasReleaseWith(
+							release.ID(releaseID),
+						),
+					),
+				),
+			),
+		).All(h.ctx)
+	if err != nil {
+		return nil, HandleEntError(err, "getting policies for release")
+	}
+	return dbPolicies, nil
+}
+
 func (h *Handler) updatePolicyAffects(client *ent.Client, dbPolicy *ent.ReleasePolicy, affects *api.ReleasePolicyAffects) (*ent.ReleasePolicy, error) {
 	if affects == nil {
 		return dbPolicy, nil
 	}
 
-	projectSetIDs, err := h.policyAffectsProjectIDs(client, affects.Projects)
+	projectSetIDs, err := h.projectIDs(client, affects.Projects)
 	if err != nil {
 		return nil, err
 	}
-	projectSetNotIDs, err := h.policyAffectsProjectIDs(client, affects.NotProjects)
+	projectSetNotIDs, err := h.projectIDs(client, affects.NotProjects)
 	if err != nil {
 		return nil, err
 	}
-	repoSetIDs, err := h.policyAffectsReposIDs(client, affects.Repos)
+	repoSetIDs, err := h.repoIDs(client, affects.Repos)
 	if err != nil {
 		return nil, err
 	}
-	repoSetNotIDs, err := h.policyAffectsReposIDs(client, affects.NotRepos)
+	repoSetNotIDs, err := h.repoIDs(client, affects.NotRepos)
 	if err != nil {
 		return nil, err
 	}
@@ -183,50 +190,42 @@ func (h *Handler) updatePolicyAffects(client *ent.Client, dbPolicy *ent.ReleaseP
 	return dbPolicy, nil
 }
 
-func (h *Handler) policyAffectsProjectIDs(client *ent.Client, projects []string) ([]int, error) {
-	var (
-		projectSetIDs   []int
-		projectSetNames []predicate.Project
-		err             error
-	)
-	// Check if there are any projects, otherwise we have nothing to do
-	if len(projects) == 0 {
-		return projectSetIDs, nil
+func (h *Handler) projectIDs(client *ent.Client, projects []string) ([]int, error) {
+	// Check that the projects exist
+	for _, p := range projects {
+		ok, err := client.Project.Query().Where(project.Name(p)).Exist(h.ctx)
+		if err != nil {
+			return nil, HandleEntError(err, "checking projects exist")
+		}
+		if !ok {
+			return nil, NewNotFoundError(nil, "project %s does not exist", p)
+		}
 	}
-
-	for _, setProject := range projects {
-		projectSetNames = append(projectSetNames, project.Name(setProject))
-	}
-
-	projectSetIDs, err = client.Project.Query().Where(
-		project.Or(projectSetNames...),
+	projectSetIDs, err := client.Project.Query().Where(
+		project.NameIn(projects...),
 	).IDs(h.ctx)
 	if err != nil {
-		return nil, HandleEntError(err, "policy project IDs")
+		return nil, HandleEntError(err, "getting project IDs")
 	}
 	return projectSetIDs, nil
 }
 
-func (h *Handler) policyAffectsReposIDs(client *ent.Client, repos []string) ([]int, error) {
-	var (
-		repoSetIDs   []int
-		repoSetNames []predicate.Repo
-		err          error
-	)
-	// Check if there are any repos, otherwise we have nothing to do
-	if len(repos) == 0 {
-		return repoSetIDs, nil
+func (h *Handler) repoIDs(client *ent.Client, repos []string) ([]int, error) {
+	// Check that the repos exist
+	for _, r := range repos {
+		ok, err := client.Repo.Query().Where(repo.Name(r)).Exist(h.ctx)
+		if err != nil {
+			return nil, HandleEntError(err, "checking projects exist")
+		}
+		if !ok {
+			return nil, NewNotFoundError(nil, "repo %s does not exist", r)
+		}
 	}
-
-	for _, setRepo := range repos {
-		repoSetNames = append(repoSetNames, repo.Name(setRepo))
-	}
-
-	repoSetIDs, err = client.Repo.Query().Where(
-		repo.Or(repoSetNames...),
+	repoSetIDs, err := client.Repo.Query().Where(
+		repo.NameIn(repos...),
 	).IDs(h.ctx)
 	if err != nil {
-		return nil, HandleEntError(err, "policy repo IDs")
+		return nil, HandleEntError(err, "getting repo IDs")
 	}
 	return repoSetIDs, nil
 }

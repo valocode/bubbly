@@ -11,15 +11,15 @@ import (
 )
 
 func (r *artifactResolver) Metadata(ctx context.Context, obj *ent.Artifact) (map[string]interface{}, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.Metadata, nil
 }
 
 func (r *codeIssueResolver) Metadata(ctx context.Context, obj *ent.CodeIssue) (map[string]interface{}, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.Metadata, nil
 }
 
 func (r *codeScanResolver) Metadata(ctx context.Context, obj *ent.CodeScan) (map[string]interface{}, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.Metadata, nil
 }
 
 func (r *codeScanResolver) Issues(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.CodeIssueWhereInput, orderBy *ent.CodeIssueOrder) ([]*ent.CodeIssue, error) {
@@ -47,7 +47,7 @@ func (r *codeScanResolver) Components(ctx context.Context, obj *ent.CodeScan, fi
 }
 
 func (r *componentResolver) Metadata(ctx context.Context, obj *ent.Component) (map[string]interface{}, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.Metadata, nil
 }
 
 func (r *componentResolver) Vulnerabilities(ctx context.Context, obj *ent.Component, first *int, last *int, where *ent.VulnerabilityWhereInput, orderBy *ent.VulnerabilityOrder) ([]*ent.Vulnerability, error) {
@@ -111,7 +111,11 @@ func (r *projectResolver) VulnerabilityReviews(ctx context.Context, obj *ent.Pro
 }
 
 func (r *projectResolver) Policies(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) ([]*ent.ReleasePolicy, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.PoliciesOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryPolicies().Filter(ctx, first, last, orderBy, where)
+	}
+	return result, err
 }
 
 func (r *queryResolver) ArtifactConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ArtifactOrder, where *ent.ArtifactWhereInput) (*ent.ArtifactConnection, error) {
@@ -119,6 +123,10 @@ func (r *queryResolver) ArtifactConnection(ctx context.Context, first *int, last
 		ent.WithArtifactOrder(orderBy),
 		ent.WithArtifactFilter(where.Filter),
 	)
+}
+
+func (r *queryResolver) Policy(ctx context.Context, first *int, last *int, orderBy *ent.ReleasePolicyOrder, where *ent.ReleasePolicyWhereInput) ([]*ent.ReleasePolicy, error) {
+	return r.client.ReleasePolicy.Query().Filter(ctx, first, last, orderBy, where)
 }
 
 func (r *queryResolver) Artifact(ctx context.Context, first *int, last *int, orderBy *ent.ArtifactOrder, where *ent.ArtifactWhereInput) ([]*ent.Artifact, error) {
@@ -319,7 +327,11 @@ func (r *releaseResolver) Log(ctx context.Context, obj *ent.Release, first *int,
 }
 
 func (r *releaseResolver) Violations(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) ([]*ent.ReleasePolicyViolation, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ViolationsOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryViolations().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *releaseResolver) Artifacts(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ArtifactWhereInput, orderBy *ent.ArtifactOrder) ([]*ent.Artifact, error) {
@@ -391,11 +403,19 @@ func (r *releaseLicenseResolver) Scans(ctx context.Context, obj *ent.ReleaseLice
 }
 
 func (r *releasePolicyResolver) Projects(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ProjectsOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryProjects().Filter(ctx, first, last, orderBy, where)
+	}
+	return result, err
 }
 
 func (r *releasePolicyResolver) Repos(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ReposOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryRepos().Filter(ctx, first, last, orderBy, where)
+	}
+	return result, err
 }
 
 func (r *releasePolicyResolver) Violations(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) ([]*ent.ReleasePolicyViolation, error) {
@@ -427,7 +447,11 @@ func (r *repoResolver) VulnerabilityReviews(ctx context.Context, obj *ent.Repo, 
 }
 
 func (r *repoResolver) Policies(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) ([]*ent.ReleasePolicy, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.PoliciesOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryPolicies().Filter(ctx, first, last, orderBy, where)
+	}
+	return result, err
 }
 
 func (r *testCaseResolver) Metadata(ctx context.Context, obj *ent.TestCase) (map[string]interface{}, error) {
@@ -447,7 +471,7 @@ func (r *testRunResolver) Tests(ctx context.Context, obj *ent.TestRun, first *in
 }
 
 func (r *vulnerabilityResolver) Metadata(ctx context.Context, obj *ent.Vulnerability) (map[string]interface{}, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.Metadata, nil
 }
 
 func (r *vulnerabilityResolver) Components(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.ComponentWhereInput, orderBy *ent.ComponentOrder) ([]*ent.Component, error) {

@@ -3,6 +3,8 @@ package store
 import (
 	"fmt"
 
+	"github.com/labstack/gommon/log"
+	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/store/api"
 	"github.com/valocode/bubbly/test"
 )
@@ -38,6 +40,12 @@ func (h *Handler) PopulateStoreWithPolicies(basedir string) error {
 	reqs, err := test.ParsePolicies(basedir)
 	if err != nil {
 		return err
+	}
+	_, projectErr := h.CreateProject(&api.ProjectCreateRequest{
+		Project: ent.NewProjectModelCreate().SetName("demo"),
+	})
+	if projectErr != nil {
+		log.Warnf("creating project failed: %s", projectErr.Error())
 	}
 	for _, req := range reqs {
 		req.Affects = &api.ReleasePolicyAffects{

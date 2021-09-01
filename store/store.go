@@ -12,6 +12,7 @@ import (
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/migrate"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/env"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -98,12 +99,20 @@ func (s *Store) initDB() error {
 	//
 	// Make sure default organisation exists: TODO
 	//
-	_, orgErr := s.client.Organization.Create().
+	dbOrg, orgErr := s.client.Organization.Create().
 		SetName(config.DefaultOrganization).
 		Save(s.ctx)
-	// Constraint error is fine (in case it already exists). Everything else is not
-	if !ent.IsConstraintError(orgErr) {
-		return orgErr
+	if orgErr != nil {
+		// Constraint error is fine (in case it already exists). Everything else is not
+		if !ent.IsConstraintError(orgErr) {
+			return orgErr
+		}
+		dbOrg, orgErr = s.client.Organization.Query().
+			Where(organization.Name(config.DefaultOrganization)).
+			Only(s.ctx)
+		if orgErr != nil {
+			return orgErr
+		}
 	}
 
 	//
@@ -111,6 +120,7 @@ func (s *Store) initDB() error {
 	//
 	_, projErr := s.client.Project.Create().
 		SetName(config.DefaultReleaseProject).
+		SetOwner(dbOrg).
 		Save(s.ctx)
 	// Constraint error is fine (in case it already exists). Everything else is not
 	if !ent.IsConstraintError(projErr) {

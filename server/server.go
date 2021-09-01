@@ -79,7 +79,9 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) *Server {
 	})
 
 	v1 := e.Group("/api/v1")
+	v1.POST("/projects", s.postProject)
 	v1.POST("/releases", s.postRelease)
+	v1.GET("/releases", s.getRelease)
 	v1.POST("/artifacts", s.postArtifact)
 	v1.POST("/codescans", s.postCodeScan)
 	v1.POST("/testruns", s.postTestRun)
@@ -136,6 +138,22 @@ func (s *Server) Start() error {
 	return nil
 }
 
+func (s *Server) postProject(c echo.Context) error {
+	var req api.ProjectCreateRequest
+	binder := &echo.DefaultBinder{}
+	if err := binder.BindBody(c, &req); err != nil {
+		return err
+	}
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	if _, err := h.CreateProject(&req); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Server) postRelease(c echo.Context) error {
 	var req api.ReleaseCreateRequest
 	binder := &echo.DefaultBinder{}
@@ -150,6 +168,23 @@ func (s *Server) postRelease(c echo.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Server) getRelease(c echo.Context) error {
+	var req api.ReleaseGetRequest
+	if err := (&echo.DefaultBinder{}).BindQueryParams(c, &req); err != nil {
+		return err
+	}
+
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	dbRelease, err := h.GetReleases(&req)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, dbRelease)
 }
 
 func (s *Server) postArtifact(c echo.Context) error {
@@ -201,16 +236,9 @@ func (s *Server) postTestRun(c echo.Context) error {
 }
 
 func (s *Server) getAdapter(c echo.Context) error {
-	var (
-		req  api.AdapterGetRequest
-		name = c.Param("name")
-		tag  = c.QueryParam("tag")
-	)
-	if name != "" {
-		req.Name = &name
-	}
-	if tag != "" {
-		req.Tag = &tag
+	var req api.AdapterGetRequest
+	if err := (&echo.DefaultBinder{}).BindQueryParams(c, &req); err != nil {
+		return err
 	}
 	h, err := store.NewHandler(store.WithStore(s.store))
 	if err != nil {

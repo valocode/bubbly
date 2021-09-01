@@ -8,6 +8,7 @@ import (
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -745,6 +746,74 @@ func NewReleaseModelUpdate() *ReleaseModelUpdate {
 func (r *ReleaseModelUpdate) SetID(value int) *ReleaseModelUpdate {
 	r.ID = &value
 	return r
+}
+
+type ReleaseEntryModelCreate struct {
+	Type *releaseentry.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time *time.Time         `json:"time,omitempty"  mapstructure:"time"`
+}
+
+func NewReleaseEntryModelCreate() *ReleaseEntryModelCreate {
+	return &ReleaseEntryModelCreate{}
+}
+
+func (re *ReleaseEntryModelCreate) SetType(value releaseentry.Type) *ReleaseEntryModelCreate {
+	re.Type = &value
+	return re
+}
+func (re *ReleaseEntryModelCreate) SetTime(value time.Time) *ReleaseEntryModelCreate {
+	re.Time = &value
+	return re
+}
+
+func (re *ReleaseEntryCreate) SetModelCreate(model *ReleaseEntryModelCreate) *ReleaseEntryCreate {
+	re.mutation.SetModelCreate(model)
+	return re
+}
+
+func (re *ReleaseEntryUpdateOne) SetModelCreate(model *ReleaseEntryModelCreate) *ReleaseEntryUpdateOne {
+	re.mutation.SetModelCreate(model)
+	return re
+}
+
+func (re *ReleaseEntryMutation) SetModelCreate(model *ReleaseEntryModelCreate) *ReleaseEntryMutation {
+	if model.Type != nil {
+		re.SetType(*model.Type)
+	}
+	if model.Time != nil {
+		re.SetTime(*model.Time)
+	}
+	return re
+}
+
+type ReleaseEntryModelRead struct {
+	Type *releaseentry.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time *time.Time         `json:"time,omitempty"  mapstructure:"time"`
+	ID   *int               `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewReleaseEntryModelRead() *ReleaseEntryModelRead {
+	return &ReleaseEntryModelRead{}
+}
+
+func (re *ReleaseEntryModelRead) FromEnt(value *ReleaseEntry) *ReleaseEntryModelRead {
+	re.Type = &value.Type
+	re.Time = &value.Time
+	re.ID = &value.ID
+	return re
+}
+
+type ReleaseEntryModelUpdate struct {
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewReleaseEntryModelUpdate() *ReleaseEntryModelUpdate {
+	return &ReleaseEntryModelUpdate{}
+}
+
+func (re *ReleaseEntryModelUpdate) SetID(value int) *ReleaseEntryModelUpdate {
+	re.ID = &value
+	return re
 }
 
 type ReleasePolicyModelCreate struct {

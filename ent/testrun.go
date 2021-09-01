@@ -9,10 +9,11 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/valocode/bubbly/ent/testrun"
+
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	schema "github.com/valocode/bubbly/ent/schema/types"
-	"github.com/valocode/bubbly/ent/testrun"
 )
 
 // TestRun is the model entity for the TestRun schema.

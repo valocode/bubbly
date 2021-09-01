@@ -34,6 +34,7 @@ require (
 	github.com/ory/dockertest/v3 v3.7.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rs/zerolog v1.23.0
+	github.com/ryanuber/columnize v2.1.2+incompatible // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/swag v1.7.0
