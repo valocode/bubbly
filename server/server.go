@@ -163,7 +163,11 @@ func (s *Server) postRelease(c echo.Context) error {
 	if err := binder.BindBody(c, &req); err != nil {
 		return err
 	}
-	h, err := store.NewHandler(store.WithStore(s.store))
+	h, err := store.NewHandler(
+		store.WithStore(s.store),
+		// TODO(miika): here is how to set user id for handler
+		// store.WithUserID(""),
+	)
 	if err != nil {
 		return err
 	}
