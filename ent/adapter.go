@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/adapter"
+	"github.com/valocode/bubbly/ent/organization"
 )
 
 // Adapter is the model entity for the Adapter schema.
@@ -21,6 +22,33 @@ type Adapter struct {
 	Tag string `json:"tag,omitempty"`
 	// Module holds the value of the "module" field.
 	Module string `json:"module,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the AdapterQuery when eager-loading is set.
+	Edges         AdapterEdges `json:"edges"`
+	adapter_owner *int
+}
+
+// AdapterEdges holds the relations/edges for other nodes in the graph.
+type AdapterEdges struct {
+	// Owner holds the value of the owner edge.
+	Owner *Organization `json:"owner,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// OwnerOrErr returns the Owner value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e AdapterEdges) OwnerOrErr() (*Organization, error) {
+	if e.loadedTypes[0] {
+		if e.Owner == nil {
+			// The edge owner was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: organization.Label}
+		}
+		return e.Owner, nil
+	}
+	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -32,6 +60,8 @@ func (*Adapter) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case adapter.FieldName, adapter.FieldTag, adapter.FieldModule:
 			values[i] = new(sql.NullString)
+		case adapter.ForeignKeys[0]: // adapter_owner
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Adapter", columns[i])
 		}
@@ -71,9 +101,21 @@ func (a *Adapter) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				a.Module = value.String
 			}
+		case adapter.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field adapter_owner", value)
+			} else if value.Valid {
+				a.adapter_owner = new(int)
+				*a.adapter_owner = int(value.Int64)
+			}
 		}
 	}
 	return nil
+}
+
+// QueryOwner queries the "owner" edge of the Adapter entity.
+func (a *Adapter) QueryOwner() *OrganizationQuery {
+	return (&AdapterClient{config: a.config}).QueryOwner(a)
 }
 
 // Update returns a builder for updating this Adapter.

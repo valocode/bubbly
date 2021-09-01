@@ -4,12 +4,14 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/adapter"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 )
 
@@ -44,9 +46,26 @@ func (au *AdapterUpdate) SetModule(s string) *AdapterUpdate {
 	return au
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (au *AdapterUpdate) SetOwnerID(id int) *AdapterUpdate {
+	au.mutation.SetOwnerID(id)
+	return au
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (au *AdapterUpdate) SetOwner(o *Organization) *AdapterUpdate {
+	return au.SetOwnerID(o.ID)
+}
+
 // Mutation returns the AdapterMutation object of the builder.
 func (au *AdapterUpdate) Mutation() *AdapterMutation {
 	return au.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (au *AdapterUpdate) ClearOwner() *AdapterUpdate {
+	au.mutation.ClearOwner()
+	return au
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -126,6 +145,9 @@ func (au *AdapterUpdate) check() error {
 			return &ValidationError{Name: "module", err: fmt.Errorf("ent: validator failed for field \"module\": %w", err)}
 		}
 	}
+	if _, ok := au.mutation.OwnerID(); au.mutation.OwnerCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"owner\"")
+	}
 	return nil
 }
 
@@ -168,6 +190,41 @@ func (au *AdapterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: adapter.FieldModule,
 		})
 	}
+	if au.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   adapter.OwnerTable,
+			Columns: []string{adapter.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   adapter.OwnerTable,
+			Columns: []string{adapter.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{adapter.Label}
@@ -205,9 +262,26 @@ func (auo *AdapterUpdateOne) SetModule(s string) *AdapterUpdateOne {
 	return auo
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (auo *AdapterUpdateOne) SetOwnerID(id int) *AdapterUpdateOne {
+	auo.mutation.SetOwnerID(id)
+	return auo
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (auo *AdapterUpdateOne) SetOwner(o *Organization) *AdapterUpdateOne {
+	return auo.SetOwnerID(o.ID)
+}
+
 // Mutation returns the AdapterMutation object of the builder.
 func (auo *AdapterUpdateOne) Mutation() *AdapterMutation {
 	return auo.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (auo *AdapterUpdateOne) ClearOwner() *AdapterUpdateOne {
+	auo.mutation.ClearOwner()
+	return auo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -294,6 +368,9 @@ func (auo *AdapterUpdateOne) check() error {
 			return &ValidationError{Name: "module", err: fmt.Errorf("ent: validator failed for field \"module\": %w", err)}
 		}
 	}
+	if _, ok := auo.mutation.OwnerID(); auo.mutation.OwnerCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"owner\"")
+	}
 	return nil
 }
 
@@ -352,6 +429,41 @@ func (auo *AdapterUpdateOne) sqlSave(ctx context.Context) (_node *Adapter, err e
 			Value:  value,
 			Column: adapter.FieldModule,
 		})
+	}
+	if auo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   adapter.OwnerTable,
+			Columns: []string{adapter.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   adapter.OwnerTable,
+			Columns: []string{adapter.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Adapter{config: auo.config}
 	_spec.Assign = _node.assignValues

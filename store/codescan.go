@@ -74,6 +74,7 @@ func (h *Handler) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.C
 				// It is not found, so create the component...
 				existingComp, err = tx.Component.Create().
 					SetModelCreate(&comp.ComponentModelCreate).
+					SetOwnerID(h.orgID).
 					Save(h.ctx)
 				if err != nil {
 					return HandleEntError(err, "component")

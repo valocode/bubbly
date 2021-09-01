@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/component"
-
+	"github.com/valocode/bubbly/ent/organization"
 	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
@@ -32,11 +32,14 @@ type Component struct {
 	Metadata schema.Metadata `json:"metadata,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ComponentQuery when eager-loading is set.
-	Edges ComponentEdges `json:"edges"`
+	Edges           ComponentEdges `json:"edges"`
+	component_owner *int
 }
 
 // ComponentEdges holds the relations/edges for other nodes in the graph.
 type ComponentEdges struct {
+	// Owner holds the value of the owner edge.
+	Owner *Organization `json:"owner,omitempty"`
 	// Vulnerabilities holds the value of the vulnerabilities edge.
 	Vulnerabilities []*Vulnerability `json:"vulnerabilities,omitempty"`
 	// Licenses holds the value of the licenses edge.
@@ -45,13 +48,27 @@ type ComponentEdges struct {
 	Uses []*ReleaseComponent `json:"uses,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
+}
+
+// OwnerOrErr returns the Owner value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ComponentEdges) OwnerOrErr() (*Organization, error) {
+	if e.loadedTypes[0] {
+		if e.Owner == nil {
+			// The edge owner was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: organization.Label}
+		}
+		return e.Owner, nil
+	}
+	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // VulnerabilitiesOrErr returns the Vulnerabilities value or an error if the edge
 // was not loaded in eager-loading.
 func (e ComponentEdges) VulnerabilitiesOrErr() ([]*Vulnerability, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.Vulnerabilities, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerabilities"}
@@ -60,7 +77,7 @@ func (e ComponentEdges) VulnerabilitiesOrErr() ([]*Vulnerability, error) {
 // LicensesOrErr returns the Licenses value or an error if the edge
 // was not loaded in eager-loading.
 func (e ComponentEdges) LicensesOrErr() ([]*License, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Licenses, nil
 	}
 	return nil, &NotLoadedError{edge: "licenses"}
@@ -69,7 +86,7 @@ func (e ComponentEdges) LicensesOrErr() ([]*License, error) {
 // UsesOrErr returns the Uses value or an error if the edge
 // was not loaded in eager-loading.
 func (e ComponentEdges) UsesOrErr() ([]*ReleaseComponent, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.Uses, nil
 	}
 	return nil, &NotLoadedError{edge: "uses"}
@@ -86,6 +103,8 @@ func (*Component) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case component.FieldName, component.FieldVendor, component.FieldVersion, component.FieldDescription, component.FieldURL:
 			values[i] = new(sql.NullString)
+		case component.ForeignKeys[0]: // component_owner
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Component", columns[i])
 		}
@@ -145,9 +164,21 @@ func (c *Component) assignValues(columns []string, values []interface{}) error {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
+		case component.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field component_owner", value)
+			} else if value.Valid {
+				c.component_owner = new(int)
+				*c.component_owner = int(value.Int64)
+			}
 		}
 	}
 	return nil
+}
+
+// QueryOwner queries the "owner" edge of the Component entity.
+func (c *Component) QueryOwner() *OrganizationQuery {
+	return (&ComponentClient{config: c.config}).QueryOwner(c)
 }
 
 // QueryVulnerabilities queries the "vulnerabilities" edge of the Component entity.

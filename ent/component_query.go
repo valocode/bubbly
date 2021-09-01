@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/license"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -29,9 +30,11 @@ type ComponentQuery struct {
 	fields     []string
 	predicates []predicate.Component
 	// eager-loading edges.
+	withOwner           *OrganizationQuery
 	withVulnerabilities *VulnerabilityQuery
 	withLicenses        *LicenseQuery
 	withUses            *ReleaseComponentQuery
+	withFKs             bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -66,6 +69,28 @@ func (cq *ComponentQuery) Unique(unique bool) *ComponentQuery {
 func (cq *ComponentQuery) Order(o ...OrderFunc) *ComponentQuery {
 	cq.order = append(cq.order, o...)
 	return cq
+}
+
+// QueryOwner chains the current query on the "owner" edge.
+func (cq *ComponentQuery) QueryOwner() *OrganizationQuery {
+	query := &OrganizationQuery{config: cq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(component.Table, component.FieldID, selector),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, component.OwnerTable, component.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryVulnerabilities chains the current query on the "vulnerabilities" edge.
@@ -315,6 +340,7 @@ func (cq *ComponentQuery) Clone() *ComponentQuery {
 		offset:              cq.offset,
 		order:               append([]OrderFunc{}, cq.order...),
 		predicates:          append([]predicate.Component{}, cq.predicates...),
+		withOwner:           cq.withOwner.Clone(),
 		withVulnerabilities: cq.withVulnerabilities.Clone(),
 		withLicenses:        cq.withLicenses.Clone(),
 		withUses:            cq.withUses.Clone(),
@@ -322,6 +348,17 @@ func (cq *ComponentQuery) Clone() *ComponentQuery {
 		sql:  cq.sql.Clone(),
 		path: cq.path,
 	}
+}
+
+// WithOwner tells the query-builder to eager-load the nodes that are connected to
+// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *ComponentQuery) WithOwner(opts ...func(*OrganizationQuery)) *ComponentQuery {
+	query := &OrganizationQuery{config: cq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	cq.withOwner = query
+	return cq
 }
 
 // WithVulnerabilities tells the query-builder to eager-load the nodes that are connected to
@@ -421,13 +458,21 @@ func (cq *ComponentQuery) prepareQuery(ctx context.Context) error {
 func (cq *ComponentQuery) sqlAll(ctx context.Context) ([]*Component, error) {
 	var (
 		nodes       = []*Component{}
+		withFKs     = cq.withFKs
 		_spec       = cq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
+			cq.withOwner != nil,
 			cq.withVulnerabilities != nil,
 			cq.withLicenses != nil,
 			cq.withUses != nil,
 		}
 	)
+	if cq.withOwner != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, component.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Component{config: cq.config}
 		nodes = append(nodes, node)
@@ -446,6 +491,35 @@ func (cq *ComponentQuery) sqlAll(ctx context.Context) ([]*Component, error) {
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+
+	if query := cq.withOwner; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Component)
+		for i := range nodes {
+			if nodes[i].component_owner == nil {
+				continue
+			}
+			fk := *nodes[i].component_owner
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(organization.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "component_owner" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Owner = n
+			}
+		}
 	}
 
 	if query := cq.withVulnerabilities; query != nil {

@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
@@ -32,6 +33,17 @@ func (rpc *ReleasePolicyCreate) SetName(s string) *ReleasePolicyCreate {
 func (rpc *ReleasePolicyCreate) SetModule(s string) *ReleasePolicyCreate {
 	rpc.mutation.SetModule(s)
 	return rpc
+}
+
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (rpc *ReleasePolicyCreate) SetOwnerID(id int) *ReleasePolicyCreate {
+	rpc.mutation.SetOwnerID(id)
+	return rpc
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (rpc *ReleasePolicyCreate) SetOwner(o *Organization) *ReleasePolicyCreate {
+	return rpc.SetOwnerID(o.ID)
 }
 
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
@@ -165,6 +177,9 @@ func (rpc *ReleasePolicyCreate) check() error {
 			return &ValidationError{Name: "module", err: fmt.Errorf(`ent: validator failed for field "module": %w`, err)}
 		}
 	}
+	if _, ok := rpc.mutation.OwnerID(); !ok {
+		return &ValidationError{Name: "owner", err: errors.New("ent: missing required edge \"owner\"")}
+	}
 	return nil
 }
 
@@ -207,6 +222,26 @@ func (rpc *ReleasePolicyCreate) createSpec() (*ReleasePolicy, *sqlgraph.CreateSp
 			Column: releasepolicy.FieldModule,
 		})
 		_node.Module = value
+	}
+	if nodes := rpc.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   releasepolicy.OwnerTable,
+			Columns: []string{releasepolicy.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.release_policy_owner = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rpc.mutation.ProjectsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

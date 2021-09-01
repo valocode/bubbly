@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/adapter"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 )
 
@@ -24,6 +25,9 @@ type AdapterQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Adapter
+	// eager-loading edges.
+	withOwner *OrganizationQuery
+	withFKs   bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +62,28 @@ func (aq *AdapterQuery) Unique(unique bool) *AdapterQuery {
 func (aq *AdapterQuery) Order(o ...OrderFunc) *AdapterQuery {
 	aq.order = append(aq.order, o...)
 	return aq
+}
+
+// QueryOwner chains the current query on the "owner" edge.
+func (aq *AdapterQuery) QueryOwner() *OrganizationQuery {
+	query := &OrganizationQuery{config: aq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := aq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := aq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(adapter.Table, adapter.FieldID, selector),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, adapter.OwnerTable, adapter.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Adapter entity from the query.
@@ -241,10 +267,22 @@ func (aq *AdapterQuery) Clone() *AdapterQuery {
 		offset:     aq.offset,
 		order:      append([]OrderFunc{}, aq.order...),
 		predicates: append([]predicate.Adapter{}, aq.predicates...),
+		withOwner:  aq.withOwner.Clone(),
 		// clone intermediate query.
 		sql:  aq.sql.Clone(),
 		path: aq.path,
 	}
+}
+
+// WithOwner tells the query-builder to eager-load the nodes that are connected to
+// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
+func (aq *AdapterQuery) WithOwner(opts ...func(*OrganizationQuery)) *AdapterQuery {
+	query := &OrganizationQuery{config: aq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	aq.withOwner = query
+	return aq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -310,9 +348,19 @@ func (aq *AdapterQuery) prepareQuery(ctx context.Context) error {
 
 func (aq *AdapterQuery) sqlAll(ctx context.Context) ([]*Adapter, error) {
 	var (
-		nodes = []*Adapter{}
-		_spec = aq.querySpec()
+		nodes       = []*Adapter{}
+		withFKs     = aq.withFKs
+		_spec       = aq.querySpec()
+		loadedTypes = [1]bool{
+			aq.withOwner != nil,
+		}
 	)
+	if aq.withOwner != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, adapter.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Adapter{config: aq.config}
 		nodes = append(nodes, node)
@@ -323,6 +371,7 @@ func (aq *AdapterQuery) sqlAll(ctx context.Context) ([]*Adapter, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, aq.driver, _spec); err != nil {
@@ -331,6 +380,36 @@ func (aq *AdapterQuery) sqlAll(ctx context.Context) ([]*Adapter, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := aq.withOwner; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Adapter)
+		for i := range nodes {
+			if nodes[i].adapter_owner == nil {
+				continue
+			}
+			fk := *nodes[i].adapter_owner
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(organization.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "adapter_owner" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Owner = n
+			}
+		}
+	}
+
 	return nodes, nil
 }
 

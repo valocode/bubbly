@@ -72,7 +72,7 @@ func (a *Adapter) Node(ctx context.Context) (node *Node, err error) {
 		ID:     a.ID,
 		Type:   "Adapter",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 0),
+		Edges:  make([]*Edge, 1),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(a.Name); err != nil {
@@ -106,6 +106,16 @@ func (a *Adapter) Node(ctx context.Context) (node *Node, err error) {
 		Type:  "int",
 		Name:  "id",
 		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Organization",
+		Name: "owner",
+	}
+	node.Edges[0].IDs, err = a.QueryOwner().
+		Select(organization.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
 	}
 	return node, nil
 }
@@ -356,7 +366,7 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 		ID:     c.ID,
 		Type:   "Component",
 		Fields: make([]*Field, 6),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(c.Name); err != nil {
@@ -416,30 +426,40 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
-		Type: "Vulnerability",
-		Name: "vulnerabilities",
+		Type: "Organization",
+		Name: "owner",
 	}
-	node.Edges[0].IDs, err = c.QueryVulnerabilities().
-		Select(vulnerability.FieldID).
+	node.Edges[0].IDs, err = c.QueryOwner().
+		Select(organization.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "License",
-		Name: "licenses",
+		Type: "Vulnerability",
+		Name: "vulnerabilities",
 	}
-	node.Edges[1].IDs, err = c.QueryLicenses().
-		Select(license.FieldID).
+	node.Edges[1].IDs, err = c.QueryVulnerabilities().
+		Select(vulnerability.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
+		Type: "License",
+		Name: "licenses",
+	}
+	node.Edges[2].IDs, err = c.QueryLicenses().
+		Select(license.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
 		Type: "ReleaseComponent",
 		Name: "uses",
 	}
-	node.Edges[2].IDs, err = c.QueryUses().
+	node.Edges[3].IDs, err = c.QueryUses().
 		Select(releasecomponent.FieldID).
 		Ints(ctx)
 	if err != nil {
@@ -1110,7 +1130,7 @@ func (rp *ReleasePolicy) Node(ctx context.Context) (node *Node, err error) {
 		ID:     rp.ID,
 		Type:   "ReleasePolicy",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(rp.Name); err != nil {
@@ -1138,30 +1158,40 @@ func (rp *ReleasePolicy) Node(ctx context.Context) (node *Node, err error) {
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
-		Type: "Project",
-		Name: "projects",
+		Type: "Organization",
+		Name: "owner",
 	}
-	node.Edges[0].IDs, err = rp.QueryProjects().
-		Select(project.FieldID).
+	node.Edges[0].IDs, err = rp.QueryOwner().
+		Select(organization.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "Repo",
-		Name: "repos",
+		Type: "Project",
+		Name: "projects",
 	}
-	node.Edges[1].IDs, err = rp.QueryRepos().
-		Select(repo.FieldID).
+	node.Edges[1].IDs, err = rp.QueryProjects().
+		Select(project.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
+		Type: "Repo",
+		Name: "repos",
+	}
+	node.Edges[2].IDs, err = rp.QueryRepos().
+		Select(repo.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
 		Type: "ReleasePolicyViolation",
 		Name: "violations",
 	}
-	node.Edges[2].IDs, err = rp.QueryViolations().
+	node.Edges[3].IDs, err = rp.QueryViolations().
 		Select(releasepolicyviolation.FieldID).
 		Ints(ctx)
 	if err != nil {
@@ -1544,7 +1574,7 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 		ID:     v.ID,
 		Type:   "Vulnerability",
 		Fields: make([]*Field, 8),
-		Edges:  make([]*Edge, 3),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(v.Vid); err != nil {
@@ -1620,30 +1650,40 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
-		Type: "Component",
-		Name: "components",
+		Type: "Organization",
+		Name: "owner",
 	}
-	node.Edges[0].IDs, err = v.QueryComponents().
-		Select(component.FieldID).
+	node.Edges[0].IDs, err = v.QueryOwner().
+		Select(organization.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "VulnerabilityReview",
-		Name: "reviews",
+		Type: "Component",
+		Name: "components",
 	}
-	node.Edges[1].IDs, err = v.QueryReviews().
-		Select(vulnerabilityreview.FieldID).
+	node.Edges[1].IDs, err = v.QueryComponents().
+		Select(component.FieldID).
 		Ints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
+		Type: "VulnerabilityReview",
+		Name: "reviews",
+	}
+	node.Edges[2].IDs, err = v.QueryReviews().
+		Select(vulnerabilityreview.FieldID).
+		Ints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
 		Type: "ReleaseVulnerability",
 		Name: "instances",
 	}
-	node.Edges[2].IDs, err = v.QueryInstances().
+	node.Edges[3].IDs, err = v.QueryInstances().
 		Select(releasevulnerability.FieldID).
 		Ints(ctx)
 	if err != nil {

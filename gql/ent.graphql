@@ -200,6 +200,7 @@ type Vulnerability implements Node {
   published: Time
   modified: Time
   metadata: Map
+  owner: Organization!
   components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
   reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
   instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
@@ -354,6 +355,7 @@ type Adapter implements Node {
   name: String
   tag: String
   module: String
+  owner: Organization!
 }
 
 """
@@ -650,6 +652,7 @@ type ReleasePolicy implements Node {
   id: ID!
   name: String
   module: String
+  owner: Organization!
   projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
   repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
   violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
@@ -692,6 +695,7 @@ type Component implements Node {
   description: String
   url: String
   metadata: Map
+  owner: Organization!
   vulnerabilities(first: Int, last: Int, where: VulnerabilityWhereInput, order_by: VulnerabilityOrder): [Vulnerability] @goField(forceResolver: true)
   licenses(first: Int, last: Int, where: LicenseWhereInput, order_by: LicenseOrder): [License] @goField(forceResolver: true)
   uses(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
@@ -1140,6 +1144,10 @@ input ComponentWhereInput {
   id_gte: Int
   id_lt: Int
   id_lte: Int
+  
+  """owner edge predicates"""
+  has_owner: Boolean
+  has_owner_with: [OrganizationWhereInput!]
   
   """vulnerabilities edge predicates"""
   has_vulnerabilities: Boolean
@@ -2122,6 +2130,10 @@ input VulnerabilityWhereInput {
   id_lt: Int
   id_lte: Int
   
+  """owner edge predicates"""
+  has_owner: Boolean
+  has_owner_with: [OrganizationWhereInput!]
+  
   """components edge predicates"""
   has_components: Boolean
   has_components_with: [ComponentWhereInput!]
@@ -2245,6 +2257,10 @@ input AdapterWhereInput {
   id_gte: Int
   id_lt: Int
   id_lte: Int
+  
+  """owner edge predicates"""
+  has_owner: Boolean
+  has_owner_with: [OrganizationWhereInput!]
 }
 
 """
@@ -2360,6 +2376,10 @@ input ReleasePolicyWhereInput {
   id_gte: Int
   id_lt: Int
   id_lte: Int
+  
+  """owner edge predicates"""
+  has_owner: Boolean
+  has_owner_with: [OrganizationWhereInput!]
   
   """projects edge predicates"""
   has_projects: Boolean

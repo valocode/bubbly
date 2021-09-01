@@ -12,6 +12,7 @@ import (
 	"github.com/valocode/bubbly/ent/component"
 
 	"github.com/valocode/bubbly/ent/license"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -82,6 +83,17 @@ func (cc *ComponentCreate) SetNillableURL(s *string) *ComponentCreate {
 func (cc *ComponentCreate) SetMetadata(s schema.Metadata) *ComponentCreate {
 	cc.mutation.SetMetadata(s)
 	return cc
+}
+
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (cc *ComponentCreate) SetOwnerID(id int) *ComponentCreate {
+	cc.mutation.SetOwnerID(id)
+	return cc
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (cc *ComponentCreate) SetOwner(o *Organization) *ComponentCreate {
+	return cc.SetOwnerID(o.ID)
 }
 
 // AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by IDs.
@@ -227,6 +239,9 @@ func (cc *ComponentCreate) check() error {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "version": %w`, err)}
 		}
 	}
+	if _, ok := cc.mutation.OwnerID(); !ok {
+		return &ValidationError{Name: "owner", err: errors.New("ent: missing required edge \"owner\"")}
+	}
 	return nil
 }
 
@@ -301,6 +316,26 @@ func (cc *ComponentCreate) createSpec() (*Component, *sqlgraph.CreateSpec) {
 			Column: component.FieldMetadata,
 		})
 		_node.Metadata = value
+	}
+	if nodes := cc.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   component.OwnerTable,
+			Columns: []string{component.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.component_owner = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := cc.mutation.VulnerabilitiesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

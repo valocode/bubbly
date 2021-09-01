@@ -21,6 +21,7 @@ func (h *Handler) SaveAdapter(req *api.AdapterSaveRequest) (*ent.Adapter, error)
 		}
 		dbAdapter, err = h.client.Adapter.Create().
 			SetModelCreate(req.Adapter).
+			SetOwnerID(h.orgID).
 			Save(h.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "adapter create")

@@ -15,12 +15,21 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "tag", Type: field.TypeString},
 		{Name: "module", Type: field.TypeString},
+		{Name: "adapter_owner", Type: field.TypeInt, Nullable: true},
 	}
 	// AdapterTable holds the schema information for the "adapter" table.
 	AdapterTable = &schema.Table{
 		Name:       "adapter",
 		Columns:    AdapterColumns,
 		PrimaryKey: []*schema.Column{AdapterColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "adapter_organization_owner",
+				Columns:    []*schema.Column{AdapterColumns[4]},
+				RefColumns: []*schema.Column{OrganizationColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "adapter_name_tag",
@@ -136,12 +145,21 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "url", Type: field.TypeString, Nullable: true},
 		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "component_owner", Type: field.TypeInt, Nullable: true},
 	}
 	// ComponentTable holds the schema information for the "component" table.
 	ComponentTable = &schema.Table{
 		Name:       "component",
 		Columns:    ComponentColumns,
 		PrimaryKey: []*schema.Column{ComponentColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "component_organization_owner",
+				Columns:    []*schema.Column{ComponentColumns[7]},
+				RefColumns: []*schema.Column{OrganizationColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "component_name_vendor_version",
@@ -388,12 +406,21 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "module", Type: field.TypeString},
+		{Name: "release_policy_owner", Type: field.TypeInt, Nullable: true},
 	}
 	// ReleasePolicyTable holds the schema information for the "release_policy" table.
 	ReleasePolicyTable = &schema.Table{
 		Name:       "release_policy",
 		Columns:    ReleasePolicyColumns,
 		PrimaryKey: []*schema.Column{ReleasePolicyColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "release_policy_organization_owner",
+				Columns:    []*schema.Column{ReleasePolicyColumns[3]},
+				RefColumns: []*schema.Column{OrganizationColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// ReleasePolicyViolationColumns holds the columns for the "release_policy_violation" table.
 	ReleasePolicyViolationColumns = []*schema.Column{
@@ -563,12 +590,21 @@ var (
 		{Name: "published", Type: field.TypeTime, Nullable: true},
 		{Name: "modified", Type: field.TypeTime, Nullable: true},
 		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "vulnerability_owner", Type: field.TypeInt, Nullable: true},
 	}
 	// VulnerabilityTable holds the schema information for the "vulnerability" table.
 	VulnerabilityTable = &schema.Table{
 		Name:       "vulnerability",
 		Columns:    VulnerabilityColumns,
 		PrimaryKey: []*schema.Column{VulnerabilityColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "vulnerability_organization_owner",
+				Columns:    []*schema.Column{VulnerabilityColumns[9]},
+				RefColumns: []*schema.Column{OrganizationColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "vulnerability_vid",
@@ -886,6 +922,7 @@ var (
 )
 
 func init() {
+	AdapterTable.ForeignKeys[0].RefTable = OrganizationTable
 	AdapterTable.Annotation = &entsql.Annotation{
 		Table: "adapter",
 	}
@@ -904,6 +941,7 @@ func init() {
 	CodeScanTable.Annotation = &entsql.Annotation{
 		Table: "code_scan",
 	}
+	ComponentTable.ForeignKeys[0].RefTable = OrganizationTable
 	ComponentTable.Annotation = &entsql.Annotation{
 		Table: "component",
 	}
@@ -945,6 +983,7 @@ func init() {
 	ReleaseLicenseTable.Annotation = &entsql.Annotation{
 		Table: "release_license",
 	}
+	ReleasePolicyTable.ForeignKeys[0].RefTable = OrganizationTable
 	ReleasePolicyTable.Annotation = &entsql.Annotation{
 		Table: "release_policy",
 	}
@@ -974,6 +1013,7 @@ func init() {
 	TestRunTable.Annotation = &entsql.Annotation{
 		Table: "test_run",
 	}
+	VulnerabilityTable.ForeignKeys[0].RefTable = OrganizationTable
 	VulnerabilityTable.Annotation = &entsql.Annotation{
 		Table: "vulnerability",
 	}

@@ -91,6 +91,10 @@ type AdapterWhereInput struct {
 	IDGTE   *int  `json:"idGTE,omitempty"`
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "owner" edge predicates.
+	HasOwner     *bool                     `json:"hasOwner,omitempty"`
+	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
 }
 
 // Filter applies the AdapterWhereInput filter on the AdapterQuery builder.
@@ -294,6 +298,24 @@ func (i *AdapterWhereInput) P() (predicate.Adapter, error) {
 		predicates = append(predicates, adapter.IDLTE(*i.IDLTE))
 	}
 
+	if i.HasOwner != nil {
+		p := adapter.HasOwner()
+		if !*i.HasOwner {
+			p = adapter.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerWith) > 0 {
+		with := make([]predicate.Organization, 0, len(i.HasOwnerWith))
+		for _, w := range i.HasOwnerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, adapter.HasOwnerWith(with...))
+	}
 	switch len(predicates) {
 	case 0:
 		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate AdapterWhereInput")
@@ -1300,6 +1322,10 @@ type ComponentWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
+	// "owner" edge predicates.
+	HasOwner     *bool                     `json:"hasOwner,omitempty"`
+	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
+
 	// "vulnerabilities" edge predicates.
 	HasVulnerabilities     *bool                      `json:"hasVulnerabilities,omitempty"`
 	HasVulnerabilitiesWith []*VulnerabilityWhereInput `json:"hasVulnerabilitiesWith,omitempty"`
@@ -1604,6 +1630,24 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 		predicates = append(predicates, component.IDLTE(*i.IDLTE))
 	}
 
+	if i.HasOwner != nil {
+		p := component.HasOwner()
+		if !*i.HasOwner {
+			p = component.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerWith) > 0 {
+		with := make([]predicate.Organization, 0, len(i.HasOwnerWith))
+		for _, w := range i.HasOwnerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, component.HasOwnerWith(with...))
+	}
 	if i.HasVulnerabilities != nil {
 		p := component.HasVulnerabilities()
 		if !*i.HasVulnerabilities {
@@ -4233,6 +4277,10 @@ type ReleasePolicyWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
+	// "owner" edge predicates.
+	HasOwner     *bool                     `json:"hasOwner,omitempty"`
+	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
+
 	// "projects" edge predicates.
 	HasProjects     *bool                `json:"hasProjects,omitempty"`
 	HasProjectsWith []*ProjectWhereInput `json:"hasProjectsWith,omitempty"`
@@ -4408,6 +4456,24 @@ func (i *ReleasePolicyWhereInput) P() (predicate.ReleasePolicy, error) {
 		predicates = append(predicates, releasepolicy.IDLTE(*i.IDLTE))
 	}
 
+	if i.HasOwner != nil {
+		p := releasepolicy.HasOwner()
+		if !*i.HasOwner {
+			p = releasepolicy.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerWith) > 0 {
+		with := make([]predicate.Organization, 0, len(i.HasOwnerWith))
+		for _, w := range i.HasOwnerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, releasepolicy.HasOwnerWith(with...))
+	}
 	if i.HasProjects != nil {
 		p := releasepolicy.HasProjects()
 		if !*i.HasProjects {
@@ -5944,6 +6010,10 @@ type VulnerabilityWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
+	// "owner" edge predicates.
+	HasOwner     *bool                     `json:"hasOwner,omitempty"`
+	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
+
 	// "components" edge predicates.
 	HasComponents     *bool                  `json:"hasComponents,omitempty"`
 	HasComponentsWith []*ComponentWhereInput `json:"hasComponentsWith,omitempty"`
@@ -6266,6 +6336,24 @@ func (i *VulnerabilityWhereInput) P() (predicate.Vulnerability, error) {
 		predicates = append(predicates, vulnerability.IDLTE(*i.IDLTE))
 	}
 
+	if i.HasOwner != nil {
+		p := vulnerability.HasOwner()
+		if !*i.HasOwner {
+			p = vulnerability.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerWith) > 0 {
+		with := make([]predicate.Organization, 0, len(i.HasOwnerWith))
+		for _, w := range i.HasOwnerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, vulnerability.HasOwnerWith(with...))
+	}
 	if i.HasComponents != nil {
 		p := vulnerability.HasComponents()
 		if !*i.HasComponents {

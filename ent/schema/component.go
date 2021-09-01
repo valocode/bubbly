@@ -45,6 +45,7 @@ func (Component) Fields() []ent.Field {
 
 func (Component) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("owner", Organization.Type).Unique().Required(),
 		edge.To("vulnerabilities", Vulnerability.Type),
 		edge.To("licenses", License.Type),
 		edge.From("uses", ReleaseComponent.Type).Ref("component"),

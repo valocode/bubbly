@@ -19,6 +19,8 @@ const (
 	FieldURL = "url"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// EdgeVulnerabilities holds the string denoting the vulnerabilities edge name in mutations.
 	EdgeVulnerabilities = "vulnerabilities"
 	// EdgeLicenses holds the string denoting the licenses edge name in mutations.
@@ -27,6 +29,13 @@ const (
 	EdgeUses = "uses"
 	// Table holds the table name of the component in the database.
 	Table = "component"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "component"
+	// OwnerInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OwnerInverseTable = "organization"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "component_owner"
 	// VulnerabilitiesTable is the table that holds the vulnerabilities relation/edge. The primary key declared below.
 	VulnerabilitiesTable = "component_vulnerabilities"
 	// VulnerabilitiesInverseTable is the table name for the Vulnerability entity.
@@ -57,6 +66,12 @@ var Columns = []string{
 	FieldMetadata,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "component"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"component_owner",
+}
+
 var (
 	// VulnerabilitiesPrimaryKey and VulnerabilitiesColumn2 are the table columns denoting the
 	// primary key for the vulnerabilities relation (M2M).
@@ -70,6 +85,11 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}

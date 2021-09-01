@@ -61,6 +61,7 @@ func (h *Handler) GetVulnerabilityOrCreate(client *ent.Client, vuln *api.Vulnera
 		// If not found, create it
 		dbVuln, err = client.Vulnerability.Create().
 			SetModelCreate(&vuln.VulnerabilityModelCreate).
+			SetOwnerID(h.orgID).
 			Save(h.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "vulnerability")
