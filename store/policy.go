@@ -59,6 +59,26 @@ func (h *Handler) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.Rel
 	return dbPolicy, nil
 }
 
+func (h *Handler) GetReleasePolicy(req *api.ReleasePolicyGetRequest) (*api.ReleasePolicyGetResponse, error) {
+	if err := h.validator.Struct(req); err != nil {
+		return nil, HandleValidatorError(err, "get release policy")
+	}
+
+	query := h.client.ReleasePolicy.Query().Where(
+		releasepolicy.Name(*req.Name),
+	)
+	dbPolicy, err := query.Only(h.ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, NewNotFoundError(err, "release policy")
+		}
+		return nil, HandleEntError(err, "get release policy")
+	}
+	return &api.ReleasePolicyGetResponse{
+		ReleasePolicyModelRead: *ent.NewReleasePolicyModelRead().FromEnt(dbPolicy),
+	}, nil
+}
+
 func (h *Handler) SetReleasePolicyAffects(req *api.ReleasePolicySetRequest) (*ent.ReleasePolicy, error) {
 	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "release policy set affects")
@@ -69,6 +89,9 @@ func (h *Handler) SetReleasePolicyAffects(req *api.ReleasePolicySetRequest) (*en
 		Where(releasepolicy.Name(*req.Policy)).
 		Only(h.ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, NewNotFoundError(nil, "release policy not found")
+		}
 		return nil, HandleEntError(err, "release policy query")
 	}
 

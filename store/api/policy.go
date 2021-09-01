@@ -14,7 +14,7 @@ type (
 	}
 
 	ReleasePolicyGetRequest struct {
-		Name *string `validate:"required"`
+		Name *string `json:"name,omitempty" param:"name" validate:"required"`
 	}
 
 	ReleasePolicyGetResponse struct {

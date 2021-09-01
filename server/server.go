@@ -87,6 +87,9 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) *Server {
 	v1.POST("/testruns", s.postTestRun)
 	v1.POST("/adapters", s.postAdapter)
 	v1.GET("/adapters/:name", s.getAdapter)
+	v1.POST("/policies", s.postPolicy)
+	v1.PUT("/policies", s.putPolicy)
+	v1.GET("/policies/:name", s.getPolicy)
 
 	// TODO: Miika - integrate Casbin as middleware or similar
 	// https://echo.labstack.com/middleware/casbin-auth/
@@ -237,7 +240,7 @@ func (s *Server) postTestRun(c echo.Context) error {
 
 func (s *Server) getAdapter(c echo.Context) error {
 	var req api.AdapterGetRequest
-	if err := (&echo.DefaultBinder{}).BindQueryParams(c, &req); err != nil {
+	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
 		return err
 	}
 	h, err := store.NewHandler(store.WithStore(s.store))
@@ -262,6 +265,54 @@ func (s *Server) postAdapter(c echo.Context) error {
 		return err
 	}
 	if _, err := h.SaveAdapter(&req); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) getPolicy(c echo.Context) error {
+	var req api.ReleasePolicyGetRequest
+	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
+		return err
+	}
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	adapter, err := h.GetReleasePolicy(&req)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, adapter)
+}
+
+func (s *Server) postPolicy(c echo.Context) error {
+	var req api.ReleasePolicySaveRequest
+	binder := &echo.DefaultBinder{}
+	if err := binder.BindBody(c, &req); err != nil {
+		return err
+	}
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	if _, err := h.SaveReleasePolicy(&req); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) putPolicy(c echo.Context) error {
+	var req api.ReleasePolicySetRequest
+	binder := &echo.DefaultBinder{}
+	if err := binder.BindBody(c, &req); err != nil {
+		return err
+	}
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	if _, err := h.SetReleasePolicyAffects(&req); err != nil {
 		return err
 	}
 	return nil

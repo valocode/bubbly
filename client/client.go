@@ -17,25 +17,11 @@ func CreateRelease(bCtx *env.BubblyContext, req *api.ReleaseCreateRequest) error
 }
 
 func GetRelease(bCtx *env.BubblyContext, req *api.ReleaseGetRequest) (*api.ReleaseGetResponse, error) {
-	var (
-		r api.ReleaseGetResponse
-		// params = make(map[string]string)
-	)
+	var r api.ReleaseGetResponse
 	params, err := structToStringMap(req)
 	if err != nil {
 		return nil, err
 	}
-	// if req.Commit != nil {
-	// 	params["commit"] = *req.Commit
-	// }
-	// if req.Repo != nil {
-	// 	params["repo"] = *req.Repo
-	// }
-	// if req.Repo != nil {
-	// 	params["repo"] = *req.Repo
-	// }
-	fmt.Println("Params: ", params)
-
 	if err := handleGetRequest(bCtx, &r, "releases", params); err != nil {
 		return nil, err
 	}
@@ -51,12 +37,10 @@ func SaveTestRun(bCtx *env.BubblyContext, req *api.TestRunRequest) error {
 }
 
 func GetAdapter(bCtx *env.BubblyContext, req *api.AdapterGetRequest) (*api.AdapterGetResponse, error) {
-	var (
-		a      api.AdapterGetResponse
-		params = make(map[string]string)
-	)
-	if req.Tag != nil {
-		params["tag"] = *req.Tag
+	var a api.AdapterGetResponse
+	params, err := structToStringMap(req)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := handleGetRequest(bCtx, &a, "adapters/"+*req.Name, params); err != nil {
@@ -67,6 +51,22 @@ func GetAdapter(bCtx *env.BubblyContext, req *api.AdapterGetRequest) (*api.Adapt
 
 func SaveAdapter(bCtx *env.BubblyContext, req *api.AdapterSaveRequest) error {
 	return handlePostRequest(bCtx, req, "adapters")
+}
+
+func GetPolicy(bCtx *env.BubblyContext, req *api.ReleasePolicyGetRequest) (*api.ReleasePolicyGetResponse, error) {
+	var r api.ReleasePolicyGetResponse
+	if err := handleGetRequest(bCtx, &r, "policies/"+*req.Name, nil); err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+func SavePolicy(bCtx *env.BubblyContext, req *api.ReleasePolicySaveRequest) error {
+	return handlePostRequest(bCtx, req, "policies")
+}
+
+func SetPolicy(bCtx *env.BubblyContext, req *api.ReleasePolicySetRequest) error {
+	return handlePutRequest(bCtx, req, "policies")
 }
 
 func handleGetRequest(bCtx *env.BubblyContext, resp interface{}, urlsuffix string, params map[string]string) error {
@@ -119,6 +119,29 @@ func handlePostRequest(bCtx *env.BubblyContext, req interface{}, urlsuffix strin
 	return nil
 }
 
+func handlePutRequest(bCtx *env.BubblyContext, req interface{}, urlsuffix string) error {
+	b := new(bytes.Buffer)
+	if err := json.NewEncoder(b).Encode(req); err != nil {
+		return err
+	}
+
+	fmt.Printf("Put Request:\n%s\n", b)
+	url := bCtx.ClientConfig.V1() + "/" + urlsuffix
+	httpReq, err := http.NewRequest(http.MethodPut, url, b)
+	if err != nil {
+		return err
+	}
+	httpReq.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return err
+	}
+	if err := handleResponseError(resp); err != nil {
+		return err
+	}
+	return nil
+}
+
 func handleResponseError(resp *http.Response) error {
 	if resp.StatusCode == http.StatusOK {
 		return nil
@@ -130,6 +153,7 @@ func handleResponseError(resp *http.Response) error {
 	return fmt.Errorf("HTTP Status: %d, Message: %s", resp.StatusCode, httpErr.Message)
 }
 
+// TODO: this won't work because we cannot distinguish between path params and query params...
 func structToStringMap(req interface{}) (map[string]string, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
