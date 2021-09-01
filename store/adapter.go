@@ -1,8 +1,6 @@
 package store
 
 import (
-	"fmt"
-
 	bubblyadapter "github.com/valocode/bubbly/adapter"
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/adapter"
@@ -57,7 +55,6 @@ func (h *Handler) GetAdapter(req *api.AdapterGetRequest) (*api.AdapterGetRespons
 		}
 		return nil, HandleEntError(err, "adapter")
 	}
-	fmt.Println("got adapter: " + dbAdapter.String())
 	return &api.AdapterGetResponse{
 		AdapterModelRead: *ent.NewAdapterModelRead().FromEnt(dbAdapter),
 	}, nil

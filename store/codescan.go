@@ -16,7 +16,17 @@ func (h *Handler) SaveCodeScan(req *api.CodeScanRequest) (*ent.CodeScan, error) 
 	if err != nil {
 		return nil, err
 	}
-	return h.saveCodeScan(release, req.CodeScan)
+	scan, err := h.saveCodeScan(release, req.CodeScan)
+	if err != nil {
+		return nil, err
+	}
+	// Once transaction is complete, evaluate the release.
+	_, evalErr := h.EvaluateReleasePolicies(release.ID)
+	if evalErr != nil {
+		return nil, NewServerError(evalErr, "evaluating release policies")
+	}
+
+	return scan, nil
 }
 
 func (h *Handler) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.CodeScan, error) {
@@ -117,11 +127,6 @@ func (h *Handler) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.C
 	})
 	if txErr != nil {
 		return nil, txErr
-	}
-	// Once transaction is complete, evaluate the release.
-	_, err := h.EvaluateReleasePolicies(release.ID)
-	if err != nil {
-		return nil, NewServerError(err, "evaluating release policies")
 	}
 
 	return codeScan, nil

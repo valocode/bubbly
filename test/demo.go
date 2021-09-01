@@ -40,10 +40,6 @@ type DemoRepoOptions struct {
 	CveScanTimeMax int
 }
 
-// type DemoData struct {
-// 	Repos []RepoData
-// }
-
 type RepoData struct {
 	Releases []ReleaseData
 }

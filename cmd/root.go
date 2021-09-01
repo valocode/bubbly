@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/fatih/color"
 	"github.com/rs/zerolog"
@@ -33,7 +31,6 @@ func NewCmdRoot(bCtx *env.BubblyContext) *cobra.Command {
 		// Run: ,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if bCtx.CLIConfig.Debug {
-				fmt.Println("DEBUG!!!")
 				bCtx.UpdateLogLevel(zerolog.DebugLevel)
 			}
 			if bCtx.CLIConfig.NoColor {

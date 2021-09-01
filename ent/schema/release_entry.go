@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/extensions/entmodel"
 )
 
 type ReleaseEntry struct {
@@ -18,6 +19,9 @@ type ReleaseEntry struct {
 func (ReleaseEntry) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		entsql.Annotation{Table: "release_entry"},
+		entmodel.Annotation{
+			SkipCreate: true,
+		},
 	}
 }
 

@@ -38,7 +38,6 @@ func DefaultReleaseSpec(bCtx *env.BubblyContext) *ReleaseSpec {
 	}
 }
 
-// TODO: how to pass around release directory and spec file...
 func Commit(bCtx *env.BubblyContext) (string, error) {
 	spec, err := ParseReleaseSpec(bCtx)
 	if err != nil {
@@ -49,7 +48,6 @@ func Commit(bCtx *env.BubblyContext) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("commit! ", commit)
 	return commit, nil
 }
 

@@ -13,7 +13,16 @@ func (h *Handler) SaveTestRun(req *api.TestRunRequest) (*ent.TestRun, error) {
 	if err != nil {
 		return nil, err
 	}
-	return h.saveTestRun(release, req.TestRun)
+	run, err := h.saveTestRun(release, req.TestRun)
+	if err != nil {
+		return nil, err
+	}
+	// Once transaction is complete, evaluate the release.
+	_, evalErr := h.EvaluateReleasePolicies(release.ID)
+	if evalErr != nil {
+		return nil, NewServerError(evalErr, "evaluating release policies")
+	}
+	return run, nil
 }
 
 func (h *Handler) saveTestRun(release *ent.Release, run *api.TestRun) (*ent.TestRun, error) {
@@ -43,12 +52,5 @@ func (h *Handler) saveTestRun(release *ent.Release, run *api.TestRun) (*ent.Test
 	if txErr != nil {
 		return nil, txErr
 	}
-
-	// Once transaction is complete, evaluate the release.
-	_, err := h.EvaluateReleasePolicies(release.ID)
-	if err != nil {
-		return nil, NewServerError(err, "evaluating release policies")
-	}
-
 	return testRun, nil
 }

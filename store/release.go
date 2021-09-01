@@ -13,8 +13,90 @@ func (h *Handler) CreateRelease(req *api.ReleaseCreateRequest) (*ent.Release, er
 	return h.createRelease(req)
 }
 
+func (h *Handler) GetReleases(req *api.ReleaseGetRequest) (*api.ReleaseGetResponse, error) {
+	dbReleases, err := h.client.Release.Query().
+		Where(release.HasCommitWith(gitcommit.Hash(*req.Commit))).
+		// Get the commit, repo and project
+		WithCommit(func(gcq *ent.GitCommitQuery) {
+			gcq.WithRepo(func(rq *ent.RepoQuery) { rq.WithProject() })
+		}).
+		WithLog().
+		WithViolations().
+		All(h.ctx)
+	if err != nil {
+		return nil, HandleEntError(err, "getting releases by commit")
+	}
+	var resp api.ReleaseGetResponse
+	for _, dbRelease := range dbReleases {
+		var (
+			commit  = dbRelease.Edges.Commit
+			repo    = commit.Edges.Repo
+			project = repo.Edges.Project
+		)
+		r := &api.ReleaseRead{
+			Project: ent.NewProjectModelRead().FromEnt(project),
+			Repo:    ent.NewRepoModelRead().FromEnt(repo),
+			Commit:  ent.NewGitCommitModelRead().FromEnt(commit),
+			Release: ent.NewReleaseModelRead().FromEnt(dbRelease),
+		}
+		if req.Policies {
+			dbPolicies, err := h.policiesForRelease(h.client, dbRelease.ID)
+			if err != nil {
+				return nil, err
+			}
+			var policies = make([]*ent.ReleasePolicyModelRead, 0, len(dbPolicies))
+			for _, p := range dbPolicies {
+				policies = append(policies, ent.NewReleasePolicyModelRead().FromEnt(p))
+			}
+			r.Policies = policies
+		}
+		// // Getting the policies that apply to a release is a bit trickier, as they
+		// // are actually applied to projects and repos that the release belongs to.
+		// // TODO: this will produce duplicate policies if a policy is joined to both
+		// // the project and repo
+		// for _, dbPolicy := range repo.Edges.Policies {
+		// 	r.Policies = append(r.Policies, ent.NewReleasePolicyModelRead().FromEnt(dbPolicy))
+		// }
+		// for _, dbPolicy := range project.Edges.Policies {
+		// 	r.Policies = append(r.Policies, ent.NewReleasePolicyModelRead().FromEnt(dbPolicy))
+		// }
+		// Append the release violation
+		for _, dbViolation := range dbRelease.Edges.Violations {
+			r.Violations = append(r.Violations, ent.NewReleasePolicyViolationModelRead().FromEnt(dbViolation))
+		}
+		// Append the release log
+		for _, dbEntry := range dbRelease.Edges.Log {
+			r.Entries = append(r.Entries, ent.NewReleaseEntryModelRead().FromEnt(dbEntry))
+		}
+		resp.Releases = append(resp.Releases, r)
+	}
+	return &resp, nil
+}
+
 func (h *Handler) LogArtifact(req *api.ArtifactLogRequest) (*ent.Artifact, error) {
-	return h.logArtifact(req)
+	if err := h.validator.Struct(req); err != nil {
+		return nil, HandleValidatorError(err, "artifact")
+	}
+	dbRelease, err := h.releaseFromCommit(req.Commit)
+	if err != nil {
+		return nil, err
+	}
+	dbArtifact, err := h.client.Artifact.Create().
+		SetModelCreate(req.Artifact).
+		SetRelease(dbRelease).
+		Save(h.ctx)
+	if err != nil {
+		return nil, HandleEntError(err, "artifact")
+	}
+	if err != nil {
+		return nil, err
+	}
+	// Once transaction is complete, evaluate the release.
+	_, evalErr := h.EvaluateReleasePolicies(dbRelease.ID)
+	if evalErr != nil {
+		return nil, NewServerError(evalErr, "evaluating release policies")
+	}
+	return dbArtifact, nil
 }
 
 func (h *Handler) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, error) {
@@ -115,22 +197,4 @@ func (h *Handler) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, er
 	}
 
 	return dbRelease, nil
-}
-
-func (h *Handler) logArtifact(req *api.ArtifactLogRequest) (*ent.Artifact, error) {
-	if err := h.validator.Struct(req); err != nil {
-		return nil, HandleValidatorError(err, "artifact")
-	}
-	dbRelease, err := h.releaseFromCommit(req.Commit)
-	if err != nil {
-		return nil, err
-	}
-	dbArtifact, err := h.client.Artifact.Create().
-		SetModelCreate(req.Artifact).
-		SetRelease(dbRelease).
-		Save(h.ctx)
-	if err != nil {
-		return nil, HandleEntError(err, "artifact")
-	}
-	return dbArtifact, nil
 }
