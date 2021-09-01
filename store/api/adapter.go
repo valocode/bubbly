@@ -10,8 +10,8 @@ type (
 	}
 
 	AdapterGetRequest struct {
-		Name *string `query:"name" validate:"required"`
-		Tag  *string `query:"tag"`
+		Name *string `json:"name,omitempty" param:"name" validate:"required"`
+		Tag  *string `json:"tag,omitempty" query:"tag"`
 	}
 
 	AdapterGetResponse struct {

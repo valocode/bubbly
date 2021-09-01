@@ -38,7 +38,7 @@ func (h *Handler) SaveAdapter(req *api.AdapterSaveRequest) (*ent.Adapter, error)
 
 func (h *Handler) GetAdapter(req *api.AdapterGetRequest) (*api.AdapterGetResponse, error) {
 	if err := h.validator.Struct(req); err != nil {
-		return nil, HandleValidatorError(err, "adapter read")
+		return nil, HandleValidatorError(err, "get adapter")
 	}
 	var tag = bubblyadapter.DefaultTag
 	if req.Tag != nil {
@@ -51,7 +51,7 @@ func (h *Handler) GetAdapter(req *api.AdapterGetRequest) (*api.AdapterGetRespons
 	dbAdapter, err := query.Only(h.ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return nil, NewNotFoundError(err, "adapter")
+			return nil, NewNotFoundError(nil, "adapter not found")
 		}
 		return nil, HandleEntError(err, "adapter")
 	}

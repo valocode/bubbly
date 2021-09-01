@@ -1,4 +1,4 @@
-package push
+package save
 
 import (
 	"fmt"
@@ -20,15 +20,15 @@ import (
 var (
 	cmdLong = cmdutil.LongDesc(
 		`
-		Push a Bubbly adapter to a remote server
+		Save a Bubbly adapter to a remote server
 		`,
 	)
 
 	cmdExamples = cmdutil.Examples(
 		`
-		# Push a Bubbly adapter
+		# Save a Bubbly adapter
 
-		bubbly adapter push
+		bubbly adapter save
 		`,
 	)
 )
@@ -40,8 +40,8 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		tag  string
 	)
 	cmd := &cobra.Command{
-		Use:     "push <adapter-file> [flags]",
-		Short:   "Push a Bubbly adapter",
+		Use:     "save <adapter-file> [flags]",
+		Short:   "Save a Bubbly adapter",
 		Long:    cmdLong + "\n\n",
 		Example: cmdExamples,
 		Args:    cobra.ExactArgs(1),

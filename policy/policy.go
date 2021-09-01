@@ -151,6 +151,10 @@ func newRego(module string, opts ...func(*runOptions)) (*rego.Rego, error) {
 		rego.Module(policyModule, module),
 		rego.Trace(r.trace),
 	}
+
+	if r.resolver == nil {
+		return nil, fmt.Errorf("resolver is required")
+	}
 	regoOptions = append(regoOptions, r.resolver.Functions()...)
 
 	return rego.New(regoOptions...), nil

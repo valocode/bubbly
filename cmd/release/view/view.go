@@ -82,7 +82,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 
 func printRelease(rel *api.ReleaseRead, policies bool) {
 	fmt.Println("Project: " + *rel.Project.Name)
-	fmt.Println("Repo: " + *rel.Project.Name)
+	fmt.Println("Repo: " + *rel.Repo.Name)
 	fmt.Println("Commit: " + *rel.Commit.Hash)
 	fmt.Println("Branch: " + *rel.Commit.Branch)
 	fmt.Println("Name: " + *rel.Release.Name)
