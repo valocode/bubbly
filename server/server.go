@@ -73,6 +73,7 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 		if err != nil {
 			log.Fatalf("creating sub filesystem for ui: %s", err.Error())
 		}
+
 		ui := e.Group("/ui")
 		ui.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 			Filesystem: http.FS(subFS),

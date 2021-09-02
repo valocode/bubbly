@@ -8,7 +8,9 @@ import (
 	"github.com/valocode/bubbly/env"
 )
 
-//go:embed ui/build/*
+// For some strange reason the __layout.* files in the svelte tree do not
+// get embedded unless specified explicitly... Bug?
+//go:embed ui/build/* ui/build/_app/pages/__layout.*
 var bubblyUI embed.FS
 
 func main() {
