@@ -36,9 +36,9 @@ const (
 
 type (
 	AdapterResult struct {
-		CodeScan *api.CodeScan
-		TestRun  *api.TestRun
-		Traces   []string
+		CodeScan *api.CodeScan `json:"code_scan"`
+		TestRun  *api.TestRun  `json:"test_run"`
+		Traces   []string      `json:"-"`
 	}
 
 	runOptions struct {

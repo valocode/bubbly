@@ -3,6 +3,7 @@ package adapter
 import (
 	"github.com/valocode/bubbly/cmd/adapter/run"
 	"github.com/valocode/bubbly/cmd/adapter/save"
+	"github.com/valocode/bubbly/cmd/adapter/test"
 	"github.com/valocode/bubbly/cmd/adapter/view"
 	"github.com/valocode/bubbly/env"
 
@@ -19,6 +20,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 
 	cmd.AddCommand(save.New(bCtx))
 	cmd.AddCommand(run.New(bCtx))
+	cmd.AddCommand(test.New(bCtx))
 	cmd.AddCommand(view.New(bCtx))
 	return cmd
 }
