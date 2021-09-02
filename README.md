@@ -11,7 +11,7 @@ Bubbly emerged from a need that many lean software teams practicing Continuous I
 
 **Release Readiness** is a term that we use to define the state of being ready to release software. What is interesting to consider is how different teams define their release readiness. Often teams have planned to implement some features and run automated quality and security checks throughout the process (static analysis, automated tests, CVE checks, etc.). Ultimately the decision of being release ready comes down to a measure of confidence. So how best to inform this measure of confidence in an efficient and reliable way?
 
-![bubbly-in-a-bubble](/docs/static/img/bubbly-in-a-bubble.drawio.svg)
+![bubbly-in-a-bubble](/docs/static/img/bubbly-in-a-bubble.svg)
 
 ## Problem Statement
 
