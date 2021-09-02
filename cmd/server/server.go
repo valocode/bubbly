@@ -51,9 +51,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 	}
 
 	f := cmd.Flags()
-
-	// agent.AgentDeploymentType's underlying type is a string,
-	// so we cast to *string on bind
+	f.BoolVar(&bCtx.ServerConfig.UI, "ui", true, "Run with the Bubbly UI")
 	f.StringVar(
 		&bCtx.ServerConfig.Host,
 		"host",

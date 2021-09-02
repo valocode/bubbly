@@ -27,6 +27,7 @@ type ReleaseConfig struct {
 type ServerConfig struct {
 	Port string
 	Host string
+	UI   bool
 }
 
 func (s ServerConfig) HostURL() string {

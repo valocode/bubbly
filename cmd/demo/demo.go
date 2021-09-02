@@ -68,10 +68,11 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			fmt.Println("")
 
 			fmt.Printf("Starting HTTP server on %s:%s\n", bCtx.ServerConfig.Host, bCtx.ServerConfig.Port)
-			if err := server.NewWithStore(bCtx, s).Start(); err != nil {
+			server, err := server.NewWithStore(bCtx, s)
+			if err != nil {
 				return err
 			}
-			return nil
+			return server.Start()
 		},
 	}
 

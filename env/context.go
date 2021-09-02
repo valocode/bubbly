@@ -1,6 +1,7 @@
 package env
 
 import (
+	"embed"
 	"os"
 
 	"github.com/rs/zerolog"
@@ -10,6 +11,8 @@ import (
 // BubblyContext holds global bubbly state that is required to be injected into
 // functions throughout the codebase.
 type BubblyContext struct {
+	// UI stores the embedded bubbly frontend
+	UI *embed.FS
 	// Logger stores the global bubbly logger
 	Logger        zerolog.Logger
 	ReleaseConfig *config.ReleaseConfig
@@ -21,14 +24,25 @@ type BubblyContext struct {
 }
 
 // NewBubblyContext sets up a default Bubbly Context
-func NewBubblyContext() *BubblyContext {
-	return &BubblyContext{
+func NewBubblyContext(opts ...func(*BubblyContext)) *BubblyContext {
+	bCtx := BubblyContext{
 		Logger:        NewDefaultLogger(),
 		ReleaseConfig: config.DefaultReleaseConfig(),
 		ServerConfig:  config.DefaultServerConfig(),
 		StoreConfig:   config.DefaultStoreConfig(),
 		ClientConfig:  config.DefaultClientConfig(),
 		CLIConfig:     config.DefaultCLIConfig(),
+	}
+	for _, opt := range opts {
+		opt(&bCtx)
+	}
+
+	return &bCtx
+}
+
+func WithBubblyUI(fs *embed.FS) func(*BubblyContext) {
+	return func(bCtx *BubblyContext) {
+		bCtx.UI = fs
 	}
 }
 

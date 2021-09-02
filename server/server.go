@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 
@@ -22,10 +23,10 @@ func New(bCtx *env.BubblyContext) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing store: %w", err)
 	}
-	return NewWithStore(bCtx, store), nil
+	return NewWithStore(bCtx, store)
 }
 
-func NewWithStore(bCtx *env.BubblyContext, store *store.Store) *Server {
+func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) {
 	var (
 		e = echo.New()
 		s = Server{
@@ -59,6 +60,24 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) *Server {
 
 	if true {
 		e.Use(middleware.CORS())
+	}
+
+	//
+	// Setup the Bubbly UI
+	//
+	if bCtx.ServerConfig.UI {
+		if bCtx.UI == nil {
+			return nil, fmt.Errorf("cannot run the bubbly UI with a nil filesystem")
+		}
+		subFS, err := fs.Sub(bCtx.UI, "ui/build")
+		if err != nil {
+			log.Fatalf("creating sub filesystem for ui: %s", err.Error())
+		}
+		ui := e.Group("/ui")
+		ui.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+			Filesystem: http.FS(subFS),
+			HTML5:      true,
+		}))
 	}
 
 	// Keep Alive Test
@@ -123,7 +142,7 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) *Server {
 	// SaaS specific things:
 	// - organizations/ PUT,GET, etc
 
-	return &s
+	return &s, nil
 }
 
 type Server struct {
