@@ -546,7 +546,6 @@ export enum ReleasePolicyViolationType {
 export enum ReleasePolicyViolationSeverity {
 	suggestion = "suggestion",
 	warning = "warning",
-	error = "error",
 	blocking = "blocking",
 }
 

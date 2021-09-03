@@ -6,6 +6,6 @@ deny[violation] {
 	count(failed_tests) > 0
 	violation = {
 		"message": sprintf("%d failing tests(s)", [count(failed_tests)]),
-		"severity": "error",
+		"severity": "blocking",
 	}
 }

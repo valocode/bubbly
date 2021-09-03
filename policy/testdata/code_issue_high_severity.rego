@@ -6,6 +6,6 @@ deny[violation] {
 	count(high_issues) > 0
 	violation = {
 		"message": sprintf("%d high issue(s)", [count(high_issues)]),
-		"severity": "error",
+		"severity": "warning",
 	}
 }

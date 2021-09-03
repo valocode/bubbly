@@ -106,7 +106,6 @@ type Severity string
 const (
 	SeveritySuggestion Severity = "suggestion"
 	SeverityWarning    Severity = "warning"
-	SeverityError      Severity = "error"
 	SeverityBlocking   Severity = "blocking"
 )
 
@@ -117,7 +116,7 @@ func (s Severity) String() string {
 // SeverityValidator is a validator for the "severity" field enum values. It is called by the builders before save.
 func SeverityValidator(s Severity) error {
 	switch s {
-	case SeveritySuggestion, SeverityWarning, SeverityError, SeverityBlocking:
+	case SeveritySuggestion, SeverityWarning, SeverityBlocking:
 		return nil
 	default:
 		return fmt.Errorf("releasepolicyviolation: invalid enum value for severity field: %q", s)

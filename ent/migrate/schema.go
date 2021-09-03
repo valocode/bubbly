@@ -427,7 +427,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "message", Type: field.TypeString},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"require", "deny"}},
-		{Name: "severity", Type: field.TypeEnum, Enums: []string{"suggestion", "warning", "error", "blocking"}},
+		{Name: "severity", Type: field.TypeEnum, Enums: []string{"suggestion", "warning", "blocking"}},
 		{Name: "release_policy_violation_policy", Type: field.TypeInt, Nullable: true},
 		{Name: "release_policy_violation_release", Type: field.TypeInt, Nullable: true},
 	}
