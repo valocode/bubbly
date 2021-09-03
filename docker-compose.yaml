@@ -27,6 +27,7 @@ services:
       - "server"
       - "--debug"
 
+
       # One of the Store options for Bubbly
   postgres:
     image: postgres:13.0

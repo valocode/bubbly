@@ -4,11 +4,18 @@ BIN=./build/bubbly
 export BUBBLY_HOST=localhost
 export BUBBLY_PORT=8111
 
+# Current commit id and (if set) the tag are compiled into the Bubbly binary
+GIT_HEAD := $(shell git rev-list -1 HEAD)
+tag := $(shell git name-rev --tags --name-only $(GIT_HEAD))
+pre := github.com/valocode/bubbly
+
+
+
 all: build
 
 .PHONY: build
 build:
-	go build -o ${BIN}
+	go build -o ${BIN} -ldflags "-X '${pre}/env.sha1=${GIT_HEAD}' -X '${pre}/env.tag=${tag}'"
 
 .PHONY: clean
 clean:

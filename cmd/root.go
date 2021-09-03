@@ -10,6 +10,7 @@ import (
 	"github.com/valocode/bubbly/cmd/policy"
 	"github.com/valocode/bubbly/cmd/release"
 	"github.com/valocode/bubbly/cmd/server"
+	versionCmd "github.com/valocode/bubbly/cmd/version"
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/env"
 )
@@ -53,6 +54,7 @@ func NewCmdRoot(bCtx *env.BubblyContext) *cobra.Command {
 	cmd.AddCommand(policy.New(bCtx))
 	cmd.AddCommand(release.New(bCtx))
 	cmd.AddCommand(server.New(bCtx))
+	cmd.AddCommand(versionCmd.New(bCtx))
 
 	// finally, print the final configuration to be used by bubbly
 	bCtx.Logger.Debug().
