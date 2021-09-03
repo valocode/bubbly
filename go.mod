@@ -51,7 +51,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 )
 
-// replace entgo.io/contrib => github.com/jlarfors/contrib v0.0.0-20210728113018-b9b57a221a03
+replace entgo.io/contrib => github.com/jlarfors/contrib v0.0.0-20210728113018-b9b57a221a03
 
 // For local development of contrib...
-replace entgo.io/contrib => /Users/jacoblarfors/work/ent/contrib
+//replace entgo.io/contrib => /Users/jacoblarfors/work/ent/contrib

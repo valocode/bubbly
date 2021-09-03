@@ -24,7 +24,7 @@ services:
       - "8222:8222" # NATS HTTP
       - "4223:4223" # NATS service
     command:
-      - "agent"
+      - "server"
       - "--debug"
 
       # One of the Store options for Bubbly
@@ -47,19 +47,6 @@ services:
       - type: volume
         source: postgres-data
         target: /var/lib/postgresql/data
-  grafana:
-    image: grafana/grafana:8.0.6
-    container_name: grafana
-    networks:
-      - bubbly-net
-    ports:
-      # 3000 clashes with local svelte development...
-      - "3001:3000"
-    volumes:
-      - type: bind
-        read_only: true
-        source: "./grafana/provisioning/datasources"
-        target: "/etc/grafana/provisioning/datasources"
 
 # User-defined bridge network is different from the default bridge
 networks:

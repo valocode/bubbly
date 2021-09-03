@@ -8,13 +8,9 @@ COPY go.sum .
 COPY go.mod .
 
 RUN go mod download \
-    && go mod verify \
-    && go get -u github.com/swaggo/swag/cmd/swag
+    && go mod verify
 
 COPY . .
-
-# generate swagger documentation
-RUN swag init
 
 RUN go build -o /go/bin/bubbly
 
