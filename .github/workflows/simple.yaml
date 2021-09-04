@@ -4,18 +4,33 @@ on:
   # run this workflow on main branch or a PR
   push:
     branches:
-      - main
+      - "**"
   pull_request:
     branches:
       - "**"
 
 name: simple
 jobs:
-  simple:
+  frontend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+        working-directory: ./ui
+      - run: npm run build --if-present
+        working-directory: ./ui
+  backend:
     strategy:
       # matrix lets us expand our range of OSs / go
       matrix:
-        go-version: [1.16.2]
+        go-version: [1.17]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:

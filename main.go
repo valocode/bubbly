@@ -1,25 +1,23 @@
 package main
 
 import (
-	"embed"
 	"os"
 
 	"github.com/valocode/bubbly/cmd"
 	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/ui"
 )
 
 var (
-	//go:embed ui/build ui/build/_app ui/build/_app/pages/*.js ui/build/_app/assets/pages/*.css
-	bubblyUI embed.FS
-	version  = "dev"
-	commit   = "dev"
-	date     = "dev"
+	version = "dev"
+	commit  = "dev"
+	date    = "dev"
 )
 
 func main() {
 	// Set up the initial BubblyContext with config.Config defaults
 	bCtx := env.NewBubblyContext(
-		env.WithBubblyUI(&bubblyUI),
+		env.WithBubblyUI(&ui.Build),
 		env.WithVersion(&env.Version{
 			Version: version,
 			Commit:  commit,
