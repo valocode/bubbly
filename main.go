@@ -8,10 +8,8 @@ import (
 	"github.com/valocode/bubbly/env"
 )
 
-//   go:embed ui/build/* ui/build/_app/pages/__layout.*
 var (
-	// For some strange reason the __layout.* files in the svelte tree do not
-	// get embedded unless specified explicitly... Bug?
+	//go:embed ui/build ui/build/_app ui/build/_app/pages/*.js ui/build/_app/assets/pages/*.css
 	bubblyUI embed.FS
 	version  = "dev"
 	commit   = "dev"

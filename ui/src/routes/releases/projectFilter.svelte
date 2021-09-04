@@ -81,7 +81,7 @@
 	type="button"
 	on:click={() => (show = !show)}
 	bind:this={projectMenu}
-	class="relative bg-white w-60 border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+	class="relative bg-white w-42 2xl:w-60 border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
 	aria-haspopup="listbox"
 	aria-expanded="true"
 	aria-labelledby="listbox-label"

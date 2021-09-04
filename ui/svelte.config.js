@@ -12,11 +12,12 @@ const config = {
 
 	kit: {
 		// The UI is hosted at path /ui in the bubbly server, and this tells
-		// svelte to use /ui as the prefix so that files can be found (e.g. js/css)
-		// TODO: this majorly breaks things
-		// paths: {
-		// 	base: '/ui',
-		// },
+		// svelte to use /ui as the prefix so that files can be found (e.g. js/css).
+		// Due to some current issues in sveltekit, these lines should be commented
+		// out during dev mode
+		paths: {
+			base: '/ui',
+		},
 		adapter: adapter({
 			// Run in "true" SPA mode
 			fallback: 'index.html'

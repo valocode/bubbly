@@ -4,20 +4,11 @@
 	import { operationStore, query } from '@urql/svelte';
 	import HeadFilterToggle from './_headFilterToggle.svelte';
 	import ReleaseSort from './_releaseSort.svelte';
-	import SelectWithSearch from './_selectWithSearch.svelte';
-	import type {
-		Project,
-		Project_Json,
-		Release,
-		Release_Conn,
-		Release_Relay
-	} from '$schema/schema_gen';
+	import type { Release, Release_Relay } from '$schema/schema_gen';
 	import Loading from '$lib/Loading.svelte';
 	import ReleaseRow from './_releaseRow.svelte';
-	import { writable } from 'svelte/store';
 	import { filterHeadOnly, filterProjects, sortReleases } from './stores';
-	import type { ProjectSelectMap } from './stores';
-	import { base } from '$app/paths';
+	import ProjectFilter from './projectFilter.svelte';
 
 	export let selectedRelease: Release;
 
@@ -104,13 +95,13 @@
 
 <div class="my-6 mx-8 flex items-center justify-between">
 	<!-- Release Filters -->
-	<h3 class="text-gray-800 text-2xl">Releases</h3>
+	<h3 class="md:visible text-gray-800 text-2xl">Releases</h3>
 	<div class="flex items-center justify-end space-x-8">
 		<div>
 			<HeadFilterToggle />
 		</div>
 		<div>
-			<SelectWithSearch />
+			<ProjectFilter />
 		</div>
 		<div>
 			<ReleaseSort />

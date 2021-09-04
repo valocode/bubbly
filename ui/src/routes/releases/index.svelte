@@ -21,15 +21,13 @@
 				<!-- End main area -->
 			</main>
 			<aside
-				class="hidden relative xl:flex xl:flex-col flex-shrink-0 w-4/12 border-r border-gray-200"
+				class="relative xl:flex xl:flex-col flex-shrink-0 w-96 2xl:w-4/12 border-r border-gray-200"
 			>
-				<!-- Start secondary column (hidden on smaller screens) -->
 				<div class="absolute inset-0 py-6 px-4 sm:px-6 lg:px-8">
 					<div class="h-full border-2 border-gray-200 border-dashed rounded-lg">
 						<ReleaseInformation release={$selectedRelease} />
 					</div>
 				</div>
-				<!-- End secondary column -->
 			</aside>
 		</div>
 	</div>
