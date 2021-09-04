@@ -1,29 +1,22 @@
 project_name: bubbly
 builds:
-  - binary: bubbly
+  - id: bubbly
+    binary: bubbly
     main: main.go
     env:
       - CGO_ENABLED=0
-    hooks:
-      pre: swag init
-    id: linux
+    flags:
+      # include the ui in the build
+      - -tags=ui
     goos:
       - linux
+      - darwin
+      - windows
     goarch:
       - amd64
       - arm64
-      - arm
     goarm:
       - 7
-  - id: darwin
-    goos:
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-  - id: windows
-    goos:
-      - windows
 archives:
   - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     id: nix
@@ -45,14 +38,14 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     folder: Formula
     homepage: "https://bubbly.dev/"
-    description: "Bubbly CLI"
+    description: "Bubbly"
     test: |
       system "#{bin}/bubbly --version"
 dockers:
   - goos: linux
     goarch: amd64
     skip_push: false
-    use_buildx: true
+    use: buildx
     dockerfile: Dockerfile.goreleaser
     image_templates:
       - "valocode/{{ .ProjectName }}:latest"
