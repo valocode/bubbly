@@ -11,10 +11,11 @@ import (
 func New(bCtx *env.BubblyContext) *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "Show the Bubbly version information",
+		Short: "Show the Bubbly version",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(bCtx.Version)
-			fmt.Println("bubbly version", bCtx.Version.Tag, bCtx.Version.SHA1)
+			fmt.Println("Bubbly version", bCtx.Version.Version)
+			fmt.Println("Commit:", bCtx.Version.Commit)
+			fmt.Println("Date:", bCtx.Version.Date)
 		},
 	}
 }

@@ -1,12 +1,10 @@
 project_name: bubbly
 before:
   hooks:
-  - go get -u github.com/swaggo/swag/cmd/swag
+    - go get -u github.com/swaggo/swag/cmd/swag
 builds:
   - binary: bubbly
     main: main.go
-    ldflags:
-      - -s -w -X main.VERSION={{ .Version }}
     env:
       - CGO_ENABLED=0
     hooks:
@@ -54,20 +52,19 @@ brews:
     test: |
       system "#{bin}/bubbly --version"
 dockers:
-  -
-    goos: linux
+  - goos: linux
     goarch: amd64
     skip_push: false
     use_buildx: true
     dockerfile: Dockerfile.goreleaser
     image_templates:
-    - "valocode/{{ .ProjectName }}:latest"
-    - "valocode/{{ .ProjectName }}:{{ .Tag }}"
-    - "valocode/{{ .ProjectName }}:{{ .Major }}"
-    - "valocode/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}"
-    - "valocode/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+      - "valocode/{{ .ProjectName }}:latest"
+      - "valocode/{{ .ProjectName }}:{{ .Tag }}"
+      - "valocode/{{ .ProjectName }}:{{ .Major }}"
+      - "valocode/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}"
+      - "valocode/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     build_flag_templates:
-    - "--pull"
+      - "--pull"
 checksum:
   name_template: "checksums.txt"
 snapshot:
