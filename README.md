@@ -15,9 +15,11 @@ Bubbly is a release readiness platform helping software teams release compliant 
 
 ## Project Status
 
-This project is currently in **ALPHA**
+This project is currently in **Alpha**
 
-This means that it should work, and if it doesn't please raise an issue. The APIs may change in the coming weeks/months.
+In terms of stability, the existing features should work and if they do not please raise an issue. Also we do not guarantee backwards compatability with the APIs and schema.
+
+In terms of feature completeness, we are working on implementing the core features of Bubbly, and hence there are missing features, such as Subscriptions and Monitoring of vulnerabilities.
 
 If you are interested in getting involved in the project, or want some help getting started, please reach out to us though our website: [https://bubbly.dev](https://bubbly.dev)
 
@@ -50,9 +52,10 @@ We are not aiming to replace every tool you are already using, in fact, without 
 
 Some ways in which Bubbly could be used are:
 
-* Real-time knowledgebase of all projects, repos and their high-level release readiness state.
+* Collect all relevant release readiness data from your release process (artifacts, test results, Software Bill of Material, etc.).
+* Create a decision protocol to formally define your Release Readiness Policy, and automatically apply that to all projects/repositories.
 * Catalogue of OSS components, licenses, Vulnerabilities and approvals/rejections for those.
-* A decision protocol to formally define your Release Readiness Policy, and automatically apply that to all projects.
+* Help teams develop their continuous practices by profiling the current process to identify bottlenecks and possible performance gains.
 
 If you have some ideas or questions for things you want to solve, please raise an issue in the [Discussion](https://github.com/valocode/bubbly/discussions) and we'll check it out :)
 

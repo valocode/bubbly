@@ -14,6 +14,8 @@ var (
 	date    = "dev"
 )
 
+//go:generate go run docs/gen.go
+
 func main() {
 	// Set up the initial BubblyContext with config.Config defaults
 	bCtx := env.NewBubblyContext(

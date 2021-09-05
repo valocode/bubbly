@@ -10,99 +10,95 @@ keywords:
 - introduction
 ---
 
-![bubbly-logo](/img/bubbly-blue-wide.png)
+![bubbly-logo](../../static/img/bubbly-blue-wide.png)
 
 ## Bubbly - Release Readiness in a Bubble
 
-Bubbly emerged from a need that many lean software teams practicing Continuous Integration and Delivery have: the need to be better performers. The idea is quite simple: build a model that can capture all the metrics that you care about, extract data from any tool in your process, and use those metrics to drive better and more automated decisions.
+Bubbly is a release readiness platform helping software teams release compliant software with confidence. Gain visibility into your release process with reports and analytics to lower risk, increase quality, reduce cycle time and drive continuous improvement.
 
-**Release Readiness** is a term that we use to define *the state of being ready to release software*.
-What is interesting to consider is how different teams define their release readiness.
-Often teams have planned to implement some features and run automated quality and security checks throughout the process (static analysis, automated tests, CVE checks, etc.).
-Ultimately the decision of being release ready comes down to a measure of confidence.
-So how best to inform this measure of confidence in an efficient and reliable way?
+**Release Readiness** is a term that we use to define the state of being ready to release software. This project aims at helping teams help teams define their Release Readiness policies (using the [Rego Policy Language](https://www.openpolicyagent.org/docs/latest/policy-language/)), collect the data to enforce those policies, and measure their performance getting to their Release Readiness goals (whether it be speed or stability).
 
-## Problem
+![bubbly-in-a-bubble](../../static/img/bubbly-in-a-bubble.svg)
 
-The problem around Release Readiness is one of data.
-All the tools used in the software process produce data, and that data should be used to measure attributes such as feature-completeness, quality and security of your product.
+## Project Status
 
-The real problem is that this data gets scattered all over the place, which results in:
+This project is currently in **Alpha**
+
+In terms of stability, the existing features should work and if they do not please raise an issue. Also we do not guarantee backwards compatability with the APIs and schema.
+
+In terms of feature completeness, we are working on implementing the core features of Bubbly, and hence there are missing features, such as Subscriptions and Monitoring of vulnerabilities.
+
+If you are interested in getting involved in the project, or want some help getting started, please reach out to us though our website: [https://bubbly.dev](https://bubbly.dev)
+
+## Problem Statement
+
+The problem around Release Readiness is one of data. All the tools used in the software process produce data, and that data should be used to drive the Release Readiness decision.
+
+The real problem is that this data gets scattered all over the place which results in:
 
 1. Broken relationships across the data
 2. Non-standard interfaces which make accessing the data hard (sometimes impossible)
-3. Massive overhead maintaining multiple data stores and data bases, ensuring that the data is up to date and accurate
+3. Overhead maintaining multiple data stores and data bases, ensuring that the data is up to date and accurate
 4. Lack of understanding of the data's hierarchy
 
 ## Proposed Solution
 
-Bubbly has been built to address the core problems mentioned above.
-This has been achieved by implementing a very lightweight *data platform* using a user-defined schema and data pipelines, with everything defined as code using a DSL built on top of HashiCorp's Configuration Language (HCL).
+Bubbly has been built to address the core problems mentioned above. This has been achieved by implementing a simple engine built over the [Rego Policy Language](https://www.openpolicyagent.org/docs/latest/policy-language/) with a versatile database schema, built using [entgo](https://entgo.io/).
 
-A user defines a schema that models the metrics and Key Performance Indicators (KPIs) that you care about. This could include automated test results, OSS components, CVEs, development metrics, traceability across requirements, and anything else that you can think of.
+A GraphQL and standard REST API are provided to help get data out, as one design goal of bubbly is putting the right data in the right place.
 
-Data pipelines extract the data from a data source (i.e. the original source of the data), transform the data into your schema and load the results into a persistent database.
+The data in Bubbly can now be used to make automated decisions in pipelines (e.g. check that results are good) and can be used to power dashboards. Any dashboard that supports GraphQL (like [Grafana](https://grafana.com/grafana/)) can be used to visualize the data. Bubbly also ships with its own UI, and this was born out of the need to understand the data hierarchy (something that ordinary dashboards do not do too well with).
 
-A GraphQL API is automatically generated based on the user-defined schema, which is the main way of getting data out from Bubbly.
-What's noteworthy is that the generated GraphQL API is extended to include some cool tricks to make life that litle bit better.
-
-The data in Bubbly can now be used to make automated decisions in pipelines (e.g. check that results are good) and can be used to power dashboards.
-Any dashboard that supports GraphQL (like [Grafana](https://grafana.com/grafana/)) can be used to visualize the data.
-Bubbly will also ship with its own UI (work in progress), and this was born out of the need to understand the data hierarchy (something that ordinary dashboards do not do too well with).
-
-Check out the [Core Concepts](./core-concepts.md) for more information on things like the schema, HCL and data pipelines.
+Check out the [Core Concepts](core-concepts.md) for more information on things like the adapters, policies and more.
 
 ### Goals
 
-The goal of Bubbly was to be a "bridge" between data, and make connecting and accessing data as simple, reliable and fun as possible! Writing data pipelines feels awesome!
+The goal of Bubbly was to be a "bridge" between data, and make connecting and accessing data related to release readiness as simple, reliable and fun as possible!
 
-We are not aiming to replace every tool you are already using, in fact, without other tools Bubbly itself is useless.
-The goal is to complement every other tool by making their data more accessible.
+We are not aiming to replace every tool you are already using, in fact, without other tools Bubbly itself is useless. The goal is to complement every other tool by making their data more accessible.
 
 Some ways in which Bubbly could be used are:
 
-1. Real-time knowledgebase of all products and their high-level release readiness state
-2. Catalogue of OSS components, licenses, CVEs and approvals/rejections for those
-3. A decision protocol to formally define your Release Readiness Criteria, and automatically apply that to all products
+* Collect all relevant release readiness data from your release process (artifacts, test results, Software Bill of Material, etc.).
+* Create a decision protocol to formally define your Release Readiness Policy, and automatically apply that to all projects/repositories.
+* Catalogue of OSS components, licenses, Vulnerabilities and approvals/rejections for those.
+* Help teams develop their continuous practices by profiling the current process to identify bottlenecks and possible performance gains.
 
-If you want to see some use cases that we are currently solving with Bubbly, check out the [Use Cases](./use-cases.md).
+If you have some ideas or questions for things you want to solve, please raise an issue in the [Discussion](https://github.com/valocode/bubbly/discussions) and we'll check it out :)
 
 ### Non-Goals
 
 The things that Bubbly is not aiming to be:
 
-1. A testing tool/framework
-2. A traditional monitoring tool (think Ops metrics, like Prometheus)
-3. Another dashboard (like Grafana)
-   1. We like to make the distinction between a "dashboard" which typically has some specific views to visualize data, vs a "knowledgebase" which is more like a web app that has multiple dashboards inside it
+* A testing tool/framework.
+* A traditional monitoring tool (think Ops metrics, like Prometheus).
+* Another dashboard (like Grafana).
+  
+## Architecture
 
-### Architecture
+See the [ARCHITECTURE.md](https://github.com/valocode/bubbly/blob/main/ARCHITECTURE.md) file for the structure of this repository.
 
-:::note TODO
-This is work in progress... Check back soon!
-:::
+## Why Open Source?
 
-### Why Open Source?
-
-Bubbly is open source, licensed under the [Mozilla Public License v2](https://www.mozilla.org/en-US/MPL/2.0/).
+Bubbly is open source, licensed under the [Mozilla Public License v2](LICENSE).
 
 We have a few reasons for being open source:
 
-1. The team and company behind Bubbly are all big fans of open source, so it was never really considered not making it open source
-2. We want to focus on building the best product, and we firmly believe making the project OSS will help us achieve this
-3. We want to enable teams to be better. And that's why we are launching a SaaS service for Bubbly to get you up and running in minutes
+1. The team and company behind Bubbly are all big fans of open source, so it was never really considered not making it open source.
+2. We want to focus on building the best product, and we firmly believe making the project OSS will help us achieve this.
 
-### Alternatives
+## Install
 
-Bubbly was born due to (what we believe is) a gap in the market.
-For each project, when we needed to solve this issue we would re-invent something and build that on top of amazing OSS projects.
+See our [Installation Guide](../getting-started/getting-started.md#installation).
 
-Hence, the only real alternative that we know of is building it yourself with something like [Elastic](https://www.elastic.co/) and [Elastic Beats](https://www.elastic.co/beats/), or [InfluxDB Telegraf](https://www.influxdata.com/time-series-platform/telegraf/).
-You can of course roll your own SQL database, and define a schema (or schema migrator) and implement your own data access layer, which then needs to provide an SDK or a DSL in order to use, which means picking a language and implementing an API or a parser, and setup your own data-driven architecture using a pub/sub model or a message queue, deployed with security and auth tokens, coupled with a CLI... (do you see where this is going?)
+## Getting Started
 
-Of course it can be a very viable approach to build these things yourself, but what often happens in internal projects that start small, is that they snowball into something that needs to be reused in other projects and features get added on top (not designed from within), and eventually you end up developing a separate product that has it's own release schedules and sophisticated software archtiecture, when really what you should have been focusing on all along is your company's product.
+See our [Getting Started Guide](../getting-started/getting-started.md).
 
-Let Bubbly be our product that you can apply to solve these problems, and if you need extra features or support then let us know!
-We might already be working on the feature that you need, or can prioritise it if we know people need it, and of course we are open to being sponsored and helping you to deploy Bubbly.
+## Contributing
 
-And as it is open source we really welcome contributions!
+See our [Contributing Guide](contributing.md).
+
+## License
+
+[Mozilla Public License Version 2.0](LICENSE)

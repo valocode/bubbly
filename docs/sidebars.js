@@ -17,34 +17,6 @@ module.exports = {
     },
     {
       type: 'category',
-      label: 'Resources',
-      items: [
-        'resources/overview',
-        'resources/kinds',
-      ],
-    },
-    {
-      type: 'doc',
-      id: 'schema/schema'
-    },
-    {
-      type: 'doc',
-      id: 'api/api'
-    },
-    {
-      type: 'category',
-      label: 'CLI',
-      items: [
-        'cli/bubbly',
-        'cli/bubbly-agent',
-        'cli/bubbly-apply',
-        'cli/bubbly-get',
-        'cli/bubbly-schema',
-        'cli/schema/bubbly-schema-apply',
-      ],
-    },
-    {
-      type: 'category',
       label: 'Tutorials',
       items: [
         'tutorials/github-metrics',
@@ -54,15 +26,44 @@ module.exports = {
     },
     {
       type: 'doc',
+      id: 'adapters/adapters',
+    },
+    {
+      type: 'doc',
+      id: 'policies/policies',
+    },
+    {
+      type: 'doc',
+      id: 'schema/schema',
+    },
+    {
+      type: 'doc',
+      id: 'api/api',
+    },
+    {
+      type: 'doc',
+      id: 'graphql/graphql',
+    },
+    {
+      type: 'category',
+      label: 'CLI',
+      items: [
+        'cli/bubbly',
+        'cli/bubbly_adapter',
+        'cli/bubbly_demo',
+        'cli/bubbly_policy',
+        'cli/bubbly_release',
+        'cli/bubbly_server',
+        'cli/bubbly_version',
+      ],
+    },
+    {
+      type: 'doc',
       id: 'current-status/status',
     },
     {
       type: 'doc',
       id: 'contributing/contributing',
-    },
-    {
-      type: 'doc',
-      id: 'future/future',
     },
   ],
 };
