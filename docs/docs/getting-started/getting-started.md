@@ -178,8 +178,3 @@ bubbly release view
 # view the local release with policies that apply to it
 bubbly release view --policies
 ```
-
-## Next Steps
-
-- [Tutorials: Getting Started](../tutorials/github-metrics)
-  provides a practical tutorial for immediately getting started with Bubbly
