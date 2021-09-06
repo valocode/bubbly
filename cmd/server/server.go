@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/server"
 
@@ -32,12 +33,17 @@ var (
 
 func New(bCtx *env.BubblyContext) *cobra.Command {
 
+	var dbProvider string
+
 	cmd := &cobra.Command{
 		Use:     "server [flags]",
 		Short:   "Start the bubbly server",
 		Long:    cmdLong + "\n\n",
 		Example: cmdExamples,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if dbProvider != "" {
+				bCtx.StoreConfig.Provider = config.Provider(dbProvider)
+			}
 
 			s, err := server.New(bCtx)
 			if err != nil {
@@ -63,6 +69,12 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		"port", "p",
 		bCtx.ServerConfig.Port,
 		"port to run the server on",
+	)
+	f.StringVar(
+		&dbProvider,
+		"db",
+		config.DefaultStoreProvider,
+		"database to use (sqlite, postgres)",
 	)
 	f.StringVar(
 		&bCtx.StoreConfig.PostgresAddr,

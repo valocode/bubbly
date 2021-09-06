@@ -6,10 +6,17 @@ builds:
     flags:
       # include the ui in the build
       - -tags=ui
+    env:
+      # sqlite requires cgo
+      - CGO_ENABLED=1
     goos:
       - linux
       - darwin
       - windows
+    ignore:
+      # some packages (e.g. zerolog) don't have this combo
+      - goos: windows
+        goarch: 386
     goarm:
       - 7
 

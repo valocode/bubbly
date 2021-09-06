@@ -20,6 +20,8 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: 16.8
+      - name: Install gcc
+        run: sudo apt-get install build-essential
       - name: Build frontend
         run: |
           npm ci
