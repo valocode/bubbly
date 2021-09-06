@@ -9,7 +9,6 @@ require (
 	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/Microsoft/go-winio v0.5.0 // indirect
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/bytecodealliance/wasmtime-go v0.29.0 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
 	github.com/docker/docker v20.10.8+incompatible // indirect
@@ -24,7 +23,6 @@ require (
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/labstack/gommon v0.3.0
 	github.com/mattn/go-isatty v0.0.13 // indirect
-	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/moby/buildkit v0.9.0 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
@@ -37,10 +35,10 @@ require (
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
-	github.com/swaggo/swag v1.7.0
 	github.com/tmccombs/hcl2json v0.3.3 // indirect
 	github.com/vektah/gqlparser/v2 v2.1.0
 	github.com/vmihailenco/msgpack/v5 v5.3.4
+	github.com/xiaoqidun/entps v0.0.0-20210811073333-c1af85abbd8d
 	github.com/zclconf/go-cty v1.9.1 // indirect
 	github.com/ziflex/lecho/v2 v2.5.0
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
