@@ -19,9 +19,8 @@ module.exports = {
       type: 'category',
       label: 'Tutorials',
       items: [
-        'tutorials/github-metrics',
-        'tutorials/snyk-metrics',
-        'tutorials/gosec-metrics'
+        'tutorials/codeissue-policy',
+        'tutorials/gosec-adapter',
       ],
     },
     {
@@ -56,10 +55,6 @@ module.exports = {
         'cli/bubbly_server',
         'cli/bubbly_version',
       ],
-    },
-    {
-      type: 'doc',
-      id: 'current-status/status',
     },
     {
       type: 'doc',

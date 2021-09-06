@@ -105,7 +105,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 				return fmt.Errorf("unknown output format: %s", output)
 
 			}
-			fmt.Printf("\n\nAdapter %s ran successfully!\n", adapterID)
+			fmt.Printf("\nAdapter %s ran successfully!\n", adapterID)
 			return nil
 		},
 	}

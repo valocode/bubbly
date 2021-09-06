@@ -37,6 +37,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		commit   string
 		repo     string
 		policies bool
+		log      bool
 	)
 	cmd := &cobra.Command{
 		Use:     "view [flags]",
@@ -76,6 +77,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 	cmd.Flags().StringVar(&commit, "commit", "", "Specify the git commit for which to view a release")
 	cmd.Flags().StringVar(&repo, "repo", "", "Specify the repo name for which to view a release. Requires also the --commit flag")
 	cmd.Flags().BoolVar(&policies, "policies", false, "Whether to also fetch the policies that apply to this release")
+	cmd.Flags().BoolVar(&log, "log", false, "Whether to also fetch the release log")
 
 	return cmd
 }
@@ -112,6 +114,17 @@ func printRelease(rel *api.ReleaseRead, policies bool) {
 		fmt.Println("No violations")
 	} else {
 		fmt.Println(columnize.SimpleFormat(violationLines))
+	}
+
+	if policies {
+		fmt.Println("")
+		fmt.Println("=== Log ===")
+		if len(rel.Entries) == 0 {
+			fmt.Println("No entries")
+		}
+		for _, e := range rel.Entries {
+			fmt.Println("  - " + e.Type.String() + " at " + e.Time.String())
+		}
 	}
 
 	fmt.Println("")

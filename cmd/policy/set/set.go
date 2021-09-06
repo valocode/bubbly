@@ -29,7 +29,6 @@ var (
 func New(bCtx *env.BubblyContext) *cobra.Command {
 
 	var (
-		name           string
 		setProjects    []string
 		notSetProjects []string
 		setRepos       []string
@@ -59,12 +58,6 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 	}
 
 	f := cmd.PersistentFlags()
-	f.StringVar(
-		&name,
-		"name",
-		"",
-		`Provide the name of the policy (default is filename without extension)`,
-	)
 	f.StringSliceVar(&setProjects, "projects", nil, "List of project (names) to associate the policy with")
 	f.StringSliceVar(&notSetProjects, "not-projects", nil, "List of project (names) to disassociate the policy with")
 	f.StringSliceVar(&setRepos, "repos", nil, "List of repo (names) to associate the policy with")

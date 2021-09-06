@@ -80,6 +80,12 @@ func handleGetRequest(bCtx *env.BubblyContext, resp interface{}, urlsuffix strin
 		q.Add(name, value)
 	}
 	httpReq.URL.RawQuery = q.Encode()
+
+	bCtx.Logger.Debug().
+		Str("query", q.Encode()).
+		Str("method", http.MethodGet).
+		Msg("Client making request")
+
 	httpResp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return err
@@ -102,7 +108,12 @@ func handlePostRequest(bCtx *env.BubblyContext, req interface{}, urlsuffix strin
 		return err
 	}
 
-	fmt.Printf("Post Request:\n%s\n", b)
+	bCtx.Logger.Debug().
+		Bytes("data", b.Bytes()).
+		Str("endpoint", urlsuffix).
+		Str("method", http.MethodPost).
+		Msg("Client making request")
+
 	url := bCtx.ClientConfig.V1() + "/" + urlsuffix
 	httpReq, err := http.NewRequest(http.MethodPost, url, b)
 	if err != nil {
@@ -125,7 +136,12 @@ func handlePutRequest(bCtx *env.BubblyContext, req interface{}, urlsuffix string
 		return err
 	}
 
-	fmt.Printf("Put Request:\n%s\n", b)
+	bCtx.Logger.Debug().
+		Bytes("data", b.Bytes()).
+		Str("endpoint", urlsuffix).
+		Str("method", http.MethodPut).
+		Msg("Client making request")
+
 	url := bCtx.ClientConfig.V1() + "/" + urlsuffix
 	httpReq, err := http.NewRequest(http.MethodPut, url, b)
 	if err != nil {

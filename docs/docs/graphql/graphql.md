@@ -17,4 +17,8 @@ We recommend using the playground to explore the schema and test queries.
 
 ## Examples
 
-TODO - create a few test queries
+:::note TODO
+This documentation is a TODO.
+
+Please check back soon as we start to fill this page with useful examples of queries you may want to run.
+:::
