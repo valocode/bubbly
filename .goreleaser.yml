@@ -3,8 +3,6 @@ builds:
   - id: bubbly
     binary: bubbly
     main: main.go
-    env:
-      - CGO_ENABLED=0
     flags:
       # include the ui in the build
       - -tags=ui
@@ -12,24 +10,14 @@ builds:
       - linux
       - darwin
       - windows
-    goarch:
-      - amd64
-      - arm64
     goarm:
       - 7
+
 archives:
-  - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     id: nix
-    builds: [linux, darwin]
-    format: tar.gz
-    files:
-      - none*
-  - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    id: windows
-    builds: [windows]
-    format: zip
-    files:
-      - none*
+    builds: [bubbly]
+
 brews:
   - name: bubbly
     tap:
@@ -41,6 +29,7 @@ brews:
     description: "Bubbly"
     test: |
       system "#{bin}/bubbly --version"
+
 dockers:
   - goos: linux
     goarch: amd64
@@ -55,6 +44,7 @@ dockers:
       - "valocode/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     build_flag_templates:
       - "--pull"
+
 checksum:
   name_template: "checksums.txt"
 snapshot:
@@ -65,6 +55,7 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
 release:
   github:
     owner: valocode
