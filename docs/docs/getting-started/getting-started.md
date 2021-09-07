@@ -14,7 +14,7 @@ keywords:
 
 ## Installation
 
-Bubbly is a single Go binary containing botht the server, client and UI. Run it using Docker or download and run natively.
+Bubbly is a single Go binary containing both the server, client and UI. Run it using Docker or download and run natively.
 
 ### Docker
 
@@ -34,8 +34,8 @@ Binaries for macOS, Windows and Linux AMD64/ARM are available to download on the
 The choice of database is important.
 Bubbly uses [entgo](https://entgo.io) which has the following [supported dialects](https://entgo.io/docs/dialects/).
 
-Entgo supports SQLite, and be default Bubbly uses an in-memory SQLite database.
-So if you just want to spin up Bubbly and try it, don't worry about a database choice for now but do not get angry when your data is not persisted... :)
+Entgo supports SQLite, and by default, Bubbly uses an in-memory SQLite database.
+So if you just want to spin up Bubbly and try it, don't worry about a database choice for now, but do not get angry when your data is not persisted... :)
 
 Once you have chosen your database, run bubbly with your preferred method:
 
