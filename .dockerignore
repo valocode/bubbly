@@ -4,6 +4,9 @@ build
 dist
 kubernetes
 
+ui/build
+ui/node_modules
+
 # ignore config files that are not required
 .gitignore
 act.env
