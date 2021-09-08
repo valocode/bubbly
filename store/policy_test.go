@@ -27,7 +27,7 @@ func TestPolicyAffects(t *testing.T) {
 	})
 	require.NoError(t, relErr)
 
-	policies, err := test.ParsePolicies("..")
+	policies, err := test.ParsePolicies()
 	require.NoError(t, err)
 	for _, p := range policies {
 		_, policyErr := h.SaveReleasePolicy(&api.ReleasePolicySaveRequest{

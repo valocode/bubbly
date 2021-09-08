@@ -1,34 +1,24 @@
 package test
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
+	"fmt"
 
-	"github.com/valocode/bubbly/ent"
+	"github.com/valocode/bubbly/policy"
 	"github.com/valocode/bubbly/store/api"
 )
 
-var policyFiles = []string{
-	"policy/testdata/code_issue_high_severity.rego",
-	"policy/testdata/test_case_fail.rego",
-	"policy/testdata/release_checklist.rego",
-}
-
-func ParsePolicies(basedir string) ([]*api.ReleasePolicySaveRequest, error) {
+func ParsePolicies() ([]*api.ReleasePolicySaveRequest, error) {
 	var reqs []*api.ReleasePolicySaveRequest
-	for _, f := range policyFiles {
-		b, err := os.ReadFile(filepath.Join(basedir, f))
-		if err != nil {
-			return nil, err
-		}
-
-		fname := filepath.Base(f)
-		fname = strings.TrimSuffix(fname, filepath.Ext(fname))
-
+	policies, err := policy.BuiltinPolicies()
+	if err != nil {
+		return nil, err
+	}
+	if len(policies) == 0 {
+		return nil, fmt.Errorf("no builtin policies found")
+	}
+	for _, policy := range policies {
 		reqs = append(reqs, &api.ReleasePolicySaveRequest{
-			Policy: ent.NewReleasePolicyModelCreate().
-				SetName(fname).SetModule(string(b)),
+			Policy: policy,
 		})
 	}
 

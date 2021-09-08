@@ -15,11 +15,6 @@ import (
 )
 
 const (
-	// policyQuery = `
-	// {
-	// 	"deny"   : data.policy.deny,
-	// 	"require": data.policy.require,
-	// }`
 	policyQuery   = `data.policy`
 	policyModule  = "policy"
 	policyPackage = "data.policy"
@@ -112,7 +107,7 @@ func Validate(module string, opts ...func(r *runOptions)) error {
 	ctx := context.Background()
 	regoInstance, err := newRego(module, opts...)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating rego instance: %w", err)
 	}
 	query, pErr := regoInstance.PrepareForEval(ctx)
 	if pErr != nil {

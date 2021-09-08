@@ -36,8 +36,8 @@ func (h *Handler) PopulateStoreWithDummyData() error {
 	return nil
 }
 
-func (h *Handler) PopulateStoreWithPolicies(basedir string) error {
-	reqs, err := test.ParsePolicies(basedir)
+func (h *Handler) PopulateStoreWithPolicies() error {
+	reqs, err := test.ParsePolicies()
 	if err != nil {
 		return err
 	}

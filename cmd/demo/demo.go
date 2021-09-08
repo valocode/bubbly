@@ -58,7 +58,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := h.PopulateStoreWithPolicies("."); err != nil {
+			if err := h.PopulateStoreWithPolicies(); err != nil {
 				return err
 			}
 			if err := h.PopulateStoreWithDummyData(); err != nil {
