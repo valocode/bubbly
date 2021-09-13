@@ -68,6 +68,8 @@ func NewWithStore(bCtx *env.BubblyConfig, store *store.Store) *Server {
 
 	e.Use(authProvider.EchoMiddleware())
 
+	e.GET("/auth/token", authProvider.EchoAuthorizeHandler())
+
 	// Keep Alive Test
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "still standin'")

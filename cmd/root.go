@@ -15,7 +15,7 @@ import (
 )
 
 // NewCmdRoot creates a new cobra.Command representing "bubbly"
-func NewCmdRoot(bCtx *env.BubblyContext) *cobra.Command {
+func NewCmdRoot(bCtx *env.BubblyConfig) *cobra.Command {
 	// cmd represents the apply command
 	cmd := &cobra.Command{
 		Use:   "bubbly",

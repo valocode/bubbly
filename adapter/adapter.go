@@ -50,7 +50,7 @@ type (
 // RunFromID runs an adapter by the given id.
 // This will get the relevant adapter (from filesystem or remotely) and perform
 // the necessary rego queries and publish that data to the release.
-func RunFromID(bCtx *env.BubblyContext, id string, opts ...func(r *runOptions)) (*AdapterResult, error) {
+func RunFromID(bCtx *env.BubblyConfig, id string, opts ...func(r *runOptions)) (*AdapterResult, error) {
 	//
 	// Get the adapter module to run
 	//
@@ -250,7 +250,7 @@ func ParseAdpaterID(id string) (string, string, error) {
 // a path to a local file, the name of an adapter (which could lead to a local
 // an adapter file in the bubbly directory), or a name:tag for which the adapter
 // is fetched remotely.
-func adapterFromID(bCtx *env.BubblyContext, id string) (string, error) {
+func adapterFromID(bCtx *env.BubblyConfig, id string) (string, error) {
 	switch strings.Count(id, ":") {
 	case 0:
 		// It could be a local adapter, or remote with a default tag.

@@ -31,8 +31,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *env.BubblyConfig) *cobra.Command {
 	var (
 		commit   string
 		repo     string

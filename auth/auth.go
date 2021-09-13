@@ -84,12 +84,16 @@ func (p *Provider) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	data, err := json.MarshalIndent(resp, "", "    ")
+	data, err := json.Marshal(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 	w.Write(data)
+}
+
+func (p *Provider) EchoAuthorizeHandler() echo.HandlerFunc {
+	return echo.WrapHandler(http.HandlerFunc(p.AuthorizeHandler))
 }
 
 // Middleware reads and verifies the bearer tokens and injects the extracted data to the request context

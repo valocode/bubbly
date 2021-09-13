@@ -22,8 +22,7 @@ import (
 	_ "github.com/valocode/bubbly/ent/runtime"
 )
 
-func New(bCtx *env.BubblyContext) (*Store, error) {
-
+func New(bCtx *env.BubblyConfig) (*Store, error) {
 	var (
 		client *ent.Client
 		err    error

@@ -12,11 +12,11 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-func CreateRelease(bCtx *env.BubblyContext, req *api.ReleaseCreateRequest) error {
+func CreateRelease(bCtx *env.BubblyConfig, req *api.ReleaseCreateRequest) error {
 	return handlePostRequest(bCtx, req, "releases")
 }
 
-func GetRelease(bCtx *env.BubblyContext, req *api.ReleaseGetRequest) (*api.ReleaseGetResponse, error) {
+func GetRelease(bCtx *env.BubblyConfig, req *api.ReleaseGetRequest) (*api.ReleaseGetResponse, error) {
 	var r api.ReleaseGetResponse
 	params, err := structToStringMap(req)
 	if err != nil {
@@ -28,15 +28,15 @@ func GetRelease(bCtx *env.BubblyContext, req *api.ReleaseGetRequest) (*api.Relea
 	return &r, nil
 }
 
-func SaveCodeScan(bCtx *env.BubblyContext, req *api.CodeScanRequest) error {
+func SaveCodeScan(bCtx *env.BubblyConfig, req *api.CodeScanRequest) error {
 	return handlePostRequest(bCtx, req, "codescans")
 }
 
-func SaveTestRun(bCtx *env.BubblyContext, req *api.TestRunRequest) error {
+func SaveTestRun(bCtx *env.BubblyConfig, req *api.TestRunRequest) error {
 	return handlePostRequest(bCtx, req, "testruns")
 }
 
-func GetAdapter(bCtx *env.BubblyContext, req *api.AdapterGetRequest) (*api.AdapterGetResponse, error) {
+func GetAdapter(bCtx *env.BubblyConfig, req *api.AdapterGetRequest) (*api.AdapterGetResponse, error) {
 	var a api.AdapterGetResponse
 	params, err := structToStringMap(req)
 	if err != nil {
@@ -49,11 +49,11 @@ func GetAdapter(bCtx *env.BubblyContext, req *api.AdapterGetRequest) (*api.Adapt
 	return &a, nil
 }
 
-func SaveAdapter(bCtx *env.BubblyContext, req *api.AdapterSaveRequest) error {
+func SaveAdapter(bCtx *env.BubblyConfig, req *api.AdapterSaveRequest) error {
 	return handlePostRequest(bCtx, req, "adapters")
 }
 
-func GetPolicy(bCtx *env.BubblyContext, req *api.ReleasePolicyGetRequest) (*api.ReleasePolicyGetResponse, error) {
+func GetPolicy(bCtx *env.BubblyConfig, req *api.ReleasePolicyGetRequest) (*api.ReleasePolicyGetResponse, error) {
 	var r api.ReleasePolicyGetResponse
 	if err := handleGetRequest(bCtx, &r, "policies/"+*req.Name, nil); err != nil {
 		return nil, err
@@ -61,15 +61,15 @@ func GetPolicy(bCtx *env.BubblyContext, req *api.ReleasePolicyGetRequest) (*api.
 	return &r, nil
 }
 
-func SavePolicy(bCtx *env.BubblyContext, req *api.ReleasePolicySaveRequest) error {
+func SavePolicy(bCtx *env.BubblyConfig, req *api.ReleasePolicySaveRequest) error {
 	return handlePostRequest(bCtx, req, "policies")
 }
 
-func SetPolicy(bCtx *env.BubblyContext, req *api.ReleasePolicySetRequest) error {
+func SetPolicy(bCtx *env.BubblyConfig, req *api.ReleasePolicySetRequest) error {
 	return handlePutRequest(bCtx, req, "policies")
 }
 
-func handleGetRequest(bCtx *env.BubblyContext, resp interface{}, urlsuffix string, params map[string]string) error {
+func handleGetRequest(bCtx *env.BubblyConfig, resp interface{}, urlsuffix string, params map[string]string) error {
 	url := bCtx.ClientConfig.V1() + "/" + urlsuffix
 	httpReq, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -96,7 +96,7 @@ func handleGetRequest(bCtx *env.BubblyContext, resp interface{}, urlsuffix strin
 	return nil
 }
 
-func handlePostRequest(bCtx *env.BubblyContext, req interface{}, urlsuffix string) error {
+func handlePostRequest(bCtx *env.BubblyConfig, req interface{}, urlsuffix string) error {
 	b := new(bytes.Buffer)
 	if err := json.NewEncoder(b).Encode(req); err != nil {
 		return err
@@ -119,7 +119,7 @@ func handlePostRequest(bCtx *env.BubblyContext, req interface{}, urlsuffix strin
 	return nil
 }
 
-func handlePutRequest(bCtx *env.BubblyContext, req interface{}, urlsuffix string) error {
+func handlePutRequest(bCtx *env.BubblyConfig, req interface{}, urlsuffix string) error {
 	b := new(bytes.Buffer)
 	if err := json.NewEncoder(b).Encode(req); err != nil {
 		return err

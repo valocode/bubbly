@@ -8,7 +8,7 @@ import (
 	"github.com/valocode/bubbly/store"
 )
 
-func httpErrorHandler(bCtx *env.BubblyContext, err error, c echo.Context) error {
+func httpErrorHandler(bCtx *env.BubblyConfig, err error, c echo.Context) error {
 	bCtx.Logger.Error().
 		Str("Path", c.Path()).
 		Strs("QueryParams", c.ParamValues()).

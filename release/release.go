@@ -32,13 +32,13 @@ type ReleaseSpecWrap struct {
 	Release ReleaseSpec `json:"release"`
 }
 
-func DefaultReleaseSpec(bCtx *env.BubblyContext) *ReleaseSpec {
+func DefaultReleaseSpec(bCtx *env.BubblyConfig) *ReleaseSpec {
 	return &ReleaseSpec{
 		Project: bCtx.ReleaseConfig.Project,
 	}
 }
 
-func Commit(bCtx *env.BubblyContext) (string, error) {
+func Commit(bCtx *env.BubblyConfig) (string, error) {
 	spec, err := ParseReleaseSpec(bCtx)
 	if err != nil {
 		return "", err
@@ -51,7 +51,7 @@ func Commit(bCtx *env.BubblyContext) (string, error) {
 	return commit, nil
 }
 
-func CreateRelease(bCtx *env.BubblyContext) (*api.ReleaseCreateRequest, error) {
+func CreateRelease(bCtx *env.BubblyConfig) (*api.ReleaseCreateRequest, error) {
 	spec, err := ParseReleaseSpec(bCtx)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func CreateRelease(bCtx *env.BubblyContext) (*api.ReleaseCreateRequest, error) {
 	}, nil
 }
 
-func ParseReleaseSpec(bCtx *env.BubblyContext) (*ReleaseSpec, error) {
+func ParseReleaseSpec(bCtx *env.BubblyConfig) (*ReleaseSpec, error) {
 	release, err := decodeReleaseSpec(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("decoding release spec: %w", err)
@@ -91,9 +91,9 @@ func ParseReleaseSpec(bCtx *env.BubblyContext) (*ReleaseSpec, error) {
 	return release, nil
 }
 
-func decodeReleaseSpec(bCtx *env.BubblyContext) (*ReleaseSpec, error) {
+func decodeReleaseSpec(bCtx *env.BubblyConfig) (*ReleaseSpec, error) {
 	spec := DefaultReleaseSpec(bCtx)
-	var possiblePaths = []string{
+	possiblePaths := []string{
 		".bubbly.json",
 		filepath.Join(bCtx.ReleaseConfig.BubblyDir, ".bubbly.json"),
 	}

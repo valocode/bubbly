@@ -34,15 +34,13 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *env.BubblyConfig) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "demo [flags]",
 		Short:   "Start the bubbly server in demo mode",
 		Long:    cmdLong + "\n\n",
 		Example: cmdExamples,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			fmt.Println("Initializing store...")
 			s, err := store.New(bCtx)
 			if err != nil {

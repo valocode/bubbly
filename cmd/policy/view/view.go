@@ -28,8 +28,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *env.BubblyConfig) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "view name[:tag] [flags]",
 		Short:   "View a Bubbly policy",

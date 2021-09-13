@@ -9,8 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *env.BubblyConfig) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "adapter <command>",
 		Short: "Manage bubbly adapters",

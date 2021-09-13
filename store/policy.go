@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/valocode/bubbly/ent"
@@ -16,16 +17,14 @@ import (
 
 type AuthContext struct {
 	UserID string
-	OrgID string
+	OrgID  string
 }
 
 func getAuth(context.Context) {
-
 }
 
 func (h *Handler) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.ReleasePolicy, error) {
-	auth := getAuth(ctx)
-	if h.Enforcer.Enforce(auth.UserID, auth.OrgID, "/policies", "save")
+	// session := auth.GetSession(ctx)
 	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "release policy create")
 	}
