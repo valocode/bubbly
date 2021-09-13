@@ -28,7 +28,6 @@ var (
 
 func New(bCtx *env.BubblyConfig) *cobra.Command {
 	var (
-		name           string
 		setProjects    []string
 		notSetProjects []string
 		setRepos       []string
@@ -41,7 +40,7 @@ func New(bCtx *env.BubblyConfig) *cobra.Command {
 		Example: cmdExamples,
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			name = args[0]
+			name := args[0]
 			if err := client.SetPolicy(bCtx, &api.ReleasePolicySetRequest{
 				Policy: &name,
 				Affects: &api.ReleasePolicyAffects{

@@ -80,6 +80,12 @@ func handleGetRequest(bCtx *env.BubblyConfig, resp interface{}, urlsuffix string
 		q.Add(name, value)
 	}
 	httpReq.URL.RawQuery = q.Encode()
+
+	bCtx.Logger.Debug().
+		Str("query", q.Encode()).
+		Str("method", http.MethodGet).
+		Msg("Client making request")
+
 	httpResp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return err

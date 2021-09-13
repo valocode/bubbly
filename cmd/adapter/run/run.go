@@ -109,7 +109,7 @@ func New(bCtx *env.BubblyConfig) *cobra.Command {
 	}
 
 	f := cmd.Flags()
-	f.BoolVar(&trace, "trace", false, "enable more verbose trace output for rego queries")
+	f.BoolVar(&trace, "trace", false, "Enable more verbose trace output for Rego queries")
 	f.BoolVar(&dryrun, "dry", false, "Enable dry run mode where the results are not sent to the bubbly server")
 	f.StringVar(&inputFiles, "input", "", "Provide a comma-separated list of files to parse and provide as input")
 	f.StringVarP(&output, "output", "o", "", "The output format of the results (only json supported right now)")
