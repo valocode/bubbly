@@ -79,6 +79,8 @@ type AdapterMutation struct {
 	tag           *string
 	module        *string
 	clearedFields map[string]struct{}
+	owner         *int
+	clearedowner  bool
 	done          bool
 	oldValue      func(context.Context) (*Adapter, error)
 	predicates    []predicate.Adapter
@@ -271,6 +273,45 @@ func (m *AdapterMutation) ResetModule() {
 	m.module = nil
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by id.
+func (m *AdapterMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (m *AdapterMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Organization entity was cleared.
+func (m *AdapterMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *AdapterMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *AdapterMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *AdapterMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
 // Where appends a list predicates to the AdapterMutation builder.
 func (m *AdapterMutation) Where(ps ...predicate.Adapter) {
 	m.predicates = append(m.predicates, ps...)
@@ -423,49 +464,77 @@ func (m *AdapterMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AdapterMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.owner != nil {
+		edges = append(edges, adapter.EdgeOwner)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *AdapterMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case adapter.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AdapterMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *AdapterMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AdapterMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedowner {
+		edges = append(edges, adapter.EdgeOwner)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *AdapterMutation) EdgeCleared(name string) bool {
+	switch name {
+	case adapter.EdgeOwner:
+		return m.clearedowner
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *AdapterMutation) ClearEdge(name string) error {
+	switch name {
+	case adapter.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	}
 	return fmt.Errorf("unknown Adapter unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *AdapterMutation) ResetEdge(name string) error {
+	switch name {
+	case adapter.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	}
 	return fmt.Errorf("unknown Adapter edge %s", name)
 }
 
@@ -2538,6 +2607,8 @@ type ComponentMutation struct {
 	url                    *string
 	metadata               *schema.Metadata
 	clearedFields          map[string]struct{}
+	owner                  *int
+	clearedowner           bool
 	vulnerabilities        map[int]struct{}
 	removedvulnerabilities map[int]struct{}
 	clearedvulnerabilities bool
@@ -2884,6 +2955,45 @@ func (m *ComponentMutation) MetadataCleared() bool {
 func (m *ComponentMutation) ResetMetadata() {
 	m.metadata = nil
 	delete(m.clearedFields, component.FieldMetadata)
+}
+
+// SetOwnerID sets the "owner" edge to the Organization entity by id.
+func (m *ComponentMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (m *ComponentMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Organization entity was cleared.
+func (m *ComponentMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *ComponentMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *ComponentMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *ComponentMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
 }
 
 // AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by ids.
@@ -3272,7 +3382,10 @@ func (m *ComponentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ComponentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
+	if m.owner != nil {
+		edges = append(edges, component.EdgeOwner)
+	}
 	if m.vulnerabilities != nil {
 		edges = append(edges, component.EdgeVulnerabilities)
 	}
@@ -3289,6 +3402,10 @@ func (m *ComponentMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ComponentMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case component.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
 	case component.EdgeVulnerabilities:
 		ids := make([]ent.Value, 0, len(m.vulnerabilities))
 		for id := range m.vulnerabilities {
@@ -3313,7 +3430,7 @@ func (m *ComponentMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ComponentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedvulnerabilities != nil {
 		edges = append(edges, component.EdgeVulnerabilities)
 	}
@@ -3354,7 +3471,10 @@ func (m *ComponentMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ComponentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
+	if m.clearedowner {
+		edges = append(edges, component.EdgeOwner)
+	}
 	if m.clearedvulnerabilities {
 		edges = append(edges, component.EdgeVulnerabilities)
 	}
@@ -3371,6 +3491,8 @@ func (m *ComponentMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ComponentMutation) EdgeCleared(name string) bool {
 	switch name {
+	case component.EdgeOwner:
+		return m.clearedowner
 	case component.EdgeVulnerabilities:
 		return m.clearedvulnerabilities
 	case component.EdgeLicenses:
@@ -3385,6 +3507,9 @@ func (m *ComponentMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ComponentMutation) ClearEdge(name string) error {
 	switch name {
+	case component.EdgeOwner:
+		m.ClearOwner()
+		return nil
 	}
 	return fmt.Errorf("unknown Component unique edge %s", name)
 }
@@ -3393,6 +3518,9 @@ func (m *ComponentMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ComponentMutation) ResetEdge(name string) error {
 	switch name {
+	case component.EdgeOwner:
+		m.ResetOwner()
+		return nil
 	case component.EdgeVulnerabilities:
 		m.ResetVulnerabilities()
 		return nil
@@ -9157,6 +9285,8 @@ type ReleasePolicyMutation struct {
 	name              *string
 	module            *string
 	clearedFields     map[string]struct{}
+	owner             *int
+	clearedowner      bool
 	projects          map[int]struct{}
 	removedprojects   map[int]struct{}
 	clearedprojects   bool
@@ -9320,6 +9450,45 @@ func (m *ReleasePolicyMutation) OldModule(ctx context.Context) (v string, err er
 // ResetModule resets all changes to the "module" field.
 func (m *ReleasePolicyMutation) ResetModule() {
 	m.module = nil
+}
+
+// SetOwnerID sets the "owner" edge to the Organization entity by id.
+func (m *ReleasePolicyMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (m *ReleasePolicyMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Organization entity was cleared.
+func (m *ReleasePolicyMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *ReleasePolicyMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *ReleasePolicyMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *ReleasePolicyMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
 }
 
 // AddProjectIDs adds the "projects" edge to the Project entity by ids.
@@ -9619,7 +9788,10 @@ func (m *ReleasePolicyMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ReleasePolicyMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
+	if m.owner != nil {
+		edges = append(edges, releasepolicy.EdgeOwner)
+	}
 	if m.projects != nil {
 		edges = append(edges, releasepolicy.EdgeProjects)
 	}
@@ -9636,6 +9808,10 @@ func (m *ReleasePolicyMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ReleasePolicyMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case releasepolicy.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
 	case releasepolicy.EdgeProjects:
 		ids := make([]ent.Value, 0, len(m.projects))
 		for id := range m.projects {
@@ -9660,7 +9836,7 @@ func (m *ReleasePolicyMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReleasePolicyMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedprojects != nil {
 		edges = append(edges, releasepolicy.EdgeProjects)
 	}
@@ -9701,7 +9877,10 @@ func (m *ReleasePolicyMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ReleasePolicyMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
+	if m.clearedowner {
+		edges = append(edges, releasepolicy.EdgeOwner)
+	}
 	if m.clearedprojects {
 		edges = append(edges, releasepolicy.EdgeProjects)
 	}
@@ -9718,6 +9897,8 @@ func (m *ReleasePolicyMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ReleasePolicyMutation) EdgeCleared(name string) bool {
 	switch name {
+	case releasepolicy.EdgeOwner:
+		return m.clearedowner
 	case releasepolicy.EdgeProjects:
 		return m.clearedprojects
 	case releasepolicy.EdgeRepos:
@@ -9732,6 +9913,9 @@ func (m *ReleasePolicyMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ReleasePolicyMutation) ClearEdge(name string) error {
 	switch name {
+	case releasepolicy.EdgeOwner:
+		m.ClearOwner()
+		return nil
 	}
 	return fmt.Errorf("unknown ReleasePolicy unique edge %s", name)
 }
@@ -9740,6 +9924,9 @@ func (m *ReleasePolicyMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ReleasePolicyMutation) ResetEdge(name string) error {
 	switch name {
+	case releasepolicy.EdgeOwner:
+		m.ResetOwner()
+		return nil
 	case releasepolicy.EdgeProjects:
 		m.ResetProjects()
 		return nil
@@ -12906,6 +13093,8 @@ type VulnerabilityMutation struct {
 	modified          *time.Time
 	metadata          *schema.Metadata
 	clearedFields     map[string]struct{}
+	owner             *int
+	clearedowner      bool
 	components        map[int]struct{}
 	removedcomponents map[int]struct{}
 	clearedcomponents bool
@@ -13372,6 +13561,45 @@ func (m *VulnerabilityMutation) ResetMetadata() {
 	delete(m.clearedFields, vulnerability.FieldMetadata)
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by id.
+func (m *VulnerabilityMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (m *VulnerabilityMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Organization entity was cleared.
+func (m *VulnerabilityMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *VulnerabilityMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *VulnerabilityMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *VulnerabilityMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
 // AddComponentIDs adds the "components" edge to the Component entity by ids.
 func (m *VulnerabilityMutation) AddComponentIDs(ids ...int) {
 	if m.components == nil {
@@ -13819,7 +14047,10 @@ func (m *VulnerabilityMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *VulnerabilityMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
+	if m.owner != nil {
+		edges = append(edges, vulnerability.EdgeOwner)
+	}
 	if m.components != nil {
 		edges = append(edges, vulnerability.EdgeComponents)
 	}
@@ -13836,6 +14067,10 @@ func (m *VulnerabilityMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *VulnerabilityMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case vulnerability.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
 	case vulnerability.EdgeComponents:
 		ids := make([]ent.Value, 0, len(m.components))
 		for id := range m.components {
@@ -13860,7 +14095,7 @@ func (m *VulnerabilityMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *VulnerabilityMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedcomponents != nil {
 		edges = append(edges, vulnerability.EdgeComponents)
 	}
@@ -13901,7 +14136,10 @@ func (m *VulnerabilityMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *VulnerabilityMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
+	if m.clearedowner {
+		edges = append(edges, vulnerability.EdgeOwner)
+	}
 	if m.clearedcomponents {
 		edges = append(edges, vulnerability.EdgeComponents)
 	}
@@ -13918,6 +14156,8 @@ func (m *VulnerabilityMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *VulnerabilityMutation) EdgeCleared(name string) bool {
 	switch name {
+	case vulnerability.EdgeOwner:
+		return m.clearedowner
 	case vulnerability.EdgeComponents:
 		return m.clearedcomponents
 	case vulnerability.EdgeReviews:
@@ -13932,6 +14172,9 @@ func (m *VulnerabilityMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *VulnerabilityMutation) ClearEdge(name string) error {
 	switch name {
+	case vulnerability.EdgeOwner:
+		m.ClearOwner()
+		return nil
 	}
 	return fmt.Errorf("unknown Vulnerability unique edge %s", name)
 }
@@ -13940,6 +14183,9 @@ func (m *VulnerabilityMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *VulnerabilityMutation) ResetEdge(name string) error {
 	switch name {
+	case vulnerability.EdgeOwner:
+		m.ResetOwner()
+		return nil
 	case vulnerability.EdgeComponents:
 		m.ResetComponents()
 		return nil

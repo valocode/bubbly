@@ -54,6 +54,7 @@ func (ReleasePolicy) Fields() []ent.Field {
 
 func (ReleasePolicy) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("owner", Organization.Type).Unique().Required(),
 		edge.To("projects", Project.Type),
 		edge.To("repos", Repo.Type),
 

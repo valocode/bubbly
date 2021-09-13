@@ -1,11 +1,11 @@
 package store
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/gitcommit"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasepolicy"
@@ -15,16 +15,7 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-type AuthContext struct {
-	UserID string
-	OrgID  string
-}
-
-func getAuth(context.Context) {
-}
-
 func (h *Handler) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.ReleasePolicy, error) {
-	// session := auth.GetSession(ctx)
 	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "release policy create")
 	}
@@ -32,7 +23,7 @@ func (h *Handler) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.Rel
 	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
 		var err error
 		dbPolicy, err = tx.ReleasePolicy.Query().
-			Where(releasepolicy.Name(*req.Policy.Name)).
+			Where(releasepolicy.Name(*req.Policy.Name), releasepolicy.HasOwnerWith(organization.ID(h.orgID))).
 			Only(h.ctx)
 		if err != nil {
 			if !ent.IsNotFound(err) {
@@ -41,6 +32,7 @@ func (h *Handler) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.Rel
 			// If not found, then create the policy
 			dbPolicy, err = tx.ReleasePolicy.Create().
 				SetModelCreate(req.Policy).
+				SetOwnerID(h.orgID).
 				Save(h.ctx)
 			if err != nil {
 				return HandleEntError(err, "release policy create")
@@ -76,6 +68,7 @@ func (h *Handler) GetReleasePolicy(req *api.ReleasePolicyGetRequest) (*api.Relea
 
 	query := h.client.ReleasePolicy.Query().Where(
 		releasepolicy.Name(*req.Name),
+		releasepolicy.HasOwnerWith(organization.ID(h.orgID)),
 	)
 	dbPolicy, err := query.Only(h.ctx)
 	if err != nil {
@@ -96,7 +89,7 @@ func (h *Handler) SetReleasePolicyAffects(req *api.ReleasePolicySetRequest) (*en
 	var dbPolicy *ent.ReleasePolicy
 	var err error
 	dbPolicy, err = h.client.ReleasePolicy.Query().
-		Where(releasepolicy.Name(*req.Policy)).
+		Where(releasepolicy.Name(*req.Policy), releasepolicy.HasOwnerWith(organization.ID(h.orgID))).
 		Only(h.ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {

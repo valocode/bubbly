@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 )
 
@@ -22,11 +23,14 @@ type ReleasePolicy struct {
 	Module string `json:"module,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ReleasePolicyQuery when eager-loading is set.
-	Edges ReleasePolicyEdges `json:"edges"`
+	Edges                ReleasePolicyEdges `json:"edges"`
+	release_policy_owner *int
 }
 
 // ReleasePolicyEdges holds the relations/edges for other nodes in the graph.
 type ReleasePolicyEdges struct {
+	// Owner holds the value of the owner edge.
+	Owner *Organization `json:"owner,omitempty"`
 	// Projects holds the value of the projects edge.
 	Projects []*Project `json:"projects,omitempty"`
 	// Repos holds the value of the repos edge.
@@ -35,13 +39,27 @@ type ReleasePolicyEdges struct {
 	Violations []*ReleasePolicyViolation `json:"violations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
+}
+
+// OwnerOrErr returns the Owner value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ReleasePolicyEdges) OwnerOrErr() (*Organization, error) {
+	if e.loadedTypes[0] {
+		if e.Owner == nil {
+			// The edge owner was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: organization.Label}
+		}
+		return e.Owner, nil
+	}
+	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // ProjectsOrErr returns the Projects value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleasePolicyEdges) ProjectsOrErr() ([]*Project, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.Projects, nil
 	}
 	return nil, &NotLoadedError{edge: "projects"}
@@ -50,7 +68,7 @@ func (e ReleasePolicyEdges) ProjectsOrErr() ([]*Project, error) {
 // ReposOrErr returns the Repos value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleasePolicyEdges) ReposOrErr() ([]*Repo, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Repos, nil
 	}
 	return nil, &NotLoadedError{edge: "repos"}
@@ -59,7 +77,7 @@ func (e ReleasePolicyEdges) ReposOrErr() ([]*Repo, error) {
 // ViolationsOrErr returns the Violations value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleasePolicyEdges) ViolationsOrErr() ([]*ReleasePolicyViolation, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.Violations, nil
 	}
 	return nil, &NotLoadedError{edge: "violations"}
@@ -74,6 +92,8 @@ func (*ReleasePolicy) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case releasepolicy.FieldName, releasepolicy.FieldModule:
 			values[i] = new(sql.NullString)
+		case releasepolicy.ForeignKeys[0]: // release_policy_owner
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type ReleasePolicy", columns[i])
 		}
@@ -107,9 +127,21 @@ func (rp *ReleasePolicy) assignValues(columns []string, values []interface{}) er
 			} else if value.Valid {
 				rp.Module = value.String
 			}
+		case releasepolicy.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field release_policy_owner", value)
+			} else if value.Valid {
+				rp.release_policy_owner = new(int)
+				*rp.release_policy_owner = int(value.Int64)
+			}
 		}
 	}
 	return nil
+}
+
+// QueryOwner queries the "owner" edge of the ReleasePolicy entity.
+func (rp *ReleasePolicy) QueryOwner() *OrganizationQuery {
+	return (&ReleasePolicyClient{config: rp.config}).QueryOwner(rp)
 }
 
 // QueryProjects queries the "projects" edge of the ReleasePolicy entity.

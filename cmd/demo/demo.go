@@ -56,7 +56,7 @@ func New(bCtx *env.BubblyConfig) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if err := h.PopulateStoreWithPolicies("."); err != nil {
+			if err := h.PopulateStoreWithPolicies(); err != nil {
 				return err
 			}
 			if err := h.PopulateStoreWithDummyData(); err != nil {
@@ -66,10 +66,11 @@ func New(bCtx *env.BubblyConfig) *cobra.Command {
 			fmt.Println("")
 
 			fmt.Printf("Starting HTTP server on %s:%s\n", bCtx.ServerConfig.Host, bCtx.ServerConfig.Port)
-			if err := server.NewWithStore(bCtx, s).Start(); err != nil {
+			server, err := server.NewWithStore(bCtx, s)
+			if err != nil {
 				return err
 			}
-			return nil
+			return server.Start()
 		},
 	}
 

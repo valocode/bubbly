@@ -24,8 +24,9 @@ services:
       - "8222:8222" # NATS HTTP
       - "4223:4223" # NATS service
     command:
-      - "agent"
+      - "server"
       - "--debug"
+
 
       # One of the Store options for Bubbly
   postgres:

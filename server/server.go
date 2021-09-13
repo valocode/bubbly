@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 
@@ -24,10 +25,10 @@ func New(bCtx *env.BubblyConfig) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing store: %w", err)
 	}
-	return NewWithStore(bCtx, store), nil
+	return NewWithStore(bCtx, store)
 }
 
-func NewWithStore(bCtx *env.BubblyConfig, store *store.Store) *Server {
+func NewWithStore(bCtx *env.BubblyConfig, store *store.Store) (*Server, error) {
 	var (
 		e = echo.New()
 		s = Server{
@@ -69,6 +70,28 @@ func NewWithStore(bCtx *env.BubblyConfig, store *store.Store) *Server {
 	e.Use(authProvider.EchoMiddleware())
 
 	e.GET("/auth/token", authProvider.EchoAuthorizeHandler())
+	if true {
+		e.Use(middleware.CORS())
+	}
+
+	//
+	// Setup the Bubbly UI
+	//
+	if bCtx.ServerConfig.UI {
+		if bCtx.UI == nil {
+			return nil, fmt.Errorf("cannot run the bubbly UI with a nil filesystem")
+		}
+		buildDir, err := fs.Sub(bCtx.UI, "build")
+		if err != nil {
+			log.Fatalf("creating sub filesystem for ui: %s", err.Error())
+		}
+
+		ui := e.Group("/ui")
+		ui.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+			Filesystem: http.FS(buildDir),
+			HTML5:      true,
+		}))
+	}
 
 	// Keep Alive Test
 	e.GET("/healthz", func(c echo.Context) error {
@@ -96,10 +119,6 @@ func NewWithStore(bCtx *env.BubblyConfig, store *store.Store) *Server {
 	v1.POST("/testruns", s.postTestRun)
 	v1.POST("/adapters", s.postAdapter)
 	v1.GET("/adapters/:name", s.getAdapter)
-
-	// func policyHandler()
-	// v1 := e.Group("/api/v1")
-	// v1.MOUNT("/policies", policyHandler)
 	v1.POST("/policies", s.postPolicy)
 	v1.PUT("/policies", s.putPolicy)
 	v1.GET("/policies/:name", s.getPolicy)
@@ -136,7 +155,7 @@ func NewWithStore(bCtx *env.BubblyConfig, store *store.Store) *Server {
 	// SaaS specific things:
 	// - organizations/ PUT,GET, etc
 
-	return &s
+	return &s, nil
 }
 
 type Server struct {
@@ -175,7 +194,11 @@ func (s *Server) postRelease(c echo.Context) error {
 	if err := binder.BindBody(c, &req); err != nil {
 		return err
 	}
-	h, err := store.NewHandler(store.WithStore(s.store))
+	h, err := store.NewHandler(
+		store.WithStore(s.store),
+		// TODO(miika): here is how to set user id for handler
+		// store.WithUserID(""),
+	)
 	if err != nil {
 		return err
 	}

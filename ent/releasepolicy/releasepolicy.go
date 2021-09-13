@@ -11,6 +11,8 @@ const (
 	FieldName = "name"
 	// FieldModule holds the string denoting the module field in the database.
 	FieldModule = "module"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// EdgeProjects holds the string denoting the projects edge name in mutations.
 	EdgeProjects = "projects"
 	// EdgeRepos holds the string denoting the repos edge name in mutations.
@@ -19,6 +21,13 @@ const (
 	EdgeViolations = "violations"
 	// Table holds the table name of the releasepolicy in the database.
 	Table = "release_policy"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "release_policy"
+	// OwnerInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OwnerInverseTable = "organization"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "release_policy_owner"
 	// ProjectsTable is the table that holds the projects relation/edge. The primary key declared below.
 	ProjectsTable = "release_policy_projects"
 	// ProjectsInverseTable is the table name for the Project entity.
@@ -45,6 +54,12 @@ var Columns = []string{
 	FieldModule,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "release_policy"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"release_policy_owner",
+}
+
 var (
 	// ProjectsPrimaryKey and ProjectsColumn2 are the table columns denoting the
 	// primary key for the projects relation (M2M).
@@ -58,6 +73,11 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}

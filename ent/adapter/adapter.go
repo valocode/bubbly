@@ -13,8 +13,17 @@ const (
 	FieldTag = "tag"
 	// FieldModule holds the string denoting the module field in the database.
 	FieldModule = "module"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// Table holds the table name of the adapter in the database.
 	Table = "adapter"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "adapter"
+	// OwnerInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OwnerInverseTable = "organization"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "adapter_owner"
 )
 
 // Columns holds all SQL columns for adapter fields.
@@ -25,10 +34,21 @@ var Columns = []string{
 	FieldModule,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "adapter"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"adapter_owner",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}

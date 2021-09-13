@@ -106,7 +106,7 @@ func DefaultServerConfig() *ServerConfig {
 func DefaultStoreConfig() *StoreConfig {
 	return &StoreConfig{
 		// Default provider
-		Provider: Provider(DefaultEnvStr("BUBBLY_STORE", DefaultStoreProvider)),
+		Provider: Provider(DefaultEnvStr("BUBBLY_DB", DefaultStoreProvider)),
 		// Default configuration for Postgres
 		PostgresAddr:     DefaultEnvStr("POSTGRES_ADDR", DefaultPostgresAddr),
 		PostgresUser:     DefaultEnvStr("POSTGRES_USER", DefaultPostgresUser),

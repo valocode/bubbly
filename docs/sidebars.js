@@ -17,52 +17,48 @@ module.exports = {
     },
     {
       type: 'category',
-      label: 'Resources',
+      label: 'Tutorials',
       items: [
-        'resources/overview',
-        'resources/kinds',
+        'tutorials/codeissue-policy',
+        'tutorials/gosec-adapter',
       ],
     },
     {
       type: 'doc',
-      id: 'schema/schema'
+      id: 'adapters/adapters',
     },
     {
       type: 'doc',
-      id: 'api/api'
+      id: 'policies/policies',
+    },
+    {
+      type: 'doc',
+      id: 'schema/schema',
+    },
+    {
+      type: 'doc',
+      id: 'api/api',
+    },
+    {
+      type: 'doc',
+      id: 'graphql/graphql',
     },
     {
       type: 'category',
       label: 'CLI',
       items: [
         'cli/bubbly',
-        'cli/bubbly-agent',
-        'cli/bubbly-apply',
-        'cli/bubbly-get',
-        'cli/bubbly-schema',
-        'cli/schema/bubbly-schema-apply',
+        'cli/bubbly_adapter',
+        'cli/bubbly_demo',
+        'cli/bubbly_policy',
+        'cli/bubbly_release',
+        'cli/bubbly_server',
+        'cli/bubbly_version',
       ],
-    },
-    {
-      type: 'category',
-      label: 'Tutorials',
-      items: [
-        'tutorials/github-metrics',
-        'tutorials/snyk-metrics',
-        'tutorials/gosec-metrics'
-      ],
-    },
-    {
-      type: 'doc',
-      id: 'current-status/status',
     },
     {
       type: 'doc',
       id: 'contributing/contributing',
-    },
-    {
-      type: 'doc',
-      id: 'future/future',
     },
   ],
 };

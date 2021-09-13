@@ -21,7 +21,7 @@ func TestStore(t *testing.T) {
 	_, projectErr := h.client.Project.Create().SetName("demo").SetOwnerID(h.orgID).Save(h.ctx)
 	require.NoError(t, projectErr)
 	{
-		pErr := h.PopulateStoreWithPolicies("..")
+		pErr := h.PopulateStoreWithPolicies()
 		require.NoError(t, pErr)
 		dErr := h.PopulateStoreWithDummyData()
 		require.NoError(t, dErr)
@@ -47,5 +47,4 @@ func TestStore(t *testing.T) {
 	for _, v := range vs {
 		t.Log(v.String())
 	}
-
 }

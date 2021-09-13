@@ -15,11 +15,6 @@ import (
 )
 
 const (
-	// policyQuery = `
-	// {
-	// 	"deny"   : data.policy.deny,
-	// 	"require": data.policy.require,
-	// }`
 	policyQuery   = `data.policy`
 	policyModule  = "policy"
 	policyPackage = "data.policy"

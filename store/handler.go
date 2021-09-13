@@ -15,6 +15,7 @@ type handlerConfig struct {
 	client    *ent.Client
 	validator *validator.Validate
 	orgName   string
+	userID    string
 }
 
 type Handler struct {
@@ -22,6 +23,7 @@ type Handler struct {
 	client    *ent.Client
 	validator *validator.Validate
 	orgID     int
+	userID    string
 }
 
 func NewHandler(opts ...func(h *handlerConfig)) (*Handler, error) {
@@ -34,6 +36,7 @@ func NewHandler(opts ...func(h *handlerConfig)) (*Handler, error) {
 		ctx:       conf.ctx,
 		client:    conf.client,
 		validator: conf.validator,
+		userID:    conf.userID,
 	}
 	if h.ctx == nil {
 		h.ctx = context.Background()
@@ -43,6 +46,11 @@ func NewHandler(opts ...func(h *handlerConfig)) (*Handler, error) {
 	}
 	if h.validator == nil {
 		h.validator = newValidator()
+	}
+	if h.userID == "" {
+		// If no user id was provided, setup annonymous user access, and check
+		// that it has permissions to perform the request
+		// TODO: h.userID = "some annonymous user"
 	}
 
 	orgName := conf.orgName
@@ -88,6 +96,12 @@ func WithClient(client *ent.Client) func(h *handlerConfig) {
 func WithOrgName(name string) func(h *handlerConfig) {
 	return func(h *handlerConfig) {
 		h.orgName = name
+	}
+}
+
+func WithUserID(userID string) func(h *handlerConfig) {
+	return func(h *handlerConfig) {
+		h.userID = userID
 	}
 }
 

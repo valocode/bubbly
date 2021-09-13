@@ -16,6 +16,7 @@ export interface Adapter {
 	name?: string;
 	tag?: string;
 	module?: string;
+	owner?: Organization;
 }
 
 export interface Adapter_Relay {
@@ -160,6 +161,7 @@ export interface Component {
 	description?: string;
 	url?: string;
 	metadata?: UNKNOWN_TYPE_schema.Metadata;
+	owner?: Organization;
 	vulnerabilities?: Vulnerability[];
 	licenses?: License[];
 	uses?: ReleaseComponent[];
@@ -486,6 +488,7 @@ export interface ReleasePolicy {
 	id?: number;
 	name?: string;
 	module?: string;
+	owner?: Organization;
 	projects?: Project[];
 	repos?: Repo[];
 	violations?: ReleasePolicyViolation[];
@@ -543,8 +546,6 @@ export enum ReleasePolicyViolationType {
 export enum ReleasePolicyViolationSeverity {
 	suggestion = "suggestion",
 	warning = "warning",
-	error = "error",
-	blocking = "blocking",
 }
 
 // #######################################
@@ -689,6 +690,7 @@ export interface Vulnerability {
 	published?: Date;
 	modified?: Date;
 	metadata?: UNKNOWN_TYPE_schema.Metadata;
+	owner?: Organization;
 	components?: Component[];
 	reviews?: VulnerabilityReview[];
 	instances?: ReleaseVulnerability[];

@@ -4,6 +4,14 @@ package ent
 
 import "context"
 
+func (a *Adapter) Owner(ctx context.Context) (*Organization, error) {
+	result, err := a.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = a.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
 func (a *Artifact) Release(ctx context.Context) (*Release, error) {
 	result, err := a.Edges.ReleaseOrErr()
 	if IsNotLoaded(err) {
@@ -64,6 +72,14 @@ func (cs *CodeScan) Components(ctx context.Context) ([]*ReleaseComponent, error)
 	result, err := cs.Edges.ComponentsOrErr()
 	if IsNotLoaded(err) {
 		result, err = cs.QueryComponents().All(ctx)
+	}
+	return result, err
+}
+
+func (c *Component) Owner(ctx context.Context) (*Organization, error) {
+	result, err := c.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = c.QueryOwner().Only(ctx)
 	}
 	return result, err
 }
@@ -372,6 +388,14 @@ func (rl *ReleaseLicense) Scans(ctx context.Context) ([]*CodeScan, error) {
 	return result, err
 }
 
+func (rp *ReleasePolicy) Owner(ctx context.Context) (*Organization, error) {
+	result, err := rp.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = rp.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
 func (rp *ReleasePolicy) Projects(ctx context.Context) ([]*Project, error) {
 	result, err := rp.Edges.ProjectsOrErr()
 	if IsNotLoaded(err) {
@@ -528,6 +552,14 @@ func (tr *TestRun) Tests(ctx context.Context) ([]*TestCase, error) {
 	result, err := tr.Edges.TestsOrErr()
 	if IsNotLoaded(err) {
 		result, err = tr.QueryTests().All(ctx)
+	}
+	return result, err
+}
+
+func (v *Vulnerability) Owner(ctx context.Context) (*Organization, error) {
+	result, err := v.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = v.QueryOwner().Only(ctx)
 	}
 	return result, err
 }

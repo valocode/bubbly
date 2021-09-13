@@ -41,7 +41,7 @@ func New(bCtx *env.BubblyConfig) *cobra.Command {
 		Example: cmdExamples,
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			name := args[0]
+			name = args[0]
 			if err := client.SetPolicy(bCtx, &api.ReleasePolicySetRequest{
 				Policy: &name,
 				Affects: &api.ReleasePolicyAffects{
@@ -58,12 +58,6 @@ func New(bCtx *env.BubblyConfig) *cobra.Command {
 	}
 
 	f := cmd.PersistentFlags()
-	f.StringVar(
-		&name,
-		"name",
-		"",
-		`Provide the name of the policy (default is filename without extension)`,
-	)
 	f.StringSliceVar(&setProjects, "projects", nil, "List of project (names) to associate the policy with")
 	f.StringSliceVar(&notSetProjects, "not-projects", nil, "List of project (names) to disassociate the policy with")
 	f.StringSliceVar(&setRepos, "repos", nil, "List of repo (names) to associate the policy with")

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
@@ -11,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/license"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	schema "github.com/valocode/bubbly/ent/schema/types"
@@ -108,6 +110,17 @@ func (cu *ComponentUpdate) ClearMetadata() *ComponentUpdate {
 	return cu
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (cu *ComponentUpdate) SetOwnerID(id int) *ComponentUpdate {
+	cu.mutation.SetOwnerID(id)
+	return cu
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (cu *ComponentUpdate) SetOwner(o *Organization) *ComponentUpdate {
+	return cu.SetOwnerID(o.ID)
+}
+
 // AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by IDs.
 func (cu *ComponentUpdate) AddVulnerabilityIDs(ids ...int) *ComponentUpdate {
 	cu.mutation.AddVulnerabilityIDs(ids...)
@@ -156,6 +169,12 @@ func (cu *ComponentUpdate) AddUses(r ...*ReleaseComponent) *ComponentUpdate {
 // Mutation returns the ComponentMutation object of the builder.
 func (cu *ComponentUpdate) Mutation() *ComponentMutation {
 	return cu.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (cu *ComponentUpdate) ClearOwner() *ComponentUpdate {
+	cu.mutation.ClearOwner()
+	return cu
 }
 
 // ClearVulnerabilities clears all "vulnerabilities" edges to the Vulnerability entity.
@@ -293,6 +312,9 @@ func (cu *ComponentUpdate) check() error {
 			return &ValidationError{Name: "version", err: fmt.Errorf("ent: validator failed for field \"version\": %w", err)}
 		}
 	}
+	if _, ok := cu.mutation.OwnerID(); cu.mutation.OwnerCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"owner\"")
+	}
 	return nil
 }
 
@@ -373,6 +395,41 @@ func (cu *ComponentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeJSON,
 			Column: component.FieldMetadata,
 		})
+	}
+	if cu.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   component.OwnerTable,
+			Columns: []string{component.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   component.OwnerTable,
+			Columns: []string{component.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if cu.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -633,6 +690,17 @@ func (cuo *ComponentUpdateOne) ClearMetadata() *ComponentUpdateOne {
 	return cuo
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (cuo *ComponentUpdateOne) SetOwnerID(id int) *ComponentUpdateOne {
+	cuo.mutation.SetOwnerID(id)
+	return cuo
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (cuo *ComponentUpdateOne) SetOwner(o *Organization) *ComponentUpdateOne {
+	return cuo.SetOwnerID(o.ID)
+}
+
 // AddVulnerabilityIDs adds the "vulnerabilities" edge to the Vulnerability entity by IDs.
 func (cuo *ComponentUpdateOne) AddVulnerabilityIDs(ids ...int) *ComponentUpdateOne {
 	cuo.mutation.AddVulnerabilityIDs(ids...)
@@ -681,6 +749,12 @@ func (cuo *ComponentUpdateOne) AddUses(r ...*ReleaseComponent) *ComponentUpdateO
 // Mutation returns the ComponentMutation object of the builder.
 func (cuo *ComponentUpdateOne) Mutation() *ComponentMutation {
 	return cuo.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (cuo *ComponentUpdateOne) ClearOwner() *ComponentUpdateOne {
+	cuo.mutation.ClearOwner()
+	return cuo
 }
 
 // ClearVulnerabilities clears all "vulnerabilities" edges to the Vulnerability entity.
@@ -825,6 +899,9 @@ func (cuo *ComponentUpdateOne) check() error {
 			return &ValidationError{Name: "version", err: fmt.Errorf("ent: validator failed for field \"version\": %w", err)}
 		}
 	}
+	if _, ok := cuo.mutation.OwnerID(); cuo.mutation.OwnerCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"owner\"")
+	}
 	return nil
 }
 
@@ -922,6 +999,41 @@ func (cuo *ComponentUpdateOne) sqlSave(ctx context.Context) (_node *Component, e
 			Type:   field.TypeJSON,
 			Column: component.FieldMetadata,
 		})
+	}
+	if cuo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   component.OwnerTable,
+			Columns: []string{component.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   component.OwnerTable,
+			Columns: []string{component.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if cuo.mutation.VulnerabilitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{

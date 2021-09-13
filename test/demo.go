@@ -13,7 +13,6 @@ import (
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	schema "github.com/valocode/bubbly/ent/schema/types"
-	"github.com/valocode/bubbly/ent/vulnerability"
 	"github.com/valocode/bubbly/integrations"
 	"github.com/valocode/bubbly/store/api"
 )
@@ -91,40 +90,6 @@ func SaveSPDXData(client *ent.Client) error {
 			return err
 		}
 		fmt.Println("Created license: " + l.String())
-	}
-	return nil
-}
-
-func SaveCVEData(client *ent.Client) error {
-	resp, err := integrations.FetchCVEs(integrations.DefaultCVEFetchOptions())
-	if err != nil {
-		return fmt.Errorf("error fetching CVEs: %w", err)
-	}
-	ctx := context.Background()
-	for _, vuln := range resp.Result.CVEItems {
-		var description string
-		// Get the english description
-		for _, d := range vuln.CVEItem.Description.DescriptionData {
-			if d.Lang == "en" {
-				description = d.Value
-			}
-		}
-		_, err := client.Vulnerability.Query().Where(
-			vulnerability.Vid(vuln.CVEItem.CVEDataMeta.ID),
-		).Only(ctx)
-		if err != nil {
-			if !ent.IsNotFound(err) {
-				return fmt.Errorf("error checking vulnerability: %w", err)
-			}
-			_, err = client.Vulnerability.Create().
-				SetVid(vuln.CVEItem.CVEDataMeta.ID).
-				SetDescription(description).
-				SetSeverityScore(float64(vuln.Impact.BaseMetricV3.CVSSV3.BaseScore)).
-				Save(ctx)
-			if err != nil {
-				return fmt.Errorf("error creating vulnerability: %w", err)
-			}
-		}
 	}
 	return nil
 }
@@ -213,15 +178,16 @@ func createRepoData(opt DemoRepoOptions) []ReleaseData {
 					SetTime(cTime),
 			}
 
+			passAll := false
+			if rand.Intn(10) > 3 {
+				passAll = true
+			}
 			for j := 1; j <= opt.NumTests; j++ {
 				// Calculate the result based on the test case number. The higher
 				// the number, the more likely to fail
 				// Create a failChance percentage
 				failChance := (float64(j*100) / float64(opt.NumTests)) / 100.0
-				result := (float64(rand.Intn(100)) * failChance) <= 80.0
-				// if !result {
-				// 	fmt.Printf("Test Case will fail: %d\n", j)
-				// }
+				result := passAll || (float64(rand.Intn(100))*failChance) <= 80.0
 				run.TestCases = append(run.TestCases, &api.TestRunCase{
 					TestCaseModelCreate: *ent.NewTestCaseModelCreate().
 						SetName(fmt.Sprintf("test_case_%d", j)).

@@ -9,6 +9,9 @@
 build/
 dist/
 
+# keep the build directory (although empty) because go:embed fails otherwise
+ui/build/.gitkeep
+
 # Test binary, built with `go test -c`
 *.test
 

@@ -65,14 +65,14 @@ type ResolverRoot interface {
 	VulnerabilityReview() VulnerabilityReviewResolver
 }
 
-type DirectiveRoot struct {
-}
+type DirectiveRoot struct{}
 
 type ComplexityRoot struct {
 	Adapter struct {
 		ID     func(childComplexity int) int
 		Module func(childComplexity int) int
 		Name   func(childComplexity int) int
+		Owner  func(childComplexity int) int
 		Tag    func(childComplexity int) int
 	}
 
@@ -159,6 +159,7 @@ type ComplexityRoot struct {
 		Licenses        func(childComplexity int, first *int, last *int, where *ent.LicenseWhereInput, orderBy *ent.LicenseOrder) int
 		Metadata        func(childComplexity int) int
 		Name            func(childComplexity int) int
+		Owner           func(childComplexity int) int
 		URL             func(childComplexity int) int
 		Uses            func(childComplexity int, first *int, last *int, where *ent.ReleaseComponentWhereInput) int
 		Vendor          func(childComplexity int) int
@@ -413,6 +414,7 @@ type ComplexityRoot struct {
 		ID         func(childComplexity int) int
 		Module     func(childComplexity int) int
 		Name       func(childComplexity int) int
+		Owner      func(childComplexity int) int
 		Projects   func(childComplexity int, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) int
 		Repos      func(childComplexity int, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) int
 		Violations func(childComplexity int, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) int
@@ -541,6 +543,7 @@ type ComplexityRoot struct {
 		Instances     func(childComplexity int, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) int
 		Metadata      func(childComplexity int) int
 		Modified      func(childComplexity int) int
+		Owner         func(childComplexity int) int
 		Published     func(childComplexity int) int
 		Reviews       func(childComplexity int, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) int
 		Severity      func(childComplexity int) int
@@ -586,9 +589,11 @@ type ComplexityRoot struct {
 type ArtifactResolver interface {
 	Metadata(ctx context.Context, obj *ent.Artifact) (map[string]interface{}, error)
 }
+
 type CodeIssueResolver interface {
 	Metadata(ctx context.Context, obj *ent.CodeIssue) (map[string]interface{}, error)
 }
+
 type CodeScanResolver interface {
 	Metadata(ctx context.Context, obj *ent.CodeScan) (map[string]interface{}, error)
 
@@ -596,25 +601,31 @@ type CodeScanResolver interface {
 	Vulnerabilities(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
 	Components(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error)
 }
+
 type ComponentResolver interface {
 	Metadata(ctx context.Context, obj *ent.Component) (map[string]interface{}, error)
+
 	Vulnerabilities(ctx context.Context, obj *ent.Component, first *int, last *int, where *ent.VulnerabilityWhereInput, orderBy *ent.VulnerabilityOrder) ([]*ent.Vulnerability, error)
 	Licenses(ctx context.Context, obj *ent.Component, first *int, last *int, where *ent.LicenseWhereInput, orderBy *ent.LicenseOrder) ([]*ent.License, error)
 	Uses(ctx context.Context, obj *ent.Component, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error)
 }
+
 type LicenseResolver interface {
 	Components(ctx context.Context, obj *ent.License, first *int, last *int, where *ent.ComponentWhereInput, orderBy *ent.ComponentOrder) ([]*ent.Component, error)
 	Uses(ctx context.Context, obj *ent.License, first *int, last *int, where *ent.LicenseUseWhereInput) ([]*ent.LicenseUse, error)
 }
+
 type OrganizationResolver interface {
 	Projects(ctx context.Context, obj *ent.Organization, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error)
 	Repos(ctx context.Context, obj *ent.Organization, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error)
 }
+
 type ProjectResolver interface {
 	Repos(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error)
 	VulnerabilityReviews(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error)
 	Policies(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) ([]*ent.ReleasePolicy, error)
 }
+
 type QueryResolver interface {
 	ArtifactConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ArtifactOrder, where *ent.ArtifactWhereInput) (*ent.ArtifactConnection, error)
 	Policy(ctx context.Context, first *int, last *int, orderBy *ent.ReleasePolicyOrder, where *ent.ReleasePolicyWhereInput) ([]*ent.ReleasePolicy, error)
@@ -652,6 +663,7 @@ type QueryResolver interface {
 	ReleaseVulnerabilityConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, where *ent.ReleaseVulnerabilityWhereInput) (*ent.ReleaseVulnerabilityConnection, error)
 	Vulnerability(ctx context.Context, first *int, last *int, orderBy *ent.VulnerabilityOrder, where *ent.VulnerabilityWhereInput) ([]*ent.Vulnerability, error)
 }
+
 type ReleaseResolver interface {
 	Subreleases(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseWhereInput, orderBy *ent.ReleaseOrder) ([]*ent.Release, error)
 	Dependencies(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseWhereInput, orderBy *ent.ReleaseOrder) ([]*ent.Release, error)
@@ -665,41 +677,51 @@ type ReleaseResolver interface {
 	TestRuns(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.TestRunWhereInput, orderBy *ent.TestRunOrder) ([]*ent.TestRun, error)
 	VulnerabilityReviews(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error)
 }
+
 type ReleaseComponentResolver interface {
 	Scans(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error)
 
 	Vulnerabilities(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
 }
+
 type ReleaseLicenseResolver interface {
 	Scans(ctx context.Context, obj *ent.ReleaseLicense, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error)
 }
+
 type ReleasePolicyResolver interface {
 	Projects(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error)
 	Repos(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error)
 	Violations(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) ([]*ent.ReleasePolicyViolation, error)
 }
+
 type ReleaseVulnerabilityResolver interface {
 	Reviews(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error)
 }
+
 type RepoResolver interface {
 	Commits(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.GitCommitWhereInput, orderBy *ent.GitCommitOrder) ([]*ent.GitCommit, error)
 	VulnerabilityReviews(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error)
 	Policies(ctx context.Context, obj *ent.Repo, first *int, last *int, where *ent.ReleasePolicyWhereInput, orderBy *ent.ReleasePolicyOrder) ([]*ent.ReleasePolicy, error)
 }
+
 type TestCaseResolver interface {
 	Metadata(ctx context.Context, obj *ent.TestCase) (map[string]interface{}, error)
 }
+
 type TestRunResolver interface {
 	Metadata(ctx context.Context, obj *ent.TestRun) (map[string]interface{}, error)
 
 	Tests(ctx context.Context, obj *ent.TestRun, first *int, last *int, where *ent.TestCaseWhereInput, orderBy *ent.TestCaseOrder) ([]*ent.TestCase, error)
 }
+
 type VulnerabilityResolver interface {
 	Metadata(ctx context.Context, obj *ent.Vulnerability) (map[string]interface{}, error)
+
 	Components(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.ComponentWhereInput, orderBy *ent.ComponentOrder) ([]*ent.Component, error)
 	Reviews(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error)
 	Instances(ctx context.Context, obj *ent.Vulnerability, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
 }
+
 type VulnerabilityReviewResolver interface {
 	Projects(ctx context.Context, obj *ent.VulnerabilityReview, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error)
 	Repos(ctx context.Context, obj *ent.VulnerabilityReview, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error)
@@ -742,6 +764,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Adapter.Name(childComplexity), true
+
+	case "Adapter.owner":
+		if e.complexity.Adapter.Owner == nil {
+			break
+		}
+
+		return e.complexity.Adapter.Owner(childComplexity), true
 
 	case "Adapter.tag":
 		if e.complexity.Adapter.Tag == nil {
@@ -1112,6 +1141,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Component.Name(childComplexity), true
+
+	case "Component.owner":
+		if e.complexity.Component.Owner == nil {
+			break
+		}
+
+		return e.complexity.Component.Owner(childComplexity), true
 
 	case "Component.url":
 		if e.complexity.Component.URL == nil {
@@ -2504,6 +2540,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ReleasePolicy.Name(childComplexity), true
 
+	case "ReleasePolicy.owner":
+		if e.complexity.ReleasePolicy.Owner == nil {
+			break
+		}
+
+		return e.complexity.ReleasePolicy.Owner(childComplexity), true
+
 	case "ReleasePolicy.projects":
 		if e.complexity.ReleasePolicy.Projects == nil {
 			break
@@ -3072,6 +3115,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Vulnerability.Modified(childComplexity), true
 
+	case "Vulnerability.owner":
+		if e.complexity.Vulnerability.Owner == nil {
+			break
+		}
+
+		return e.complexity.Vulnerability.Owner(childComplexity), true
+
 	case "Vulnerability.published":
 		if e.complexity.Vulnerability.Published == nil {
 			break
@@ -3377,22 +3427,20 @@ interface Node {
   id: ID!
 }
 
-enum ReleasePolicyViolationSeverity {
-  suggestion
-  warning
-  error
-  blocking
+enum ReleaseEntryType {
+  artifact
+  deploy
+  code_scan
+  test_run
 }
 
-enum RepoOrderField {
-  name
-}
-
-enum ArtifactOrderField {
-  name
-  sha256
+enum ReleaseEntryOrderField {
   type
   time
+}
+
+enum ReleasePolicyOrderField {
+  name
 }
 
 enum CodeIssueType {
@@ -3401,10 +3449,29 @@ enum CodeIssueType {
   bug
 }
 
-enum CodeIssueSeverity {
-  low
-  medium
-  high
+enum ComponentOrderField {
+  name
+  vendor
+  version
+}
+
+enum ReleasePolicyViolationType {
+  require
+  deny
+}
+
+enum ReleasePolicyViolationSeverity {
+  suggestion
+  warning
+  blocking
+}
+
+enum VulnerabilityReviewDecision {
+  exploitable
+  in_progress
+  invalid
+  mitigated
+  ineffective
 }
 
 enum VulnerabilityReviewOrderField {
@@ -3416,20 +3483,9 @@ enum OrderDirection {
   DESC
 }
 
-enum ArtifactType {
-  docker
-  file
-}
-
-enum ComponentOrderField {
-  name
-  vendor
-  version
-}
-
-enum AdapterOrderField {
-  name
-  tag
+enum CodeScanOrderField {
+  tool
+  time
 }
 
 enum ReleaseStatus {
@@ -3438,27 +3494,8 @@ enum ReleaseStatus {
   blocked
 }
 
-enum TestRunOrderField {
-  tool
-  time
-}
-
-enum VulnerabilitySeverity {
-  None
-  Low
-  Medium
-  High
-  Critical
-}
-
-enum ReleasePolicyViolationType {
-  require
-  deny
-}
-
-enum CodeScanOrderField {
-  tool
-  time
+enum ProjectOrderField {
+  name
 }
 
 enum GitCommitOrderField {
@@ -3473,6 +3510,15 @@ enum LicenseOrderField {
   name
 }
 
+enum TestCaseOrderField {
+  name
+}
+
+enum TestRunOrderField {
+  tool
+  time
+}
+
 enum VulnerabilityOrderField {
   vid
   severity_score
@@ -3481,24 +3527,9 @@ enum VulnerabilityOrderField {
   modified
 }
 
-enum ReleasePolicyOrderField {
-  name
-}
-
-enum VulnerabilityReviewDecision {
-  exploitable
-  in_progress
-  invalid
-  mitigated
-  ineffective
-}
-
-enum TestCaseOrderField {
-  name
-}
-
-enum ProjectOrderField {
-  name
+enum ArtifactType {
+  docker
+  file
 }
 
 enum ReleaseComponentType {
@@ -3507,9 +3538,39 @@ enum ReleaseComponentType {
   development
 }
 
-enum ReleaseEntryOrderField {
+enum ArtifactOrderField {
+  name
+  sha256
   type
   time
+}
+
+enum CodeIssueSeverity {
+  low
+  medium
+  high
+}
+
+enum ReleaseOrderField {
+  name
+  version
+}
+
+enum RepoOrderField {
+  name
+}
+
+enum VulnerabilitySeverity {
+  None
+  Low
+  Medium
+  High
+  Critical
+}
+
+enum AdapterOrderField {
+  name
+  tag
 }
 
 enum CodeIssueOrderField {
@@ -3518,130 +3579,23 @@ enum CodeIssueOrderField {
   type
 }
 
-enum ReleaseOrderField {
-  name
-  version
-}
-
-enum ReleaseEntryType {
-  artifact
-  deploy
-  code_scan
-  test_run
-}
-
 """
-ReleaseEntryConnection supports the relay edge specification for node ReleaseEntry in the ent schema.
+ProjectConnection supports the relay edge specification for node Project in the ent schema.
 Generated by ent.
 """
-type ReleaseEntryEdge {
-  node: ReleaseEntry
+type ProjectEdge {
+  node: Project
   cursor: Cursor!
 }
 
 """
-ReleaseVulnerabilityConnection supports the relay edge specification for node ReleaseVulnerability in the ent schema.
+ReleaseEntryConnection supports the relay connection specification for node ReleaseEntry in the ent schema.
 Generated by ent.
 """
-type ReleaseVulnerabilityEdge {
-  node: ReleaseVulnerability
-  cursor: Cursor!
-}
-
-"""
-Vulnerability represents the node Vulnerability in the ent schema.
-Generated by ent.
-"""
-type Vulnerability implements Node {
-  id: ID!
-  vid: String
-  summary: String
-  description: String
-  severity_score: Float
-  severity: VulnerabilitySeverity
-  published: Time
-  modified: Time
-  metadata: Map
-  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
-  reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-  instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
-}
-
-"""
-ReleaseLicense represents the node ReleaseLicense in the ent schema.
-Generated by ent.
-"""
-type ReleaseLicense implements Node {
-  id: ID!
-  license: License!
-  component: ReleaseComponent
-  release: Release!
-  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
-}
-
-"""
-ReleasePolicyViolation represents the node ReleasePolicyViolation in the ent schema.
-Generated by ent.
-"""
-type ReleasePolicyViolation implements Node {
-  id: ID!
-  message: String
-  type: ReleasePolicyViolationType
-  severity: ReleasePolicyViolationSeverity
-  policy: ReleasePolicy!
-  release: Release!
-}
-
-"""
-TestCaseConnection supports the relay connection specification for node TestCase in the ent schema.
-Generated by ent.
-"""
-type TestCaseConnection {
+type ReleaseEntryConnection {
   totalCount: Int!
   pageInfo: PageInfo!
-  edges: [TestCaseEdge]
-}
-
-"""
-CodeIssueConnection supports the relay connection specification for node CodeIssue in the ent schema.
-Generated by ent.
-"""
-type CodeIssueConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [CodeIssueEdge]
-}
-
-"""
-GitCommit represents the node GitCommit in the ent schema.
-Generated by ent.
-"""
-type GitCommit implements Node {
-  id: ID!
-  hash: String
-  branch: String
-  tag: String
-  time: Time
-  repo: Repo!
-  release: Release
-}
-
-"""
-GitCommitConnection supports the relay edge specification for node GitCommit in the ent schema.
-Generated by ent.
-"""
-type GitCommitEdge {
-  node: GitCommit
-  cursor: Cursor!
-}
-
-"""
-ArtifactConnection supports the relay edge specification for node Artifact in the ent schema.
-Generated by ent.
-"""
-type ArtifactEdge {
-  node: Artifact
-  cursor: Cursor!
+  edges: [ReleaseEntryEdge]
 }
 
 """
@@ -3659,22 +3613,48 @@ type CodeIssue implements Node {
 }
 
 """
-RepoConnection supports the relay edge specification for node Repo in the ent schema.
+CodeIssueConnection supports the relay connection specification for node CodeIssue in the ent schema.
 Generated by ent.
 """
-type RepoEdge {
-  node: Repo
-  cursor: Cursor!
+type CodeIssueConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [CodeIssueEdge]
 }
 
 """
-LicenseUseConnection supports the relay connection specification for node LicenseUse in the ent schema.
+ReleaseVulnerabilityConnection supports the relay connection specification for node ReleaseVulnerability in the ent schema.
 Generated by ent.
 """
-type LicenseUseConnection {
+type ReleaseVulnerabilityConnection {
   totalCount: Int!
   pageInfo: PageInfo!
-  edges: [LicenseUseEdge]
+  edges: [ReleaseVulnerabilityEdge]
+}
+
+"""
+VulnerabilityReview represents the node VulnerabilityReview in the ent schema.
+Generated by ent.
+"""
+type VulnerabilityReview implements Node {
+  id: ID!
+  name: String
+  decision: VulnerabilityReviewDecision
+  vulnerability: Vulnerability!
+  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
+  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
+  releases(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
+  instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+}
+
+"""
+ProjectConnection supports the relay connection specification for node Project in the ent schema.
+Generated by ent.
+"""
+type ProjectConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ProjectEdge]
 }
 
 """
@@ -3688,34 +3668,93 @@ type ReleasePolicyConnection {
 }
 
 """
-OrganizationConnection supports the relay connection specification for node Organization in the ent schema.
+ReleasePolicyViolationConnection supports the relay edge specification for node ReleasePolicyViolation in the ent schema.
 Generated by ent.
 """
-type OrganizationConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [OrganizationEdge]
+type ReleasePolicyViolationEdge {
+  node: ReleasePolicyViolation
+  cursor: Cursor!
 }
 
 """
-VulnerabilityConnection supports the relay connection specification for node Vulnerability in the ent schema.
+TestRunConnection supports the relay edge specification for node TestRun in the ent schema.
 Generated by ent.
 """
-type VulnerabilityConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [VulnerabilityEdge]
+type TestRunEdge {
+  node: TestRun
+  cursor: Cursor!
 }
 
 """
-Adapter represents the node Adapter in the ent schema.
+ReleaseVulnerabilityConnection supports the relay edge specification for node ReleaseVulnerability in the ent schema.
 Generated by ent.
 """
-type Adapter implements Node {
+type ReleaseVulnerabilityEdge {
+  node: ReleaseVulnerability
+  cursor: Cursor!
+}
+
+"""
+AdapterConnection supports the relay edge specification for node Adapter in the ent schema.
+Generated by ent.
+"""
+type AdapterEdge {
+  node: Adapter
+  cursor: Cursor!
+}
+
+"""
+ReleaseConnection supports the relay edge specification for node Release in the ent schema.
+Generated by ent.
+"""
+type ReleaseEdge {
+  node: Release
+  cursor: Cursor!
+}
+
+"""
+ReleaseLicense represents the node ReleaseLicense in the ent schema.
+Generated by ent.
+"""
+type ReleaseLicense implements Node {
+  id: ID!
+  license: License!
+  component: ReleaseComponent
+  release: Release!
+  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
+}
+
+"""
+ReleaseLicenseConnection supports the relay edge specification for node ReleaseLicense in the ent schema.
+Generated by ent.
+"""
+type ReleaseLicenseEdge {
+  node: ReleaseLicense
+  cursor: Cursor!
+}
+
+"""
+ReleasePolicy represents the node ReleasePolicy in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicy implements Node {
   id: ID!
   name: String
-  tag: String
   module: String
+  owner: Organization!
+  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
+  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
+  violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
+}
+
+"""
+ArtifactConnection supports the relay connection specification for node Artifact in the ent schema.
+Generated by ent.
+"""
+type ArtifactConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ArtifactEdge]
 }
 
 """
@@ -3728,20 +3767,101 @@ type CodeIssueEdge {
 }
 
 """
-CodeScanConnection supports the relay edge specification for node CodeScan in the ent schema.
+TestCaseConnection supports the relay edge specification for node TestCase in the ent schema.
 Generated by ent.
 """
-type CodeScanEdge {
-  node: CodeScan
+type TestCaseEdge {
+  node: TestCase
   cursor: Cursor!
 }
 
 """
-ProjectConnection supports the relay edge specification for node Project in the ent schema.
+VulnerabilityReviewConnection supports the relay edge specification for node VulnerabilityReview in the ent schema.
 Generated by ent.
 """
-type ProjectEdge {
-  node: Project
+type VulnerabilityReviewEdge {
+  node: VulnerabilityReview
+  cursor: Cursor!
+}
+
+"""
+LicenseUse represents the node LicenseUse in the ent schema.
+Generated by ent.
+"""
+type LicenseUse implements Node {
+  id: ID!
+  license: License!
+}
+
+"""
+TestCase represents the node TestCase in the ent schema.
+Generated by ent.
+"""
+type TestCase implements Node {
+  id: ID!
+  name: String
+  result: Boolean
+  message: String
+  elapsed: Float
+  metadata: Map
+  run: TestRun!
+}
+
+"""
+TestRunConnection supports the relay connection specification for node TestRun in the ent schema.
+Generated by ent.
+"""
+type TestRunConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [TestRunEdge]
+}
+
+"""
+VulnerabilityConnection supports the relay edge specification for node Vulnerability in the ent schema.
+Generated by ent.
+"""
+type VulnerabilityEdge {
+  node: Vulnerability
+  cursor: Cursor!
+}
+
+"""
+VulnerabilityReviewConnection supports the relay connection specification for node VulnerabilityReview in the ent schema.
+Generated by ent.
+"""
+type VulnerabilityReviewConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [VulnerabilityReviewEdge]
+}
+
+"""
+AdapterConnection supports the relay connection specification for node Adapter in the ent schema.
+Generated by ent.
+"""
+type AdapterConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [AdapterEdge]
+}
+
+"""
+ComponentConnection supports the relay connection specification for node Component in the ent schema.
+Generated by ent.
+"""
+type ComponentConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ComponentEdge]
+}
+
+"""
+LicenseConnection supports the relay edge specification for node License in the ent schema.
+Generated by ent.
+"""
+type LicenseEdge {
+  node: License
   cursor: Cursor!
 }
 
@@ -3768,212 +3888,11 @@ type Release implements Node {
   vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
 }
 
-"""
-ReleaseComponent represents the node ReleaseComponent in the ent schema.
-Generated by ent.
-"""
-type ReleaseComponent implements Node {
-  id: ID!
-  type: ReleaseComponentType
-  release: Release!
-  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan!] @goField(forceResolver: true)
-  component: Component!
-  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
-}
-
-"""
-ReleaseEntryConnection supports the relay connection specification for node ReleaseEntry in the ent schema.
-Generated by ent.
-"""
-type ReleaseEntryConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleaseEntryEdge]
-}
-
-"""
-ReleasePolicyViolationConnection supports the relay connection specification for node ReleasePolicyViolation in the ent schema.
-Generated by ent.
-"""
-type ReleasePolicyViolationConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleasePolicyViolationEdge]
-}
-
-"""
-LicenseUseConnection supports the relay edge specification for node LicenseUse in the ent schema.
-Generated by ent.
-"""
-type LicenseUseEdge {
-  node: LicenseUse
-  cursor: Cursor!
-}
-
-"""
-OrganizationConnection supports the relay edge specification for node Organization in the ent schema.
-Generated by ent.
-"""
-type OrganizationEdge {
-  node: Organization
-  cursor: Cursor!
-}
-
-"""
-ProjectConnection supports the relay connection specification for node Project in the ent schema.
-Generated by ent.
-"""
-type ProjectConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ProjectEdge]
-}
-
-"""
-CodeScanConnection supports the relay connection specification for node CodeScan in the ent schema.
-Generated by ent.
-"""
-type CodeScanConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [CodeScanEdge]
-}
-
-"""
-ComponentConnection supports the relay edge specification for node Component in the ent schema.
-Generated by ent.
-"""
-type ComponentEdge {
-  node: Component
-  cursor: Cursor!
-}
-
-"""
-Organization represents the node Organization in the ent schema.
-Generated by ent.
-"""
-type Organization implements Node {
-  id: ID!
-  name: String
-  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-}
-
-"""
-ReleaseLicenseConnection supports the relay connection specification for node ReleaseLicense in the ent schema.
-Generated by ent.
-"""
-type ReleaseLicenseConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleaseLicenseEdge]
-}
-
-"""
-VulnerabilityConnection supports the relay edge specification for node Vulnerability in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityEdge {
-  node: Vulnerability
-  cursor: Cursor!
-}
-
-"""
-AdapterConnection supports the relay connection specification for node Adapter in the ent schema.
-Generated by ent.
-"""
-type AdapterConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [AdapterEdge]
-}
-
-"""
-Artifact represents the node Artifact in the ent schema.
-Generated by ent.
-"""
-type Artifact implements Node {
-  id: ID!
-  name: String
-  sha256: String
-  type: ArtifactType
-  time: Time
-  metadata: Map
-  release: Release
-  entry: ReleaseEntry
-}
-
-"""
-ArtifactConnection supports the relay connection specification for node Artifact in the ent schema.
-Generated by ent.
-"""
-type ArtifactConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ArtifactEdge]
-}
-
-"""
-Project represents the node Project in the ent schema.
-Generated by ent.
-"""
-type Project implements Node {
-  id: ID!
-  name: String
-  owner: Organization!
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-  policies(first: Int, last: Int, where: ReleasePolicyWhereInput, order_by: ReleasePolicyOrder): [ReleasePolicy] @goField(forceResolver: true)
-}
-
-"""
-ReleaseConnection supports the relay connection specification for node Release in the ent schema.
-Generated by ent.
-"""
-type ReleaseConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleaseEdge]
-}
-
 type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
   startCursor: Cursor
   endCursor: Cursor
-}
-
-"""
-AdapterConnection supports the relay edge specification for node Adapter in the ent schema.
-Generated by ent.
-"""
-type AdapterEdge {
-  node: Adapter
-  cursor: Cursor!
-}
-
-"""
-ComponentConnection supports the relay connection specification for node Component in the ent schema.
-Generated by ent.
-"""
-type ComponentConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ComponentEdge]
-}
-
-"""
-TestRun represents the node TestRun in the ent schema.
-Generated by ent.
-"""
-type TestRun implements Node {
-  id: ID!
-  tool: String
-  time: Time
-  metadata: Map
-  release: Release!
-  entry: ReleaseEntry
-  tests(first: Int, last: Int, where: TestCaseWhereInput, order_by: TestCaseOrder): [TestCase] @goField(forceResolver: true)
 }
 
 """
@@ -3987,257 +3906,13 @@ type RepoConnection {
 }
 
 """
-LicenseUse represents the node LicenseUse in the ent schema.
+ReleaseLicenseConnection supports the relay connection specification for node ReleaseLicense in the ent schema.
 Generated by ent.
 """
-type LicenseUse implements Node {
-  id: ID!
-  license: License!
-}
-
-"""
-ReleaseLicenseConnection supports the relay edge specification for node ReleaseLicense in the ent schema.
-Generated by ent.
-"""
-type ReleaseLicenseEdge {
-  node: ReleaseLicense
-  cursor: Cursor!
-}
-
-"""
-ReleasePolicy represents the node ReleasePolicy in the ent schema.
-Generated by ent.
-"""
-type ReleasePolicy implements Node {
-  id: ID!
-  name: String
-  module: String
-  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-  violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
-}
-
-"""
-TestRunConnection supports the relay connection specification for node TestRun in the ent schema.
-Generated by ent.
-"""
-type TestRunConnection {
+type ReleaseLicenseConnection {
   totalCount: Int!
   pageInfo: PageInfo!
-  edges: [TestRunEdge]
-}
-
-"""
-VulnerabilityReview represents the node VulnerabilityReview in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityReview implements Node {
-  id: ID!
-  name: String
-  decision: VulnerabilityReviewDecision
-  vulnerability: Vulnerability!
-  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-  releases(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
-  instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
-}
-
-"""
-Component represents the node Component in the ent schema.
-Generated by ent.
-"""
-type Component implements Node {
-  id: ID!
-  name: String
-  vendor: String
-  version: String
-  description: String
-  url: String
-  metadata: Map
-  vulnerabilities(first: Int, last: Int, where: VulnerabilityWhereInput, order_by: VulnerabilityOrder): [Vulnerability] @goField(forceResolver: true)
-  licenses(first: Int, last: Int, where: LicenseWhereInput, order_by: LicenseOrder): [License] @goField(forceResolver: true)
-  uses(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
-}
-
-"""
-LicenseConnection supports the relay connection specification for node License in the ent schema.
-Generated by ent.
-"""
-type LicenseConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [LicenseEdge]
-}
-
-"""
-LicenseConnection supports the relay edge specification for node License in the ent schema.
-Generated by ent.
-"""
-type LicenseEdge {
-  node: License
-  cursor: Cursor!
-}
-
-"""
-GitCommitConnection supports the relay connection specification for node GitCommit in the ent schema.
-Generated by ent.
-"""
-type GitCommitConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [GitCommitEdge]
-}
-
-"""
-ReleasePolicyViolationConnection supports the relay edge specification for node ReleasePolicyViolation in the ent schema.
-Generated by ent.
-"""
-type ReleasePolicyViolationEdge {
-  node: ReleasePolicyViolation
-  cursor: Cursor!
-}
-
-"""
-ReleaseComponentConnection supports the relay edge specification for node ReleaseComponent in the ent schema.
-Generated by ent.
-"""
-type ReleaseComponentEdge {
-  node: ReleaseComponent
-  cursor: Cursor!
-}
-
-"""
-ReleaseEntry represents the node ReleaseEntry in the ent schema.
-Generated by ent.
-"""
-type ReleaseEntry implements Node {
-  id: ID!
-  type: ReleaseEntryType
-  time: Time
-  artifact: Artifact
-  code_scan: CodeScan
-  test_run: TestRun
-  release: Release!
-}
-
-"""
-ReleasePolicyConnection supports the relay edge specification for node ReleasePolicy in the ent schema.
-Generated by ent.
-"""
-type ReleasePolicyEdge {
-  node: ReleasePolicy
-  cursor: Cursor!
-}
-
-"""
-ReleaseVulnerabilityConnection supports the relay connection specification for node ReleaseVulnerability in the ent schema.
-Generated by ent.
-"""
-type ReleaseVulnerabilityConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleaseVulnerabilityEdge]
-}
-
-"""
-TestCase represents the node TestCase in the ent schema.
-Generated by ent.
-"""
-type TestCase implements Node {
-  id: ID!
-  name: String
-  result: Boolean
-  message: String
-  elapsed: Float
-  metadata: Map
-  run: TestRun!
-}
-
-"""
-TestCaseConnection supports the relay edge specification for node TestCase in the ent schema.
-Generated by ent.
-"""
-type TestCaseEdge {
-  node: TestCase
-  cursor: Cursor!
-}
-
-"""
-VulnerabilityReviewConnection supports the relay connection specification for node VulnerabilityReview in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityReviewConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [VulnerabilityReviewEdge]
-}
-
-"""
-VulnerabilityReviewConnection supports the relay edge specification for node VulnerabilityReview in the ent schema.
-Generated by ent.
-"""
-type VulnerabilityReviewEdge {
-  node: VulnerabilityReview
-  cursor: Cursor!
-}
-
-"""
-CodeScan represents the node CodeScan in the ent schema.
-Generated by ent.
-"""
-type CodeScan implements Node {
-  id: ID!
-  tool: String
-  time: Time
-  metadata: Map
-  release: Release!
-  entry: ReleaseEntry
-  issues(first: Int, last: Int, where: CodeIssueWhereInput, order_by: CodeIssueOrder): [CodeIssue] @goField(forceResolver: true)
-  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
-  components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
-}
-
-"""
-ReleaseConnection supports the relay edge specification for node Release in the ent schema.
-Generated by ent.
-"""
-type ReleaseEdge {
-  node: Release
-  cursor: Cursor!
-}
-
-"""
-ReleaseComponentConnection supports the relay connection specification for node ReleaseComponent in the ent schema.
-Generated by ent.
-"""
-type ReleaseComponentConnection {
-  totalCount: Int!
-  pageInfo: PageInfo!
-  edges: [ReleaseComponentEdge]
-}
-
-"""
-TestRunConnection supports the relay edge specification for node TestRun in the ent schema.
-Generated by ent.
-"""
-type TestRunEdge {
-  node: TestRun
-  cursor: Cursor!
-}
-
-"""
-License represents the node License in the ent schema.
-Generated by ent.
-"""
-type License implements Node {
-  id: ID!
-  spdx_id: String
-  name: String
-  reference: String
-  details_url: String
-  is_osi_approved: Boolean
-  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
-  uses(first: Int, last: Int, where: LicenseUseWhereInput): [LicenseUse] @goField(forceResolver: true)
+  edges: [ReleaseLicenseEdge]
 }
 
 """
@@ -4270,180 +3945,259 @@ type Repo implements Node {
 }
 
 """
-ReleaseVulnerabilityWhereInput is used for filtering ReleaseVulnerability objects.
-Input was generated by ent.
+CodeScanConnection supports the relay connection specification for node CodeScan in the ent schema.
+Generated by ent.
 """
-input ReleaseVulnerabilityWhereInput {
-  not: ReleaseVulnerabilityWhereInput
-  and: [ReleaseVulnerabilityWhereInput!]
-  or: [ReleaseVulnerabilityWhereInput!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """vulnerability edge predicates"""
-  has_vulnerability: Boolean
-  has_vulnerability_with: [VulnerabilityWhereInput!]
-  
-  """component edge predicates"""
-  has_component: Boolean
-  has_component_with: [ReleaseComponentWhereInput!]
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """reviews edge predicates"""
-  has_reviews: Boolean
-  has_reviews_with: [VulnerabilityReviewWhereInput!]
-  
-  """scan edge predicates"""
-  has_scan: Boolean
-  has_scan_with: [CodeScanWhereInput!]
-}
-
-input RepoOrder {
-  direction: OrderDirection!
-  field: RepoOrderField
-}
-
-input AdapterOrder {
-  direction: OrderDirection!
-  field: AdapterOrderField
-}
-
-input LicenseOrder {
-  direction: OrderDirection!
-  field: LicenseOrderField
+type CodeScanConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [CodeScanEdge]
 }
 
 """
-LicenseUseWhereInput is used for filtering LicenseUse objects.
-Input was generated by ent.
+CodeScanConnection supports the relay edge specification for node CodeScan in the ent schema.
+Generated by ent.
 """
-input LicenseUseWhereInput {
-  not: LicenseUseWhereInput
-  and: [LicenseUseWhereInput!]
-  or: [LicenseUseWhereInput!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """license edge predicates"""
-  has_license: Boolean
-  has_license_with: [LicenseWhereInput!]
-}
-
-input ProjectOrder {
-  direction: OrderDirection!
-  field: ProjectOrderField
+type CodeScanEdge {
+  node: CodeScan
+  cursor: Cursor!
 }
 
 """
-ReleaseEntryWhereInput is used for filtering ReleaseEntry objects.
-Input was generated by ent.
+ComponentConnection supports the relay edge specification for node Component in the ent schema.
+Generated by ent.
 """
-input ReleaseEntryWhereInput {
-  not: ReleaseEntryWhereInput
-  and: [ReleaseEntryWhereInput!]
-  or: [ReleaseEntryWhereInput!]
-  
-  """type field predicates"""
-  type: ReleaseEntryType
-  type_neq: ReleaseEntryType
-  type_in: [ReleaseEntryType!]
-  type_not_in: [ReleaseEntryType!]
-  
-  """time field predicates"""
-  time: Time
-  time_neq: Time
-  time_in: [Time!]
-  time_not_in: [Time!]
-  time_gt: Time
-  time_gte: Time
-  time_lt: Time
-  time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """artifact edge predicates"""
-  has_artifact: Boolean
-  has_artifact_with: [ArtifactWhereInput!]
-  
-  """code_scan edge predicates"""
-  has_code_scan: Boolean
-  has_code_scan_with: [CodeScanWhereInput!]
-  
-  """test_run edge predicates"""
-  has_test_run: Boolean
-  has_test_run_with: [TestRunWhereInput!]
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
+type ComponentEdge {
+  node: Component
+  cursor: Cursor!
 }
 
 """
-ComponentWhereInput is used for filtering Component objects.
-Input was generated by ent.
+OrganizationConnection supports the relay connection specification for node Organization in the ent schema.
+Generated by ent.
 """
-input ComponentWhereInput {
-  not: ComponentWhereInput
-  and: [ComponentWhereInput!]
-  or: [ComponentWhereInput!]
-  
-  """name field predicates"""
+type OrganizationConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [OrganizationEdge]
+}
+
+"""
+Project represents the node Project in the ent schema.
+Generated by ent.
+"""
+type Project implements Node {
+  id: ID!
   name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """vendor field predicates"""
-  vendor: String
-  vendor_neq: String
-  vendor_in: [String!]
-  vendor_not_in: [String!]
-  vendor_gt: String
-  vendor_gte: String
-  vendor_lt: String
-  vendor_lte: String
-  vendor_contains: String
-  vendor_has_prefix: String
-  vendor_has_suffix: String
-  vendor_equal_fold: String
-  vendor_contains_fold: String
-  
+  owner: Organization!
+  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
+  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  policies(first: Int, last: Int, where: ReleasePolicyWhereInput, order_by: ReleasePolicyOrder): [ReleasePolicy] @goField(forceResolver: true)
+}
+
+"""
+TestCaseConnection supports the relay connection specification for node TestCase in the ent schema.
+Generated by ent.
+"""
+type TestCaseConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [TestCaseEdge]
+}
+
+"""
+CodeScan represents the node CodeScan in the ent schema.
+Generated by ent.
+"""
+type CodeScan implements Node {
+  id: ID!
+  tool: String
+  time: Time
+  metadata: Map
+  release: Release!
+  entry: ReleaseEntry
+  issues(first: Int, last: Int, where: CodeIssueWhereInput, order_by: CodeIssueOrder): [CodeIssue] @goField(forceResolver: true)
+  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+  components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
+}
+
+"""
+GitCommitConnection supports the relay edge specification for node GitCommit in the ent schema.
+Generated by ent.
+"""
+type GitCommitEdge {
+  node: GitCommit
+  cursor: Cursor!
+}
+
+"""
+ReleaseConnection supports the relay connection specification for node Release in the ent schema.
+Generated by ent.
+"""
+type ReleaseConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleaseEdge]
+}
+
+"""
+ReleasePolicyViolation represents the node ReleasePolicyViolation in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicyViolation implements Node {
+  id: ID!
+  message: String
+  type: ReleasePolicyViolationType
+  severity: ReleasePolicyViolationSeverity
+  policy: ReleasePolicy!
+  release: Release!
+}
+
+"""
+ReleasePolicyViolationConnection supports the relay connection specification for node ReleasePolicyViolation in the ent schema.
+Generated by ent.
+"""
+type ReleasePolicyViolationConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [ReleasePolicyViolationEdge]
+}
+
+"""
+GitCommit represents the node GitCommit in the ent schema.
+Generated by ent.
+"""
+type GitCommit implements Node {
+  id: ID!
+  hash: String
+  branch: String
+  tag: String
+  time: Time
+  repo: Repo!
+  release: Release
+}
+
+"""
+OrganizationConnection supports the relay edge specification for node Organization in the ent schema.
+Generated by ent.
+"""
+type OrganizationEdge {
+  node: Organization
+  cursor: Cursor!
+}
+
+"""
+ReleaseEntry represents the node ReleaseEntry in the ent schema.
+Generated by ent.
+"""
+type ReleaseEntry implements Node {
+  id: ID!
+  type: ReleaseEntryType
+  time: Time
+  artifact: Artifact
+  code_scan: CodeScan
+  test_run: TestRun
+  release: Release!
+}
+
+"""
+RepoConnection supports the relay edge specification for node Repo in the ent schema.
+Generated by ent.
+"""
+type RepoEdge {
+  node: Repo
+  cursor: Cursor!
+}
+
+"""
+Adapter represents the node Adapter in the ent schema.
+Generated by ent.
+"""
+type Adapter implements Node {
+  id: ID!
+  name: String
+  tag: String
+  module: String
+  owner: Organization!
+}
+
+"""
+ReleaseComponent represents the node ReleaseComponent in the ent schema.
+Generated by ent.
+"""
+type ReleaseComponent implements Node {
+  id: ID!
+  type: ReleaseComponentType
+  release: Release!
+  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan!] @goField(forceResolver: true)
+  component: Component!
+  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+}
+
+"""
+Vulnerability represents the node Vulnerability in the ent schema.
+Generated by ent.
+"""
+type Vulnerability implements Node {
+  id: ID!
+  vid: String
+  summary: String
+  description: String
+  severity_score: Float
+  severity: VulnerabilitySeverity
+  published: Time
+  modified: Time
+  metadata: Map
+  owner: Organization!
+  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
+  reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+}
+
+"""
+GitCommitConnection supports the relay connection specification for node GitCommit in the ent schema.
+Generated by ent.
+"""
+type GitCommitConnection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+  edges: [GitCommitEdge]
+}
+
+"""
+LicenseUseConnection supports the relay edge specification for node LicenseUse in the ent schema.
+Generated by ent.
+"""
+type LicenseUseEdge {
+  node: LicenseUse
+  cursor: Cursor!
+}
+
+"""
+Artifact represents the node Artifact in the ent schema.
+Generated by ent.
+"""
+type Artifact implements Node {
+  id: ID!
+  name: String
+  sha256: String
+  type: ArtifactType
+  time: Time
+  metadata: Map
+  release: Release
+  entry: ReleaseEntry
+}
+
+"""
+ReleaseComponentConnection supports the relay edge specification for node ReleaseComponent in the ent schema.
+Generated by ent.
+"""
+type ReleaseComponentEdge {
+  node: ReleaseComponent
+  cursor: Cursor!
+}
+
+"""
   """version field predicates"""
   version: String
   version_neq: String
@@ -4458,115 +4212,64 @@ input ComponentWhereInput {
   version_has_suffix: String
   version_equal_fold: String
   version_contains_fold: String
-  
-  """description field predicates"""
-  description: String
-  description_neq: String
-  description_in: [String!]
-  description_not_in: [String!]
-  description_gt: String
-  description_gte: String
-  description_lt: String
-  description_lte: String
-  description_contains: String
-  description_has_prefix: String
-  description_has_suffix: String
-  description_is_nil: Boolean
-  description_not_nil: Boolean
-  description_equal_fold: String
-  description_contains_fold: String
-  
-  """url field predicates"""
-  url: String
-  url_neq: String
-  url_in: [String!]
-  url_not_in: [String!]
-  url_gt: String
-  url_gte: String
-  url_lt: String
-  url_lte: String
-  url_contains: String
-  url_has_prefix: String
-  url_has_suffix: String
-  url_is_nil: Boolean
-  url_not_nil: Boolean
-  url_equal_fold: String
-  url_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """vulnerabilities edge predicates"""
-  has_vulnerabilities: Boolean
-  has_vulnerabilities_with: [VulnerabilityWhereInput!]
-  
-  """licenses edge predicates"""
-  has_licenses: Boolean
-  has_licenses_with: [LicenseWhereInput!]
-  
-  """uses edge predicates"""
-  has_uses: Boolean
-  has_uses_with: [ReleaseComponentWhereInput!]
-}
 
-input GitCommitOrder {
-  direction: OrderDirection!
-  field: GitCommitOrderField
-}
+  """status field predicates"""
+  status: ReleaseStatus
+  status_neq: ReleaseStatus
+  status_in: [ReleaseStatus!]
+  status_not_in: [ReleaseStatus!]
 
-"""
-ProjectWhereInput is used for filtering Project objects.
-Input was generated by ent.
-"""
-input ProjectWhereInput {
-  not: ProjectWhereInput
-  and: [ProjectWhereInput!]
-  or: [ProjectWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """owner edge predicates"""
   has_owner: Boolean
   has_owner_with: [OrganizationWhereInput!]
-  
+
   """repos edge predicates"""
   has_repos: Boolean
   has_repos_with: [RepoWhereInput!]
-  
-  """vulnerability_reviews edge predicates"""
-  has_vulnerability_reviews: Boolean
-  has_vulnerability_reviews_with: [VulnerabilityReviewWhereInput!]
-  
+  """subreleases edge predicates"""
+  has_subreleases: Boolean
+  has_subreleases_with: [ReleaseWhereInput!]
+
+  """dependencies edge predicates"""
+  has_dependencies: Boolean
+  has_dependencies_with: [ReleaseWhereInput!]
+
+  """commit edge predicates"""
+  has_commit: Boolean
+  has_commit_with: [GitCommitWhereInput!]
+
+  """head_of edge predicates"""
+  has_head_of: Boolean
+  has_head_of_with: [RepoWhereInput!]
+
+  """log edge predicates"""
+  has_log: Boolean
+  has_log_with: [ReleaseEntryWhereInput!]
+
+  """violations edge predicates"""
+  has_violations: Boolean
+  has_violations_with: [ReleasePolicyViolationWhereInput!]
+
+  """artifacts edge predicates"""
+  has_artifacts: Boolean
+  has_artifacts_with: [ArtifactWhereInput!]
+
+  """components edge predicates"""
+  has_components: Boolean
+  has_components_with: [ReleaseComponentWhereInput!]
+
+  """vulnerabilities edge predicates"""
+  has_vulnerabilities: Boolean
+  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
+
+  """code_scans edge predicates"""
+  has_code_scans: Boolean
+  has_code_scans_with: [CodeScanWhereInput!]
+
+  """test_runs edge predicates"""
+  has_test_runs: Boolean
+  has_test_runs_with: [TestRunWhereInput!]
+
   """policies edge predicates"""
   has_policies: Boolean
   has_policies_with: [ReleasePolicyWhereInput!]
@@ -4595,7 +4298,7 @@ input CodeIssueWhereInput {
   not: CodeIssueWhereInput
   and: [CodeIssueWhereInput!]
   or: [CodeIssueWhereInput!]
-  
+
   """rule_id field predicates"""
   rule_id: String
   rule_id_neq: String
@@ -4610,7 +4313,7 @@ input CodeIssueWhereInput {
   rule_id_has_suffix: String
   rule_id_equal_fold: String
   rule_id_contains_fold: String
-  
+
   """message field predicates"""
   message: String
   message_neq: String
@@ -4625,645 +4328,52 @@ input CodeIssueWhereInput {
   message_has_suffix: String
   message_equal_fold: String
   message_contains_fold: String
-  
+
   """severity field predicates"""
   severity: CodeIssueSeverity
   severity_neq: CodeIssueSeverity
   severity_in: [CodeIssueSeverity!]
   severity_not_in: [CodeIssueSeverity!]
-  
+
   """type field predicates"""
   type: CodeIssueType
   type_neq: CodeIssueType
   type_in: [CodeIssueType!]
   type_not_in: [CodeIssueType!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
+}
+
+"""
+ReleaseVulnerabilityWhereInput is used for filtering ReleaseVulnerability objects.
+Input was generated by ent.
+"""
+input ReleaseVulnerabilityWhereInput {
+  not: ReleaseVulnerabilityWhereInput
+  and: [ReleaseVulnerabilityWhereInput!]
+  or: [ReleaseVulnerabilityWhereInput!]
+  """vulnerability edge predicates"""
+  has_vulnerability: Boolean
+  has_vulnerability_with: [VulnerabilityWhereInput!]
+
+  """component edge predicates"""
+  has_component: Boolean
+  has_component_with: [ReleaseComponentWhereInput!]
+
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+
+  """reviews edge predicates"""
+  has_reviews: Boolean
+  has_reviews_with: [VulnerabilityReviewWhereInput!]
+
   """scan edge predicates"""
   has_scan: Boolean
   has_scan_with: [CodeScanWhereInput!]
 }
 
-input TestCaseOrder {
+input TestRunOrder {
   direction: OrderDirection!
-  field: TestCaseOrderField
-}
-
-"""
-TestRunWhereInput is used for filtering TestRun objects.
-Input was generated by ent.
-"""
-input TestRunWhereInput {
-  not: TestRunWhereInput
-  and: [TestRunWhereInput!]
-  or: [TestRunWhereInput!]
-  
-  """tool field predicates"""
-  tool: String
-  tool_neq: String
-  tool_in: [String!]
-  tool_not_in: [String!]
-  tool_gt: String
-  tool_gte: String
-  tool_lt: String
-  tool_lte: String
-  tool_contains: String
-  tool_has_prefix: String
-  tool_has_suffix: String
-  tool_equal_fold: String
-  tool_contains_fold: String
-  
-  """time field predicates"""
-  time: Time
-  time_neq: Time
-  time_in: [Time!]
-  time_not_in: [Time!]
-  time_gt: Time
-  time_gte: Time
-  time_lt: Time
-  time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """entry edge predicates"""
-  has_entry: Boolean
-  has_entry_with: [ReleaseEntryWhereInput!]
-  
-  """tests edge predicates"""
-  has_tests: Boolean
-  has_tests_with: [TestCaseWhereInput!]
-}
-
-input ReleasePolicyOrder {
-  direction: OrderDirection!
-  field: ReleasePolicyOrderField
-}
-
-"""
-TestCaseWhereInput is used for filtering TestCase objects.
-Input was generated by ent.
-"""
-input TestCaseWhereInput {
-  not: TestCaseWhereInput
-  and: [TestCaseWhereInput!]
-  or: [TestCaseWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """result field predicates"""
-  result: Boolean
-  result_neq: Boolean
-  
-  """message field predicates"""
-  message: String
-  message_neq: String
-  message_in: [String!]
-  message_not_in: [String!]
-  message_gt: String
-  message_gte: String
-  message_lt: String
-  message_lte: String
-  message_contains: String
-  message_has_prefix: String
-  message_has_suffix: String
-  message_equal_fold: String
-  message_contains_fold: String
-  
-  """elapsed field predicates"""
-  elapsed: Float
-  elapsed_neq: Float
-  elapsed_in: [Float!]
-  elapsed_not_in: [Float!]
-  elapsed_gt: Float
-  elapsed_gte: Float
-  elapsed_lt: Float
-  elapsed_lte: Float
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """run edge predicates"""
-  has_run: Boolean
-  has_run_with: [TestRunWhereInput!]
-}
-
-"""
-ArtifactWhereInput is used for filtering Artifact objects.
-Input was generated by ent.
-"""
-input ArtifactWhereInput {
-  not: ArtifactWhereInput
-  and: [ArtifactWhereInput!]
-  or: [ArtifactWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """sha256 field predicates"""
-  sha256: String
-  sha256_neq: String
-  sha256_in: [String!]
-  sha256_not_in: [String!]
-  sha256_gt: String
-  sha256_gte: String
-  sha256_lt: String
-  sha256_lte: String
-  sha256_contains: String
-  sha256_has_prefix: String
-  sha256_has_suffix: String
-  sha256_equal_fold: String
-  sha256_contains_fold: String
-  
-  """type field predicates"""
-  type: ArtifactType
-  type_neq: ArtifactType
-  type_in: [ArtifactType!]
-  type_not_in: [ArtifactType!]
-  
-  """time field predicates"""
-  time: Time
-  time_neq: Time
-  time_in: [Time!]
-  time_not_in: [Time!]
-  time_gt: Time
-  time_gte: Time
-  time_lt: Time
-  time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """entry edge predicates"""
-  has_entry: Boolean
-  has_entry_with: [ReleaseEntryWhereInput!]
-}
-
-input ComponentOrder {
-  direction: OrderDirection!
-  field: ComponentOrderField
-}
-
-"""
-LicenseWhereInput is used for filtering License objects.
-Input was generated by ent.
-"""
-input LicenseWhereInput {
-  not: LicenseWhereInput
-  and: [LicenseWhereInput!]
-  or: [LicenseWhereInput!]
-  
-  """spdx_id field predicates"""
-  spdx_id: String
-  spdx_id_neq: String
-  spdx_id_in: [String!]
-  spdx_id_not_in: [String!]
-  spdx_id_gt: String
-  spdx_id_gte: String
-  spdx_id_lt: String
-  spdx_id_lte: String
-  spdx_id_contains: String
-  spdx_id_has_prefix: String
-  spdx_id_has_suffix: String
-  spdx_id_equal_fold: String
-  spdx_id_contains_fold: String
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """reference field predicates"""
-  reference: String
-  reference_neq: String
-  reference_in: [String!]
-  reference_not_in: [String!]
-  reference_gt: String
-  reference_gte: String
-  reference_lt: String
-  reference_lte: String
-  reference_contains: String
-  reference_has_prefix: String
-  reference_has_suffix: String
-  reference_is_nil: Boolean
-  reference_not_nil: Boolean
-  reference_equal_fold: String
-  reference_contains_fold: String
-  
-  """details_url field predicates"""
-  details_url: String
-  details_url_neq: String
-  details_url_in: [String!]
-  details_url_not_in: [String!]
-  details_url_gt: String
-  details_url_gte: String
-  details_url_lt: String
-  details_url_lte: String
-  details_url_contains: String
-  details_url_has_prefix: String
-  details_url_has_suffix: String
-  details_url_is_nil: Boolean
-  details_url_not_nil: Boolean
-  details_url_equal_fold: String
-  details_url_contains_fold: String
-  
-  """is_osi_approved field predicates"""
-  is_osi_approved: Boolean
-  is_osi_approved_neq: Boolean
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """components edge predicates"""
-  has_components: Boolean
-  has_components_with: [ComponentWhereInput!]
-  
-  """uses edge predicates"""
-  has_uses: Boolean
-  has_uses_with: [LicenseUseWhereInput!]
-}
-
-"""
-OrganizationWhereInput is used for filtering Organization objects.
-Input was generated by ent.
-"""
-input OrganizationWhereInput {
-  not: OrganizationWhereInput
-  and: [OrganizationWhereInput!]
-  or: [OrganizationWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """projects edge predicates"""
-  has_projects: Boolean
-  has_projects_with: [ProjectWhereInput!]
-  
-  """repos edge predicates"""
-  has_repos: Boolean
-  has_repos_with: [RepoWhereInput!]
-}
-
-input ReleaseOrder {
-  direction: OrderDirection!
-  field: ReleaseOrderField
-}
-
-"""
-ReleaseWhereInput is used for filtering Release objects.
-Input was generated by ent.
-"""
-input ReleaseWhereInput {
-  not: ReleaseWhereInput
-  and: [ReleaseWhereInput!]
-  or: [ReleaseWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """version field predicates"""
-  version: String
-  version_neq: String
-  version_in: [String!]
-  version_not_in: [String!]
-  version_gt: String
-  version_gte: String
-  version_lt: String
-  version_lte: String
-  version_contains: String
-  version_has_prefix: String
-  version_has_suffix: String
-  version_equal_fold: String
-  version_contains_fold: String
-  
-  """status field predicates"""
-  status: ReleaseStatus
-  status_neq: ReleaseStatus
-  status_in: [ReleaseStatus!]
-  status_not_in: [ReleaseStatus!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """subreleases edge predicates"""
-  has_subreleases: Boolean
-  has_subreleases_with: [ReleaseWhereInput!]
-  
-  """dependencies edge predicates"""
-  has_dependencies: Boolean
-  has_dependencies_with: [ReleaseWhereInput!]
-  
-  """commit edge predicates"""
-  has_commit: Boolean
-  has_commit_with: [GitCommitWhereInput!]
-  
-  """head_of edge predicates"""
-  has_head_of: Boolean
-  has_head_of_with: [RepoWhereInput!]
-  
-  """log edge predicates"""
-  has_log: Boolean
-  has_log_with: [ReleaseEntryWhereInput!]
-  
-  """violations edge predicates"""
-  has_violations: Boolean
-  has_violations_with: [ReleasePolicyViolationWhereInput!]
-  
-  """artifacts edge predicates"""
-  has_artifacts: Boolean
-  has_artifacts_with: [ArtifactWhereInput!]
-  
-  """components edge predicates"""
-  has_components: Boolean
-  has_components_with: [ReleaseComponentWhereInput!]
-  
-  """vulnerabilities edge predicates"""
-  has_vulnerabilities: Boolean
-  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
-  
-  """code_scans edge predicates"""
-  has_code_scans: Boolean
-  has_code_scans_with: [CodeScanWhereInput!]
-  
-  """test_runs edge predicates"""
-  has_test_runs: Boolean
-  has_test_runs_with: [TestRunWhereInput!]
-  
-  """vulnerability_reviews edge predicates"""
-  has_vulnerability_reviews: Boolean
-  has_vulnerability_reviews_with: [VulnerabilityReviewWhereInput!]
-}
-
-"""
-VulnerabilityReviewWhereInput is used for filtering VulnerabilityReview objects.
-Input was generated by ent.
-"""
-input VulnerabilityReviewWhereInput {
-  not: VulnerabilityReviewWhereInput
-  and: [VulnerabilityReviewWhereInput!]
-  or: [VulnerabilityReviewWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """decision field predicates"""
-  decision: VulnerabilityReviewDecision
-  decision_neq: VulnerabilityReviewDecision
-  decision_in: [VulnerabilityReviewDecision!]
-  decision_not_in: [VulnerabilityReviewDecision!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """vulnerability edge predicates"""
-  has_vulnerability: Boolean
-  has_vulnerability_with: [VulnerabilityWhereInput!]
-  
-  """projects edge predicates"""
-  has_projects: Boolean
-  has_projects_with: [ProjectWhereInput!]
-  
-  """repos edge predicates"""
-  has_repos: Boolean
-  has_repos_with: [RepoWhereInput!]
-  
-  """releases edge predicates"""
-  has_releases: Boolean
-  has_releases_with: [ReleaseWhereInput!]
-  
-  """instances edge predicates"""
-  has_instances: Boolean
-  has_instances_with: [ReleaseVulnerabilityWhereInput!]
-}
-
-input CodeIssueOrder {
-  direction: OrderDirection!
-  field: CodeIssueOrderField
-}
-
-"""
-GitCommitWhereInput is used for filtering GitCommit objects.
-Input was generated by ent.
-"""
-input GitCommitWhereInput {
-  not: GitCommitWhereInput
-  and: [GitCommitWhereInput!]
-  or: [GitCommitWhereInput!]
-  
-  """hash field predicates"""
-  hash: String
-  hash_neq: String
-  hash_in: [String!]
-  hash_not_in: [String!]
-  hash_gt: String
-  hash_gte: String
-  hash_lt: String
-  hash_lte: String
-  hash_contains: String
-  hash_has_prefix: String
-  hash_has_suffix: String
-  hash_equal_fold: String
-  hash_contains_fold: String
-  
-  """branch field predicates"""
-  branch: String
-  branch_neq: String
-  branch_in: [String!]
-  branch_not_in: [String!]
-  branch_gt: String
-  branch_gte: String
-  branch_lt: String
-  branch_lte: String
-  branch_contains: String
-  branch_has_prefix: String
-  branch_has_suffix: String
-  branch_equal_fold: String
-  branch_contains_fold: String
-  
-  """tag field predicates"""
-  tag: String
-  tag_neq: String
-  tag_in: [String!]
-  tag_not_in: [String!]
-  tag_gt: String
-  tag_gte: String
-  tag_lt: String
-  tag_lte: String
-  tag_contains: String
-  tag_has_prefix: String
-  tag_has_suffix: String
-  tag_is_nil: Boolean
-  tag_not_nil: Boolean
-  tag_equal_fold: String
-  tag_contains_fold: String
-  
-  """time field predicates"""
-  time: Time
-  time_neq: Time
-  time_in: [Time!]
-  time_not_in: [Time!]
-  time_gt: Time
-  time_gte: Time
-  time_lt: Time
-  time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """repo edge predicates"""
-  has_repo: Boolean
-  has_repo_with: [RepoWhereInput!]
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
+  field: TestRunOrderField
 }
 
 """
@@ -5274,7 +4384,7 @@ input ReleaseLicenseWhereInput {
   not: ReleaseLicenseWhereInput
   and: [ReleaseLicenseWhereInput!]
   or: [ReleaseLicenseWhereInput!]
-  
+
   """id field predicates"""
   id: Int
   id_neq: Int
@@ -5284,33 +4394,33 @@ input ReleaseLicenseWhereInput {
   id_gte: Int
   id_lt: Int
   id_lte: Int
-  
+
   """license edge predicates"""
   has_license: Boolean
   has_license_with: [LicenseWhereInput!]
-  
+
   """component edge predicates"""
   has_component: Boolean
   has_component_with: [ReleaseComponentWhereInput!]
-  
+
   """release edge predicates"""
   has_release: Boolean
   has_release_with: [ReleaseWhereInput!]
-  
+
   """scans edge predicates"""
   has_scans: Boolean
   has_scans_with: [CodeScanWhereInput!]
 }
 
 """
-RepoWhereInput is used for filtering Repo objects.
+ReleasePolicyWhereInput is used for filtering ReleasePolicy objects.
 Input was generated by ent.
 """
-input RepoWhereInput {
-  not: RepoWhereInput
-  and: [RepoWhereInput!]
-  or: [RepoWhereInput!]
-  
+input ReleasePolicyWhereInput {
+  not: ReleasePolicyWhereInput
+  and: [ReleasePolicyWhereInput!]
+  or: [ReleasePolicyWhereInput!]
+
   """name field predicates"""
   name: String
   name_neq: String
@@ -5325,22 +4435,22 @@ input RepoWhereInput {
   name_has_suffix: String
   name_equal_fold: String
   name_contains_fold: String
-  
-  """default_branch field predicates"""
-  default_branch: String
-  default_branch_neq: String
-  default_branch_in: [String!]
-  default_branch_not_in: [String!]
-  default_branch_gt: String
-  default_branch_gte: String
-  default_branch_lt: String
-  default_branch_lte: String
-  default_branch_contains: String
-  default_branch_has_prefix: String
-  default_branch_has_suffix: String
-  default_branch_equal_fold: String
-  default_branch_contains_fold: String
-  
+
+  """module field predicates"""
+  module: String
+  module_neq: String
+  module_in: [String!]
+  module_not_in: [String!]
+  module_gt: String
+  module_gte: String
+  module_lt: String
+  module_lte: String
+  module_contains: String
+  module_has_prefix: String
+  module_has_suffix: String
+  module_equal_fold: String
+  module_contains_fold: String
+
   """id field predicates"""
   id: Int
   id_neq: Int
@@ -5350,30 +4460,145 @@ input RepoWhereInput {
   id_gte: Int
   id_lt: Int
   id_lte: Int
-  
+
   """owner edge predicates"""
   has_owner: Boolean
   has_owner_with: [OrganizationWhereInput!]
-  
-  """project edge predicates"""
-  has_project: Boolean
-  has_project_with: [ProjectWhereInput!]
-  
-  """head edge predicates"""
-  has_head: Boolean
-  has_head_with: [ReleaseWhereInput!]
-  
-  """commits edge predicates"""
-  has_commits: Boolean
-  has_commits_with: [GitCommitWhereInput!]
-  
+
+  """projects edge predicates"""
+  has_projects: Boolean
+  has_projects_with: [ProjectWhereInput!]
+
+  """repos edge predicates"""
+  has_repos: Boolean
+  has_repos_with: [RepoWhereInput!]
+
+  """violations edge predicates"""
+  has_violations: Boolean
+  has_violations_with: [ReleasePolicyViolationWhereInput!]
+}
+
+input RepoOrder {
+  direction: OrderDirection!
+  field: RepoOrderField
+}
+
+input CodeIssueOrder {
+  direction: OrderDirection!
+  field: CodeIssueOrderField
+}
+
+input ComponentOrder {
+  direction: OrderDirection!
+  field: ComponentOrderField
+}
+
+input GitCommitOrder {
+  direction: OrderDirection!
+  field: GitCommitOrderField
+}
+
+"""
+ProjectWhereInput is used for filtering Project objects.
+Input was generated by ent.
+"""
+input ProjectWhereInput {
+  not: ProjectWhereInput
+  and: [ProjectWhereInput!]
+  or: [ProjectWhereInput!]
+
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """owner edge predicates"""
+  has_owner: Boolean
+  has_owner_with: [OrganizationWhereInput!]
+
+  """repos edge predicates"""
+  has_repos: Boolean
+  has_repos_with: [RepoWhereInput!]
+
   """vulnerability_reviews edge predicates"""
   has_vulnerability_reviews: Boolean
   has_vulnerability_reviews_with: [VulnerabilityReviewWhereInput!]
-  
+
   """policies edge predicates"""
   has_policies: Boolean
   has_policies_with: [ReleasePolicyWhereInput!]
+}
+
+"""
+ReleaseEntryWhereInput is used for filtering ReleaseEntry objects.
+Input was generated by ent.
+"""
+input ReleaseEntryWhereInput {
+  not: ReleaseEntryWhereInput
+  and: [ReleaseEntryWhereInput!]
+  or: [ReleaseEntryWhereInput!]
+
+  """type field predicates"""
+  type: ReleaseEntryType
+  type_neq: ReleaseEntryType
+  type_in: [ReleaseEntryType!]
+  type_not_in: [ReleaseEntryType!]
+
+  """time field predicates"""
+  time: Time
+  time_neq: Time
+  time_in: [Time!]
+  time_not_in: [Time!]
+  time_gt: Time
+  time_gte: Time
+  time_lt: Time
+  time_lte: Time
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """artifact edge predicates"""
+  has_artifact: Boolean
+  has_artifact_with: [ArtifactWhereInput!]
+
+  """code_scan edge predicates"""
+  has_code_scan: Boolean
+  has_code_scan_with: [CodeScanWhereInput!]
+
+  """test_run edge predicates"""
+  has_test_run: Boolean
+  has_test_run_with: [TestRunWhereInput!]
+
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
 }
 
 """
@@ -5384,7 +4609,7 @@ input VulnerabilityWhereInput {
   not: VulnerabilityWhereInput
   and: [VulnerabilityWhereInput!]
   or: [VulnerabilityWhereInput!]
-  
+
   """vid field predicates"""
   vid: String
   vid_neq: String
@@ -5399,7 +4624,7 @@ input VulnerabilityWhereInput {
   vid_has_suffix: String
   vid_equal_fold: String
   vid_contains_fold: String
-  
+
   """summary field predicates"""
   summary: String
   summary_neq: String
@@ -5416,7 +4641,7 @@ input VulnerabilityWhereInput {
   summary_not_nil: Boolean
   summary_equal_fold: String
   summary_contains_fold: String
-  
+
   """description field predicates"""
   description: String
   description_neq: String
@@ -5433,7 +4658,7 @@ input VulnerabilityWhereInput {
   description_not_nil: Boolean
   description_equal_fold: String
   description_contains_fold: String
-  
+
   """severity_score field predicates"""
   severity_score: Float
   severity_score_neq: Float
@@ -5443,13 +4668,13 @@ input VulnerabilityWhereInput {
   severity_score_gte: Float
   severity_score_lt: Float
   severity_score_lte: Float
-  
+
   """severity field predicates"""
   severity: VulnerabilitySeverity
   severity_neq: VulnerabilitySeverity
   severity_in: [VulnerabilitySeverity!]
   severity_not_in: [VulnerabilitySeverity!]
-  
+
   """published field predicates"""
   published: Time
   published_neq: Time
@@ -5461,7 +4686,7 @@ input VulnerabilityWhereInput {
   published_lte: Time
   published_is_nil: Boolean
   published_not_nil: Boolean
-  
+
   """modified field predicates"""
   modified: Time
   modified_neq: Time
@@ -5473,7 +4698,7 @@ input VulnerabilityWhereInput {
   modified_lte: Time
   modified_is_nil: Boolean
   modified_not_nil: Boolean
-  
+
   """id field predicates"""
   id: Int
   id_neq: Int
@@ -5483,76 +4708,38 @@ input VulnerabilityWhereInput {
   id_gte: Int
   id_lt: Int
   id_lte: Int
-  
+
+  """owner edge predicates"""
+  has_owner: Boolean
+  has_owner_with: [OrganizationWhereInput!]
+
   """components edge predicates"""
   has_components: Boolean
   has_components_with: [ComponentWhereInput!]
-  
+
   """reviews edge predicates"""
   has_reviews: Boolean
   has_reviews_with: [VulnerabilityReviewWhereInput!]
-  
+
   """instances edge predicates"""
   has_instances: Boolean
   has_instances_with: [ReleaseVulnerabilityWhereInput!]
 }
 
-input CodeScanOrder {
+input VulnerabilityReviewOrder {
   direction: OrderDirection!
-  field: CodeScanOrderField
+  field: VulnerabilityReviewOrderField
 }
 
 """
-ReleaseComponentWhereInput is used for filtering ReleaseComponent objects.
+ComponentWhereInput is used for filtering Component objects.
 Input was generated by ent.
 """
-input ReleaseComponentWhereInput {
-  not: ReleaseComponentWhereInput
-  and: [ReleaseComponentWhereInput!]
-  or: [ReleaseComponentWhereInput!]
-  
-  """type field predicates"""
-  type: ReleaseComponentType
-  type_neq: ReleaseComponentType
-  type_in: [ReleaseComponentType!]
-  type_not_in: [ReleaseComponentType!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """release edge predicates"""
-  has_release: Boolean
-  has_release_with: [ReleaseWhereInput!]
-  
-  """scans edge predicates"""
-  has_scans: Boolean
-  has_scans_with: [CodeScanWhereInput!]
-  
-  """component edge predicates"""
-  has_component: Boolean
-  has_component_with: [ComponentWhereInput!]
-  
-  """vulnerabilities edge predicates"""
-  has_vulnerabilities: Boolean
-  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
-}
+input ComponentWhereInput {
+  not: ComponentWhereInput
+  and: [ComponentWhereInput!]
+  or: [ComponentWhereInput!]
 
-"""
-AdapterWhereInput is used for filtering Adapter objects.
-Input was generated by ent.
-"""
-input AdapterWhereInput {
-  not: AdapterWhereInput
-  and: [AdapterWhereInput!]
-  or: [AdapterWhereInput!]
-  
   """name field predicates"""
   name: String
   name_neq: String
@@ -5567,37 +4754,71 @@ input AdapterWhereInput {
   name_has_suffix: String
   name_equal_fold: String
   name_contains_fold: String
-  
-  """tag field predicates"""
-  tag: String
-  tag_neq: String
-  tag_in: [String!]
-  tag_not_in: [String!]
-  tag_gt: String
-  tag_gte: String
-  tag_lt: String
-  tag_lte: String
-  tag_contains: String
-  tag_has_prefix: String
-  tag_has_suffix: String
-  tag_equal_fold: String
-  tag_contains_fold: String
-  
-  """module field predicates"""
-  module: String
-  module_neq: String
-  module_in: [String!]
-  module_not_in: [String!]
-  module_gt: String
-  module_gte: String
-  module_lt: String
-  module_lte: String
-  module_contains: String
-  module_has_prefix: String
-  module_has_suffix: String
-  module_equal_fold: String
-  module_contains_fold: String
-  
+
+  """vendor field predicates"""
+  vendor: String
+  vendor_neq: String
+  vendor_in: [String!]
+  vendor_not_in: [String!]
+  vendor_gt: String
+  vendor_gte: String
+  vendor_lt: String
+  vendor_lte: String
+  vendor_contains: String
+  vendor_has_prefix: String
+  vendor_has_suffix: String
+  vendor_equal_fold: String
+  vendor_contains_fold: String
+
+  """version field predicates"""
+  version: String
+  version_neq: String
+  version_in: [String!]
+  version_not_in: [String!]
+  version_gt: String
+  version_gte: String
+  version_lt: String
+  version_lte: String
+  version_contains: String
+  version_has_prefix: String
+  version_has_suffix: String
+  version_equal_fold: String
+  version_contains_fold: String
+
+  """description field predicates"""
+  description: String
+  description_neq: String
+  description_in: [String!]
+  description_not_in: [String!]
+  description_gt: String
+  description_gte: String
+  description_lt: String
+  description_lte: String
+  description_contains: String
+  description_has_prefix: String
+  description_has_suffix: String
+  description_is_nil: Boolean
+  description_not_nil: Boolean
+  description_equal_fold: String
+  description_contains_fold: String
+
+  """url field predicates"""
+  url: String
+  url_neq: String
+  url_in: [String!]
+  url_not_in: [String!]
+  url_gt: String
+  url_gte: String
+  url_lt: String
+  url_lte: String
+  url_contains: String
+  url_has_prefix: String
+  url_has_suffix: String
+  url_is_nil: Boolean
+  url_not_nil: Boolean
+  url_equal_fold: String
+  url_contains_fold: String
+
   """id field predicates"""
   id: Int
   id_neq: Int
@@ -5607,17 +4828,43 @@ input AdapterWhereInput {
   id_gte: Int
   id_lt: Int
   id_lte: Int
+
+  """owner edge predicates"""
+  has_owner: Boolean
+  has_owner_with: [OrganizationWhereInput!]
+
+  """vulnerabilities edge predicates"""
+  has_vulnerabilities: Boolean
+  has_vulnerabilities_with: [VulnerabilityWhereInput!]
+
+  """licenses edge predicates"""
+  has_licenses: Boolean
+  has_licenses_with: [LicenseWhereInput!]
+
+  """uses edge predicates"""
+  has_uses: Boolean
+  has_uses_with: [ReleaseComponentWhereInput!]
+}
+
+input ReleaseOrder {
+  direction: OrderDirection!
+  field: ReleaseOrderField
+}
+
+input ReleasePolicyOrder {
+  direction: OrderDirection!
+  field: ReleasePolicyOrderField
 }
 
 """
-CodeScanWhereInput is used for filtering CodeScan objects.
+TestRunWhereInput is used for filtering TestRun objects.
 Input was generated by ent.
 """
-input CodeScanWhereInput {
-  not: CodeScanWhereInput
-  and: [CodeScanWhereInput!]
-  or: [CodeScanWhereInput!]
-  
+input TestRunWhereInput {
+  not: TestRunWhereInput
+  and: [TestRunWhereInput!]
+  or: [TestRunWhereInput!]
+
   """tool field predicates"""
   tool: String
   tool_neq: String
@@ -5632,7 +4879,7 @@ input CodeScanWhereInput {
   tool_has_suffix: String
   tool_equal_fold: String
   tool_contains_fold: String
-  
+
   """time field predicates"""
   time: Time
   time_neq: Time
@@ -5642,7 +4889,7 @@ input CodeScanWhereInput {
   time_gte: Time
   time_lt: Time
   time_lte: Time
-  
+
   """id field predicates"""
   id: Int
   id_neq: Int
@@ -5652,99 +4899,44 @@ input CodeScanWhereInput {
   id_gte: Int
   id_lt: Int
   id_lte: Int
-  
+
   """release edge predicates"""
   has_release: Boolean
   has_release_with: [ReleaseWhereInput!]
-  
+
   """entry edge predicates"""
   has_entry: Boolean
   has_entry_with: [ReleaseEntryWhereInput!]
-  
-  """issues edge predicates"""
-  has_issues: Boolean
-  has_issues_with: [CodeIssueWhereInput!]
-  
-  """vulnerabilities edge predicates"""
-  has_vulnerabilities: Boolean
-  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
-  
-  """components edge predicates"""
-  has_components: Boolean
-  has_components_with: [ReleaseComponentWhereInput!]
+
+  """tests edge predicates"""
+  has_tests: Boolean
+  has_tests_with: [TestCaseWhereInput!]
 }
 
 """
-ReleasePolicyWhereInput is used for filtering ReleasePolicy objects.
+CodeIssueWhereInput is used for filtering CodeIssue objects.
 Input was generated by ent.
 """
-input ReleasePolicyWhereInput {
-  not: ReleasePolicyWhereInput
-  and: [ReleasePolicyWhereInput!]
-  or: [ReleasePolicyWhereInput!]
-  
-  """name field predicates"""
-  name: String
-  name_neq: String
-  name_in: [String!]
-  name_not_in: [String!]
-  name_gt: String
-  name_gte: String
-  name_lt: String
-  name_lte: String
-  name_contains: String
-  name_has_prefix: String
-  name_has_suffix: String
-  name_equal_fold: String
-  name_contains_fold: String
-  
-  """module field predicates"""
-  module: String
-  module_neq: String
-  module_in: [String!]
-  module_not_in: [String!]
-  module_gt: String
-  module_gte: String
-  module_lt: String
-  module_lte: String
-  module_contains: String
-  module_has_prefix: String
-  module_has_suffix: String
-  module_equal_fold: String
-  module_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
-  """projects edge predicates"""
-  has_projects: Boolean
-  has_projects_with: [ProjectWhereInput!]
-  
-  """repos edge predicates"""
-  has_repos: Boolean
-  has_repos_with: [RepoWhereInput!]
-  
-  """violations edge predicates"""
-  has_violations: Boolean
-  has_violations_with: [ReleasePolicyViolationWhereInput!]
-}
+input CodeIssueWhereInput {
+  not: CodeIssueWhereInput
+  and: [CodeIssueWhereInput!]
+  or: [CodeIssueWhereInput!]
 
-"""
-ReleasePolicyViolationWhereInput is used for filtering ReleasePolicyViolation objects.
-Input was generated by ent.
-"""
-input ReleasePolicyViolationWhereInput {
-  not: ReleasePolicyViolationWhereInput
-  and: [ReleasePolicyViolationWhereInput!]
-  or: [ReleasePolicyViolationWhereInput!]
-  
+  """rule_id field predicates"""
+  rule_id: String
+  rule_id_neq: String
+  rule_id_in: [String!]
+  rule_id_not_in: [String!]
+  rule_id_gt: String
+  rule_id_gte: String
+  rule_id_lt: String
+  rule_id_lte: String
+  rule_id_contains: String
+  rule_id_has_prefix: String
+  rule_id_has_suffix: String
+  rule_id_equal_fold: String
+  rule_id_contains_fold: String
+
   """message field predicates"""
   message: String
   message_neq: String
@@ -5759,19 +4951,19 @@ input ReleasePolicyViolationWhereInput {
   message_has_suffix: String
   message_equal_fold: String
   message_contains_fold: String
-  
-  """type field predicates"""
-  type: ReleasePolicyViolationType
-  type_neq: ReleasePolicyViolationType
-  type_in: [ReleasePolicyViolationType!]
-  type_not_in: [ReleasePolicyViolationType!]
-  
+
   """severity field predicates"""
-  severity: ReleasePolicyViolationSeverity
-  severity_neq: ReleasePolicyViolationSeverity
-  severity_in: [ReleasePolicyViolationSeverity!]
-  severity_not_in: [ReleasePolicyViolationSeverity!]
-  
+  severity: CodeIssueSeverity
+  severity_neq: CodeIssueSeverity
+  severity_in: [CodeIssueSeverity!]
+  severity_not_in: [CodeIssueSeverity!]
+
+  """type field predicates"""
+  type: CodeIssueType
+  type_neq: CodeIssueType
+  type_in: [CodeIssueType!]
+  type_not_in: [CodeIssueType!]
+
   """id field predicates"""
   id: Int
   id_neq: Int
@@ -5781,24 +4973,568 @@ input ReleasePolicyViolationWhereInput {
   id_gte: Int
   id_lt: Int
   id_lte: Int
-  
-  """policy edge predicates"""
-  has_policy: Boolean
-  has_policy_with: [ReleasePolicyWhereInput!]
-  
+
+  """scan edge predicates"""
+  has_scan: Boolean
+  has_scan_with: [CodeScanWhereInput!]
+}
+
+input CodeScanOrder {
+  direction: OrderDirection!
+  field: CodeScanOrderField
+}
+
+"""
+LicenseWhereInput is used for filtering License objects.
+Input was generated by ent.
+"""
+input LicenseWhereInput {
+  not: LicenseWhereInput
+  and: [LicenseWhereInput!]
+  or: [LicenseWhereInput!]
+
+  """spdx_id field predicates"""
+  spdx_id: String
+  spdx_id_neq: String
+  spdx_id_in: [String!]
+  spdx_id_not_in: [String!]
+  spdx_id_gt: String
+  spdx_id_gte: String
+  spdx_id_lt: String
+  spdx_id_lte: String
+  spdx_id_contains: String
+  spdx_id_has_prefix: String
+  spdx_id_has_suffix: String
+  spdx_id_equal_fold: String
+  spdx_id_contains_fold: String
+
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+
+  """reference field predicates"""
+  reference: String
+  reference_neq: String
+  reference_in: [String!]
+  reference_not_in: [String!]
+  reference_gt: String
+  reference_gte: String
+  reference_lt: String
+  reference_lte: String
+  reference_contains: String
+  reference_has_prefix: String
+  reference_has_suffix: String
+  reference_is_nil: Boolean
+  reference_not_nil: Boolean
+  reference_equal_fold: String
+  reference_contains_fold: String
+
+  """details_url field predicates"""
+  details_url: String
+  details_url_neq: String
+  details_url_in: [String!]
+  details_url_not_in: [String!]
+  details_url_gt: String
+  details_url_gte: String
+  details_url_lt: String
+  details_url_lte: String
+  details_url_contains: String
+  details_url_has_prefix: String
+  details_url_has_suffix: String
+  details_url_is_nil: Boolean
+  details_url_not_nil: Boolean
+  details_url_equal_fold: String
+  details_url_contains_fold: String
+
+  """is_osi_approved field predicates"""
+  is_osi_approved: Boolean
+  is_osi_approved_neq: Boolean
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """components edge predicates"""
+  has_components: Boolean
+  has_components_with: [ComponentWhereInput!]
+
+  """uses edge predicates"""
+  has_uses: Boolean
+  has_uses_with: [LicenseUseWhereInput!]
+}
+
+"""
+LicenseUseWhereInput is used for filtering LicenseUse objects.
+Input was generated by ent.
+"""
+input LicenseUseWhereInput {
+  not: LicenseUseWhereInput
+  and: [LicenseUseWhereInput!]
+  or: [LicenseUseWhereInput!]
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """license edge predicates"""
+  has_license: Boolean
+  has_license_with: [LicenseWhereInput!]
+}
+
+"""
+OrganizationWhereInput is used for filtering Organization objects.
+Input was generated by ent.
+"""
+input OrganizationWhereInput {
+  not: OrganizationWhereInput
+  and: [OrganizationWhereInput!]
+  or: [OrganizationWhereInput!]
+
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """projects edge predicates"""
+  has_projects: Boolean
+  has_projects_with: [ProjectWhereInput!]
+
+  """repos edge predicates"""
+  has_repos: Boolean
+  has_repos_with: [RepoWhereInput!]
+}
+
+input VulnerabilityOrder {
+  direction: OrderDirection!
+  field: VulnerabilityOrderField
+}
+
+"""
+VulnerabilityReviewWhereInput is used for filtering VulnerabilityReview objects.
+Input was generated by ent.
+"""
+input VulnerabilityReviewWhereInput {
+  not: VulnerabilityReviewWhereInput
+  and: [VulnerabilityReviewWhereInput!]
+  or: [VulnerabilityReviewWhereInput!]
+
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+
+  """decision field predicates"""
+  decision: VulnerabilityReviewDecision
+  decision_neq: VulnerabilityReviewDecision
+  decision_in: [VulnerabilityReviewDecision!]
+  decision_not_in: [VulnerabilityReviewDecision!]
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """vulnerability edge predicates"""
+  has_vulnerability: Boolean
+  has_vulnerability_with: [VulnerabilityWhereInput!]
+
+  """projects edge predicates"""
+  has_projects: Boolean
+  has_projects_with: [ProjectWhereInput!]
+
+  """repos edge predicates"""
+  has_repos: Boolean
+  has_repos_with: [RepoWhereInput!]
+
+  """releases edge predicates"""
+  has_releases: Boolean
+  has_releases_with: [ReleaseWhereInput!]
+
+  """instances edge predicates"""
+  has_instances: Boolean
+  has_instances_with: [ReleaseVulnerabilityWhereInput!]
+}
+
+"""
+ArtifactWhereInput is used for filtering Artifact objects.
+Input was generated by ent.
+"""
+input ArtifactWhereInput {
+  not: ArtifactWhereInput
+  and: [ArtifactWhereInput!]
+  or: [ArtifactWhereInput!]
+
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+
+  """sha256 field predicates"""
+  sha256: String
+  sha256_neq: String
+  sha256_in: [String!]
+  sha256_not_in: [String!]
+  sha256_gt: String
+  sha256_gte: String
+  sha256_lt: String
+  sha256_lte: String
+  sha256_contains: String
+  sha256_has_prefix: String
+  sha256_has_suffix: String
+  sha256_equal_fold: String
+  sha256_contains_fold: String
+
+  """type field predicates"""
+  type: ArtifactType
+  type_neq: ArtifactType
+  type_in: [ArtifactType!]
+  type_not_in: [ArtifactType!]
+
+  """time field predicates"""
+  time: Time
+  time_neq: Time
+  time_in: [Time!]
+  time_not_in: [Time!]
+  time_gt: Time
+  time_gte: Time
+  time_lt: Time
+  time_lte: Time
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+
+  """entry edge predicates"""
+  has_entry: Boolean
+  has_entry_with: [ReleaseEntryWhereInput!]
+}
+
+"""
+GitCommitWhereInput is used for filtering GitCommit objects.
+Input was generated by ent.
+"""
+input GitCommitWhereInput {
+  not: GitCommitWhereInput
+  and: [GitCommitWhereInput!]
+  or: [GitCommitWhereInput!]
+
+  """hash field predicates"""
+  hash: String
+  hash_neq: String
+  hash_in: [String!]
+  hash_not_in: [String!]
+  hash_gt: String
+  hash_gte: String
+  hash_lt: String
+  hash_lte: String
+  hash_contains: String
+  hash_has_prefix: String
+  hash_has_suffix: String
+  hash_equal_fold: String
+  hash_contains_fold: String
+
+  """branch field predicates"""
+  branch: String
+  branch_neq: String
+  branch_in: [String!]
+  branch_not_in: [String!]
+  branch_gt: String
+  branch_gte: String
+  branch_lt: String
+  branch_lte: String
+  branch_contains: String
+  branch_has_prefix: String
+  branch_has_suffix: String
+  branch_equal_fold: String
+  branch_contains_fold: String
+
+  """tag field predicates"""
+  tag: String
+  tag_neq: String
+  tag_in: [String!]
+  tag_not_in: [String!]
+  tag_gt: String
+  tag_gte: String
+  tag_lt: String
+  tag_lte: String
+  tag_contains: String
+  tag_has_prefix: String
+  tag_has_suffix: String
+  tag_is_nil: Boolean
+  tag_not_nil: Boolean
+  tag_equal_fold: String
+  tag_contains_fold: String
+
+  """time field predicates"""
+  time: Time
+  time_neq: Time
+  time_in: [Time!]
+  time_not_in: [Time!]
+  time_gt: Time
+  time_gte: Time
+  time_lt: Time
+  time_lte: Time
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """repo edge predicates"""
+  has_repo: Boolean
+  has_repo_with: [RepoWhereInput!]
+
   """release edge predicates"""
   has_release: Boolean
   has_release_with: [ReleaseWhereInput!]
 }
 
-input TestRunOrder {
-  direction: OrderDirection!
-  field: TestRunOrderField
+"""
+ReleaseComponentWhereInput is used for filtering ReleaseComponent objects.
+Input was generated by ent.
+"""
+input ReleaseComponentWhereInput {
+  not: ReleaseComponentWhereInput
+  and: [ReleaseComponentWhereInput!]
+  or: [ReleaseComponentWhereInput!]
+
+  """type field predicates"""
+  type: ReleaseComponentType
+  type_neq: ReleaseComponentType
+  type_in: [ReleaseComponentType!]
+  type_not_in: [ReleaseComponentType!]
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+
+  """scans edge predicates"""
+  has_scans: Boolean
+  has_scans_with: [CodeScanWhereInput!]
+
+  """component edge predicates"""
+  has_component: Boolean
+  has_component_with: [ComponentWhereInput!]
+
+  """vulnerabilities edge predicates"""
+  has_vulnerabilities: Boolean
+  has_vulnerabilities_with: [ReleaseVulnerabilityWhereInput!]
 }
 
-input VulnerabilityReviewOrder {
-  direction: OrderDirection!
-  field: VulnerabilityReviewOrderField
+"""
+ReleasePolicyViolationWhereInput is used for filtering ReleasePolicyViolation objects.
+Input was generated by ent.
+"""
+input ReleasePolicyViolationWhereInput {
+  not: ReleasePolicyViolationWhereInput
+  and: [ReleasePolicyViolationWhereInput!]
+  or: [ReleasePolicyViolationWhereInput!]
+
+  """message field predicates"""
+  message: String
+  message_neq: String
+  message_in: [String!]
+  message_not_in: [String!]
+  message_gt: String
+  message_gte: String
+  message_lt: String
+  message_lte: String
+  message_contains: String
+  message_has_prefix: String
+  message_has_suffix: String
+  message_equal_fold: String
+  message_contains_fold: String
+
+  """type field predicates"""
+  type: ReleasePolicyViolationType
+  type_neq: ReleasePolicyViolationType
+  type_in: [ReleasePolicyViolationType!]
+  type_not_in: [ReleasePolicyViolationType!]
+
+  """severity field predicates"""
+  severity: ReleasePolicyViolationSeverity
+  severity_neq: ReleasePolicyViolationSeverity
+  severity_in: [ReleasePolicyViolationSeverity!]
+  severity_not_in: [ReleasePolicyViolationSeverity!]
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """policy edge predicates"""
+  has_policy: Boolean
+  has_policy_with: [ReleasePolicyWhereInput!]
+
+  """release edge predicates"""
+  has_release: Boolean
+  has_release_with: [ReleaseWhereInput!]
+}
+
+"""
+TestCaseWhereInput is used for filtering TestCase objects.
+Input was generated by ent.
+"""
+input TestCaseWhereInput {
+  not: TestCaseWhereInput
+  and: [TestCaseWhereInput!]
+  or: [TestCaseWhereInput!]
+
+  """name field predicates"""
+  name: String
+  name_neq: String
+  name_in: [String!]
+  name_not_in: [String!]
+  name_gt: String
+  name_gte: String
+  name_lt: String
+  name_lte: String
+  name_contains: String
+  name_has_prefix: String
+  name_has_suffix: String
+  name_equal_fold: String
+  name_contains_fold: String
+
+  """result field predicates"""
+  result: Boolean
+  result_neq: Boolean
+
+  """message field predicates"""
+  message: String
+  message_neq: String
+  message_in: [String!]
+  message_not_in: [String!]
+  message_gt: String
+  message_gte: String
+  message_lt: String
+  message_lte: String
+  message_contains: String
+  message_has_prefix: String
+  message_has_suffix: String
+  message_equal_fold: String
+  message_contains_fold: String
+
+  """elapsed field predicates"""
+  elapsed: Float
+  elapsed_neq: Float
+  elapsed_in: [Float!]
+  elapsed_not_in: [Float!]
+  elapsed_gt: Float
+  elapsed_gte: Float
+  elapsed_lt: Float
+  elapsed_lte: Float
+
+  """id field predicates"""
+  id: Int
+  id_neq: Int
+  id_in: [Int!]
+  id_not_in: [Int!]
+  id_gt: Int
+  id_gte: Int
+  id_lt: Int
+  id_lte: Int
+
+  """run edge predicates"""
+  has_run: Boolean
+  has_run_with: [TestRunWhereInput!]
 }
 `, BuiltIn: false},
 }
@@ -9337,6 +9073,41 @@ func (ec *executionContext) _Adapter_module(ctx context.Context, field graphql.C
 	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Adapter_owner(ctx context.Context, field graphql.CollectedField, obj *ent.Adapter) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Adapter",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Owner(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Organization)
+	fc.Result = res
+	return ec.marshalNOrganization2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrganization(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _AdapterConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.AdapterConnection) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -11042,6 +10813,41 @@ func (ec *executionContext) _Component_metadata(ctx context.Context, field graph
 	res := resTmp.(map[string]interface{})
 	fc.Result = res
 	return ec.marshalOMap2map(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Component_owner(ctx context.Context, field graphql.CollectedField, obj *ent.Component) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Component",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Owner(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Organization)
+	fc.Result = res
+	return ec.marshalNOrganization2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrganization(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Component_vulnerabilities(ctx context.Context, field graphql.CollectedField, obj *ent.Component) (ret graphql.Marshaler) {
@@ -16666,6 +16472,41 @@ func (ec *executionContext) _ReleasePolicy_module(ctx context.Context, field gra
 	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ReleasePolicy_owner(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicy) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleasePolicy",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Owner(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Organization)
+	fc.Result = res
+	return ec.marshalNOrganization2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrganization(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _ReleasePolicy_projects(ctx context.Context, field graphql.CollectedField, obj *ent.ReleasePolicy) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -19282,6 +19123,41 @@ func (ec *executionContext) _Vulnerability_metadata(ctx context.Context, field g
 	return ec.marshalOMap2map(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Vulnerability_owner(ctx context.Context, field graphql.CollectedField, obj *ent.Vulnerability) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Vulnerability",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Owner(ctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Organization)
+	fc.Result = res
+	return ec.marshalNOrganization2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrganization(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Vulnerability_components(ctx context.Context, field graphql.CollectedField, obj *ent.Vulnerability) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -21116,7 +20992,7 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 func (ec *executionContext) unmarshalInputAdapterOrder(ctx context.Context, obj interface{}) (ent.AdapterOrder, error) {
 	var it ent.AdapterOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -21144,7 +21020,7 @@ func (ec *executionContext) unmarshalInputAdapterOrder(ctx context.Context, obj 
 
 func (ec *executionContext) unmarshalInputAdapterWhereInput(ctx context.Context, obj interface{}) (ent.AdapterWhereInput, error) {
 	var it ent.AdapterWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -21548,6 +21424,22 @@ func (ec *executionContext) unmarshalInputAdapterWhereInput(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
+		case "has_owner":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_owner"))
+			it.HasOwner, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_owner_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_owner_with"))
+			it.HasOwnerWith, err = ec.unmarshalOOrganizationWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrganizationWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -21556,7 +21448,7 @@ func (ec *executionContext) unmarshalInputAdapterWhereInput(ctx context.Context,
 
 func (ec *executionContext) unmarshalInputArtifactOrder(ctx context.Context, obj interface{}) (ent.ArtifactOrder, error) {
 	var it ent.ArtifactOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -21584,7 +21476,7 @@ func (ec *executionContext) unmarshalInputArtifactOrder(ctx context.Context, obj
 
 func (ec *executionContext) unmarshalInputArtifactWhereInput(ctx context.Context, obj interface{}) (ent.ArtifactWhereInput, error) {
 	var it ent.ArtifactWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -22020,7 +21912,7 @@ func (ec *executionContext) unmarshalInputArtifactWhereInput(ctx context.Context
 
 func (ec *executionContext) unmarshalInputCodeIssueOrder(ctx context.Context, obj interface{}) (ent.CodeIssueOrder, error) {
 	var it ent.CodeIssueOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -22048,7 +21940,7 @@ func (ec *executionContext) unmarshalInputCodeIssueOrder(ctx context.Context, ob
 
 func (ec *executionContext) unmarshalInputCodeIssueWhereInput(ctx context.Context, obj interface{}) (ent.CodeIssueWhereInput, error) {
 	var it ent.CodeIssueWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -22436,7 +22328,7 @@ func (ec *executionContext) unmarshalInputCodeIssueWhereInput(ctx context.Contex
 
 func (ec *executionContext) unmarshalInputCodeScanOrder(ctx context.Context, obj interface{}) (ent.CodeScanOrder, error) {
 	var it ent.CodeScanOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -22464,7 +22356,7 @@ func (ec *executionContext) unmarshalInputCodeScanOrder(ctx context.Context, obj
 
 func (ec *executionContext) unmarshalInputCodeScanWhereInput(ctx context.Context, obj interface{}) (ent.CodeScanWhereInput, error) {
 	var it ent.CodeScanWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -22812,7 +22704,7 @@ func (ec *executionContext) unmarshalInputCodeScanWhereInput(ctx context.Context
 
 func (ec *executionContext) unmarshalInputComponentOrder(ctx context.Context, obj interface{}) (ent.ComponentOrder, error) {
 	var it ent.ComponentOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -22840,7 +22732,7 @@ func (ec *executionContext) unmarshalInputComponentOrder(ctx context.Context, ob
 
 func (ec *executionContext) unmarshalInputComponentWhereInput(ctx context.Context, obj interface{}) (ent.ComponentWhereInput, error) {
 	var it ent.ComponentWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -23484,6 +23376,22 @@ func (ec *executionContext) unmarshalInputComponentWhereInput(ctx context.Contex
 			if err != nil {
 				return it, err
 			}
+		case "has_owner":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_owner"))
+			it.HasOwner, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_owner_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_owner_with"))
+			it.HasOwnerWith, err = ec.unmarshalOOrganizationWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrganizationWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "has_vulnerabilities":
 			var err error
 
@@ -23540,7 +23448,7 @@ func (ec *executionContext) unmarshalInputComponentWhereInput(ctx context.Contex
 
 func (ec *executionContext) unmarshalInputGitCommitOrder(ctx context.Context, obj interface{}) (ent.GitCommitOrder, error) {
 	var it ent.GitCommitOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -23568,7 +23476,7 @@ func (ec *executionContext) unmarshalInputGitCommitOrder(ctx context.Context, ob
 
 func (ec *executionContext) unmarshalInputGitCommitWhereInput(ctx context.Context, obj interface{}) (ent.GitCommitWhereInput, error) {
 	var it ent.GitCommitWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -24092,7 +24000,7 @@ func (ec *executionContext) unmarshalInputGitCommitWhereInput(ctx context.Contex
 
 func (ec *executionContext) unmarshalInputLicenseOrder(ctx context.Context, obj interface{}) (ent.LicenseOrder, error) {
 	var it ent.LicenseOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -24120,7 +24028,7 @@ func (ec *executionContext) unmarshalInputLicenseOrder(ctx context.Context, obj 
 
 func (ec *executionContext) unmarshalInputLicenseUseWhereInput(ctx context.Context, obj interface{}) (ent.LicenseUseWhereInput, error) {
 	var it ent.LicenseUseWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -24236,7 +24144,7 @@ func (ec *executionContext) unmarshalInputLicenseUseWhereInput(ctx context.Conte
 
 func (ec *executionContext) unmarshalInputLicenseWhereInput(ctx context.Context, obj interface{}) (ent.LicenseWhereInput, error) {
 	var it ent.LicenseWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -24832,7 +24740,7 @@ func (ec *executionContext) unmarshalInputLicenseWhereInput(ctx context.Context,
 
 func (ec *executionContext) unmarshalInputOrganizationWhereInput(ctx context.Context, obj interface{}) (ent.OrganizationWhereInput, error) {
 	var it ent.OrganizationWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -25068,7 +24976,7 @@ func (ec *executionContext) unmarshalInputOrganizationWhereInput(ctx context.Con
 
 func (ec *executionContext) unmarshalInputProjectOrder(ctx context.Context, obj interface{}) (ent.ProjectOrder, error) {
 	var it ent.ProjectOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -25096,7 +25004,7 @@ func (ec *executionContext) unmarshalInputProjectOrder(ctx context.Context, obj 
 
 func (ec *executionContext) unmarshalInputProjectWhereInput(ctx context.Context, obj interface{}) (ent.ProjectWhereInput, error) {
 	var it ent.ProjectWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -25364,7 +25272,7 @@ func (ec *executionContext) unmarshalInputProjectWhereInput(ctx context.Context,
 
 func (ec *executionContext) unmarshalInputReleaseComponentWhereInput(ctx context.Context, obj interface{}) (ent.ReleaseComponentWhereInput, error) {
 	var it ent.ReleaseComponentWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -25560,7 +25468,7 @@ func (ec *executionContext) unmarshalInputReleaseComponentWhereInput(ctx context
 
 func (ec *executionContext) unmarshalInputReleaseEntryOrder(ctx context.Context, obj interface{}) (ent.ReleaseEntryOrder, error) {
 	var it ent.ReleaseEntryOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -25588,7 +25496,7 @@ func (ec *executionContext) unmarshalInputReleaseEntryOrder(ctx context.Context,
 
 func (ec *executionContext) unmarshalInputReleaseEntryWhereInput(ctx context.Context, obj interface{}) (ent.ReleaseEntryWhereInput, error) {
 	var it ent.ReleaseEntryWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -25848,7 +25756,7 @@ func (ec *executionContext) unmarshalInputReleaseEntryWhereInput(ctx context.Con
 
 func (ec *executionContext) unmarshalInputReleaseLicenseWhereInput(ctx context.Context, obj interface{}) (ent.ReleaseLicenseWhereInput, error) {
 	var it ent.ReleaseLicenseWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -26012,7 +25920,7 @@ func (ec *executionContext) unmarshalInputReleaseLicenseWhereInput(ctx context.C
 
 func (ec *executionContext) unmarshalInputReleaseOrder(ctx context.Context, obj interface{}) (ent.ReleaseOrder, error) {
 	var it ent.ReleaseOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -26040,7 +25948,7 @@ func (ec *executionContext) unmarshalInputReleaseOrder(ctx context.Context, obj 
 
 func (ec *executionContext) unmarshalInputReleasePolicyOrder(ctx context.Context, obj interface{}) (ent.ReleasePolicyOrder, error) {
 	var it ent.ReleasePolicyOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -26068,7 +25976,7 @@ func (ec *executionContext) unmarshalInputReleasePolicyOrder(ctx context.Context
 
 func (ec *executionContext) unmarshalInputReleasePolicyViolationWhereInput(ctx context.Context, obj interface{}) (ent.ReleasePolicyViolationWhereInput, error) {
 	var it ent.ReleasePolicyViolationWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -26368,7 +26276,7 @@ func (ec *executionContext) unmarshalInputReleasePolicyViolationWhereInput(ctx c
 
 func (ec *executionContext) unmarshalInputReleasePolicyWhereInput(ctx context.Context, obj interface{}) (ent.ReleasePolicyWhereInput, error) {
 	var it ent.ReleasePolicyWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -26668,6 +26576,22 @@ func (ec *executionContext) unmarshalInputReleasePolicyWhereInput(ctx context.Co
 			if err != nil {
 				return it, err
 			}
+		case "has_owner":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_owner"))
+			it.HasOwner, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_owner_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_owner_with"))
+			it.HasOwnerWith, err = ec.unmarshalOOrganizationWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrganizationWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "has_projects":
 			var err error
 
@@ -26724,7 +26648,7 @@ func (ec *executionContext) unmarshalInputReleasePolicyWhereInput(ctx context.Co
 
 func (ec *executionContext) unmarshalInputReleaseVulnerabilityWhereInput(ctx context.Context, obj interface{}) (ent.ReleaseVulnerabilityWhereInput, error) {
 	var it ent.ReleaseVulnerabilityWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -26904,7 +26828,7 @@ func (ec *executionContext) unmarshalInputReleaseVulnerabilityWhereInput(ctx con
 
 func (ec *executionContext) unmarshalInputReleaseWhereInput(ctx context.Context, obj interface{}) (ent.ReleaseWhereInput, error) {
 	var it ent.ReleaseWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -27436,7 +27360,7 @@ func (ec *executionContext) unmarshalInputReleaseWhereInput(ctx context.Context,
 
 func (ec *executionContext) unmarshalInputRepoOrder(ctx context.Context, obj interface{}) (ent.RepoOrder, error) {
 	var it ent.RepoOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -27464,7 +27388,7 @@ func (ec *executionContext) unmarshalInputRepoOrder(ctx context.Context, obj int
 
 func (ec *executionContext) unmarshalInputRepoWhereInput(ctx context.Context, obj interface{}) (ent.RepoWhereInput, error) {
 	var it ent.RepoWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -27868,7 +27792,7 @@ func (ec *executionContext) unmarshalInputRepoWhereInput(ctx context.Context, ob
 
 func (ec *executionContext) unmarshalInputTestCaseOrder(ctx context.Context, obj interface{}) (ent.TestCaseOrder, error) {
 	var it ent.TestCaseOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -27896,7 +27820,7 @@ func (ec *executionContext) unmarshalInputTestCaseOrder(ctx context.Context, obj
 
 func (ec *executionContext) unmarshalInputTestCaseWhereInput(ctx context.Context, obj interface{}) (ent.TestCaseWhereInput, error) {
 	var it ent.TestCaseWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -28300,7 +28224,7 @@ func (ec *executionContext) unmarshalInputTestCaseWhereInput(ctx context.Context
 
 func (ec *executionContext) unmarshalInputTestRunOrder(ctx context.Context, obj interface{}) (ent.TestRunOrder, error) {
 	var it ent.TestRunOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -28328,7 +28252,7 @@ func (ec *executionContext) unmarshalInputTestRunOrder(ctx context.Context, obj 
 
 func (ec *executionContext) unmarshalInputTestRunWhereInput(ctx context.Context, obj interface{}) (ent.TestRunWhereInput, error) {
 	var it ent.TestRunWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -28644,7 +28568,7 @@ func (ec *executionContext) unmarshalInputTestRunWhereInput(ctx context.Context,
 
 func (ec *executionContext) unmarshalInputVulnerabilityOrder(ctx context.Context, obj interface{}) (ent.VulnerabilityOrder, error) {
 	var it ent.VulnerabilityOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -28672,7 +28596,7 @@ func (ec *executionContext) unmarshalInputVulnerabilityOrder(ctx context.Context
 
 func (ec *executionContext) unmarshalInputVulnerabilityReviewOrder(ctx context.Context, obj interface{}) (ent.VulnerabilityReviewOrder, error) {
 	var it ent.VulnerabilityReviewOrder
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -28700,7 +28624,7 @@ func (ec *executionContext) unmarshalInputVulnerabilityReviewOrder(ctx context.C
 
 func (ec *executionContext) unmarshalInputVulnerabilityReviewWhereInput(ctx context.Context, obj interface{}) (ent.VulnerabilityReviewWhereInput, error) {
 	var it ent.VulnerabilityReviewWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -29016,7 +28940,7 @@ func (ec *executionContext) unmarshalInputVulnerabilityReviewWhereInput(ctx cont
 
 func (ec *executionContext) unmarshalInputVulnerabilityWhereInput(ctx context.Context, obj interface{}) (ent.VulnerabilityWhereInput, error) {
 	var it ent.VulnerabilityWhereInput
-	var asMap = obj.(map[string]interface{})
+	asMap := obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -29708,6 +29632,22 @@ func (ec *executionContext) unmarshalInputVulnerabilityWhereInput(ctx context.Co
 			if err != nil {
 				return it, err
 			}
+		case "has_owner":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_owner"))
+			it.HasOwner, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "has_owner_with":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("has_owner_with"))
+			it.HasOwnerWith, err = ec.unmarshalOOrganizationWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrganizationWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "has_components":
 			var err error
 
@@ -29770,106 +29710,41 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case *ent.Vulnerability:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Vulnerability(ctx, sel, obj)
-	case *ent.ReleaseLicense:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleaseLicense(ctx, sel, obj)
-	case *ent.ReleasePolicyViolation:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleasePolicyViolation(ctx, sel, obj)
-	case *ent.GitCommit:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._GitCommit(ctx, sel, obj)
 	case *ent.CodeIssue:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._CodeIssue(ctx, sel, obj)
-	case *ent.Adapter:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Adapter(ctx, sel, obj)
-	case *ent.Release:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Release(ctx, sel, obj)
-	case *ent.ReleaseComponent:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleaseComponent(ctx, sel, obj)
-	case *ent.Organization:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Organization(ctx, sel, obj)
-	case *ent.Artifact:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Artifact(ctx, sel, obj)
-	case *ent.Project:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._Project(ctx, sel, obj)
-	case *ent.TestRun:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._TestRun(ctx, sel, obj)
-	case *ent.LicenseUse:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._LicenseUse(ctx, sel, obj)
-	case *ent.ReleasePolicy:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ReleasePolicy(ctx, sel, obj)
 	case *ent.VulnerabilityReview:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._VulnerabilityReview(ctx, sel, obj)
-	case *ent.Component:
+	case *ent.ReleaseLicense:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._Component(ctx, sel, obj)
-	case *ent.ReleaseEntry:
+		return ec._ReleaseLicense(ctx, sel, obj)
+	case *ent.ReleasePolicy:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._ReleaseEntry(ctx, sel, obj)
+		return ec._ReleasePolicy(ctx, sel, obj)
+	case *ent.LicenseUse:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._LicenseUse(ctx, sel, obj)
 	case *ent.TestCase:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._TestCase(ctx, sel, obj)
-	case *ent.CodeScan:
+	case *ent.Release:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._CodeScan(ctx, sel, obj)
-	case *ent.License:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._License(ctx, sel, obj)
+		return ec._Release(ctx, sel, obj)
 	case *ent.ReleaseVulnerability:
 		if obj == nil {
 			return graphql.Null
@@ -29880,6 +29755,71 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._Repo(ctx, sel, obj)
+	case *ent.Project:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Project(ctx, sel, obj)
+	case *ent.CodeScan:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CodeScan(ctx, sel, obj)
+	case *ent.ReleasePolicyViolation:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleasePolicyViolation(ctx, sel, obj)
+	case *ent.GitCommit:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._GitCommit(ctx, sel, obj)
+	case *ent.ReleaseEntry:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleaseEntry(ctx, sel, obj)
+	case *ent.Adapter:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Adapter(ctx, sel, obj)
+	case *ent.ReleaseComponent:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ReleaseComponent(ctx, sel, obj)
+	case *ent.Vulnerability:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Vulnerability(ctx, sel, obj)
+	case *ent.Artifact:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Artifact(ctx, sel, obj)
+	case *ent.TestRun:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._TestRun(ctx, sel, obj)
+	case *ent.Component:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Component(ctx, sel, obj)
+	case *ent.License:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._License(ctx, sel, obj)
+	case *ent.Organization:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Organization(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -29903,7 +29843,7 @@ func (ec *executionContext) _Adapter(ctx context.Context, sel ast.SelectionSet, 
 		case "id":
 			out.Values[i] = ec._Adapter_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._Adapter_name(ctx, field, obj)
@@ -29911,6 +29851,20 @@ func (ec *executionContext) _Adapter(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Adapter_tag(ctx, field, obj)
 		case "module":
 			out.Values[i] = ec._Adapter_module(ctx, field, obj)
+		case "owner":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Adapter_owner(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -30437,6 +30391,20 @@ func (ec *executionContext) _Component(ctx context.Context, sel ast.SelectionSet
 					}
 				}()
 				res = ec._Component_metadata(ctx, field, obj)
+				return res
+			})
+		case "owner":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Component_owner(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "vulnerabilities":
@@ -32273,6 +32241,20 @@ func (ec *executionContext) _ReleasePolicy(ctx context.Context, sel ast.Selectio
 			out.Values[i] = ec._ReleasePolicy_name(ctx, field, obj)
 		case "module":
 			out.Values[i] = ec._ReleasePolicy_module(ctx, field, obj)
+		case "owner":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleasePolicy_owner(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "projects":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -33124,6 +33106,20 @@ func (ec *executionContext) _Vulnerability(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._Vulnerability_metadata(ctx, field, obj)
+				return res
+			})
+		case "owner":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Vulnerability_owner(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "components":
@@ -34351,7 +34347,7 @@ func (ec *executionContext) unmarshalOAdapterOrderField2ᚖgithubᚗcomᚋvaloco
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.AdapterOrderField)
+	res := new(ent.AdapterOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -34508,7 +34504,7 @@ func (ec *executionContext) unmarshalOArtifactOrderField2ᚖgithubᚗcomᚋvaloc
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.ArtifactOrderField)
+	res := new(ent.ArtifactOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -34598,7 +34594,7 @@ func (ec *executionContext) unmarshalOArtifactType2ᚖgithubᚗcomᚋvalocodeᚋ
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(artifact.Type)
+	res := new(artifact.Type)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -34779,7 +34775,7 @@ func (ec *executionContext) unmarshalOCodeIssueOrderField2ᚖgithubᚗcomᚋvalo
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.CodeIssueOrderField)
+	res := new(ent.CodeIssueOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -34869,7 +34865,7 @@ func (ec *executionContext) unmarshalOCodeIssueSeverity2ᚖgithubᚗcomᚋvaloco
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(codeissue.Severity)
+	res := new(codeissue.Severity)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -34959,7 +34955,7 @@ func (ec *executionContext) unmarshalOCodeIssueType2ᚖgithubᚗcomᚋvalocode�
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(codeissue.Type)
+	res := new(codeissue.Type)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -35156,7 +35152,7 @@ func (ec *executionContext) unmarshalOCodeScanOrderField2ᚖgithubᚗcomᚋvaloc
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.CodeScanOrderField)
+	res := new(ent.CodeScanOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -35313,7 +35309,7 @@ func (ec *executionContext) unmarshalOComponentOrderField2ᚖgithubᚗcomᚋvalo
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.ComponentOrderField)
+	res := new(ent.ComponentOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -35361,7 +35357,7 @@ func (ec *executionContext) unmarshalOCursor2ᚖgithubᚗcomᚋvalocodeᚋbubbly
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.Cursor)
+	res := new(ent.Cursor)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -35546,7 +35542,7 @@ func (ec *executionContext) unmarshalOGitCommitOrderField2ᚖgithubᚗcomᚋvalo
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.GitCommitOrderField)
+	res := new(ent.GitCommitOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -35754,7 +35750,7 @@ func (ec *executionContext) unmarshalOLicenseOrderField2ᚖgithubᚗcomᚋvaloco
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.LicenseOrderField)
+	res := new(ent.LicenseOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -36145,7 +36141,7 @@ func (ec *executionContext) unmarshalOProjectOrderField2ᚖgithubᚗcomᚋvaloco
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.ProjectOrderField)
+	res := new(ent.ProjectOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -36415,7 +36411,7 @@ func (ec *executionContext) unmarshalOReleaseComponentType2ᚖgithubᚗcomᚋval
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(releasecomponent.Type)
+	res := new(releasecomponent.Type)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -36626,7 +36622,7 @@ func (ec *executionContext) unmarshalOReleaseEntryOrderField2ᚖgithubᚗcomᚋv
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.ReleaseEntryOrderField)
+	res := new(ent.ReleaseEntryOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -36716,7 +36712,7 @@ func (ec *executionContext) unmarshalOReleaseEntryType2ᚖgithubᚗcomᚋvalocod
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(releaseentry.Type)
+	res := new(releaseentry.Type)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -36858,7 +36854,7 @@ func (ec *executionContext) unmarshalOReleaseOrderField2ᚖgithubᚗcomᚋvaloco
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.ReleaseOrderField)
+	res := new(ent.ReleaseOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -36976,7 +36972,7 @@ func (ec *executionContext) unmarshalOReleasePolicyOrderField2ᚖgithubᚗcomᚋ
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.ReleasePolicyOrderField)
+	res := new(ent.ReleasePolicyOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -37160,7 +37156,7 @@ func (ec *executionContext) unmarshalOReleasePolicyViolationSeverity2ᚖgithub�
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(releasepolicyviolation.Severity)
+	res := new(releasepolicyviolation.Severity)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -37250,7 +37246,7 @@ func (ec *executionContext) unmarshalOReleasePolicyViolationType2ᚖgithubᚗcom
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(releasepolicyviolation.Type)
+	res := new(releasepolicyviolation.Type)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -37404,7 +37400,7 @@ func (ec *executionContext) unmarshalOReleaseStatus2ᚖgithubᚗcomᚋvalocode�
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(release.Status)
+	res := new(release.Status)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -37694,7 +37690,7 @@ func (ec *executionContext) unmarshalORepoOrderField2ᚖgithubᚗcomᚋvalocode�
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.RepoOrderField)
+	res := new(ent.RepoOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -37911,7 +37907,7 @@ func (ec *executionContext) unmarshalOTestCaseOrderField2ᚖgithubᚗcomᚋvaloc
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.TestCaseOrderField)
+	res := new(ent.TestCaseOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -38068,7 +38064,7 @@ func (ec *executionContext) unmarshalOTestRunOrderField2ᚖgithubᚗcomᚋvaloco
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.TestRunOrderField)
+	res := new(ent.TestRunOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -38285,7 +38281,7 @@ func (ec *executionContext) unmarshalOVulnerabilityOrderField2ᚖgithubᚗcomᚋ
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.VulnerabilityOrderField)
+	res := new(ent.VulnerabilityOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -38429,7 +38425,7 @@ func (ec *executionContext) unmarshalOVulnerabilityReviewDecision2ᚖgithubᚗco
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(vulnerabilityreview.Decision)
+	res := new(vulnerabilityreview.Decision)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -38500,7 +38496,7 @@ func (ec *executionContext) unmarshalOVulnerabilityReviewOrderField2ᚖgithubᚗ
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(ent.VulnerabilityReviewOrderField)
+	res := new(ent.VulnerabilityReviewOrderField)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -38622,7 +38618,7 @@ func (ec *executionContext) unmarshalOVulnerabilitySeverity2ᚖgithubᚗcomᚋva
 	if v == nil {
 		return nil, nil
 	}
-	var res = new(vulnerability.Severity)
+	res := new(vulnerability.Severity)
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }

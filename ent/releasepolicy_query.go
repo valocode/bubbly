@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/releasepolicy"
@@ -29,9 +30,11 @@ type ReleasePolicyQuery struct {
 	fields     []string
 	predicates []predicate.ReleasePolicy
 	// eager-loading edges.
+	withOwner      *OrganizationQuery
 	withProjects   *ProjectQuery
 	withRepos      *RepoQuery
 	withViolations *ReleasePolicyViolationQuery
+	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -66,6 +69,28 @@ func (rpq *ReleasePolicyQuery) Unique(unique bool) *ReleasePolicyQuery {
 func (rpq *ReleasePolicyQuery) Order(o ...OrderFunc) *ReleasePolicyQuery {
 	rpq.order = append(rpq.order, o...)
 	return rpq
+}
+
+// QueryOwner chains the current query on the "owner" edge.
+func (rpq *ReleasePolicyQuery) QueryOwner() *OrganizationQuery {
+	query := &OrganizationQuery{config: rpq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rpq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rpq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasepolicy.Table, releasepolicy.FieldID, selector),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releasepolicy.OwnerTable, releasepolicy.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryProjects chains the current query on the "projects" edge.
@@ -315,6 +340,7 @@ func (rpq *ReleasePolicyQuery) Clone() *ReleasePolicyQuery {
 		offset:         rpq.offset,
 		order:          append([]OrderFunc{}, rpq.order...),
 		predicates:     append([]predicate.ReleasePolicy{}, rpq.predicates...),
+		withOwner:      rpq.withOwner.Clone(),
 		withProjects:   rpq.withProjects.Clone(),
 		withRepos:      rpq.withRepos.Clone(),
 		withViolations: rpq.withViolations.Clone(),
@@ -322,6 +348,17 @@ func (rpq *ReleasePolicyQuery) Clone() *ReleasePolicyQuery {
 		sql:  rpq.sql.Clone(),
 		path: rpq.path,
 	}
+}
+
+// WithOwner tells the query-builder to eager-load the nodes that are connected to
+// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
+func (rpq *ReleasePolicyQuery) WithOwner(opts ...func(*OrganizationQuery)) *ReleasePolicyQuery {
+	query := &OrganizationQuery{config: rpq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rpq.withOwner = query
+	return rpq
 }
 
 // WithProjects tells the query-builder to eager-load the nodes that are connected to
@@ -421,13 +458,21 @@ func (rpq *ReleasePolicyQuery) prepareQuery(ctx context.Context) error {
 func (rpq *ReleasePolicyQuery) sqlAll(ctx context.Context) ([]*ReleasePolicy, error) {
 	var (
 		nodes       = []*ReleasePolicy{}
+		withFKs     = rpq.withFKs
 		_spec       = rpq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
+			rpq.withOwner != nil,
 			rpq.withProjects != nil,
 			rpq.withRepos != nil,
 			rpq.withViolations != nil,
 		}
 	)
+	if rpq.withOwner != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, releasepolicy.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &ReleasePolicy{config: rpq.config}
 		nodes = append(nodes, node)
@@ -446,6 +491,35 @@ func (rpq *ReleasePolicyQuery) sqlAll(ctx context.Context) ([]*ReleasePolicy, er
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+
+	if query := rpq.withOwner; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*ReleasePolicy)
+		for i := range nodes {
+			if nodes[i].release_policy_owner == nil {
+				continue
+			}
+			fk := *nodes[i].release_policy_owner
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(organization.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "release_policy_owner" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Owner = n
+			}
+		}
 	}
 
 	if query := rpq.withProjects; query != nil {

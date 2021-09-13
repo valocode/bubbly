@@ -1,47 +1,30 @@
 project_name: bubbly
-before:
-  hooks:
-  - go get -u github.com/swaggo/swag/cmd/swag
 builds:
-  - binary: bubbly
+  - id: bubbly
+    binary: bubbly
     main: main.go
-    ldflags:
-      - -s -w -X main.VERSION={{ .Version }}
-    env:
-      - CGO_ENABLED=0
-    hooks:
-      pre: swag init
-    id: linux
+    flags:
+      # include the ui in the build
+      - -tags=ui
     goos:
       - linux
+      - darwin
+      - windows
     goarch:
-      - amd64
       - arm64
-      - arm
+      - amd64
+    ignore:
+      # some packages (e.g. zerolog, sqlite) don't have this combo
+      - goos: windows
+        goarch: arm64
     goarm:
       - 7
-  - id: darwin
-    goos:
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-  - id: windows
-    goos:
-      - windows
+
 archives:
-  - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     id: nix
-    builds: [linux, darwin]
-    format: tar.gz
-    files:
-      - none*
-  - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    id: windows
-    builds: [windows]
-    format: zip
-    files:
-      - none*
+    builds: [bubbly]
+
 brews:
   - name: bubbly
     tap:
@@ -50,24 +33,25 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     folder: Formula
     homepage: "https://bubbly.dev/"
-    description: "Bubbly CLI"
+    description: "Bubbly"
     test: |
       system "#{bin}/bubbly --version"
+
 dockers:
-  -
-    goos: linux
+  - goos: linux
     goarch: amd64
     skip_push: false
-    use_buildx: true
+    use: buildx
     dockerfile: Dockerfile.goreleaser
     image_templates:
-    - "valocode/{{ .ProjectName }}:latest"
-    - "valocode/{{ .ProjectName }}:{{ .Tag }}"
-    - "valocode/{{ .ProjectName }}:{{ .Major }}"
-    - "valocode/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}"
-    - "valocode/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+      - "valocode/{{ .ProjectName }}:latest"
+      - "valocode/{{ .ProjectName }}:{{ .Tag }}"
+      - "valocode/{{ .ProjectName }}:{{ .Major }}"
+      - "valocode/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}"
+      - "valocode/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     build_flag_templates:
-    - "--pull"
+      - "--pull"
+
 checksum:
   name_template: "checksums.txt"
 snapshot:
@@ -78,6 +62,7 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
 release:
   github:
     owner: valocode

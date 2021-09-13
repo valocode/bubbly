@@ -16,6 +16,7 @@ type (
 		Commit   *string `json:"commit,omitempty" query:"commit" validate:"required"`
 		Repo     *string `json:"repo,omitempty" query:"repo"`
 		Policies bool    `json:"policies,string" query:"policies"`
+		Log      bool    `json:"log,string" query:"log"`
 	}
 
 	ReleaseGetResponse struct {

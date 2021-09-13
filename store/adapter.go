@@ -21,6 +21,7 @@ func (h *Handler) SaveAdapter(req *api.AdapterSaveRequest) (*ent.Adapter, error)
 		}
 		dbAdapter, err = h.client.Adapter.Create().
 			SetModelCreate(req.Adapter).
+			SetOwnerID(h.orgID).
 			Save(h.ctx)
 		if err != nil {
 			return nil, HandleEntError(err, "adapter create")
@@ -40,7 +41,7 @@ func (h *Handler) GetAdapter(req *api.AdapterGetRequest) (*api.AdapterGetRespons
 	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "get adapter")
 	}
-	var tag = bubblyadapter.DefaultTag
+	tag := bubblyadapter.DefaultTag
 	if req.Tag != nil {
 		tag = *req.Tag
 	}

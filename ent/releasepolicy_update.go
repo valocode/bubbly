@@ -4,11 +4,13 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/releasepolicy"
@@ -39,6 +41,17 @@ func (rpu *ReleasePolicyUpdate) SetName(s string) *ReleasePolicyUpdate {
 func (rpu *ReleasePolicyUpdate) SetModule(s string) *ReleasePolicyUpdate {
 	rpu.mutation.SetModule(s)
 	return rpu
+}
+
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (rpu *ReleasePolicyUpdate) SetOwnerID(id int) *ReleasePolicyUpdate {
+	rpu.mutation.SetOwnerID(id)
+	return rpu
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (rpu *ReleasePolicyUpdate) SetOwner(o *Organization) *ReleasePolicyUpdate {
+	return rpu.SetOwnerID(o.ID)
 }
 
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
@@ -89,6 +102,12 @@ func (rpu *ReleasePolicyUpdate) AddViolations(r ...*ReleasePolicyViolation) *Rel
 // Mutation returns the ReleasePolicyMutation object of the builder.
 func (rpu *ReleasePolicyUpdate) Mutation() *ReleasePolicyMutation {
 	return rpu.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (rpu *ReleasePolicyUpdate) ClearOwner() *ReleasePolicyUpdate {
+	rpu.mutation.ClearOwner()
+	return rpu
 }
 
 // ClearProjects clears all "projects" edges to the Project entity.
@@ -226,6 +245,9 @@ func (rpu *ReleasePolicyUpdate) check() error {
 			return &ValidationError{Name: "module", err: fmt.Errorf("ent: validator failed for field \"module\": %w", err)}
 		}
 	}
+	if _, ok := rpu.mutation.OwnerID(); rpu.mutation.OwnerCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"owner\"")
+	}
 	return nil
 }
 
@@ -260,6 +282,41 @@ func (rpu *ReleasePolicyUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Value:  value,
 			Column: releasepolicy.FieldModule,
 		})
+	}
+	if rpu.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   releasepolicy.OwnerTable,
+			Columns: []string{releasepolicy.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpu.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   releasepolicy.OwnerTable,
+			Columns: []string{releasepolicy.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if rpu.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -454,6 +511,17 @@ func (rpuo *ReleasePolicyUpdateOne) SetModule(s string) *ReleasePolicyUpdateOne 
 	return rpuo
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (rpuo *ReleasePolicyUpdateOne) SetOwnerID(id int) *ReleasePolicyUpdateOne {
+	rpuo.mutation.SetOwnerID(id)
+	return rpuo
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (rpuo *ReleasePolicyUpdateOne) SetOwner(o *Organization) *ReleasePolicyUpdateOne {
+	return rpuo.SetOwnerID(o.ID)
+}
+
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
 func (rpuo *ReleasePolicyUpdateOne) AddProjectIDs(ids ...int) *ReleasePolicyUpdateOne {
 	rpuo.mutation.AddProjectIDs(ids...)
@@ -502,6 +570,12 @@ func (rpuo *ReleasePolicyUpdateOne) AddViolations(r ...*ReleasePolicyViolation) 
 // Mutation returns the ReleasePolicyMutation object of the builder.
 func (rpuo *ReleasePolicyUpdateOne) Mutation() *ReleasePolicyMutation {
 	return rpuo.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (rpuo *ReleasePolicyUpdateOne) ClearOwner() *ReleasePolicyUpdateOne {
+	rpuo.mutation.ClearOwner()
+	return rpuo
 }
 
 // ClearProjects clears all "projects" edges to the Project entity.
@@ -646,6 +720,9 @@ func (rpuo *ReleasePolicyUpdateOne) check() error {
 			return &ValidationError{Name: "module", err: fmt.Errorf("ent: validator failed for field \"module\": %w", err)}
 		}
 	}
+	if _, ok := rpuo.mutation.OwnerID(); rpuo.mutation.OwnerCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"owner\"")
+	}
 	return nil
 }
 
@@ -697,6 +774,41 @@ func (rpuo *ReleasePolicyUpdateOne) sqlSave(ctx context.Context) (_node *Release
 			Value:  value,
 			Column: releasepolicy.FieldModule,
 		})
+	}
+	if rpuo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   releasepolicy.OwnerTable,
+			Columns: []string{releasepolicy.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rpuo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   releasepolicy.OwnerTable,
+			Columns: []string{releasepolicy.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if rpuo.mutation.ProjectsCleared() {
 		edge := &sqlgraph.EdgeSpec{

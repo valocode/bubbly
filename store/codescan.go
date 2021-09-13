@@ -32,7 +32,6 @@ func (h *Handler) SaveCodeScan(req *api.CodeScanRequest) (*ent.CodeScan, error) 
 func (h *Handler) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.CodeScan, error) {
 	var codeScan *ent.CodeScan
 	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
-
 		var err error
 		codeScan, err = tx.CodeScan.Create().
 			SetModelCreate(&scan.CodeScanModelCreate).
@@ -74,6 +73,7 @@ func (h *Handler) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.C
 				// It is not found, so create the component...
 				existingComp, err = tx.Component.Create().
 					SetModelCreate(&comp.ComponentModelCreate).
+					SetOwnerID(h.orgID).
 					Save(h.ctx)
 				if err != nil {
 					return HandleEntError(err, "component")

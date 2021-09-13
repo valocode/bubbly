@@ -71,10 +71,8 @@ func ValidColumn(column string) bool {
 	return false
 }
 
-var (
-	// MessageValidator is a validator for the "message" field. It is called by the builders before save.
-	MessageValidator func(string) error
-)
+// MessageValidator is a validator for the "message" field. It is called by the builders before save.
+var MessageValidator func(string) error
 
 // Type defines the type for the "type" enum field.
 type Type string

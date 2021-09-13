@@ -27,7 +27,7 @@ func (ReleasePolicyViolation) Fields() []ent.Field {
 		field.Enum("type").
 			Values("require", "deny"),
 		field.Enum("severity").
-			Values("suggestion", "warning", "error", "blocking"),
+			Values("suggestion", "warning", "blocking"),
 	}
 }
 

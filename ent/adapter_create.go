@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/adapter"
+	"github.com/valocode/bubbly/ent/organization"
 )
 
 // AdapterCreate is the builder for creating a Adapter entity.
@@ -35,6 +36,17 @@ func (ac *AdapterCreate) SetTag(s string) *AdapterCreate {
 func (ac *AdapterCreate) SetModule(s string) *AdapterCreate {
 	ac.mutation.SetModule(s)
 	return ac
+}
+
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (ac *AdapterCreate) SetOwnerID(id int) *AdapterCreate {
+	ac.mutation.SetOwnerID(id)
+	return ac
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (ac *AdapterCreate) SetOwner(o *Organization) *AdapterCreate {
+	return ac.SetOwnerID(o.ID)
 }
 
 // Mutation returns the AdapterMutation object of the builder.
@@ -131,6 +143,9 @@ func (ac *AdapterCreate) check() error {
 			return &ValidationError{Name: "module", err: fmt.Errorf(`ent: validator failed for field "module": %w`, err)}
 		}
 	}
+	if _, ok := ac.mutation.OwnerID(); !ok {
+		return &ValidationError{Name: "owner", err: errors.New("ent: missing required edge \"owner\"")}
+	}
 	return nil
 }
 
@@ -181,6 +196,26 @@ func (ac *AdapterCreate) createSpec() (*Adapter, *sqlgraph.CreateSpec) {
 			Column: adapter.FieldModule,
 		})
 		_node.Module = value
+	}
+	if nodes := ac.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   adapter.OwnerTable,
+			Columns: []string{adapter.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.adapter_owner = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

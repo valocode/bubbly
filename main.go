@@ -5,19 +5,31 @@ import (
 
 	"github.com/valocode/bubbly/cmd"
 	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/ui"
 )
+
+var (
+	version = "dev"
+	commit  = "dev"
+	date    = "dev"
+)
+
+//go:generate go run docs/gen.go
 
 func main() {
 	// Set up the initial BubblyContext with config.Config defaults
-	bCtx := env.NewBubblyContext()
+	bCtx := env.NewBubblyContext(
+		env.WithBubblyUI(&ui.Build),
+		env.WithVersion(&env.Version{
+			Version: version,
+			Commit:  commit,
+			Date:    date,
+		}),
+	)
 
 	// Create initial root command, binding global flags
 	rootCmd := cmd.NewCmdRoot(bCtx)
 
-	// // Parse the global flags set up by the rootCmd against
-	// if err := rootCmd.ParseFlags(os.Args); err != nil {
-	// 	log.Fatal("error parsing flags: ", err)
-	// }
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

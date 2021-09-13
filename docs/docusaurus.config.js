@@ -11,7 +11,7 @@ module.exports = {
   projectName: 'bubbly', // Usually your repo name.
   themeConfig: {
     prism: {
-      additionalLanguages: ['hcl'],
+      additionalLanguages: ['rego'],
     },
     navbar: {
       title: 'Bubbly',

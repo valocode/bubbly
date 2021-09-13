@@ -356,6 +356,22 @@ func (c *AdapterClient) GetX(ctx context.Context, id int) *Adapter {
 	return obj
 }
 
+// QueryOwner queries the owner edge of a Adapter.
+func (c *AdapterClient) QueryOwner(a *Adapter) *OrganizationQuery {
+	query := &OrganizationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(adapter.Table, adapter.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, adapter.OwnerTable, adapter.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *AdapterClient) Hooks() []Hook {
 	return c.hooks.Adapter
@@ -844,6 +860,22 @@ func (c *ComponentClient) GetX(ctx context.Context, id int) *Component {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryOwner queries the owner edge of a Component.
+func (c *ComponentClient) QueryOwner(co *Component) *OrganizationQuery {
+	query := &OrganizationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(component.Table, component.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, component.OwnerTable, component.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryVulnerabilities queries the vulnerabilities edge of a Component.
@@ -2356,6 +2388,22 @@ func (c *ReleasePolicyClient) GetX(ctx context.Context, id int) *ReleasePolicy {
 	return obj
 }
 
+// QueryOwner queries the owner edge of a ReleasePolicy.
+func (c *ReleasePolicyClient) QueryOwner(rp *ReleasePolicy) *OrganizationQuery {
+	query := &OrganizationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rp.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasepolicy.Table, releasepolicy.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, releasepolicy.OwnerTable, releasepolicy.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryProjects queries the projects edge of a ReleasePolicy.
 func (c *ReleasePolicyClient) QueryProjects(rp *ReleasePolicy) *ProjectQuery {
 	query := &ProjectQuery{config: c.config}
@@ -3215,6 +3263,22 @@ func (c *VulnerabilityClient) GetX(ctx context.Context, id int) *Vulnerability {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryOwner queries the owner edge of a Vulnerability.
+func (c *VulnerabilityClient) QueryOwner(v *Vulnerability) *OrganizationQuery {
+	query := &OrganizationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := v.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(vulnerability.Table, vulnerability.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, vulnerability.OwnerTable, vulnerability.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(v.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryComponents queries the components edge of a Vulnerability.

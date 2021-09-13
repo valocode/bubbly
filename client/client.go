@@ -102,7 +102,12 @@ func handlePostRequest(bCtx *env.BubblyConfig, req interface{}, urlsuffix string
 		return err
 	}
 
-	fmt.Printf("Post Request:\n%s\n", b)
+	bCtx.Logger.Debug().
+		Bytes("data", b.Bytes()).
+		Str("endpoint", urlsuffix).
+		Str("method", http.MethodPost).
+		Msg("Client making request")
+
 	url := bCtx.ClientConfig.V1() + "/" + urlsuffix
 	httpReq, err := http.NewRequest(http.MethodPost, url, b)
 	if err != nil {
@@ -125,7 +130,12 @@ func handlePutRequest(bCtx *env.BubblyConfig, req interface{}, urlsuffix string)
 		return err
 	}
 
-	fmt.Printf("Put Request:\n%s\n", b)
+	bCtx.Logger.Debug().
+		Bytes("data", b.Bytes()).
+		Str("endpoint", urlsuffix).
+		Str("method", http.MethodPut).
+		Msg("Client making request")
+
 	url := bCtx.ClientConfig.V1() + "/" + urlsuffix
 	httpReq, err := http.NewRequest(http.MethodPut, url, b)
 	if err != nil {

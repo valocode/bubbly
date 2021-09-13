@@ -19,7 +19,7 @@ type fakeResolver struct {
 }
 
 func (r *fakeResolver) Functions() []func(*rego.Rego) {
-	var funcs = make([]func(*rego.Rego), 0, len(r.data))
+	funcs := make([]func(*rego.Rego), 0, len(r.data))
 	for name, value := range r.data {
 		funcs = append(funcs,
 			rego.Function1(&rego.Function{
@@ -51,37 +51,37 @@ func TestPolicy(t *testing.T) {
 		{
 			name:   "test_case_policy_failing",
 			input:  map[string][]map[string]interface{}{"test_cases": {{"result": false}}},
-			policy: "./testdata/test_case_fail.rego",
+			policy: "./builtin/test_case_fail.rego",
 			want:   1,
 		},
 		{
 			name:   "test_case_policy_passing",
 			input:  map[string][]map[string]interface{}{"test_cases": {{"result": true}}},
-			policy: "./testdata/test_case_fail.rego",
+			policy: "./builtin/test_case_fail.rego",
 			want:   0,
 		},
 		{
 			name:   "code_issues_high_severity_failing",
 			input:  map[string][]map[string]interface{}{"code_issues": {{"severity": "high"}}},
-			policy: "./testdata/code_issue_high_severity.rego",
+			policy: "./builtin/code_issue_high_severity.rego",
 			want:   1,
 		},
 		{
 			name:   "code_issues_high_severity_passing",
 			input:  map[string][]map[string]interface{}{"code_issues": {{"severity": "low"}}},
-			policy: "./testdata/code_issue_high_severity.rego",
+			policy: "./builtin/code_issue_high_severity.rego",
 			want:   0,
 		},
 		{
 			name:   "release_checklist_failing",
 			input:  map[string][]map[string]interface{}{"release_entries": {{"type": "code_scan"}}},
-			policy: "./testdata/release_checklist.rego",
+			policy: "./builtin/release_checklist.rego",
 			want:   1,
 		},
 		// {
 		// 	name:   "code_issues_high_severity_passing",
 		// 	input:  map[string][]map[string]interface{}{"code_issues": {{"severity": "low"}}},
-		// 	policy: "./testdata/code_issue_high_severity.rego",
+		// 	policy: "./builtin/code_issue_high_severity.rego",
 		// 	want:   0,
 		// },
 	}

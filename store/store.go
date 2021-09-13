@@ -16,7 +16,7 @@ import (
 	"github.com/valocode/bubbly/env"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/xiaoqidun/entps"
 
 	// required by schema hooks.
 	_ "github.com/valocode/bubbly/ent/runtime"
