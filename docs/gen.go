@@ -22,7 +22,7 @@ func main() {
 }
 
 func genCLIDocs() {
-	cmd := cmd.NewCmdRoot(env.NewBubblyContext())
+	cmd := cmd.NewCmdRoot(env.NewBubblyConfig())
 	err := doc.GenMarkdownTreeCustom(cmd, "./docs/docs/cli",
 		func(s string) string {
 			filename := filepath.Base(s)

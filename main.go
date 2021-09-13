@@ -17,8 +17,8 @@ var (
 //go:generate go run docs/gen.go
 
 func main() {
-	// Set up the initial BubblyContext with config.Config defaults
-	bCtx := env.NewBubblyContext(
+	// Set up the initial BubblyConfig with config.Config defaults
+	bCtx := env.NewBubblyConfig(
 		env.WithBubblyUI(&ui.Build),
 		env.WithVersion(&env.Version{
 			Version: version,

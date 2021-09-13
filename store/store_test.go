@@ -12,7 +12,7 @@ import (
 )
 
 func TestStore(t *testing.T) {
-	bCtx := env.NewBubblyContext()
+	bCtx := env.NewBubblyConfig()
 	s, err := New(bCtx)
 	require.NoError(t, err)
 	h, err := NewHandler(WithStore(s))

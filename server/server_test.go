@@ -62,7 +62,7 @@ func testPutRequest(t *testing.T, e *echo.Echo, h echo.HandlerFunc, path string,
 }
 
 func TestAdapter(t *testing.T) {
-	s, err := New(env.NewBubblyContext())
+	s, err := New(env.NewBubblyConfig())
 	require.NoError(t, err)
 
 	{
@@ -87,7 +87,7 @@ func TestAdapter(t *testing.T) {
 }
 
 func TestPolicy(t *testing.T) {
-	s, err := New(env.NewBubblyContext())
+	s, err := New(env.NewBubblyConfig())
 	require.NoError(t, err)
 
 	{
@@ -113,7 +113,7 @@ func TestPolicy(t *testing.T) {
 }
 
 func TestServer(t *testing.T) {
-	s, err := New(env.NewBubblyContext())
+	s, err := New(env.NewBubblyConfig())
 	require.NoError(t, err)
 
 	data := test.CreateDummyData()

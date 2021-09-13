@@ -13,7 +13,7 @@ import (
 )
 
 func TestPolicyAffects(t *testing.T) {
-	s, err := New(env.NewBubblyContext())
+	s, err := New(env.NewBubblyConfig())
 	require.NoError(t, err)
 
 	h, err := NewHandler(WithStore(s))

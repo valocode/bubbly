@@ -26,8 +26,8 @@ type BubblyConfig struct {
 	Version      *Version
 }
 
-// NewBubblyContext sets up a default Bubbly Context
-func NewBubblyContext(opts ...func(*BubblyConfig)) *BubblyConfig {
+// NewBubblyConfig sets up a default Bubbly Config
+func NewBubblyConfig(opts ...func(*BubblyConfig)) *BubblyConfig {
 	return &BubblyConfig{
 		Logger:        NewDefaultLogger(),
 		ReleaseConfig: config.DefaultReleaseConfig(),
@@ -85,7 +85,7 @@ func NewDefaultLogger() zerolog.Logger {
 }
 
 // UpdateLogLevel is a convenience method for updating the log level of
-// the zerolog.Logger managed by a BubblyContext instance
+// the zerolog.Logger managed by a BubblyConfig instance
 func (bCtx *BubblyConfig) UpdateLogLevel(level zerolog.Level) {
 	bCtx.Logger = bCtx.Logger.Level(level)
 }
