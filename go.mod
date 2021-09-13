@@ -12,6 +12,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/bytecodealliance/wasmtime-go v0.29.0 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
+	github.com/coreos/go-oidc/v3 v3.0.0
 	github.com/docker/docker v20.10.8+incompatible // indirect
 	github.com/fatih/color v1.12.0
 	github.com/go-git/go-git/v5 v5.4.2
@@ -34,7 +35,7 @@ require (
 	github.com/ory/dockertest/v3 v3.7.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rs/zerolog v1.23.0
-	github.com/ryanuber/columnize v2.1.2+incompatible // indirect
+	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/swag v1.7.0
@@ -45,13 +46,14 @@ require (
 	github.com/ziflex/lecho/v2 v2.5.0
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
+	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
 
-// replace entgo.io/contrib => github.com/jlarfors/contrib v0.0.0-20210728113018-b9b57a221a03
+replace entgo.io/contrib => github.com/jlarfors/contrib v0.0.0-20210728113018-b9b57a221a03
 
 // For local development of contrib...
-replace entgo.io/contrib => /Users/jacoblarfors/work/ent/contrib
+//replace entgo.io/contrib => /Users/jacoblarfors/work/ent/contrib
