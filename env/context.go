@@ -4,12 +4,13 @@ import (
 	"os"
 
 	"github.com/rs/zerolog"
+	"github.com/valocode/bubbly/auth"
 	"github.com/valocode/bubbly/config"
 )
 
-// BubblyContext holds global bubbly state that is required to be injected into
+// BubblyConfig holds global bubbly state that is required to be injected into
 // functions throughout the codebase.
-type BubblyContext struct {
+type BubblyConfig struct {
 	// Logger stores the global bubbly logger
 	Logger        zerolog.Logger
 	ReleaseConfig *config.ReleaseConfig
@@ -18,17 +19,19 @@ type BubblyContext struct {
 	StoreConfig  *config.StoreConfig
 	ClientConfig *config.ClientConfig
 	CLIConfig    *config.CLIConfig
+	AuthConfig   *auth.Config
 }
 
 // NewBubblyContext sets up a default Bubbly Context
-func NewBubblyContext() *BubblyContext {
-	return &BubblyContext{
+func NewBubblyContext() *BubblyConfig {
+	return &BubblyConfig{
 		Logger:        NewDefaultLogger(),
 		ReleaseConfig: config.DefaultReleaseConfig(),
 		ServerConfig:  config.DefaultServerConfig(),
 		StoreConfig:   config.DefaultStoreConfig(),
 		ClientConfig:  config.DefaultClientConfig(),
 		CLIConfig:     config.DefaultCLIConfig(),
+		AuthConfig:    config.DefaultAuthConfig(),
 	}
 }
 
@@ -46,6 +49,6 @@ func NewDefaultLogger() zerolog.Logger {
 
 // UpdateLogLevel is a convenience method for updating the log level of
 // the zerolog.Logger managed by a BubblyContext instance
-func (bCtx *BubblyContext) UpdateLogLevel(level zerolog.Level) {
+func (bCtx *BubblyConfig) UpdateLogLevel(level zerolog.Level) {
 	bCtx.Logger = bCtx.Logger.Level(level)
 }

@@ -14,7 +14,18 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
+type AuthContext struct {
+	UserID string
+	OrgID string
+}
+
+func getAuth(context.Context) {
+
+}
+
 func (h *Handler) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.ReleasePolicy, error) {
+	auth := getAuth(ctx)
+	if h.Enforcer.Enforce(auth.UserID, auth.OrgID, "/policies", "save")
 	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "release policy create")
 	}

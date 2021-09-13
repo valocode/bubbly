@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/valocode/bubbly/auth"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/gql"
 	"github.com/valocode/bubbly/store"
@@ -17,7 +19,7 @@ import (
 	"github.com/ziflex/lecho/v2"
 )
 
-func New(bCtx *env.BubblyContext) (*Server, error) {
+func New(bCtx *env.BubblyConfig) (*Server, error) {
 	store, err := store.New(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing store: %w", err)
@@ -25,7 +27,7 @@ func New(bCtx *env.BubblyContext) (*Server, error) {
 	return NewWithStore(bCtx, store), nil
 }
 
-func NewWithStore(bCtx *env.BubblyContext, store *store.Store) *Server {
+func NewWithStore(bCtx *env.BubblyConfig, store *store.Store) *Server {
 	var (
 		e = echo.New()
 		s = Server{
@@ -34,7 +36,7 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) *Server {
 			e:     e,
 		}
 	)
-	var logLevel = log.INFO
+	logLevel := log.INFO
 	if s.bCtx.CLIConfig.Debug {
 		logLevel = log.DEBUG
 	}
@@ -57,9 +59,14 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) *Server {
 		e.DefaultHTTPErrorHandler(httpError, c)
 	}
 
-	if true {
+	if true { // TODO: this is always true so why the if statement?
 		e.Use(middleware.CORS())
 	}
+
+	authProvider, _ := auth.NewProvider(context.TODO(), bCtx.AuthConfig)
+	// TODO: handle error
+
+	e.Use(authProvider.EchoMiddleware())
 
 	// Keep Alive Test
 	e.GET("/healthz", func(c echo.Context) error {
@@ -87,6 +94,10 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) *Server {
 	v1.POST("/testruns", s.postTestRun)
 	v1.POST("/adapters", s.postAdapter)
 	v1.GET("/adapters/:name", s.getAdapter)
+
+	// func policyHandler()
+	// v1 := e.Group("/api/v1")
+	// v1.MOUNT("/policies", policyHandler)
 	v1.POST("/policies", s.postPolicy)
 	v1.PUT("/policies", s.putPolicy)
 	v1.GET("/policies/:name", s.getPolicy)
@@ -128,12 +139,11 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) *Server {
 
 type Server struct {
 	store *store.Store
-	bCtx  *env.BubblyContext
+	bCtx  *env.BubblyConfig
 	e     *echo.Echo
 }
 
 func (s *Server) Start() error {
-
 	addr := fmt.Sprintf("%s:%s", s.bCtx.ServerConfig.Host, s.bCtx.ServerConfig.Port)
 	if err := s.e.Start(addr); err != http.ErrServerClosed {
 		return err
