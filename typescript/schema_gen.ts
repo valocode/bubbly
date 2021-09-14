@@ -182,6 +182,41 @@ export interface Component_Edge {
 }
 
 // #######################################
+// Event
+// #######################################
+export interface Event_Json {
+	event?: Event[];
+}
+
+export interface Event {
+	id?: number;
+	message?: string;
+	type?: EventType;
+	time?: Date;
+	release?: Release;
+	repo?: Repo;
+	project?: Project;
+}
+
+export interface Event_Relay {
+	event_connection?: Event_Conn;
+}
+
+export interface Event_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: Event_Edge[];
+}
+
+export interface Event_Edge {
+	node?: Event;
+}
+
+export enum EventType {
+	evaluate_release = "evaluate_release",
+}
+
+// #######################################
 // GitCommit
 // #######################################
 export interface GitCommit_Json {

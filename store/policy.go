@@ -2,8 +2,10 @@ package store
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/valocode/bubbly/ent"
+	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
@@ -107,9 +109,13 @@ func (h *Handler) SetReleasePolicyAffects(req *api.ReleasePolicySetRequest) (*en
 }
 
 func (h *Handler) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyViolation, error) {
-	var dbViolations []*ent.ReleasePolicyViolation
+	var (
+		dbViolations []*ent.ReleasePolicyViolation
+		dbPolicies   []*ent.ReleasePolicy
+	)
 	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
-		dbPolicies, err := h.policiesForRelease(tx.Client(), releaseID)
+		var err error
+		dbPolicies, err = h.policiesForRelease(tx.Client(), releaseID)
 		if err != nil {
 			return err
 		}
@@ -150,6 +156,29 @@ func (h *Handler) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyVi
 	if txErr != nil {
 		return nil, txErr
 	}
+	// Save the event that policies were evaluated
+	var (
+		policies  []string
+		policyStr string
+	)
+
+	for _, p := range dbPolicies {
+		policies = append(policies, p.Name)
+	}
+	if len(policies) == 0 {
+		policyStr = "None"
+	} else {
+		policyStr = strings.Join(policies, ",")
+	}
+	if _, err := h.SaveEvent(&api.EventSaveRequest{
+		ReleaseID: &releaseID,
+		Event: ent.NewEventModelCreate().
+			SetMessage(fmt.Sprintf("Policies: %s\nViolations: %d", policyStr, len(dbViolations))).
+			SetType(event.TypeEvaluateRelease),
+	}); err != nil {
+		return nil, err
+	}
+
 	return dbViolations, nil
 }
 

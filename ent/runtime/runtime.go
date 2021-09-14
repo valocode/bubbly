@@ -10,6 +10,7 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/organization"
@@ -111,6 +112,16 @@ func init() {
 	componentDescVersion := componentFields[2].Descriptor()
 	// component.VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	component.VersionValidator = componentDescVersion.Validators[0].(func(string) error)
+	eventFields := schema.Event{}.Fields()
+	_ = eventFields
+	// eventDescMessage is the schema descriptor for message field.
+	eventDescMessage := eventFields[0].Descriptor()
+	// event.DefaultMessage holds the default value on creation for the message field.
+	event.DefaultMessage = eventDescMessage.Default.(string)
+	// eventDescTime is the schema descriptor for time field.
+	eventDescTime := eventFields[2].Descriptor()
+	// event.DefaultTime holds the default value on creation for the time field.
+	event.DefaultTime = eventDescTime.Default.(func() time.Time)
 	gitcommitFields := schema.GitCommit{}.Fields()
 	_ = gitcommitFields
 	// gitcommitDescHash is the schema descriptor for hash field.

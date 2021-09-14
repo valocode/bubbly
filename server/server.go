@@ -99,6 +99,7 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 	})
 
 	v1 := e.Group("/api/v1")
+	v1.GET("/events", s.getEvents)
 	v1.POST("/projects", s.postProject)
 	v1.POST("/releases", s.postRelease)
 	v1.GET("/releases", s.getRelease)
@@ -159,6 +160,25 @@ func (s *Server) Start() error {
 		return err
 	}
 	return nil
+}
+
+func (s *Server) getEvents(c echo.Context) error {
+	var req api.EventGetRequest
+	if err := (&echo.DefaultBinder{}).BindQueryParams(c, &req); err != nil {
+		return err
+	}
+
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	dbEvents, err := h.GetEvents(&req)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, api.EventGetResponse{
+		Events: dbEvents,
+	})
 }
 
 func (s *Server) postProject(c echo.Context) error {

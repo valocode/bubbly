@@ -11,6 +11,7 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
@@ -1709,6 +1710,289 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 		return predicates[0], nil
 	default:
 		return component.And(predicates...), nil
+	}
+}
+
+// EventWhereInput represents a where input for filtering Event queries.
+type EventWhereInput struct {
+	Not *EventWhereInput   `json:"not,omitempty"`
+	Or  []*EventWhereInput `json:"or,omitempty"`
+	And []*EventWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "message" field predicates.
+	Message             *string  `json:"message,omitempty"`
+	MessageNEQ          *string  `json:"messageNEQ,omitempty"`
+	MessageIn           []string `json:"messageIn,omitempty"`
+	MessageNotIn        []string `json:"messageNotIn,omitempty"`
+	MessageGT           *string  `json:"messageGT,omitempty"`
+	MessageGTE          *string  `json:"messageGTE,omitempty"`
+	MessageLT           *string  `json:"messageLT,omitempty"`
+	MessageLTE          *string  `json:"messageLTE,omitempty"`
+	MessageContains     *string  `json:"messageContains,omitempty"`
+	MessageHasPrefix    *string  `json:"messageHasPrefix,omitempty"`
+	MessageHasSuffix    *string  `json:"messageHasSuffix,omitempty"`
+	MessageEqualFold    *string  `json:"messageEqualFold,omitempty"`
+	MessageContainsFold *string  `json:"messageContainsFold,omitempty"`
+
+	// "type" field predicates.
+	Type      *event.Type  `json:"type,omitempty"`
+	TypeNEQ   *event.Type  `json:"typeNEQ,omitempty"`
+	TypeIn    []event.Type `json:"typeIn,omitempty"`
+	TypeNotIn []event.Type `json:"typeNotIn,omitempty"`
+
+	// "time" field predicates.
+	Time      *time.Time  `json:"time,omitempty"`
+	TimeNEQ   *time.Time  `json:"timeNEQ,omitempty"`
+	TimeIn    []time.Time `json:"timeIn,omitempty"`
+	TimeNotIn []time.Time `json:"timeNotIn,omitempty"`
+	TimeGT    *time.Time  `json:"timeGT,omitempty"`
+	TimeGTE   *time.Time  `json:"timeGTE,omitempty"`
+	TimeLT    *time.Time  `json:"timeLT,omitempty"`
+	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
+
+	// "release" edge predicates.
+	HasRelease     *bool                `json:"hasRelease,omitempty"`
+	HasReleaseWith []*ReleaseWhereInput `json:"hasReleaseWith,omitempty"`
+
+	// "repo" edge predicates.
+	HasRepo     *bool             `json:"hasRepo,omitempty"`
+	HasRepoWith []*RepoWhereInput `json:"hasRepoWith,omitempty"`
+
+	// "project" edge predicates.
+	HasProject     *bool                `json:"hasProject,omitempty"`
+	HasProjectWith []*ProjectWhereInput `json:"hasProjectWith,omitempty"`
+}
+
+// Filter applies the EventWhereInput filter on the EventQuery builder.
+func (i *EventWhereInput) Filter(q *EventQuery) (*EventQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// P returns a predicate for filtering events.
+// An error is returned if the input is empty or invalid.
+func (i *EventWhereInput) P() (predicate.Event, error) {
+	var predicates []predicate.Event
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, event.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.Event, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, event.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.Event, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, event.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, event.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, event.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, event.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, event.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, event.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, event.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, event.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, event.IDLTE(*i.IDLTE))
+	}
+	if i.Message != nil {
+		predicates = append(predicates, event.MessageEQ(*i.Message))
+	}
+	if i.MessageNEQ != nil {
+		predicates = append(predicates, event.MessageNEQ(*i.MessageNEQ))
+	}
+	if len(i.MessageIn) > 0 {
+		predicates = append(predicates, event.MessageIn(i.MessageIn...))
+	}
+	if len(i.MessageNotIn) > 0 {
+		predicates = append(predicates, event.MessageNotIn(i.MessageNotIn...))
+	}
+	if i.MessageGT != nil {
+		predicates = append(predicates, event.MessageGT(*i.MessageGT))
+	}
+	if i.MessageGTE != nil {
+		predicates = append(predicates, event.MessageGTE(*i.MessageGTE))
+	}
+	if i.MessageLT != nil {
+		predicates = append(predicates, event.MessageLT(*i.MessageLT))
+	}
+	if i.MessageLTE != nil {
+		predicates = append(predicates, event.MessageLTE(*i.MessageLTE))
+	}
+	if i.MessageContains != nil {
+		predicates = append(predicates, event.MessageContains(*i.MessageContains))
+	}
+	if i.MessageHasPrefix != nil {
+		predicates = append(predicates, event.MessageHasPrefix(*i.MessageHasPrefix))
+	}
+	if i.MessageHasSuffix != nil {
+		predicates = append(predicates, event.MessageHasSuffix(*i.MessageHasSuffix))
+	}
+	if i.MessageEqualFold != nil {
+		predicates = append(predicates, event.MessageEqualFold(*i.MessageEqualFold))
+	}
+	if i.MessageContainsFold != nil {
+		predicates = append(predicates, event.MessageContainsFold(*i.MessageContainsFold))
+	}
+	if i.Type != nil {
+		predicates = append(predicates, event.TypeEQ(*i.Type))
+	}
+	if i.TypeNEQ != nil {
+		predicates = append(predicates, event.TypeNEQ(*i.TypeNEQ))
+	}
+	if len(i.TypeIn) > 0 {
+		predicates = append(predicates, event.TypeIn(i.TypeIn...))
+	}
+	if len(i.TypeNotIn) > 0 {
+		predicates = append(predicates, event.TypeNotIn(i.TypeNotIn...))
+	}
+	if i.Time != nil {
+		predicates = append(predicates, event.TimeEQ(*i.Time))
+	}
+	if i.TimeNEQ != nil {
+		predicates = append(predicates, event.TimeNEQ(*i.TimeNEQ))
+	}
+	if len(i.TimeIn) > 0 {
+		predicates = append(predicates, event.TimeIn(i.TimeIn...))
+	}
+	if len(i.TimeNotIn) > 0 {
+		predicates = append(predicates, event.TimeNotIn(i.TimeNotIn...))
+	}
+	if i.TimeGT != nil {
+		predicates = append(predicates, event.TimeGT(*i.TimeGT))
+	}
+	if i.TimeGTE != nil {
+		predicates = append(predicates, event.TimeGTE(*i.TimeGTE))
+	}
+	if i.TimeLT != nil {
+		predicates = append(predicates, event.TimeLT(*i.TimeLT))
+	}
+	if i.TimeLTE != nil {
+		predicates = append(predicates, event.TimeLTE(*i.TimeLTE))
+	}
+
+	if i.HasRelease != nil {
+		p := event.HasRelease()
+		if !*i.HasRelease {
+			p = event.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasReleaseWith) > 0 {
+		with := make([]predicate.Release, 0, len(i.HasReleaseWith))
+		for _, w := range i.HasReleaseWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, event.HasReleaseWith(with...))
+	}
+	if i.HasRepo != nil {
+		p := event.HasRepo()
+		if !*i.HasRepo {
+			p = event.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRepoWith) > 0 {
+		with := make([]predicate.Repo, 0, len(i.HasRepoWith))
+		for _, w := range i.HasRepoWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, event.HasRepoWith(with...))
+	}
+	if i.HasProject != nil {
+		p := event.HasProject()
+		if !*i.HasProject {
+			p = event.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasProjectWith) > 0 {
+		with := make([]predicate.Project, 0, len(i.HasProjectWith))
+		for _, w := range i.HasProjectWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, event.HasProjectWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate EventWhereInput")
+	case 1:
+		return predicates[0], nil
+	default:
+		return event.And(predicates...), nil
 	}
 }
 

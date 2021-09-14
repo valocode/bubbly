@@ -168,6 +168,42 @@ var (
 			},
 		},
 	}
+	// EventColumns holds the columns for the "event" table.
+	EventColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "message", Type: field.TypeString, Default: ""},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"evaluate_release"}},
+		{Name: "time", Type: field.TypeTime},
+		{Name: "event_release", Type: field.TypeInt, Nullable: true},
+		{Name: "event_repo", Type: field.TypeInt, Nullable: true},
+		{Name: "event_project", Type: field.TypeInt, Nullable: true},
+	}
+	// EventTable holds the schema information for the "event" table.
+	EventTable = &schema.Table{
+		Name:       "event",
+		Columns:    EventColumns,
+		PrimaryKey: []*schema.Column{EventColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "event_release_release",
+				Columns:    []*schema.Column{EventColumns[4]},
+				RefColumns: []*schema.Column{ReleaseColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "event_repo_repo",
+				Columns:    []*schema.Column{EventColumns[5]},
+				RefColumns: []*schema.Column{RepoColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "event_project_project",
+				Columns:    []*schema.Column{EventColumns[6]},
+				RefColumns: []*schema.Column{ProjectColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// CommitColumns holds the columns for the "commit" table.
 	CommitColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -891,6 +927,7 @@ var (
 		CodeIssueTable,
 		CodeScanTable,
 		ComponentTable,
+		EventTable,
 		CommitTable,
 		LicenseTable,
 		LicenseUseTable,
@@ -944,6 +981,12 @@ func init() {
 	ComponentTable.ForeignKeys[0].RefTable = OrganizationTable
 	ComponentTable.Annotation = &entsql.Annotation{
 		Table: "component",
+	}
+	EventTable.ForeignKeys[0].RefTable = ReleaseTable
+	EventTable.ForeignKeys[1].RefTable = RepoTable
+	EventTable.ForeignKeys[2].RefTable = ProjectTable
+	EventTable.Annotation = &entsql.Annotation{
+		Table: "event",
 	}
 	CommitTable.ForeignKeys[0].RefTable = RepoTable
 	CommitTable.Annotation = &entsql.Annotation{

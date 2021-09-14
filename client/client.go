@@ -170,6 +170,8 @@ func handleResponseError(resp *http.Response) error {
 }
 
 // TODO: this won't work because we cannot distinguish between path params and query params...
+// Solution is to use mapstructure and add the skip tag for those fields which should
+// be path params and not query params. See GetEvents example.
 func structToStringMap(req interface{}) (map[string]string, error) {
 	b, err := json.Marshal(req)
 	if err != nil {

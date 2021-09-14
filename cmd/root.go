@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/valocode/bubbly/cmd/adapter"
 	"github.com/valocode/bubbly/cmd/demo"
+	"github.com/valocode/bubbly/cmd/events"
 	"github.com/valocode/bubbly/cmd/policy"
 	"github.com/valocode/bubbly/cmd/release"
 	"github.com/valocode/bubbly/cmd/server"
@@ -51,6 +52,7 @@ func NewCmdRoot(bCtx *env.BubblyContext) *cobra.Command {
 
 	cmd.AddCommand(adapter.New(bCtx))
 	cmd.AddCommand(demo.New(bCtx))
+	cmd.AddCommand(events.New(bCtx))
 	cmd.AddCommand(policy.New(bCtx))
 	cmd.AddCommand(release.New(bCtx))
 	cmd.AddCommand(server.New(bCtx))

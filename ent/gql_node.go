@@ -20,6 +20,7 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/licenseuse"
@@ -422,6 +423,71 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 	err = c.QueryUses().
 		Select(releasecomponent.FieldID).
 		Scan(ctx, &node.Edges[3].IDs)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+func (e *Event) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     e.ID,
+		Type:   "Event",
+		Fields: make([]*Field, 3),
+		Edges:  make([]*Edge, 3),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(e.Message); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "message",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(e.Type); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "event.Type",
+		Name:  "type",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(e.Time); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "time.Time",
+		Name:  "time",
+		Value: string(buf),
+	}
+	node.Edges[0] = &Edge{
+		Type: "Release",
+		Name: "release",
+	}
+	err = e.QueryRelease().
+		Select(release.FieldID).
+		Scan(ctx, &node.Edges[0].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[1] = &Edge{
+		Type: "Repo",
+		Name: "repo",
+	}
+	err = e.QueryRepo().
+		Select(repo.FieldID).
+		Scan(ctx, &node.Edges[1].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[2] = &Edge{
+		Type: "Project",
+		Name: "project",
+	}
+	err = e.QueryProject().
+		Select(project.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1705,6 +1771,14 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			return nil, err
 		}
 		return n, nil
+	case event.Table:
+		n, err := c.Event.Query().
+			Where(event.ID(id)).
+			Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case gitcommit.Table:
 		n, err := c.GitCommit.Query().
 			Where(gitcommit.ID(id)).
@@ -1965,6 +2039,18 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case component.Table:
 		nodes, err := c.Component.Query().
 			Where(component.IDIn(ids...)).
+			All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case event.Table:
+		nodes, err := c.Event.Query().
+			Where(event.IDIn(ids...)).
 			All(ctx)
 		if err != nil {
 			return nil, err

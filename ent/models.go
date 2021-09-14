@@ -15,6 +15,8 @@ import (
 
 	"github.com/valocode/bubbly/ent/component"
 
+	"github.com/valocode/bubbly/ent/event"
+
 	"github.com/valocode/bubbly/ent/gitcommit"
 
 	"github.com/valocode/bubbly/ent/organization"
@@ -590,6 +592,100 @@ func NewComponentModelUpdate() *ComponentModelUpdate {
 func (c *ComponentModelUpdate) SetID(value int) *ComponentModelUpdate {
 	c.ID = &value
 	return c
+}
+
+type EventModelCreate struct {
+	Message *string     `json:"message,omitempty"  mapstructure:"message"`
+	Type    *event.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time    *time.Time  `json:"time,omitempty"  mapstructure:"time"`
+}
+
+func NewEventModelCreate() *EventModelCreate {
+	return &EventModelCreate{}
+}
+func (e *EventModelCreate) SetMessage(value string) *EventModelCreate {
+	e.Message = &value
+	return e
+}
+func (e *EventModelCreate) SetType(value event.Type) *EventModelCreate {
+	e.Type = &value
+	return e
+}
+func (e *EventModelCreate) SetTime(value time.Time) *EventModelCreate {
+	e.Time = &value
+	return e
+}
+
+func (e *EventCreate) SetModelCreate(model *EventModelCreate) *EventCreate {
+	e.mutation.SetModelCreate(model)
+	return e
+}
+
+func (e *EventUpdateOne) SetModelCreate(model *EventModelCreate) *EventUpdateOne {
+	e.mutation.SetModelCreate(model)
+	return e
+}
+
+func (e *EventMutation) SetModelCreate(model *EventModelCreate) *EventMutation {
+	if model.Message != nil {
+		e.SetMessage(*model.Message)
+	}
+	if model.Type != nil {
+		e.SetType(*model.Type)
+	}
+	if model.Time != nil {
+		e.SetTime(*model.Time)
+	}
+	return e
+}
+
+func (e *EventQuery) WhereModelCreate(model *EventModelCreate) *EventQuery {
+
+	if model.Message != nil {
+		e.Where(event.MessageEQ(*model.Message))
+	}
+
+	if model.Type != nil {
+		e.Where(event.TypeEQ(*model.Type))
+	}
+
+	if model.Time != nil {
+		e.Where(event.TimeEQ(*model.Time))
+	}
+
+	return e
+}
+
+type EventModelRead struct {
+	Message *string     `json:"message,omitempty"  mapstructure:"message"`
+	Type    *event.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time    *time.Time  `json:"time,omitempty"  mapstructure:"time"`
+	ID      *int        `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewEventModelRead() *EventModelRead {
+	return &EventModelRead{}
+}
+
+func (e *EventModelRead) FromEnt(value *Event) *EventModelRead {
+	e.Message = &value.Message
+	e.Type = &value.Type
+	e.Time = &value.Time
+	e.ID = &value.ID
+	return e
+}
+
+type EventModelUpdate struct {
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewEventModelUpdate() *EventModelUpdate {
+	return &EventModelUpdate{}
+}
+
+func (e *EventModelUpdate) SetID(value int) *EventModelUpdate {
+	e.ID = &value
+	return e
 }
 
 type GitCommitModelCreate struct {

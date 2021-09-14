@@ -108,6 +108,30 @@ func (c *Component) Uses(ctx context.Context) ([]*ReleaseComponent, error) {
 	return result, err
 }
 
+func (e *Event) Release(ctx context.Context) (*Release, error) {
+	result, err := e.Edges.ReleaseOrErr()
+	if IsNotLoaded(err) {
+		result, err = e.QueryRelease().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (e *Event) Repo(ctx context.Context) (*Repo, error) {
+	result, err := e.Edges.RepoOrErr()
+	if IsNotLoaded(err) {
+		result, err = e.QueryRepo().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (e *Event) Project(ctx context.Context) (*Project, error) {
+	result, err := e.Edges.ProjectOrErr()
+	if IsNotLoaded(err) {
+		result, err = e.QueryProject().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (gc *GitCommit) Repo(ctx context.Context) (*Repo, error) {
 	result, err := gc.Edges.RepoOrErr()
 	if IsNotLoaded(err) {

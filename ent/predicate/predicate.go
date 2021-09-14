@@ -21,6 +21,9 @@ type CodeScan func(*sql.Selector)
 // Component is the predicate function for component builders.
 type Component func(*sql.Selector)
 
+// Event is the predicate function for event builders.
+type Event func(*sql.Selector)
+
 // GitCommit is the predicate function for gitcommit builders.
 type GitCommit func(*sql.Selector)
 
