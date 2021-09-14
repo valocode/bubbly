@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"os"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -35,18 +34,17 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 			e:     e,
 		}
 	)
-	var logLevel = log.INFO
-	if s.bCtx.CLIConfig.Debug {
-		logLevel = log.DEBUG
-	}
-	e.Logger = lecho.New(
-		os.Stdout,
-		lecho.WithLevel(logLevel),
+	// Create an echo logger from our existing zerolog
+	eLogger := lecho.From(bCtx.Logger,
+		lecho.WithTimestamp(),
 	)
+	e.Logger = eLogger
 	e.Use(
 		middleware.Recover(),
 		middleware.RequestID(), // Generate a request IDs
-		middleware.Logger(),
+		lecho.Middleware(lecho.Config{
+			Logger: eLogger,
+		}),
 	)
 
 	// Setup the error handler
@@ -58,6 +56,7 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 		e.DefaultHTTPErrorHandler(httpError, c)
 	}
 
+	// TODO: use only for dev/debugging, but disable by default
 	if true {
 		e.Use(middleware.CORS())
 	}

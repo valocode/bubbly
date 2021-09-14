@@ -33,7 +33,7 @@ require (
 	github.com/opencontainers/runc v1.0.0-rc95 // indirect
 	github.com/ory/dockertest/v3 v3.7.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/rs/zerolog v1.23.0
+	github.com/rs/zerolog v1.24.0
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
@@ -42,7 +42,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.4
 	github.com/xiaoqidun/entps v0.0.0-20210811073333-c1af85abbd8d
 	github.com/zclconf/go-cty v1.9.1 // indirect
-	github.com/ziflex/lecho/v2 v2.5.0
+	github.com/ziflex/lecho/v2 v2.5.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
