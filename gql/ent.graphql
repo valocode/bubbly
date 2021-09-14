@@ -229,10 +229,10 @@ type VulnerabilityReview implements Node {
   name: String
   decision: VulnerabilityReviewDecision
   vulnerability: Vulnerability!
-  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-  releases(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
-  instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+  projects: [Project]
+  repos: [Repo]
+  releases: [Release]
+  instances: [ReleaseVulnerability]
 }
 
 """
@@ -309,7 +309,7 @@ type ReleaseLicense implements Node {
   license: License!
   component: ReleaseComponent
   release: Release!
-  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
+  scans: [CodeScan]
 }
 
 """
@@ -330,9 +330,9 @@ type ReleasePolicy implements Node {
   name: String
   module: String
   owner: Organization!
-  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-  violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
+  projects: [Project]
+  repos: [Repo]
+  violations: [ReleasePolicyViolation]
 }
 
 """
@@ -462,18 +462,18 @@ type Release implements Node {
   name: String
   version: String
   status: ReleaseStatus
-  subreleases(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
-  dependencies(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
+  subreleases: [Release]
+  dependencies: [Release]
   commit: GitCommit!
   head_of: Repo
-  log(first: Int, last: Int, where: ReleaseEntryWhereInput, order_by: ReleaseEntryOrder): [ReleaseEntry] @goField(forceResolver: true)
-  violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
-  artifacts(first: Int, last: Int, where: ArtifactWhereInput, order_by: ArtifactOrder): [Artifact] @goField(forceResolver: true)
-  components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
-  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
-  code_scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
-  test_runs(first: Int, last: Int, where: TestRunWhereInput, order_by: TestRunOrder): [TestRun] @goField(forceResolver: true)
-  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  log: [ReleaseEntry]
+  violations: [ReleasePolicyViolation]
+  artifacts: [Artifact]
+  components: [ReleaseComponent]
+  vulnerabilities: [ReleaseVulnerability]
+  code_scans: [CodeScan]
+  test_runs: [TestRun]
+  vulnerability_reviews: [VulnerabilityReview]
 }
 
 type PageInfo {
@@ -512,7 +512,7 @@ type ReleaseVulnerability implements Node {
   vulnerability: Vulnerability!
   component: ReleaseComponent
   release: Release!
-  reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
+  reviews: [VulnerabilityReview]
   scan: CodeScan
 }
 
@@ -527,9 +527,9 @@ type Repo implements Node {
   owner: Organization!
   project: Project!
   head: Release
-  commits(first: Int, last: Int, where: GitCommitWhereInput, order_by: GitCommitOrder): [GitCommit] @goField(forceResolver: true)
-  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-  policies(first: Int, last: Int, where: ReleasePolicyWhereInput, order_by: ReleasePolicyOrder): [ReleasePolicy] @goField(forceResolver: true)
+  commits: [GitCommit]
+  vulnerability_reviews: [VulnerabilityReview]
+  policies: [ReleasePolicy]
 }
 
 """
@@ -578,9 +578,9 @@ type Project implements Node {
   id: ID!
   name: String
   owner: Organization!
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
-  vulnerability_reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-  policies(first: Int, last: Int, where: ReleasePolicyWhereInput, order_by: ReleasePolicyOrder): [ReleasePolicy] @goField(forceResolver: true)
+  repos: [Repo]
+  vulnerability_reviews: [VulnerabilityReview]
+  policies: [ReleasePolicy]
 }
 
 """
@@ -604,9 +604,9 @@ type CodeScan implements Node {
   metadata: Map
   release: Release!
   entry: ReleaseEntry
-  issues(first: Int, last: Int, where: CodeIssueWhereInput, order_by: CodeIssueOrder): [CodeIssue] @goField(forceResolver: true)
-  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
-  components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
+  issues: [CodeIssue]
+  vulnerabilities: [ReleaseVulnerability]
+  components: [ReleaseComponent]
 }
 
 """
@@ -717,9 +717,9 @@ type ReleaseComponent implements Node {
   id: ID!
   type: ReleaseComponentType
   release: Release!
-  scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan!] @goField(forceResolver: true)
+  scans: [CodeScan!]
   component: Component!
-  vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+  vulnerabilities: [ReleaseVulnerability]
 }
 
 """
@@ -737,9 +737,9 @@ type Vulnerability implements Node {
   modified: Time
   metadata: Map
   owner: Organization!
-  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
-  reviews(first: Int, last: Int, where: VulnerabilityReviewWhereInput, order_by: VulnerabilityReviewOrder): [VulnerabilityReview] @goField(forceResolver: true)
-  instances(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+  components: [Component]
+  reviews: [VulnerabilityReview]
+  instances: [ReleaseVulnerability]
 }
 
 """
@@ -805,7 +805,7 @@ type TestRun implements Node {
   metadata: Map
   release: Release!
   entry: ReleaseEntry
-  tests(first: Int, last: Int, where: TestCaseWhereInput, order_by: TestCaseOrder): [TestCase] @goField(forceResolver: true)
+  tests: [TestCase]
 }
 
 """
@@ -840,9 +840,9 @@ type Component implements Node {
   url: String
   metadata: Map
   owner: Organization!
-  vulnerabilities(first: Int, last: Int, where: VulnerabilityWhereInput, order_by: VulnerabilityOrder): [Vulnerability] @goField(forceResolver: true)
-  licenses(first: Int, last: Int, where: LicenseWhereInput, order_by: LicenseOrder): [License] @goField(forceResolver: true)
-  uses(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
+  vulnerabilities: [Vulnerability]
+  licenses: [License]
+  uses: [ReleaseComponent]
 }
 
 """
@@ -865,8 +865,8 @@ type License implements Node {
   reference: String
   details_url: String
   is_osi_approved: Boolean
-  components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
-  uses(first: Int, last: Int, where: LicenseUseWhereInput): [LicenseUse] @goField(forceResolver: true)
+  components: [Component]
+  uses: [LicenseUse]
 }
 
 """
@@ -896,8 +896,8 @@ Generated by ent.
 type Organization implements Node {
   id: ID!
   name: String
-  projects(first: Int, last: Int, where: ProjectWhereInput, order_by: ProjectOrder): [Project] @goField(forceResolver: true)
-  repos(first: Int, last: Int, where: RepoWhereInput, order_by: RepoOrder): [Repo] @goField(forceResolver: true)
+  projects: [Project]
+  repos: [Repo]
 }
 
 """
@@ -948,16 +948,6 @@ input CodeScanWhereInput {
   time_gte: Time
   time_lt: Time
   time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """release edge predicates"""
   has_release: Boolean
@@ -1023,16 +1013,6 @@ input RepoWhereInput {
   default_branch_has_suffix: String
   default_branch_equal_fold: String
   default_branch_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """owner edge predicates"""
   has_owner: Boolean
@@ -1118,16 +1098,6 @@ input AdapterWhereInput {
   module_equal_fold: String
   module_contains_fold: String
   
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """owner edge predicates"""
   has_owner: Boolean
   has_owner_with: [OrganizationWhereInput!]
@@ -1193,16 +1163,6 @@ input ReleaseWhereInput {
   status_in: [ReleaseStatus!]
   status_not_in: [ReleaseStatus!]
   
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """subreleases edge predicates"""
   has_subreleases: Boolean
   has_subreleases_with: [ReleaseWhereInput!]
@@ -1261,16 +1221,6 @@ input ReleaseVulnerabilityWhereInput {
   and: [ReleaseVulnerabilityWhereInput!]
   or: [ReleaseVulnerabilityWhereInput!]
   
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """vulnerability edge predicates"""
   has_vulnerability: Boolean
   has_vulnerability_with: [VulnerabilityWhereInput!]
@@ -1305,16 +1255,6 @@ input ReleaseLicenseWhereInput {
   not: ReleaseLicenseWhereInput
   and: [ReleaseLicenseWhereInput!]
   or: [ReleaseLicenseWhereInput!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """license edge predicates"""
   has_license: Boolean
@@ -1371,16 +1311,6 @@ input ReleasePolicyWhereInput {
   module_has_suffix: String
   module_equal_fold: String
   module_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """owner edge predicates"""
   has_owner: Boolean
@@ -1443,16 +1373,6 @@ input ProjectWhereInput {
   name_equal_fold: String
   name_contains_fold: String
   
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """owner edge predicates"""
   has_owner: Boolean
   has_owner_with: [OrganizationWhereInput!]
@@ -1494,16 +1414,6 @@ input ReleaseEntryWhereInput {
   time_gte: Time
   time_lt: Time
   time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """artifact edge predicates"""
   has_artifact: Boolean
@@ -1620,16 +1530,6 @@ input VulnerabilityWhereInput {
   modified_is_nil: Boolean
   modified_not_nil: Boolean
   
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """owner edge predicates"""
   has_owner: Boolean
   has_owner_with: [OrganizationWhereInput!]
@@ -1740,16 +1640,6 @@ input ComponentWhereInput {
   url_equal_fold: String
   url_contains_fold: String
   
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """owner edge predicates"""
   has_owner: Boolean
   has_owner_with: [OrganizationWhereInput!]
@@ -1810,16 +1700,6 @@ input TestRunWhereInput {
   time_gte: Time
   time_lt: Time
   time_lte: Time
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """release edge predicates"""
   has_release: Boolean
@@ -1884,16 +1764,6 @@ input CodeIssueWhereInput {
   type_neq: CodeIssueType
   type_in: [CodeIssueType!]
   type_not_in: [CodeIssueType!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """scan edge predicates"""
   has_scan: Boolean
@@ -1982,16 +1852,6 @@ input LicenseWhereInput {
   is_osi_approved: Boolean
   is_osi_approved_neq: Boolean
   
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """components edge predicates"""
   has_components: Boolean
   has_components_with: [ComponentWhereInput!]
@@ -2009,16 +1869,6 @@ input LicenseUseWhereInput {
   not: LicenseUseWhereInput
   and: [LicenseUseWhereInput!]
   or: [LicenseUseWhereInput!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """license edge predicates"""
   has_license: Boolean
@@ -2048,16 +1898,6 @@ input OrganizationWhereInput {
   name_has_suffix: String
   name_equal_fold: String
   name_contains_fold: String
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """projects edge predicates"""
   has_projects: Boolean
@@ -2102,16 +1942,6 @@ input VulnerabilityReviewWhereInput {
   decision_neq: VulnerabilityReviewDecision
   decision_in: [VulnerabilityReviewDecision!]
   decision_not_in: [VulnerabilityReviewDecision!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """vulnerability edge predicates"""
   has_vulnerability: Boolean
@@ -2189,16 +2019,6 @@ input ArtifactWhereInput {
   time_lt: Time
   time_lte: Time
   
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """release edge predicates"""
   has_release: Boolean
   has_release_with: [ReleaseWhereInput!]
@@ -2274,16 +2094,6 @@ input GitCommitWhereInput {
   time_lt: Time
   time_lte: Time
   
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """repo edge predicates"""
   has_repo: Boolean
   has_repo_with: [RepoWhereInput!]
@@ -2307,16 +2117,6 @@ input ReleaseComponentWhereInput {
   type_neq: ReleaseComponentType
   type_in: [ReleaseComponentType!]
   type_not_in: [ReleaseComponentType!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """release edge predicates"""
   has_release: Boolean
@@ -2370,16 +2170,6 @@ input ReleasePolicyViolationWhereInput {
   severity_neq: ReleasePolicyViolationSeverity
   severity_in: [ReleasePolicyViolationSeverity!]
   severity_not_in: [ReleasePolicyViolationSeverity!]
-  
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
   
   """policy edge predicates"""
   has_policy: Boolean
@@ -2443,17 +2233,55 @@ input TestCaseWhereInput {
   elapsed_lt: Float
   elapsed_lte: Float
   
-  """id field predicates"""
-  id: Int
-  id_neq: Int
-  id_in: [Int!]
-  id_not_in: [Int!]
-  id_gt: Int
-  id_gte: Int
-  id_lt: Int
-  id_lte: Int
-  
   """run edge predicates"""
   has_run: Boolean
   has_run_with: [TestRunWhereInput!]
+}
+
+"""Query generated by ent."""
+type Query {
+  release_license_connection(first: Int, last: Int, before: Cursor, after: Cursor, where: ReleaseLicenseWhereInput): ReleaseLicenseConnection
+  release_policy_violation(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation]
+  repo_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: RepoOrder, where: RepoWhereInput): RepoConnection
+  test_case_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: TestCaseOrder, where: TestCaseWhereInput): TestCaseConnection
+  component(first: Int, last: Int, order_by: ComponentOrder, where: ComponentWhereInput): [Component]
+  license_use(first: Int, last: Int, where: LicenseUseWhereInput): [LicenseUse]
+  release_entry(first: Int, last: Int, order_by: ReleaseEntryOrder, where: ReleaseEntryWhereInput): [ReleaseEntry]
+  code_issue(first: Int, last: Int, order_by: CodeIssueOrder, where: CodeIssueWhereInput): [CodeIssue]
+  component_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: ComponentOrder, where: ComponentWhereInput): ComponentConnection
+  project(first: Int, last: Int, order_by: ProjectOrder, where: ProjectWhereInput): [Project]
+  release_policy_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: ReleasePolicyOrder, where: ReleasePolicyWhereInput): ReleasePolicyConnection
+  release_policy_violation_connection(first: Int, last: Int, before: Cursor, after: Cursor, where: ReleasePolicyViolationWhereInput): ReleasePolicyViolationConnection
+  vulnerability_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: VulnerabilityOrder, where: VulnerabilityWhereInput): VulnerabilityConnection
+  adapter_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: AdapterOrder, where: AdapterWhereInput): AdapterConnection
+  artifact_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: ArtifactOrder, where: ArtifactWhereInput): ArtifactConnection
+  artifact(first: Int, last: Int, order_by: ArtifactOrder, where: ArtifactWhereInput): [Artifact]
+  commit(first: Int, last: Int, order_by: GitCommitOrder, where: GitCommitWhereInput): [GitCommit]
+  license(first: Int, last: Int, order_by: LicenseOrder, where: LicenseWhereInput): [License]
+  license_use_connection(first: Int, last: Int, before: Cursor, after: Cursor, where: LicenseUseWhereInput): LicenseUseConnection
+  organization_connection(first: Int, last: Int, before: Cursor, after: Cursor, where: OrganizationWhereInput): OrganizationConnection
+  organization(first: Int, last: Int, where: OrganizationWhereInput): [Organization]
+  release_policy(first: Int, last: Int, order_by: ReleasePolicyOrder, where: ReleasePolicyWhereInput): [ReleasePolicy]
+  repo(first: Int, last: Int, order_by: RepoOrder, where: RepoWhereInput): [Repo]
+  code_scan(first: Int, last: Int, order_by: CodeScanOrder, where: CodeScanWhereInput): [CodeScan]
+  commit_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: GitCommitOrder, where: GitCommitWhereInput): GitCommitConnection
+  project_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: ProjectOrder, where: ProjectWhereInput): ProjectConnection
+  release_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: ReleaseOrder, where: ReleaseWhereInput): ReleaseConnection
+  release_component_connection(first: Int, last: Int, before: Cursor, after: Cursor, where: ReleaseComponentWhereInput): ReleaseComponentConnection
+  release_entry_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: ReleaseEntryOrder, where: ReleaseEntryWhereInput): ReleaseEntryConnection
+  release_vulnerability_connection(first: Int, last: Int, before: Cursor, after: Cursor, where: ReleaseVulnerabilityWhereInput): ReleaseVulnerabilityConnection
+  test_run(first: Int, last: Int, order_by: TestRunOrder, where: TestRunWhereInput): [TestRun]
+  vulnerability_review_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: VulnerabilityReviewOrder, where: VulnerabilityReviewWhereInput): VulnerabilityReviewConnection
+  code_scan_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: CodeScanOrder, where: CodeScanWhereInput): CodeScanConnection
+  release(first: Int, last: Int, order_by: ReleaseOrder, where: ReleaseWhereInput): [Release]
+  release_component(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent]
+  test_run_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: TestRunOrder, where: TestRunWhereInput): TestRunConnection
+  adapter(first: Int, last: Int, order_by: AdapterOrder, where: AdapterWhereInput): [Adapter]
+  code_issue_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: CodeIssueOrder, where: CodeIssueWhereInput): CodeIssueConnection
+  license_connection(first: Int, last: Int, before: Cursor, after: Cursor, order_by: LicenseOrder, where: LicenseWhereInput): LicenseConnection
+  release_vulnerability(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability]
+  test_case(first: Int, last: Int, order_by: TestCaseOrder, where: TestCaseWhereInput): [TestCase]
+  vulnerability_review(first: Int, last: Int, order_by: VulnerabilityReviewOrder, where: VulnerabilityReviewWhereInput): [VulnerabilityReview]
+  release_license(first: Int, last: Int, where: ReleaseLicenseWhereInput): [ReleaseLicense]
+  vulnerability(first: Int, last: Int, order_by: VulnerabilityOrder, where: VulnerabilityWhereInput): [Vulnerability]
 }

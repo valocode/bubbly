@@ -155,6 +155,7 @@ func Run(module string, opts ...func(r *runOptions)) (*AdapterResult, error) {
 	if codeScans != nil {
 		result.CodeScan = codeScans[0]
 		result.CodeScan.Issues = codeIssues
+		result.CodeScan.Components = components
 		if err := validate.Struct(result.CodeScan); err != nil {
 			return nil, err
 		}
@@ -163,6 +164,9 @@ func Run(module string, opts ...func(r *runOptions)) (*AdapterResult, error) {
 		// the missing code_scan
 		if codeIssues != nil {
 			return nil, fmt.Errorf("cannot provide code_issue without code_scan: please provide a code_scan")
+		}
+		if components != nil {
+			return nil, fmt.Errorf("cannot provide component without code_scan: please provide a code_scan")
 		}
 	}
 

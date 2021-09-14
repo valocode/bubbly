@@ -4,6 +4,8 @@ import (
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/gitcommit"
+	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/vulnerability"
 	"github.com/valocode/bubbly/store/api"
 )
@@ -12,16 +14,16 @@ func (h *Handler) SaveCodeScan(req *api.CodeScanRequest) (*ent.CodeScan, error) 
 	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "code scan create")
 	}
-	release, err := h.releaseFromCommit(req.Commit)
+	dbRelease, err := h.releaseFromCommit(req.Commit)
 	if err != nil {
 		return nil, err
 	}
-	scan, err := h.saveCodeScan(release, req.CodeScan)
+	scan, err := h.saveCodeScan(dbRelease, req.CodeScan)
 	if err != nil {
 		return nil, err
 	}
 	// Once transaction is complete, evaluate the release.
-	_, evalErr := h.EvaluateReleasePolicies(release.ID)
+	_, evalErr := h.EvaluateReleasePolicies(dbRelease.ID)
 	if evalErr != nil {
 		return nil, NewServerError(evalErr, "evaluating release policies")
 	}
@@ -29,14 +31,14 @@ func (h *Handler) SaveCodeScan(req *api.CodeScanRequest) (*ent.CodeScan, error) 
 	return scan, nil
 }
 
-func (h *Handler) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.CodeScan, error) {
+func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent.CodeScan, error) {
 	var codeScan *ent.CodeScan
 	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
 
 		var err error
 		codeScan, err = tx.CodeScan.Create().
 			SetModelCreate(&scan.CodeScanModelCreate).
-			SetRelease(release).
+			SetRelease(dbRelease).
 			Save(h.ctx)
 		if err != nil {
 			return HandleEntError(err, "code scan")
@@ -62,11 +64,9 @@ func (h *Handler) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.C
 			if err := h.validator.Struct(comp); err != nil {
 				return HandleValidatorError(err, "release component create")
 			}
-			existingComp, err = tx.Component.Query().Where(
-				component.Vendor(*comp.Vendor),
-				component.Name(*comp.Name),
-				component.Version(*comp.Version),
-			).Only(h.ctx)
+			existingComp, err = tx.Component.Query().
+				WhereModelCreate(&comp.ComponentModelCreate).
+				Only(h.ctx)
 			if err != nil {
 				if !ent.IsNotFound(err) {
 					return HandleEntError(err, "component")
@@ -80,13 +80,24 @@ func (h *Handler) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.C
 					return HandleEntError(err, "component")
 				}
 			}
-			relComp, err := tx.ReleaseComponent.Create().
-				SetComponent(existingComp).
-				AddScans(codeScan).
-				SetRelease(release).
-				Save(h.ctx)
+			// Get the release component, which might already exist if the
+			// component already exists
+			relComp, err := tx.ReleaseComponent.Query().Where(
+				releasecomponent.HasComponentWith(component.ID(existingComp.ID)),
+				releasecomponent.HasReleaseWith(release.ID(dbRelease.ID)),
+			).Only(h.ctx)
 			if err != nil {
-				return HandleEntError(err, "release component")
+				if !ent.IsNotFound(err) {
+					return HandleEntError(err, "query release component")
+				}
+				relComp, err = tx.ReleaseComponent.Create().
+					SetComponent(existingComp).
+					AddScans(codeScan).
+					SetRelease(dbRelease).
+					Save(h.ctx)
+				if err != nil {
+					return HandleEntError(err, "create release component")
+				}
 			}
 			//
 			// Save component vulnerabilities
@@ -108,13 +119,15 @@ func (h *Handler) saveCodeScan(release *ent.Release, scan *api.CodeScan) (*ent.C
 					}
 					// If not found, create!
 					existingVuln, err = tx.Vulnerability.Create().
-						SetModelCreate(&vuln.VulnerabilityModelCreate).Save(h.ctx)
+						SetModelCreate(&vuln.VulnerabilityModelCreate).
+						SetOwnerID(h.orgID).
+						Save(h.ctx)
 					if err != nil {
 						return HandleEntError(err, "vulnerability")
 					}
 				}
 				_, err = tx.ReleaseVulnerability.Create().
-					SetRelease(release).
+					SetRelease(dbRelease).
 					SetVulnerability(existingVuln).
 					SetScan(codeScan).
 					SetComponent(relComp).
