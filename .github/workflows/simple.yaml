@@ -11,7 +11,7 @@ on:
 
 name: simple
 jobs:
-  backend:
+  build-test:
     strategy:
       # matrix lets us expand our range of OSs / go
       matrix:
