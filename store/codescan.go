@@ -6,7 +6,9 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
+	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/vulnerability"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 	"github.com/valocode/bubbly/store/api"
 )
 
@@ -126,14 +128,36 @@ func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent
 						return HandleEntError(err, "vulnerability")
 					}
 				}
-				_, err = tx.ReleaseVulnerability.Create().
-					SetRelease(dbRelease).
-					SetVulnerability(existingVuln).
-					SetScan(codeScan).
-					SetComponent(relComp).
-					Save(h.ctx)
+				// Check if the release vulnerability already exists, which is
+				// the combination of release ID and vulnerability ID
+				dbRelVuln, err := tx.ReleaseVulnerability.Query().Where(
+					releasevulnerability.HasReleaseWith(release.ID(dbRelease.ID)),
+					releasevulnerability.HasVulnerabilityWith(vulnerability.ID(existingVuln.ID)),
+				).Only(h.ctx)
 				if err != nil {
-					return HandleEntError(err, "release vulnerability")
+					if !ent.IsNotFound(err) {
+						return HandleEntError(err, "query release vulnerability")
+					}
+					dbRelVuln, err = tx.ReleaseVulnerability.Create().
+						SetRelease(dbRelease).
+						SetVulnerability(existingVuln).
+						SetScan(codeScan).
+						SetComponent(relComp).
+						Save(h.ctx)
+					if err != nil {
+						return HandleEntError(err, "create release vulnerability")
+					}
+				}
+				if vuln.Patch != nil {
+					_, err := tx.VulnerabilityReview.Create().
+						SetName(*vuln.Patch.Message).
+						SetDecision(vulnerabilityreview.DecisionPatched).
+						SetVulnerability(existingVuln).
+						AddInstanceIDs(dbRelVuln.ID).
+						Save(h.ctx)
+					if err != nil {
+						return HandleEntError(err, "create vulnerability patch")
+					}
 				}
 			}
 		}

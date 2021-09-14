@@ -17,6 +17,11 @@ type (
 
 	Vulnerability struct {
 		ent.VulnerabilityModelCreate `validate:"required" mapstructure:",squash"`
+		Patch                        *VulnerabilityPatch `json:"patch,omitempty" mapstructure:"patch"`
+	}
+
+	VulnerabilityPatch struct {
+		Message *string `json:"message,omitempty" validate:"required" mapstructure:"message"`
 	}
 
 	ComponentRead struct {

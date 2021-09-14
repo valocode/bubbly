@@ -12,6 +12,8 @@ component := [comp |
 		"vulnerabilities": [{
 			"vid": vuln.id,
 			"severity_score": vuln.cvssScore,
+			# if you want to add a patch which becomes a vulnerability review
+			# "patch": {"message": "test patch"},
 		}],
 	}
 ]

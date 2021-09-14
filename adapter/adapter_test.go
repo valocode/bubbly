@@ -24,13 +24,13 @@ func TestRego(t *testing.T) {
 			result, err := RunFromFile(
 				tc.adapter,
 				WithInputFileSlice(tc.inputFiles),
-				WithTracing(true),
+				// WithTracing(true),
 			)
 			require.NoError(t, err)
 			for _, trace := range result.Traces {
 				fmt.Println(trace)
 			}
-			t.Logf("result: %#v", result.CodeScan)
+			t.Logf("%s result: %#v", name, result.CodeScan)
 		})
 	}
 }
