@@ -6,6 +6,15 @@
         {{ template "header" . }}
 {{- end }}
 
+import (
+	"time"
+{{ range $n := filterModelNodes $.Nodes }}
+
+	"github.com/valocode/bubbly/ent/{{ $n.Package }}"
+{{ end }}
+	schema "github.com/valocode/bubbly/ent/schema/types"
+)
+
 {{ range $n := filterModelNodes $.Nodes }}
     {{ $receiver := $n.Receiver }}
     
@@ -19,16 +28,6 @@
     func New{{ $n.Name }}ModelCreate() *{{ $n.Name }}ModelCreate {
         return &{{ $n.Name }}ModelCreate{}
     }
-
-    {{/*
-    func ({{ $receiver }} *{{ $n.Name }}ModelCreate) SetMutatorFields(mutator *ent.{{ $n.MutationName }}) {
-        {{- range $f := $n.Fields }}
-            if {{ $receiver }}.{{ $f.StructField }} != nil {
-                mutator.{{ $f.MutationSet }}(*{{ $receiver }}.{{ $f.StructField }})
-            }
-        {{- end }}
-    }
-    */}}
 
     {{- range $f := fieldsModelCreate $n }}
         func ({{ $receiver }} *{{ $n.Name }}ModelCreate) Set{{ $f.StructField }}(value {{ $f.Type.String }}) *{{ $n.Name }}ModelCreate {
@@ -55,16 +54,18 @@
         {{- end }}
         return {{ $receiver }}
     }
-    
-    {{/*
-    func (a *AdapterQuery) WhereUnique(model *AdapterModelCreate) *AdapterQuery {
-        if model.Name != nil {
-            a.Where(adapter.Name(*model.Name))
-        }
-        // ... for other fields...
-        return a
-    }
-    */}}
+
+    func ({{ $receiver }} *{{ $n.QueryName }}) WhereModelCreate(model *{{ $n.Name }}ModelCreate) *{{ $n.QueryName }} {
+        {{- range $f := fieldsModelCreate $n }}
+            {{ if $f.Type.Comparable }}
+                if model.{{ $f.StructField }} != nil {
+                    {{ $receiver }}.Where({{ $n.Package }}.{{ $f.StructField }}EQ(*model.{{ $f.StructField }}))
+                }
+            {{ end }}
+            
+        {{- end }}
+        return {{ $receiver }}
+    }    
 
     type  {{ $n.Name }}ModelRead struct {
         {{- range $f := fieldsModelRead $n }}

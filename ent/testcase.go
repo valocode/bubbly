@@ -8,9 +8,8 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/valocode/bubbly/ent/testcase"
-
 	schema "github.com/valocode/bubbly/ent/schema/types"
+	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 )
 

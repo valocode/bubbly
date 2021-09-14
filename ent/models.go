@@ -5,13 +5,39 @@ package ent
 import (
 	"time"
 
+	"github.com/valocode/bubbly/ent/adapter"
+
 	"github.com/valocode/bubbly/ent/artifact"
+
 	"github.com/valocode/bubbly/ent/codeissue"
+
+	"github.com/valocode/bubbly/ent/codescan"
+
+	"github.com/valocode/bubbly/ent/component"
+
+	"github.com/valocode/bubbly/ent/gitcommit"
+
+	"github.com/valocode/bubbly/ent/organization"
+
+	"github.com/valocode/bubbly/ent/project"
+
 	"github.com/valocode/bubbly/ent/release"
+
 	"github.com/valocode/bubbly/ent/releaseentry"
+
+	"github.com/valocode/bubbly/ent/releasepolicy"
+
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
-	schema "github.com/valocode/bubbly/ent/schema/types"
+
+	"github.com/valocode/bubbly/ent/repo"
+
+	"github.com/valocode/bubbly/ent/testcase"
+
+	"github.com/valocode/bubbly/ent/testrun"
+
 	"github.com/valocode/bubbly/ent/vulnerability"
+
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 type AdapterModelCreate struct {
@@ -23,7 +49,6 @@ type AdapterModelCreate struct {
 func NewAdapterModelCreate() *AdapterModelCreate {
 	return &AdapterModelCreate{}
 }
-
 func (a *AdapterModelCreate) SetName(value string) *AdapterModelCreate {
 	a.Name = &value
 	return a
@@ -57,6 +82,23 @@ func (a *AdapterMutation) SetModelCreate(model *AdapterModelCreate) *AdapterMuta
 	if model.Module != nil {
 		a.SetModule(*model.Module)
 	}
+	return a
+}
+
+func (a *AdapterQuery) WhereModelCreate(model *AdapterModelCreate) *AdapterQuery {
+
+	if model.Name != nil {
+		a.Where(adapter.NameEQ(*model.Name))
+	}
+
+	if model.Tag != nil {
+		a.Where(adapter.TagEQ(*model.Tag))
+	}
+
+	if model.Module != nil {
+		a.Where(adapter.ModuleEQ(*model.Module))
+	}
+
 	return a
 }
 
@@ -103,7 +145,6 @@ type ArtifactModelCreate struct {
 func NewArtifactModelCreate() *ArtifactModelCreate {
 	return &ArtifactModelCreate{}
 }
-
 func (a *ArtifactModelCreate) SetName(value string) *ArtifactModelCreate {
 	a.Name = &value
 	return a
@@ -154,6 +195,27 @@ func (a *ArtifactMutation) SetModelCreate(model *ArtifactModelCreate) *ArtifactM
 	return a
 }
 
+func (a *ArtifactQuery) WhereModelCreate(model *ArtifactModelCreate) *ArtifactQuery {
+
+	if model.Name != nil {
+		a.Where(artifact.NameEQ(*model.Name))
+	}
+
+	if model.Sha256 != nil {
+		a.Where(artifact.Sha256EQ(*model.Sha256))
+	}
+
+	if model.Type != nil {
+		a.Where(artifact.TypeEQ(*model.Type))
+	}
+
+	if model.Time != nil {
+		a.Where(artifact.TimeEQ(*model.Time))
+	}
+
+	return a
+}
+
 type ArtifactModelRead struct {
 	Name     *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
 	Sha256   *string          `json:"sha256,omitempty" validate:"required" mapstructure:"sha256"`
@@ -201,7 +263,6 @@ type CodeIssueModelCreate struct {
 func NewCodeIssueModelCreate() *CodeIssueModelCreate {
 	return &CodeIssueModelCreate{}
 }
-
 func (ci *CodeIssueModelCreate) SetRuleID(value string) *CodeIssueModelCreate {
 	ci.RuleID = &value
 	return ci
@@ -252,6 +313,27 @@ func (ci *CodeIssueMutation) SetModelCreate(model *CodeIssueModelCreate) *CodeIs
 	return ci
 }
 
+func (ci *CodeIssueQuery) WhereModelCreate(model *CodeIssueModelCreate) *CodeIssueQuery {
+
+	if model.RuleID != nil {
+		ci.Where(codeissue.RuleIDEQ(*model.RuleID))
+	}
+
+	if model.Message != nil {
+		ci.Where(codeissue.MessageEQ(*model.Message))
+	}
+
+	if model.Severity != nil {
+		ci.Where(codeissue.SeverityEQ(*model.Severity))
+	}
+
+	if model.Type != nil {
+		ci.Where(codeissue.TypeEQ(*model.Type))
+	}
+
+	return ci
+}
+
 type CodeIssueModelRead struct {
 	RuleID   *string             `json:"rule_id,omitempty" validate:"required" mapstructure:"rule_id"`
 	Message  *string             `json:"message,omitempty" validate:"required" mapstructure:"message"`
@@ -297,7 +379,6 @@ type CodeScanModelCreate struct {
 func NewCodeScanModelCreate() *CodeScanModelCreate {
 	return &CodeScanModelCreate{}
 }
-
 func (cs *CodeScanModelCreate) SetTool(value string) *CodeScanModelCreate {
 	cs.Tool = &value
 	return cs
@@ -331,6 +412,19 @@ func (cs *CodeScanMutation) SetModelCreate(model *CodeScanModelCreate) *CodeScan
 	if model.Metadata != nil {
 		cs.SetMetadata(*model.Metadata)
 	}
+	return cs
+}
+
+func (cs *CodeScanQuery) WhereModelCreate(model *CodeScanModelCreate) *CodeScanQuery {
+
+	if model.Tool != nil {
+		cs.Where(codescan.ToolEQ(*model.Tool))
+	}
+
+	if model.Time != nil {
+		cs.Where(codescan.TimeEQ(*model.Time))
+	}
+
 	return cs
 }
 
@@ -378,7 +472,6 @@ type ComponentModelCreate struct {
 func NewComponentModelCreate() *ComponentModelCreate {
 	return &ComponentModelCreate{}
 }
-
 func (c *ComponentModelCreate) SetName(value string) *ComponentModelCreate {
 	c.Name = &value
 	return c
@@ -436,6 +529,31 @@ func (c *ComponentMutation) SetModelCreate(model *ComponentModelCreate) *Compone
 	return c
 }
 
+func (c *ComponentQuery) WhereModelCreate(model *ComponentModelCreate) *ComponentQuery {
+
+	if model.Name != nil {
+		c.Where(component.NameEQ(*model.Name))
+	}
+
+	if model.Vendor != nil {
+		c.Where(component.VendorEQ(*model.Vendor))
+	}
+
+	if model.Version != nil {
+		c.Where(component.VersionEQ(*model.Version))
+	}
+
+	if model.Description != nil {
+		c.Where(component.DescriptionEQ(*model.Description))
+	}
+
+	if model.URL != nil {
+		c.Where(component.URLEQ(*model.URL))
+	}
+
+	return c
+}
+
 type ComponentModelRead struct {
 	Name        *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
 	Vendor      *string          `json:"vendor,omitempty"  mapstructure:"vendor"`
@@ -484,7 +602,6 @@ type GitCommitModelCreate struct {
 func NewGitCommitModelCreate() *GitCommitModelCreate {
 	return &GitCommitModelCreate{}
 }
-
 func (gc *GitCommitModelCreate) SetHash(value string) *GitCommitModelCreate {
 	gc.Hash = &value
 	return gc
@@ -525,6 +642,27 @@ func (gc *GitCommitMutation) SetModelCreate(model *GitCommitModelCreate) *GitCom
 	if model.Time != nil {
 		gc.SetTime(*model.Time)
 	}
+	return gc
+}
+
+func (gc *GitCommitQuery) WhereModelCreate(model *GitCommitModelCreate) *GitCommitQuery {
+
+	if model.Hash != nil {
+		gc.Where(gitcommit.HashEQ(*model.Hash))
+	}
+
+	if model.Branch != nil {
+		gc.Where(gitcommit.BranchEQ(*model.Branch))
+	}
+
+	if model.Tag != nil {
+		gc.Where(gitcommit.TagEQ(*model.Tag))
+	}
+
+	if model.Time != nil {
+		gc.Where(gitcommit.TimeEQ(*model.Time))
+	}
+
 	return gc
 }
 
@@ -569,7 +707,6 @@ type OrganizationModelCreate struct {
 func NewOrganizationModelCreate() *OrganizationModelCreate {
 	return &OrganizationModelCreate{}
 }
-
 func (o *OrganizationModelCreate) SetName(value string) *OrganizationModelCreate {
 	o.Name = &value
 	return o
@@ -589,6 +726,15 @@ func (o *OrganizationMutation) SetModelCreate(model *OrganizationModelCreate) *O
 	if model.Name != nil {
 		o.SetName(*model.Name)
 	}
+	return o
+}
+
+func (o *OrganizationQuery) WhereModelCreate(model *OrganizationModelCreate) *OrganizationQuery {
+
+	if model.Name != nil {
+		o.Where(organization.NameEQ(*model.Name))
+	}
+
 	return o
 }
 
@@ -627,7 +773,6 @@ type ProjectModelCreate struct {
 func NewProjectModelCreate() *ProjectModelCreate {
 	return &ProjectModelCreate{}
 }
-
 func (pr *ProjectModelCreate) SetName(value string) *ProjectModelCreate {
 	pr.Name = &value
 	return pr
@@ -647,6 +792,15 @@ func (pr *ProjectMutation) SetModelCreate(model *ProjectModelCreate) *ProjectMut
 	if model.Name != nil {
 		pr.SetName(*model.Name)
 	}
+	return pr
+}
+
+func (pr *ProjectQuery) WhereModelCreate(model *ProjectModelCreate) *ProjectQuery {
+
+	if model.Name != nil {
+		pr.Where(project.NameEQ(*model.Name))
+	}
+
 	return pr
 }
 
@@ -686,7 +840,6 @@ type ReleaseModelCreate struct {
 func NewReleaseModelCreate() *ReleaseModelCreate {
 	return &ReleaseModelCreate{}
 }
-
 func (r *ReleaseModelCreate) SetName(value string) *ReleaseModelCreate {
 	r.Name = &value
 	return r
@@ -713,6 +866,19 @@ func (r *ReleaseMutation) SetModelCreate(model *ReleaseModelCreate) *ReleaseMuta
 	if model.Version != nil {
 		r.SetVersion(*model.Version)
 	}
+	return r
+}
+
+func (r *ReleaseQuery) WhereModelCreate(model *ReleaseModelCreate) *ReleaseQuery {
+
+	if model.Name != nil {
+		r.Where(release.NameEQ(*model.Name))
+	}
+
+	if model.Version != nil {
+		r.Where(release.VersionEQ(*model.Version))
+	}
+
 	return r
 }
 
@@ -756,7 +922,6 @@ type ReleaseEntryModelCreate struct {
 func NewReleaseEntryModelCreate() *ReleaseEntryModelCreate {
 	return &ReleaseEntryModelCreate{}
 }
-
 func (re *ReleaseEntryModelCreate) SetType(value releaseentry.Type) *ReleaseEntryModelCreate {
 	re.Type = &value
 	return re
@@ -783,6 +948,19 @@ func (re *ReleaseEntryMutation) SetModelCreate(model *ReleaseEntryModelCreate) *
 	if model.Time != nil {
 		re.SetTime(*model.Time)
 	}
+	return re
+}
+
+func (re *ReleaseEntryQuery) WhereModelCreate(model *ReleaseEntryModelCreate) *ReleaseEntryQuery {
+
+	if model.Type != nil {
+		re.Where(releaseentry.TypeEQ(*model.Type))
+	}
+
+	if model.Time != nil {
+		re.Where(releaseentry.TimeEQ(*model.Time))
+	}
+
 	return re
 }
 
@@ -824,7 +1002,6 @@ type ReleasePolicyModelCreate struct {
 func NewReleasePolicyModelCreate() *ReleasePolicyModelCreate {
 	return &ReleasePolicyModelCreate{}
 }
-
 func (rp *ReleasePolicyModelCreate) SetName(value string) *ReleasePolicyModelCreate {
 	rp.Name = &value
 	return rp
@@ -851,6 +1028,19 @@ func (rp *ReleasePolicyMutation) SetModelCreate(model *ReleasePolicyModelCreate)
 	if model.Module != nil {
 		rp.SetModule(*model.Module)
 	}
+	return rp
+}
+
+func (rp *ReleasePolicyQuery) WhereModelCreate(model *ReleasePolicyModelCreate) *ReleasePolicyQuery {
+
+	if model.Name != nil {
+		rp.Where(releasepolicy.NameEQ(*model.Name))
+	}
+
+	if model.Module != nil {
+		rp.Where(releasepolicy.ModuleEQ(*model.Module))
+	}
+
 	return rp
 }
 
@@ -893,7 +1083,6 @@ type ReleasePolicyViolationModelCreate struct {
 func NewReleasePolicyViolationModelCreate() *ReleasePolicyViolationModelCreate {
 	return &ReleasePolicyViolationModelCreate{}
 }
-
 func (rpv *ReleasePolicyViolationModelCreate) SetMessage(value string) *ReleasePolicyViolationModelCreate {
 	rpv.Message = &value
 	return rpv
@@ -927,6 +1116,23 @@ func (rpv *ReleasePolicyViolationMutation) SetModelCreate(model *ReleasePolicyVi
 	if model.Severity != nil {
 		rpv.SetSeverity(*model.Severity)
 	}
+	return rpv
+}
+
+func (rpv *ReleasePolicyViolationQuery) WhereModelCreate(model *ReleasePolicyViolationModelCreate) *ReleasePolicyViolationQuery {
+
+	if model.Message != nil {
+		rpv.Where(releasepolicyviolation.MessageEQ(*model.Message))
+	}
+
+	if model.Type != nil {
+		rpv.Where(releasepolicyviolation.TypeEQ(*model.Type))
+	}
+
+	if model.Severity != nil {
+		rpv.Where(releasepolicyviolation.SeverityEQ(*model.Severity))
+	}
+
 	return rpv
 }
 
@@ -970,7 +1176,6 @@ type RepoModelCreate struct {
 func NewRepoModelCreate() *RepoModelCreate {
 	return &RepoModelCreate{}
 }
-
 func (r *RepoModelCreate) SetName(value string) *RepoModelCreate {
 	r.Name = &value
 	return r
@@ -997,6 +1202,19 @@ func (r *RepoMutation) SetModelCreate(model *RepoModelCreate) *RepoMutation {
 	if model.DefaultBranch != nil {
 		r.SetDefaultBranch(*model.DefaultBranch)
 	}
+	return r
+}
+
+func (r *RepoQuery) WhereModelCreate(model *RepoModelCreate) *RepoQuery {
+
+	if model.Name != nil {
+		r.Where(repo.NameEQ(*model.Name))
+	}
+
+	if model.DefaultBranch != nil {
+		r.Where(repo.DefaultBranchEQ(*model.DefaultBranch))
+	}
+
 	return r
 }
 
@@ -1041,7 +1259,6 @@ type TestCaseModelCreate struct {
 func NewTestCaseModelCreate() *TestCaseModelCreate {
 	return &TestCaseModelCreate{}
 }
-
 func (tc *TestCaseModelCreate) SetName(value string) *TestCaseModelCreate {
 	tc.Name = &value
 	return tc
@@ -1092,6 +1309,27 @@ func (tc *TestCaseMutation) SetModelCreate(model *TestCaseModelCreate) *TestCase
 	return tc
 }
 
+func (tc *TestCaseQuery) WhereModelCreate(model *TestCaseModelCreate) *TestCaseQuery {
+
+	if model.Name != nil {
+		tc.Where(testcase.NameEQ(*model.Name))
+	}
+
+	if model.Result != nil {
+		tc.Where(testcase.ResultEQ(*model.Result))
+	}
+
+	if model.Message != nil {
+		tc.Where(testcase.MessageEQ(*model.Message))
+	}
+
+	if model.Elapsed != nil {
+		tc.Where(testcase.ElapsedEQ(*model.Elapsed))
+	}
+
+	return tc
+}
+
 type TestCaseModelRead struct {
 	Name     *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
 	Result   *bool            `json:"result,omitempty" validate:"required" mapstructure:"result"`
@@ -1137,7 +1375,6 @@ type TestRunModelCreate struct {
 func NewTestRunModelCreate() *TestRunModelCreate {
 	return &TestRunModelCreate{}
 }
-
 func (tr *TestRunModelCreate) SetTool(value string) *TestRunModelCreate {
 	tr.Tool = &value
 	return tr
@@ -1171,6 +1408,19 @@ func (tr *TestRunMutation) SetModelCreate(model *TestRunModelCreate) *TestRunMut
 	if model.Metadata != nil {
 		tr.SetMetadata(*model.Metadata)
 	}
+	return tr
+}
+
+func (tr *TestRunQuery) WhereModelCreate(model *TestRunModelCreate) *TestRunQuery {
+
+	if model.Tool != nil {
+		tr.Where(testrun.ToolEQ(*model.Tool))
+	}
+
+	if model.Time != nil {
+		tr.Where(testrun.TimeEQ(*model.Time))
+	}
+
 	return tr
 }
 
@@ -1220,7 +1470,6 @@ type VulnerabilityModelCreate struct {
 func NewVulnerabilityModelCreate() *VulnerabilityModelCreate {
 	return &VulnerabilityModelCreate{}
 }
-
 func (v *VulnerabilityModelCreate) SetVid(value string) *VulnerabilityModelCreate {
 	v.Vid = &value
 	return v
@@ -1289,6 +1538,39 @@ func (v *VulnerabilityMutation) SetModelCreate(model *VulnerabilityModelCreate) 
 	if model.Metadata != nil {
 		v.SetMetadata(*model.Metadata)
 	}
+	return v
+}
+
+func (v *VulnerabilityQuery) WhereModelCreate(model *VulnerabilityModelCreate) *VulnerabilityQuery {
+
+	if model.Vid != nil {
+		v.Where(vulnerability.VidEQ(*model.Vid))
+	}
+
+	if model.Summary != nil {
+		v.Where(vulnerability.SummaryEQ(*model.Summary))
+	}
+
+	if model.Description != nil {
+		v.Where(vulnerability.DescriptionEQ(*model.Description))
+	}
+
+	if model.SeverityScore != nil {
+		v.Where(vulnerability.SeverityScoreEQ(*model.SeverityScore))
+	}
+
+	if model.Severity != nil {
+		v.Where(vulnerability.SeverityEQ(*model.Severity))
+	}
+
+	if model.Published != nil {
+		v.Where(vulnerability.PublishedEQ(*model.Published))
+	}
+
+	if model.Modified != nil {
+		v.Where(vulnerability.ModifiedEQ(*model.Modified))
+	}
+
 	return v
 }
 

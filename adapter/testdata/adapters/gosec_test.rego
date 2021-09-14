@@ -1,5 +1,5 @@
 package adapter
 
-test_post_allowed {
+test_code_issues {
 	code_issue with input as {"path": ["users"], "method": "POST"}
 }

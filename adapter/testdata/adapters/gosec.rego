@@ -7,15 +7,14 @@ code_scan[scan] {
 	}
 }
 
-code_issue[issue] {
-	some i
-	iss := input[_].Issues[i]
+# Use array comprehension to create a list of code_issue
+# https://www.openpolicyagent.org/docs/latest/policy-language/#array-comprehensions
+code_issue := [issue |
+	iss := input[_].Issues[_]
 	issue := {
-		# providing the i is necessary so that we get all unique code_issues
-		"i": i,
 		"rule_id": iss.rule_id,
 		"message": iss.details,
 		"severity": lower(iss.severity),
 		"type": "security",
 	}
-}
+]

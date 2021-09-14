@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -25,12 +26,12 @@ func main() {
 	ex, err := entgql.NewExtension(
 		entgql.WithSchemaPath("../gql/ent.graphql"),
 		entgql.WithConfigPath("../gql/gqlgen.yaml"),
-		entgql.WithCustomRelaySpec(true, func(name string) string {
-			return name + "_connection"
-		}),
-		entgql.WithNaming("snake"),
+		// entgql.WithCustomRelaySpec(true, func(name string) string {
+		// 	return name + "_connection"
+		// }),
+		// entgql.WithNaming("snake"),
+		// entgql.WithOrderBy(true),
 		entgql.WithWhereFilters(true),
-		entgql.WithOrderBy(true),
 		entgql.WithMapScalarFunc(func(f *gen.Field, o gen.Op) string {
 			if f.StructField() == "Metadata" {
 				return "Map"

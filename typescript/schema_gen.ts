@@ -757,6 +757,7 @@ export enum VulnerabilityReviewDecision {
 	invalid = 'invalid',
 	mitigated = 'mitigated',
 	ineffective = 'ineffective',
+	patched = 'patched',
 }
 
 export interface pageInfo {
