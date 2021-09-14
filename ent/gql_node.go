@@ -99,21 +99,13 @@ func (a *Adapter) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "module",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(a.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[3] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Organization",
 		Name: "owner",
 	}
-	node.Edges[0].IDs, err = a.QueryOwner().
+	err = a.QueryOwner().
 		Select(organization.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -168,21 +160,13 @@ func (a *Artifact) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "metadata",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(a.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[5] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[0].IDs, err = a.QueryRelease().
+	err = a.QueryRelease().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -190,9 +174,9 @@ func (a *Artifact) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseEntry",
 		Name: "entry",
 	}
-	node.Edges[1].IDs, err = a.QueryEntry().
+	err = a.QueryEntry().
 		Select(releaseentry.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -247,21 +231,13 @@ func (ci *CodeIssue) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "metadata",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(ci.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[5] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "CodeScan",
 		Name: "scan",
 	}
-	node.Edges[0].IDs, err = ci.QueryScan().
+	err = ci.QueryScan().
 		Select(codescan.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -300,21 +276,13 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "metadata",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(cs.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[3] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[0].IDs, err = cs.QueryRelease().
+	err = cs.QueryRelease().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -322,9 +290,9 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseEntry",
 		Name: "entry",
 	}
-	node.Edges[1].IDs, err = cs.QueryEntry().
+	err = cs.QueryEntry().
 		Select(releaseentry.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -332,9 +300,9 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		Type: "CodeIssue",
 		Name: "issues",
 	}
-	node.Edges[2].IDs, err = cs.QueryIssues().
+	err = cs.QueryIssues().
 		Select(codeissue.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -342,9 +310,9 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseVulnerability",
 		Name: "vulnerabilities",
 	}
-	node.Edges[3].IDs, err = cs.QueryVulnerabilities().
+	err = cs.QueryVulnerabilities().
 		Select(releasevulnerability.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -352,9 +320,9 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseComponent",
 		Name: "components",
 	}
-	node.Edges[4].IDs, err = cs.QueryComponents().
+	err = cs.QueryComponents().
 		Select(releasecomponent.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[4].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -417,21 +385,13 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "metadata",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(c.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[6] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Organization",
 		Name: "owner",
 	}
-	node.Edges[0].IDs, err = c.QueryOwner().
+	err = c.QueryOwner().
 		Select(organization.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -439,9 +399,9 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Vulnerability",
 		Name: "vulnerabilities",
 	}
-	node.Edges[1].IDs, err = c.QueryVulnerabilities().
+	err = c.QueryVulnerabilities().
 		Select(vulnerability.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -449,9 +409,9 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 		Type: "License",
 		Name: "licenses",
 	}
-	node.Edges[2].IDs, err = c.QueryLicenses().
+	err = c.QueryLicenses().
 		Select(license.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -459,9 +419,9 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseComponent",
 		Name: "uses",
 	}
-	node.Edges[3].IDs, err = c.QueryUses().
+	err = c.QueryUses().
 		Select(releasecomponent.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -508,21 +468,13 @@ func (gc *GitCommit) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "time",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(gc.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[4] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Repo",
 		Name: "repo",
 	}
-	node.Edges[0].IDs, err = gc.QueryRepo().
+	err = gc.QueryRepo().
 		Select(repo.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -530,9 +482,9 @@ func (gc *GitCommit) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[1].IDs, err = gc.QueryRelease().
+	err = gc.QueryRelease().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -587,21 +539,13 @@ func (l *License) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "is_osi_approved",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(l.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[5] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Component",
 		Name: "components",
 	}
-	node.Edges[0].IDs, err = l.QueryComponents().
+	err = l.QueryComponents().
 		Select(component.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -609,9 +553,9 @@ func (l *License) Node(ctx context.Context) (node *Node, err error) {
 		Type: "LicenseUse",
 		Name: "uses",
 	}
-	node.Edges[1].IDs, err = l.QueryUses().
+	err = l.QueryUses().
 		Select(licenseuse.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -625,22 +569,13 @@ func (lu *LicenseUse) Node(ctx context.Context) (node *Node, err error) {
 		Fields: make([]*Field, 0),
 		Edges:  make([]*Edge, 1),
 	}
-	var buf []byte
-	if buf, err = json.Marshal(lu.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "License",
 		Name: "license",
 	}
-	node.Edges[0].IDs, err = lu.QueryLicense().
+	err = lu.QueryLicense().
 		Select(license.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -663,21 +598,13 @@ func (o *Organization) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "name",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(o.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[1] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Project",
 		Name: "projects",
 	}
-	node.Edges[0].IDs, err = o.QueryProjects().
+	err = o.QueryProjects().
 		Select(project.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -685,9 +612,9 @@ func (o *Organization) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Repo",
 		Name: "repos",
 	}
-	node.Edges[1].IDs, err = o.QueryRepos().
+	err = o.QueryRepos().
 		Select(repo.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -710,21 +637,13 @@ func (pr *Project) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "name",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(pr.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[1] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Organization",
 		Name: "owner",
 	}
-	node.Edges[0].IDs, err = pr.QueryOwner().
+	err = pr.QueryOwner().
 		Select(organization.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -732,9 +651,9 @@ func (pr *Project) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Repo",
 		Name: "repos",
 	}
-	node.Edges[1].IDs, err = pr.QueryRepos().
+	err = pr.QueryRepos().
 		Select(repo.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -742,9 +661,9 @@ func (pr *Project) Node(ctx context.Context) (node *Node, err error) {
 		Type: "VulnerabilityReview",
 		Name: "vulnerability_reviews",
 	}
-	node.Edges[2].IDs, err = pr.QueryVulnerabilityReviews().
+	err = pr.QueryVulnerabilityReviews().
 		Select(vulnerabilityreview.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -752,9 +671,9 @@ func (pr *Project) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleasePolicy",
 		Name: "policies",
 	}
-	node.Edges[3].IDs, err = pr.QueryPolicies().
+	err = pr.QueryPolicies().
 		Select(releasepolicy.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -793,21 +712,13 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "status",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(r.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[3] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Release",
 		Name: "subreleases",
 	}
-	node.Edges[0].IDs, err = r.QuerySubreleases().
+	err = r.QuerySubreleases().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -815,9 +726,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Release",
 		Name: "dependencies",
 	}
-	node.Edges[1].IDs, err = r.QueryDependencies().
+	err = r.QueryDependencies().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -825,9 +736,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "GitCommit",
 		Name: "commit",
 	}
-	node.Edges[2].IDs, err = r.QueryCommit().
+	err = r.QueryCommit().
 		Select(gitcommit.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -835,9 +746,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Repo",
 		Name: "head_of",
 	}
-	node.Edges[3].IDs, err = r.QueryHeadOf().
+	err = r.QueryHeadOf().
 		Select(repo.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -845,9 +756,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseEntry",
 		Name: "log",
 	}
-	node.Edges[4].IDs, err = r.QueryLog().
+	err = r.QueryLog().
 		Select(releaseentry.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[4].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -855,9 +766,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleasePolicyViolation",
 		Name: "violations",
 	}
-	node.Edges[5].IDs, err = r.QueryViolations().
+	err = r.QueryViolations().
 		Select(releasepolicyviolation.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[5].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -865,9 +776,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Artifact",
 		Name: "artifacts",
 	}
-	node.Edges[6].IDs, err = r.QueryArtifacts().
+	err = r.QueryArtifacts().
 		Select(artifact.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[6].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -875,9 +786,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseComponent",
 		Name: "components",
 	}
-	node.Edges[7].IDs, err = r.QueryComponents().
+	err = r.QueryComponents().
 		Select(releasecomponent.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[7].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -885,9 +796,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseVulnerability",
 		Name: "vulnerabilities",
 	}
-	node.Edges[8].IDs, err = r.QueryVulnerabilities().
+	err = r.QueryVulnerabilities().
 		Select(releasevulnerability.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[8].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -895,9 +806,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "CodeScan",
 		Name: "code_scans",
 	}
-	node.Edges[9].IDs, err = r.QueryCodeScans().
+	err = r.QueryCodeScans().
 		Select(codescan.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[9].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -905,9 +816,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "TestRun",
 		Name: "test_runs",
 	}
-	node.Edges[10].IDs, err = r.QueryTestRuns().
+	err = r.QueryTestRuns().
 		Select(testrun.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[10].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -915,9 +826,9 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		Type: "VulnerabilityReview",
 		Name: "vulnerability_reviews",
 	}
-	node.Edges[11].IDs, err = r.QueryVulnerabilityReviews().
+	err = r.QueryVulnerabilityReviews().
 		Select(vulnerabilityreview.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[11].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -940,21 +851,13 @@ func (rc *ReleaseComponent) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "type",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(rc.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[1] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[0].IDs, err = rc.QueryRelease().
+	err = rc.QueryRelease().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -962,9 +865,9 @@ func (rc *ReleaseComponent) Node(ctx context.Context) (node *Node, err error) {
 		Type: "CodeScan",
 		Name: "scans",
 	}
-	node.Edges[1].IDs, err = rc.QueryScans().
+	err = rc.QueryScans().
 		Select(codescan.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -972,9 +875,9 @@ func (rc *ReleaseComponent) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Component",
 		Name: "component",
 	}
-	node.Edges[2].IDs, err = rc.QueryComponent().
+	err = rc.QueryComponent().
 		Select(component.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -982,9 +885,9 @@ func (rc *ReleaseComponent) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseVulnerability",
 		Name: "vulnerabilities",
 	}
-	node.Edges[3].IDs, err = rc.QueryVulnerabilities().
+	err = rc.QueryVulnerabilities().
 		Select(releasevulnerability.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1015,21 +918,13 @@ func (re *ReleaseEntry) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "time",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(re.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[2] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Artifact",
 		Name: "artifact",
 	}
-	node.Edges[0].IDs, err = re.QueryArtifact().
+	err = re.QueryArtifact().
 		Select(artifact.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1037,9 +932,9 @@ func (re *ReleaseEntry) Node(ctx context.Context) (node *Node, err error) {
 		Type: "CodeScan",
 		Name: "code_scan",
 	}
-	node.Edges[1].IDs, err = re.QueryCodeScan().
+	err = re.QueryCodeScan().
 		Select(codescan.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1047,9 +942,9 @@ func (re *ReleaseEntry) Node(ctx context.Context) (node *Node, err error) {
 		Type: "TestRun",
 		Name: "test_run",
 	}
-	node.Edges[2].IDs, err = re.QueryTestRun().
+	err = re.QueryTestRun().
 		Select(testrun.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1057,9 +952,9 @@ func (re *ReleaseEntry) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[3].IDs, err = re.QueryRelease().
+	err = re.QueryRelease().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1073,22 +968,13 @@ func (rl *ReleaseLicense) Node(ctx context.Context) (node *Node, err error) {
 		Fields: make([]*Field, 0),
 		Edges:  make([]*Edge, 4),
 	}
-	var buf []byte
-	if buf, err = json.Marshal(rl.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "License",
 		Name: "license",
 	}
-	node.Edges[0].IDs, err = rl.QueryLicense().
+	err = rl.QueryLicense().
 		Select(license.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1096,9 +982,9 @@ func (rl *ReleaseLicense) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseComponent",
 		Name: "component",
 	}
-	node.Edges[1].IDs, err = rl.QueryComponent().
+	err = rl.QueryComponent().
 		Select(releasecomponent.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1106,9 +992,9 @@ func (rl *ReleaseLicense) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[2].IDs, err = rl.QueryRelease().
+	err = rl.QueryRelease().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1116,9 +1002,9 @@ func (rl *ReleaseLicense) Node(ctx context.Context) (node *Node, err error) {
 		Type: "CodeScan",
 		Name: "scans",
 	}
-	node.Edges[3].IDs, err = rl.QueryScans().
+	err = rl.QueryScans().
 		Select(codescan.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1149,21 +1035,13 @@ func (rp *ReleasePolicy) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "module",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(rp.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[2] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Organization",
 		Name: "owner",
 	}
-	node.Edges[0].IDs, err = rp.QueryOwner().
+	err = rp.QueryOwner().
 		Select(organization.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1171,9 +1049,9 @@ func (rp *ReleasePolicy) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Project",
 		Name: "projects",
 	}
-	node.Edges[1].IDs, err = rp.QueryProjects().
+	err = rp.QueryProjects().
 		Select(project.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1181,9 +1059,9 @@ func (rp *ReleasePolicy) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Repo",
 		Name: "repos",
 	}
-	node.Edges[2].IDs, err = rp.QueryRepos().
+	err = rp.QueryRepos().
 		Select(repo.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1191,9 +1069,9 @@ func (rp *ReleasePolicy) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleasePolicyViolation",
 		Name: "violations",
 	}
-	node.Edges[3].IDs, err = rp.QueryViolations().
+	err = rp.QueryViolations().
 		Select(releasepolicyviolation.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1232,21 +1110,13 @@ func (rpv *ReleasePolicyViolation) Node(ctx context.Context) (node *Node, err er
 		Name:  "severity",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(rpv.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[3] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "ReleasePolicy",
 		Name: "policy",
 	}
-	node.Edges[0].IDs, err = rpv.QueryPolicy().
+	err = rpv.QueryPolicy().
 		Select(releasepolicy.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1254,9 +1124,9 @@ func (rpv *ReleasePolicyViolation) Node(ctx context.Context) (node *Node, err er
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[1].IDs, err = rpv.QueryRelease().
+	err = rpv.QueryRelease().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1270,22 +1140,13 @@ func (rv *ReleaseVulnerability) Node(ctx context.Context) (node *Node, err error
 		Fields: make([]*Field, 0),
 		Edges:  make([]*Edge, 5),
 	}
-	var buf []byte
-	if buf, err = json.Marshal(rv.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[0] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Vulnerability",
 		Name: "vulnerability",
 	}
-	node.Edges[0].IDs, err = rv.QueryVulnerability().
+	err = rv.QueryVulnerability().
 		Select(vulnerability.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1293,9 +1154,9 @@ func (rv *ReleaseVulnerability) Node(ctx context.Context) (node *Node, err error
 		Type: "ReleaseComponent",
 		Name: "component",
 	}
-	node.Edges[1].IDs, err = rv.QueryComponent().
+	err = rv.QueryComponent().
 		Select(releasecomponent.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1303,9 +1164,9 @@ func (rv *ReleaseVulnerability) Node(ctx context.Context) (node *Node, err error
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[2].IDs, err = rv.QueryRelease().
+	err = rv.QueryRelease().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1313,9 +1174,9 @@ func (rv *ReleaseVulnerability) Node(ctx context.Context) (node *Node, err error
 		Type: "VulnerabilityReview",
 		Name: "reviews",
 	}
-	node.Edges[3].IDs, err = rv.QueryReviews().
+	err = rv.QueryReviews().
 		Select(vulnerabilityreview.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1323,9 +1184,9 @@ func (rv *ReleaseVulnerability) Node(ctx context.Context) (node *Node, err error
 		Type: "CodeScan",
 		Name: "scan",
 	}
-	node.Edges[4].IDs, err = rv.QueryScan().
+	err = rv.QueryScan().
 		Select(codescan.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[4].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1356,21 +1217,13 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "default_branch",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(r.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[2] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Organization",
 		Name: "owner",
 	}
-	node.Edges[0].IDs, err = r.QueryOwner().
+	err = r.QueryOwner().
 		Select(organization.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1378,9 +1231,9 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Project",
 		Name: "project",
 	}
-	node.Edges[1].IDs, err = r.QueryProject().
+	err = r.QueryProject().
 		Select(project.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1388,9 +1241,9 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Release",
 		Name: "head",
 	}
-	node.Edges[2].IDs, err = r.QueryHead().
+	err = r.QueryHead().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1398,9 +1251,9 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 		Type: "GitCommit",
 		Name: "commits",
 	}
-	node.Edges[3].IDs, err = r.QueryCommits().
+	err = r.QueryCommits().
 		Select(gitcommit.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1408,9 +1261,9 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 		Type: "VulnerabilityReview",
 		Name: "vulnerability_reviews",
 	}
-	node.Edges[4].IDs, err = r.QueryVulnerabilityReviews().
+	err = r.QueryVulnerabilityReviews().
 		Select(vulnerabilityreview.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[4].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1418,9 +1271,9 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleasePolicy",
 		Name: "policies",
 	}
-	node.Edges[5].IDs, err = r.QueryPolicies().
+	err = r.QueryPolicies().
 		Select(releasepolicy.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[5].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1475,21 +1328,13 @@ func (tc *TestCase) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "metadata",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(tc.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[5] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "TestRun",
 		Name: "run",
 	}
-	node.Edges[0].IDs, err = tc.QueryRun().
+	err = tc.QueryRun().
 		Select(testrun.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1528,21 +1373,13 @@ func (tr *TestRun) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "metadata",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(tr.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[3] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Release",
 		Name: "release",
 	}
-	node.Edges[0].IDs, err = tr.QueryRelease().
+	err = tr.QueryRelease().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1550,9 +1387,9 @@ func (tr *TestRun) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseEntry",
 		Name: "entry",
 	}
-	node.Edges[1].IDs, err = tr.QueryEntry().
+	err = tr.QueryEntry().
 		Select(releaseentry.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1560,9 +1397,9 @@ func (tr *TestRun) Node(ctx context.Context) (node *Node, err error) {
 		Type: "TestCase",
 		Name: "tests",
 	}
-	node.Edges[2].IDs, err = tr.QueryTests().
+	err = tr.QueryTests().
 		Select(testcase.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1641,21 +1478,13 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "metadata",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(v.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[8] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Organization",
 		Name: "owner",
 	}
-	node.Edges[0].IDs, err = v.QueryOwner().
+	err = v.QueryOwner().
 		Select(organization.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1663,9 +1492,9 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 		Type: "Component",
 		Name: "components",
 	}
-	node.Edges[1].IDs, err = v.QueryComponents().
+	err = v.QueryComponents().
 		Select(component.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1673,9 +1502,9 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 		Type: "VulnerabilityReview",
 		Name: "reviews",
 	}
-	node.Edges[2].IDs, err = v.QueryReviews().
+	err = v.QueryReviews().
 		Select(vulnerabilityreview.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1683,9 +1512,9 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 		Type: "ReleaseVulnerability",
 		Name: "instances",
 	}
-	node.Edges[3].IDs, err = v.QueryInstances().
+	err = v.QueryInstances().
 		Select(releasevulnerability.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1716,21 +1545,13 @@ func (vr *VulnerabilityReview) Node(ctx context.Context) (node *Node, err error)
 		Name:  "decision",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(vr.ID); err != nil {
-		return nil, err
-	}
-	node.Fields[2] = &Field{
-		Type:  "int",
-		Name:  "id",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Vulnerability",
 		Name: "vulnerability",
 	}
-	node.Edges[0].IDs, err = vr.QueryVulnerability().
+	err = vr.QueryVulnerability().
 		Select(vulnerability.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1738,9 +1559,9 @@ func (vr *VulnerabilityReview) Node(ctx context.Context) (node *Node, err error)
 		Type: "Project",
 		Name: "projects",
 	}
-	node.Edges[1].IDs, err = vr.QueryProjects().
+	err = vr.QueryProjects().
 		Select(project.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1748,9 +1569,9 @@ func (vr *VulnerabilityReview) Node(ctx context.Context) (node *Node, err error)
 		Type: "Repo",
 		Name: "repos",
 	}
-	node.Edges[2].IDs, err = vr.QueryRepos().
+	err = vr.QueryRepos().
 		Select(repo.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1758,9 +1579,9 @@ func (vr *VulnerabilityReview) Node(ctx context.Context) (node *Node, err error)
 		Type: "Release",
 		Name: "releases",
 	}
-	node.Edges[3].IDs, err = vr.QueryReleases().
+	err = vr.QueryReleases().
 		Select(release.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1768,9 +1589,9 @@ func (vr *VulnerabilityReview) Node(ctx context.Context) (node *Node, err error)
 		Type: "ReleaseVulnerability",
 		Name: "instances",
 	}
-	node.Edges[4].IDs, err = vr.QueryInstances().
+	err = vr.QueryInstances().
 		Select(releasevulnerability.FieldID).
-		Ints(ctx)
+		Scan(ctx, &node.Edges[4].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1847,7 +1668,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case adapter.Table:
 		n, err := c.Adapter.Query().
 			Where(adapter.ID(id)).
-			CollectFields(ctx, "Adapter").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1856,7 +1676,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case artifact.Table:
 		n, err := c.Artifact.Query().
 			Where(artifact.ID(id)).
-			CollectFields(ctx, "Artifact").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1865,7 +1684,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case codeissue.Table:
 		n, err := c.CodeIssue.Query().
 			Where(codeissue.ID(id)).
-			CollectFields(ctx, "CodeIssue").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1874,7 +1692,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case codescan.Table:
 		n, err := c.CodeScan.Query().
 			Where(codescan.ID(id)).
-			CollectFields(ctx, "CodeScan").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1883,7 +1700,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case component.Table:
 		n, err := c.Component.Query().
 			Where(component.ID(id)).
-			CollectFields(ctx, "Component").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1892,7 +1708,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case gitcommit.Table:
 		n, err := c.GitCommit.Query().
 			Where(gitcommit.ID(id)).
-			CollectFields(ctx, "GitCommit").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1901,7 +1716,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case license.Table:
 		n, err := c.License.Query().
 			Where(license.ID(id)).
-			CollectFields(ctx, "License").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1910,7 +1724,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case licenseuse.Table:
 		n, err := c.LicenseUse.Query().
 			Where(licenseuse.ID(id)).
-			CollectFields(ctx, "LicenseUse").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1919,7 +1732,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case organization.Table:
 		n, err := c.Organization.Query().
 			Where(organization.ID(id)).
-			CollectFields(ctx, "Organization").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1928,7 +1740,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case project.Table:
 		n, err := c.Project.Query().
 			Where(project.ID(id)).
-			CollectFields(ctx, "Project").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1937,7 +1748,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case release.Table:
 		n, err := c.Release.Query().
 			Where(release.ID(id)).
-			CollectFields(ctx, "Release").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1946,7 +1756,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case releasecomponent.Table:
 		n, err := c.ReleaseComponent.Query().
 			Where(releasecomponent.ID(id)).
-			CollectFields(ctx, "ReleaseComponent").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1955,7 +1764,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case releaseentry.Table:
 		n, err := c.ReleaseEntry.Query().
 			Where(releaseentry.ID(id)).
-			CollectFields(ctx, "ReleaseEntry").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1964,7 +1772,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case releaselicense.Table:
 		n, err := c.ReleaseLicense.Query().
 			Where(releaselicense.ID(id)).
-			CollectFields(ctx, "ReleaseLicense").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1973,7 +1780,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case releasepolicy.Table:
 		n, err := c.ReleasePolicy.Query().
 			Where(releasepolicy.ID(id)).
-			CollectFields(ctx, "ReleasePolicy").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1982,7 +1788,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case releasepolicyviolation.Table:
 		n, err := c.ReleasePolicyViolation.Query().
 			Where(releasepolicyviolation.ID(id)).
-			CollectFields(ctx, "ReleasePolicyViolation").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -1991,7 +1796,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case releasevulnerability.Table:
 		n, err := c.ReleaseVulnerability.Query().
 			Where(releasevulnerability.ID(id)).
-			CollectFields(ctx, "ReleaseVulnerability").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -2000,7 +1804,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case repo.Table:
 		n, err := c.Repo.Query().
 			Where(repo.ID(id)).
-			CollectFields(ctx, "Repo").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -2009,7 +1812,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case testcase.Table:
 		n, err := c.TestCase.Query().
 			Where(testcase.ID(id)).
-			CollectFields(ctx, "TestCase").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -2018,7 +1820,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case testrun.Table:
 		n, err := c.TestRun.Query().
 			Where(testrun.ID(id)).
-			CollectFields(ctx, "TestRun").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -2027,7 +1828,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case vulnerability.Table:
 		n, err := c.Vulnerability.Query().
 			Where(vulnerability.ID(id)).
-			CollectFields(ctx, "Vulnerability").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -2036,7 +1836,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 	case vulnerabilityreview.Table:
 		n, err := c.VulnerabilityReview.Query().
 			Where(vulnerabilityreview.ID(id)).
-			CollectFields(ctx, "VulnerabilityReview").
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -2118,7 +1917,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case adapter.Table:
 		nodes, err := c.Adapter.Query().
 			Where(adapter.IDIn(ids...)).
-			CollectFields(ctx, "Adapter").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2131,7 +1929,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case artifact.Table:
 		nodes, err := c.Artifact.Query().
 			Where(artifact.IDIn(ids...)).
-			CollectFields(ctx, "Artifact").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2144,7 +1941,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case codeissue.Table:
 		nodes, err := c.CodeIssue.Query().
 			Where(codeissue.IDIn(ids...)).
-			CollectFields(ctx, "CodeIssue").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2157,7 +1953,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case codescan.Table:
 		nodes, err := c.CodeScan.Query().
 			Where(codescan.IDIn(ids...)).
-			CollectFields(ctx, "CodeScan").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2170,7 +1965,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case component.Table:
 		nodes, err := c.Component.Query().
 			Where(component.IDIn(ids...)).
-			CollectFields(ctx, "Component").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2183,7 +1977,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case gitcommit.Table:
 		nodes, err := c.GitCommit.Query().
 			Where(gitcommit.IDIn(ids...)).
-			CollectFields(ctx, "GitCommit").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2196,7 +1989,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case license.Table:
 		nodes, err := c.License.Query().
 			Where(license.IDIn(ids...)).
-			CollectFields(ctx, "License").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2209,7 +2001,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case licenseuse.Table:
 		nodes, err := c.LicenseUse.Query().
 			Where(licenseuse.IDIn(ids...)).
-			CollectFields(ctx, "LicenseUse").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2222,7 +2013,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case organization.Table:
 		nodes, err := c.Organization.Query().
 			Where(organization.IDIn(ids...)).
-			CollectFields(ctx, "Organization").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2235,7 +2025,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case project.Table:
 		nodes, err := c.Project.Query().
 			Where(project.IDIn(ids...)).
-			CollectFields(ctx, "Project").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2248,7 +2037,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case release.Table:
 		nodes, err := c.Release.Query().
 			Where(release.IDIn(ids...)).
-			CollectFields(ctx, "Release").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2261,7 +2049,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case releasecomponent.Table:
 		nodes, err := c.ReleaseComponent.Query().
 			Where(releasecomponent.IDIn(ids...)).
-			CollectFields(ctx, "ReleaseComponent").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2274,7 +2061,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case releaseentry.Table:
 		nodes, err := c.ReleaseEntry.Query().
 			Where(releaseentry.IDIn(ids...)).
-			CollectFields(ctx, "ReleaseEntry").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2287,7 +2073,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case releaselicense.Table:
 		nodes, err := c.ReleaseLicense.Query().
 			Where(releaselicense.IDIn(ids...)).
-			CollectFields(ctx, "ReleaseLicense").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2300,7 +2085,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case releasepolicy.Table:
 		nodes, err := c.ReleasePolicy.Query().
 			Where(releasepolicy.IDIn(ids...)).
-			CollectFields(ctx, "ReleasePolicy").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2313,7 +2097,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case releasepolicyviolation.Table:
 		nodes, err := c.ReleasePolicyViolation.Query().
 			Where(releasepolicyviolation.IDIn(ids...)).
-			CollectFields(ctx, "ReleasePolicyViolation").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2326,7 +2109,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case releasevulnerability.Table:
 		nodes, err := c.ReleaseVulnerability.Query().
 			Where(releasevulnerability.IDIn(ids...)).
-			CollectFields(ctx, "ReleaseVulnerability").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2339,7 +2121,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case repo.Table:
 		nodes, err := c.Repo.Query().
 			Where(repo.IDIn(ids...)).
-			CollectFields(ctx, "Repo").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2352,7 +2133,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case testcase.Table:
 		nodes, err := c.TestCase.Query().
 			Where(testcase.IDIn(ids...)).
-			CollectFields(ctx, "TestCase").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2365,7 +2145,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case testrun.Table:
 		nodes, err := c.TestRun.Query().
 			Where(testrun.IDIn(ids...)).
-			CollectFields(ctx, "TestRun").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2378,7 +2157,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case vulnerability.Table:
 		nodes, err := c.Vulnerability.Query().
 			Where(vulnerability.IDIn(ids...)).
-			CollectFields(ctx, "Vulnerability").
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -2391,7 +2169,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case vulnerabilityreview.Table:
 		nodes, err := c.VulnerabilityReview.Query().
 			Where(vulnerabilityreview.IDIn(ids...)).
-			CollectFields(ctx, "VulnerabilityReview").
 			All(ctx)
 		if err != nil {
 			return nil, err

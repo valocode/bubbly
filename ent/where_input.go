@@ -37,6 +37,16 @@ type AdapterWhereInput struct {
 	Or  []*AdapterWhereInput `json:"or,omitempty"`
 	And []*AdapterWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -81,16 +91,6 @@ type AdapterWhereInput struct {
 	ModuleHasSuffix    *string  `json:"moduleHasSuffix,omitempty"`
 	ModuleEqualFold    *string  `json:"moduleEqualFold,omitempty"`
 	ModuleContainsFold *string  `json:"moduleContainsFold,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "owner" edge predicates.
 	HasOwner     *bool                     `json:"hasOwner,omitempty"`
@@ -155,6 +155,30 @@ func (i *AdapterWhereInput) P() (predicate.Adapter, error) {
 			and = append(and, p)
 		}
 		predicates = append(predicates, adapter.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, adapter.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, adapter.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, adapter.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, adapter.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, adapter.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, adapter.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, adapter.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, adapter.IDLTE(*i.IDLTE))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, adapter.NameEQ(*i.Name))
@@ -273,30 +297,6 @@ func (i *AdapterWhereInput) P() (predicate.Adapter, error) {
 	if i.ModuleContainsFold != nil {
 		predicates = append(predicates, adapter.ModuleContainsFold(*i.ModuleContainsFold))
 	}
-	if i.ID != nil {
-		predicates = append(predicates, adapter.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, adapter.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, adapter.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, adapter.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, adapter.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, adapter.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, adapter.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, adapter.IDLTE(*i.IDLTE))
-	}
 
 	if i.HasOwner != nil {
 		p := adapter.HasOwner()
@@ -331,6 +331,16 @@ type ArtifactWhereInput struct {
 	Not *ArtifactWhereInput   `json:"not,omitempty"`
 	Or  []*ArtifactWhereInput `json:"or,omitempty"`
 	And []*ArtifactWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
@@ -377,16 +387,6 @@ type ArtifactWhereInput struct {
 	TimeGTE   *time.Time  `json:"timeGTE,omitempty"`
 	TimeLT    *time.Time  `json:"timeLT,omitempty"`
 	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "release" edge predicates.
 	HasRelease     *bool                `json:"hasRelease,omitempty"`
@@ -455,6 +455,30 @@ func (i *ArtifactWhereInput) P() (predicate.Artifact, error) {
 			and = append(and, p)
 		}
 		predicates = append(predicates, artifact.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, artifact.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, artifact.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, artifact.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, artifact.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, artifact.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, artifact.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, artifact.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, artifact.IDLTE(*i.IDLTE))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, artifact.NameEQ(*i.Name))
@@ -570,30 +594,6 @@ func (i *ArtifactWhereInput) P() (predicate.Artifact, error) {
 	if i.TimeLTE != nil {
 		predicates = append(predicates, artifact.TimeLTE(*i.TimeLTE))
 	}
-	if i.ID != nil {
-		predicates = append(predicates, artifact.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, artifact.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, artifact.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, artifact.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, artifact.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, artifact.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, artifact.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, artifact.IDLTE(*i.IDLTE))
-	}
 
 	if i.HasRelease != nil {
 		p := artifact.HasRelease()
@@ -647,6 +647,16 @@ type CodeIssueWhereInput struct {
 	Or  []*CodeIssueWhereInput `json:"or,omitempty"`
 	And []*CodeIssueWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "rule_id" field predicates.
 	RuleID             *string  `json:"ruleID,omitempty"`
 	RuleIDNEQ          *string  `json:"ruleIDNEQ,omitempty"`
@@ -688,16 +698,6 @@ type CodeIssueWhereInput struct {
 	TypeNEQ   *codeissue.Type  `json:"typeNEQ,omitempty"`
 	TypeIn    []codeissue.Type `json:"typeIn,omitempty"`
 	TypeNotIn []codeissue.Type `json:"typeNotIn,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "scan" edge predicates.
 	HasScan     *bool                 `json:"hasScan,omitempty"`
@@ -762,6 +762,30 @@ func (i *CodeIssueWhereInput) P() (predicate.CodeIssue, error) {
 			and = append(and, p)
 		}
 		predicates = append(predicates, codeissue.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, codeissue.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, codeissue.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, codeissue.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, codeissue.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, codeissue.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, codeissue.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, codeissue.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, codeissue.IDLTE(*i.IDLTE))
 	}
 	if i.RuleID != nil {
 		predicates = append(predicates, codeissue.RuleIDEQ(*i.RuleID))
@@ -865,30 +889,6 @@ func (i *CodeIssueWhereInput) P() (predicate.CodeIssue, error) {
 	if len(i.TypeNotIn) > 0 {
 		predicates = append(predicates, codeissue.TypeNotIn(i.TypeNotIn...))
 	}
-	if i.ID != nil {
-		predicates = append(predicates, codeissue.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, codeissue.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, codeissue.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, codeissue.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, codeissue.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, codeissue.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, codeissue.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, codeissue.IDLTE(*i.IDLTE))
-	}
 
 	if i.HasScan != nil {
 		p := codeissue.HasScan()
@@ -924,6 +924,16 @@ type CodeScanWhereInput struct {
 	Or  []*CodeScanWhereInput `json:"or,omitempty"`
 	And []*CodeScanWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "tool" field predicates.
 	Tool             *string  `json:"tool,omitempty"`
 	ToolNEQ          *string  `json:"toolNEQ,omitempty"`
@@ -948,16 +958,6 @@ type CodeScanWhereInput struct {
 	TimeGTE   *time.Time  `json:"timeGTE,omitempty"`
 	TimeLT    *time.Time  `json:"timeLT,omitempty"`
 	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "release" edge predicates.
 	HasRelease     *bool                `json:"hasRelease,omitempty"`
@@ -1039,6 +1039,30 @@ func (i *CodeScanWhereInput) P() (predicate.CodeScan, error) {
 		}
 		predicates = append(predicates, codescan.And(and...))
 	}
+	if i.ID != nil {
+		predicates = append(predicates, codescan.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, codescan.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, codescan.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, codescan.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, codescan.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, codescan.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, codescan.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, codescan.IDLTE(*i.IDLTE))
+	}
 	if i.Tool != nil {
 		predicates = append(predicates, codescan.ToolEQ(*i.Tool))
 	}
@@ -1101,30 +1125,6 @@ func (i *CodeScanWhereInput) P() (predicate.CodeScan, error) {
 	}
 	if i.TimeLTE != nil {
 		predicates = append(predicates, codescan.TimeLTE(*i.TimeLTE))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, codescan.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, codescan.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, codescan.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, codescan.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, codescan.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, codescan.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, codescan.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, codescan.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasRelease != nil {
@@ -1233,6 +1233,16 @@ type ComponentWhereInput struct {
 	Or  []*ComponentWhereInput `json:"or,omitempty"`
 	And []*ComponentWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -1312,16 +1322,6 @@ type ComponentWhereInput struct {
 	URLEqualFold    *string  `json:"urlEqualFold,omitempty"`
 	URLContainsFold *string  `json:"urlContainsFold,omitempty"`
 
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-
 	// "owner" edge predicates.
 	HasOwner     *bool                     `json:"hasOwner,omitempty"`
 	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -1397,6 +1397,30 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 			and = append(and, p)
 		}
 		predicates = append(predicates, component.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, component.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, component.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, component.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, component.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, component.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, component.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, component.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, component.IDLTE(*i.IDLTE))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, component.NameEQ(*i.Name))
@@ -1605,30 +1629,6 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 	if i.URLContainsFold != nil {
 		predicates = append(predicates, component.URLContainsFold(*i.URLContainsFold))
 	}
-	if i.ID != nil {
-		predicates = append(predicates, component.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, component.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, component.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, component.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, component.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, component.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, component.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, component.IDLTE(*i.IDLTE))
-	}
 
 	if i.HasOwner != nil {
 		p := component.HasOwner()
@@ -1718,6 +1718,16 @@ type GitCommitWhereInput struct {
 	Or  []*GitCommitWhereInput `json:"or,omitempty"`
 	And []*GitCommitWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "hash" field predicates.
 	Hash             *string  `json:"hash,omitempty"`
 	HashNEQ          *string  `json:"hashNEQ,omitempty"`
@@ -1774,16 +1784,6 @@ type GitCommitWhereInput struct {
 	TimeGTE   *time.Time  `json:"timeGTE,omitempty"`
 	TimeLT    *time.Time  `json:"timeLT,omitempty"`
 	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "repo" edge predicates.
 	HasRepo     *bool             `json:"hasRepo,omitempty"`
@@ -1852,6 +1852,30 @@ func (i *GitCommitWhereInput) P() (predicate.GitCommit, error) {
 			and = append(and, p)
 		}
 		predicates = append(predicates, gitcommit.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, gitcommit.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, gitcommit.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, gitcommit.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, gitcommit.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, gitcommit.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, gitcommit.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, gitcommit.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, gitcommit.IDLTE(*i.IDLTE))
 	}
 	if i.Hash != nil {
 		predicates = append(predicates, gitcommit.HashEQ(*i.Hash))
@@ -2000,30 +2024,6 @@ func (i *GitCommitWhereInput) P() (predicate.GitCommit, error) {
 	if i.TimeLTE != nil {
 		predicates = append(predicates, gitcommit.TimeLTE(*i.TimeLTE))
 	}
-	if i.ID != nil {
-		predicates = append(predicates, gitcommit.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, gitcommit.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, gitcommit.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, gitcommit.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, gitcommit.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, gitcommit.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, gitcommit.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, gitcommit.IDLTE(*i.IDLTE))
-	}
 
 	if i.HasRepo != nil {
 		p := gitcommit.HasRepo()
@@ -2076,6 +2076,16 @@ type LicenseWhereInput struct {
 	Not *LicenseWhereInput   `json:"not,omitempty"`
 	Or  []*LicenseWhereInput `json:"or,omitempty"`
 	And []*LicenseWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "spdx_id" field predicates.
 	SpdxID             *string  `json:"spdxID,omitempty"`
@@ -2145,16 +2155,6 @@ type LicenseWhereInput struct {
 	IsOsiApproved    *bool `json:"isOsiApproved,omitempty"`
 	IsOsiApprovedNEQ *bool `json:"isOsiApprovedNEQ,omitempty"`
 
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-
 	// "components" edge predicates.
 	HasComponents     *bool                  `json:"hasComponents,omitempty"`
 	HasComponentsWith []*ComponentWhereInput `json:"hasComponentsWith,omitempty"`
@@ -2222,6 +2222,30 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 			and = append(and, p)
 		}
 		predicates = append(predicates, license.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, license.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, license.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, license.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, license.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, license.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, license.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, license.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, license.IDLTE(*i.IDLTE))
 	}
 	if i.SpdxID != nil {
 		predicates = append(predicates, license.SpdxIDEQ(*i.SpdxID))
@@ -2396,30 +2420,6 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 	}
 	if i.IsOsiApprovedNEQ != nil {
 		predicates = append(predicates, license.IsOsiApprovedNEQ(*i.IsOsiApprovedNEQ))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, license.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, license.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, license.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, license.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, license.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, license.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, license.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, license.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasComponents != nil {
@@ -2607,6 +2607,16 @@ type OrganizationWhereInput struct {
 	Or  []*OrganizationWhereInput `json:"or,omitempty"`
 	And []*OrganizationWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -2621,16 +2631,6 @@ type OrganizationWhereInput struct {
 	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "projects" edge predicates.
 	HasProjects     *bool                `json:"hasProjects,omitempty"`
@@ -2700,6 +2700,30 @@ func (i *OrganizationWhereInput) P() (predicate.Organization, error) {
 		}
 		predicates = append(predicates, organization.And(and...))
 	}
+	if i.ID != nil {
+		predicates = append(predicates, organization.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, organization.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, organization.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, organization.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, organization.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, organization.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, organization.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, organization.IDLTE(*i.IDLTE))
+	}
 	if i.Name != nil {
 		predicates = append(predicates, organization.NameEQ(*i.Name))
 	}
@@ -2738,30 +2762,6 @@ func (i *OrganizationWhereInput) P() (predicate.Organization, error) {
 	}
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, organization.NameContainsFold(*i.NameContainsFold))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, organization.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, organization.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, organization.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, organization.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, organization.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, organization.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, organization.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, organization.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasProjects != nil {
@@ -2816,6 +2816,16 @@ type ProjectWhereInput struct {
 	Or  []*ProjectWhereInput `json:"or,omitempty"`
 	And []*ProjectWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -2830,16 +2840,6 @@ type ProjectWhereInput struct {
 	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "owner" edge predicates.
 	HasOwner     *bool                     `json:"hasOwner,omitempty"`
@@ -2917,6 +2917,30 @@ func (i *ProjectWhereInput) P() (predicate.Project, error) {
 		}
 		predicates = append(predicates, project.And(and...))
 	}
+	if i.ID != nil {
+		predicates = append(predicates, project.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, project.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, project.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, project.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, project.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, project.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, project.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, project.IDLTE(*i.IDLTE))
+	}
 	if i.Name != nil {
 		predicates = append(predicates, project.NameEQ(*i.Name))
 	}
@@ -2955,30 +2979,6 @@ func (i *ProjectWhereInput) P() (predicate.Project, error) {
 	}
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, project.NameContainsFold(*i.NameContainsFold))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, project.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, project.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, project.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, project.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, project.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, project.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, project.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, project.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasOwner != nil {
@@ -3069,6 +3069,16 @@ type ReleaseWhereInput struct {
 	Or  []*ReleaseWhereInput `json:"or,omitempty"`
 	And []*ReleaseWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -3104,16 +3114,6 @@ type ReleaseWhereInput struct {
 	StatusNEQ   *release.Status  `json:"statusNEQ,omitempty"`
 	StatusIn    []release.Status `json:"statusIn,omitempty"`
 	StatusNotIn []release.Status `json:"statusNotIn,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "subreleases" edge predicates.
 	HasSubreleases     *bool                `json:"hasSubreleases,omitempty"`
@@ -3223,6 +3223,30 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 		}
 		predicates = append(predicates, release.And(and...))
 	}
+	if i.ID != nil {
+		predicates = append(predicates, release.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, release.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, release.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, release.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, release.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, release.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, release.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, release.IDLTE(*i.IDLTE))
+	}
 	if i.Name != nil {
 		predicates = append(predicates, release.NameEQ(*i.Name))
 	}
@@ -3312,30 +3336,6 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 	}
 	if len(i.StatusNotIn) > 0 {
 		predicates = append(predicates, release.StatusNotIn(i.StatusNotIn...))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, release.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, release.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, release.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, release.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, release.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, release.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, release.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, release.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasSubreleases != nil {
@@ -3570,12 +3570,6 @@ type ReleaseComponentWhereInput struct {
 	Or  []*ReleaseComponentWhereInput `json:"or,omitempty"`
 	And []*ReleaseComponentWhereInput `json:"and,omitempty"`
 
-	// "type" field predicates.
-	Type      *releasecomponent.Type  `json:"type,omitempty"`
-	TypeNEQ   *releasecomponent.Type  `json:"typeNEQ,omitempty"`
-	TypeIn    []releasecomponent.Type `json:"typeIn,omitempty"`
-	TypeNotIn []releasecomponent.Type `json:"typeNotIn,omitempty"`
-
 	// "id" field predicates.
 	ID      *int  `json:"id,omitempty"`
 	IDNEQ   *int  `json:"idNEQ,omitempty"`
@@ -3585,6 +3579,12 @@ type ReleaseComponentWhereInput struct {
 	IDGTE   *int  `json:"idGTE,omitempty"`
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "type" field predicates.
+	Type      *releasecomponent.Type  `json:"type,omitempty"`
+	TypeNEQ   *releasecomponent.Type  `json:"typeNEQ,omitempty"`
+	TypeIn    []releasecomponent.Type `json:"typeIn,omitempty"`
+	TypeNotIn []releasecomponent.Type `json:"typeNotIn,omitempty"`
 
 	// "release" edge predicates.
 	HasRelease     *bool                `json:"hasRelease,omitempty"`
@@ -3662,18 +3662,6 @@ func (i *ReleaseComponentWhereInput) P() (predicate.ReleaseComponent, error) {
 		}
 		predicates = append(predicates, releasecomponent.And(and...))
 	}
-	if i.Type != nil {
-		predicates = append(predicates, releasecomponent.TypeEQ(*i.Type))
-	}
-	if i.TypeNEQ != nil {
-		predicates = append(predicates, releasecomponent.TypeNEQ(*i.TypeNEQ))
-	}
-	if len(i.TypeIn) > 0 {
-		predicates = append(predicates, releasecomponent.TypeIn(i.TypeIn...))
-	}
-	if len(i.TypeNotIn) > 0 {
-		predicates = append(predicates, releasecomponent.TypeNotIn(i.TypeNotIn...))
-	}
 	if i.ID != nil {
 		predicates = append(predicates, releasecomponent.IDEQ(*i.ID))
 	}
@@ -3697,6 +3685,18 @@ func (i *ReleaseComponentWhereInput) P() (predicate.ReleaseComponent, error) {
 	}
 	if i.IDLTE != nil {
 		predicates = append(predicates, releasecomponent.IDLTE(*i.IDLTE))
+	}
+	if i.Type != nil {
+		predicates = append(predicates, releasecomponent.TypeEQ(*i.Type))
+	}
+	if i.TypeNEQ != nil {
+		predicates = append(predicates, releasecomponent.TypeNEQ(*i.TypeNEQ))
+	}
+	if len(i.TypeIn) > 0 {
+		predicates = append(predicates, releasecomponent.TypeIn(i.TypeIn...))
+	}
+	if len(i.TypeNotIn) > 0 {
+		predicates = append(predicates, releasecomponent.TypeNotIn(i.TypeNotIn...))
 	}
 
 	if i.HasRelease != nil {
@@ -3787,6 +3787,16 @@ type ReleaseEntryWhereInput struct {
 	Or  []*ReleaseEntryWhereInput `json:"or,omitempty"`
 	And []*ReleaseEntryWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "type" field predicates.
 	Type      *releaseentry.Type  `json:"type,omitempty"`
 	TypeNEQ   *releaseentry.Type  `json:"typeNEQ,omitempty"`
@@ -3802,16 +3812,6 @@ type ReleaseEntryWhereInput struct {
 	TimeGTE   *time.Time  `json:"timeGTE,omitempty"`
 	TimeLT    *time.Time  `json:"timeLT,omitempty"`
 	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "artifact" edge predicates.
 	HasArtifact     *bool                 `json:"hasArtifact,omitempty"`
@@ -3889,6 +3889,30 @@ func (i *ReleaseEntryWhereInput) P() (predicate.ReleaseEntry, error) {
 		}
 		predicates = append(predicates, releaseentry.And(and...))
 	}
+	if i.ID != nil {
+		predicates = append(predicates, releaseentry.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, releaseentry.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, releaseentry.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, releaseentry.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, releaseentry.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, releaseentry.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, releaseentry.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, releaseentry.IDLTE(*i.IDLTE))
+	}
 	if i.Type != nil {
 		predicates = append(predicates, releaseentry.TypeEQ(*i.Type))
 	}
@@ -3924,30 +3948,6 @@ func (i *ReleaseEntryWhereInput) P() (predicate.ReleaseEntry, error) {
 	}
 	if i.TimeLTE != nil {
 		predicates = append(predicates, releaseentry.TimeLTE(*i.TimeLTE))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, releaseentry.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, releaseentry.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, releaseentry.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, releaseentry.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, releaseentry.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, releaseentry.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, releaseentry.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, releaseentry.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasArtifact != nil {
@@ -4237,6 +4237,16 @@ type ReleasePolicyWhereInput struct {
 	Or  []*ReleasePolicyWhereInput `json:"or,omitempty"`
 	And []*ReleasePolicyWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -4266,16 +4276,6 @@ type ReleasePolicyWhereInput struct {
 	ModuleHasSuffix    *string  `json:"moduleHasSuffix,omitempty"`
 	ModuleEqualFold    *string  `json:"moduleEqualFold,omitempty"`
 	ModuleContainsFold *string  `json:"moduleContainsFold,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "owner" edge predicates.
 	HasOwner     *bool                     `json:"hasOwner,omitempty"`
@@ -4352,6 +4352,30 @@ func (i *ReleasePolicyWhereInput) P() (predicate.ReleasePolicy, error) {
 			and = append(and, p)
 		}
 		predicates = append(predicates, releasepolicy.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, releasepolicy.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, releasepolicy.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, releasepolicy.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, releasepolicy.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, releasepolicy.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, releasepolicy.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, releasepolicy.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, releasepolicy.IDLTE(*i.IDLTE))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, releasepolicy.NameEQ(*i.Name))
@@ -4430,30 +4454,6 @@ func (i *ReleasePolicyWhereInput) P() (predicate.ReleasePolicy, error) {
 	}
 	if i.ModuleContainsFold != nil {
 		predicates = append(predicates, releasepolicy.ModuleContainsFold(*i.ModuleContainsFold))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, releasepolicy.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, releasepolicy.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, releasepolicy.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, releasepolicy.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, releasepolicy.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, releasepolicy.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, releasepolicy.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, releasepolicy.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasOwner != nil {
@@ -4544,6 +4544,16 @@ type ReleasePolicyViolationWhereInput struct {
 	Or  []*ReleasePolicyViolationWhereInput `json:"or,omitempty"`
 	And []*ReleasePolicyViolationWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "message" field predicates.
 	Message             *string  `json:"message,omitempty"`
 	MessageNEQ          *string  `json:"messageNEQ,omitempty"`
@@ -4570,16 +4580,6 @@ type ReleasePolicyViolationWhereInput struct {
 	SeverityNEQ   *releasepolicyviolation.Severity  `json:"severityNEQ,omitempty"`
 	SeverityIn    []releasepolicyviolation.Severity `json:"severityIn,omitempty"`
 	SeverityNotIn []releasepolicyviolation.Severity `json:"severityNotIn,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "policy" edge predicates.
 	HasPolicy     *bool                      `json:"hasPolicy,omitempty"`
@@ -4649,6 +4649,30 @@ func (i *ReleasePolicyViolationWhereInput) P() (predicate.ReleasePolicyViolation
 		}
 		predicates = append(predicates, releasepolicyviolation.And(and...))
 	}
+	if i.ID != nil {
+		predicates = append(predicates, releasepolicyviolation.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, releasepolicyviolation.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, releasepolicyviolation.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, releasepolicyviolation.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, releasepolicyviolation.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, releasepolicyviolation.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, releasepolicyviolation.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, releasepolicyviolation.IDLTE(*i.IDLTE))
+	}
 	if i.Message != nil {
 		predicates = append(predicates, releasepolicyviolation.MessageEQ(*i.Message))
 	}
@@ -4711,30 +4735,6 @@ func (i *ReleasePolicyViolationWhereInput) P() (predicate.ReleasePolicyViolation
 	}
 	if len(i.SeverityNotIn) > 0 {
 		predicates = append(predicates, releasepolicyviolation.SeverityNotIn(i.SeverityNotIn...))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, releasepolicyviolation.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, releasepolicyviolation.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, releasepolicyviolation.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, releasepolicyviolation.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, releasepolicyviolation.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, releasepolicyviolation.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, releasepolicyviolation.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, releasepolicyviolation.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasPolicy != nil {
@@ -5010,6 +5010,16 @@ type RepoWhereInput struct {
 	Or  []*RepoWhereInput `json:"or,omitempty"`
 	And []*RepoWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -5039,16 +5049,6 @@ type RepoWhereInput struct {
 	DefaultBranchHasSuffix    *string  `json:"defaultBranchHasSuffix,omitempty"`
 	DefaultBranchEqualFold    *string  `json:"defaultBranchEqualFold,omitempty"`
 	DefaultBranchContainsFold *string  `json:"defaultBranchContainsFold,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "owner" edge predicates.
 	HasOwner     *bool                     `json:"hasOwner,omitempty"`
@@ -5134,6 +5134,30 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 		}
 		predicates = append(predicates, repo.And(and...))
 	}
+	if i.ID != nil {
+		predicates = append(predicates, repo.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, repo.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, repo.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, repo.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, repo.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, repo.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, repo.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, repo.IDLTE(*i.IDLTE))
+	}
 	if i.Name != nil {
 		predicates = append(predicates, repo.NameEQ(*i.Name))
 	}
@@ -5211,30 +5235,6 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 	}
 	if i.DefaultBranchContainsFold != nil {
 		predicates = append(predicates, repo.DefaultBranchContainsFold(*i.DefaultBranchContainsFold))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, repo.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, repo.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, repo.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, repo.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, repo.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, repo.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, repo.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, repo.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasOwner != nil {
@@ -5361,6 +5361,16 @@ type TestCaseWhereInput struct {
 	Or  []*TestCaseWhereInput `json:"or,omitempty"`
 	And []*TestCaseWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -5404,16 +5414,6 @@ type TestCaseWhereInput struct {
 	ElapsedGTE   *float64  `json:"elapsedGTE,omitempty"`
 	ElapsedLT    *float64  `json:"elapsedLT,omitempty"`
 	ElapsedLTE   *float64  `json:"elapsedLTE,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "run" edge predicates.
 	HasRun     *bool                `json:"hasRun,omitempty"`
@@ -5478,6 +5478,30 @@ func (i *TestCaseWhereInput) P() (predicate.TestCase, error) {
 			and = append(and, p)
 		}
 		predicates = append(predicates, testcase.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, testcase.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, testcase.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, testcase.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, testcase.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, testcase.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, testcase.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, testcase.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, testcase.IDLTE(*i.IDLTE))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, testcase.NameEQ(*i.Name))
@@ -5587,30 +5611,6 @@ func (i *TestCaseWhereInput) P() (predicate.TestCase, error) {
 	if i.ElapsedLTE != nil {
 		predicates = append(predicates, testcase.ElapsedLTE(*i.ElapsedLTE))
 	}
-	if i.ID != nil {
-		predicates = append(predicates, testcase.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, testcase.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, testcase.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, testcase.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, testcase.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, testcase.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, testcase.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, testcase.IDLTE(*i.IDLTE))
-	}
 
 	if i.HasRun != nil {
 		p := testcase.HasRun()
@@ -5646,6 +5646,16 @@ type TestRunWhereInput struct {
 	Or  []*TestRunWhereInput `json:"or,omitempty"`
 	And []*TestRunWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "tool" field predicates.
 	Tool             *string  `json:"tool,omitempty"`
 	ToolNEQ          *string  `json:"toolNEQ,omitempty"`
@@ -5670,16 +5680,6 @@ type TestRunWhereInput struct {
 	TimeGTE   *time.Time  `json:"timeGTE,omitempty"`
 	TimeLT    *time.Time  `json:"timeLT,omitempty"`
 	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "release" edge predicates.
 	HasRelease     *bool                `json:"hasRelease,omitempty"`
@@ -5753,6 +5753,30 @@ func (i *TestRunWhereInput) P() (predicate.TestRun, error) {
 		}
 		predicates = append(predicates, testrun.And(and...))
 	}
+	if i.ID != nil {
+		predicates = append(predicates, testrun.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, testrun.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, testrun.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, testrun.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, testrun.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, testrun.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, testrun.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, testrun.IDLTE(*i.IDLTE))
+	}
 	if i.Tool != nil {
 		predicates = append(predicates, testrun.ToolEQ(*i.Tool))
 	}
@@ -5815,30 +5839,6 @@ func (i *TestRunWhereInput) P() (predicate.TestRun, error) {
 	}
 	if i.TimeLTE != nil {
 		predicates = append(predicates, testrun.TimeLTE(*i.TimeLTE))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, testrun.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, testrun.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, testrun.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, testrun.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, testrun.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, testrun.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, testrun.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, testrun.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasRelease != nil {
@@ -5910,6 +5910,16 @@ type VulnerabilityWhereInput struct {
 	Not *VulnerabilityWhereInput   `json:"not,omitempty"`
 	Or  []*VulnerabilityWhereInput `json:"or,omitempty"`
 	And []*VulnerabilityWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "vid" field predicates.
 	Vid             *string  `json:"vid,omitempty"`
@@ -6000,16 +6010,6 @@ type VulnerabilityWhereInput struct {
 	ModifiedIsNil  bool        `json:"modifiedIsNil,omitempty"`
 	ModifiedNotNil bool        `json:"modifiedNotNil,omitempty"`
 
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-
 	// "owner" edge predicates.
 	HasOwner     *bool                     `json:"hasOwner,omitempty"`
 	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
@@ -6085,6 +6085,30 @@ func (i *VulnerabilityWhereInput) P() (predicate.Vulnerability, error) {
 			and = append(and, p)
 		}
 		predicates = append(predicates, vulnerability.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, vulnerability.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, vulnerability.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, vulnerability.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, vulnerability.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, vulnerability.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, vulnerability.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, vulnerability.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, vulnerability.IDLTE(*i.IDLTE))
 	}
 	if i.Vid != nil {
 		predicates = append(predicates, vulnerability.VidEQ(*i.Vid))
@@ -6311,30 +6335,6 @@ func (i *VulnerabilityWhereInput) P() (predicate.Vulnerability, error) {
 	if i.ModifiedNotNil {
 		predicates = append(predicates, vulnerability.ModifiedNotNil())
 	}
-	if i.ID != nil {
-		predicates = append(predicates, vulnerability.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, vulnerability.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, vulnerability.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, vulnerability.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, vulnerability.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, vulnerability.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, vulnerability.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, vulnerability.IDLTE(*i.IDLTE))
-	}
 
 	if i.HasOwner != nil {
 		p := vulnerability.HasOwner()
@@ -6424,6 +6424,16 @@ type VulnerabilityReviewWhereInput struct {
 	Or  []*VulnerabilityReviewWhereInput `json:"or,omitempty"`
 	And []*VulnerabilityReviewWhereInput `json:"and,omitempty"`
 
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -6444,16 +6454,6 @@ type VulnerabilityReviewWhereInput struct {
 	DecisionNEQ   *vulnerabilityreview.Decision  `json:"decisionNEQ,omitempty"`
 	DecisionIn    []vulnerabilityreview.Decision `json:"decisionIn,omitempty"`
 	DecisionNotIn []vulnerabilityreview.Decision `json:"decisionNotIn,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
 
 	// "vulnerability" edge predicates.
 	HasVulnerability     *bool                      `json:"hasVulnerability,omitempty"`
@@ -6535,6 +6535,30 @@ func (i *VulnerabilityReviewWhereInput) P() (predicate.VulnerabilityReview, erro
 		}
 		predicates = append(predicates, vulnerabilityreview.And(and...))
 	}
+	if i.ID != nil {
+		predicates = append(predicates, vulnerabilityreview.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, vulnerabilityreview.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, vulnerabilityreview.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, vulnerabilityreview.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, vulnerabilityreview.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, vulnerabilityreview.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, vulnerabilityreview.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, vulnerabilityreview.IDLTE(*i.IDLTE))
+	}
 	if i.Name != nil {
 		predicates = append(predicates, vulnerabilityreview.NameEQ(*i.Name))
 	}
@@ -6585,30 +6609,6 @@ func (i *VulnerabilityReviewWhereInput) P() (predicate.VulnerabilityReview, erro
 	}
 	if len(i.DecisionNotIn) > 0 {
 		predicates = append(predicates, vulnerabilityreview.DecisionNotIn(i.DecisionNotIn...))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, vulnerabilityreview.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, vulnerabilityreview.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, vulnerabilityreview.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, vulnerabilityreview.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, vulnerabilityreview.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, vulnerabilityreview.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, vulnerabilityreview.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, vulnerabilityreview.IDLTE(*i.IDLTE))
 	}
 
 	if i.HasVulnerability != nil {

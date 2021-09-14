@@ -3,9 +3,9 @@ module github.com/valocode/bubbly
 go 1.16
 
 require (
-	entgo.io/contrib v0.0.0-20210701194530-6b9b6b0bd76c
-	entgo.io/ent v0.9.1
-	github.com/99designs/gqlgen v0.13.0
+	entgo.io/contrib v0.1.1-0.20210909110117-6470c1c113ab
+	entgo.io/ent v0.9.2-0.20210821141344-368a8f7a2e9a
+	github.com/99designs/gqlgen v0.14.0
 	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/Microsoft/go-winio v0.5.0 // indirect
@@ -13,6 +13,8 @@ require (
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
 	github.com/docker/docker v20.10.8+incompatible // indirect
 	github.com/fatih/color v1.12.0
+	github.com/go-bindata/go-bindata v1.0.1-0.20190711162640-ee3c2418e368 // indirect
+	github.com/go-chi/chi v3.3.2+incompatible // indirect
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
@@ -36,7 +38,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tmccombs/hcl2json v0.3.3 // indirect
-	github.com/vektah/gqlparser/v2 v2.1.0
+	github.com/vektah/gqlparser/v2 v2.2.0
 	github.com/vmihailenco/msgpack/v5 v5.3.4
 	github.com/xiaoqidun/entps v0.0.0-20210811073333-c1af85abbd8d
 	github.com/zclconf/go-cty v1.9.1 // indirect
@@ -49,7 +51,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 )
 
-replace entgo.io/contrib => github.com/jlarfors/contrib v0.0.0-20210728113018-b9b57a221a03
+// replace entgo.io/contrib => github.com/jlarfors/contrib v0.0.0-20210728113018-b9b57a221a03
 
 // For local development of contrib...
 //replace entgo.io/contrib => /Users/jacoblarfors/work/ent/contrib
