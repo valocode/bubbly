@@ -55,17 +55,16 @@ import (
         return {{ $receiver }}
     }
 
-    func ({{ $receiver }} *{{ $n.QueryName }}) WhereModelCreate(model *{{ $n.Name }}ModelCreate) *{{ $n.QueryName }} {
-        {{- range $f := fieldsModelCreate $n }}
-            {{ if $f.Type.Comparable }}
-                if model.{{ $f.StructField }} != nil {
-                    {{ $receiver }}.Where({{ $n.Package }}.{{ $f.StructField }}EQ(*model.{{ $f.StructField }}))
+    {{- range $f := fieldsModelCreate $n }}
+        {{- if $f.Type.Comparable }}
+            func ({{ $receiver }} *{{ $n.QueryName }}) Where{{ $f.StructField }}(value *{{ $f.Type }}) *{{ $n.QueryName }} {
+                if value != nil {
+                    {{ $receiver }}.Where({{ $n.Package }}.{{ $f.StructField }}EQ(*value))
                 }
-            {{ end }}
-            
+                return {{ $receiver }}
+            }    
         {{- end }}
-        return {{ $receiver }}
-    }    
+    {{- end }}
 
     type  {{ $n.Name }}ModelRead struct {
         {{- range $f := fieldsModelRead $n }}

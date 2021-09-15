@@ -67,7 +67,9 @@ func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent
 				return HandleValidatorError(err, "release component create")
 			}
 			existingComp, err = tx.Component.Query().
-				WhereModelCreate(&comp.ComponentModelCreate).
+				WhereName(comp.Name).
+				WhereVendor(comp.Vendor).
+				WhereVersion(comp.Version).
 				Only(h.ctx)
 			if err != nil {
 				if !ent.IsNotFound(err) {

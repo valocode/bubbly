@@ -86,21 +86,22 @@ func (a *AdapterMutation) SetModelCreate(model *AdapterModelCreate) *AdapterMuta
 	}
 	return a
 }
-
-func (a *AdapterQuery) WhereModelCreate(model *AdapterModelCreate) *AdapterQuery {
-
-	if model.Name != nil {
-		a.Where(adapter.NameEQ(*model.Name))
+func (a *AdapterQuery) WhereName(value *string) *AdapterQuery {
+	if value != nil {
+		a.Where(adapter.NameEQ(*value))
 	}
-
-	if model.Tag != nil {
-		a.Where(adapter.TagEQ(*model.Tag))
+	return a
+}
+func (a *AdapterQuery) WhereTag(value *string) *AdapterQuery {
+	if value != nil {
+		a.Where(adapter.TagEQ(*value))
 	}
-
-	if model.Module != nil {
-		a.Where(adapter.ModuleEQ(*model.Module))
+	return a
+}
+func (a *AdapterQuery) WhereModule(value *string) *AdapterQuery {
+	if value != nil {
+		a.Where(adapter.ModuleEQ(*value))
 	}
-
 	return a
 }
 
@@ -196,25 +197,28 @@ func (a *ArtifactMutation) SetModelCreate(model *ArtifactModelCreate) *ArtifactM
 	}
 	return a
 }
-
-func (a *ArtifactQuery) WhereModelCreate(model *ArtifactModelCreate) *ArtifactQuery {
-
-	if model.Name != nil {
-		a.Where(artifact.NameEQ(*model.Name))
+func (a *ArtifactQuery) WhereName(value *string) *ArtifactQuery {
+	if value != nil {
+		a.Where(artifact.NameEQ(*value))
 	}
-
-	if model.Sha256 != nil {
-		a.Where(artifact.Sha256EQ(*model.Sha256))
+	return a
+}
+func (a *ArtifactQuery) WhereSha256(value *string) *ArtifactQuery {
+	if value != nil {
+		a.Where(artifact.Sha256EQ(*value))
 	}
-
-	if model.Type != nil {
-		a.Where(artifact.TypeEQ(*model.Type))
+	return a
+}
+func (a *ArtifactQuery) WhereType(value *artifact.Type) *ArtifactQuery {
+	if value != nil {
+		a.Where(artifact.TypeEQ(*value))
 	}
-
-	if model.Time != nil {
-		a.Where(artifact.TimeEQ(*model.Time))
+	return a
+}
+func (a *ArtifactQuery) WhereTime(value *time.Time) *ArtifactQuery {
+	if value != nil {
+		a.Where(artifact.TimeEQ(*value))
 	}
-
 	return a
 }
 
@@ -314,25 +318,28 @@ func (ci *CodeIssueMutation) SetModelCreate(model *CodeIssueModelCreate) *CodeIs
 	}
 	return ci
 }
-
-func (ci *CodeIssueQuery) WhereModelCreate(model *CodeIssueModelCreate) *CodeIssueQuery {
-
-	if model.RuleID != nil {
-		ci.Where(codeissue.RuleIDEQ(*model.RuleID))
+func (ci *CodeIssueQuery) WhereRuleID(value *string) *CodeIssueQuery {
+	if value != nil {
+		ci.Where(codeissue.RuleIDEQ(*value))
 	}
-
-	if model.Message != nil {
-		ci.Where(codeissue.MessageEQ(*model.Message))
+	return ci
+}
+func (ci *CodeIssueQuery) WhereMessage(value *string) *CodeIssueQuery {
+	if value != nil {
+		ci.Where(codeissue.MessageEQ(*value))
 	}
-
-	if model.Severity != nil {
-		ci.Where(codeissue.SeverityEQ(*model.Severity))
+	return ci
+}
+func (ci *CodeIssueQuery) WhereSeverity(value *codeissue.Severity) *CodeIssueQuery {
+	if value != nil {
+		ci.Where(codeissue.SeverityEQ(*value))
 	}
-
-	if model.Type != nil {
-		ci.Where(codeissue.TypeEQ(*model.Type))
+	return ci
+}
+func (ci *CodeIssueQuery) WhereType(value *codeissue.Type) *CodeIssueQuery {
+	if value != nil {
+		ci.Where(codeissue.TypeEQ(*value))
 	}
-
 	return ci
 }
 
@@ -416,17 +423,16 @@ func (cs *CodeScanMutation) SetModelCreate(model *CodeScanModelCreate) *CodeScan
 	}
 	return cs
 }
-
-func (cs *CodeScanQuery) WhereModelCreate(model *CodeScanModelCreate) *CodeScanQuery {
-
-	if model.Tool != nil {
-		cs.Where(codescan.ToolEQ(*model.Tool))
+func (cs *CodeScanQuery) WhereTool(value *string) *CodeScanQuery {
+	if value != nil {
+		cs.Where(codescan.ToolEQ(*value))
 	}
-
-	if model.Time != nil {
-		cs.Where(codescan.TimeEQ(*model.Time))
+	return cs
+}
+func (cs *CodeScanQuery) WhereTime(value *time.Time) *CodeScanQuery {
+	if value != nil {
+		cs.Where(codescan.TimeEQ(*value))
 	}
-
 	return cs
 }
 
@@ -530,29 +536,34 @@ func (c *ComponentMutation) SetModelCreate(model *ComponentModelCreate) *Compone
 	}
 	return c
 }
-
-func (c *ComponentQuery) WhereModelCreate(model *ComponentModelCreate) *ComponentQuery {
-
-	if model.Name != nil {
-		c.Where(component.NameEQ(*model.Name))
+func (c *ComponentQuery) WhereName(value *string) *ComponentQuery {
+	if value != nil {
+		c.Where(component.NameEQ(*value))
 	}
-
-	if model.Vendor != nil {
-		c.Where(component.VendorEQ(*model.Vendor))
+	return c
+}
+func (c *ComponentQuery) WhereVendor(value *string) *ComponentQuery {
+	if value != nil {
+		c.Where(component.VendorEQ(*value))
 	}
-
-	if model.Version != nil {
-		c.Where(component.VersionEQ(*model.Version))
+	return c
+}
+func (c *ComponentQuery) WhereVersion(value *string) *ComponentQuery {
+	if value != nil {
+		c.Where(component.VersionEQ(*value))
 	}
-
-	if model.Description != nil {
-		c.Where(component.DescriptionEQ(*model.Description))
+	return c
+}
+func (c *ComponentQuery) WhereDescription(value *string) *ComponentQuery {
+	if value != nil {
+		c.Where(component.DescriptionEQ(*value))
 	}
-
-	if model.URL != nil {
-		c.Where(component.URLEQ(*model.URL))
+	return c
+}
+func (c *ComponentQuery) WhereURL(value *string) *ComponentQuery {
+	if value != nil {
+		c.Where(component.URLEQ(*value))
 	}
-
 	return c
 }
 
@@ -638,21 +649,22 @@ func (e *EventMutation) SetModelCreate(model *EventModelCreate) *EventMutation {
 	}
 	return e
 }
-
-func (e *EventQuery) WhereModelCreate(model *EventModelCreate) *EventQuery {
-
-	if model.Message != nil {
-		e.Where(event.MessageEQ(*model.Message))
+func (e *EventQuery) WhereMessage(value *string) *EventQuery {
+	if value != nil {
+		e.Where(event.MessageEQ(*value))
 	}
-
-	if model.Type != nil {
-		e.Where(event.TypeEQ(*model.Type))
+	return e
+}
+func (e *EventQuery) WhereType(value *event.Type) *EventQuery {
+	if value != nil {
+		e.Where(event.TypeEQ(*value))
 	}
-
-	if model.Time != nil {
-		e.Where(event.TimeEQ(*model.Time))
+	return e
+}
+func (e *EventQuery) WhereTime(value *time.Time) *EventQuery {
+	if value != nil {
+		e.Where(event.TimeEQ(*value))
 	}
-
 	return e
 }
 
@@ -740,25 +752,28 @@ func (gc *GitCommitMutation) SetModelCreate(model *GitCommitModelCreate) *GitCom
 	}
 	return gc
 }
-
-func (gc *GitCommitQuery) WhereModelCreate(model *GitCommitModelCreate) *GitCommitQuery {
-
-	if model.Hash != nil {
-		gc.Where(gitcommit.HashEQ(*model.Hash))
+func (gc *GitCommitQuery) WhereHash(value *string) *GitCommitQuery {
+	if value != nil {
+		gc.Where(gitcommit.HashEQ(*value))
 	}
-
-	if model.Branch != nil {
-		gc.Where(gitcommit.BranchEQ(*model.Branch))
+	return gc
+}
+func (gc *GitCommitQuery) WhereBranch(value *string) *GitCommitQuery {
+	if value != nil {
+		gc.Where(gitcommit.BranchEQ(*value))
 	}
-
-	if model.Tag != nil {
-		gc.Where(gitcommit.TagEQ(*model.Tag))
+	return gc
+}
+func (gc *GitCommitQuery) WhereTag(value *string) *GitCommitQuery {
+	if value != nil {
+		gc.Where(gitcommit.TagEQ(*value))
 	}
-
-	if model.Time != nil {
-		gc.Where(gitcommit.TimeEQ(*model.Time))
+	return gc
+}
+func (gc *GitCommitQuery) WhereTime(value *time.Time) *GitCommitQuery {
+	if value != nil {
+		gc.Where(gitcommit.TimeEQ(*value))
 	}
-
 	return gc
 }
 
@@ -824,13 +839,10 @@ func (o *OrganizationMutation) SetModelCreate(model *OrganizationModelCreate) *O
 	}
 	return o
 }
-
-func (o *OrganizationQuery) WhereModelCreate(model *OrganizationModelCreate) *OrganizationQuery {
-
-	if model.Name != nil {
-		o.Where(organization.NameEQ(*model.Name))
+func (o *OrganizationQuery) WhereName(value *string) *OrganizationQuery {
+	if value != nil {
+		o.Where(organization.NameEQ(*value))
 	}
-
 	return o
 }
 
@@ -890,13 +902,10 @@ func (pr *ProjectMutation) SetModelCreate(model *ProjectModelCreate) *ProjectMut
 	}
 	return pr
 }
-
-func (pr *ProjectQuery) WhereModelCreate(model *ProjectModelCreate) *ProjectQuery {
-
-	if model.Name != nil {
-		pr.Where(project.NameEQ(*model.Name))
+func (pr *ProjectQuery) WhereName(value *string) *ProjectQuery {
+	if value != nil {
+		pr.Where(project.NameEQ(*value))
 	}
-
 	return pr
 }
 
@@ -964,17 +973,16 @@ func (r *ReleaseMutation) SetModelCreate(model *ReleaseModelCreate) *ReleaseMuta
 	}
 	return r
 }
-
-func (r *ReleaseQuery) WhereModelCreate(model *ReleaseModelCreate) *ReleaseQuery {
-
-	if model.Name != nil {
-		r.Where(release.NameEQ(*model.Name))
+func (r *ReleaseQuery) WhereName(value *string) *ReleaseQuery {
+	if value != nil {
+		r.Where(release.NameEQ(*value))
 	}
-
-	if model.Version != nil {
-		r.Where(release.VersionEQ(*model.Version))
+	return r
+}
+func (r *ReleaseQuery) WhereVersion(value *string) *ReleaseQuery {
+	if value != nil {
+		r.Where(release.VersionEQ(*value))
 	}
-
 	return r
 }
 
@@ -1046,17 +1054,16 @@ func (re *ReleaseEntryMutation) SetModelCreate(model *ReleaseEntryModelCreate) *
 	}
 	return re
 }
-
-func (re *ReleaseEntryQuery) WhereModelCreate(model *ReleaseEntryModelCreate) *ReleaseEntryQuery {
-
-	if model.Type != nil {
-		re.Where(releaseentry.TypeEQ(*model.Type))
+func (re *ReleaseEntryQuery) WhereType(value *releaseentry.Type) *ReleaseEntryQuery {
+	if value != nil {
+		re.Where(releaseentry.TypeEQ(*value))
 	}
-
-	if model.Time != nil {
-		re.Where(releaseentry.TimeEQ(*model.Time))
+	return re
+}
+func (re *ReleaseEntryQuery) WhereTime(value *time.Time) *ReleaseEntryQuery {
+	if value != nil {
+		re.Where(releaseentry.TimeEQ(*value))
 	}
-
 	return re
 }
 
@@ -1126,17 +1133,16 @@ func (rp *ReleasePolicyMutation) SetModelCreate(model *ReleasePolicyModelCreate)
 	}
 	return rp
 }
-
-func (rp *ReleasePolicyQuery) WhereModelCreate(model *ReleasePolicyModelCreate) *ReleasePolicyQuery {
-
-	if model.Name != nil {
-		rp.Where(releasepolicy.NameEQ(*model.Name))
+func (rp *ReleasePolicyQuery) WhereName(value *string) *ReleasePolicyQuery {
+	if value != nil {
+		rp.Where(releasepolicy.NameEQ(*value))
 	}
-
-	if model.Module != nil {
-		rp.Where(releasepolicy.ModuleEQ(*model.Module))
+	return rp
+}
+func (rp *ReleasePolicyQuery) WhereModule(value *string) *ReleasePolicyQuery {
+	if value != nil {
+		rp.Where(releasepolicy.ModuleEQ(*value))
 	}
-
 	return rp
 }
 
@@ -1214,21 +1220,22 @@ func (rpv *ReleasePolicyViolationMutation) SetModelCreate(model *ReleasePolicyVi
 	}
 	return rpv
 }
-
-func (rpv *ReleasePolicyViolationQuery) WhereModelCreate(model *ReleasePolicyViolationModelCreate) *ReleasePolicyViolationQuery {
-
-	if model.Message != nil {
-		rpv.Where(releasepolicyviolation.MessageEQ(*model.Message))
+func (rpv *ReleasePolicyViolationQuery) WhereMessage(value *string) *ReleasePolicyViolationQuery {
+	if value != nil {
+		rpv.Where(releasepolicyviolation.MessageEQ(*value))
 	}
-
-	if model.Type != nil {
-		rpv.Where(releasepolicyviolation.TypeEQ(*model.Type))
+	return rpv
+}
+func (rpv *ReleasePolicyViolationQuery) WhereType(value *releasepolicyviolation.Type) *ReleasePolicyViolationQuery {
+	if value != nil {
+		rpv.Where(releasepolicyviolation.TypeEQ(*value))
 	}
-
-	if model.Severity != nil {
-		rpv.Where(releasepolicyviolation.SeverityEQ(*model.Severity))
+	return rpv
+}
+func (rpv *ReleasePolicyViolationQuery) WhereSeverity(value *releasepolicyviolation.Severity) *ReleasePolicyViolationQuery {
+	if value != nil {
+		rpv.Where(releasepolicyviolation.SeverityEQ(*value))
 	}
-
 	return rpv
 }
 
@@ -1300,17 +1307,16 @@ func (r *RepoMutation) SetModelCreate(model *RepoModelCreate) *RepoMutation {
 	}
 	return r
 }
-
-func (r *RepoQuery) WhereModelCreate(model *RepoModelCreate) *RepoQuery {
-
-	if model.Name != nil {
-		r.Where(repo.NameEQ(*model.Name))
+func (r *RepoQuery) WhereName(value *string) *RepoQuery {
+	if value != nil {
+		r.Where(repo.NameEQ(*value))
 	}
-
-	if model.DefaultBranch != nil {
-		r.Where(repo.DefaultBranchEQ(*model.DefaultBranch))
+	return r
+}
+func (r *RepoQuery) WhereDefaultBranch(value *string) *RepoQuery {
+	if value != nil {
+		r.Where(repo.DefaultBranchEQ(*value))
 	}
-
 	return r
 }
 
@@ -1404,25 +1410,28 @@ func (tc *TestCaseMutation) SetModelCreate(model *TestCaseModelCreate) *TestCase
 	}
 	return tc
 }
-
-func (tc *TestCaseQuery) WhereModelCreate(model *TestCaseModelCreate) *TestCaseQuery {
-
-	if model.Name != nil {
-		tc.Where(testcase.NameEQ(*model.Name))
+func (tc *TestCaseQuery) WhereName(value *string) *TestCaseQuery {
+	if value != nil {
+		tc.Where(testcase.NameEQ(*value))
 	}
-
-	if model.Result != nil {
-		tc.Where(testcase.ResultEQ(*model.Result))
+	return tc
+}
+func (tc *TestCaseQuery) WhereResult(value *bool) *TestCaseQuery {
+	if value != nil {
+		tc.Where(testcase.ResultEQ(*value))
 	}
-
-	if model.Message != nil {
-		tc.Where(testcase.MessageEQ(*model.Message))
+	return tc
+}
+func (tc *TestCaseQuery) WhereMessage(value *string) *TestCaseQuery {
+	if value != nil {
+		tc.Where(testcase.MessageEQ(*value))
 	}
-
-	if model.Elapsed != nil {
-		tc.Where(testcase.ElapsedEQ(*model.Elapsed))
+	return tc
+}
+func (tc *TestCaseQuery) WhereElapsed(value *float64) *TestCaseQuery {
+	if value != nil {
+		tc.Where(testcase.ElapsedEQ(*value))
 	}
-
 	return tc
 }
 
@@ -1506,17 +1515,16 @@ func (tr *TestRunMutation) SetModelCreate(model *TestRunModelCreate) *TestRunMut
 	}
 	return tr
 }
-
-func (tr *TestRunQuery) WhereModelCreate(model *TestRunModelCreate) *TestRunQuery {
-
-	if model.Tool != nil {
-		tr.Where(testrun.ToolEQ(*model.Tool))
+func (tr *TestRunQuery) WhereTool(value *string) *TestRunQuery {
+	if value != nil {
+		tr.Where(testrun.ToolEQ(*value))
 	}
-
-	if model.Time != nil {
-		tr.Where(testrun.TimeEQ(*model.Time))
+	return tr
+}
+func (tr *TestRunQuery) WhereTime(value *time.Time) *TestRunQuery {
+	if value != nil {
+		tr.Where(testrun.TimeEQ(*value))
 	}
-
 	return tr
 }
 
@@ -1636,37 +1644,46 @@ func (v *VulnerabilityMutation) SetModelCreate(model *VulnerabilityModelCreate) 
 	}
 	return v
 }
-
-func (v *VulnerabilityQuery) WhereModelCreate(model *VulnerabilityModelCreate) *VulnerabilityQuery {
-
-	if model.Vid != nil {
-		v.Where(vulnerability.VidEQ(*model.Vid))
+func (v *VulnerabilityQuery) WhereVid(value *string) *VulnerabilityQuery {
+	if value != nil {
+		v.Where(vulnerability.VidEQ(*value))
 	}
-
-	if model.Summary != nil {
-		v.Where(vulnerability.SummaryEQ(*model.Summary))
+	return v
+}
+func (v *VulnerabilityQuery) WhereSummary(value *string) *VulnerabilityQuery {
+	if value != nil {
+		v.Where(vulnerability.SummaryEQ(*value))
 	}
-
-	if model.Description != nil {
-		v.Where(vulnerability.DescriptionEQ(*model.Description))
+	return v
+}
+func (v *VulnerabilityQuery) WhereDescription(value *string) *VulnerabilityQuery {
+	if value != nil {
+		v.Where(vulnerability.DescriptionEQ(*value))
 	}
-
-	if model.SeverityScore != nil {
-		v.Where(vulnerability.SeverityScoreEQ(*model.SeverityScore))
+	return v
+}
+func (v *VulnerabilityQuery) WhereSeverityScore(value *float64) *VulnerabilityQuery {
+	if value != nil {
+		v.Where(vulnerability.SeverityScoreEQ(*value))
 	}
-
-	if model.Severity != nil {
-		v.Where(vulnerability.SeverityEQ(*model.Severity))
+	return v
+}
+func (v *VulnerabilityQuery) WhereSeverity(value *vulnerability.Severity) *VulnerabilityQuery {
+	if value != nil {
+		v.Where(vulnerability.SeverityEQ(*value))
 	}
-
-	if model.Published != nil {
-		v.Where(vulnerability.PublishedEQ(*model.Published))
+	return v
+}
+func (v *VulnerabilityQuery) WherePublished(value *time.Time) *VulnerabilityQuery {
+	if value != nil {
+		v.Where(vulnerability.PublishedEQ(*value))
 	}
-
-	if model.Modified != nil {
-		v.Where(vulnerability.ModifiedEQ(*model.Modified))
+	return v
+}
+func (v *VulnerabilityQuery) WhereModified(value *time.Time) *VulnerabilityQuery {
+	if value != nil {
+		v.Where(vulnerability.ModifiedEQ(*value))
 	}
-
 	return v
 }
 
