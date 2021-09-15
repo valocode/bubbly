@@ -23,7 +23,6 @@ import (
 	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
@@ -562,7 +561,7 @@ func (l *License) Node(ctx context.Context) (node *Node, err error) {
 		ID:     l.ID,
 		Type:   "License",
 		Fields: make([]*Field, 5),
-		Edges:  make([]*Edge, 2),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(l.SpdxID); err != nil {
@@ -606,42 +605,32 @@ func (l *License) Node(ctx context.Context) (node *Node, err error) {
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
-		Type: "Component",
-		Name: "components",
+		Type: "Organization",
+		Name: "owner",
 	}
-	err = l.QueryComponents().
-		Select(component.FieldID).
+	err = l.QueryOwner().
+		Select(organization.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "LicenseUse",
-		Name: "uses",
+		Type: "Component",
+		Name: "components",
 	}
-	err = l.QueryUses().
-		Select(licenseuse.FieldID).
+	err = l.QueryComponents().
+		Select(component.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
-	return node, nil
-}
-
-func (lu *LicenseUse) Node(ctx context.Context) (node *Node, err error) {
-	node = &Node{
-		ID:     lu.ID,
-		Type:   "LicenseUse",
-		Fields: make([]*Field, 0),
-		Edges:  make([]*Edge, 1),
+	node.Edges[2] = &Edge{
+		Type: "ReleaseLicense",
+		Name: "instances",
 	}
-	node.Edges[0] = &Edge{
-		Type: "License",
-		Name: "license",
-	}
-	err = lu.QueryLicense().
-		Select(license.FieldID).
-		Scan(ctx, &node.Edges[0].IDs)
+	err = l.QueryInstances().
+		Select(releaselicense.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1795,14 +1784,6 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			return nil, err
 		}
 		return n, nil
-	case licenseuse.Table:
-		n, err := c.LicenseUse.Query().
-			Where(licenseuse.ID(id)).
-			Only(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return n, nil
 	case organization.Table:
 		n, err := c.Organization.Query().
 			Where(organization.ID(id)).
@@ -2075,18 +2056,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case license.Table:
 		nodes, err := c.License.Query().
 			Where(license.IDIn(ids...)).
-			All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case licenseuse.Table:
-		nodes, err := c.LicenseUse.Query().
-			Where(licenseuse.IDIn(ids...)).
 			All(ctx)
 		if err != nil {
 			return nil, err

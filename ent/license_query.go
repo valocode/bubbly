@@ -14,8 +14,9 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licenseuse"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
+	"github.com/valocode/bubbly/ent/releaselicense"
 )
 
 // LicenseQuery is the builder for querying License entities.
@@ -28,8 +29,10 @@ type LicenseQuery struct {
 	fields     []string
 	predicates []predicate.License
 	// eager-loading edges.
+	withOwner      *OrganizationQuery
 	withComponents *ComponentQuery
-	withUses       *LicenseUseQuery
+	withInstances  *ReleaseLicenseQuery
+	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -66,6 +69,28 @@ func (lq *LicenseQuery) Order(o ...OrderFunc) *LicenseQuery {
 	return lq
 }
 
+// QueryOwner chains the current query on the "owner" edge.
+func (lq *LicenseQuery) QueryOwner() *OrganizationQuery {
+	query := &OrganizationQuery{config: lq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := lq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := lq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(license.Table, license.FieldID, selector),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, license.OwnerTable, license.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(lq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryComponents chains the current query on the "components" edge.
 func (lq *LicenseQuery) QueryComponents() *ComponentQuery {
 	query := &ComponentQuery{config: lq.config}
@@ -88,9 +113,9 @@ func (lq *LicenseQuery) QueryComponents() *ComponentQuery {
 	return query
 }
 
-// QueryUses chains the current query on the "uses" edge.
-func (lq *LicenseQuery) QueryUses() *LicenseUseQuery {
-	query := &LicenseUseQuery{config: lq.config}
+// QueryInstances chains the current query on the "instances" edge.
+func (lq *LicenseQuery) QueryInstances() *ReleaseLicenseQuery {
+	query := &ReleaseLicenseQuery{config: lq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := lq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -101,8 +126,8 @@ func (lq *LicenseQuery) QueryUses() *LicenseUseQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(license.Table, license.FieldID, selector),
-			sqlgraph.To(licenseuse.Table, licenseuse.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, license.UsesTable, license.UsesColumn),
+			sqlgraph.To(releaselicense.Table, releaselicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, license.InstancesTable, license.InstancesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(lq.driver.Dialect(), step)
 		return fromU, nil
@@ -291,12 +316,24 @@ func (lq *LicenseQuery) Clone() *LicenseQuery {
 		offset:         lq.offset,
 		order:          append([]OrderFunc{}, lq.order...),
 		predicates:     append([]predicate.License{}, lq.predicates...),
+		withOwner:      lq.withOwner.Clone(),
 		withComponents: lq.withComponents.Clone(),
-		withUses:       lq.withUses.Clone(),
+		withInstances:  lq.withInstances.Clone(),
 		// clone intermediate query.
 		sql:  lq.sql.Clone(),
 		path: lq.path,
 	}
+}
+
+// WithOwner tells the query-builder to eager-load the nodes that are connected to
+// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
+func (lq *LicenseQuery) WithOwner(opts ...func(*OrganizationQuery)) *LicenseQuery {
+	query := &OrganizationQuery{config: lq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	lq.withOwner = query
+	return lq
 }
 
 // WithComponents tells the query-builder to eager-load the nodes that are connected to
@@ -310,14 +347,14 @@ func (lq *LicenseQuery) WithComponents(opts ...func(*ComponentQuery)) *LicenseQu
 	return lq
 }
 
-// WithUses tells the query-builder to eager-load the nodes that are connected to
-// the "uses" edge. The optional arguments are used to configure the query builder of the edge.
-func (lq *LicenseQuery) WithUses(opts ...func(*LicenseUseQuery)) *LicenseQuery {
-	query := &LicenseUseQuery{config: lq.config}
+// WithInstances tells the query-builder to eager-load the nodes that are connected to
+// the "instances" edge. The optional arguments are used to configure the query builder of the edge.
+func (lq *LicenseQuery) WithInstances(opts ...func(*ReleaseLicenseQuery)) *LicenseQuery {
+	query := &ReleaseLicenseQuery{config: lq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	lq.withUses = query
+	lq.withInstances = query
 	return lq
 }
 
@@ -385,12 +422,20 @@ func (lq *LicenseQuery) prepareQuery(ctx context.Context) error {
 func (lq *LicenseQuery) sqlAll(ctx context.Context) ([]*License, error) {
 	var (
 		nodes       = []*License{}
+		withFKs     = lq.withFKs
 		_spec       = lq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
+			lq.withOwner != nil,
 			lq.withComponents != nil,
-			lq.withUses != nil,
+			lq.withInstances != nil,
 		}
 	)
+	if lq.withOwner != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, license.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &License{config: lq.config}
 		nodes = append(nodes, node)
@@ -409,6 +454,35 @@ func (lq *LicenseQuery) sqlAll(ctx context.Context) ([]*License, error) {
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+
+	if query := lq.withOwner; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*License)
+		for i := range nodes {
+			if nodes[i].license_owner == nil {
+				continue
+			}
+			fk := *nodes[i].license_owner
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(organization.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "license_owner" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Owner = n
+			}
+		}
 	}
 
 	if query := lq.withComponents; query != nil {
@@ -476,32 +550,32 @@ func (lq *LicenseQuery) sqlAll(ctx context.Context) ([]*License, error) {
 		}
 	}
 
-	if query := lq.withUses; query != nil {
+	if query := lq.withInstances; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[int]*License)
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Uses = []*LicenseUse{}
+			nodes[i].Edges.Instances = []*ReleaseLicense{}
 		}
 		query.withFKs = true
-		query.Where(predicate.LicenseUse(func(s *sql.Selector) {
-			s.Where(sql.InValues(license.UsesColumn, fks...))
+		query.Where(predicate.ReleaseLicense(func(s *sql.Selector) {
+			s.Where(sql.InValues(license.InstancesColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.license_use_license
+			fk := n.release_license_license
 			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "license_use_license" is nil for node %v`, n.ID)
+				return nil, fmt.Errorf(`foreign-key "release_license_license" is nil for node %v`, n.ID)
 			}
 			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "license_use_license" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "release_license_license" returned %v for node %v`, *fk, n.ID)
 			}
-			node.Edges.Uses = append(node.Edges.Uses, n)
+			node.Edges.Instances = append(node.Edges.Instances, n)
 		}
 	}
 

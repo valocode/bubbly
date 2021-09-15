@@ -11,7 +11,8 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licenseuse"
+	"github.com/valocode/bubbly/ent/organization"
+	"github.com/valocode/bubbly/ent/releaselicense"
 )
 
 // LicenseCreate is the builder for creating a License entity.
@@ -75,6 +76,17 @@ func (lc *LicenseCreate) SetNillableIsOsiApproved(b *bool) *LicenseCreate {
 	return lc
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (lc *LicenseCreate) SetOwnerID(id int) *LicenseCreate {
+	lc.mutation.SetOwnerID(id)
+	return lc
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (lc *LicenseCreate) SetOwner(o *Organization) *LicenseCreate {
+	return lc.SetOwnerID(o.ID)
+}
+
 // AddComponentIDs adds the "components" edge to the Component entity by IDs.
 func (lc *LicenseCreate) AddComponentIDs(ids ...int) *LicenseCreate {
 	lc.mutation.AddComponentIDs(ids...)
@@ -90,19 +102,19 @@ func (lc *LicenseCreate) AddComponents(c ...*Component) *LicenseCreate {
 	return lc.AddComponentIDs(ids...)
 }
 
-// AddUseIDs adds the "uses" edge to the LicenseUse entity by IDs.
-func (lc *LicenseCreate) AddUseIDs(ids ...int) *LicenseCreate {
-	lc.mutation.AddUseIDs(ids...)
+// AddInstanceIDs adds the "instances" edge to the ReleaseLicense entity by IDs.
+func (lc *LicenseCreate) AddInstanceIDs(ids ...int) *LicenseCreate {
+	lc.mutation.AddInstanceIDs(ids...)
 	return lc
 }
 
-// AddUses adds the "uses" edges to the LicenseUse entity.
-func (lc *LicenseCreate) AddUses(l ...*LicenseUse) *LicenseCreate {
-	ids := make([]int, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
+// AddInstances adds the "instances" edges to the ReleaseLicense entity.
+func (lc *LicenseCreate) AddInstances(r ...*ReleaseLicense) *LicenseCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
-	return lc.AddUseIDs(ids...)
+	return lc.AddInstanceIDs(ids...)
 }
 
 // Mutation returns the LicenseMutation object of the builder.
@@ -203,6 +215,9 @@ func (lc *LicenseCreate) check() error {
 	if _, ok := lc.mutation.IsOsiApproved(); !ok {
 		return &ValidationError{Name: "is_osi_approved", err: errors.New(`ent: missing required field "is_osi_approved"`)}
 	}
+	if _, ok := lc.mutation.OwnerID(); !ok {
+		return &ValidationError{Name: "owner", err: errors.New("ent: missing required edge \"owner\"")}
+	}
 	return nil
 }
 
@@ -270,6 +285,26 @@ func (lc *LicenseCreate) createSpec() (*License, *sqlgraph.CreateSpec) {
 		})
 		_node.IsOsiApproved = value
 	}
+	if nodes := lc.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   license.OwnerTable,
+			Columns: []string{license.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.license_owner = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := lc.mutation.ComponentsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -289,17 +324,17 @@ func (lc *LicenseCreate) createSpec() (*License, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := lc.mutation.UsesIDs(); len(nodes) > 0 {
+	if nodes := lc.mutation.InstancesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   license.UsesTable,
-			Columns: []string{license.UsesColumn},
+			Table:   license.InstancesTable,
+			Columns: []string{license.InstancesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: licenseuse.FieldID,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}

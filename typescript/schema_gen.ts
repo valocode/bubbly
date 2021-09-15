@@ -261,8 +261,9 @@ export interface License {
 	reference?: string;
 	details_url?: string;
 	is_osi_approved?: boolean;
+	owner?: Organization;
 	components?: Component[];
-	uses?: LicenseUse[];
+	instances?: ReleaseLicense[];
 }
 
 export interface License_Relay {
@@ -277,32 +278,6 @@ export interface License_Conn {
 
 export interface License_Edge {
 	node?: License;
-}
-
-// #######################################
-// LicenseUse
-// #######################################
-export interface LicenseUse_Json {
-	license_use?: LicenseUse[];
-}
-
-export interface LicenseUse {
-	id?: number;
-	license?: License;
-}
-
-export interface LicenseUse_Relay {
-	license_use_connection?: LicenseUse_Conn;
-}
-
-export interface LicenseUse_Conn {
-	totalCount?: number;
-	pageInfo?: pageInfo;
-	edges?: LicenseUse_Edge[];
-}
-
-export interface LicenseUse_Edge {
-	node?: LicenseUse;
 }
 
 // #######################################

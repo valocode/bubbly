@@ -30,9 +30,6 @@ type GitCommit func(*sql.Selector)
 // License is the predicate function for license builders.
 type License func(*sql.Selector)
 
-// LicenseUse is the predicate function for licenseuse builders.
-type LicenseUse func(*sql.Selector)
-
 // Organization is the predicate function for organization builders.
 type Organization func(*sql.Selector)
 

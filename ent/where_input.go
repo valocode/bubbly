@@ -14,7 +14,6 @@ import (
 	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
@@ -2439,13 +2438,17 @@ type LicenseWhereInput struct {
 	IsOsiApproved    *bool `json:"isOsiApproved,omitempty"`
 	IsOsiApprovedNEQ *bool `json:"isOsiApprovedNEQ,omitempty"`
 
+	// "owner" edge predicates.
+	HasOwner     *bool                     `json:"hasOwner,omitempty"`
+	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
+
 	// "components" edge predicates.
 	HasComponents     *bool                  `json:"hasComponents,omitempty"`
 	HasComponentsWith []*ComponentWhereInput `json:"hasComponentsWith,omitempty"`
 
-	// "uses" edge predicates.
-	HasUses     *bool                   `json:"hasUses,omitempty"`
-	HasUsesWith []*LicenseUseWhereInput `json:"hasUsesWith,omitempty"`
+	// "instances" edge predicates.
+	HasInstances     *bool                       `json:"hasInstances,omitempty"`
+	HasInstancesWith []*ReleaseLicenseWhereInput `json:"hasInstancesWith,omitempty"`
 }
 
 // Filter applies the LicenseWhereInput filter on the LicenseQuery builder.
@@ -2706,6 +2709,24 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 		predicates = append(predicates, license.IsOsiApprovedNEQ(*i.IsOsiApprovedNEQ))
 	}
 
+	if i.HasOwner != nil {
+		p := license.HasOwner()
+		if !*i.HasOwner {
+			p = license.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerWith) > 0 {
+		with := make([]predicate.Organization, 0, len(i.HasOwnerWith))
+		for _, w := range i.HasOwnerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, license.HasOwnerWith(with...))
+	}
 	if i.HasComponents != nil {
 		p := license.HasComponents()
 		if !*i.HasComponents {
@@ -2724,23 +2745,23 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 		}
 		predicates = append(predicates, license.HasComponentsWith(with...))
 	}
-	if i.HasUses != nil {
-		p := license.HasUses()
-		if !*i.HasUses {
+	if i.HasInstances != nil {
+		p := license.HasInstances()
+		if !*i.HasInstances {
 			p = license.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasUsesWith) > 0 {
-		with := make([]predicate.LicenseUse, 0, len(i.HasUsesWith))
-		for _, w := range i.HasUsesWith {
+	if len(i.HasInstancesWith) > 0 {
+		with := make([]predicate.ReleaseLicense, 0, len(i.HasInstancesWith))
+		for _, w := range i.HasInstancesWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, license.HasUsesWith(with...))
+		predicates = append(predicates, license.HasInstancesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -2749,139 +2770,6 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 		return predicates[0], nil
 	default:
 		return license.And(predicates...), nil
-	}
-}
-
-// LicenseUseWhereInput represents a where input for filtering LicenseUse queries.
-type LicenseUseWhereInput struct {
-	Not *LicenseUseWhereInput   `json:"not,omitempty"`
-	Or  []*LicenseUseWhereInput `json:"or,omitempty"`
-	And []*LicenseUseWhereInput `json:"and,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-
-	// "license" edge predicates.
-	HasLicense     *bool                `json:"hasLicense,omitempty"`
-	HasLicenseWith []*LicenseWhereInput `json:"hasLicenseWith,omitempty"`
-}
-
-// Filter applies the LicenseUseWhereInput filter on the LicenseUseQuery builder.
-func (i *LicenseUseWhereInput) Filter(q *LicenseUseQuery) (*LicenseUseQuery, error) {
-	if i == nil {
-		return q, nil
-	}
-	p, err := i.P()
-	if err != nil {
-		return nil, err
-	}
-	return q.Where(p), nil
-}
-
-// P returns a predicate for filtering licenseuses.
-// An error is returned if the input is empty or invalid.
-func (i *LicenseUseWhereInput) P() (predicate.LicenseUse, error) {
-	var predicates []predicate.LicenseUse
-	if i.Not != nil {
-		p, err := i.Not.P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, licenseuse.Not(p))
-	}
-	switch n := len(i.Or); {
-	case n == 1:
-		p, err := i.Or[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		or := make([]predicate.LicenseUse, 0, n)
-		for _, w := range i.Or {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			or = append(or, p)
-		}
-		predicates = append(predicates, licenseuse.Or(or...))
-	}
-	switch n := len(i.And); {
-	case n == 1:
-		p, err := i.And[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		and := make([]predicate.LicenseUse, 0, n)
-		for _, w := range i.And {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			and = append(and, p)
-		}
-		predicates = append(predicates, licenseuse.And(and...))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, licenseuse.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, licenseuse.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, licenseuse.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, licenseuse.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, licenseuse.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, licenseuse.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, licenseuse.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, licenseuse.IDLTE(*i.IDLTE))
-	}
-
-	if i.HasLicense != nil {
-		p := licenseuse.HasLicense()
-		if !*i.HasLicense {
-			p = licenseuse.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasLicenseWith) > 0 {
-		with := make([]predicate.License, 0, len(i.HasLicenseWith))
-		for _, w := range i.HasLicenseWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, licenseuse.HasLicenseWith(with...))
-	}
-	switch len(predicates) {
-	case 0:
-		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate LicenseUseWhereInput")
-	case 1:
-		return predicates[0], nil
-	default:
-		return licenseuse.And(predicates...), nil
 	}
 }
 

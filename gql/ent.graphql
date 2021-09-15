@@ -531,13 +531,17 @@ input LicenseWhereInput {
   idLT: ID
   idLTE: ID
   
+  """owner edge predicates"""
+  hasOwner: Boolean
+  hasOwnerWith: [OrganizationWhereInput!]
+  
   """components edge predicates"""
   hasComponents: Boolean
   hasComponentsWith: [ComponentWhereInput!]
   
-  """uses edge predicates"""
-  hasUses: Boolean
-  hasUsesWith: [LicenseUseWhereInput!]
+  """instances edge predicates"""
+  hasInstances: Boolean
+  hasInstancesWith: [ReleaseLicenseWhereInput!]
 }
 
 """

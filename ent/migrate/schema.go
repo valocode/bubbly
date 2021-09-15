@@ -242,36 +242,26 @@ var (
 		{Name: "reference", Type: field.TypeString, Nullable: true},
 		{Name: "details_url", Type: field.TypeString, Nullable: true},
 		{Name: "is_osi_approved", Type: field.TypeBool, Default: false},
+		{Name: "license_owner", Type: field.TypeInt, Nullable: true},
 	}
 	// LicenseTable holds the schema information for the "license" table.
 	LicenseTable = &schema.Table{
 		Name:       "license",
 		Columns:    LicenseColumns,
 		PrimaryKey: []*schema.Column{LicenseColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "license_organization_owner",
+				Columns:    []*schema.Column{LicenseColumns[6]},
+				RefColumns: []*schema.Column{OrganizationColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "license_spdx_id",
 				Unique:  true,
 				Columns: []*schema.Column{LicenseColumns[1]},
-			},
-		},
-	}
-	// LicenseUseColumns holds the columns for the "license_use" table.
-	LicenseUseColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "license_use_license", Type: field.TypeInt, Nullable: true},
-	}
-	// LicenseUseTable holds the schema information for the "license_use" table.
-	LicenseUseTable = &schema.Table{
-		Name:       "license_use",
-		Columns:    LicenseUseColumns,
-		PrimaryKey: []*schema.Column{LicenseUseColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "license_use_license_license",
-				Columns:    []*schema.Column{LicenseUseColumns[1]},
-				RefColumns: []*schema.Column{LicenseColumns[0]},
-				OnDelete:   schema.SetNull,
 			},
 		},
 	}
@@ -930,7 +920,6 @@ var (
 		EventTable,
 		CommitTable,
 		LicenseTable,
-		LicenseUseTable,
 		OrganizationTable,
 		ProjectTable,
 		ReleaseTable,
@@ -992,12 +981,9 @@ func init() {
 	CommitTable.Annotation = &entsql.Annotation{
 		Table: "commit",
 	}
+	LicenseTable.ForeignKeys[0].RefTable = OrganizationTable
 	LicenseTable.Annotation = &entsql.Annotation{
 		Table: "license",
-	}
-	LicenseUseTable.ForeignKeys[0].RefTable = LicenseTable
-	LicenseUseTable.Annotation = &entsql.Annotation{
-		Table: "license_use",
 	}
 	OrganizationTable.Annotation = &entsql.Annotation{
 		Table: "organization",

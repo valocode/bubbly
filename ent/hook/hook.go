@@ -113,19 +113,6 @@ func (f LicenseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return f(ctx, mv)
 }
 
-// The LicenseUseFunc type is an adapter to allow the use of ordinary
-// function as LicenseUse mutator.
-type LicenseUseFunc func(context.Context, *ent.LicenseUseMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f LicenseUseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.LicenseUseMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LicenseUseMutation", m)
-	}
-	return f(ctx, mv)
-}
-
 // The OrganizationFunc type is an adapter to allow the use of ordinary
 // function as Organization mutator.
 type OrganizationFunc func(context.Context, *ent.OrganizationMutation) (ent.Value, error)

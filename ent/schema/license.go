@@ -40,8 +40,9 @@ func (License) Fields() []ent.Field {
 
 func (License) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("owner", Organization.Type).Unique().Required(),
 		edge.From("components", Component.Type).Ref("licenses"),
-		edge.From("uses", LicenseUse.Type).Ref("license"),
+		edge.From("instances", ReleaseLicense.Type).Ref("license"),
 	}
 }
 
