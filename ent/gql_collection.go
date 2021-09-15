@@ -69,6 +69,18 @@ func (c *ComponentQuery) collectField(ctx *graphql.OperationContext, field graph
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (e *EventQuery) CollectFields(ctx context.Context, satisfies ...string) *EventQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		e = e.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return e
+}
+
+func (e *EventQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *EventQuery {
+	return e
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (gc *GitCommitQuery) CollectFields(ctx context.Context, satisfies ...string) *GitCommitQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		gc = gc.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
@@ -90,18 +102,6 @@ func (l *LicenseQuery) CollectFields(ctx context.Context, satisfies ...string) *
 
 func (l *LicenseQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *LicenseQuery {
 	return l
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (lu *LicenseUseQuery) CollectFields(ctx context.Context, satisfies ...string) *LicenseUseQuery {
-	if fc := graphql.GetFieldContext(ctx); fc != nil {
-		lu = lu.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
-	}
-	return lu
-}
-
-func (lu *LicenseUseQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *LicenseUseQuery {
-	return lu
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.

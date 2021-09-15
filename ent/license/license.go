@@ -17,24 +17,33 @@ const (
 	FieldDetailsURL = "details_url"
 	// FieldIsOsiApproved holds the string denoting the is_osi_approved field in the database.
 	FieldIsOsiApproved = "is_osi_approved"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// EdgeComponents holds the string denoting the components edge name in mutations.
 	EdgeComponents = "components"
-	// EdgeUses holds the string denoting the uses edge name in mutations.
-	EdgeUses = "uses"
+	// EdgeInstances holds the string denoting the instances edge name in mutations.
+	EdgeInstances = "instances"
 	// Table holds the table name of the license in the database.
 	Table = "license"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "license"
+	// OwnerInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OwnerInverseTable = "organization"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "license_owner"
 	// ComponentsTable is the table that holds the components relation/edge. The primary key declared below.
 	ComponentsTable = "component_licenses"
 	// ComponentsInverseTable is the table name for the Component entity.
 	// It exists in this package in order to avoid circular dependency with the "component" package.
 	ComponentsInverseTable = "component"
-	// UsesTable is the table that holds the uses relation/edge.
-	UsesTable = "license_use"
-	// UsesInverseTable is the table name for the LicenseUse entity.
-	// It exists in this package in order to avoid circular dependency with the "licenseuse" package.
-	UsesInverseTable = "license_use"
-	// UsesColumn is the table column denoting the uses relation/edge.
-	UsesColumn = "license_use_license"
+	// InstancesTable is the table that holds the instances relation/edge.
+	InstancesTable = "release_license"
+	// InstancesInverseTable is the table name for the ReleaseLicense entity.
+	// It exists in this package in order to avoid circular dependency with the "releaselicense" package.
+	InstancesInverseTable = "release_license"
+	// InstancesColumn is the table column denoting the instances relation/edge.
+	InstancesColumn = "release_license_license"
 )
 
 // Columns holds all SQL columns for license fields.
@@ -47,6 +56,12 @@ var Columns = []string{
 	FieldIsOsiApproved,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "license"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"license_owner",
+}
+
 var (
 	// ComponentsPrimaryKey and ComponentsColumn2 are the table columns denoting the
 	// primary key for the components relation (M2M).
@@ -57,6 +72,11 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}

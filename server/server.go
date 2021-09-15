@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"os"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -37,18 +36,17 @@ func NewWithStore(bCtx *env.BubblyConfig, store *store.Store) (*Server, error) {
 			e:     e,
 		}
 	)
-	logLevel := log.INFO
-	if s.bCtx.CLIConfig.Debug {
-		logLevel = log.DEBUG
-	}
-	e.Logger = lecho.New(
-		os.Stdout,
-		lecho.WithLevel(logLevel),
+	// Create an echo logger from our existing zerolog
+	eLogger := lecho.From(bCtx.Logger,
+		lecho.WithTimestamp(),
 	)
+	e.Logger = eLogger
 	e.Use(
 		middleware.Recover(),
 		middleware.RequestID(), // Generate a request IDs
-		middleware.Logger(),
+		lecho.Middleware(lecho.Config{
+			Logger: eLogger,
+		}),
 	)
 
 	// Setup the error handler
@@ -70,6 +68,8 @@ func NewWithStore(bCtx *env.BubblyConfig, store *store.Store) (*Server, error) {
 	e.Use(authProvider.EchoMiddleware())
 
 	e.GET("/auth/token", authProvider.EchoAuthorizeHandler())
+
+	// TODO: use only for dev/debugging, but disable by default
 	if true {
 		e.Use(middleware.CORS())
 	}
@@ -111,6 +111,7 @@ func NewWithStore(bCtx *env.BubblyConfig, store *store.Store) (*Server, error) {
 	})
 
 	v1 := e.Group("/api/v1")
+	v1.GET("/events", s.getEvents)
 	v1.POST("/projects", s.postProject)
 	v1.POST("/releases", s.postRelease)
 	v1.GET("/releases", s.getRelease)
@@ -170,6 +171,25 @@ func (s *Server) Start() error {
 		return err
 	}
 	return nil
+}
+
+func (s *Server) getEvents(c echo.Context) error {
+	var req api.EventGetRequest
+	if err := (&echo.DefaultBinder{}).BindQueryParams(c, &req); err != nil {
+		return err
+	}
+
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	dbEvents, err := h.GetEvents(&req)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, api.EventGetResponse{
+		Events: dbEvents,
+	})
 }
 
 func (s *Server) postProject(c echo.Context) error {

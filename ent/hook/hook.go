@@ -74,6 +74,19 @@ func (f ComponentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	return f(ctx, mv)
 }
 
+// The EventFunc type is an adapter to allow the use of ordinary
+// function as Event mutator.
+type EventFunc func(context.Context, *ent.EventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.EventMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EventMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The GitCommitFunc type is an adapter to allow the use of ordinary
 // function as GitCommit mutator.
 type GitCommitFunc func(context.Context, *ent.GitCommitMutation) (ent.Value, error)
@@ -96,19 +109,6 @@ func (f LicenseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	mv, ok := m.(*ent.LicenseMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LicenseMutation", m)
-	}
-	return f(ctx, mv)
-}
-
-// The LicenseUseFunc type is an adapter to allow the use of ordinary
-// function as LicenseUse mutator.
-type LicenseUseFunc func(context.Context, *ent.LicenseUseMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f LicenseUseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.LicenseUseMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LicenseUseMutation", m)
 	}
 	return f(ctx, mv)
 }

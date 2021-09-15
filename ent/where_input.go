@@ -11,9 +11,9 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
@@ -1712,6 +1712,289 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 	}
 }
 
+// EventWhereInput represents a where input for filtering Event queries.
+type EventWhereInput struct {
+	Not *EventWhereInput   `json:"not,omitempty"`
+	Or  []*EventWhereInput `json:"or,omitempty"`
+	And []*EventWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "message" field predicates.
+	Message             *string  `json:"message,omitempty"`
+	MessageNEQ          *string  `json:"messageNEQ,omitempty"`
+	MessageIn           []string `json:"messageIn,omitempty"`
+	MessageNotIn        []string `json:"messageNotIn,omitempty"`
+	MessageGT           *string  `json:"messageGT,omitempty"`
+	MessageGTE          *string  `json:"messageGTE,omitempty"`
+	MessageLT           *string  `json:"messageLT,omitempty"`
+	MessageLTE          *string  `json:"messageLTE,omitempty"`
+	MessageContains     *string  `json:"messageContains,omitempty"`
+	MessageHasPrefix    *string  `json:"messageHasPrefix,omitempty"`
+	MessageHasSuffix    *string  `json:"messageHasSuffix,omitempty"`
+	MessageEqualFold    *string  `json:"messageEqualFold,omitempty"`
+	MessageContainsFold *string  `json:"messageContainsFold,omitempty"`
+
+	// "type" field predicates.
+	Type      *event.Type  `json:"type,omitempty"`
+	TypeNEQ   *event.Type  `json:"typeNEQ,omitempty"`
+	TypeIn    []event.Type `json:"typeIn,omitempty"`
+	TypeNotIn []event.Type `json:"typeNotIn,omitempty"`
+
+	// "time" field predicates.
+	Time      *time.Time  `json:"time,omitempty"`
+	TimeNEQ   *time.Time  `json:"timeNEQ,omitempty"`
+	TimeIn    []time.Time `json:"timeIn,omitempty"`
+	TimeNotIn []time.Time `json:"timeNotIn,omitempty"`
+	TimeGT    *time.Time  `json:"timeGT,omitempty"`
+	TimeGTE   *time.Time  `json:"timeGTE,omitempty"`
+	TimeLT    *time.Time  `json:"timeLT,omitempty"`
+	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
+
+	// "release" edge predicates.
+	HasRelease     *bool                `json:"hasRelease,omitempty"`
+	HasReleaseWith []*ReleaseWhereInput `json:"hasReleaseWith,omitempty"`
+
+	// "repo" edge predicates.
+	HasRepo     *bool             `json:"hasRepo,omitempty"`
+	HasRepoWith []*RepoWhereInput `json:"hasRepoWith,omitempty"`
+
+	// "project" edge predicates.
+	HasProject     *bool                `json:"hasProject,omitempty"`
+	HasProjectWith []*ProjectWhereInput `json:"hasProjectWith,omitempty"`
+}
+
+// Filter applies the EventWhereInput filter on the EventQuery builder.
+func (i *EventWhereInput) Filter(q *EventQuery) (*EventQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// P returns a predicate for filtering events.
+// An error is returned if the input is empty or invalid.
+func (i *EventWhereInput) P() (predicate.Event, error) {
+	var predicates []predicate.Event
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, event.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.Event, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, event.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.Event, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, event.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, event.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, event.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, event.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, event.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, event.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, event.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, event.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, event.IDLTE(*i.IDLTE))
+	}
+	if i.Message != nil {
+		predicates = append(predicates, event.MessageEQ(*i.Message))
+	}
+	if i.MessageNEQ != nil {
+		predicates = append(predicates, event.MessageNEQ(*i.MessageNEQ))
+	}
+	if len(i.MessageIn) > 0 {
+		predicates = append(predicates, event.MessageIn(i.MessageIn...))
+	}
+	if len(i.MessageNotIn) > 0 {
+		predicates = append(predicates, event.MessageNotIn(i.MessageNotIn...))
+	}
+	if i.MessageGT != nil {
+		predicates = append(predicates, event.MessageGT(*i.MessageGT))
+	}
+	if i.MessageGTE != nil {
+		predicates = append(predicates, event.MessageGTE(*i.MessageGTE))
+	}
+	if i.MessageLT != nil {
+		predicates = append(predicates, event.MessageLT(*i.MessageLT))
+	}
+	if i.MessageLTE != nil {
+		predicates = append(predicates, event.MessageLTE(*i.MessageLTE))
+	}
+	if i.MessageContains != nil {
+		predicates = append(predicates, event.MessageContains(*i.MessageContains))
+	}
+	if i.MessageHasPrefix != nil {
+		predicates = append(predicates, event.MessageHasPrefix(*i.MessageHasPrefix))
+	}
+	if i.MessageHasSuffix != nil {
+		predicates = append(predicates, event.MessageHasSuffix(*i.MessageHasSuffix))
+	}
+	if i.MessageEqualFold != nil {
+		predicates = append(predicates, event.MessageEqualFold(*i.MessageEqualFold))
+	}
+	if i.MessageContainsFold != nil {
+		predicates = append(predicates, event.MessageContainsFold(*i.MessageContainsFold))
+	}
+	if i.Type != nil {
+		predicates = append(predicates, event.TypeEQ(*i.Type))
+	}
+	if i.TypeNEQ != nil {
+		predicates = append(predicates, event.TypeNEQ(*i.TypeNEQ))
+	}
+	if len(i.TypeIn) > 0 {
+		predicates = append(predicates, event.TypeIn(i.TypeIn...))
+	}
+	if len(i.TypeNotIn) > 0 {
+		predicates = append(predicates, event.TypeNotIn(i.TypeNotIn...))
+	}
+	if i.Time != nil {
+		predicates = append(predicates, event.TimeEQ(*i.Time))
+	}
+	if i.TimeNEQ != nil {
+		predicates = append(predicates, event.TimeNEQ(*i.TimeNEQ))
+	}
+	if len(i.TimeIn) > 0 {
+		predicates = append(predicates, event.TimeIn(i.TimeIn...))
+	}
+	if len(i.TimeNotIn) > 0 {
+		predicates = append(predicates, event.TimeNotIn(i.TimeNotIn...))
+	}
+	if i.TimeGT != nil {
+		predicates = append(predicates, event.TimeGT(*i.TimeGT))
+	}
+	if i.TimeGTE != nil {
+		predicates = append(predicates, event.TimeGTE(*i.TimeGTE))
+	}
+	if i.TimeLT != nil {
+		predicates = append(predicates, event.TimeLT(*i.TimeLT))
+	}
+	if i.TimeLTE != nil {
+		predicates = append(predicates, event.TimeLTE(*i.TimeLTE))
+	}
+
+	if i.HasRelease != nil {
+		p := event.HasRelease()
+		if !*i.HasRelease {
+			p = event.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasReleaseWith) > 0 {
+		with := make([]predicate.Release, 0, len(i.HasReleaseWith))
+		for _, w := range i.HasReleaseWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, event.HasReleaseWith(with...))
+	}
+	if i.HasRepo != nil {
+		p := event.HasRepo()
+		if !*i.HasRepo {
+			p = event.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasRepoWith) > 0 {
+		with := make([]predicate.Repo, 0, len(i.HasRepoWith))
+		for _, w := range i.HasRepoWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, event.HasRepoWith(with...))
+	}
+	if i.HasProject != nil {
+		p := event.HasProject()
+		if !*i.HasProject {
+			p = event.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasProjectWith) > 0 {
+		with := make([]predicate.Project, 0, len(i.HasProjectWith))
+		for _, w := range i.HasProjectWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, event.HasProjectWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate EventWhereInput")
+	case 1:
+		return predicates[0], nil
+	default:
+		return event.And(predicates...), nil
+	}
+}
+
 // GitCommitWhereInput represents a where input for filtering GitCommit queries.
 type GitCommitWhereInput struct {
 	Not *GitCommitWhereInput   `json:"not,omitempty"`
@@ -2155,13 +2438,17 @@ type LicenseWhereInput struct {
 	IsOsiApproved    *bool `json:"isOsiApproved,omitempty"`
 	IsOsiApprovedNEQ *bool `json:"isOsiApprovedNEQ,omitempty"`
 
+	// "owner" edge predicates.
+	HasOwner     *bool                     `json:"hasOwner,omitempty"`
+	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
+
 	// "components" edge predicates.
 	HasComponents     *bool                  `json:"hasComponents,omitempty"`
 	HasComponentsWith []*ComponentWhereInput `json:"hasComponentsWith,omitempty"`
 
-	// "uses" edge predicates.
-	HasUses     *bool                   `json:"hasUses,omitempty"`
-	HasUsesWith []*LicenseUseWhereInput `json:"hasUsesWith,omitempty"`
+	// "instances" edge predicates.
+	HasInstances     *bool                       `json:"hasInstances,omitempty"`
+	HasInstancesWith []*ReleaseLicenseWhereInput `json:"hasInstancesWith,omitempty"`
 }
 
 // Filter applies the LicenseWhereInput filter on the LicenseQuery builder.
@@ -2422,6 +2709,24 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 		predicates = append(predicates, license.IsOsiApprovedNEQ(*i.IsOsiApprovedNEQ))
 	}
 
+	if i.HasOwner != nil {
+		p := license.HasOwner()
+		if !*i.HasOwner {
+			p = license.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasOwnerWith) > 0 {
+		with := make([]predicate.Organization, 0, len(i.HasOwnerWith))
+		for _, w := range i.HasOwnerWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, license.HasOwnerWith(with...))
+	}
 	if i.HasComponents != nil {
 		p := license.HasComponents()
 		if !*i.HasComponents {
@@ -2440,23 +2745,23 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 		}
 		predicates = append(predicates, license.HasComponentsWith(with...))
 	}
-	if i.HasUses != nil {
-		p := license.HasUses()
-		if !*i.HasUses {
+	if i.HasInstances != nil {
+		p := license.HasInstances()
+		if !*i.HasInstances {
 			p = license.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasUsesWith) > 0 {
-		with := make([]predicate.LicenseUse, 0, len(i.HasUsesWith))
-		for _, w := range i.HasUsesWith {
+	if len(i.HasInstancesWith) > 0 {
+		with := make([]predicate.ReleaseLicense, 0, len(i.HasInstancesWith))
+		for _, w := range i.HasInstancesWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, license.HasUsesWith(with...))
+		predicates = append(predicates, license.HasInstancesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -2465,139 +2770,6 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 		return predicates[0], nil
 	default:
 		return license.And(predicates...), nil
-	}
-}
-
-// LicenseUseWhereInput represents a where input for filtering LicenseUse queries.
-type LicenseUseWhereInput struct {
-	Not *LicenseUseWhereInput   `json:"not,omitempty"`
-	Or  []*LicenseUseWhereInput `json:"or,omitempty"`
-	And []*LicenseUseWhereInput `json:"and,omitempty"`
-
-	// "id" field predicates.
-	ID      *int  `json:"id,omitempty"`
-	IDNEQ   *int  `json:"idNEQ,omitempty"`
-	IDIn    []int `json:"idIn,omitempty"`
-	IDNotIn []int `json:"idNotIn,omitempty"`
-	IDGT    *int  `json:"idGT,omitempty"`
-	IDGTE   *int  `json:"idGTE,omitempty"`
-	IDLT    *int  `json:"idLT,omitempty"`
-	IDLTE   *int  `json:"idLTE,omitempty"`
-
-	// "license" edge predicates.
-	HasLicense     *bool                `json:"hasLicense,omitempty"`
-	HasLicenseWith []*LicenseWhereInput `json:"hasLicenseWith,omitempty"`
-}
-
-// Filter applies the LicenseUseWhereInput filter on the LicenseUseQuery builder.
-func (i *LicenseUseWhereInput) Filter(q *LicenseUseQuery) (*LicenseUseQuery, error) {
-	if i == nil {
-		return q, nil
-	}
-	p, err := i.P()
-	if err != nil {
-		return nil, err
-	}
-	return q.Where(p), nil
-}
-
-// P returns a predicate for filtering licenseuses.
-// An error is returned if the input is empty or invalid.
-func (i *LicenseUseWhereInput) P() (predicate.LicenseUse, error) {
-	var predicates []predicate.LicenseUse
-	if i.Not != nil {
-		p, err := i.Not.P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, licenseuse.Not(p))
-	}
-	switch n := len(i.Or); {
-	case n == 1:
-		p, err := i.Or[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		or := make([]predicate.LicenseUse, 0, n)
-		for _, w := range i.Or {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			or = append(or, p)
-		}
-		predicates = append(predicates, licenseuse.Or(or...))
-	}
-	switch n := len(i.And); {
-	case n == 1:
-		p, err := i.And[0].P()
-		if err != nil {
-			return nil, err
-		}
-		predicates = append(predicates, p)
-	case n > 1:
-		and := make([]predicate.LicenseUse, 0, n)
-		for _, w := range i.And {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			and = append(and, p)
-		}
-		predicates = append(predicates, licenseuse.And(and...))
-	}
-	if i.ID != nil {
-		predicates = append(predicates, licenseuse.IDEQ(*i.ID))
-	}
-	if i.IDNEQ != nil {
-		predicates = append(predicates, licenseuse.IDNEQ(*i.IDNEQ))
-	}
-	if len(i.IDIn) > 0 {
-		predicates = append(predicates, licenseuse.IDIn(i.IDIn...))
-	}
-	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, licenseuse.IDNotIn(i.IDNotIn...))
-	}
-	if i.IDGT != nil {
-		predicates = append(predicates, licenseuse.IDGT(*i.IDGT))
-	}
-	if i.IDGTE != nil {
-		predicates = append(predicates, licenseuse.IDGTE(*i.IDGTE))
-	}
-	if i.IDLT != nil {
-		predicates = append(predicates, licenseuse.IDLT(*i.IDLT))
-	}
-	if i.IDLTE != nil {
-		predicates = append(predicates, licenseuse.IDLTE(*i.IDLTE))
-	}
-
-	if i.HasLicense != nil {
-		p := licenseuse.HasLicense()
-		if !*i.HasLicense {
-			p = licenseuse.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasLicenseWith) > 0 {
-		with := make([]predicate.License, 0, len(i.HasLicenseWith))
-		for _, w := range i.HasLicenseWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, licenseuse.HasLicenseWith(with...))
-	}
-	switch len(predicates) {
-	case 0:
-		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate LicenseUseWhereInput")
-	case 1:
-		return predicates[0], nil
-	default:
-		return licenseuse.And(predicates...), nil
 	}
 }
 
@@ -6434,20 +6606,20 @@ type VulnerabilityReviewWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
-	// "name" field predicates.
-	Name             *string  `json:"name,omitempty"`
-	NameNEQ          *string  `json:"nameNEQ,omitempty"`
-	NameIn           []string `json:"nameIn,omitempty"`
-	NameNotIn        []string `json:"nameNotIn,omitempty"`
-	NameGT           *string  `json:"nameGT,omitempty"`
-	NameGTE          *string  `json:"nameGTE,omitempty"`
-	NameLT           *string  `json:"nameLT,omitempty"`
-	NameLTE          *string  `json:"nameLTE,omitempty"`
-	NameContains     *string  `json:"nameContains,omitempty"`
-	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
-	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
-	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
-	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+	// "note" field predicates.
+	Note             *string  `json:"note,omitempty"`
+	NoteNEQ          *string  `json:"noteNEQ,omitempty"`
+	NoteIn           []string `json:"noteIn,omitempty"`
+	NoteNotIn        []string `json:"noteNotIn,omitempty"`
+	NoteGT           *string  `json:"noteGT,omitempty"`
+	NoteGTE          *string  `json:"noteGTE,omitempty"`
+	NoteLT           *string  `json:"noteLT,omitempty"`
+	NoteLTE          *string  `json:"noteLTE,omitempty"`
+	NoteContains     *string  `json:"noteContains,omitempty"`
+	NoteHasPrefix    *string  `json:"noteHasPrefix,omitempty"`
+	NoteHasSuffix    *string  `json:"noteHasSuffix,omitempty"`
+	NoteEqualFold    *string  `json:"noteEqualFold,omitempty"`
+	NoteContainsFold *string  `json:"noteContainsFold,omitempty"`
 
 	// "decision" field predicates.
 	Decision      *vulnerabilityreview.Decision  `json:"decision,omitempty"`
@@ -6559,44 +6731,44 @@ func (i *VulnerabilityReviewWhereInput) P() (predicate.VulnerabilityReview, erro
 	if i.IDLTE != nil {
 		predicates = append(predicates, vulnerabilityreview.IDLTE(*i.IDLTE))
 	}
-	if i.Name != nil {
-		predicates = append(predicates, vulnerabilityreview.NameEQ(*i.Name))
+	if i.Note != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteEQ(*i.Note))
 	}
-	if i.NameNEQ != nil {
-		predicates = append(predicates, vulnerabilityreview.NameNEQ(*i.NameNEQ))
+	if i.NoteNEQ != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteNEQ(*i.NoteNEQ))
 	}
-	if len(i.NameIn) > 0 {
-		predicates = append(predicates, vulnerabilityreview.NameIn(i.NameIn...))
+	if len(i.NoteIn) > 0 {
+		predicates = append(predicates, vulnerabilityreview.NoteIn(i.NoteIn...))
 	}
-	if len(i.NameNotIn) > 0 {
-		predicates = append(predicates, vulnerabilityreview.NameNotIn(i.NameNotIn...))
+	if len(i.NoteNotIn) > 0 {
+		predicates = append(predicates, vulnerabilityreview.NoteNotIn(i.NoteNotIn...))
 	}
-	if i.NameGT != nil {
-		predicates = append(predicates, vulnerabilityreview.NameGT(*i.NameGT))
+	if i.NoteGT != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteGT(*i.NoteGT))
 	}
-	if i.NameGTE != nil {
-		predicates = append(predicates, vulnerabilityreview.NameGTE(*i.NameGTE))
+	if i.NoteGTE != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteGTE(*i.NoteGTE))
 	}
-	if i.NameLT != nil {
-		predicates = append(predicates, vulnerabilityreview.NameLT(*i.NameLT))
+	if i.NoteLT != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteLT(*i.NoteLT))
 	}
-	if i.NameLTE != nil {
-		predicates = append(predicates, vulnerabilityreview.NameLTE(*i.NameLTE))
+	if i.NoteLTE != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteLTE(*i.NoteLTE))
 	}
-	if i.NameContains != nil {
-		predicates = append(predicates, vulnerabilityreview.NameContains(*i.NameContains))
+	if i.NoteContains != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteContains(*i.NoteContains))
 	}
-	if i.NameHasPrefix != nil {
-		predicates = append(predicates, vulnerabilityreview.NameHasPrefix(*i.NameHasPrefix))
+	if i.NoteHasPrefix != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteHasPrefix(*i.NoteHasPrefix))
 	}
-	if i.NameHasSuffix != nil {
-		predicates = append(predicates, vulnerabilityreview.NameHasSuffix(*i.NameHasSuffix))
+	if i.NoteHasSuffix != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteHasSuffix(*i.NoteHasSuffix))
 	}
-	if i.NameEqualFold != nil {
-		predicates = append(predicates, vulnerabilityreview.NameEqualFold(*i.NameEqualFold))
+	if i.NoteEqualFold != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteEqualFold(*i.NoteEqualFold))
 	}
-	if i.NameContainsFold != nil {
-		predicates = append(predicates, vulnerabilityreview.NameContainsFold(*i.NameContainsFold))
+	if i.NoteContainsFold != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteContainsFold(*i.NoteContainsFold))
 	}
 	if i.Decision != nil {
 		predicates = append(predicates, vulnerabilityreview.DecisionEQ(*i.Decision))

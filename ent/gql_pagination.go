@@ -19,9 +19,9 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
@@ -1729,6 +1729,290 @@ func (c *Component) ToEdge(order *ComponentOrder) *ComponentEdge {
 	}
 }
 
+// EventEdge is the edge representation of Event.
+type EventEdge struct {
+	Node   *Event `json:"node"`
+	Cursor Cursor `json:"cursor"`
+}
+
+// EventConnection is the connection containing edges to Event.
+type EventConnection struct {
+	Edges      []*EventEdge `json:"edges"`
+	PageInfo   PageInfo     `json:"pageInfo"`
+	TotalCount int          `json:"totalCount"`
+}
+
+// EventPaginateOption enables pagination customization.
+type EventPaginateOption func(*eventPager) error
+
+// WithEventOrder configures pagination ordering.
+func WithEventOrder(order *EventOrder) EventPaginateOption {
+	if order == nil {
+		order = DefaultEventOrder
+	}
+	o := *order
+	return func(pager *eventPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultEventOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithEventFilter configures pagination filter.
+func WithEventFilter(filter func(*EventQuery) (*EventQuery, error)) EventPaginateOption {
+	return func(pager *eventPager) error {
+		if filter == nil {
+			return errors.New("EventQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type eventPager struct {
+	order  *EventOrder
+	filter func(*EventQuery) (*EventQuery, error)
+}
+
+func newEventPager(opts []EventPaginateOption) (*eventPager, error) {
+	pager := &eventPager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultEventOrder
+	}
+	return pager, nil
+}
+
+func (p *eventPager) applyFilter(query *EventQuery) (*EventQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *eventPager) toCursor(e *Event) Cursor {
+	return p.order.Field.toCursor(e)
+}
+
+func (p *eventPager) applyCursors(query *EventQuery, after, before *Cursor) *EventQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultEventOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *eventPager) applyOrder(query *EventQuery, reverse bool) *EventQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultEventOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultEventOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Event.
+func (e *EventQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...EventPaginateOption,
+) (*EventConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newEventPager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if e, err = pager.applyFilter(e); err != nil {
+		return nil, err
+	}
+
+	conn := &EventConnection{Edges: []*EventEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := e.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := e.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	e = pager.applyCursors(e, after, before)
+	e = pager.applyOrder(e, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		e = e.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		e = e.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := e.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *Event
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Event {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Event {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*EventEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &EventEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+var (
+	// EventOrderFieldType orders Event by type.
+	EventOrderFieldType = &EventOrderField{
+		field: event.FieldType,
+		toCursor: func(e *Event) Cursor {
+			return Cursor{
+				ID:    e.ID,
+				Value: e.Type,
+			}
+		},
+	}
+	// EventOrderFieldTime orders Event by time.
+	EventOrderFieldTime = &EventOrderField{
+		field: event.FieldTime,
+		toCursor: func(e *Event) Cursor {
+			return Cursor{
+				ID:    e.ID,
+				Value: e.Time,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f EventOrderField) String() string {
+	var str string
+	switch f.field {
+	case event.FieldType:
+		str = "type"
+	case event.FieldTime:
+		str = "time"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f EventOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *EventOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("EventOrderField %T must be a string", v)
+	}
+	switch str {
+	case "type":
+		*f = *EventOrderFieldType
+	case "time":
+		*f = *EventOrderFieldTime
+	default:
+		return fmt.Errorf("%s is not a valid EventOrderField", str)
+	}
+	return nil
+}
+
+// EventOrderField defines the ordering field of Event.
+type EventOrderField struct {
+	field    string
+	toCursor func(*Event) Cursor
+}
+
+// EventOrder defines the ordering of Event.
+type EventOrder struct {
+	Direction OrderDirection   `json:"direction"`
+	Field     *EventOrderField `json:"field"`
+}
+
+// DefaultEventOrder is the default ordering of Event.
+var DefaultEventOrder = &EventOrder{
+	Direction: OrderDirectionAsc,
+	Field: &EventOrderField{
+		field: event.FieldID,
+		toCursor: func(e *Event) Cursor {
+			return Cursor{ID: e.ID}
+		},
+	},
+}
+
+// ToEdge converts Event into EventEdge.
+func (e *Event) ToEdge(order *EventOrder) *EventEdge {
+	if order == nil {
+		order = DefaultEventOrder
+	}
+	return &EventEdge{
+		Node:   e,
+		Cursor: order.Field.toCursor(e),
+	}
+}
+
 // GitCommitEdge is the edge representation of GitCommit.
 type GitCommitEdge struct {
 	Node   *GitCommit `json:"node"`
@@ -2322,233 +2606,6 @@ func (l *License) ToEdge(order *LicenseOrder) *LicenseEdge {
 	return &LicenseEdge{
 		Node:   l,
 		Cursor: order.Field.toCursor(l),
-	}
-}
-
-// LicenseUseEdge is the edge representation of LicenseUse.
-type LicenseUseEdge struct {
-	Node   *LicenseUse `json:"node"`
-	Cursor Cursor      `json:"cursor"`
-}
-
-// LicenseUseConnection is the connection containing edges to LicenseUse.
-type LicenseUseConnection struct {
-	Edges      []*LicenseUseEdge `json:"edges"`
-	PageInfo   PageInfo          `json:"pageInfo"`
-	TotalCount int               `json:"totalCount"`
-}
-
-// LicenseUsePaginateOption enables pagination customization.
-type LicenseUsePaginateOption func(*licenseUsePager) error
-
-// WithLicenseUseOrder configures pagination ordering.
-func WithLicenseUseOrder(order *LicenseUseOrder) LicenseUsePaginateOption {
-	if order == nil {
-		order = DefaultLicenseUseOrder
-	}
-	o := *order
-	return func(pager *licenseUsePager) error {
-		if err := o.Direction.Validate(); err != nil {
-			return err
-		}
-		if o.Field == nil {
-			o.Field = DefaultLicenseUseOrder.Field
-		}
-		pager.order = &o
-		return nil
-	}
-}
-
-// WithLicenseUseFilter configures pagination filter.
-func WithLicenseUseFilter(filter func(*LicenseUseQuery) (*LicenseUseQuery, error)) LicenseUsePaginateOption {
-	return func(pager *licenseUsePager) error {
-		if filter == nil {
-			return errors.New("LicenseUseQuery filter cannot be nil")
-		}
-		pager.filter = filter
-		return nil
-	}
-}
-
-type licenseUsePager struct {
-	order  *LicenseUseOrder
-	filter func(*LicenseUseQuery) (*LicenseUseQuery, error)
-}
-
-func newLicenseUsePager(opts []LicenseUsePaginateOption) (*licenseUsePager, error) {
-	pager := &licenseUsePager{}
-	for _, opt := range opts {
-		if err := opt(pager); err != nil {
-			return nil, err
-		}
-	}
-	if pager.order == nil {
-		pager.order = DefaultLicenseUseOrder
-	}
-	return pager, nil
-}
-
-func (p *licenseUsePager) applyFilter(query *LicenseUseQuery) (*LicenseUseQuery, error) {
-	if p.filter != nil {
-		return p.filter(query)
-	}
-	return query, nil
-}
-
-func (p *licenseUsePager) toCursor(lu *LicenseUse) Cursor {
-	return p.order.Field.toCursor(lu)
-}
-
-func (p *licenseUsePager) applyCursors(query *LicenseUseQuery, after, before *Cursor) *LicenseUseQuery {
-	for _, predicate := range cursorsToPredicates(
-		p.order.Direction, after, before,
-		p.order.Field.field, DefaultLicenseUseOrder.Field.field,
-	) {
-		query = query.Where(predicate)
-	}
-	return query
-}
-
-func (p *licenseUsePager) applyOrder(query *LicenseUseQuery, reverse bool) *LicenseUseQuery {
-	direction := p.order.Direction
-	if reverse {
-		direction = direction.reverse()
-	}
-	query = query.Order(direction.orderFunc(p.order.Field.field))
-	if p.order.Field != DefaultLicenseUseOrder.Field {
-		query = query.Order(direction.orderFunc(DefaultLicenseUseOrder.Field.field))
-	}
-	return query
-}
-
-// Paginate executes the query and returns a relay based cursor connection to LicenseUse.
-func (lu *LicenseUseQuery) Paginate(
-	ctx context.Context, after *Cursor, first *int,
-	before *Cursor, last *int, opts ...LicenseUsePaginateOption,
-) (*LicenseUseConnection, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	pager, err := newLicenseUsePager(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	if lu, err = pager.applyFilter(lu); err != nil {
-		return nil, err
-	}
-
-	conn := &LicenseUseConnection{Edges: []*LicenseUseEdge{}}
-	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
-		if hasCollectedField(ctx, totalCountField) ||
-			hasCollectedField(ctx, pageInfoField) {
-			count, err := lu.Count(ctx)
-			if err != nil {
-				return nil, err
-			}
-			conn.TotalCount = count
-			conn.PageInfo.HasNextPage = first != nil && count > 0
-			conn.PageInfo.HasPreviousPage = last != nil && count > 0
-		}
-		return conn, nil
-	}
-
-	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
-		count, err := lu.Clone().Count(ctx)
-		if err != nil {
-			return nil, err
-		}
-		conn.TotalCount = count
-	}
-
-	lu = pager.applyCursors(lu, after, before)
-	lu = pager.applyOrder(lu, last != nil)
-	var limit int
-	if first != nil {
-		limit = *first + 1
-	} else if last != nil {
-		limit = *last + 1
-	}
-	if limit > 0 {
-		lu = lu.Limit(limit)
-	}
-
-	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
-		lu = lu.collectField(graphql.GetOperationContext(ctx), *field)
-	}
-
-	nodes, err := lu.All(ctx)
-	if err != nil || len(nodes) == 0 {
-		return conn, err
-	}
-
-	if len(nodes) == limit {
-		conn.PageInfo.HasNextPage = first != nil
-		conn.PageInfo.HasPreviousPage = last != nil
-		nodes = nodes[:len(nodes)-1]
-	}
-
-	var nodeAt func(int) *LicenseUse
-	if last != nil {
-		n := len(nodes) - 1
-		nodeAt = func(i int) *LicenseUse {
-			return nodes[n-i]
-		}
-	} else {
-		nodeAt = func(i int) *LicenseUse {
-			return nodes[i]
-		}
-	}
-
-	conn.Edges = make([]*LicenseUseEdge, len(nodes))
-	for i := range nodes {
-		node := nodeAt(i)
-		conn.Edges[i] = &LicenseUseEdge{
-			Node:   node,
-			Cursor: pager.toCursor(node),
-		}
-	}
-
-	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
-	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
-	if conn.TotalCount == 0 {
-		conn.TotalCount = len(nodes)
-	}
-
-	return conn, nil
-}
-
-// LicenseUseOrderField defines the ordering field of LicenseUse.
-type LicenseUseOrderField struct {
-	field    string
-	toCursor func(*LicenseUse) Cursor
-}
-
-// LicenseUseOrder defines the ordering of LicenseUse.
-type LicenseUseOrder struct {
-	Direction OrderDirection        `json:"direction"`
-	Field     *LicenseUseOrderField `json:"field"`
-}
-
-// DefaultLicenseUseOrder is the default ordering of LicenseUse.
-var DefaultLicenseUseOrder = &LicenseUseOrder{
-	Direction: OrderDirectionAsc,
-	Field: &LicenseUseOrderField{
-		field: licenseuse.FieldID,
-		toCursor: func(lu *LicenseUse) Cursor {
-			return Cursor{ID: lu.ID}
-		},
-	},
-}
-
-// ToEdge converts LicenseUse into LicenseUseEdge.
-func (lu *LicenseUse) ToEdge(order *LicenseUseOrder) *LicenseUseEdge {
-	if order == nil {
-		order = DefaultLicenseUseOrder
-	}
-	return &LicenseUseEdge{
-		Node:   lu,
-		Cursor: order.Field.toCursor(lu),
 	}
 }
 
@@ -6139,13 +6196,13 @@ func (vr *VulnerabilityReviewQuery) Paginate(
 }
 
 var (
-	// VulnerabilityReviewOrderFieldName orders VulnerabilityReview by name.
-	VulnerabilityReviewOrderFieldName = &VulnerabilityReviewOrderField{
-		field: vulnerabilityreview.FieldName,
+	// VulnerabilityReviewOrderFieldNote orders VulnerabilityReview by note.
+	VulnerabilityReviewOrderFieldNote = &VulnerabilityReviewOrderField{
+		field: vulnerabilityreview.FieldNote,
 		toCursor: func(vr *VulnerabilityReview) Cursor {
 			return Cursor{
 				ID:    vr.ID,
-				Value: vr.Name,
+				Value: vr.Note,
 			}
 		},
 	}
@@ -6155,8 +6212,8 @@ var (
 func (f VulnerabilityReviewOrderField) String() string {
 	var str string
 	switch f.field {
-	case vulnerabilityreview.FieldName:
-		str = "name"
+	case vulnerabilityreview.FieldNote:
+		str = "note"
 	}
 	return str
 }
@@ -6173,8 +6230,8 @@ func (f *VulnerabilityReviewOrderField) UnmarshalGQL(v interface{}) error {
 		return fmt.Errorf("VulnerabilityReviewOrderField %T must be a string", v)
 	}
 	switch str {
-	case "name":
-		*f = *VulnerabilityReviewOrderFieldName
+	case "note":
+		*f = *VulnerabilityReviewOrderFieldNote
 	default:
 		return fmt.Errorf("%s is not a valid VulnerabilityReviewOrderField", str)
 	}

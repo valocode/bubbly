@@ -14,9 +14,9 @@ import (
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/component"
+	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licenseuse"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
@@ -52,12 +52,12 @@ type Client struct {
 	CodeScan *CodeScanClient
 	// Component is the client for interacting with the Component builders.
 	Component *ComponentClient
+	// Event is the client for interacting with the Event builders.
+	Event *EventClient
 	// GitCommit is the client for interacting with the GitCommit builders.
 	GitCommit *GitCommitClient
 	// License is the client for interacting with the License builders.
 	License *LicenseClient
-	// LicenseUse is the client for interacting with the LicenseUse builders.
-	LicenseUse *LicenseUseClient
 	// Organization is the client for interacting with the Organization builders.
 	Organization *OrganizationClient
 	// Project is the client for interacting with the Project builders.
@@ -106,9 +106,9 @@ func (c *Client) init() {
 	c.CodeIssue = NewCodeIssueClient(c.config)
 	c.CodeScan = NewCodeScanClient(c.config)
 	c.Component = NewComponentClient(c.config)
+	c.Event = NewEventClient(c.config)
 	c.GitCommit = NewGitCommitClient(c.config)
 	c.License = NewLicenseClient(c.config)
-	c.LicenseUse = NewLicenseUseClient(c.config)
 	c.Organization = NewOrganizationClient(c.config)
 	c.Project = NewProjectClient(c.config)
 	c.Release = NewReleaseClient(c.config)
@@ -161,9 +161,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		CodeIssue:              NewCodeIssueClient(cfg),
 		CodeScan:               NewCodeScanClient(cfg),
 		Component:              NewComponentClient(cfg),
+		Event:                  NewEventClient(cfg),
 		GitCommit:              NewGitCommitClient(cfg),
 		License:                NewLicenseClient(cfg),
-		LicenseUse:             NewLicenseUseClient(cfg),
 		Organization:           NewOrganizationClient(cfg),
 		Project:                NewProjectClient(cfg),
 		Release:                NewReleaseClient(cfg),
@@ -201,9 +201,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		CodeIssue:              NewCodeIssueClient(cfg),
 		CodeScan:               NewCodeScanClient(cfg),
 		Component:              NewComponentClient(cfg),
+		Event:                  NewEventClient(cfg),
 		GitCommit:              NewGitCommitClient(cfg),
 		License:                NewLicenseClient(cfg),
-		LicenseUse:             NewLicenseUseClient(cfg),
 		Organization:           NewOrganizationClient(cfg),
 		Project:                NewProjectClient(cfg),
 		Release:                NewReleaseClient(cfg),
@@ -252,9 +252,9 @@ func (c *Client) Use(hooks ...Hook) {
 	c.CodeIssue.Use(hooks...)
 	c.CodeScan.Use(hooks...)
 	c.Component.Use(hooks...)
+	c.Event.Use(hooks...)
 	c.GitCommit.Use(hooks...)
 	c.License.Use(hooks...)
-	c.LicenseUse.Use(hooks...)
 	c.Organization.Use(hooks...)
 	c.Project.Use(hooks...)
 	c.Release.Use(hooks...)
@@ -931,6 +931,144 @@ func (c *ComponentClient) Hooks() []Hook {
 	return c.hooks.Component
 }
 
+// EventClient is a client for the Event schema.
+type EventClient struct {
+	config
+}
+
+// NewEventClient returns a client for the Event from the given config.
+func NewEventClient(c config) *EventClient {
+	return &EventClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `event.Hooks(f(g(h())))`.
+func (c *EventClient) Use(hooks ...Hook) {
+	c.hooks.Event = append(c.hooks.Event, hooks...)
+}
+
+// Create returns a create builder for Event.
+func (c *EventClient) Create() *EventCreate {
+	mutation := newEventMutation(c.config, OpCreate)
+	return &EventCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Event entities.
+func (c *EventClient) CreateBulk(builders ...*EventCreate) *EventCreateBulk {
+	return &EventCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Event.
+func (c *EventClient) Update() *EventUpdate {
+	mutation := newEventMutation(c.config, OpUpdate)
+	return &EventUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EventClient) UpdateOne(e *Event) *EventUpdateOne {
+	mutation := newEventMutation(c.config, OpUpdateOne, withEvent(e))
+	return &EventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EventClient) UpdateOneID(id int) *EventUpdateOne {
+	mutation := newEventMutation(c.config, OpUpdateOne, withEventID(id))
+	return &EventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Event.
+func (c *EventClient) Delete() *EventDelete {
+	mutation := newEventMutation(c.config, OpDelete)
+	return &EventDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *EventClient) DeleteOne(e *Event) *EventDeleteOne {
+	return c.DeleteOneID(e.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *EventClient) DeleteOneID(id int) *EventDeleteOne {
+	builder := c.Delete().Where(event.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EventDeleteOne{builder}
+}
+
+// Query returns a query builder for Event.
+func (c *EventClient) Query() *EventQuery {
+	return &EventQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Event entity by its id.
+func (c *EventClient) Get(ctx context.Context, id int) (*Event, error) {
+	return c.Query().Where(event.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EventClient) GetX(ctx context.Context, id int) *Event {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRelease queries the release edge of a Event.
+func (c *EventClient) QueryRelease(e *Event) *ReleaseQuery {
+	query := &ReleaseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := e.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, id),
+			sqlgraph.To(release.Table, release.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, event.ReleaseTable, event.ReleaseColumn),
+		)
+		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRepo queries the repo edge of a Event.
+func (c *EventClient) QueryRepo(e *Event) *RepoQuery {
+	query := &RepoQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := e.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, id),
+			sqlgraph.To(repo.Table, repo.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, event.RepoTable, event.RepoColumn),
+		)
+		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProject queries the project edge of a Event.
+func (c *EventClient) QueryProject(e *Event) *ProjectQuery {
+	query := &ProjectQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := e.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, event.ProjectTable, event.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EventClient) Hooks() []Hook {
+	return c.hooks.Event
+}
+
 // GitCommitClient is a client for the GitCommit schema.
 type GitCommitClient struct {
 	config
@@ -1138,6 +1276,22 @@ func (c *LicenseClient) GetX(ctx context.Context, id int) *License {
 	return obj
 }
 
+// QueryOwner queries the owner edge of a License.
+func (c *LicenseClient) QueryOwner(l *License) *OrganizationQuery {
+	query := &OrganizationQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := l.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(license.Table, license.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, license.OwnerTable, license.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryComponents queries the components edge of a License.
 func (c *LicenseClient) QueryComponents(l *License) *ComponentQuery {
 	query := &ComponentQuery{config: c.config}
@@ -1154,15 +1308,15 @@ func (c *LicenseClient) QueryComponents(l *License) *ComponentQuery {
 	return query
 }
 
-// QueryUses queries the uses edge of a License.
-func (c *LicenseClient) QueryUses(l *License) *LicenseUseQuery {
-	query := &LicenseUseQuery{config: c.config}
+// QueryInstances queries the instances edge of a License.
+func (c *LicenseClient) QueryInstances(l *License) *ReleaseLicenseQuery {
+	query := &ReleaseLicenseQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := l.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(license.Table, license.FieldID, id),
-			sqlgraph.To(licenseuse.Table, licenseuse.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, license.UsesTable, license.UsesColumn),
+			sqlgraph.To(releaselicense.Table, releaselicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, license.InstancesTable, license.InstancesColumn),
 		)
 		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
 		return fromV, nil
@@ -1173,112 +1327,6 @@ func (c *LicenseClient) QueryUses(l *License) *LicenseUseQuery {
 // Hooks returns the client hooks.
 func (c *LicenseClient) Hooks() []Hook {
 	return c.hooks.License
-}
-
-// LicenseUseClient is a client for the LicenseUse schema.
-type LicenseUseClient struct {
-	config
-}
-
-// NewLicenseUseClient returns a client for the LicenseUse from the given config.
-func NewLicenseUseClient(c config) *LicenseUseClient {
-	return &LicenseUseClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `licenseuse.Hooks(f(g(h())))`.
-func (c *LicenseUseClient) Use(hooks ...Hook) {
-	c.hooks.LicenseUse = append(c.hooks.LicenseUse, hooks...)
-}
-
-// Create returns a create builder for LicenseUse.
-func (c *LicenseUseClient) Create() *LicenseUseCreate {
-	mutation := newLicenseUseMutation(c.config, OpCreate)
-	return &LicenseUseCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of LicenseUse entities.
-func (c *LicenseUseClient) CreateBulk(builders ...*LicenseUseCreate) *LicenseUseCreateBulk {
-	return &LicenseUseCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for LicenseUse.
-func (c *LicenseUseClient) Update() *LicenseUseUpdate {
-	mutation := newLicenseUseMutation(c.config, OpUpdate)
-	return &LicenseUseUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *LicenseUseClient) UpdateOne(lu *LicenseUse) *LicenseUseUpdateOne {
-	mutation := newLicenseUseMutation(c.config, OpUpdateOne, withLicenseUse(lu))
-	return &LicenseUseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *LicenseUseClient) UpdateOneID(id int) *LicenseUseUpdateOne {
-	mutation := newLicenseUseMutation(c.config, OpUpdateOne, withLicenseUseID(id))
-	return &LicenseUseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for LicenseUse.
-func (c *LicenseUseClient) Delete() *LicenseUseDelete {
-	mutation := newLicenseUseMutation(c.config, OpDelete)
-	return &LicenseUseDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a delete builder for the given entity.
-func (c *LicenseUseClient) DeleteOne(lu *LicenseUse) *LicenseUseDeleteOne {
-	return c.DeleteOneID(lu.ID)
-}
-
-// DeleteOneID returns a delete builder for the given id.
-func (c *LicenseUseClient) DeleteOneID(id int) *LicenseUseDeleteOne {
-	builder := c.Delete().Where(licenseuse.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &LicenseUseDeleteOne{builder}
-}
-
-// Query returns a query builder for LicenseUse.
-func (c *LicenseUseClient) Query() *LicenseUseQuery {
-	return &LicenseUseQuery{
-		config: c.config,
-	}
-}
-
-// Get returns a LicenseUse entity by its id.
-func (c *LicenseUseClient) Get(ctx context.Context, id int) (*LicenseUse, error) {
-	return c.Query().Where(licenseuse.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *LicenseUseClient) GetX(ctx context.Context, id int) *LicenseUse {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryLicense queries the license edge of a LicenseUse.
-func (c *LicenseUseClient) QueryLicense(lu *LicenseUse) *LicenseQuery {
-	query := &LicenseQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := lu.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(licenseuse.Table, licenseuse.FieldID, id),
-			sqlgraph.To(license.Table, license.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, licenseuse.LicenseTable, licenseuse.LicenseColumn),
-		)
-		fromV = sqlgraph.Neighbors(lu.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *LicenseUseClient) Hooks() []Hook {
-	return c.hooks.LicenseUse
 }
 
 // OrganizationClient is a client for the Organization schema.

@@ -168,6 +168,42 @@ var (
 			},
 		},
 	}
+	// EventColumns holds the columns for the "event" table.
+	EventColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "message", Type: field.TypeString, Default: ""},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"evaluate_release"}},
+		{Name: "time", Type: field.TypeTime},
+		{Name: "event_release", Type: field.TypeInt, Nullable: true},
+		{Name: "event_repo", Type: field.TypeInt, Nullable: true},
+		{Name: "event_project", Type: field.TypeInt, Nullable: true},
+	}
+	// EventTable holds the schema information for the "event" table.
+	EventTable = &schema.Table{
+		Name:       "event",
+		Columns:    EventColumns,
+		PrimaryKey: []*schema.Column{EventColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "event_release_release",
+				Columns:    []*schema.Column{EventColumns[4]},
+				RefColumns: []*schema.Column{ReleaseColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "event_repo_repo",
+				Columns:    []*schema.Column{EventColumns[5]},
+				RefColumns: []*schema.Column{RepoColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "event_project_project",
+				Columns:    []*schema.Column{EventColumns[6]},
+				RefColumns: []*schema.Column{ProjectColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// CommitColumns holds the columns for the "commit" table.
 	CommitColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -206,36 +242,26 @@ var (
 		{Name: "reference", Type: field.TypeString, Nullable: true},
 		{Name: "details_url", Type: field.TypeString, Nullable: true},
 		{Name: "is_osi_approved", Type: field.TypeBool, Default: false},
+		{Name: "license_owner", Type: field.TypeInt, Nullable: true},
 	}
 	// LicenseTable holds the schema information for the "license" table.
 	LicenseTable = &schema.Table{
 		Name:       "license",
 		Columns:    LicenseColumns,
 		PrimaryKey: []*schema.Column{LicenseColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "license_organization_owner",
+				Columns:    []*schema.Column{LicenseColumns[6]},
+				RefColumns: []*schema.Column{OrganizationColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "license_spdx_id",
 				Unique:  true,
 				Columns: []*schema.Column{LicenseColumns[1]},
-			},
-		},
-	}
-	// LicenseUseColumns holds the columns for the "license_use" table.
-	LicenseUseColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "license_use_license", Type: field.TypeInt, Nullable: true},
-	}
-	// LicenseUseTable holds the schema information for the "license_use" table.
-	LicenseUseTable = &schema.Table{
-		Name:       "license_use",
-		Columns:    LicenseUseColumns,
-		PrimaryKey: []*schema.Column{LicenseUseColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "license_use_license_license",
-				Columns:    []*schema.Column{LicenseUseColumns[1]},
-				RefColumns: []*schema.Column{LicenseColumns[0]},
-				OnDelete:   schema.SetNull,
 			},
 		},
 	}
@@ -616,7 +642,7 @@ var (
 	// VulnerabilityReviewColumns holds the columns for the "vulnerability_review" table.
 	VulnerabilityReviewColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString},
+		{Name: "note", Type: field.TypeString},
 		{Name: "decision", Type: field.TypeEnum, Enums: []string{"exploitable", "in_progress", "invalid", "mitigated", "ineffective", "patched"}, Default: "exploitable"},
 		{Name: "vulnerability_review_vulnerability", Type: field.TypeInt, Nullable: true},
 	}
@@ -891,9 +917,9 @@ var (
 		CodeIssueTable,
 		CodeScanTable,
 		ComponentTable,
+		EventTable,
 		CommitTable,
 		LicenseTable,
-		LicenseUseTable,
 		OrganizationTable,
 		ProjectTable,
 		ReleaseTable,
@@ -945,16 +971,19 @@ func init() {
 	ComponentTable.Annotation = &entsql.Annotation{
 		Table: "component",
 	}
+	EventTable.ForeignKeys[0].RefTable = ReleaseTable
+	EventTable.ForeignKeys[1].RefTable = RepoTable
+	EventTable.ForeignKeys[2].RefTable = ProjectTable
+	EventTable.Annotation = &entsql.Annotation{
+		Table: "event",
+	}
 	CommitTable.ForeignKeys[0].RefTable = RepoTable
 	CommitTable.Annotation = &entsql.Annotation{
 		Table: "commit",
 	}
+	LicenseTable.ForeignKeys[0].RefTable = OrganizationTable
 	LicenseTable.Annotation = &entsql.Annotation{
 		Table: "license",
-	}
-	LicenseUseTable.ForeignKeys[0].RefTable = LicenseTable
-	LicenseUseTable.Annotation = &entsql.Annotation{
-		Table: "license_use",
 	}
 	OrganizationTable.Annotation = &entsql.Annotation{
 		Table: "organization",

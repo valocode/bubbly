@@ -14,8 +14,6 @@ require (
 	github.com/coreos/go-oidc/v3 v3.0.0
 	github.com/docker/docker v20.10.8+incompatible // indirect
 	github.com/fatih/color v1.12.0
-	github.com/go-bindata/go-bindata v1.0.1-0.20190711162640-ee3c2418e368 // indirect
-	github.com/go-chi/chi v3.3.2+incompatible // indirect
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
@@ -34,7 +32,7 @@ require (
 	github.com/opencontainers/runc v1.0.0-rc95 // indirect
 	github.com/ory/dockertest/v3 v3.7.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/rs/zerolog v1.23.0
+	github.com/rs/zerolog v1.24.0
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
@@ -43,7 +41,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.4
 	github.com/xiaoqidun/entps v0.0.0-20210811073333-c1af85abbd8d
 	github.com/zclconf/go-cty v1.9.1 // indirect
-	github.com/ziflex/lecho/v2 v2.5.0
+	github.com/ziflex/lecho/v2 v2.5.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c

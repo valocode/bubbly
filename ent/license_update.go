@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
@@ -11,8 +12,9 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/license"
-	"github.com/valocode/bubbly/ent/licenseuse"
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
+	"github.com/valocode/bubbly/ent/releaselicense"
 )
 
 // LicenseUpdate is the builder for updating License entities.
@@ -94,6 +96,17 @@ func (lu *LicenseUpdate) SetNillableIsOsiApproved(b *bool) *LicenseUpdate {
 	return lu
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (lu *LicenseUpdate) SetOwnerID(id int) *LicenseUpdate {
+	lu.mutation.SetOwnerID(id)
+	return lu
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (lu *LicenseUpdate) SetOwner(o *Organization) *LicenseUpdate {
+	return lu.SetOwnerID(o.ID)
+}
+
 // AddComponentIDs adds the "components" edge to the Component entity by IDs.
 func (lu *LicenseUpdate) AddComponentIDs(ids ...int) *LicenseUpdate {
 	lu.mutation.AddComponentIDs(ids...)
@@ -109,24 +122,30 @@ func (lu *LicenseUpdate) AddComponents(c ...*Component) *LicenseUpdate {
 	return lu.AddComponentIDs(ids...)
 }
 
-// AddUseIDs adds the "uses" edge to the LicenseUse entity by IDs.
-func (lu *LicenseUpdate) AddUseIDs(ids ...int) *LicenseUpdate {
-	lu.mutation.AddUseIDs(ids...)
+// AddInstanceIDs adds the "instances" edge to the ReleaseLicense entity by IDs.
+func (lu *LicenseUpdate) AddInstanceIDs(ids ...int) *LicenseUpdate {
+	lu.mutation.AddInstanceIDs(ids...)
 	return lu
 }
 
-// AddUses adds the "uses" edges to the LicenseUse entity.
-func (lu *LicenseUpdate) AddUses(l ...*LicenseUse) *LicenseUpdate {
-	ids := make([]int, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
+// AddInstances adds the "instances" edges to the ReleaseLicense entity.
+func (lu *LicenseUpdate) AddInstances(r ...*ReleaseLicense) *LicenseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
-	return lu.AddUseIDs(ids...)
+	return lu.AddInstanceIDs(ids...)
 }
 
 // Mutation returns the LicenseMutation object of the builder.
 func (lu *LicenseUpdate) Mutation() *LicenseMutation {
 	return lu.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (lu *LicenseUpdate) ClearOwner() *LicenseUpdate {
+	lu.mutation.ClearOwner()
+	return lu
 }
 
 // ClearComponents clears all "components" edges to the Component entity.
@@ -150,25 +169,25 @@ func (lu *LicenseUpdate) RemoveComponents(c ...*Component) *LicenseUpdate {
 	return lu.RemoveComponentIDs(ids...)
 }
 
-// ClearUses clears all "uses" edges to the LicenseUse entity.
-func (lu *LicenseUpdate) ClearUses() *LicenseUpdate {
-	lu.mutation.ClearUses()
+// ClearInstances clears all "instances" edges to the ReleaseLicense entity.
+func (lu *LicenseUpdate) ClearInstances() *LicenseUpdate {
+	lu.mutation.ClearInstances()
 	return lu
 }
 
-// RemoveUseIDs removes the "uses" edge to LicenseUse entities by IDs.
-func (lu *LicenseUpdate) RemoveUseIDs(ids ...int) *LicenseUpdate {
-	lu.mutation.RemoveUseIDs(ids...)
+// RemoveInstanceIDs removes the "instances" edge to ReleaseLicense entities by IDs.
+func (lu *LicenseUpdate) RemoveInstanceIDs(ids ...int) *LicenseUpdate {
+	lu.mutation.RemoveInstanceIDs(ids...)
 	return lu
 }
 
-// RemoveUses removes "uses" edges to LicenseUse entities.
-func (lu *LicenseUpdate) RemoveUses(l ...*LicenseUse) *LicenseUpdate {
-	ids := make([]int, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
+// RemoveInstances removes "instances" edges to ReleaseLicense entities.
+func (lu *LicenseUpdate) RemoveInstances(r ...*ReleaseLicense) *LicenseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
-	return lu.RemoveUseIDs(ids...)
+	return lu.RemoveInstanceIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -243,6 +262,9 @@ func (lu *LicenseUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
 		}
 	}
+	if _, ok := lu.mutation.OwnerID(); lu.mutation.OwnerCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"owner\"")
+	}
 	return nil
 }
 
@@ -311,6 +333,41 @@ func (lu *LicenseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: license.FieldIsOsiApproved,
 		})
 	}
+	if lu.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   license.OwnerTable,
+			Columns: []string{license.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := lu.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   license.OwnerTable,
+			Columns: []string{license.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if lu.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -365,33 +422,33 @@ func (lu *LicenseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if lu.mutation.UsesCleared() {
+	if lu.mutation.InstancesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   license.UsesTable,
-			Columns: []string{license.UsesColumn},
+			Table:   license.InstancesTable,
+			Columns: []string{license.InstancesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: licenseuse.FieldID,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := lu.mutation.RemovedUsesIDs(); len(nodes) > 0 && !lu.mutation.UsesCleared() {
+	if nodes := lu.mutation.RemovedInstancesIDs(); len(nodes) > 0 && !lu.mutation.InstancesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   license.UsesTable,
-			Columns: []string{license.UsesColumn},
+			Table:   license.InstancesTable,
+			Columns: []string{license.InstancesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: licenseuse.FieldID,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}
@@ -400,17 +457,17 @@ func (lu *LicenseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := lu.mutation.UsesIDs(); len(nodes) > 0 {
+	if nodes := lu.mutation.InstancesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   license.UsesTable,
-			Columns: []string{license.UsesColumn},
+			Table:   license.InstancesTable,
+			Columns: []string{license.InstancesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: licenseuse.FieldID,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}
@@ -504,6 +561,17 @@ func (luo *LicenseUpdateOne) SetNillableIsOsiApproved(b *bool) *LicenseUpdateOne
 	return luo
 }
 
+// SetOwnerID sets the "owner" edge to the Organization entity by ID.
+func (luo *LicenseUpdateOne) SetOwnerID(id int) *LicenseUpdateOne {
+	luo.mutation.SetOwnerID(id)
+	return luo
+}
+
+// SetOwner sets the "owner" edge to the Organization entity.
+func (luo *LicenseUpdateOne) SetOwner(o *Organization) *LicenseUpdateOne {
+	return luo.SetOwnerID(o.ID)
+}
+
 // AddComponentIDs adds the "components" edge to the Component entity by IDs.
 func (luo *LicenseUpdateOne) AddComponentIDs(ids ...int) *LicenseUpdateOne {
 	luo.mutation.AddComponentIDs(ids...)
@@ -519,24 +587,30 @@ func (luo *LicenseUpdateOne) AddComponents(c ...*Component) *LicenseUpdateOne {
 	return luo.AddComponentIDs(ids...)
 }
 
-// AddUseIDs adds the "uses" edge to the LicenseUse entity by IDs.
-func (luo *LicenseUpdateOne) AddUseIDs(ids ...int) *LicenseUpdateOne {
-	luo.mutation.AddUseIDs(ids...)
+// AddInstanceIDs adds the "instances" edge to the ReleaseLicense entity by IDs.
+func (luo *LicenseUpdateOne) AddInstanceIDs(ids ...int) *LicenseUpdateOne {
+	luo.mutation.AddInstanceIDs(ids...)
 	return luo
 }
 
-// AddUses adds the "uses" edges to the LicenseUse entity.
-func (luo *LicenseUpdateOne) AddUses(l ...*LicenseUse) *LicenseUpdateOne {
-	ids := make([]int, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
+// AddInstances adds the "instances" edges to the ReleaseLicense entity.
+func (luo *LicenseUpdateOne) AddInstances(r ...*ReleaseLicense) *LicenseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
-	return luo.AddUseIDs(ids...)
+	return luo.AddInstanceIDs(ids...)
 }
 
 // Mutation returns the LicenseMutation object of the builder.
 func (luo *LicenseUpdateOne) Mutation() *LicenseMutation {
 	return luo.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Organization entity.
+func (luo *LicenseUpdateOne) ClearOwner() *LicenseUpdateOne {
+	luo.mutation.ClearOwner()
+	return luo
 }
 
 // ClearComponents clears all "components" edges to the Component entity.
@@ -560,25 +634,25 @@ func (luo *LicenseUpdateOne) RemoveComponents(c ...*Component) *LicenseUpdateOne
 	return luo.RemoveComponentIDs(ids...)
 }
 
-// ClearUses clears all "uses" edges to the LicenseUse entity.
-func (luo *LicenseUpdateOne) ClearUses() *LicenseUpdateOne {
-	luo.mutation.ClearUses()
+// ClearInstances clears all "instances" edges to the ReleaseLicense entity.
+func (luo *LicenseUpdateOne) ClearInstances() *LicenseUpdateOne {
+	luo.mutation.ClearInstances()
 	return luo
 }
 
-// RemoveUseIDs removes the "uses" edge to LicenseUse entities by IDs.
-func (luo *LicenseUpdateOne) RemoveUseIDs(ids ...int) *LicenseUpdateOne {
-	luo.mutation.RemoveUseIDs(ids...)
+// RemoveInstanceIDs removes the "instances" edge to ReleaseLicense entities by IDs.
+func (luo *LicenseUpdateOne) RemoveInstanceIDs(ids ...int) *LicenseUpdateOne {
+	luo.mutation.RemoveInstanceIDs(ids...)
 	return luo
 }
 
-// RemoveUses removes "uses" edges to LicenseUse entities.
-func (luo *LicenseUpdateOne) RemoveUses(l ...*LicenseUse) *LicenseUpdateOne {
-	ids := make([]int, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
+// RemoveInstances removes "instances" edges to ReleaseLicense entities.
+func (luo *LicenseUpdateOne) RemoveInstances(r ...*ReleaseLicense) *LicenseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
 	}
-	return luo.RemoveUseIDs(ids...)
+	return luo.RemoveInstanceIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -659,6 +733,9 @@ func (luo *LicenseUpdateOne) check() error {
 		if err := license.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
 		}
+	}
+	if _, ok := luo.mutation.OwnerID(); luo.mutation.OwnerCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"owner\"")
 	}
 	return nil
 }
@@ -745,6 +822,41 @@ func (luo *LicenseUpdateOne) sqlSave(ctx context.Context) (_node *License, err e
 			Column: license.FieldIsOsiApproved,
 		})
 	}
+	if luo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   license.OwnerTable,
+			Columns: []string{license.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := luo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   license.OwnerTable,
+			Columns: []string{license.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if luo.mutation.ComponentsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -799,33 +911,33 @@ func (luo *LicenseUpdateOne) sqlSave(ctx context.Context) (_node *License, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if luo.mutation.UsesCleared() {
+	if luo.mutation.InstancesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   license.UsesTable,
-			Columns: []string{license.UsesColumn},
+			Table:   license.InstancesTable,
+			Columns: []string{license.InstancesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: licenseuse.FieldID,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := luo.mutation.RemovedUsesIDs(); len(nodes) > 0 && !luo.mutation.UsesCleared() {
+	if nodes := luo.mutation.RemovedInstancesIDs(); len(nodes) > 0 && !luo.mutation.InstancesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   license.UsesTable,
-			Columns: []string{license.UsesColumn},
+			Table:   license.InstancesTable,
+			Columns: []string{license.InstancesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: licenseuse.FieldID,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}
@@ -834,17 +946,17 @@ func (luo *LicenseUpdateOne) sqlSave(ctx context.Context) (_node *License, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := luo.mutation.UsesIDs(); len(nodes) > 0 {
+	if nodes := luo.mutation.InstancesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   license.UsesTable,
-			Columns: []string{license.UsesColumn},
+			Table:   license.InstancesTable,
+			Columns: []string{license.InstancesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: licenseuse.FieldID,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}

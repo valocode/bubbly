@@ -22,12 +22,12 @@ type Tx struct {
 	CodeScan *CodeScanClient
 	// Component is the client for interacting with the Component builders.
 	Component *ComponentClient
+	// Event is the client for interacting with the Event builders.
+	Event *EventClient
 	// GitCommit is the client for interacting with the GitCommit builders.
 	GitCommit *GitCommitClient
 	// License is the client for interacting with the License builders.
 	License *LicenseClient
-	// LicenseUse is the client for interacting with the LicenseUse builders.
-	LicenseUse *LicenseUseClient
 	// Organization is the client for interacting with the Organization builders.
 	Organization *OrganizationClient
 	// Project is the client for interacting with the Project builders.
@@ -196,9 +196,9 @@ func (tx *Tx) init() {
 	tx.CodeIssue = NewCodeIssueClient(tx.config)
 	tx.CodeScan = NewCodeScanClient(tx.config)
 	tx.Component = NewComponentClient(tx.config)
+	tx.Event = NewEventClient(tx.config)
 	tx.GitCommit = NewGitCommitClient(tx.config)
 	tx.License = NewLicenseClient(tx.config)
-	tx.LicenseUse = NewLicenseUseClient(tx.config)
 	tx.Organization = NewOrganizationClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
 	tx.Release = NewReleaseClient(tx.config)

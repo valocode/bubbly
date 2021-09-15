@@ -79,11 +79,6 @@ func filterModelNodes(nodes []*gen.Type) ([]*gen.Type, error) {
 	for _, n := range nodes {
 		if n.Annotations != nil && n.Annotations[antName] != nil {
 			aptNodes = append(aptNodes, n)
-			// for _, e := range filterModelNodeEdges(n.Edges) {
-			// 	aptNodes = append(aptNodes, e.Type)
-
-			// 	// aptNodes = append(aptNodes, []*gen)
-			// }
 		}
 	}
 	return aptNodes, nil

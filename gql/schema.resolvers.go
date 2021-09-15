@@ -5,7 +5,6 @@ package gql
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/valocode/bubbly/ent"
 )
@@ -82,16 +81,12 @@ func (r *licenseResolver) Components(ctx context.Context, obj *ent.License, firs
 	return result, err
 }
 
-func (r *licenseResolver) Uses(ctx context.Context, obj *ent.License, first *int, last *int, where *ent.LicenseUseWhereInput) ([]*ent.LicenseUse, error) {
-	return obj.QueryUses().Filter(ctx, first, last, nil, where)
-}
-
-func (r *organizationResolver) Projects(ctx context.Context, obj *ent.Organization, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *organizationResolver) Repos(ctx context.Context, obj *ent.Organization, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *licenseResolver) Instances(ctx context.Context, obj *ent.License, first *int, last *int, where *ent.ReleaseLicenseWhereInput) ([]*ent.ReleaseLicense, error) {
+	result, err := obj.Edges.InstancesOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryInstances().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *projectResolver) Repos(ctx context.Context, obj *ent.Project, first *int, last *int, where *ent.RepoWhereInput, orderBy *ent.RepoOrder) ([]*ent.Repo, error) {
@@ -118,13 +113,6 @@ func (r *projectResolver) Policies(ctx context.Context, obj *ent.Project, first 
 	return result, err
 }
 
-func (r *queryResolver) ArtifactConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ArtifactOrder, where *ent.ArtifactWhereInput) (*ent.ArtifactConnection, error) {
-	return r.client.Artifact.Query().Paginate(ctx, after, first, before, last,
-		ent.WithArtifactOrder(orderBy),
-		ent.WithArtifactFilter(where.Filter),
-	)
-}
-
 func (r *queryResolver) Policy(ctx context.Context, first *int, last *int, orderBy *ent.ReleasePolicyOrder, where *ent.ReleasePolicyWhereInput) ([]*ent.ReleasePolicy, error) {
 	return r.client.ReleasePolicy.Query().Filter(ctx, first, last, orderBy, where)
 }
@@ -133,46 +121,8 @@ func (r *queryResolver) Artifact(ctx context.Context, first *int, last *int, ord
 	return r.client.Artifact.Query().Filter(ctx, first, last, orderBy, where)
 }
 
-func (r *queryResolver) CodeIssueConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.CodeIssueOrder, where *ent.CodeIssueWhereInput) (*ent.CodeIssueConnection, error) {
-	return r.client.CodeIssue.Query().Paginate(ctx, after, first, before, last,
-		ent.WithCodeIssueOrder(orderBy),
-		ent.WithCodeIssueFilter(where.Filter),
-	)
-}
-
-func (r *queryResolver) ComponentConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ComponentOrder, where *ent.ComponentWhereInput) (*ent.ComponentConnection, error) {
-	return r.client.Component.Query().Paginate(ctx, after, first, before, last,
-		ent.WithComponentOrder(orderBy),
-		ent.WithComponentFilter(where.Filter),
-	)
-}
-
-func (r *queryResolver) TestCaseConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.TestCaseOrder, where *ent.TestCaseWhereInput) (*ent.TestCaseConnection, error) {
-	return r.client.TestCase.Query().Paginate(ctx, after, first, before, last,
-		ent.WithTestCaseOrder(orderBy),
-		ent.WithTestCaseFilter(where.Filter),
-	)
-}
-
-func (r *queryResolver) VulnerabilityConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.VulnerabilityOrder, where *ent.VulnerabilityWhereInput) (*ent.VulnerabilityConnection, error) {
-	return r.client.Vulnerability.Query().Paginate(ctx, after, first, before, last,
-		ent.WithVulnerabilityFilter(where.Filter),
-	)
-}
-
 func (r *queryResolver) Component(ctx context.Context, first *int, last *int, orderBy *ent.ComponentOrder, where *ent.ComponentWhereInput) ([]*ent.Component, error) {
 	return r.client.Component.Query().Filter(ctx, first, last, orderBy, where)
-}
-
-func (r *queryResolver) CommitConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.GitCommitOrder, where *ent.GitCommitWhereInput) (*ent.GitCommitConnection, error) {
-	return r.client.GitCommit.Query().Paginate(ctx, after, first, before, last,
-		ent.WithGitCommitOrder(orderBy),
-		ent.WithGitCommitFilter(where.Filter),
-	)
-}
-
-func (r *queryResolver) TestCase(ctx context.Context, first *int, last *int, orderBy *ent.TestCaseOrder, where *ent.TestCaseWhereInput) ([]*ent.TestCase, error) {
-	return r.client.TestCase.Query().Filter(ctx, first, last, orderBy, where)
 }
 
 func (r *queryResolver) LicenseConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.LicenseOrder, where *ent.LicenseWhereInput) (*ent.LicenseConnection, error) {
@@ -180,17 +130,6 @@ func (r *queryResolver) LicenseConnection(ctx context.Context, first *int, last 
 		ent.WithLicenseOrder(orderBy),
 		ent.WithLicenseFilter(where.Filter),
 	)
-}
-
-func (r *queryResolver) ReleaseEntryConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ReleaseEntryOrder, where *ent.ReleaseEntryWhereInput) (*ent.ReleaseEntryConnection, error) {
-	return r.client.ReleaseEntry.Query().Paginate(ctx, after, first, before, last,
-		ent.WithReleaseEntryOrder(orderBy),
-		ent.WithReleaseEntryFilter(where.Filter),
-	)
-}
-
-func (r *queryResolver) TestRun(ctx context.Context, first *int, last *int, orderBy *ent.TestRunOrder, where *ent.TestRunWhereInput) ([]*ent.TestRun, error) {
-	return r.client.TestRun.Query().Filter(ctx, first, last, orderBy, where)
 }
 
 func (r *queryResolver) VulnerabilityReview(ctx context.Context, first *int, last *int, orderBy *ent.VulnerabilityReviewOrder, where *ent.VulnerabilityReviewWhereInput) ([]*ent.VulnerabilityReview, error) {
@@ -201,30 +140,8 @@ func (r *queryResolver) License(ctx context.Context, first *int, last *int, orde
 	return r.client.License.Query().Filter(ctx, first, last, orderBy, where)
 }
 
-func (r *queryResolver) ReleaseVulnerability(ctx context.Context, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error) {
-	return r.client.ReleaseVulnerability.Query().Filter(ctx, first, last, nil, where)
-}
-
 func (r *queryResolver) Repo(ctx context.Context, first *int, last *int, orderBy *ent.RepoOrder, where *ent.RepoWhereInput) ([]*ent.Repo, error) {
 	return r.client.Repo.Query().Filter(ctx, first, last, orderBy, where)
-}
-
-func (r *queryResolver) TestRunConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.TestRunOrder, where *ent.TestRunWhereInput) (*ent.TestRunConnection, error) {
-	return r.client.TestRun.Query().Paginate(ctx, after, first, before, last,
-		ent.WithTestRunOrder(orderBy),
-		ent.WithTestRunFilter(where.Filter),
-	)
-}
-
-func (r *queryResolver) LicenseUseConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, where *ent.LicenseUseWhereInput) (*ent.LicenseUseConnection, error) {
-	return r.client.LicenseUse.Query().Paginate(ctx, after, first, before, last,
-		// ent.WithLicenseUseOrder(orderBy),
-		ent.WithLicenseUseFilter(where.Filter),
-	)
-}
-
-func (r *queryResolver) LicenseUse(ctx context.Context, first *int, last *int, where *ent.LicenseUseWhereInput) ([]*ent.LicenseUse, error) {
-	return r.client.LicenseUse.Query().Filter(ctx, first, last, nil, where)
 }
 
 func (r *queryResolver) Project(ctx context.Context, first *int, last *int, orderBy *ent.ProjectOrder, where *ent.ProjectWhereInput) ([]*ent.Project, error) {
@@ -242,38 +159,8 @@ func (r *queryResolver) RepoConnection(ctx context.Context, first *int, last *in
 	)
 }
 
-func (r *queryResolver) VulnerabilityReviewConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.VulnerabilityReviewOrder, where *ent.VulnerabilityReviewWhereInput) (*ent.VulnerabilityReviewConnection, error) {
-	return r.client.VulnerabilityReview.Query().Paginate(ctx, after, first, before, last,
-		ent.WithVulnerabilityReviewOrder(orderBy),
-		ent.WithVulnerabilityReviewFilter(where.Filter),
-	)
-}
-
-func (r *queryResolver) CodeScanConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.CodeScanOrder, where *ent.CodeScanWhereInput) (*ent.CodeScanConnection, error) {
-	return r.client.CodeScan.Query().Paginate(ctx, after, first, before, last,
-		ent.WithCodeScanOrder(orderBy),
-		ent.WithCodeScanFilter(where.Filter),
-	)
-}
-
 func (r *queryResolver) Commit(ctx context.Context, first *int, last *int, orderBy *ent.GitCommitOrder, where *ent.GitCommitWhereInput) ([]*ent.GitCommit, error) {
 	return r.client.GitCommit.Query().Filter(ctx, first, last, orderBy, where)
-}
-
-func (r *queryResolver) CodeScan(ctx context.Context, first *int, last *int, orderBy *ent.CodeScanOrder, where *ent.CodeScanWhereInput) ([]*ent.CodeScan, error) {
-	return r.client.CodeScan.Query().Filter(ctx, first, last, orderBy, where)
-}
-
-func (r *queryResolver) ReleaseComponentConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, where *ent.ReleaseComponentWhereInput) (*ent.ReleaseComponentConnection, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *queryResolver) ReleaseEntry(ctx context.Context, first *int, last *int, orderBy *ent.ReleaseEntryOrder, where *ent.ReleaseEntryWhereInput) ([]*ent.ReleaseEntry, error) {
-	return r.client.ReleaseEntry.Query().Filter(ctx, first, last, orderBy, where)
-}
-
-func (r *queryResolver) CodeIssue(ctx context.Context, first *int, last *int, orderBy *ent.CodeIssueOrder, where *ent.CodeIssueWhereInput) ([]*ent.CodeIssue, error) {
-	return r.client.CodeIssue.Query().Filter(ctx, first, last, orderBy, where)
 }
 
 func (r *queryResolver) ProjectConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ProjectOrder, where *ent.ProjectWhereInput) (*ent.ProjectConnection, error) {
@@ -288,14 +175,6 @@ func (r *queryResolver) ReleaseConnection(ctx context.Context, first *int, last 
 		ent.WithReleaseOrder(orderBy),
 		ent.WithReleaseFilter(where.Filter),
 	)
-}
-
-func (r *queryResolver) ReleaseComponent(ctx context.Context, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error) {
-	return r.client.ReleaseComponent.Query().Filter(ctx, first, last, nil, where)
-}
-
-func (r *queryResolver) ReleaseVulnerabilityConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, where *ent.ReleaseVulnerabilityWhereInput) (*ent.ReleaseVulnerabilityConnection, error) {
-	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) Vulnerability(ctx context.Context, first *int, last *int, orderBy *ent.VulnerabilityOrder, where *ent.VulnerabilityWhereInput) ([]*ent.Vulnerability, error) {
@@ -399,7 +278,11 @@ func (r *releaseComponentResolver) Vulnerabilities(ctx context.Context, obj *ent
 }
 
 func (r *releaseLicenseResolver) Scans(ctx context.Context, obj *ent.ReleaseLicense, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ScansOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryScans().Filter(ctx, first, last, orderBy, where)
+	}
+	return result, err
 }
 
 func (r *releasePolicyResolver) Projects(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.ProjectWhereInput, orderBy *ent.ProjectOrder) ([]*ent.Project, error) {
@@ -419,7 +302,11 @@ func (r *releasePolicyResolver) Repos(ctx context.Context, obj *ent.ReleasePolic
 }
 
 func (r *releasePolicyResolver) Violations(ctx context.Context, obj *ent.ReleasePolicy, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) ([]*ent.ReleasePolicyViolation, error) {
-	panic(fmt.Errorf("not implemented"))
+	result, err := obj.Edges.ViolationsOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryViolations().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
 }
 
 func (r *releaseVulnerabilityResolver) Reviews(ctx context.Context, obj *ent.ReleaseVulnerability, first *int, last *int, where *ent.VulnerabilityReviewWhereInput, orderBy *ent.VulnerabilityReviewOrder) ([]*ent.VulnerabilityReview, error) {
@@ -545,9 +432,6 @@ func (r *Resolver) Component() ComponentResolver { return &componentResolver{r} 
 // License returns LicenseResolver implementation.
 func (r *Resolver) License() LicenseResolver { return &licenseResolver{r} }
 
-// Organization returns OrganizationResolver implementation.
-func (r *Resolver) Organization() OrganizationResolver { return &organizationResolver{r} }
-
 // Project returns ProjectResolver implementation.
 func (r *Resolver) Project() ProjectResolver { return &projectResolver{r} }
 
@@ -593,7 +477,6 @@ type codeIssueResolver struct{ *Resolver }
 type codeScanResolver struct{ *Resolver }
 type componentResolver struct{ *Resolver }
 type licenseResolver struct{ *Resolver }
-type organizationResolver struct{ *Resolver }
 type projectResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type releaseResolver struct{ *Resolver }

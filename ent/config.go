@@ -29,9 +29,9 @@ type hooks struct {
 	CodeIssue              []ent.Hook
 	CodeScan               []ent.Hook
 	Component              []ent.Hook
+	Event                  []ent.Hook
 	GitCommit              []ent.Hook
 	License                []ent.Hook
-	LicenseUse             []ent.Hook
 	Organization           []ent.Hook
 	Project                []ent.Hook
 	Release                []ent.Hook

@@ -108,6 +108,30 @@ func (c *Component) Uses(ctx context.Context) ([]*ReleaseComponent, error) {
 	return result, err
 }
 
+func (e *Event) Release(ctx context.Context) (*Release, error) {
+	result, err := e.Edges.ReleaseOrErr()
+	if IsNotLoaded(err) {
+		result, err = e.QueryRelease().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (e *Event) Repo(ctx context.Context) (*Repo, error) {
+	result, err := e.Edges.RepoOrErr()
+	if IsNotLoaded(err) {
+		result, err = e.QueryRepo().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (e *Event) Project(ctx context.Context) (*Project, error) {
+	result, err := e.Edges.ProjectOrErr()
+	if IsNotLoaded(err) {
+		result, err = e.QueryProject().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (gc *GitCommit) Repo(ctx context.Context) (*Repo, error) {
 	result, err := gc.Edges.RepoOrErr()
 	if IsNotLoaded(err) {
@@ -124,6 +148,14 @@ func (gc *GitCommit) Release(ctx context.Context) (*Release, error) {
 	return result, MaskNotFound(err)
 }
 
+func (l *License) Owner(ctx context.Context) (*Organization, error) {
+	result, err := l.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = l.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
 func (l *License) Components(ctx context.Context) ([]*Component, error) {
 	result, err := l.Edges.ComponentsOrErr()
 	if IsNotLoaded(err) {
@@ -132,18 +164,10 @@ func (l *License) Components(ctx context.Context) ([]*Component, error) {
 	return result, err
 }
 
-func (l *License) Uses(ctx context.Context) ([]*LicenseUse, error) {
-	result, err := l.Edges.UsesOrErr()
+func (l *License) Instances(ctx context.Context) ([]*ReleaseLicense, error) {
+	result, err := l.Edges.InstancesOrErr()
 	if IsNotLoaded(err) {
-		result, err = l.QueryUses().All(ctx)
-	}
-	return result, err
-}
-
-func (lu *LicenseUse) License(ctx context.Context) (*License, error) {
-	result, err := lu.Edges.LicenseOrErr()
-	if IsNotLoaded(err) {
-		result, err = lu.QueryLicense().Only(ctx)
+		result, err = l.QueryInstances().All(ctx)
 	}
 	return result, err
 }

@@ -231,6 +231,51 @@ func (c *ComponentQuery) Filter(
 	return c.All(ctx)
 }
 
+func (e *EventQuery) Filter(
+	ctx context.Context, first *int, last *int,
+	orderBy *EventOrder, where *EventWhereInput,
+) ([]*Event, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	if orderBy == nil {
+		orderBy = DefaultEventOrder
+	}
+	if err := orderBy.Direction.Validate(); err != nil {
+		return nil, err
+	}
+	if orderBy.Field == nil {
+		orderBy.Field = DefaultEventOrder.Field
+	}
+
+	e, err := where.Filter(e)
+	if err != nil {
+		return nil, err
+	}
+
+	// If getting last then reverse the direction
+	if last != nil {
+		orderBy.Direction = orderBy.Direction.reverse()
+	}
+	e = e.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
+	// If a custom order was given, also apply the default order
+	if orderBy.Field != DefaultEventOrder.Field {
+		e = e.Order(orderBy.Direction.orderFunc(DefaultEventOrder.Field.field))
+	}
+
+	var limit int
+	if first != nil {
+		limit = *first
+	} else if last != nil {
+		limit = *last
+	}
+	if limit > 0 {
+		e = e.Limit(limit)
+	}
+
+	return e.All(ctx)
+}
+
 func (gc *GitCommitQuery) Filter(
 	ctx context.Context, first *int, last *int,
 	orderBy *GitCommitOrder, where *GitCommitWhereInput,
@@ -319,51 +364,6 @@ func (l *LicenseQuery) Filter(
 	}
 
 	return l.All(ctx)
-}
-
-func (lu *LicenseUseQuery) Filter(
-	ctx context.Context, first *int, last *int,
-	orderBy *LicenseUseOrder, where *LicenseUseWhereInput,
-) ([]*LicenseUse, error) {
-	if err := validateFirstLast(first, last); err != nil {
-		return nil, err
-	}
-	if orderBy == nil {
-		orderBy = DefaultLicenseUseOrder
-	}
-	if err := orderBy.Direction.Validate(); err != nil {
-		return nil, err
-	}
-	if orderBy.Field == nil {
-		orderBy.Field = DefaultLicenseUseOrder.Field
-	}
-
-	lu, err := where.Filter(lu)
-	if err != nil {
-		return nil, err
-	}
-
-	// If getting last then reverse the direction
-	if last != nil {
-		orderBy.Direction = orderBy.Direction.reverse()
-	}
-	lu = lu.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
-	// If a custom order was given, also apply the default order
-	if orderBy.Field != DefaultLicenseUseOrder.Field {
-		lu = lu.Order(orderBy.Direction.orderFunc(DefaultLicenseUseOrder.Field.field))
-	}
-
-	var limit int
-	if first != nil {
-		limit = *first
-	} else if last != nil {
-		limit = *last
-	}
-	if limit > 0 {
-		lu = lu.Limit(limit)
-	}
-
-	return lu.All(ctx)
 }
 
 func (o *OrganizationQuery) Filter(

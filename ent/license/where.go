@@ -612,6 +612,34 @@ func IsOsiApprovedNEQ(v bool) predicate.License {
 	})
 }
 
+// HasOwner applies the HasEdge predicate on the "owner" edge.
+func HasOwner() predicate.License {
+	return predicate.License(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(OwnerTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, OwnerTable, OwnerColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOwnerWith applies the HasEdge predicate on the "owner" edge with a given conditions (other predicates).
+func HasOwnerWith(preds ...predicate.Organization) predicate.License {
+	return predicate.License(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(OwnerInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, OwnerTable, OwnerColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasComponents applies the HasEdge predicate on the "components" edge.
 func HasComponents() predicate.License {
 	return predicate.License(func(s *sql.Selector) {
@@ -640,25 +668,25 @@ func HasComponentsWith(preds ...predicate.Component) predicate.License {
 	})
 }
 
-// HasUses applies the HasEdge predicate on the "uses" edge.
-func HasUses() predicate.License {
+// HasInstances applies the HasEdge predicate on the "instances" edge.
+func HasInstances() predicate.License {
 	return predicate.License(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(UsesTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, UsesTable, UsesColumn),
+			sqlgraph.To(InstancesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, InstancesTable, InstancesColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasUsesWith applies the HasEdge predicate on the "uses" edge with a given conditions (other predicates).
-func HasUsesWith(preds ...predicate.LicenseUse) predicate.License {
+// HasInstancesWith applies the HasEdge predicate on the "instances" edge with a given conditions (other predicates).
+func HasInstancesWith(preds ...predicate.ReleaseLicense) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(UsesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, UsesTable, UsesColumn),
+			sqlgraph.To(InstancesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, InstancesTable, InstancesColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

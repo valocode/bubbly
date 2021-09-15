@@ -58,6 +58,12 @@ erDiagram
         string url
         schemaDOTMetadata metadata
     }
+    Event {
+        int id
+        string message
+        eventDOTType type
+        timeDOTTime time
+    }
     GitCommit {
         int id
         string hash
@@ -72,9 +78,6 @@ erDiagram
         string reference
         string details_url
         bool is_osi_approved
-    }
-    LicenseUse {
-        int id
     }
     Organization {
         int id
@@ -148,7 +151,7 @@ erDiagram
     }
     VulnerabilityReview {
         int id
-        string name
+        string note
         vulnerabilityreviewDOTDecision decision
     }
     	Adapter }o--o| Organization : "owner"
@@ -158,9 +161,12 @@ erDiagram
     	Component }o--o| Organization : "owner"
     	Component }o--o{ Vulnerability : "vulnerabilities/components"
     	Component }o--o{ License : "licenses/components"
+    	Event }o--o| Release : "release"
+    	Event }o--o| Repo : "repo"
+    	Event }o--o| Project : "project"
     	GitCommit }o--o| Repo : "repo/commits"
     	GitCommit |o--o| Release : "release/commit"
-    	LicenseUse }o--o| License : "license/uses"
+    	License }o--o| Organization : "owner"
     	Project }o--o| Organization : "owner/projects"
     	Release }o--o{ Release : "dependencies/subreleases"
     	ReleaseComponent }o--o| Release : "release/components"
@@ -170,7 +176,7 @@ erDiagram
     	ReleaseEntry |o--o| CodeScan : "code_scan/entry"
     	ReleaseEntry |o--o| TestRun : "test_run/entry"
     	ReleaseEntry }o--o| Release : "release/log"
-    	ReleaseLicense }o--o| License : "license"
+    	ReleaseLicense }o--o| License : "license/instances"
     	ReleaseLicense }o--o| ReleaseComponent : "component"
     	ReleaseLicense }o--o| Release : "release"
     	ReleaseLicense |o--o{ CodeScan : "scans"
@@ -260,6 +266,17 @@ This list is auto-generated from the ent schema.
 - **vulnerabilities** (M2M to [Vulnerability](#vulnerability))
 - **licenses** (M2M to [License](#license))
 - **uses** (O2M to [ReleaseComponent](#releasecomponent))
+### Event
+
+#### Fields
+- **message** (string)
+- **type** (event.Type)
+- **time** (time.Time)
+
+#### Edges
+- **release** (M2O to [Release](#release))
+- **repo** (M2O to [Repo](#repo))
+- **project** (M2O to [Project](#project))
 ### GitCommit
 
 #### Fields
@@ -281,14 +298,9 @@ This list is auto-generated from the ent schema.
 - **is_osi_approved** (bool)
 
 #### Edges
+- **owner** (M2O to [Organization](#organization))
 - **components** (M2M to [Component](#component))
-- **uses** (O2M to [LicenseUse](#licenseuse))
-### LicenseUse
-
-#### Fields
-
-#### Edges
-- **license** (M2O to [License](#license))
+- **instances** (O2M to [ReleaseLicense](#releaselicense))
 ### Organization
 
 #### Fields
@@ -443,7 +455,7 @@ This list is auto-generated from the ent schema.
 ### VulnerabilityReview
 
 #### Fields
-- **name** (string)
+- **note** (string)
 - **decision** (vulnerabilityreview.Decision)
 
 #### Edges

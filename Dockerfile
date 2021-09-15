@@ -32,13 +32,13 @@ RUN go build -tags ui -o /go/bin/bubbly
 FROM gcr.io/distroless/base-debian10
 
 # Copy our static executable.
-COPY --from=builder /go/bin/bubbly go/bin/bubbly
+COPY --from=builder /go/bin/bubbly /bubbly
 
 # Use an unprivileged user.
 USER nonroot:nonroot
 
-ENTRYPOINT ["go/bin/bubbly"]
-# 4223 NATS service
-# 8111 bubbly agent
-# 8222 NATS HTTP
-EXPOSE 4223 8111 8222
+EXPOSE 8111
+ENTRYPOINT ["/bubbly"]
+CMD ["server"]
+
+

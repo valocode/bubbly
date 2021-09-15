@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/license"
+	"github.com/valocode/bubbly/ent/organization"
 )
 
 // License is the model entity for the License schema.
@@ -27,36 +28,53 @@ type License struct {
 	IsOsiApproved bool `json:"is_osi_approved,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the LicenseQuery when eager-loading is set.
-	Edges LicenseEdges `json:"edges"`
+	Edges         LicenseEdges `json:"edges"`
+	license_owner *int
 }
 
 // LicenseEdges holds the relations/edges for other nodes in the graph.
 type LicenseEdges struct {
+	// Owner holds the value of the owner edge.
+	Owner *Organization `json:"owner,omitempty"`
 	// Components holds the value of the components edge.
 	Components []*Component `json:"components,omitempty"`
-	// Uses holds the value of the uses edge.
-	Uses []*LicenseUse `json:"uses,omitempty"`
+	// Instances holds the value of the instances edge.
+	Instances []*ReleaseLicense `json:"instances,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// OwnerOrErr returns the Owner value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e LicenseEdges) OwnerOrErr() (*Organization, error) {
+	if e.loadedTypes[0] {
+		if e.Owner == nil {
+			// The edge owner was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: organization.Label}
+		}
+		return e.Owner, nil
+	}
+	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // ComponentsOrErr returns the Components value or an error if the edge
 // was not loaded in eager-loading.
 func (e LicenseEdges) ComponentsOrErr() ([]*Component, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.Components, nil
 	}
 	return nil, &NotLoadedError{edge: "components"}
 }
 
-// UsesOrErr returns the Uses value or an error if the edge
+// InstancesOrErr returns the Instances value or an error if the edge
 // was not loaded in eager-loading.
-func (e LicenseEdges) UsesOrErr() ([]*LicenseUse, error) {
-	if e.loadedTypes[1] {
-		return e.Uses, nil
+func (e LicenseEdges) InstancesOrErr() ([]*ReleaseLicense, error) {
+	if e.loadedTypes[2] {
+		return e.Instances, nil
 	}
-	return nil, &NotLoadedError{edge: "uses"}
+	return nil, &NotLoadedError{edge: "instances"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -70,6 +88,8 @@ func (*License) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullInt64)
 		case license.FieldSpdxID, license.FieldName, license.FieldReference, license.FieldDetailsURL:
 			values[i] = new(sql.NullString)
+		case license.ForeignKeys[0]: // license_owner
+			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type License", columns[i])
 		}
@@ -121,9 +141,21 @@ func (l *License) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				l.IsOsiApproved = value.Bool
 			}
+		case license.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field license_owner", value)
+			} else if value.Valid {
+				l.license_owner = new(int)
+				*l.license_owner = int(value.Int64)
+			}
 		}
 	}
 	return nil
+}
+
+// QueryOwner queries the "owner" edge of the License entity.
+func (l *License) QueryOwner() *OrganizationQuery {
+	return (&LicenseClient{config: l.config}).QueryOwner(l)
 }
 
 // QueryComponents queries the "components" edge of the License entity.
@@ -131,9 +163,9 @@ func (l *License) QueryComponents() *ComponentQuery {
 	return (&LicenseClient{config: l.config}).QueryComponents(l)
 }
 
-// QueryUses queries the "uses" edge of the License entity.
-func (l *License) QueryUses() *LicenseUseQuery {
-	return (&LicenseClient{config: l.config}).QueryUses(l)
+// QueryInstances queries the "instances" edge of the License entity.
+func (l *License) QueryInstances() *ReleaseLicenseQuery {
+	return (&LicenseClient{config: l.config}).QueryInstances(l)
 }
 
 // Update returns a builder for updating this License.

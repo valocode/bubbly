@@ -182,6 +182,41 @@ export interface Component_Edge {
 }
 
 // #######################################
+// Event
+// #######################################
+export interface Event_Json {
+	event?: Event[]
+}
+
+export interface Event {
+	id?: number
+	message?: string
+	type?: EventType
+	time?: Date
+	release?: Release
+	repo?: Repo
+	project?: Project
+}
+
+export interface Event_Relay {
+	event_connection?: Event_Conn
+}
+
+export interface Event_Conn {
+	totalCount?: number
+	pageInfo?: pageInfo
+	edges?: Event_Edge[]
+}
+
+export interface Event_Edge {
+	node?: Event
+}
+
+export enum EventType {
+	evaluate_release = 'evaluate_release',
+}
+
+// #######################################
 // GitCommit
 // #######################################
 export interface GitCommit_Json {
@@ -226,8 +261,9 @@ export interface License {
 	reference?: string
 	details_url?: string
 	is_osi_approved?: boolean
+	owner?: Organization
 	components?: Component[]
-	uses?: LicenseUse[]
+	instances?: ReleaseLicense[]
 }
 
 export interface License_Relay {
@@ -242,32 +278,6 @@ export interface License_Conn {
 
 export interface License_Edge {
 	node?: License
-}
-
-// #######################################
-// LicenseUse
-// #######################################
-export interface LicenseUse_Json {
-	license_use?: LicenseUse[]
-}
-
-export interface LicenseUse {
-	id?: number
-	license?: License
-}
-
-export interface LicenseUse_Relay {
-	license_use_connection?: LicenseUse_Conn
-}
-
-export interface LicenseUse_Conn {
-	totalCount?: number
-	pageInfo?: pageInfo
-	edges?: LicenseUse_Edge[]
-}
-
-export interface LicenseUse_Edge {
-	node?: LicenseUse
 }
 
 // #######################################
@@ -728,7 +738,7 @@ export interface VulnerabilityReview_Json {
 
 export interface VulnerabilityReview {
 	id?: number
-	name?: string
+	note?: string
 	decision?: VulnerabilityReviewDecision
 	vulnerability?: Vulnerability
 	projects?: Project[]
