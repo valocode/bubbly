@@ -152,7 +152,7 @@ func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent
 				}
 				if vuln.Patch != nil {
 					_, err := tx.VulnerabilityReview.Create().
-						SetName(*vuln.Patch.Message).
+						SetNote(*vuln.Patch.Note).
 						SetDecision(vulnerabilityreview.DecisionPatched).
 						SetVulnerability(existingVuln).
 						AddInstanceIDs(dbRelVuln.ID).

@@ -1595,12 +1595,12 @@ func (vr *VulnerabilityReview) Node(ctx context.Context) (node *Node, err error)
 		Edges:  make([]*Edge, 5),
 	}
 	var buf []byte
-	if buf, err = json.Marshal(vr.Name); err != nil {
+	if buf, err = json.Marshal(vr.Note); err != nil {
 		return nil, err
 	}
 	node.Fields[0] = &Field{
 		Type:  "string",
-		Name:  "name",
+		Name:  "note",
 		Value: string(buf),
 	}
 	if buf, err = json.Marshal(vr.Decision); err != nil {

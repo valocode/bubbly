@@ -763,7 +763,7 @@ export interface VulnerabilityReview_Json {
 
 export interface VulnerabilityReview {
 	id?: number;
-	name?: string;
+	note?: string;
 	decision?: VulnerabilityReviewDecision;
 	vulnerability?: Vulnerability;
 	projects?: Project[];

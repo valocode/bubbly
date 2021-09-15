@@ -13,8 +13,6 @@ require (
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
 	github.com/docker/docker v20.10.8+incompatible // indirect
 	github.com/fatih/color v1.12.0
-	github.com/go-bindata/go-bindata v1.0.1-0.20190711162640-ee3c2418e368 // indirect
-	github.com/go-chi/chi v3.3.2+incompatible // indirect
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect

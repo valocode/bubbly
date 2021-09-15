@@ -6424,13 +6424,13 @@ func (vr *VulnerabilityReviewQuery) Paginate(
 }
 
 var (
-	// VulnerabilityReviewOrderFieldName orders VulnerabilityReview by name.
-	VulnerabilityReviewOrderFieldName = &VulnerabilityReviewOrderField{
-		field: vulnerabilityreview.FieldName,
+	// VulnerabilityReviewOrderFieldNote orders VulnerabilityReview by note.
+	VulnerabilityReviewOrderFieldNote = &VulnerabilityReviewOrderField{
+		field: vulnerabilityreview.FieldNote,
 		toCursor: func(vr *VulnerabilityReview) Cursor {
 			return Cursor{
 				ID:    vr.ID,
-				Value: vr.Name,
+				Value: vr.Note,
 			}
 		},
 	}
@@ -6440,8 +6440,8 @@ var (
 func (f VulnerabilityReviewOrderField) String() string {
 	var str string
 	switch f.field {
-	case vulnerabilityreview.FieldName:
-		str = "name"
+	case vulnerabilityreview.FieldNote:
+		str = "note"
 	}
 	return str
 }
@@ -6458,8 +6458,8 @@ func (f *VulnerabilityReviewOrderField) UnmarshalGQL(v interface{}) error {
 		return fmt.Errorf("VulnerabilityReviewOrderField %T must be a string", v)
 	}
 	switch str {
-	case "name":
-		*f = *VulnerabilityReviewOrderFieldName
+	case "note":
+		*f = *VulnerabilityReviewOrderFieldNote
 	default:
 		return fmt.Errorf("%s is not a valid VulnerabilityReviewOrderField", str)
 	}

@@ -264,10 +264,10 @@ func init() {
 	vulnerability.DefaultSeverityScore = vulnerabilityDescSeverityScore.Default.(float64)
 	vulnerabilityreviewFields := schema.VulnerabilityReview{}.Fields()
 	_ = vulnerabilityreviewFields
-	// vulnerabilityreviewDescName is the schema descriptor for name field.
-	vulnerabilityreviewDescName := vulnerabilityreviewFields[0].Descriptor()
-	// vulnerabilityreview.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	vulnerabilityreview.NameValidator = vulnerabilityreviewDescName.Validators[0].(func(string) error)
+	// vulnerabilityreviewDescNote is the schema descriptor for note field.
+	vulnerabilityreviewDescNote := vulnerabilityreviewFields[0].Descriptor()
+	// vulnerabilityreview.NoteValidator is a validator for the "note" field. It is called by the builders before save.
+	vulnerabilityreview.NoteValidator = vulnerabilityreviewDescNote.Validators[0].(func(string) error)
 }
 
 const (

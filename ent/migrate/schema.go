@@ -652,7 +652,7 @@ var (
 	// VulnerabilityReviewColumns holds the columns for the "vulnerability_review" table.
 	VulnerabilityReviewColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString},
+		{Name: "note", Type: field.TypeString},
 		{Name: "decision", Type: field.TypeEnum, Enums: []string{"exploitable", "in_progress", "invalid", "mitigated", "ineffective", "patched"}, Default: "exploitable"},
 		{Name: "vulnerability_review_vulnerability", Type: field.TypeInt, Nullable: true},
 	}

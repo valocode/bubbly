@@ -14794,7 +14794,7 @@ type VulnerabilityReviewMutation struct {
 	op                   Op
 	typ                  string
 	id                   *int
-	name                 *string
+	note                 *string
 	decision             *vulnerabilityreview.Decision
 	clearedFields        map[string]struct{}
 	vulnerability        *int
@@ -14895,40 +14895,40 @@ func (m *VulnerabilityReviewMutation) ID() (id int, exists bool) {
 	return *m.id, true
 }
 
-// SetName sets the "name" field.
-func (m *VulnerabilityReviewMutation) SetName(s string) {
-	m.name = &s
+// SetNote sets the "note" field.
+func (m *VulnerabilityReviewMutation) SetNote(s string) {
+	m.note = &s
 }
 
-// Name returns the value of the "name" field in the mutation.
-func (m *VulnerabilityReviewMutation) Name() (r string, exists bool) {
-	v := m.name
+// Note returns the value of the "note" field in the mutation.
+func (m *VulnerabilityReviewMutation) Note() (r string, exists bool) {
+	v := m.note
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldName returns the old "name" field's value of the VulnerabilityReview entity.
+// OldNote returns the old "note" field's value of the VulnerabilityReview entity.
 // If the VulnerabilityReview object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *VulnerabilityReviewMutation) OldName(ctx context.Context) (v string, err error) {
+func (m *VulnerabilityReviewMutation) OldNote(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldName is only allowed on UpdateOne operations")
+		return v, fmt.Errorf("OldNote is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldName requires an ID field in the mutation")
+		return v, fmt.Errorf("OldNote requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldName: %w", err)
+		return v, fmt.Errorf("querying old value for OldNote: %w", err)
 	}
-	return oldValue.Name, nil
+	return oldValue.Note, nil
 }
 
-// ResetName resets all changes to the "name" field.
-func (m *VulnerabilityReviewMutation) ResetName() {
-	m.name = nil
+// ResetNote resets all changes to the "note" field.
+func (m *VulnerabilityReviewMutation) ResetNote() {
+	m.note = nil
 }
 
 // SetDecision sets the "decision" field.
@@ -15242,8 +15242,8 @@ func (m *VulnerabilityReviewMutation) Type() string {
 // AddedFields().
 func (m *VulnerabilityReviewMutation) Fields() []string {
 	fields := make([]string, 0, 2)
-	if m.name != nil {
-		fields = append(fields, vulnerabilityreview.FieldName)
+	if m.note != nil {
+		fields = append(fields, vulnerabilityreview.FieldNote)
 	}
 	if m.decision != nil {
 		fields = append(fields, vulnerabilityreview.FieldDecision)
@@ -15256,8 +15256,8 @@ func (m *VulnerabilityReviewMutation) Fields() []string {
 // schema.
 func (m *VulnerabilityReviewMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case vulnerabilityreview.FieldName:
-		return m.Name()
+	case vulnerabilityreview.FieldNote:
+		return m.Note()
 	case vulnerabilityreview.FieldDecision:
 		return m.Decision()
 	}
@@ -15269,8 +15269,8 @@ func (m *VulnerabilityReviewMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *VulnerabilityReviewMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case vulnerabilityreview.FieldName:
-		return m.OldName(ctx)
+	case vulnerabilityreview.FieldNote:
+		return m.OldNote(ctx)
 	case vulnerabilityreview.FieldDecision:
 		return m.OldDecision(ctx)
 	}
@@ -15282,12 +15282,12 @@ func (m *VulnerabilityReviewMutation) OldField(ctx context.Context, name string)
 // type.
 func (m *VulnerabilityReviewMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case vulnerabilityreview.FieldName:
+	case vulnerabilityreview.FieldNote:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetName(v)
+		m.SetNote(v)
 		return nil
 	case vulnerabilityreview.FieldDecision:
 		v, ok := value.(vulnerabilityreview.Decision)
@@ -15345,8 +15345,8 @@ func (m *VulnerabilityReviewMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *VulnerabilityReviewMutation) ResetField(name string) error {
 	switch name {
-	case vulnerabilityreview.FieldName:
-		m.ResetName()
+	case vulnerabilityreview.FieldNote:
+		m.ResetNote()
 		return nil
 	case vulnerabilityreview.FieldDecision:
 		m.ResetDecision()

@@ -6718,20 +6718,20 @@ type VulnerabilityReviewWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
-	// "name" field predicates.
-	Name             *string  `json:"name,omitempty"`
-	NameNEQ          *string  `json:"nameNEQ,omitempty"`
-	NameIn           []string `json:"nameIn,omitempty"`
-	NameNotIn        []string `json:"nameNotIn,omitempty"`
-	NameGT           *string  `json:"nameGT,omitempty"`
-	NameGTE          *string  `json:"nameGTE,omitempty"`
-	NameLT           *string  `json:"nameLT,omitempty"`
-	NameLTE          *string  `json:"nameLTE,omitempty"`
-	NameContains     *string  `json:"nameContains,omitempty"`
-	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
-	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
-	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
-	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+	// "note" field predicates.
+	Note             *string  `json:"note,omitempty"`
+	NoteNEQ          *string  `json:"noteNEQ,omitempty"`
+	NoteIn           []string `json:"noteIn,omitempty"`
+	NoteNotIn        []string `json:"noteNotIn,omitempty"`
+	NoteGT           *string  `json:"noteGT,omitempty"`
+	NoteGTE          *string  `json:"noteGTE,omitempty"`
+	NoteLT           *string  `json:"noteLT,omitempty"`
+	NoteLTE          *string  `json:"noteLTE,omitempty"`
+	NoteContains     *string  `json:"noteContains,omitempty"`
+	NoteHasPrefix    *string  `json:"noteHasPrefix,omitempty"`
+	NoteHasSuffix    *string  `json:"noteHasSuffix,omitempty"`
+	NoteEqualFold    *string  `json:"noteEqualFold,omitempty"`
+	NoteContainsFold *string  `json:"noteContainsFold,omitempty"`
 
 	// "decision" field predicates.
 	Decision      *vulnerabilityreview.Decision  `json:"decision,omitempty"`
@@ -6843,44 +6843,44 @@ func (i *VulnerabilityReviewWhereInput) P() (predicate.VulnerabilityReview, erro
 	if i.IDLTE != nil {
 		predicates = append(predicates, vulnerabilityreview.IDLTE(*i.IDLTE))
 	}
-	if i.Name != nil {
-		predicates = append(predicates, vulnerabilityreview.NameEQ(*i.Name))
+	if i.Note != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteEQ(*i.Note))
 	}
-	if i.NameNEQ != nil {
-		predicates = append(predicates, vulnerabilityreview.NameNEQ(*i.NameNEQ))
+	if i.NoteNEQ != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteNEQ(*i.NoteNEQ))
 	}
-	if len(i.NameIn) > 0 {
-		predicates = append(predicates, vulnerabilityreview.NameIn(i.NameIn...))
+	if len(i.NoteIn) > 0 {
+		predicates = append(predicates, vulnerabilityreview.NoteIn(i.NoteIn...))
 	}
-	if len(i.NameNotIn) > 0 {
-		predicates = append(predicates, vulnerabilityreview.NameNotIn(i.NameNotIn...))
+	if len(i.NoteNotIn) > 0 {
+		predicates = append(predicates, vulnerabilityreview.NoteNotIn(i.NoteNotIn...))
 	}
-	if i.NameGT != nil {
-		predicates = append(predicates, vulnerabilityreview.NameGT(*i.NameGT))
+	if i.NoteGT != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteGT(*i.NoteGT))
 	}
-	if i.NameGTE != nil {
-		predicates = append(predicates, vulnerabilityreview.NameGTE(*i.NameGTE))
+	if i.NoteGTE != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteGTE(*i.NoteGTE))
 	}
-	if i.NameLT != nil {
-		predicates = append(predicates, vulnerabilityreview.NameLT(*i.NameLT))
+	if i.NoteLT != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteLT(*i.NoteLT))
 	}
-	if i.NameLTE != nil {
-		predicates = append(predicates, vulnerabilityreview.NameLTE(*i.NameLTE))
+	if i.NoteLTE != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteLTE(*i.NoteLTE))
 	}
-	if i.NameContains != nil {
-		predicates = append(predicates, vulnerabilityreview.NameContains(*i.NameContains))
+	if i.NoteContains != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteContains(*i.NoteContains))
 	}
-	if i.NameHasPrefix != nil {
-		predicates = append(predicates, vulnerabilityreview.NameHasPrefix(*i.NameHasPrefix))
+	if i.NoteHasPrefix != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteHasPrefix(*i.NoteHasPrefix))
 	}
-	if i.NameHasSuffix != nil {
-		predicates = append(predicates, vulnerabilityreview.NameHasSuffix(*i.NameHasSuffix))
+	if i.NoteHasSuffix != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteHasSuffix(*i.NoteHasSuffix))
 	}
-	if i.NameEqualFold != nil {
-		predicates = append(predicates, vulnerabilityreview.NameEqualFold(*i.NameEqualFold))
+	if i.NoteEqualFold != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteEqualFold(*i.NoteEqualFold))
 	}
-	if i.NameContainsFold != nil {
-		predicates = append(predicates, vulnerabilityreview.NameContainsFold(*i.NameContainsFold))
+	if i.NoteContainsFold != nil {
+		predicates = append(predicates, vulnerabilityreview.NoteContainsFold(*i.NoteContainsFold))
 	}
 	if i.Decision != nil {
 		predicates = append(predicates, vulnerabilityreview.DecisionEQ(*i.Decision))

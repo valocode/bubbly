@@ -21,7 +21,7 @@ type (
 	}
 
 	VulnerabilityPatch struct {
-		Message *string `json:"message,omitempty" validate:"required" mapstructure:"message"`
+		Note *string `json:"note,omitempty" validate:"required" mapstructure:"note"`
 	}
 
 	ComponentRead struct {
