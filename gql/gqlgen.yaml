@@ -23,6 +23,9 @@ models:
   ArtifactType:
     model:
       - github.com/valocode/bubbly/ent/artifact.Type
+  EventStatus:
+    model:
+      - github.com/valocode/bubbly/ent/event.Status
   EventType:
     model:
       - github.com/valocode/bubbly/ent/event.Type

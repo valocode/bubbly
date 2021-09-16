@@ -8,7 +8,6 @@ import (
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/event"
-	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -472,9 +471,10 @@ func (c *ComponentModelUpdate) SetID(value int) *ComponentModelUpdate {
 }
 
 type EventModelCreate struct {
-	Message *string     `json:"message,omitempty"  mapstructure:"message"`
-	Type    *event.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
-	Time    *time.Time  `json:"time,omitempty"  mapstructure:"time"`
+	Message *string       `json:"message,omitempty"  mapstructure:"message"`
+	Status  *event.Status `json:"status,omitempty"  mapstructure:"status"`
+	Type    *event.Type   `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time    *time.Time    `json:"time,omitempty"  mapstructure:"time"`
 }
 
 func NewEventModelCreate() *EventModelCreate {
@@ -482,6 +482,10 @@ func NewEventModelCreate() *EventModelCreate {
 }
 func (e *EventModelCreate) SetMessage(value string) *EventModelCreate {
 	e.Message = &value
+	return e
+}
+func (e *EventModelCreate) SetStatus(value event.Status) *EventModelCreate {
+	e.Status = &value
 	return e
 }
 func (e *EventModelCreate) SetType(value event.Type) *EventModelCreate {
@@ -507,6 +511,9 @@ func (e *EventMutation) SetModelCreate(model *EventModelCreate) *EventMutation {
 	if model.Message != nil {
 		e.SetMessage(*model.Message)
 	}
+	if model.Status != nil {
+		e.SetStatus(*model.Status)
+	}
 	if model.Type != nil {
 		e.SetType(*model.Type)
 	}
@@ -517,10 +524,11 @@ func (e *EventMutation) SetModelCreate(model *EventModelCreate) *EventMutation {
 }
 
 type EventModelRead struct {
-	Message *string     `json:"message,omitempty"  mapstructure:"message"`
-	Type    *event.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
-	Time    *time.Time  `json:"time,omitempty"  mapstructure:"time"`
-	ID      *int        `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Message *string       `json:"message,omitempty"  mapstructure:"message"`
+	Status  *event.Status `json:"status,omitempty"  mapstructure:"status"`
+	Type    *event.Type   `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time    *time.Time    `json:"time,omitempty"  mapstructure:"time"`
+	ID      *int          `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewEventModelRead() *EventModelRead {
@@ -529,6 +537,7 @@ func NewEventModelRead() *EventModelRead {
 
 func (e *EventModelRead) FromEnt(value *Event) *EventModelRead {
 	e.Message = &value.Message
+	e.Status = &value.Status
 	e.Type = &value.Type
 	e.Time = &value.Time
 	e.ID = &value.ID
@@ -636,11 +645,8 @@ func (gc *GitCommitModelUpdate) SetID(value int) *GitCommitModelUpdate {
 }
 
 type LicenseModelCreate struct {
-	LicenseID     *string `json:"license_id,omitempty" validate:"required" mapstructure:"license_id"`
-	Name          *string `json:"name,omitempty"  mapstructure:"name"`
-	Reference     *string `json:"reference,omitempty"  mapstructure:"reference"`
-	DetailsURL    *string `json:"details_url,omitempty"  mapstructure:"details_url"`
-	IsOsiApproved *bool   `json:"is_osi_approved,omitempty"  mapstructure:"is_osi_approved"`
+	LicenseID *string `json:"license_id,omitempty" validate:"required" mapstructure:"license_id"`
+	Name      *string `json:"name,omitempty"  mapstructure:"name"`
 }
 
 func NewLicenseModelCreate() *LicenseModelCreate {
@@ -652,18 +658,6 @@ func (l *LicenseModelCreate) SetLicenseID(value string) *LicenseModelCreate {
 }
 func (l *LicenseModelCreate) SetName(value string) *LicenseModelCreate {
 	l.Name = &value
-	return l
-}
-func (l *LicenseModelCreate) SetReference(value string) *LicenseModelCreate {
-	l.Reference = &value
-	return l
-}
-func (l *LicenseModelCreate) SetDetailsURL(value string) *LicenseModelCreate {
-	l.DetailsURL = &value
-	return l
-}
-func (l *LicenseModelCreate) SetIsOsiApproved(value bool) *LicenseModelCreate {
-	l.IsOsiApproved = &value
 	return l
 }
 
@@ -684,25 +678,13 @@ func (l *LicenseMutation) SetModelCreate(model *LicenseModelCreate) *LicenseMuta
 	if model.Name != nil {
 		l.SetName(*model.Name)
 	}
-	if model.Reference != nil {
-		l.SetReference(*model.Reference)
-	}
-	if model.DetailsURL != nil {
-		l.SetDetailsURL(*model.DetailsURL)
-	}
-	if model.IsOsiApproved != nil {
-		l.SetIsOsiApproved(*model.IsOsiApproved)
-	}
 	return l
 }
 
 type LicenseModelRead struct {
-	LicenseID     *string `json:"license_id,omitempty" validate:"required" mapstructure:"license_id"`
-	Name          *string `json:"name,omitempty"  mapstructure:"name"`
-	Reference     *string `json:"reference,omitempty"  mapstructure:"reference"`
-	DetailsURL    *string `json:"details_url,omitempty"  mapstructure:"details_url"`
-	IsOsiApproved *bool   `json:"is_osi_approved,omitempty"  mapstructure:"is_osi_approved"`
-	ID            *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	LicenseID *string `json:"license_id,omitempty" validate:"required" mapstructure:"license_id"`
+	Name      *string `json:"name,omitempty"  mapstructure:"name"`
+	ID        *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewLicenseModelRead() *LicenseModelRead {
@@ -712,9 +694,6 @@ func NewLicenseModelRead() *LicenseModelRead {
 func (l *LicenseModelRead) FromEnt(value *License) *LicenseModelRead {
 	l.LicenseID = &value.LicenseID
 	l.Name = &value.Name
-	l.Reference = &value.Reference
-	l.DetailsURL = &value.DetailsURL
-	l.IsOsiApproved = &value.IsOsiApproved
 	l.ID = &value.ID
 	return l
 }
@@ -884,10 +863,9 @@ func (r *ReleaseMutation) SetModelCreate(model *ReleaseModelCreate) *ReleaseMuta
 }
 
 type ReleaseModelRead struct {
-	Name    *string         `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Version *string         `json:"version,omitempty" validate:"required" mapstructure:"version"`
-	Status  *release.Status `json:"status,omitempty"  mapstructure:"status"`
-	ID      *int            `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name    *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Version *string `json:"version,omitempty" validate:"required" mapstructure:"version"`
+	ID      *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewReleaseModelRead() *ReleaseModelRead {
@@ -897,7 +875,6 @@ func NewReleaseModelRead() *ReleaseModelRead {
 func (r *ReleaseModelRead) FromEnt(value *Release) *ReleaseModelRead {
 	r.Name = &value.Name
 	r.Version = &value.Version
-	r.Status = &value.Status
 	r.ID = &value.ID
 	return r
 }
@@ -1191,6 +1168,103 @@ func NewRepoModelUpdate() *RepoModelUpdate {
 func (r *RepoModelUpdate) SetID(value int) *RepoModelUpdate {
 	r.ID = &value
 	return r
+}
+
+type SPDXLicenseModelCreate struct {
+	LicenseID     *string `json:"license_id,omitempty" validate:"required" mapstructure:"license_id"`
+	Name          *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Reference     *string `json:"reference,omitempty"  mapstructure:"reference"`
+	DetailsURL    *string `json:"details_url,omitempty"  mapstructure:"details_url"`
+	IsOsiApproved *bool   `json:"is_osi_approved,omitempty"  mapstructure:"is_osi_approved"`
+}
+
+func NewSPDXLicenseModelCreate() *SPDXLicenseModelCreate {
+	return &SPDXLicenseModelCreate{}
+}
+func (sl *SPDXLicenseModelCreate) SetLicenseID(value string) *SPDXLicenseModelCreate {
+	sl.LicenseID = &value
+	return sl
+}
+func (sl *SPDXLicenseModelCreate) SetName(value string) *SPDXLicenseModelCreate {
+	sl.Name = &value
+	return sl
+}
+func (sl *SPDXLicenseModelCreate) SetReference(value string) *SPDXLicenseModelCreate {
+	sl.Reference = &value
+	return sl
+}
+func (sl *SPDXLicenseModelCreate) SetDetailsURL(value string) *SPDXLicenseModelCreate {
+	sl.DetailsURL = &value
+	return sl
+}
+func (sl *SPDXLicenseModelCreate) SetIsOsiApproved(value bool) *SPDXLicenseModelCreate {
+	sl.IsOsiApproved = &value
+	return sl
+}
+
+func (sl *SPDXLicenseCreate) SetModelCreate(model *SPDXLicenseModelCreate) *SPDXLicenseCreate {
+	sl.mutation.SetModelCreate(model)
+	return sl
+}
+
+func (sl *SPDXLicenseUpdateOne) SetModelCreate(model *SPDXLicenseModelCreate) *SPDXLicenseUpdateOne {
+	sl.mutation.SetModelCreate(model)
+	return sl
+}
+
+func (sl *SPDXLicenseMutation) SetModelCreate(model *SPDXLicenseModelCreate) *SPDXLicenseMutation {
+	if model.LicenseID != nil {
+		sl.SetLicenseID(*model.LicenseID)
+	}
+	if model.Name != nil {
+		sl.SetName(*model.Name)
+	}
+	if model.Reference != nil {
+		sl.SetReference(*model.Reference)
+	}
+	if model.DetailsURL != nil {
+		sl.SetDetailsURL(*model.DetailsURL)
+	}
+	if model.IsOsiApproved != nil {
+		sl.SetIsOsiApproved(*model.IsOsiApproved)
+	}
+	return sl
+}
+
+type SPDXLicenseModelRead struct {
+	LicenseID     *string `json:"license_id,omitempty" validate:"required" mapstructure:"license_id"`
+	Name          *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Reference     *string `json:"reference,omitempty"  mapstructure:"reference"`
+	DetailsURL    *string `json:"details_url,omitempty"  mapstructure:"details_url"`
+	IsOsiApproved *bool   `json:"is_osi_approved,omitempty"  mapstructure:"is_osi_approved"`
+	ID            *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewSPDXLicenseModelRead() *SPDXLicenseModelRead {
+	return &SPDXLicenseModelRead{}
+}
+
+func (sl *SPDXLicenseModelRead) FromEnt(value *SPDXLicense) *SPDXLicenseModelRead {
+	sl.LicenseID = &value.LicenseID
+	sl.Name = &value.Name
+	sl.Reference = &value.Reference
+	sl.DetailsURL = &value.DetailsURL
+	sl.IsOsiApproved = &value.IsOsiApproved
+	sl.ID = &value.ID
+	return sl
+}
+
+type SPDXLicenseModelUpdate struct {
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewSPDXLicenseModelUpdate() *SPDXLicenseModelUpdate {
+	return &SPDXLicenseModelUpdate{}
+}
+
+func (sl *SPDXLicenseModelUpdate) SetID(value int) *SPDXLicenseModelUpdate {
+	sl.ID = &value
+	return sl
 }
 
 type TestCaseModelCreate struct {
@@ -1582,6 +1656,11 @@ func (rv *ReleaseVulnerabilityQuery) WhereInput(input ReleaseVulnerabilityWhereI
 func (r *RepoQuery) WhereInput(input RepoWhereInput) *RepoQuery {
 	input.Filter(r)
 	return r
+}
+
+func (sl *SPDXLicenseQuery) WhereInput(input SPDXLicenseWhereInput) *SPDXLicenseQuery {
+	input.Filter(sl)
+	return sl
 }
 
 func (tc *TestCaseQuery) WhereInput(input TestCaseWhereInput) *TestCaseQuery {

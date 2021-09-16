@@ -33,6 +33,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -442,7 +443,7 @@ func (e *Event) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     e.ID,
 		Type:   "Event",
-		Fields: make([]*Field, 3),
+		Fields: make([]*Field, 4),
 		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
@@ -454,10 +455,18 @@ func (e *Event) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "message",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(e.Type); err != nil {
+	if buf, err = json.Marshal(e.Status); err != nil {
 		return nil, err
 	}
 	node.Fields[1] = &Field{
+		Type:  "event.Status",
+		Name:  "status",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(e.Type); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
 		Type:  "event.Type",
 		Name:  "type",
 		Value: string(buf),
@@ -465,7 +474,7 @@ func (e *Event) Node(ctx context.Context) (node *Node, err error) {
 	if buf, err = json.Marshal(e.Time); err != nil {
 		return nil, err
 	}
-	node.Fields[2] = &Field{
+	node.Fields[3] = &Field{
 		Type:  "time.Time",
 		Name:  "time",
 		Value: string(buf),
@@ -570,8 +579,8 @@ func (l *License) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     l.ID,
 		Type:   "License",
-		Fields: make([]*Field, 5),
-		Edges:  make([]*Edge, 3),
+		Fields: make([]*Field, 2),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(l.LicenseID); err != nil {
@@ -590,30 +599,6 @@ func (l *License) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "name",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(l.Reference); err != nil {
-		return nil, err
-	}
-	node.Fields[2] = &Field{
-		Type:  "string",
-		Name:  "reference",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(l.DetailsURL); err != nil {
-		return nil, err
-	}
-	node.Fields[3] = &Field{
-		Type:  "string",
-		Name:  "details_url",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(l.IsOsiApproved); err != nil {
-		return nil, err
-	}
-	node.Fields[4] = &Field{
-		Type:  "bool",
-		Name:  "is_osi_approved",
-		Value: string(buf),
-	}
 	node.Edges[0] = &Edge{
 		Type: "Organization",
 		Name: "owner",
@@ -625,22 +610,32 @@ func (l *License) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "Component",
-		Name: "components",
+		Type: "SPDXLicense",
+		Name: "spdx",
 	}
-	err = l.QueryComponents().
-		Select(component.FieldID).
+	err = l.QuerySpdx().
+		Select(spdxlicense.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[2] = &Edge{
+		Type: "Component",
+		Name: "components",
+	}
+	err = l.QueryComponents().
+		Select(component.FieldID).
+		Scan(ctx, &node.Edges[2].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[3] = &Edge{
 		Type: "ReleaseLicense",
 		Name: "instances",
 	}
 	err = l.QueryInstances().
 		Select(releaselicense.FieldID).
-		Scan(ctx, &node.Edges[2].IDs)
+		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -749,7 +744,7 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     r.ID,
 		Type:   "Release",
-		Fields: make([]*Field, 3),
+		Fields: make([]*Field, 2),
 		Edges:  make([]*Edge, 13),
 	}
 	var buf []byte
@@ -767,14 +762,6 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 	node.Fields[1] = &Field{
 		Type:  "string",
 		Name:  "version",
-		Value: string(buf),
-	}
-	if buf, err = json.Marshal(r.Status); err != nil {
-		return nil, err
-	}
-	node.Fields[2] = &Field{
-		Type:  "release.Status",
-		Name:  "status",
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
@@ -1365,6 +1352,57 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 	return node, nil
 }
 
+func (sl *SPDXLicense) Node(ctx context.Context) (node *Node, err error) {
+	node = &Node{
+		ID:     sl.ID,
+		Type:   "SPDXLicense",
+		Fields: make([]*Field, 5),
+		Edges:  make([]*Edge, 0),
+	}
+	var buf []byte
+	if buf, err = json.Marshal(sl.LicenseID); err != nil {
+		return nil, err
+	}
+	node.Fields[0] = &Field{
+		Type:  "string",
+		Name:  "license_id",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(sl.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "string",
+		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(sl.Reference); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "string",
+		Name:  "reference",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(sl.DetailsURL); err != nil {
+		return nil, err
+	}
+	node.Fields[3] = &Field{
+		Type:  "string",
+		Name:  "details_url",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(sl.IsOsiApproved); err != nil {
+		return nil, err
+	}
+	node.Fields[4] = &Field{
+		Type:  "bool",
+		Name:  "is_osi_approved",
+		Value: string(buf),
+	}
+	return node, nil
+}
+
 func (tc *TestCase) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     tc.ID,
@@ -1894,6 +1932,14 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			return nil, err
 		}
 		return n, nil
+	case spdxlicense.Table:
+		n, err := c.SPDXLicense.Query().
+			Where(spdxlicense.ID(id)).
+			Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return n, nil
 	case testcase.Table:
 		n, err := c.TestCase.Query().
 			Where(testcase.ID(id)).
@@ -2206,6 +2252,18 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 	case repo.Table:
 		nodes, err := c.Repo.Query().
 			Where(repo.IDIn(ids...)).
+			All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case spdxlicense.Table:
+		nodes, err := c.SPDXLicense.Query().
+			Where(spdxlicense.IDIn(ids...)).
 			All(ctx)
 		if err != nil {
 			return nil, err

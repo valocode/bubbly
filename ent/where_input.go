@@ -25,6 +25,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -1765,6 +1766,12 @@ type EventWhereInput struct {
 	MessageEqualFold    *string  `json:"messageEqualFold,omitempty"`
 	MessageContainsFold *string  `json:"messageContainsFold,omitempty"`
 
+	// "status" field predicates.
+	Status      *event.Status  `json:"status,omitempty"`
+	StatusNEQ   *event.Status  `json:"statusNEQ,omitempty"`
+	StatusIn    []event.Status `json:"statusIn,omitempty"`
+	StatusNotIn []event.Status `json:"statusNotIn,omitempty"`
+
 	// "type" field predicates.
 	Type      *event.Type  `json:"type,omitempty"`
 	TypeNEQ   *event.Type  `json:"typeNEQ,omitempty"`
@@ -1915,6 +1922,18 @@ func (i *EventWhereInput) P() (predicate.Event, error) {
 	}
 	if i.MessageContainsFold != nil {
 		predicates = append(predicates, event.MessageContainsFold(*i.MessageContainsFold))
+	}
+	if i.Status != nil {
+		predicates = append(predicates, event.StatusEQ(*i.Status))
+	}
+	if i.StatusNEQ != nil {
+		predicates = append(predicates, event.StatusNEQ(*i.StatusNEQ))
+	}
+	if len(i.StatusIn) > 0 {
+		predicates = append(predicates, event.StatusIn(i.StatusIn...))
+	}
+	if len(i.StatusNotIn) > 0 {
+		predicates = append(predicates, event.StatusNotIn(i.StatusNotIn...))
 	}
 	if i.Type != nil {
 		predicates = append(predicates, event.TypeEQ(*i.Type))
@@ -2424,47 +2443,13 @@ type LicenseWhereInput struct {
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
 
-	// "reference" field predicates.
-	Reference             *string  `json:"reference,omitempty"`
-	ReferenceNEQ          *string  `json:"referenceNEQ,omitempty"`
-	ReferenceIn           []string `json:"referenceIn,omitempty"`
-	ReferenceNotIn        []string `json:"referenceNotIn,omitempty"`
-	ReferenceGT           *string  `json:"referenceGT,omitempty"`
-	ReferenceGTE          *string  `json:"referenceGTE,omitempty"`
-	ReferenceLT           *string  `json:"referenceLT,omitempty"`
-	ReferenceLTE          *string  `json:"referenceLTE,omitempty"`
-	ReferenceContains     *string  `json:"referenceContains,omitempty"`
-	ReferenceHasPrefix    *string  `json:"referenceHasPrefix,omitempty"`
-	ReferenceHasSuffix    *string  `json:"referenceHasSuffix,omitempty"`
-	ReferenceIsNil        bool     `json:"referenceIsNil,omitempty"`
-	ReferenceNotNil       bool     `json:"referenceNotNil,omitempty"`
-	ReferenceEqualFold    *string  `json:"referenceEqualFold,omitempty"`
-	ReferenceContainsFold *string  `json:"referenceContainsFold,omitempty"`
-
-	// "details_url" field predicates.
-	DetailsURL             *string  `json:"detailsURL,omitempty"`
-	DetailsURLNEQ          *string  `json:"detailsURLNEQ,omitempty"`
-	DetailsURLIn           []string `json:"detailsURLIn,omitempty"`
-	DetailsURLNotIn        []string `json:"detailsURLNotIn,omitempty"`
-	DetailsURLGT           *string  `json:"detailsURLGT,omitempty"`
-	DetailsURLGTE          *string  `json:"detailsURLGTE,omitempty"`
-	DetailsURLLT           *string  `json:"detailsURLLT,omitempty"`
-	DetailsURLLTE          *string  `json:"detailsURLLTE,omitempty"`
-	DetailsURLContains     *string  `json:"detailsURLContains,omitempty"`
-	DetailsURLHasPrefix    *string  `json:"detailsURLHasPrefix,omitempty"`
-	DetailsURLHasSuffix    *string  `json:"detailsURLHasSuffix,omitempty"`
-	DetailsURLIsNil        bool     `json:"detailsURLIsNil,omitempty"`
-	DetailsURLNotNil       bool     `json:"detailsURLNotNil,omitempty"`
-	DetailsURLEqualFold    *string  `json:"detailsURLEqualFold,omitempty"`
-	DetailsURLContainsFold *string  `json:"detailsURLContainsFold,omitempty"`
-
-	// "is_osi_approved" field predicates.
-	IsOsiApproved    *bool `json:"isOsiApproved,omitempty"`
-	IsOsiApprovedNEQ *bool `json:"isOsiApprovedNEQ,omitempty"`
-
 	// "owner" edge predicates.
 	HasOwner     *bool                     `json:"hasOwner,omitempty"`
 	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
+
+	// "spdx" edge predicates.
+	HasSpdx     *bool                    `json:"hasSpdx,omitempty"`
+	HasSpdxWith []*SPDXLicenseWhereInput `json:"hasSpdxWith,omitempty"`
 
 	// "components" edge predicates.
 	HasComponents     *bool                  `json:"hasComponents,omitempty"`
@@ -2642,102 +2627,6 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, license.NameContainsFold(*i.NameContainsFold))
 	}
-	if i.Reference != nil {
-		predicates = append(predicates, license.ReferenceEQ(*i.Reference))
-	}
-	if i.ReferenceNEQ != nil {
-		predicates = append(predicates, license.ReferenceNEQ(*i.ReferenceNEQ))
-	}
-	if len(i.ReferenceIn) > 0 {
-		predicates = append(predicates, license.ReferenceIn(i.ReferenceIn...))
-	}
-	if len(i.ReferenceNotIn) > 0 {
-		predicates = append(predicates, license.ReferenceNotIn(i.ReferenceNotIn...))
-	}
-	if i.ReferenceGT != nil {
-		predicates = append(predicates, license.ReferenceGT(*i.ReferenceGT))
-	}
-	if i.ReferenceGTE != nil {
-		predicates = append(predicates, license.ReferenceGTE(*i.ReferenceGTE))
-	}
-	if i.ReferenceLT != nil {
-		predicates = append(predicates, license.ReferenceLT(*i.ReferenceLT))
-	}
-	if i.ReferenceLTE != nil {
-		predicates = append(predicates, license.ReferenceLTE(*i.ReferenceLTE))
-	}
-	if i.ReferenceContains != nil {
-		predicates = append(predicates, license.ReferenceContains(*i.ReferenceContains))
-	}
-	if i.ReferenceHasPrefix != nil {
-		predicates = append(predicates, license.ReferenceHasPrefix(*i.ReferenceHasPrefix))
-	}
-	if i.ReferenceHasSuffix != nil {
-		predicates = append(predicates, license.ReferenceHasSuffix(*i.ReferenceHasSuffix))
-	}
-	if i.ReferenceIsNil {
-		predicates = append(predicates, license.ReferenceIsNil())
-	}
-	if i.ReferenceNotNil {
-		predicates = append(predicates, license.ReferenceNotNil())
-	}
-	if i.ReferenceEqualFold != nil {
-		predicates = append(predicates, license.ReferenceEqualFold(*i.ReferenceEqualFold))
-	}
-	if i.ReferenceContainsFold != nil {
-		predicates = append(predicates, license.ReferenceContainsFold(*i.ReferenceContainsFold))
-	}
-	if i.DetailsURL != nil {
-		predicates = append(predicates, license.DetailsURLEQ(*i.DetailsURL))
-	}
-	if i.DetailsURLNEQ != nil {
-		predicates = append(predicates, license.DetailsURLNEQ(*i.DetailsURLNEQ))
-	}
-	if len(i.DetailsURLIn) > 0 {
-		predicates = append(predicates, license.DetailsURLIn(i.DetailsURLIn...))
-	}
-	if len(i.DetailsURLNotIn) > 0 {
-		predicates = append(predicates, license.DetailsURLNotIn(i.DetailsURLNotIn...))
-	}
-	if i.DetailsURLGT != nil {
-		predicates = append(predicates, license.DetailsURLGT(*i.DetailsURLGT))
-	}
-	if i.DetailsURLGTE != nil {
-		predicates = append(predicates, license.DetailsURLGTE(*i.DetailsURLGTE))
-	}
-	if i.DetailsURLLT != nil {
-		predicates = append(predicates, license.DetailsURLLT(*i.DetailsURLLT))
-	}
-	if i.DetailsURLLTE != nil {
-		predicates = append(predicates, license.DetailsURLLTE(*i.DetailsURLLTE))
-	}
-	if i.DetailsURLContains != nil {
-		predicates = append(predicates, license.DetailsURLContains(*i.DetailsURLContains))
-	}
-	if i.DetailsURLHasPrefix != nil {
-		predicates = append(predicates, license.DetailsURLHasPrefix(*i.DetailsURLHasPrefix))
-	}
-	if i.DetailsURLHasSuffix != nil {
-		predicates = append(predicates, license.DetailsURLHasSuffix(*i.DetailsURLHasSuffix))
-	}
-	if i.DetailsURLIsNil {
-		predicates = append(predicates, license.DetailsURLIsNil())
-	}
-	if i.DetailsURLNotNil {
-		predicates = append(predicates, license.DetailsURLNotNil())
-	}
-	if i.DetailsURLEqualFold != nil {
-		predicates = append(predicates, license.DetailsURLEqualFold(*i.DetailsURLEqualFold))
-	}
-	if i.DetailsURLContainsFold != nil {
-		predicates = append(predicates, license.DetailsURLContainsFold(*i.DetailsURLContainsFold))
-	}
-	if i.IsOsiApproved != nil {
-		predicates = append(predicates, license.IsOsiApprovedEQ(*i.IsOsiApproved))
-	}
-	if i.IsOsiApprovedNEQ != nil {
-		predicates = append(predicates, license.IsOsiApprovedNEQ(*i.IsOsiApprovedNEQ))
-	}
 
 	if i.HasOwner != nil {
 		p := license.HasOwner()
@@ -2756,6 +2645,24 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, license.HasOwnerWith(with...))
+	}
+	if i.HasSpdx != nil {
+		p := license.HasSpdx()
+		if !*i.HasSpdx {
+			p = license.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasSpdxWith) > 0 {
+		with := make([]predicate.SPDXLicense, 0, len(i.HasSpdxWith))
+		for _, w := range i.HasSpdxWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, license.HasSpdxWith(with...))
 	}
 	if i.HasComponents != nil {
 		p := license.HasComponents()
@@ -3311,12 +3218,6 @@ type ReleaseWhereInput struct {
 	VersionEqualFold    *string  `json:"versionEqualFold,omitempty"`
 	VersionContainsFold *string  `json:"versionContainsFold,omitempty"`
 
-	// "status" field predicates.
-	Status      *release.Status  `json:"status,omitempty"`
-	StatusNEQ   *release.Status  `json:"statusNEQ,omitempty"`
-	StatusIn    []release.Status `json:"statusIn,omitempty"`
-	StatusNotIn []release.Status `json:"statusNotIn,omitempty"`
-
 	// "subreleases" edge predicates.
 	HasSubreleases     *bool                `json:"hasSubreleases,omitempty"`
 	HasSubreleasesWith []*ReleaseWhereInput `json:"hasSubreleasesWith,omitempty"`
@@ -3530,18 +3431,6 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 	}
 	if i.VersionContainsFold != nil {
 		predicates = append(predicates, release.VersionContainsFold(*i.VersionContainsFold))
-	}
-	if i.Status != nil {
-		predicates = append(predicates, release.StatusEQ(*i.Status))
-	}
-	if i.StatusNEQ != nil {
-		predicates = append(predicates, release.StatusNEQ(*i.StatusNEQ))
-	}
-	if len(i.StatusIn) > 0 {
-		predicates = append(predicates, release.StatusIn(i.StatusIn...))
-	}
-	if len(i.StatusNotIn) > 0 {
-		predicates = append(predicates, release.StatusNotIn(i.StatusNotIn...))
 	}
 
 	if i.HasSubreleases != nil {
@@ -5598,6 +5487,359 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 		return predicates[0], nil
 	default:
 		return repo.And(predicates...), nil
+	}
+}
+
+// SPDXLicenseWhereInput represents a where input for filtering SPDXLicense queries.
+type SPDXLicenseWhereInput struct {
+	Not *SPDXLicenseWhereInput   `json:"not,omitempty"`
+	Or  []*SPDXLicenseWhereInput `json:"or,omitempty"`
+	And []*SPDXLicenseWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *int  `json:"id,omitempty"`
+	IDNEQ   *int  `json:"idNEQ,omitempty"`
+	IDIn    []int `json:"idIn,omitempty"`
+	IDNotIn []int `json:"idNotIn,omitempty"`
+	IDGT    *int  `json:"idGT,omitempty"`
+	IDGTE   *int  `json:"idGTE,omitempty"`
+	IDLT    *int  `json:"idLT,omitempty"`
+	IDLTE   *int  `json:"idLTE,omitempty"`
+
+	// "license_id" field predicates.
+	LicenseID             *string  `json:"licenseID,omitempty"`
+	LicenseIDNEQ          *string  `json:"licenseIDNEQ,omitempty"`
+	LicenseIDIn           []string `json:"licenseIDIn,omitempty"`
+	LicenseIDNotIn        []string `json:"licenseIDNotIn,omitempty"`
+	LicenseIDGT           *string  `json:"licenseIDGT,omitempty"`
+	LicenseIDGTE          *string  `json:"licenseIDGTE,omitempty"`
+	LicenseIDLT           *string  `json:"licenseIDLT,omitempty"`
+	LicenseIDLTE          *string  `json:"licenseIDLTE,omitempty"`
+	LicenseIDContains     *string  `json:"licenseIDContains,omitempty"`
+	LicenseIDHasPrefix    *string  `json:"licenseIDHasPrefix,omitempty"`
+	LicenseIDHasSuffix    *string  `json:"licenseIDHasSuffix,omitempty"`
+	LicenseIDEqualFold    *string  `json:"licenseIDEqualFold,omitempty"`
+	LicenseIDContainsFold *string  `json:"licenseIDContainsFold,omitempty"`
+
+	// "name" field predicates.
+	Name             *string  `json:"name,omitempty"`
+	NameNEQ          *string  `json:"nameNEQ,omitempty"`
+	NameIn           []string `json:"nameIn,omitempty"`
+	NameNotIn        []string `json:"nameNotIn,omitempty"`
+	NameGT           *string  `json:"nameGT,omitempty"`
+	NameGTE          *string  `json:"nameGTE,omitempty"`
+	NameLT           *string  `json:"nameLT,omitempty"`
+	NameLTE          *string  `json:"nameLTE,omitempty"`
+	NameContains     *string  `json:"nameContains,omitempty"`
+	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
+	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
+	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
+
+	// "reference" field predicates.
+	Reference             *string  `json:"reference,omitempty"`
+	ReferenceNEQ          *string  `json:"referenceNEQ,omitempty"`
+	ReferenceIn           []string `json:"referenceIn,omitempty"`
+	ReferenceNotIn        []string `json:"referenceNotIn,omitempty"`
+	ReferenceGT           *string  `json:"referenceGT,omitempty"`
+	ReferenceGTE          *string  `json:"referenceGTE,omitempty"`
+	ReferenceLT           *string  `json:"referenceLT,omitempty"`
+	ReferenceLTE          *string  `json:"referenceLTE,omitempty"`
+	ReferenceContains     *string  `json:"referenceContains,omitempty"`
+	ReferenceHasPrefix    *string  `json:"referenceHasPrefix,omitempty"`
+	ReferenceHasSuffix    *string  `json:"referenceHasSuffix,omitempty"`
+	ReferenceIsNil        bool     `json:"referenceIsNil,omitempty"`
+	ReferenceNotNil       bool     `json:"referenceNotNil,omitempty"`
+	ReferenceEqualFold    *string  `json:"referenceEqualFold,omitempty"`
+	ReferenceContainsFold *string  `json:"referenceContainsFold,omitempty"`
+
+	// "details_url" field predicates.
+	DetailsURL             *string  `json:"detailsURL,omitempty"`
+	DetailsURLNEQ          *string  `json:"detailsURLNEQ,omitempty"`
+	DetailsURLIn           []string `json:"detailsURLIn,omitempty"`
+	DetailsURLNotIn        []string `json:"detailsURLNotIn,omitempty"`
+	DetailsURLGT           *string  `json:"detailsURLGT,omitempty"`
+	DetailsURLGTE          *string  `json:"detailsURLGTE,omitempty"`
+	DetailsURLLT           *string  `json:"detailsURLLT,omitempty"`
+	DetailsURLLTE          *string  `json:"detailsURLLTE,omitempty"`
+	DetailsURLContains     *string  `json:"detailsURLContains,omitempty"`
+	DetailsURLHasPrefix    *string  `json:"detailsURLHasPrefix,omitempty"`
+	DetailsURLHasSuffix    *string  `json:"detailsURLHasSuffix,omitempty"`
+	DetailsURLIsNil        bool     `json:"detailsURLIsNil,omitempty"`
+	DetailsURLNotNil       bool     `json:"detailsURLNotNil,omitempty"`
+	DetailsURLEqualFold    *string  `json:"detailsURLEqualFold,omitempty"`
+	DetailsURLContainsFold *string  `json:"detailsURLContainsFold,omitempty"`
+
+	// "is_osi_approved" field predicates.
+	IsOsiApproved    *bool `json:"isOsiApproved,omitempty"`
+	IsOsiApprovedNEQ *bool `json:"isOsiApprovedNEQ,omitempty"`
+}
+
+// Filter applies the SPDXLicenseWhereInput filter on the SPDXLicenseQuery builder.
+func (i *SPDXLicenseWhereInput) Filter(q *SPDXLicenseQuery) (*SPDXLicenseQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// P returns a predicate for filtering spdxlicenses.
+// An error is returned if the input is empty or invalid.
+func (i *SPDXLicenseWhereInput) P() (predicate.SPDXLicense, error) {
+	var predicates []predicate.SPDXLicense
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, spdxlicense.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.SPDXLicense, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, spdxlicense.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, err
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.SPDXLicense, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, spdxlicense.And(and...))
+	}
+	if i.ID != nil {
+		predicates = append(predicates, spdxlicense.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, spdxlicense.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, spdxlicense.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, spdxlicense.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, spdxlicense.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, spdxlicense.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, spdxlicense.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, spdxlicense.IDLTE(*i.IDLTE))
+	}
+	if i.LicenseID != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDEQ(*i.LicenseID))
+	}
+	if i.LicenseIDNEQ != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDNEQ(*i.LicenseIDNEQ))
+	}
+	if len(i.LicenseIDIn) > 0 {
+		predicates = append(predicates, spdxlicense.LicenseIDIn(i.LicenseIDIn...))
+	}
+	if len(i.LicenseIDNotIn) > 0 {
+		predicates = append(predicates, spdxlicense.LicenseIDNotIn(i.LicenseIDNotIn...))
+	}
+	if i.LicenseIDGT != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDGT(*i.LicenseIDGT))
+	}
+	if i.LicenseIDGTE != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDGTE(*i.LicenseIDGTE))
+	}
+	if i.LicenseIDLT != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDLT(*i.LicenseIDLT))
+	}
+	if i.LicenseIDLTE != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDLTE(*i.LicenseIDLTE))
+	}
+	if i.LicenseIDContains != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDContains(*i.LicenseIDContains))
+	}
+	if i.LicenseIDHasPrefix != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDHasPrefix(*i.LicenseIDHasPrefix))
+	}
+	if i.LicenseIDHasSuffix != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDHasSuffix(*i.LicenseIDHasSuffix))
+	}
+	if i.LicenseIDEqualFold != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDEqualFold(*i.LicenseIDEqualFold))
+	}
+	if i.LicenseIDContainsFold != nil {
+		predicates = append(predicates, spdxlicense.LicenseIDContainsFold(*i.LicenseIDContainsFold))
+	}
+	if i.Name != nil {
+		predicates = append(predicates, spdxlicense.NameEQ(*i.Name))
+	}
+	if i.NameNEQ != nil {
+		predicates = append(predicates, spdxlicense.NameNEQ(*i.NameNEQ))
+	}
+	if len(i.NameIn) > 0 {
+		predicates = append(predicates, spdxlicense.NameIn(i.NameIn...))
+	}
+	if len(i.NameNotIn) > 0 {
+		predicates = append(predicates, spdxlicense.NameNotIn(i.NameNotIn...))
+	}
+	if i.NameGT != nil {
+		predicates = append(predicates, spdxlicense.NameGT(*i.NameGT))
+	}
+	if i.NameGTE != nil {
+		predicates = append(predicates, spdxlicense.NameGTE(*i.NameGTE))
+	}
+	if i.NameLT != nil {
+		predicates = append(predicates, spdxlicense.NameLT(*i.NameLT))
+	}
+	if i.NameLTE != nil {
+		predicates = append(predicates, spdxlicense.NameLTE(*i.NameLTE))
+	}
+	if i.NameContains != nil {
+		predicates = append(predicates, spdxlicense.NameContains(*i.NameContains))
+	}
+	if i.NameHasPrefix != nil {
+		predicates = append(predicates, spdxlicense.NameHasPrefix(*i.NameHasPrefix))
+	}
+	if i.NameHasSuffix != nil {
+		predicates = append(predicates, spdxlicense.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameEqualFold != nil {
+		predicates = append(predicates, spdxlicense.NameEqualFold(*i.NameEqualFold))
+	}
+	if i.NameContainsFold != nil {
+		predicates = append(predicates, spdxlicense.NameContainsFold(*i.NameContainsFold))
+	}
+	if i.Reference != nil {
+		predicates = append(predicates, spdxlicense.ReferenceEQ(*i.Reference))
+	}
+	if i.ReferenceNEQ != nil {
+		predicates = append(predicates, spdxlicense.ReferenceNEQ(*i.ReferenceNEQ))
+	}
+	if len(i.ReferenceIn) > 0 {
+		predicates = append(predicates, spdxlicense.ReferenceIn(i.ReferenceIn...))
+	}
+	if len(i.ReferenceNotIn) > 0 {
+		predicates = append(predicates, spdxlicense.ReferenceNotIn(i.ReferenceNotIn...))
+	}
+	if i.ReferenceGT != nil {
+		predicates = append(predicates, spdxlicense.ReferenceGT(*i.ReferenceGT))
+	}
+	if i.ReferenceGTE != nil {
+		predicates = append(predicates, spdxlicense.ReferenceGTE(*i.ReferenceGTE))
+	}
+	if i.ReferenceLT != nil {
+		predicates = append(predicates, spdxlicense.ReferenceLT(*i.ReferenceLT))
+	}
+	if i.ReferenceLTE != nil {
+		predicates = append(predicates, spdxlicense.ReferenceLTE(*i.ReferenceLTE))
+	}
+	if i.ReferenceContains != nil {
+		predicates = append(predicates, spdxlicense.ReferenceContains(*i.ReferenceContains))
+	}
+	if i.ReferenceHasPrefix != nil {
+		predicates = append(predicates, spdxlicense.ReferenceHasPrefix(*i.ReferenceHasPrefix))
+	}
+	if i.ReferenceHasSuffix != nil {
+		predicates = append(predicates, spdxlicense.ReferenceHasSuffix(*i.ReferenceHasSuffix))
+	}
+	if i.ReferenceIsNil {
+		predicates = append(predicates, spdxlicense.ReferenceIsNil())
+	}
+	if i.ReferenceNotNil {
+		predicates = append(predicates, spdxlicense.ReferenceNotNil())
+	}
+	if i.ReferenceEqualFold != nil {
+		predicates = append(predicates, spdxlicense.ReferenceEqualFold(*i.ReferenceEqualFold))
+	}
+	if i.ReferenceContainsFold != nil {
+		predicates = append(predicates, spdxlicense.ReferenceContainsFold(*i.ReferenceContainsFold))
+	}
+	if i.DetailsURL != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLEQ(*i.DetailsURL))
+	}
+	if i.DetailsURLNEQ != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLNEQ(*i.DetailsURLNEQ))
+	}
+	if len(i.DetailsURLIn) > 0 {
+		predicates = append(predicates, spdxlicense.DetailsURLIn(i.DetailsURLIn...))
+	}
+	if len(i.DetailsURLNotIn) > 0 {
+		predicates = append(predicates, spdxlicense.DetailsURLNotIn(i.DetailsURLNotIn...))
+	}
+	if i.DetailsURLGT != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLGT(*i.DetailsURLGT))
+	}
+	if i.DetailsURLGTE != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLGTE(*i.DetailsURLGTE))
+	}
+	if i.DetailsURLLT != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLLT(*i.DetailsURLLT))
+	}
+	if i.DetailsURLLTE != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLLTE(*i.DetailsURLLTE))
+	}
+	if i.DetailsURLContains != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLContains(*i.DetailsURLContains))
+	}
+	if i.DetailsURLHasPrefix != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLHasPrefix(*i.DetailsURLHasPrefix))
+	}
+	if i.DetailsURLHasSuffix != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLHasSuffix(*i.DetailsURLHasSuffix))
+	}
+	if i.DetailsURLIsNil {
+		predicates = append(predicates, spdxlicense.DetailsURLIsNil())
+	}
+	if i.DetailsURLNotNil {
+		predicates = append(predicates, spdxlicense.DetailsURLNotNil())
+	}
+	if i.DetailsURLEqualFold != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLEqualFold(*i.DetailsURLEqualFold))
+	}
+	if i.DetailsURLContainsFold != nil {
+		predicates = append(predicates, spdxlicense.DetailsURLContainsFold(*i.DetailsURLContainsFold))
+	}
+	if i.IsOsiApproved != nil {
+		predicates = append(predicates, spdxlicense.IsOsiApprovedEQ(*i.IsOsiApproved))
+	}
+	if i.IsOsiApprovedNEQ != nil {
+		predicates = append(predicates, spdxlicense.IsOsiApprovedNEQ(*i.IsOsiApprovedNEQ))
+	}
+
+	switch len(predicates) {
+	case 0:
+		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate SPDXLicenseWhereInput")
+	case 1:
+		return predicates[0], nil
+	default:
+		return spdxlicense.And(predicates...), nil
 	}
 }
 

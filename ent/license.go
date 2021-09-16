@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/organization"
+	"github.com/valocode/bubbly/ent/spdxlicense"
 )
 
 // License is the model entity for the License schema.
@@ -20,29 +21,26 @@ type License struct {
 	LicenseID string `json:"license_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// Reference holds the value of the "reference" field.
-	Reference string `json:"reference,omitempty"`
-	// DetailsURL holds the value of the "details_url" field.
-	DetailsURL string `json:"details_url,omitempty"`
-	// IsOsiApproved holds the value of the "is_osi_approved" field.
-	IsOsiApproved bool `json:"is_osi_approved,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the LicenseQuery when eager-loading is set.
 	Edges         LicenseEdges `json:"edges"`
 	license_owner *int
+	license_spdx  *int
 }
 
 // LicenseEdges holds the relations/edges for other nodes in the graph.
 type LicenseEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Organization `json:"owner,omitempty"`
+	// Spdx holds the value of the spdx edge.
+	Spdx *SPDXLicense `json:"spdx,omitempty"`
 	// Components holds the value of the components edge.
 	Components []*Component `json:"components,omitempty"`
 	// Instances holds the value of the instances edge.
 	Instances []*ReleaseLicense `json:"instances,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -59,10 +57,24 @@ func (e LicenseEdges) OwnerOrErr() (*Organization, error) {
 	return nil, &NotLoadedError{edge: "owner"}
 }
 
+// SpdxOrErr returns the Spdx value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e LicenseEdges) SpdxOrErr() (*SPDXLicense, error) {
+	if e.loadedTypes[1] {
+		if e.Spdx == nil {
+			// The edge spdx was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: spdxlicense.Label}
+		}
+		return e.Spdx, nil
+	}
+	return nil, &NotLoadedError{edge: "spdx"}
+}
+
 // ComponentsOrErr returns the Components value or an error if the edge
 // was not loaded in eager-loading.
 func (e LicenseEdges) ComponentsOrErr() ([]*Component, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Components, nil
 	}
 	return nil, &NotLoadedError{edge: "components"}
@@ -71,7 +83,7 @@ func (e LicenseEdges) ComponentsOrErr() ([]*Component, error) {
 // InstancesOrErr returns the Instances value or an error if the edge
 // was not loaded in eager-loading.
 func (e LicenseEdges) InstancesOrErr() ([]*ReleaseLicense, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.Instances, nil
 	}
 	return nil, &NotLoadedError{edge: "instances"}
@@ -82,13 +94,13 @@ func (*License) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case license.FieldIsOsiApproved:
-			values[i] = new(sql.NullBool)
 		case license.FieldID:
 			values[i] = new(sql.NullInt64)
-		case license.FieldLicenseID, license.FieldName, license.FieldReference, license.FieldDetailsURL:
+		case license.FieldLicenseID, license.FieldName:
 			values[i] = new(sql.NullString)
 		case license.ForeignKeys[0]: // license_owner
+			values[i] = new(sql.NullInt64)
+		case license.ForeignKeys[1]: // license_spdx
 			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type License", columns[i])
@@ -123,30 +135,19 @@ func (l *License) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				l.Name = value.String
 			}
-		case license.FieldReference:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field reference", values[i])
-			} else if value.Valid {
-				l.Reference = value.String
-			}
-		case license.FieldDetailsURL:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field details_url", values[i])
-			} else if value.Valid {
-				l.DetailsURL = value.String
-			}
-		case license.FieldIsOsiApproved:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field is_osi_approved", values[i])
-			} else if value.Valid {
-				l.IsOsiApproved = value.Bool
-			}
 		case license.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field license_owner", value)
 			} else if value.Valid {
 				l.license_owner = new(int)
 				*l.license_owner = int(value.Int64)
+			}
+		case license.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field license_spdx", value)
+			} else if value.Valid {
+				l.license_spdx = new(int)
+				*l.license_spdx = int(value.Int64)
 			}
 		}
 	}
@@ -156,6 +157,11 @@ func (l *License) assignValues(columns []string, values []interface{}) error {
 // QueryOwner queries the "owner" edge of the License entity.
 func (l *License) QueryOwner() *OrganizationQuery {
 	return (&LicenseClient{config: l.config}).QueryOwner(l)
+}
+
+// QuerySpdx queries the "spdx" edge of the License entity.
+func (l *License) QuerySpdx() *SPDXLicenseQuery {
+	return (&LicenseClient{config: l.config}).QuerySpdx(l)
 }
 
 // QueryComponents queries the "components" edge of the License entity.
@@ -195,12 +201,6 @@ func (l *License) String() string {
 	builder.WriteString(l.LicenseID)
 	builder.WriteString(", name=")
 	builder.WriteString(l.Name)
-	builder.WriteString(", reference=")
-	builder.WriteString(l.Reference)
-	builder.WriteString(", details_url=")
-	builder.WriteString(l.DetailsURL)
-	builder.WriteString(", is_osi_approved=")
-	builder.WriteString(fmt.Sprintf("%v", l.IsOsiApproved))
 	builder.WriteByte(')')
 	return builder.String()
 }

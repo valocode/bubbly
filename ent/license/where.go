@@ -105,27 +105,6 @@ func Name(v string) predicate.License {
 	})
 }
 
-// Reference applies equality check predicate on the "reference" field. It's identical to ReferenceEQ.
-func Reference(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldReference), v))
-	})
-}
-
-// DetailsURL applies equality check predicate on the "details_url" field. It's identical to DetailsURLEQ.
-func DetailsURL(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldDetailsURL), v))
-	})
-}
-
-// IsOsiApproved applies equality check predicate on the "is_osi_approved" field. It's identical to IsOsiApprovedEQ.
-func IsOsiApproved(v bool) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldIsOsiApproved), v))
-	})
-}
-
 // LicenseIDEQ applies the EQ predicate on the "license_id" field.
 func LicenseIDEQ(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
@@ -362,270 +341,6 @@ func NameContainsFold(v string) predicate.License {
 	})
 }
 
-// ReferenceEQ applies the EQ predicate on the "reference" field.
-func ReferenceEQ(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldReference), v))
-	})
-}
-
-// ReferenceNEQ applies the NEQ predicate on the "reference" field.
-func ReferenceNEQ(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldReference), v))
-	})
-}
-
-// ReferenceIn applies the In predicate on the "reference" field.
-func ReferenceIn(vs ...string) predicate.License {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.License(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.In(s.C(FieldReference), v...))
-	})
-}
-
-// ReferenceNotIn applies the NotIn predicate on the "reference" field.
-func ReferenceNotIn(vs ...string) predicate.License {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.License(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.NotIn(s.C(FieldReference), v...))
-	})
-}
-
-// ReferenceGT applies the GT predicate on the "reference" field.
-func ReferenceGT(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldReference), v))
-	})
-}
-
-// ReferenceGTE applies the GTE predicate on the "reference" field.
-func ReferenceGTE(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldReference), v))
-	})
-}
-
-// ReferenceLT applies the LT predicate on the "reference" field.
-func ReferenceLT(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldReference), v))
-	})
-}
-
-// ReferenceLTE applies the LTE predicate on the "reference" field.
-func ReferenceLTE(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldReference), v))
-	})
-}
-
-// ReferenceContains applies the Contains predicate on the "reference" field.
-func ReferenceContains(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldReference), v))
-	})
-}
-
-// ReferenceHasPrefix applies the HasPrefix predicate on the "reference" field.
-func ReferenceHasPrefix(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldReference), v))
-	})
-}
-
-// ReferenceHasSuffix applies the HasSuffix predicate on the "reference" field.
-func ReferenceHasSuffix(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldReference), v))
-	})
-}
-
-// ReferenceIsNil applies the IsNil predicate on the "reference" field.
-func ReferenceIsNil() predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.IsNull(s.C(FieldReference)))
-	})
-}
-
-// ReferenceNotNil applies the NotNil predicate on the "reference" field.
-func ReferenceNotNil() predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.NotNull(s.C(FieldReference)))
-	})
-}
-
-// ReferenceEqualFold applies the EqualFold predicate on the "reference" field.
-func ReferenceEqualFold(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldReference), v))
-	})
-}
-
-// ReferenceContainsFold applies the ContainsFold predicate on the "reference" field.
-func ReferenceContainsFold(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldReference), v))
-	})
-}
-
-// DetailsURLEQ applies the EQ predicate on the "details_url" field.
-func DetailsURLEQ(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldDetailsURL), v))
-	})
-}
-
-// DetailsURLNEQ applies the NEQ predicate on the "details_url" field.
-func DetailsURLNEQ(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldDetailsURL), v))
-	})
-}
-
-// DetailsURLIn applies the In predicate on the "details_url" field.
-func DetailsURLIn(vs ...string) predicate.License {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.License(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.In(s.C(FieldDetailsURL), v...))
-	})
-}
-
-// DetailsURLNotIn applies the NotIn predicate on the "details_url" field.
-func DetailsURLNotIn(vs ...string) predicate.License {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.License(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.NotIn(s.C(FieldDetailsURL), v...))
-	})
-}
-
-// DetailsURLGT applies the GT predicate on the "details_url" field.
-func DetailsURLGT(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldDetailsURL), v))
-	})
-}
-
-// DetailsURLGTE applies the GTE predicate on the "details_url" field.
-func DetailsURLGTE(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldDetailsURL), v))
-	})
-}
-
-// DetailsURLLT applies the LT predicate on the "details_url" field.
-func DetailsURLLT(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldDetailsURL), v))
-	})
-}
-
-// DetailsURLLTE applies the LTE predicate on the "details_url" field.
-func DetailsURLLTE(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldDetailsURL), v))
-	})
-}
-
-// DetailsURLContains applies the Contains predicate on the "details_url" field.
-func DetailsURLContains(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldDetailsURL), v))
-	})
-}
-
-// DetailsURLHasPrefix applies the HasPrefix predicate on the "details_url" field.
-func DetailsURLHasPrefix(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldDetailsURL), v))
-	})
-}
-
-// DetailsURLHasSuffix applies the HasSuffix predicate on the "details_url" field.
-func DetailsURLHasSuffix(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldDetailsURL), v))
-	})
-}
-
-// DetailsURLIsNil applies the IsNil predicate on the "details_url" field.
-func DetailsURLIsNil() predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.IsNull(s.C(FieldDetailsURL)))
-	})
-}
-
-// DetailsURLNotNil applies the NotNil predicate on the "details_url" field.
-func DetailsURLNotNil() predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.NotNull(s.C(FieldDetailsURL)))
-	})
-}
-
-// DetailsURLEqualFold applies the EqualFold predicate on the "details_url" field.
-func DetailsURLEqualFold(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldDetailsURL), v))
-	})
-}
-
-// DetailsURLContainsFold applies the ContainsFold predicate on the "details_url" field.
-func DetailsURLContainsFold(v string) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldDetailsURL), v))
-	})
-}
-
-// IsOsiApprovedEQ applies the EQ predicate on the "is_osi_approved" field.
-func IsOsiApprovedEQ(v bool) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldIsOsiApproved), v))
-	})
-}
-
-// IsOsiApprovedNEQ applies the NEQ predicate on the "is_osi_approved" field.
-func IsOsiApprovedNEQ(v bool) predicate.License {
-	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldIsOsiApproved), v))
-	})
-}
-
 // HasOwner applies the HasEdge predicate on the "owner" edge.
 func HasOwner() predicate.License {
 	return predicate.License(func(s *sql.Selector) {
@@ -645,6 +360,34 @@ func HasOwnerWith(preds ...predicate.Organization) predicate.License {
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(OwnerInverseTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, OwnerTable, OwnerColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSpdx applies the HasEdge predicate on the "spdx" edge.
+func HasSpdx() predicate.License {
+	return predicate.License(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(SpdxTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, SpdxTable, SpdxColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSpdxWith applies the HasEdge predicate on the "spdx" edge with a given conditions (other predicates).
+func HasSpdxWith(preds ...predicate.SPDXLicense) predicate.License {
+	return predicate.License(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(SpdxInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, SpdxTable, SpdxColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

@@ -192,6 +192,7 @@ export interface Event_Json {
 export interface Event {
 	id?: number;
 	message?: string;
+	status?: EventStatus;
 	type?: EventType;
 	time?: Date;
 	release?: Release;
@@ -213,8 +214,14 @@ export interface Event_Edge {
 	node?: Event;
 }
 
+export enum EventStatus {
+	ok = "ok",
+	error = "error",
+}
+
 export enum EventType {
 	evaluate_release = "evaluate_release",
+	monitor = "monitor",
 }
 
 // #######################################
@@ -259,10 +266,8 @@ export interface License {
 	id?: number;
 	license_id?: string;
 	name?: string;
-	reference?: string;
-	details_url?: string;
-	is_osi_approved?: boolean;
 	owner?: Organization;
+	spdx?: SPDXLicense;
 	components?: Component[];
 	instances?: ReleaseLicense[];
 }
@@ -350,7 +355,6 @@ export interface Release {
 	id?: number;
 	name?: string;
 	version?: string;
-	status?: ReleaseStatus;
 	subreleases?: Release[];
 	dependencies?: Release[];
 	commit?: GitCommit;
@@ -378,12 +382,6 @@ export interface Release_Conn {
 
 export interface Release_Edge {
 	node?: Release;
-}
-
-export enum ReleaseStatus {
-	pending = "pending",
-	ready = "ready",
-	blocked = "blocked",
 }
 
 // #######################################
@@ -623,6 +621,36 @@ export interface Repo_Conn {
 
 export interface Repo_Edge {
 	node?: Repo;
+}
+
+// #######################################
+// SPDXLicense
+// #######################################
+export interface SPDXLicense_Json {
+	spdx_license?: SPDXLicense[];
+}
+
+export interface SPDXLicense {
+	id?: number;
+	license_id?: string;
+	name?: string;
+	reference?: string;
+	details_url?: string;
+	is_osi_approved?: boolean;
+}
+
+export interface SPDXLicense_Relay {
+	spdx_license_connection?: SPDXLicense_Conn;
+}
+
+export interface SPDXLicense_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: SPDXLicense_Edge[];
+}
+
+export interface SPDXLicense_Edge {
+	node?: SPDXLicense;
 }
 
 // #######################################

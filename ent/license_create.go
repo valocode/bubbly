@@ -13,6 +13,7 @@ import (
 	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/releaselicense"
+	"github.com/valocode/bubbly/ent/spdxlicense"
 )
 
 // LicenseCreate is the builder for creating a License entity.
@@ -42,48 +43,6 @@ func (lc *LicenseCreate) SetNillableName(s *string) *LicenseCreate {
 	return lc
 }
 
-// SetReference sets the "reference" field.
-func (lc *LicenseCreate) SetReference(s string) *LicenseCreate {
-	lc.mutation.SetReference(s)
-	return lc
-}
-
-// SetNillableReference sets the "reference" field if the given value is not nil.
-func (lc *LicenseCreate) SetNillableReference(s *string) *LicenseCreate {
-	if s != nil {
-		lc.SetReference(*s)
-	}
-	return lc
-}
-
-// SetDetailsURL sets the "details_url" field.
-func (lc *LicenseCreate) SetDetailsURL(s string) *LicenseCreate {
-	lc.mutation.SetDetailsURL(s)
-	return lc
-}
-
-// SetNillableDetailsURL sets the "details_url" field if the given value is not nil.
-func (lc *LicenseCreate) SetNillableDetailsURL(s *string) *LicenseCreate {
-	if s != nil {
-		lc.SetDetailsURL(*s)
-	}
-	return lc
-}
-
-// SetIsOsiApproved sets the "is_osi_approved" field.
-func (lc *LicenseCreate) SetIsOsiApproved(b bool) *LicenseCreate {
-	lc.mutation.SetIsOsiApproved(b)
-	return lc
-}
-
-// SetNillableIsOsiApproved sets the "is_osi_approved" field if the given value is not nil.
-func (lc *LicenseCreate) SetNillableIsOsiApproved(b *bool) *LicenseCreate {
-	if b != nil {
-		lc.SetIsOsiApproved(*b)
-	}
-	return lc
-}
-
 // SetOwnerID sets the "owner" edge to the Organization entity by ID.
 func (lc *LicenseCreate) SetOwnerID(id int) *LicenseCreate {
 	lc.mutation.SetOwnerID(id)
@@ -93,6 +52,25 @@ func (lc *LicenseCreate) SetOwnerID(id int) *LicenseCreate {
 // SetOwner sets the "owner" edge to the Organization entity.
 func (lc *LicenseCreate) SetOwner(o *Organization) *LicenseCreate {
 	return lc.SetOwnerID(o.ID)
+}
+
+// SetSpdxID sets the "spdx" edge to the SPDXLicense entity by ID.
+func (lc *LicenseCreate) SetSpdxID(id int) *LicenseCreate {
+	lc.mutation.SetSpdxID(id)
+	return lc
+}
+
+// SetNillableSpdxID sets the "spdx" edge to the SPDXLicense entity by ID if the given value is not nil.
+func (lc *LicenseCreate) SetNillableSpdxID(id *int) *LicenseCreate {
+	if id != nil {
+		lc = lc.SetSpdxID(*id)
+	}
+	return lc
+}
+
+// SetSpdx sets the "spdx" edge to the SPDXLicense entity.
+func (lc *LicenseCreate) SetSpdx(s *SPDXLicense) *LicenseCreate {
+	return lc.SetSpdxID(s.ID)
 }
 
 // AddComponentIDs adds the "components" edge to the Component entity by IDs.
@@ -136,7 +114,6 @@ func (lc *LicenseCreate) Save(ctx context.Context) (*License, error) {
 		err  error
 		node *License
 	)
-	lc.defaults()
 	if len(lc.hooks) == 0 {
 		if err = lc.check(); err != nil {
 			return nil, err
@@ -194,14 +171,6 @@ func (lc *LicenseCreate) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (lc *LicenseCreate) defaults() {
-	if _, ok := lc.mutation.IsOsiApproved(); !ok {
-		v := license.DefaultIsOsiApproved
-		lc.mutation.SetIsOsiApproved(v)
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (lc *LicenseCreate) check() error {
 	if _, ok := lc.mutation.LicenseID(); !ok {
@@ -211,9 +180,6 @@ func (lc *LicenseCreate) check() error {
 		if err := license.LicenseIDValidator(v); err != nil {
 			return &ValidationError{Name: "license_id", err: fmt.Errorf(`ent: validator failed for field "license_id": %w`, err)}
 		}
-	}
-	if _, ok := lc.mutation.IsOsiApproved(); !ok {
-		return &ValidationError{Name: "is_osi_approved", err: errors.New(`ent: missing required field "is_osi_approved"`)}
 	}
 	if _, ok := lc.mutation.OwnerID(); !ok {
 		return &ValidationError{Name: "owner", err: errors.New("ent: missing required edge \"owner\"")}
@@ -261,30 +227,6 @@ func (lc *LicenseCreate) createSpec() (*License, *sqlgraph.CreateSpec) {
 		})
 		_node.Name = value
 	}
-	if value, ok := lc.mutation.Reference(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: license.FieldReference,
-		})
-		_node.Reference = value
-	}
-	if value, ok := lc.mutation.DetailsURL(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: license.FieldDetailsURL,
-		})
-		_node.DetailsURL = value
-	}
-	if value, ok := lc.mutation.IsOsiApproved(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
-			Value:  value,
-			Column: license.FieldIsOsiApproved,
-		})
-		_node.IsOsiApproved = value
-	}
 	if nodes := lc.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -303,6 +245,26 @@ func (lc *LicenseCreate) createSpec() (*License, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.license_owner = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := lc.mutation.SpdxIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   license.SpdxTable,
+			Columns: []string{license.SpdxColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: spdxlicense.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.license_spdx = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := lc.mutation.ComponentsIDs(); len(nodes) > 0 {
@@ -360,7 +322,6 @@ func (lcb *LicenseCreateBulk) Save(ctx context.Context) ([]*License, error) {
 	for i := range lcb.builders {
 		func(i int, root context.Context) {
 			builder := lcb.builders[i]
-			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*LicenseMutation)
 				if !ok {

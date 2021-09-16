@@ -4,10 +4,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/store"
 )
 
 func TestSpdx(t *testing.T) {
-	list, err := FetchSPDXLicenses()
+	s, err := store.New(env.NewBubblyContext())
 	require.NoError(t, err)
-	t.Logf("list: %#v", list)
+	m, err := NewSPDXMonitor(WithStore(s))
+	require.NoError(t, err)
+	doErr := m.Do()
+	require.NoError(t, doErr)
 }

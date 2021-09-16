@@ -15,6 +15,7 @@ import (
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/releaselicense"
+	"github.com/valocode/bubbly/ent/spdxlicense"
 )
 
 // LicenseUpdate is the builder for updating License entities.
@@ -56,60 +57,6 @@ func (lu *LicenseUpdate) ClearName() *LicenseUpdate {
 	return lu
 }
 
-// SetReference sets the "reference" field.
-func (lu *LicenseUpdate) SetReference(s string) *LicenseUpdate {
-	lu.mutation.SetReference(s)
-	return lu
-}
-
-// SetNillableReference sets the "reference" field if the given value is not nil.
-func (lu *LicenseUpdate) SetNillableReference(s *string) *LicenseUpdate {
-	if s != nil {
-		lu.SetReference(*s)
-	}
-	return lu
-}
-
-// ClearReference clears the value of the "reference" field.
-func (lu *LicenseUpdate) ClearReference() *LicenseUpdate {
-	lu.mutation.ClearReference()
-	return lu
-}
-
-// SetDetailsURL sets the "details_url" field.
-func (lu *LicenseUpdate) SetDetailsURL(s string) *LicenseUpdate {
-	lu.mutation.SetDetailsURL(s)
-	return lu
-}
-
-// SetNillableDetailsURL sets the "details_url" field if the given value is not nil.
-func (lu *LicenseUpdate) SetNillableDetailsURL(s *string) *LicenseUpdate {
-	if s != nil {
-		lu.SetDetailsURL(*s)
-	}
-	return lu
-}
-
-// ClearDetailsURL clears the value of the "details_url" field.
-func (lu *LicenseUpdate) ClearDetailsURL() *LicenseUpdate {
-	lu.mutation.ClearDetailsURL()
-	return lu
-}
-
-// SetIsOsiApproved sets the "is_osi_approved" field.
-func (lu *LicenseUpdate) SetIsOsiApproved(b bool) *LicenseUpdate {
-	lu.mutation.SetIsOsiApproved(b)
-	return lu
-}
-
-// SetNillableIsOsiApproved sets the "is_osi_approved" field if the given value is not nil.
-func (lu *LicenseUpdate) SetNillableIsOsiApproved(b *bool) *LicenseUpdate {
-	if b != nil {
-		lu.SetIsOsiApproved(*b)
-	}
-	return lu
-}
-
 // SetOwnerID sets the "owner" edge to the Organization entity by ID.
 func (lu *LicenseUpdate) SetOwnerID(id int) *LicenseUpdate {
 	lu.mutation.SetOwnerID(id)
@@ -119,6 +66,25 @@ func (lu *LicenseUpdate) SetOwnerID(id int) *LicenseUpdate {
 // SetOwner sets the "owner" edge to the Organization entity.
 func (lu *LicenseUpdate) SetOwner(o *Organization) *LicenseUpdate {
 	return lu.SetOwnerID(o.ID)
+}
+
+// SetSpdxID sets the "spdx" edge to the SPDXLicense entity by ID.
+func (lu *LicenseUpdate) SetSpdxID(id int) *LicenseUpdate {
+	lu.mutation.SetSpdxID(id)
+	return lu
+}
+
+// SetNillableSpdxID sets the "spdx" edge to the SPDXLicense entity by ID if the given value is not nil.
+func (lu *LicenseUpdate) SetNillableSpdxID(id *int) *LicenseUpdate {
+	if id != nil {
+		lu = lu.SetSpdxID(*id)
+	}
+	return lu
+}
+
+// SetSpdx sets the "spdx" edge to the SPDXLicense entity.
+func (lu *LicenseUpdate) SetSpdx(s *SPDXLicense) *LicenseUpdate {
+	return lu.SetSpdxID(s.ID)
 }
 
 // AddComponentIDs adds the "components" edge to the Component entity by IDs.
@@ -159,6 +125,12 @@ func (lu *LicenseUpdate) Mutation() *LicenseMutation {
 // ClearOwner clears the "owner" edge to the Organization entity.
 func (lu *LicenseUpdate) ClearOwner() *LicenseUpdate {
 	lu.mutation.ClearOwner()
+	return lu
+}
+
+// ClearSpdx clears the "spdx" edge to the SPDXLicense entity.
+func (lu *LicenseUpdate) ClearSpdx() *LicenseUpdate {
+	lu.mutation.ClearSpdx()
 	return lu
 }
 
@@ -315,39 +287,6 @@ func (lu *LicenseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: license.FieldName,
 		})
 	}
-	if value, ok := lu.mutation.Reference(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: license.FieldReference,
-		})
-	}
-	if lu.mutation.ReferenceCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: license.FieldReference,
-		})
-	}
-	if value, ok := lu.mutation.DetailsURL(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: license.FieldDetailsURL,
-		})
-	}
-	if lu.mutation.DetailsURLCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: license.FieldDetailsURL,
-		})
-	}
-	if value, ok := lu.mutation.IsOsiApproved(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
-			Value:  value,
-			Column: license.FieldIsOsiApproved,
-		})
-	}
 	if lu.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -375,6 +314,41 @@ func (lu *LicenseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if lu.mutation.SpdxCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   license.SpdxTable,
+			Columns: []string{license.SpdxColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: spdxlicense.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := lu.mutation.SpdxIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   license.SpdxTable,
+			Columns: []string{license.SpdxColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: spdxlicense.FieldID,
 				},
 			},
 		}
@@ -536,60 +510,6 @@ func (luo *LicenseUpdateOne) ClearName() *LicenseUpdateOne {
 	return luo
 }
 
-// SetReference sets the "reference" field.
-func (luo *LicenseUpdateOne) SetReference(s string) *LicenseUpdateOne {
-	luo.mutation.SetReference(s)
-	return luo
-}
-
-// SetNillableReference sets the "reference" field if the given value is not nil.
-func (luo *LicenseUpdateOne) SetNillableReference(s *string) *LicenseUpdateOne {
-	if s != nil {
-		luo.SetReference(*s)
-	}
-	return luo
-}
-
-// ClearReference clears the value of the "reference" field.
-func (luo *LicenseUpdateOne) ClearReference() *LicenseUpdateOne {
-	luo.mutation.ClearReference()
-	return luo
-}
-
-// SetDetailsURL sets the "details_url" field.
-func (luo *LicenseUpdateOne) SetDetailsURL(s string) *LicenseUpdateOne {
-	luo.mutation.SetDetailsURL(s)
-	return luo
-}
-
-// SetNillableDetailsURL sets the "details_url" field if the given value is not nil.
-func (luo *LicenseUpdateOne) SetNillableDetailsURL(s *string) *LicenseUpdateOne {
-	if s != nil {
-		luo.SetDetailsURL(*s)
-	}
-	return luo
-}
-
-// ClearDetailsURL clears the value of the "details_url" field.
-func (luo *LicenseUpdateOne) ClearDetailsURL() *LicenseUpdateOne {
-	luo.mutation.ClearDetailsURL()
-	return luo
-}
-
-// SetIsOsiApproved sets the "is_osi_approved" field.
-func (luo *LicenseUpdateOne) SetIsOsiApproved(b bool) *LicenseUpdateOne {
-	luo.mutation.SetIsOsiApproved(b)
-	return luo
-}
-
-// SetNillableIsOsiApproved sets the "is_osi_approved" field if the given value is not nil.
-func (luo *LicenseUpdateOne) SetNillableIsOsiApproved(b *bool) *LicenseUpdateOne {
-	if b != nil {
-		luo.SetIsOsiApproved(*b)
-	}
-	return luo
-}
-
 // SetOwnerID sets the "owner" edge to the Organization entity by ID.
 func (luo *LicenseUpdateOne) SetOwnerID(id int) *LicenseUpdateOne {
 	luo.mutation.SetOwnerID(id)
@@ -599,6 +519,25 @@ func (luo *LicenseUpdateOne) SetOwnerID(id int) *LicenseUpdateOne {
 // SetOwner sets the "owner" edge to the Organization entity.
 func (luo *LicenseUpdateOne) SetOwner(o *Organization) *LicenseUpdateOne {
 	return luo.SetOwnerID(o.ID)
+}
+
+// SetSpdxID sets the "spdx" edge to the SPDXLicense entity by ID.
+func (luo *LicenseUpdateOne) SetSpdxID(id int) *LicenseUpdateOne {
+	luo.mutation.SetSpdxID(id)
+	return luo
+}
+
+// SetNillableSpdxID sets the "spdx" edge to the SPDXLicense entity by ID if the given value is not nil.
+func (luo *LicenseUpdateOne) SetNillableSpdxID(id *int) *LicenseUpdateOne {
+	if id != nil {
+		luo = luo.SetSpdxID(*id)
+	}
+	return luo
+}
+
+// SetSpdx sets the "spdx" edge to the SPDXLicense entity.
+func (luo *LicenseUpdateOne) SetSpdx(s *SPDXLicense) *LicenseUpdateOne {
+	return luo.SetSpdxID(s.ID)
 }
 
 // AddComponentIDs adds the "components" edge to the Component entity by IDs.
@@ -639,6 +578,12 @@ func (luo *LicenseUpdateOne) Mutation() *LicenseMutation {
 // ClearOwner clears the "owner" edge to the Organization entity.
 func (luo *LicenseUpdateOne) ClearOwner() *LicenseUpdateOne {
 	luo.mutation.ClearOwner()
+	return luo
+}
+
+// ClearSpdx clears the "spdx" edge to the SPDXLicense entity.
+func (luo *LicenseUpdateOne) ClearSpdx() *LicenseUpdateOne {
+	luo.mutation.ClearSpdx()
 	return luo
 }
 
@@ -819,39 +764,6 @@ func (luo *LicenseUpdateOne) sqlSave(ctx context.Context) (_node *License, err e
 			Column: license.FieldName,
 		})
 	}
-	if value, ok := luo.mutation.Reference(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: license.FieldReference,
-		})
-	}
-	if luo.mutation.ReferenceCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: license.FieldReference,
-		})
-	}
-	if value, ok := luo.mutation.DetailsURL(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: license.FieldDetailsURL,
-		})
-	}
-	if luo.mutation.DetailsURLCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: license.FieldDetailsURL,
-		})
-	}
-	if value, ok := luo.mutation.IsOsiApproved(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
-			Value:  value,
-			Column: license.FieldIsOsiApproved,
-		})
-	}
 	if luo.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -879,6 +791,41 @@ func (luo *LicenseUpdateOne) sqlSave(ctx context.Context) (_node *License, err e
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: organization.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if luo.mutation.SpdxCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   license.SpdxTable,
+			Columns: []string{license.SpdxColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: spdxlicense.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := luo.mutation.SpdxIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   license.SpdxTable,
+			Columns: []string{license.SpdxColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: spdxlicense.FieldID,
 				},
 			},
 		}

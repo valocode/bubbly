@@ -28,6 +28,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
 	schema "github.com/valocode/bubbly/ent/schema/types"
+	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -63,6 +64,7 @@ const (
 	TypeReleasePolicyViolation = "ReleasePolicyViolation"
 	TypeReleaseVulnerability   = "ReleaseVulnerability"
 	TypeRepo                   = "Repo"
+	TypeSPDXLicense            = "SPDXLicense"
 	TypeTestCase               = "TestCase"
 	TypeTestRun                = "TestRun"
 	TypeVulnerability          = "Vulnerability"
@@ -3624,6 +3626,7 @@ type EventMutation struct {
 	typ            string
 	id             *int
 	message        *string
+	status         *event.Status
 	_type          *event.Type
 	time           *time.Time
 	clearedFields  map[string]struct{}
@@ -3751,6 +3754,42 @@ func (m *EventMutation) OldMessage(ctx context.Context) (v string, err error) {
 // ResetMessage resets all changes to the "message" field.
 func (m *EventMutation) ResetMessage() {
 	m.message = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *EventMutation) SetStatus(e event.Status) {
+	m.status = &e
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *EventMutation) Status() (r event.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the Event entity.
+// If the Event object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventMutation) OldStatus(ctx context.Context) (v event.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *EventMutation) ResetStatus() {
+	m.status = nil
 }
 
 // SetType sets the "type" field.
@@ -3961,9 +4000,12 @@ func (m *EventMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.message != nil {
 		fields = append(fields, event.FieldMessage)
+	}
+	if m.status != nil {
+		fields = append(fields, event.FieldStatus)
 	}
 	if m._type != nil {
 		fields = append(fields, event.FieldType)
@@ -3981,6 +4023,8 @@ func (m *EventMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case event.FieldMessage:
 		return m.Message()
+	case event.FieldStatus:
+		return m.Status()
 	case event.FieldType:
 		return m.GetType()
 	case event.FieldTime:
@@ -3996,6 +4040,8 @@ func (m *EventMutation) OldField(ctx context.Context, name string) (ent.Value, e
 	switch name {
 	case event.FieldMessage:
 		return m.OldMessage(ctx)
+	case event.FieldStatus:
+		return m.OldStatus(ctx)
 	case event.FieldType:
 		return m.OldType(ctx)
 	case event.FieldTime:
@@ -4015,6 +4061,13 @@ func (m *EventMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMessage(v)
+		return nil
+	case event.FieldStatus:
+		v, ok := value.(event.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
 		return nil
 	case event.FieldType:
 		v, ok := value.(event.Type)
@@ -4081,6 +4134,9 @@ func (m *EventMutation) ResetField(name string) error {
 	switch name {
 	case event.FieldMessage:
 		m.ResetMessage()
+		return nil
+	case event.FieldStatus:
+		m.ResetStatus()
 		return nil
 	case event.FieldType:
 		m.ResetType()
@@ -4816,12 +4872,11 @@ type LicenseMutation struct {
 	id                *int
 	license_id        *string
 	name              *string
-	reference         *string
-	details_url       *string
-	is_osi_approved   *bool
 	clearedFields     map[string]struct{}
 	owner             *int
 	clearedowner      bool
+	spdx              *int
+	clearedspdx       bool
 	components        map[int]struct{}
 	removedcomponents map[int]struct{}
 	clearedcomponents bool
@@ -4997,140 +5052,6 @@ func (m *LicenseMutation) ResetName() {
 	delete(m.clearedFields, license.FieldName)
 }
 
-// SetReference sets the "reference" field.
-func (m *LicenseMutation) SetReference(s string) {
-	m.reference = &s
-}
-
-// Reference returns the value of the "reference" field in the mutation.
-func (m *LicenseMutation) Reference() (r string, exists bool) {
-	v := m.reference
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldReference returns the old "reference" field's value of the License entity.
-// If the License object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *LicenseMutation) OldReference(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldReference is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldReference requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldReference: %w", err)
-	}
-	return oldValue.Reference, nil
-}
-
-// ClearReference clears the value of the "reference" field.
-func (m *LicenseMutation) ClearReference() {
-	m.reference = nil
-	m.clearedFields[license.FieldReference] = struct{}{}
-}
-
-// ReferenceCleared returns if the "reference" field was cleared in this mutation.
-func (m *LicenseMutation) ReferenceCleared() bool {
-	_, ok := m.clearedFields[license.FieldReference]
-	return ok
-}
-
-// ResetReference resets all changes to the "reference" field.
-func (m *LicenseMutation) ResetReference() {
-	m.reference = nil
-	delete(m.clearedFields, license.FieldReference)
-}
-
-// SetDetailsURL sets the "details_url" field.
-func (m *LicenseMutation) SetDetailsURL(s string) {
-	m.details_url = &s
-}
-
-// DetailsURL returns the value of the "details_url" field in the mutation.
-func (m *LicenseMutation) DetailsURL() (r string, exists bool) {
-	v := m.details_url
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDetailsURL returns the old "details_url" field's value of the License entity.
-// If the License object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *LicenseMutation) OldDetailsURL(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldDetailsURL is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldDetailsURL requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDetailsURL: %w", err)
-	}
-	return oldValue.DetailsURL, nil
-}
-
-// ClearDetailsURL clears the value of the "details_url" field.
-func (m *LicenseMutation) ClearDetailsURL() {
-	m.details_url = nil
-	m.clearedFields[license.FieldDetailsURL] = struct{}{}
-}
-
-// DetailsURLCleared returns if the "details_url" field was cleared in this mutation.
-func (m *LicenseMutation) DetailsURLCleared() bool {
-	_, ok := m.clearedFields[license.FieldDetailsURL]
-	return ok
-}
-
-// ResetDetailsURL resets all changes to the "details_url" field.
-func (m *LicenseMutation) ResetDetailsURL() {
-	m.details_url = nil
-	delete(m.clearedFields, license.FieldDetailsURL)
-}
-
-// SetIsOsiApproved sets the "is_osi_approved" field.
-func (m *LicenseMutation) SetIsOsiApproved(b bool) {
-	m.is_osi_approved = &b
-}
-
-// IsOsiApproved returns the value of the "is_osi_approved" field in the mutation.
-func (m *LicenseMutation) IsOsiApproved() (r bool, exists bool) {
-	v := m.is_osi_approved
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldIsOsiApproved returns the old "is_osi_approved" field's value of the License entity.
-// If the License object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *LicenseMutation) OldIsOsiApproved(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldIsOsiApproved is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldIsOsiApproved requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIsOsiApproved: %w", err)
-	}
-	return oldValue.IsOsiApproved, nil
-}
-
-// ResetIsOsiApproved resets all changes to the "is_osi_approved" field.
-func (m *LicenseMutation) ResetIsOsiApproved() {
-	m.is_osi_approved = nil
-}
-
 // SetOwnerID sets the "owner" edge to the Organization entity by id.
 func (m *LicenseMutation) SetOwnerID(id int) {
 	m.owner = &id
@@ -5168,6 +5089,45 @@ func (m *LicenseMutation) OwnerIDs() (ids []int) {
 func (m *LicenseMutation) ResetOwner() {
 	m.owner = nil
 	m.clearedowner = false
+}
+
+// SetSpdxID sets the "spdx" edge to the SPDXLicense entity by id.
+func (m *LicenseMutation) SetSpdxID(id int) {
+	m.spdx = &id
+}
+
+// ClearSpdx clears the "spdx" edge to the SPDXLicense entity.
+func (m *LicenseMutation) ClearSpdx() {
+	m.clearedspdx = true
+}
+
+// SpdxCleared reports if the "spdx" edge to the SPDXLicense entity was cleared.
+func (m *LicenseMutation) SpdxCleared() bool {
+	return m.clearedspdx
+}
+
+// SpdxID returns the "spdx" edge ID in the mutation.
+func (m *LicenseMutation) SpdxID() (id int, exists bool) {
+	if m.spdx != nil {
+		return *m.spdx, true
+	}
+	return
+}
+
+// SpdxIDs returns the "spdx" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SpdxID instead. It exists only for internal usage by the builders.
+func (m *LicenseMutation) SpdxIDs() (ids []int) {
+	if id := m.spdx; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSpdx resets all changes to the "spdx" edge.
+func (m *LicenseMutation) ResetSpdx() {
+	m.spdx = nil
+	m.clearedspdx = false
 }
 
 // AddComponentIDs adds the "components" edge to the Component entity by ids.
@@ -5297,21 +5257,12 @@ func (m *LicenseMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *LicenseMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 2)
 	if m.license_id != nil {
 		fields = append(fields, license.FieldLicenseID)
 	}
 	if m.name != nil {
 		fields = append(fields, license.FieldName)
-	}
-	if m.reference != nil {
-		fields = append(fields, license.FieldReference)
-	}
-	if m.details_url != nil {
-		fields = append(fields, license.FieldDetailsURL)
-	}
-	if m.is_osi_approved != nil {
-		fields = append(fields, license.FieldIsOsiApproved)
 	}
 	return fields
 }
@@ -5325,12 +5276,6 @@ func (m *LicenseMutation) Field(name string) (ent.Value, bool) {
 		return m.LicenseID()
 	case license.FieldName:
 		return m.Name()
-	case license.FieldReference:
-		return m.Reference()
-	case license.FieldDetailsURL:
-		return m.DetailsURL()
-	case license.FieldIsOsiApproved:
-		return m.IsOsiApproved()
 	}
 	return nil, false
 }
@@ -5344,12 +5289,6 @@ func (m *LicenseMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldLicenseID(ctx)
 	case license.FieldName:
 		return m.OldName(ctx)
-	case license.FieldReference:
-		return m.OldReference(ctx)
-	case license.FieldDetailsURL:
-		return m.OldDetailsURL(ctx)
-	case license.FieldIsOsiApproved:
-		return m.OldIsOsiApproved(ctx)
 	}
 	return nil, fmt.Errorf("unknown License field %s", name)
 }
@@ -5372,27 +5311,6 @@ func (m *LicenseMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
-		return nil
-	case license.FieldReference:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetReference(v)
-		return nil
-	case license.FieldDetailsURL:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDetailsURL(v)
-		return nil
-	case license.FieldIsOsiApproved:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetIsOsiApproved(v)
 		return nil
 	}
 	return fmt.Errorf("unknown License field %s", name)
@@ -5427,12 +5345,6 @@ func (m *LicenseMutation) ClearedFields() []string {
 	if m.FieldCleared(license.FieldName) {
 		fields = append(fields, license.FieldName)
 	}
-	if m.FieldCleared(license.FieldReference) {
-		fields = append(fields, license.FieldReference)
-	}
-	if m.FieldCleared(license.FieldDetailsURL) {
-		fields = append(fields, license.FieldDetailsURL)
-	}
 	return fields
 }
 
@@ -5450,12 +5362,6 @@ func (m *LicenseMutation) ClearField(name string) error {
 	case license.FieldName:
 		m.ClearName()
 		return nil
-	case license.FieldReference:
-		m.ClearReference()
-		return nil
-	case license.FieldDetailsURL:
-		m.ClearDetailsURL()
-		return nil
 	}
 	return fmt.Errorf("unknown License nullable field %s", name)
 }
@@ -5470,24 +5376,18 @@ func (m *LicenseMutation) ResetField(name string) error {
 	case license.FieldName:
 		m.ResetName()
 		return nil
-	case license.FieldReference:
-		m.ResetReference()
-		return nil
-	case license.FieldDetailsURL:
-		m.ResetDetailsURL()
-		return nil
-	case license.FieldIsOsiApproved:
-		m.ResetIsOsiApproved()
-		return nil
 	}
 	return fmt.Errorf("unknown License field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *LicenseMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.owner != nil {
 		edges = append(edges, license.EdgeOwner)
+	}
+	if m.spdx != nil {
+		edges = append(edges, license.EdgeSpdx)
 	}
 	if m.components != nil {
 		edges = append(edges, license.EdgeComponents)
@@ -5504,6 +5404,10 @@ func (m *LicenseMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case license.EdgeOwner:
 		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case license.EdgeSpdx:
+		if id := m.spdx; id != nil {
 			return []ent.Value{*id}
 		}
 	case license.EdgeComponents:
@@ -5524,7 +5428,7 @@ func (m *LicenseMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *LicenseMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedcomponents != nil {
 		edges = append(edges, license.EdgeComponents)
 	}
@@ -5556,9 +5460,12 @@ func (m *LicenseMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *LicenseMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedowner {
 		edges = append(edges, license.EdgeOwner)
+	}
+	if m.clearedspdx {
+		edges = append(edges, license.EdgeSpdx)
 	}
 	if m.clearedcomponents {
 		edges = append(edges, license.EdgeComponents)
@@ -5575,6 +5482,8 @@ func (m *LicenseMutation) EdgeCleared(name string) bool {
 	switch name {
 	case license.EdgeOwner:
 		return m.clearedowner
+	case license.EdgeSpdx:
+		return m.clearedspdx
 	case license.EdgeComponents:
 		return m.clearedcomponents
 	case license.EdgeInstances:
@@ -5590,6 +5499,9 @@ func (m *LicenseMutation) ClearEdge(name string) error {
 	case license.EdgeOwner:
 		m.ClearOwner()
 		return nil
+	case license.EdgeSpdx:
+		m.ClearSpdx()
+		return nil
 	}
 	return fmt.Errorf("unknown License unique edge %s", name)
 }
@@ -5600,6 +5512,9 @@ func (m *LicenseMutation) ResetEdge(name string) error {
 	switch name {
 	case license.EdgeOwner:
 		m.ResetOwner()
+		return nil
+	case license.EdgeSpdx:
+		m.ResetSpdx()
 		return nil
 	case license.EdgeComponents:
 		m.ResetComponents()
@@ -6697,7 +6612,6 @@ type ReleaseMutation struct {
 	id                           *int
 	name                         *string
 	version                      *string
-	status                       *release.Status
 	clearedFields                map[string]struct{}
 	subreleases                  map[int]struct{}
 	removedsubreleases           map[int]struct{}
@@ -6890,42 +6804,6 @@ func (m *ReleaseMutation) OldVersion(ctx context.Context) (v string, err error) 
 // ResetVersion resets all changes to the "version" field.
 func (m *ReleaseMutation) ResetVersion() {
 	m.version = nil
-}
-
-// SetStatus sets the "status" field.
-func (m *ReleaseMutation) SetStatus(r release.Status) {
-	m.status = &r
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *ReleaseMutation) Status() (r release.Status, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the Release entity.
-// If the Release object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ReleaseMutation) OldStatus(ctx context.Context) (v release.Status, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *ReleaseMutation) ResetStatus() {
-	m.status = nil
 }
 
 // AddSubreleaseIDs adds the "subreleases" edge to the Release entity by ids.
@@ -7619,15 +7497,12 @@ func (m *ReleaseMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ReleaseMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 2)
 	if m.name != nil {
 		fields = append(fields, release.FieldName)
 	}
 	if m.version != nil {
 		fields = append(fields, release.FieldVersion)
-	}
-	if m.status != nil {
-		fields = append(fields, release.FieldStatus)
 	}
 	return fields
 }
@@ -7641,8 +7516,6 @@ func (m *ReleaseMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case release.FieldVersion:
 		return m.Version()
-	case release.FieldStatus:
-		return m.Status()
 	}
 	return nil, false
 }
@@ -7656,8 +7529,6 @@ func (m *ReleaseMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldName(ctx)
 	case release.FieldVersion:
 		return m.OldVersion(ctx)
-	case release.FieldStatus:
-		return m.OldStatus(ctx)
 	}
 	return nil, fmt.Errorf("unknown Release field %s", name)
 }
@@ -7680,13 +7551,6 @@ func (m *ReleaseMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetVersion(v)
-		return nil
-	case release.FieldStatus:
-		v, ok := value.(release.Status)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Release field %s", name)
@@ -7742,9 +7606,6 @@ func (m *ReleaseMutation) ResetField(name string) error {
 		return nil
 	case release.FieldVersion:
 		m.ResetVersion()
-		return nil
-	case release.FieldStatus:
-		m.ResetStatus()
 		return nil
 	}
 	return fmt.Errorf("unknown Release field %s", name)
@@ -12422,6 +12283,555 @@ func (m *RepoMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Repo edge %s", name)
+}
+
+// SPDXLicenseMutation represents an operation that mutates the SPDXLicense nodes in the graph.
+type SPDXLicenseMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *int
+	license_id      *string
+	name            *string
+	reference       *string
+	details_url     *string
+	is_osi_approved *bool
+	clearedFields   map[string]struct{}
+	done            bool
+	oldValue        func(context.Context) (*SPDXLicense, error)
+	predicates      []predicate.SPDXLicense
+}
+
+var _ ent.Mutation = (*SPDXLicenseMutation)(nil)
+
+// spdxlicenseOption allows management of the mutation configuration using functional options.
+type spdxlicenseOption func(*SPDXLicenseMutation)
+
+// newSPDXLicenseMutation creates new mutation for the SPDXLicense entity.
+func newSPDXLicenseMutation(c config, op Op, opts ...spdxlicenseOption) *SPDXLicenseMutation {
+	m := &SPDXLicenseMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeSPDXLicense,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withSPDXLicenseID sets the ID field of the mutation.
+func withSPDXLicenseID(id int) spdxlicenseOption {
+	return func(m *SPDXLicenseMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *SPDXLicense
+		)
+		m.oldValue = func(ctx context.Context) (*SPDXLicense, error) {
+			once.Do(func() {
+				if m.done {
+					err = fmt.Errorf("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().SPDXLicense.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSPDXLicense sets the old SPDXLicense of the mutation.
+func withSPDXLicense(node *SPDXLicense) spdxlicenseOption {
+	return func(m *SPDXLicenseMutation) {
+		m.oldValue = func(context.Context) (*SPDXLicense, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SPDXLicenseMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SPDXLicenseMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SPDXLicenseMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetLicenseID sets the "license_id" field.
+func (m *SPDXLicenseMutation) SetLicenseID(s string) {
+	m.license_id = &s
+}
+
+// LicenseID returns the value of the "license_id" field in the mutation.
+func (m *SPDXLicenseMutation) LicenseID() (r string, exists bool) {
+	v := m.license_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLicenseID returns the old "license_id" field's value of the SPDXLicense entity.
+// If the SPDXLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SPDXLicenseMutation) OldLicenseID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldLicenseID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldLicenseID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLicenseID: %w", err)
+	}
+	return oldValue.LicenseID, nil
+}
+
+// ResetLicenseID resets all changes to the "license_id" field.
+func (m *SPDXLicenseMutation) ResetLicenseID() {
+	m.license_id = nil
+}
+
+// SetName sets the "name" field.
+func (m *SPDXLicenseMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *SPDXLicenseMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the SPDXLicense entity.
+// If the SPDXLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SPDXLicenseMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *SPDXLicenseMutation) ResetName() {
+	m.name = nil
+}
+
+// SetReference sets the "reference" field.
+func (m *SPDXLicenseMutation) SetReference(s string) {
+	m.reference = &s
+}
+
+// Reference returns the value of the "reference" field in the mutation.
+func (m *SPDXLicenseMutation) Reference() (r string, exists bool) {
+	v := m.reference
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReference returns the old "reference" field's value of the SPDXLicense entity.
+// If the SPDXLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SPDXLicenseMutation) OldReference(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldReference is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldReference requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReference: %w", err)
+	}
+	return oldValue.Reference, nil
+}
+
+// ClearReference clears the value of the "reference" field.
+func (m *SPDXLicenseMutation) ClearReference() {
+	m.reference = nil
+	m.clearedFields[spdxlicense.FieldReference] = struct{}{}
+}
+
+// ReferenceCleared returns if the "reference" field was cleared in this mutation.
+func (m *SPDXLicenseMutation) ReferenceCleared() bool {
+	_, ok := m.clearedFields[spdxlicense.FieldReference]
+	return ok
+}
+
+// ResetReference resets all changes to the "reference" field.
+func (m *SPDXLicenseMutation) ResetReference() {
+	m.reference = nil
+	delete(m.clearedFields, spdxlicense.FieldReference)
+}
+
+// SetDetailsURL sets the "details_url" field.
+func (m *SPDXLicenseMutation) SetDetailsURL(s string) {
+	m.details_url = &s
+}
+
+// DetailsURL returns the value of the "details_url" field in the mutation.
+func (m *SPDXLicenseMutation) DetailsURL() (r string, exists bool) {
+	v := m.details_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDetailsURL returns the old "details_url" field's value of the SPDXLicense entity.
+// If the SPDXLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SPDXLicenseMutation) OldDetailsURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldDetailsURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldDetailsURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDetailsURL: %w", err)
+	}
+	return oldValue.DetailsURL, nil
+}
+
+// ClearDetailsURL clears the value of the "details_url" field.
+func (m *SPDXLicenseMutation) ClearDetailsURL() {
+	m.details_url = nil
+	m.clearedFields[spdxlicense.FieldDetailsURL] = struct{}{}
+}
+
+// DetailsURLCleared returns if the "details_url" field was cleared in this mutation.
+func (m *SPDXLicenseMutation) DetailsURLCleared() bool {
+	_, ok := m.clearedFields[spdxlicense.FieldDetailsURL]
+	return ok
+}
+
+// ResetDetailsURL resets all changes to the "details_url" field.
+func (m *SPDXLicenseMutation) ResetDetailsURL() {
+	m.details_url = nil
+	delete(m.clearedFields, spdxlicense.FieldDetailsURL)
+}
+
+// SetIsOsiApproved sets the "is_osi_approved" field.
+func (m *SPDXLicenseMutation) SetIsOsiApproved(b bool) {
+	m.is_osi_approved = &b
+}
+
+// IsOsiApproved returns the value of the "is_osi_approved" field in the mutation.
+func (m *SPDXLicenseMutation) IsOsiApproved() (r bool, exists bool) {
+	v := m.is_osi_approved
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsOsiApproved returns the old "is_osi_approved" field's value of the SPDXLicense entity.
+// If the SPDXLicense object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SPDXLicenseMutation) OldIsOsiApproved(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldIsOsiApproved is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldIsOsiApproved requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsOsiApproved: %w", err)
+	}
+	return oldValue.IsOsiApproved, nil
+}
+
+// ResetIsOsiApproved resets all changes to the "is_osi_approved" field.
+func (m *SPDXLicenseMutation) ResetIsOsiApproved() {
+	m.is_osi_approved = nil
+}
+
+// Where appends a list predicates to the SPDXLicenseMutation builder.
+func (m *SPDXLicenseMutation) Where(ps ...predicate.SPDXLicense) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *SPDXLicenseMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (SPDXLicense).
+func (m *SPDXLicenseMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *SPDXLicenseMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.license_id != nil {
+		fields = append(fields, spdxlicense.FieldLicenseID)
+	}
+	if m.name != nil {
+		fields = append(fields, spdxlicense.FieldName)
+	}
+	if m.reference != nil {
+		fields = append(fields, spdxlicense.FieldReference)
+	}
+	if m.details_url != nil {
+		fields = append(fields, spdxlicense.FieldDetailsURL)
+	}
+	if m.is_osi_approved != nil {
+		fields = append(fields, spdxlicense.FieldIsOsiApproved)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *SPDXLicenseMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case spdxlicense.FieldLicenseID:
+		return m.LicenseID()
+	case spdxlicense.FieldName:
+		return m.Name()
+	case spdxlicense.FieldReference:
+		return m.Reference()
+	case spdxlicense.FieldDetailsURL:
+		return m.DetailsURL()
+	case spdxlicense.FieldIsOsiApproved:
+		return m.IsOsiApproved()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SPDXLicenseMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case spdxlicense.FieldLicenseID:
+		return m.OldLicenseID(ctx)
+	case spdxlicense.FieldName:
+		return m.OldName(ctx)
+	case spdxlicense.FieldReference:
+		return m.OldReference(ctx)
+	case spdxlicense.FieldDetailsURL:
+		return m.OldDetailsURL(ctx)
+	case spdxlicense.FieldIsOsiApproved:
+		return m.OldIsOsiApproved(ctx)
+	}
+	return nil, fmt.Errorf("unknown SPDXLicense field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SPDXLicenseMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case spdxlicense.FieldLicenseID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLicenseID(v)
+		return nil
+	case spdxlicense.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case spdxlicense.FieldReference:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReference(v)
+		return nil
+	case spdxlicense.FieldDetailsURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDetailsURL(v)
+		return nil
+	case spdxlicense.FieldIsOsiApproved:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsOsiApproved(v)
+		return nil
+	}
+	return fmt.Errorf("unknown SPDXLicense field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *SPDXLicenseMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *SPDXLicenseMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SPDXLicenseMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown SPDXLicense numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *SPDXLicenseMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(spdxlicense.FieldReference) {
+		fields = append(fields, spdxlicense.FieldReference)
+	}
+	if m.FieldCleared(spdxlicense.FieldDetailsURL) {
+		fields = append(fields, spdxlicense.FieldDetailsURL)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *SPDXLicenseMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *SPDXLicenseMutation) ClearField(name string) error {
+	switch name {
+	case spdxlicense.FieldReference:
+		m.ClearReference()
+		return nil
+	case spdxlicense.FieldDetailsURL:
+		m.ClearDetailsURL()
+		return nil
+	}
+	return fmt.Errorf("unknown SPDXLicense nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *SPDXLicenseMutation) ResetField(name string) error {
+	switch name {
+	case spdxlicense.FieldLicenseID:
+		m.ResetLicenseID()
+		return nil
+	case spdxlicense.FieldName:
+		m.ResetName()
+		return nil
+	case spdxlicense.FieldReference:
+		m.ResetReference()
+		return nil
+	case spdxlicense.FieldDetailsURL:
+		m.ResetDetailsURL()
+		return nil
+	case spdxlicense.FieldIsOsiApproved:
+		m.ResetIsOsiApproved()
+		return nil
+	}
+	return fmt.Errorf("unknown SPDXLicense field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *SPDXLicenseMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *SPDXLicenseMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *SPDXLicenseMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *SPDXLicenseMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *SPDXLicenseMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *SPDXLicenseMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *SPDXLicenseMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown SPDXLicense unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *SPDXLicenseMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown SPDXLicense edge %s", name)
 }
 
 // TestCaseMutation represents an operation that mutates the TestCase nodes in the graph.

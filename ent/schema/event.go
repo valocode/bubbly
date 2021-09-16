@@ -26,8 +26,12 @@ func (Event) Annotations() []schema.Annotation {
 func (Event) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("message").Default("").Immutable(),
+		field.Enum("status").
+			Values("ok", "error").
+			Default("ok").
+			Immutable(),
 		field.Enum("type").
-			Values("evaluate_release").
+			Values("evaluate_release", "monitor").
 			Immutable().
 			Annotations(
 				entgql.OrderField("type"),

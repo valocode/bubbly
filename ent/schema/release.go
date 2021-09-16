@@ -38,12 +38,6 @@ func (Release) Fields() []ent.Field {
 			Annotations(
 				entgql.OrderField("version"),
 			),
-		field.Enum("status").
-			Values("pending", "ready", "blocked").
-			Default("pending").
-			Annotations(
-				entmodel.SkipCreate(),
-			),
 	}
 }
 

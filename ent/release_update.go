@@ -50,20 +50,6 @@ func (ru *ReleaseUpdate) SetVersion(s string) *ReleaseUpdate {
 	return ru
 }
 
-// SetStatus sets the "status" field.
-func (ru *ReleaseUpdate) SetStatus(r release.Status) *ReleaseUpdate {
-	ru.mutation.SetStatus(r)
-	return ru
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (ru *ReleaseUpdate) SetNillableStatus(r *release.Status) *ReleaseUpdate {
-	if r != nil {
-		ru.SetStatus(*r)
-	}
-	return ru
-}
-
 // AddSubreleaseIDs adds the "subreleases" edge to the Release entity by IDs.
 func (ru *ReleaseUpdate) AddSubreleaseIDs(ids ...int) *ReleaseUpdate {
 	ru.mutation.AddSubreleaseIDs(ids...)
@@ -579,11 +565,6 @@ func (ru *ReleaseUpdate) check() error {
 			return &ValidationError{Name: "version", err: fmt.Errorf("ent: validator failed for field \"version\": %w", err)}
 		}
 	}
-	if v, ok := ru.mutation.Status(); ok {
-		if err := release.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
-		}
-	}
 	if _, ok := ru.mutation.CommitID(); ru.mutation.CommitCleared() && !ok {
 		return errors.New("ent: clearing a required unique edge \"commit\"")
 	}
@@ -620,13 +601,6 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeString,
 			Value:  value,
 			Column: release.FieldVersion,
-		})
-	}
-	if value, ok := ru.mutation.Status(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: release.FieldStatus,
 		})
 	}
 	if ru.mutation.SubreleasesCleared() {
@@ -1324,20 +1298,6 @@ func (ruo *ReleaseUpdateOne) SetVersion(s string) *ReleaseUpdateOne {
 	return ruo
 }
 
-// SetStatus sets the "status" field.
-func (ruo *ReleaseUpdateOne) SetStatus(r release.Status) *ReleaseUpdateOne {
-	ruo.mutation.SetStatus(r)
-	return ruo
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (ruo *ReleaseUpdateOne) SetNillableStatus(r *release.Status) *ReleaseUpdateOne {
-	if r != nil {
-		ruo.SetStatus(*r)
-	}
-	return ruo
-}
-
 // AddSubreleaseIDs adds the "subreleases" edge to the Release entity by IDs.
 func (ruo *ReleaseUpdateOne) AddSubreleaseIDs(ids ...int) *ReleaseUpdateOne {
 	ruo.mutation.AddSubreleaseIDs(ids...)
@@ -1860,11 +1820,6 @@ func (ruo *ReleaseUpdateOne) check() error {
 			return &ValidationError{Name: "version", err: fmt.Errorf("ent: validator failed for field \"version\": %w", err)}
 		}
 	}
-	if v, ok := ruo.mutation.Status(); ok {
-		if err := release.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf("ent: validator failed for field \"status\": %w", err)}
-		}
-	}
 	if _, ok := ruo.mutation.CommitID(); ruo.mutation.CommitCleared() && !ok {
 		return errors.New("ent: clearing a required unique edge \"commit\"")
 	}
@@ -1918,13 +1873,6 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 			Type:   field.TypeString,
 			Value:  value,
 			Column: release.FieldVersion,
-		})
-	}
-	if value, ok := ruo.mutation.Status(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: release.FieldStatus,
 		})
 	}
 	if ruo.mutation.SubreleasesCleared() {

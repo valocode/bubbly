@@ -21,8 +21,6 @@ type Release struct {
 	Name string `json:"name,omitempty"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
-	// Status holds the value of the "status" field.
-	Status release.Status `json:"status,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ReleaseQuery when eager-loading is set.
 	Edges              ReleaseEdges `json:"edges"`
@@ -197,7 +195,7 @@ func (*Release) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case release.FieldID:
 			values[i] = new(sql.NullInt64)
-		case release.FieldName, release.FieldVersion, release.FieldStatus:
+		case release.FieldName, release.FieldVersion:
 			values[i] = new(sql.NullString)
 		case release.ForeignKeys[0]: // git_commit_release
 			values[i] = new(sql.NullInt64)
@@ -235,12 +233,6 @@ func (r *Release) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field version", values[i])
 			} else if value.Valid {
 				r.Version = value.String
-			}
-		case release.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				r.Status = release.Status(value.String)
 			}
 		case release.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -353,8 +345,6 @@ func (r *Release) String() string {
 	builder.WriteString(r.Name)
 	builder.WriteString(", version=")
 	builder.WriteString(r.Version)
-	builder.WriteString(", status=")
-	builder.WriteString(fmt.Sprintf("%v", r.Status))
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -60,6 +60,9 @@ type ReleaseVulnerability func(*sql.Selector)
 // Repo is the predicate function for repo builders.
 type Repo func(*sql.Selector)
 
+// SPDXLicense is the predicate function for spdxlicense builders.
+type SPDXLicense func(*sql.Selector)
+
 // TestCase is the predicate function for testcase builders.
 type TestCase func(*sql.Selector)
 

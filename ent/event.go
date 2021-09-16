@@ -21,6 +21,8 @@ type Event struct {
 	ID int `json:"id,omitempty"`
 	// Message holds the value of the "message" field.
 	Message string `json:"message,omitempty"`
+	// Status holds the value of the "status" field.
+	Status event.Status `json:"status,omitempty"`
 	// Type holds the value of the "type" field.
 	Type event.Type `json:"type,omitempty"`
 	// Time holds the value of the "time" field.
@@ -95,7 +97,7 @@ func (*Event) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case event.FieldID:
 			values[i] = new(sql.NullInt64)
-		case event.FieldMessage, event.FieldType:
+		case event.FieldMessage, event.FieldStatus, event.FieldType:
 			values[i] = new(sql.NullString)
 		case event.FieldTime:
 			values[i] = new(sql.NullTime)
@@ -131,6 +133,12 @@ func (e *Event) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field message", values[i])
 			} else if value.Valid {
 				e.Message = value.String
+			}
+		case event.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				e.Status = event.Status(value.String)
 			}
 		case event.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -210,6 +218,8 @@ func (e *Event) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v", e.ID))
 	builder.WriteString(", message=")
 	builder.WriteString(e.Message)
+	builder.WriteString(", status=")
+	builder.WriteString(fmt.Sprintf("%v", e.Status))
 	builder.WriteString(", type=")
 	builder.WriteString(fmt.Sprintf("%v", e.Type))
 	builder.WriteString(", time=")

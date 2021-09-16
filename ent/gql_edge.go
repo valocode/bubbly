@@ -164,6 +164,14 @@ func (l *License) Owner(ctx context.Context) (*Organization, error) {
 	return result, err
 }
 
+func (l *License) Spdx(ctx context.Context) (*SPDXLicense, error) {
+	result, err := l.Edges.SpdxOrErr()
+	if IsNotLoaded(err) {
+		result, err = l.QuerySpdx().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
 func (l *License) Components(ctx context.Context) ([]*Component, error) {
 	result, err := l.Edges.ComponentsOrErr()
 	if IsNotLoaded(err) {

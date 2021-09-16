@@ -143,6 +143,11 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 	// SaaS specific things:
 	// - organizations/ PUT,GET, etc
 
+	// Initialise monitoring services
+	if err := s.initMonitoring(); err != nil {
+		return nil, fmt.Errorf("initializing monitoring: %w", err)
+	}
+
 	return &s, nil
 }
 

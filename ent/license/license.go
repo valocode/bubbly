@@ -2,6 +2,10 @@
 
 package license
 
+import (
+	"entgo.io/ent"
+)
+
 const (
 	// Label holds the string label denoting the license type in the database.
 	Label = "license"
@@ -11,14 +15,10 @@ const (
 	FieldLicenseID = "license_id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldReference holds the string denoting the reference field in the database.
-	FieldReference = "reference"
-	// FieldDetailsURL holds the string denoting the details_url field in the database.
-	FieldDetailsURL = "details_url"
-	// FieldIsOsiApproved holds the string denoting the is_osi_approved field in the database.
-	FieldIsOsiApproved = "is_osi_approved"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
+	// EdgeSpdx holds the string denoting the spdx edge name in mutations.
+	EdgeSpdx = "spdx"
 	// EdgeComponents holds the string denoting the components edge name in mutations.
 	EdgeComponents = "components"
 	// EdgeInstances holds the string denoting the instances edge name in mutations.
@@ -32,6 +32,13 @@ const (
 	OwnerInverseTable = "organization"
 	// OwnerColumn is the table column denoting the owner relation/edge.
 	OwnerColumn = "license_owner"
+	// SpdxTable is the table that holds the spdx relation/edge.
+	SpdxTable = "license"
+	// SpdxInverseTable is the table name for the SPDXLicense entity.
+	// It exists in this package in order to avoid circular dependency with the "spdxlicense" package.
+	SpdxInverseTable = "spdx_license"
+	// SpdxColumn is the table column denoting the spdx relation/edge.
+	SpdxColumn = "license_spdx"
 	// ComponentsTable is the table that holds the components relation/edge. The primary key declared below.
 	ComponentsTable = "component_licenses"
 	// ComponentsInverseTable is the table name for the Component entity.
@@ -51,15 +58,13 @@ var Columns = []string{
 	FieldID,
 	FieldLicenseID,
 	FieldName,
-	FieldReference,
-	FieldDetailsURL,
-	FieldIsOsiApproved,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "license"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"license_owner",
+	"license_spdx",
 }
 
 var (
@@ -83,9 +88,14 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/valocode/bubbly/ent/runtime"
+//
 var (
+	Hooks [1]ent.Hook
 	// LicenseIDValidator is a validator for the "license_id" field. It is called by the builders before save.
 	LicenseIDValidator func(string) error
-	// DefaultIsOsiApproved holds the default value on creation for the "is_osi_approved" field.
-	DefaultIsOsiApproved bool
 )

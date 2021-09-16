@@ -15,6 +15,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/docker/docker v20.10.8+incompatible // indirect
 	github.com/fatih/color v1.12.0
+	github.com/go-co-op/gocron v1.9.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect

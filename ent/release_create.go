@@ -42,20 +42,6 @@ func (rc *ReleaseCreate) SetVersion(s string) *ReleaseCreate {
 	return rc
 }
 
-// SetStatus sets the "status" field.
-func (rc *ReleaseCreate) SetStatus(r release.Status) *ReleaseCreate {
-	rc.mutation.SetStatus(r)
-	return rc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (rc *ReleaseCreate) SetNillableStatus(r *release.Status) *ReleaseCreate {
-	if r != nil {
-		rc.SetStatus(*r)
-	}
-	return rc
-}
-
 // AddSubreleaseIDs adds the "subreleases" edge to the Release entity by IDs.
 func (rc *ReleaseCreate) AddSubreleaseIDs(ids ...int) *ReleaseCreate {
 	rc.mutation.AddSubreleaseIDs(ids...)
@@ -262,9 +248,6 @@ func (rc *ReleaseCreate) Save(ctx context.Context) (*Release, error) {
 		err  error
 		node *Release
 	)
-	if err := rc.defaults(); err != nil {
-		return nil, err
-	}
 	if len(rc.hooks) == 0 {
 		if err = rc.check(); err != nil {
 			return nil, err
@@ -322,15 +305,6 @@ func (rc *ReleaseCreate) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (rc *ReleaseCreate) defaults() error {
-	if _, ok := rc.mutation.Status(); !ok {
-		v := release.DefaultStatus
-		rc.mutation.SetStatus(v)
-	}
-	return nil
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (rc *ReleaseCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
@@ -347,14 +321,6 @@ func (rc *ReleaseCreate) check() error {
 	if v, ok := rc.mutation.Version(); ok {
 		if err := release.VersionValidator(v); err != nil {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "version": %w`, err)}
-		}
-	}
-	if _, ok := rc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "status"`)}
-	}
-	if v, ok := rc.mutation.Status(); ok {
-		if err := release.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "status": %w`, err)}
 		}
 	}
 	if _, ok := rc.mutation.CommitID(); !ok {
@@ -402,14 +368,6 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 			Column: release.FieldVersion,
 		})
 		_node.Version = value
-	}
-	if value, ok := rc.mutation.Status(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: release.FieldStatus,
-		})
-		_node.Status = value
 	}
 	if nodes := rc.mutation.SubreleasesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -677,7 +635,6 @@ func (rcb *ReleaseCreateBulk) Save(ctx context.Context) ([]*Release, error) {
 	for i := range rcb.builders {
 		func(i int, root context.Context) {
 			builder := rcb.builders[i]
-			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ReleaseMutation)
 				if !ok {
