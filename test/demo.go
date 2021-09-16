@@ -81,8 +81,7 @@ func SaveSPDXData(client *ent.Client) error {
 	ctx := context.Background()
 	for _, lic := range list.Licenses {
 		l, err := client.License.Create().
-			SetSpdxID(lic.LicenseID).
-			SetName(lic.Name).
+			SetName(lic.LicenseID).
 			SetDetailsURL(lic.DetailsURL).
 			SetIsOsiApproved(lic.IsOSIApproved).SetReference(lic.Reference).
 			Save(ctx)

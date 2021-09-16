@@ -364,12 +364,12 @@ func (lq *LicenseQuery) WithInstances(opts ...func(*ReleaseLicenseQuery)) *Licen
 // Example:
 //
 //	var v []struct {
-//		SpdxID string `json:"spdx_id,omitempty"`
+//		LicenseID string `json:"license_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.License.Query().
-//		GroupBy(license.FieldSpdxID).
+//		GroupBy(license.FieldLicenseID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 //
@@ -391,11 +391,11 @@ func (lq *LicenseQuery) GroupBy(field string, fields ...string) *LicenseGroupBy 
 // Example:
 //
 //	var v []struct {
-//		SpdxID string `json:"spdx_id,omitempty"`
+//		LicenseID string `json:"license_id,omitempty"`
 //	}
 //
 //	client.License.Query().
-//		Select(license.FieldSpdxID).
+//		Select(license.FieldLicenseID).
 //		Scan(ctx, &v)
 //
 func (lq *LicenseQuery) Select(fields ...string) *LicenseSelect {

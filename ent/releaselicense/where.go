@@ -181,7 +181,7 @@ func HasScans() predicate.ReleaseLicense {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(ScansTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ScansTable, ScansColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ScansTable, ScansPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -193,7 +193,7 @@ func HasScansWith(preds ...predicate.CodeScan) predicate.ReleaseLicense {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(ScansInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ScansTable, ScansColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, ScansTable, ScansPrimaryKey...),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

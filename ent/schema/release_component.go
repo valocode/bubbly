@@ -49,6 +49,7 @@ func (ReleaseComponent) Edges() []ent.Edge {
 		edge.To("scans", CodeScan.Type).Required(),
 		edge.To("component", Component.Type).Required().Unique(),
 		edge.From("vulnerabilities", ReleaseVulnerability.Type).Ref("component"),
+		edge.From("licenses", ReleaseLicense.Type).Ref("component"),
 	}
 }
 

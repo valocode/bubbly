@@ -249,7 +249,7 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		ID:     cs.ID,
 		Type:   "CodeScan",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 5),
+		Edges:  make([]*Edge, 6),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(cs.Tool); err != nil {
@@ -317,12 +317,22 @@ func (cs *CodeScan) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[4] = &Edge{
+		Type: "ReleaseLicense",
+		Name: "licenses",
+	}
+	err = cs.QueryLicenses().
+		Select(releaselicense.FieldID).
+		Scan(ctx, &node.Edges[4].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[5] = &Edge{
 		Type: "ReleaseComponent",
 		Name: "components",
 	}
 	err = cs.QueryComponents().
 		Select(releasecomponent.FieldID).
-		Scan(ctx, &node.Edges[4].IDs)
+		Scan(ctx, &node.Edges[5].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -564,12 +574,12 @@ func (l *License) Node(ctx context.Context) (node *Node, err error) {
 		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
-	if buf, err = json.Marshal(l.SpdxID); err != nil {
+	if buf, err = json.Marshal(l.LicenseID); err != nil {
 		return nil, err
 	}
 	node.Fields[0] = &Field{
 		Type:  "string",
-		Name:  "spdx_id",
+		Name:  "license_id",
 		Value: string(buf),
 	}
 	if buf, err = json.Marshal(l.Name); err != nil {
@@ -740,7 +750,7 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		ID:     r.ID,
 		Type:   "Release",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 12),
+		Edges:  make([]*Edge, 13),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(r.Name); err != nil {
@@ -858,32 +868,42 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[9] = &Edge{
-		Type: "CodeScan",
-		Name: "code_scans",
+		Type: "ReleaseLicense",
+		Name: "licenses",
 	}
-	err = r.QueryCodeScans().
-		Select(codescan.FieldID).
+	err = r.QueryLicenses().
+		Select(releaselicense.FieldID).
 		Scan(ctx, &node.Edges[9].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[10] = &Edge{
-		Type: "TestRun",
-		Name: "test_runs",
+		Type: "CodeScan",
+		Name: "code_scans",
 	}
-	err = r.QueryTestRuns().
-		Select(testrun.FieldID).
+	err = r.QueryCodeScans().
+		Select(codescan.FieldID).
 		Scan(ctx, &node.Edges[10].IDs)
 	if err != nil {
 		return nil, err
 	}
 	node.Edges[11] = &Edge{
+		Type: "TestRun",
+		Name: "test_runs",
+	}
+	err = r.QueryTestRuns().
+		Select(testrun.FieldID).
+		Scan(ctx, &node.Edges[11].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[12] = &Edge{
 		Type: "VulnerabilityReview",
 		Name: "vulnerability_reviews",
 	}
 	err = r.QueryVulnerabilityReviews().
 		Select(vulnerabilityreview.FieldID).
-		Scan(ctx, &node.Edges[11].IDs)
+		Scan(ctx, &node.Edges[12].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -895,7 +915,7 @@ func (rc *ReleaseComponent) Node(ctx context.Context) (node *Node, err error) {
 		ID:     rc.ID,
 		Type:   "ReleaseComponent",
 		Fields: make([]*Field, 1),
-		Edges:  make([]*Edge, 4),
+		Edges:  make([]*Edge, 5),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(rc.Type); err != nil {
@@ -943,6 +963,16 @@ func (rc *ReleaseComponent) Node(ctx context.Context) (node *Node, err error) {
 	err = rc.QueryVulnerabilities().
 		Select(releasevulnerability.FieldID).
 		Scan(ctx, &node.Edges[3].IDs)
+	if err != nil {
+		return nil, err
+	}
+	node.Edges[4] = &Edge{
+		Type: "ReleaseLicense",
+		Name: "licenses",
+	}
+	err = rc.QueryLicenses().
+		Select(releaselicense.FieldID).
+		Scan(ctx, &node.Edges[4].IDs)
 	if err != nil {
 		return nil, err
 	}

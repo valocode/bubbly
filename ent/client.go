@@ -755,6 +755,22 @@ func (c *CodeScanClient) QueryVulnerabilities(cs *CodeScan) *ReleaseVulnerabilit
 	return query
 }
 
+// QueryLicenses queries the licenses edge of a CodeScan.
+func (c *CodeScanClient) QueryLicenses(cs *CodeScan) *ReleaseLicenseQuery {
+	query := &ReleaseLicenseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := cs.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(codescan.Table, codescan.FieldID, id),
+			sqlgraph.To(releaselicense.Table, releaselicense.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, codescan.LicensesTable, codescan.LicensesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cs.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryComponents queries the components edge of a CodeScan.
 func (c *CodeScanClient) QueryComponents(cs *CodeScan) *ReleaseComponentQuery {
 	query := &ReleaseComponentQuery{config: c.config}
@@ -1834,6 +1850,22 @@ func (c *ReleaseClient) QueryVulnerabilities(r *Release) *ReleaseVulnerabilityQu
 	return query
 }
 
+// QueryLicenses queries the licenses edge of a Release.
+func (c *ReleaseClient) QueryLicenses(r *Release) *ReleaseLicenseQuery {
+	query := &ReleaseLicenseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, id),
+			sqlgraph.To(releaselicense.Table, releaselicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, release.LicensesTable, release.LicensesColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryCodeScans queries the code_scans edge of a Release.
 func (c *ReleaseClient) QueryCodeScans(r *Release) *CodeScanQuery {
 	query := &CodeScanQuery{config: c.config}
@@ -2030,6 +2062,22 @@ func (c *ReleaseComponentClient) QueryVulnerabilities(rc *ReleaseComponent) *Rel
 			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, id),
 			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, releasecomponent.VulnerabilitiesTable, releasecomponent.VulnerabilitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryLicenses queries the licenses edge of a ReleaseComponent.
+func (c *ReleaseComponentClient) QueryLicenses(rc *ReleaseComponent) *ReleaseLicenseQuery {
+	query := &ReleaseLicenseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, id),
+			sqlgraph.To(releaselicense.Table, releaselicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, releasecomponent.LicensesTable, releasecomponent.LicensesColumn),
 		)
 		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
 		return fromV, nil
@@ -2338,7 +2386,7 @@ func (c *ReleaseLicenseClient) QueryScans(rl *ReleaseLicense) *CodeScanQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(releaselicense.Table, releaselicense.FieldID, id),
 			sqlgraph.To(codescan.Table, codescan.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, releaselicense.ScansTable, releaselicense.ScansColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, releaselicense.ScansTable, releaselicense.ScansPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(rl.driver.Dialect(), step)
 		return fromV, nil

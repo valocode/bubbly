@@ -16,8 +16,8 @@ type License struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// SpdxID holds the value of the "spdx_id" field.
-	SpdxID string `json:"spdx_id,omitempty"`
+	// LicenseID holds the value of the "license_id" field.
+	LicenseID string `json:"license_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Reference holds the value of the "reference" field.
@@ -86,7 +86,7 @@ func (*License) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullBool)
 		case license.FieldID:
 			values[i] = new(sql.NullInt64)
-		case license.FieldSpdxID, license.FieldName, license.FieldReference, license.FieldDetailsURL:
+		case license.FieldLicenseID, license.FieldName, license.FieldReference, license.FieldDetailsURL:
 			values[i] = new(sql.NullString)
 		case license.ForeignKeys[0]: // license_owner
 			values[i] = new(sql.NullInt64)
@@ -111,11 +111,11 @@ func (l *License) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			l.ID = int(value.Int64)
-		case license.FieldSpdxID:
+		case license.FieldLicenseID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field spdx_id", values[i])
+				return fmt.Errorf("unexpected type %T for field license_id", values[i])
 			} else if value.Valid {
-				l.SpdxID = value.String
+				l.LicenseID = value.String
 			}
 		case license.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -191,8 +191,8 @@ func (l *License) String() string {
 	var builder strings.Builder
 	builder.WriteString("License(")
 	builder.WriteString(fmt.Sprintf("id=%v", l.ID))
-	builder.WriteString(", spdx_id=")
-	builder.WriteString(l.SpdxID)
+	builder.WriteString(", license_id=")
+	builder.WriteString(l.LicenseID)
 	builder.WriteString(", name=")
 	builder.WriteString(l.Name)
 	builder.WriteString(", reference=")

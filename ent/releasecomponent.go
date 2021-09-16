@@ -40,9 +40,11 @@ type ReleaseComponentEdges struct {
 	Component *Component `json:"component,omitempty"`
 	// Vulnerabilities holds the value of the vulnerabilities edge.
 	Vulnerabilities []*ReleaseVulnerability `json:"vulnerabilities,omitempty"`
+	// Licenses holds the value of the licenses edge.
+	Licenses []*ReleaseLicense `json:"licenses,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // ReleaseOrErr returns the Release value or an error if the edge
@@ -89,6 +91,15 @@ func (e ReleaseComponentEdges) VulnerabilitiesOrErr() ([]*ReleaseVulnerability, 
 		return e.Vulnerabilities, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerabilities"}
+}
+
+// LicensesOrErr returns the Licenses value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReleaseComponentEdges) LicensesOrErr() ([]*ReleaseLicense, error) {
+	if e.loadedTypes[4] {
+		return e.Licenses, nil
+	}
+	return nil, &NotLoadedError{edge: "licenses"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -168,6 +179,11 @@ func (rc *ReleaseComponent) QueryComponent() *ComponentQuery {
 // QueryVulnerabilities queries the "vulnerabilities" edge of the ReleaseComponent entity.
 func (rc *ReleaseComponent) QueryVulnerabilities() *ReleaseVulnerabilityQuery {
 	return (&ReleaseComponentClient{config: rc.config}).QueryVulnerabilities(rc)
+}
+
+// QueryLicenses queries the "licenses" edge of the ReleaseComponent entity.
+func (rc *ReleaseComponent) QueryLicenses() *ReleaseLicenseQuery {
+	return (&ReleaseComponentClient{config: rc.config}).QueryLicenses(rc)
 }
 
 // Update returns a builder for updating this ReleaseComponent.

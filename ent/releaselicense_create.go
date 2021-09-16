@@ -244,10 +244,10 @@ func (rlc *ReleaseLicenseCreate) createSpec() (*ReleaseLicense, *sqlgraph.Create
 	}
 	if nodes := rlc.mutation.ScansIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   releaselicense.ScansTable,
-			Columns: []string{releaselicense.ScansColumn},
+			Columns: releaselicense.ScansPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

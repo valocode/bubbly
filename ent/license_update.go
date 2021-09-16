@@ -30,15 +30,29 @@ func (lu *LicenseUpdate) Where(ps ...predicate.License) *LicenseUpdate {
 	return lu
 }
 
-// SetSpdxID sets the "spdx_id" field.
-func (lu *LicenseUpdate) SetSpdxID(s string) *LicenseUpdate {
-	lu.mutation.SetSpdxID(s)
+// SetLicenseID sets the "license_id" field.
+func (lu *LicenseUpdate) SetLicenseID(s string) *LicenseUpdate {
+	lu.mutation.SetLicenseID(s)
 	return lu
 }
 
 // SetName sets the "name" field.
 func (lu *LicenseUpdate) SetName(s string) *LicenseUpdate {
 	lu.mutation.SetName(s)
+	return lu
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (lu *LicenseUpdate) SetNillableName(s *string) *LicenseUpdate {
+	if s != nil {
+		lu.SetName(*s)
+	}
+	return lu
+}
+
+// ClearName clears the value of the "name" field.
+func (lu *LicenseUpdate) ClearName() *LicenseUpdate {
+	lu.mutation.ClearName()
 	return lu
 }
 
@@ -252,14 +266,9 @@ func (lu *LicenseUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (lu *LicenseUpdate) check() error {
-	if v, ok := lu.mutation.SpdxID(); ok {
-		if err := license.SpdxIDValidator(v); err != nil {
-			return &ValidationError{Name: "spdx_id", err: fmt.Errorf("ent: validator failed for field \"spdx_id\": %w", err)}
-		}
-	}
-	if v, ok := lu.mutation.Name(); ok {
-		if err := license.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+	if v, ok := lu.mutation.LicenseID(); ok {
+		if err := license.LicenseIDValidator(v); err != nil {
+			return &ValidationError{Name: "license_id", err: fmt.Errorf("ent: validator failed for field \"license_id\": %w", err)}
 		}
 	}
 	if _, ok := lu.mutation.OwnerID(); lu.mutation.OwnerCleared() && !ok {
@@ -286,17 +295,23 @@ func (lu *LicenseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := lu.mutation.SpdxID(); ok {
+	if value, ok := lu.mutation.LicenseID(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: license.FieldSpdxID,
+			Column: license.FieldLicenseID,
 		})
 	}
 	if value, ok := lu.mutation.Name(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
+			Column: license.FieldName,
+		})
+	}
+	if lu.mutation.NameCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
 			Column: license.FieldName,
 		})
 	}
@@ -495,15 +510,29 @@ type LicenseUpdateOne struct {
 	mutation *LicenseMutation
 }
 
-// SetSpdxID sets the "spdx_id" field.
-func (luo *LicenseUpdateOne) SetSpdxID(s string) *LicenseUpdateOne {
-	luo.mutation.SetSpdxID(s)
+// SetLicenseID sets the "license_id" field.
+func (luo *LicenseUpdateOne) SetLicenseID(s string) *LicenseUpdateOne {
+	luo.mutation.SetLicenseID(s)
 	return luo
 }
 
 // SetName sets the "name" field.
 func (luo *LicenseUpdateOne) SetName(s string) *LicenseUpdateOne {
 	luo.mutation.SetName(s)
+	return luo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (luo *LicenseUpdateOne) SetNillableName(s *string) *LicenseUpdateOne {
+	if s != nil {
+		luo.SetName(*s)
+	}
+	return luo
+}
+
+// ClearName clears the value of the "name" field.
+func (luo *LicenseUpdateOne) ClearName() *LicenseUpdateOne {
+	luo.mutation.ClearName()
 	return luo
 }
 
@@ -724,14 +753,9 @@ func (luo *LicenseUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (luo *LicenseUpdateOne) check() error {
-	if v, ok := luo.mutation.SpdxID(); ok {
-		if err := license.SpdxIDValidator(v); err != nil {
-			return &ValidationError{Name: "spdx_id", err: fmt.Errorf("ent: validator failed for field \"spdx_id\": %w", err)}
-		}
-	}
-	if v, ok := luo.mutation.Name(); ok {
-		if err := license.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+	if v, ok := luo.mutation.LicenseID(); ok {
+		if err := license.LicenseIDValidator(v); err != nil {
+			return &ValidationError{Name: "license_id", err: fmt.Errorf("ent: validator failed for field \"license_id\": %w", err)}
 		}
 	}
 	if _, ok := luo.mutation.OwnerID(); luo.mutation.OwnerCleared() && !ok {
@@ -775,17 +799,23 @@ func (luo *LicenseUpdateOne) sqlSave(ctx context.Context) (_node *License, err e
 			}
 		}
 	}
-	if value, ok := luo.mutation.SpdxID(); ok {
+	if value, ok := luo.mutation.LicenseID(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: license.FieldSpdxID,
+			Column: license.FieldLicenseID,
 		})
 	}
 	if value, ok := luo.mutation.Name(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
+			Column: license.FieldName,
+		})
+	}
+	if luo.mutation.NameCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
 			Column: license.FieldName,
 		})
 	}

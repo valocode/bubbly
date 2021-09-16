@@ -134,14 +134,24 @@ func init() {
 	gitcommit.BranchValidator = gitcommitDescBranch.Validators[0].(func(string) error)
 	licenseFields := schema.License{}.Fields()
 	_ = licenseFields
-	// licenseDescSpdxID is the schema descriptor for spdx_id field.
-	licenseDescSpdxID := licenseFields[0].Descriptor()
-	// license.SpdxIDValidator is a validator for the "spdx_id" field. It is called by the builders before save.
-	license.SpdxIDValidator = licenseDescSpdxID.Validators[0].(func(string) error)
-	// licenseDescName is the schema descriptor for name field.
-	licenseDescName := licenseFields[1].Descriptor()
-	// license.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	license.NameValidator = licenseDescName.Validators[0].(func(string) error)
+	// licenseDescLicenseID is the schema descriptor for license_id field.
+	licenseDescLicenseID := licenseFields[0].Descriptor()
+	// license.LicenseIDValidator is a validator for the "license_id" field. It is called by the builders before save.
+	license.LicenseIDValidator = func() func(string) error {
+		validators := licenseDescLicenseID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(license_id string) error {
+			for _, fn := range fns {
+				if err := fn(license_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// licenseDescIsOsiApproved is the schema descriptor for is_osi_approved field.
 	licenseDescIsOsiApproved := licenseFields[4].Descriptor()
 	// license.DefaultIsOsiApproved holds the default value on creation for the is_osi_approved field.

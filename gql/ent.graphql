@@ -453,20 +453,20 @@ input LicenseWhereInput {
   and: [LicenseWhereInput!]
   or: [LicenseWhereInput!]
   
-  """spdx_id field predicates"""
-  spdxID: String
-  spdxIDNEQ: String
-  spdxIDIn: [String!]
-  spdxIDNotIn: [String!]
-  spdxIDGT: String
-  spdxIDGTE: String
-  spdxIDLT: String
-  spdxIDLTE: String
-  spdxIDContains: String
-  spdxIDHasPrefix: String
-  spdxIDHasSuffix: String
-  spdxIDEqualFold: String
-  spdxIDContainsFold: String
+  """license_id field predicates"""
+  licenseID: String
+  licenseIDNEQ: String
+  licenseIDIn: [String!]
+  licenseIDNotIn: [String!]
+  licenseIDGT: String
+  licenseIDGTE: String
+  licenseIDLT: String
+  licenseIDLTE: String
+  licenseIDContains: String
+  licenseIDHasPrefix: String
+  licenseIDHasSuffix: String
+  licenseIDEqualFold: String
+  licenseIDContainsFold: String
   
   """name field predicates"""
   name: String
@@ -480,6 +480,8 @@ input LicenseWhereInput {
   nameContains: String
   nameHasPrefix: String
   nameHasSuffix: String
+  nameIsNil: Boolean
+  nameNotNil: Boolean
   nameEqualFold: String
   nameContainsFold: String
   
@@ -1112,6 +1114,10 @@ input CodeScanWhereInput {
   hasVulnerabilities: Boolean
   hasVulnerabilitiesWith: [ReleaseVulnerabilityWhereInput!]
   
+  """licenses edge predicates"""
+  hasLicenses: Boolean
+  hasLicensesWith: [ReleaseLicenseWhereInput!]
+  
   """components edge predicates"""
   hasComponents: Boolean
   hasComponentsWith: [ReleaseComponentWhereInput!]
@@ -1232,6 +1238,10 @@ input ReleaseWhereInput {
   hasVulnerabilities: Boolean
   hasVulnerabilitiesWith: [ReleaseVulnerabilityWhereInput!]
   
+  """licenses edge predicates"""
+  hasLicenses: Boolean
+  hasLicensesWith: [ReleaseLicenseWhereInput!]
+  
   """code_scans edge predicates"""
   hasCodeScans: Boolean
   hasCodeScansWith: [CodeScanWhereInput!]
@@ -1285,6 +1295,10 @@ input ReleaseComponentWhereInput {
   """vulnerabilities edge predicates"""
   hasVulnerabilities: Boolean
   hasVulnerabilitiesWith: [ReleaseVulnerabilityWhereInput!]
+  
+  """licenses edge predicates"""
+  hasLicenses: Boolean
+  hasLicensesWith: [ReleaseLicenseWhereInput!]
 }
 
 """

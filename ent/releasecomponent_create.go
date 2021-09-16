@@ -13,6 +13,7 @@ import (
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
+	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 )
 
@@ -87,6 +88,21 @@ func (rcc *ReleaseComponentCreate) AddVulnerabilities(r ...*ReleaseVulnerability
 		ids[i] = r[i].ID
 	}
 	return rcc.AddVulnerabilityIDs(ids...)
+}
+
+// AddLicenseIDs adds the "licenses" edge to the ReleaseLicense entity by IDs.
+func (rcc *ReleaseComponentCreate) AddLicenseIDs(ids ...int) *ReleaseComponentCreate {
+	rcc.mutation.AddLicenseIDs(ids...)
+	return rcc
+}
+
+// AddLicenses adds the "licenses" edges to the ReleaseLicense entity.
+func (rcc *ReleaseComponentCreate) AddLicenses(r ...*ReleaseLicense) *ReleaseComponentCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return rcc.AddLicenseIDs(ids...)
 }
 
 // Mutation returns the ReleaseComponentMutation object of the builder.
@@ -293,6 +309,25 @@ func (rcc *ReleaseComponentCreate) createSpec() (*ReleaseComponent, *sqlgraph.Cr
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rcc.mutation.LicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   releasecomponent.LicensesTable,
+			Columns: []string{releasecomponent.LicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}

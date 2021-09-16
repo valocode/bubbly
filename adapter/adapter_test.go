@@ -15,8 +15,9 @@ func TestRego(t *testing.T) {
 	}
 
 	tests := []test{
-		{adapter: "testdata/adapters/gosec.rego", inputFiles: []string{"testdata/adapters/gosec.json"}},
+		{adapter: "testdata/gosec.rego", inputFiles: []string{"testdata/gosec.json"}},
 		{adapter: "testdata/snyk.rego", inputFiles: []string{"testdata/snyk.json"}},
+		{adapter: "testdata/meta-doubleopen.rego", inputFiles: []string{"testdata/meta-doubleopen.json"}},
 	}
 	for _, tc := range tests {
 		name := filepath.Base(tc.adapter)

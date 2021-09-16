@@ -7,8 +7,8 @@ const (
 	Label = "license"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldSpdxID holds the string denoting the spdx_id field in the database.
-	FieldSpdxID = "spdx_id"
+	// FieldLicenseID holds the string denoting the license_id field in the database.
+	FieldLicenseID = "license_id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldReference holds the string denoting the reference field in the database.
@@ -49,7 +49,7 @@ const (
 // Columns holds all SQL columns for license fields.
 var Columns = []string{
 	FieldID,
-	FieldSpdxID,
+	FieldLicenseID,
 	FieldName,
 	FieldReference,
 	FieldDetailsURL,
@@ -84,10 +84,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// SpdxIDValidator is a validator for the "spdx_id" field. It is called by the builders before save.
-	SpdxIDValidator func(string) error
-	// NameValidator is a validator for the "name" field. It is called by the builders before save.
-	NameValidator func(string) error
+	// LicenseIDValidator is a validator for the "license_id" field. It is called by the builders before save.
+	LicenseIDValidator func(string) error
 	// DefaultIsOsiApproved holds the default value on creation for the "is_osi_approved" field.
 	DefaultIsOsiApproved bool
 )

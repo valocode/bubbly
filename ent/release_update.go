@@ -17,6 +17,7 @@ import (
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
@@ -196,6 +197,21 @@ func (ru *ReleaseUpdate) AddVulnerabilities(r ...*ReleaseVulnerability) *Release
 		ids[i] = r[i].ID
 	}
 	return ru.AddVulnerabilityIDs(ids...)
+}
+
+// AddLicenseIDs adds the "licenses" edge to the ReleaseLicense entity by IDs.
+func (ru *ReleaseUpdate) AddLicenseIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.AddLicenseIDs(ids...)
+	return ru
+}
+
+// AddLicenses adds the "licenses" edges to the ReleaseLicense entity.
+func (ru *ReleaseUpdate) AddLicenses(r ...*ReleaseLicense) *ReleaseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ru.AddLicenseIDs(ids...)
 }
 
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by IDs.
@@ -405,6 +421,27 @@ func (ru *ReleaseUpdate) RemoveVulnerabilities(r ...*ReleaseVulnerability) *Rele
 		ids[i] = r[i].ID
 	}
 	return ru.RemoveVulnerabilityIDs(ids...)
+}
+
+// ClearLicenses clears all "licenses" edges to the ReleaseLicense entity.
+func (ru *ReleaseUpdate) ClearLicenses() *ReleaseUpdate {
+	ru.mutation.ClearLicenses()
+	return ru
+}
+
+// RemoveLicenseIDs removes the "licenses" edge to ReleaseLicense entities by IDs.
+func (ru *ReleaseUpdate) RemoveLicenseIDs(ids ...int) *ReleaseUpdate {
+	ru.mutation.RemoveLicenseIDs(ids...)
+	return ru
+}
+
+// RemoveLicenses removes "licenses" edges to ReleaseLicense entities.
+func (ru *ReleaseUpdate) RemoveLicenses(r ...*ReleaseLicense) *ReleaseUpdate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ru.RemoveLicenseIDs(ids...)
 }
 
 // ClearCodeScans clears all "code_scans" edges to the CodeScan entity.
@@ -1040,6 +1077,60 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.LicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LicensesTable,
+			Columns: []string{release.LicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaselicense.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.RemovedLicensesIDs(); len(nodes) > 0 && !ru.mutation.LicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LicensesTable,
+			Columns: []string{release.LicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaselicense.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.LicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LicensesTable,
+			Columns: []string{release.LicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaselicense.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if ru.mutation.CodeScansCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -1382,6 +1473,21 @@ func (ruo *ReleaseUpdateOne) AddVulnerabilities(r ...*ReleaseVulnerability) *Rel
 	return ruo.AddVulnerabilityIDs(ids...)
 }
 
+// AddLicenseIDs adds the "licenses" edge to the ReleaseLicense entity by IDs.
+func (ruo *ReleaseUpdateOne) AddLicenseIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.AddLicenseIDs(ids...)
+	return ruo
+}
+
+// AddLicenses adds the "licenses" edges to the ReleaseLicense entity.
+func (ruo *ReleaseUpdateOne) AddLicenses(r ...*ReleaseLicense) *ReleaseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ruo.AddLicenseIDs(ids...)
+}
+
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by IDs.
 func (ruo *ReleaseUpdateOne) AddCodeScanIDs(ids ...int) *ReleaseUpdateOne {
 	ruo.mutation.AddCodeScanIDs(ids...)
@@ -1589,6 +1695,27 @@ func (ruo *ReleaseUpdateOne) RemoveVulnerabilities(r ...*ReleaseVulnerability) *
 		ids[i] = r[i].ID
 	}
 	return ruo.RemoveVulnerabilityIDs(ids...)
+}
+
+// ClearLicenses clears all "licenses" edges to the ReleaseLicense entity.
+func (ruo *ReleaseUpdateOne) ClearLicenses() *ReleaseUpdateOne {
+	ruo.mutation.ClearLicenses()
+	return ruo
+}
+
+// RemoveLicenseIDs removes the "licenses" edge to ReleaseLicense entities by IDs.
+func (ruo *ReleaseUpdateOne) RemoveLicenseIDs(ids ...int) *ReleaseUpdateOne {
+	ruo.mutation.RemoveLicenseIDs(ids...)
+	return ruo
+}
+
+// RemoveLicenses removes "licenses" edges to ReleaseLicense entities.
+func (ruo *ReleaseUpdateOne) RemoveLicenses(r ...*ReleaseLicense) *ReleaseUpdateOne {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return ruo.RemoveLicenseIDs(ids...)
 }
 
 // ClearCodeScans clears all "code_scans" edges to the CodeScan entity.
@@ -2240,6 +2367,60 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.LicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LicensesTable,
+			Columns: []string{release.LicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaselicense.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.RemovedLicensesIDs(); len(nodes) > 0 && !ruo.mutation.LicensesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LicensesTable,
+			Columns: []string{release.LicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaselicense.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.LicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LicensesTable,
+			Columns: []string{release.LicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}

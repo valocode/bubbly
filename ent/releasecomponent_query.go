@@ -17,6 +17,7 @@ import (
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
+	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 )
 
@@ -34,6 +35,7 @@ type ReleaseComponentQuery struct {
 	withScans           *CodeScanQuery
 	withComponent       *ComponentQuery
 	withVulnerabilities *ReleaseVulnerabilityQuery
+	withLicenses        *ReleaseLicenseQuery
 	withFKs             bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -152,6 +154,28 @@ func (rcq *ReleaseComponentQuery) QueryVulnerabilities() *ReleaseVulnerabilityQu
 			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, selector),
 			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, releasecomponent.VulnerabilitiesTable, releasecomponent.VulnerabilitiesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryLicenses chains the current query on the "licenses" edge.
+func (rcq *ReleaseComponentQuery) QueryLicenses() *ReleaseLicenseQuery {
+	query := &ReleaseLicenseQuery{config: rcq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, selector),
+			sqlgraph.To(releaselicense.Table, releaselicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, releasecomponent.LicensesTable, releasecomponent.LicensesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rcq.driver.Dialect(), step)
 		return fromU, nil
@@ -344,6 +368,7 @@ func (rcq *ReleaseComponentQuery) Clone() *ReleaseComponentQuery {
 		withScans:           rcq.withScans.Clone(),
 		withComponent:       rcq.withComponent.Clone(),
 		withVulnerabilities: rcq.withVulnerabilities.Clone(),
+		withLicenses:        rcq.withLicenses.Clone(),
 		// clone intermediate query.
 		sql:  rcq.sql.Clone(),
 		path: rcq.path,
@@ -391,6 +416,17 @@ func (rcq *ReleaseComponentQuery) WithVulnerabilities(opts ...func(*ReleaseVulne
 		opt(query)
 	}
 	rcq.withVulnerabilities = query
+	return rcq
+}
+
+// WithLicenses tells the query-builder to eager-load the nodes that are connected to
+// the "licenses" edge. The optional arguments are used to configure the query builder of the edge.
+func (rcq *ReleaseComponentQuery) WithLicenses(opts ...func(*ReleaseLicenseQuery)) *ReleaseComponentQuery {
+	query := &ReleaseLicenseQuery{config: rcq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rcq.withLicenses = query
 	return rcq
 }
 
@@ -460,11 +496,12 @@ func (rcq *ReleaseComponentQuery) sqlAll(ctx context.Context) ([]*ReleaseCompone
 		nodes       = []*ReleaseComponent{}
 		withFKs     = rcq.withFKs
 		_spec       = rcq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			rcq.withRelease != nil,
 			rcq.withScans != nil,
 			rcq.withComponent != nil,
 			rcq.withVulnerabilities != nil,
+			rcq.withLicenses != nil,
 		}
 	)
 	if rcq.withRelease != nil || rcq.withComponent != nil {
@@ -642,6 +679,35 @@ func (rcq *ReleaseComponentQuery) sqlAll(ctx context.Context) ([]*ReleaseCompone
 				return nil, fmt.Errorf(`unexpected foreign-key "release_vulnerability_component" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Vulnerabilities = append(node.Edges.Vulnerabilities, n)
+		}
+	}
+
+	if query := rcq.withLicenses; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*ReleaseComponent)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Licenses = []*ReleaseLicense{}
+		}
+		query.withFKs = true
+		query.Where(predicate.ReleaseLicense(func(s *sql.Selector) {
+			s.Where(sql.InValues(releasecomponent.LicensesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.release_license_component
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "release_license_component" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "release_license_component" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Licenses = append(node.Edges.Licenses, n)
 		}
 	}
 

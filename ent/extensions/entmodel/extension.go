@@ -6,6 +6,7 @@ import (
 	"log"
 	"text/template"
 
+	"entgo.io/contrib/entgql"
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
 	"entgo.io/ent/schema"
@@ -46,6 +47,7 @@ func (e *Extensions) Templates() []*gen.Template {
 				"fieldsRequiredNoDefault": fieldsRequiredNoDefault,
 				"fieldTag":                fieldTag,
 				"fieldsAndID":             fieldsAndID,
+				"filterNodes":             filterNodes,
 			}).ParseDir(
 			"extensions/entmodel/templates",
 		)))
@@ -138,4 +140,22 @@ func isFieldRequiredNoDefault(field *gen.Field) bool {
 
 func fieldsAndID(node *gen.Type) []*gen.Field {
 	return append(node.Fields, node.ID)
+}
+
+// filterNodes - copied from ent/contrib/entgql...
+func filterNodes(nodes []*gen.Type) ([]*gen.Type, error) {
+	var filteredNodes []*gen.Type
+	for _, n := range nodes {
+		ant := &entgql.Annotation{}
+		if n.Annotations != nil && n.Annotations[ant.Name()] != nil {
+			if err := ant.Decode(n.Annotations[ant.Name()]); err != nil {
+				return nil, err
+			}
+			if ant.Skip {
+				continue
+			}
+		}
+		filteredNodes = append(filteredNodes, n)
+	}
+	return filteredNodes, nil
 }

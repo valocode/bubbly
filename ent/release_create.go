@@ -15,6 +15,7 @@ import (
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
@@ -188,6 +189,21 @@ func (rc *ReleaseCreate) AddVulnerabilities(r ...*ReleaseVulnerability) *Release
 		ids[i] = r[i].ID
 	}
 	return rc.AddVulnerabilityIDs(ids...)
+}
+
+// AddLicenseIDs adds the "licenses" edge to the ReleaseLicense entity by IDs.
+func (rc *ReleaseCreate) AddLicenseIDs(ids ...int) *ReleaseCreate {
+	rc.mutation.AddLicenseIDs(ids...)
+	return rc
+}
+
+// AddLicenses adds the "licenses" edges to the ReleaseLicense entity.
+func (rc *ReleaseCreate) AddLicenses(r ...*ReleaseLicense) *ReleaseCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return rc.AddLicenseIDs(ids...)
 }
 
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by IDs.
@@ -560,6 +576,25 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.LicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LicensesTable,
+			Columns: []string{release.LicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}

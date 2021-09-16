@@ -50,6 +50,8 @@ type ReleaseEdges struct {
 	Components []*ReleaseComponent `json:"components,omitempty"`
 	// Vulnerabilities holds the value of the vulnerabilities edge.
 	Vulnerabilities []*ReleaseVulnerability `json:"vulnerabilities,omitempty"`
+	// Licenses holds the value of the licenses edge.
+	Licenses []*ReleaseLicense `json:"licenses,omitempty"`
 	// CodeScans holds the value of the code_scans edge.
 	CodeScans []*CodeScan `json:"code_scans,omitempty"`
 	// TestRuns holds the value of the test_runs edge.
@@ -58,7 +60,7 @@ type ReleaseEdges struct {
 	VulnerabilityReviews []*VulnerabilityReview `json:"vulnerability_reviews,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [12]bool
+	loadedTypes [13]bool
 }
 
 // SubreleasesOrErr returns the Subreleases value or an error if the edge
@@ -152,10 +154,19 @@ func (e ReleaseEdges) VulnerabilitiesOrErr() ([]*ReleaseVulnerability, error) {
 	return nil, &NotLoadedError{edge: "vulnerabilities"}
 }
 
+// LicensesOrErr returns the Licenses value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReleaseEdges) LicensesOrErr() ([]*ReleaseLicense, error) {
+	if e.loadedTypes[9] {
+		return e.Licenses, nil
+	}
+	return nil, &NotLoadedError{edge: "licenses"}
+}
+
 // CodeScansOrErr returns the CodeScans value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) CodeScansOrErr() ([]*CodeScan, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[10] {
 		return e.CodeScans, nil
 	}
 	return nil, &NotLoadedError{edge: "code_scans"}
@@ -164,7 +175,7 @@ func (e ReleaseEdges) CodeScansOrErr() ([]*CodeScan, error) {
 // TestRunsOrErr returns the TestRuns value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) TestRunsOrErr() ([]*TestRun, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[11] {
 		return e.TestRuns, nil
 	}
 	return nil, &NotLoadedError{edge: "test_runs"}
@@ -173,7 +184,7 @@ func (e ReleaseEdges) TestRunsOrErr() ([]*TestRun, error) {
 // VulnerabilityReviewsOrErr returns the VulnerabilityReviews value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error) {
-	if e.loadedTypes[11] {
+	if e.loadedTypes[12] {
 		return e.VulnerabilityReviews, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
@@ -293,6 +304,11 @@ func (r *Release) QueryComponents() *ReleaseComponentQuery {
 // QueryVulnerabilities queries the "vulnerabilities" edge of the Release entity.
 func (r *Release) QueryVulnerabilities() *ReleaseVulnerabilityQuery {
 	return (&ReleaseClient{config: r.config}).QueryVulnerabilities(r)
+}
+
+// QueryLicenses queries the "licenses" edge of the Release entity.
+func (r *Release) QueryLicenses() *ReleaseLicenseQuery {
+	return (&ReleaseClient{config: r.config}).QueryLicenses(r)
 }
 
 // QueryCodeScans queries the "code_scans" edge of the Release entity.

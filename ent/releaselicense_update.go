@@ -327,10 +327,10 @@ func (rlu *ReleaseLicenseUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if rlu.mutation.ScansCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   releaselicense.ScansTable,
-			Columns: []string{releaselicense.ScansColumn},
+			Columns: releaselicense.ScansPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -343,10 +343,10 @@ func (rlu *ReleaseLicenseUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if nodes := rlu.mutation.RemovedScansIDs(); len(nodes) > 0 && !rlu.mutation.ScansCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   releaselicense.ScansTable,
-			Columns: []string{releaselicense.ScansColumn},
+			Columns: releaselicense.ScansPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -362,10 +362,10 @@ func (rlu *ReleaseLicenseUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if nodes := rlu.mutation.ScansIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   releaselicense.ScansTable,
-			Columns: []string{releaselicense.ScansColumn},
+			Columns: releaselicense.ScansPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -718,10 +718,10 @@ func (rluo *ReleaseLicenseUpdateOne) sqlSave(ctx context.Context) (_node *Releas
 	}
 	if rluo.mutation.ScansCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   releaselicense.ScansTable,
-			Columns: []string{releaselicense.ScansColumn},
+			Columns: releaselicense.ScansPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -734,10 +734,10 @@ func (rluo *ReleaseLicenseUpdateOne) sqlSave(ctx context.Context) (_node *Releas
 	}
 	if nodes := rluo.mutation.RemovedScansIDs(); len(nodes) > 0 && !rluo.mutation.ScansCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   releaselicense.ScansTable,
-			Columns: []string{releaselicense.ScansColumn},
+			Columns: releaselicense.ScansPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -753,10 +753,10 @@ func (rluo *ReleaseLicenseUpdateOne) sqlSave(ctx context.Context) (_node *Releas
 	}
 	if nodes := rluo.mutation.ScansIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   releaselicense.ScansTable,
-			Columns: []string{releaselicense.ScansColumn},
+			Columns: releaselicense.ScansPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

@@ -91,10 +91,10 @@ func IDLTE(id int) predicate.License {
 	})
 }
 
-// SpdxID applies equality check predicate on the "spdx_id" field. It's identical to SpdxIDEQ.
-func SpdxID(v string) predicate.License {
+// LicenseID applies equality check predicate on the "license_id" field. It's identical to LicenseIDEQ.
+func LicenseID(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldSpdxID), v))
+		s.Where(sql.EQ(s.C(FieldLicenseID), v))
 	})
 }
 
@@ -126,22 +126,22 @@ func IsOsiApproved(v bool) predicate.License {
 	})
 }
 
-// SpdxIDEQ applies the EQ predicate on the "spdx_id" field.
-func SpdxIDEQ(v string) predicate.License {
+// LicenseIDEQ applies the EQ predicate on the "license_id" field.
+func LicenseIDEQ(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldSpdxID), v))
+		s.Where(sql.EQ(s.C(FieldLicenseID), v))
 	})
 }
 
-// SpdxIDNEQ applies the NEQ predicate on the "spdx_id" field.
-func SpdxIDNEQ(v string) predicate.License {
+// LicenseIDNEQ applies the NEQ predicate on the "license_id" field.
+func LicenseIDNEQ(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldSpdxID), v))
+		s.Where(sql.NEQ(s.C(FieldLicenseID), v))
 	})
 }
 
-// SpdxIDIn applies the In predicate on the "spdx_id" field.
-func SpdxIDIn(vs ...string) predicate.License {
+// LicenseIDIn applies the In predicate on the "license_id" field.
+func LicenseIDIn(vs ...string) predicate.License {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -153,12 +153,12 @@ func SpdxIDIn(vs ...string) predicate.License {
 			s.Where(sql.False())
 			return
 		}
-		s.Where(sql.In(s.C(FieldSpdxID), v...))
+		s.Where(sql.In(s.C(FieldLicenseID), v...))
 	})
 }
 
-// SpdxIDNotIn applies the NotIn predicate on the "spdx_id" field.
-func SpdxIDNotIn(vs ...string) predicate.License {
+// LicenseIDNotIn applies the NotIn predicate on the "license_id" field.
+func LicenseIDNotIn(vs ...string) predicate.License {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -170,70 +170,70 @@ func SpdxIDNotIn(vs ...string) predicate.License {
 			s.Where(sql.False())
 			return
 		}
-		s.Where(sql.NotIn(s.C(FieldSpdxID), v...))
+		s.Where(sql.NotIn(s.C(FieldLicenseID), v...))
 	})
 }
 
-// SpdxIDGT applies the GT predicate on the "spdx_id" field.
-func SpdxIDGT(v string) predicate.License {
+// LicenseIDGT applies the GT predicate on the "license_id" field.
+func LicenseIDGT(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldSpdxID), v))
+		s.Where(sql.GT(s.C(FieldLicenseID), v))
 	})
 }
 
-// SpdxIDGTE applies the GTE predicate on the "spdx_id" field.
-func SpdxIDGTE(v string) predicate.License {
+// LicenseIDGTE applies the GTE predicate on the "license_id" field.
+func LicenseIDGTE(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldSpdxID), v))
+		s.Where(sql.GTE(s.C(FieldLicenseID), v))
 	})
 }
 
-// SpdxIDLT applies the LT predicate on the "spdx_id" field.
-func SpdxIDLT(v string) predicate.License {
+// LicenseIDLT applies the LT predicate on the "license_id" field.
+func LicenseIDLT(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldSpdxID), v))
+		s.Where(sql.LT(s.C(FieldLicenseID), v))
 	})
 }
 
-// SpdxIDLTE applies the LTE predicate on the "spdx_id" field.
-func SpdxIDLTE(v string) predicate.License {
+// LicenseIDLTE applies the LTE predicate on the "license_id" field.
+func LicenseIDLTE(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldSpdxID), v))
+		s.Where(sql.LTE(s.C(FieldLicenseID), v))
 	})
 }
 
-// SpdxIDContains applies the Contains predicate on the "spdx_id" field.
-func SpdxIDContains(v string) predicate.License {
+// LicenseIDContains applies the Contains predicate on the "license_id" field.
+func LicenseIDContains(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldSpdxID), v))
+		s.Where(sql.Contains(s.C(FieldLicenseID), v))
 	})
 }
 
-// SpdxIDHasPrefix applies the HasPrefix predicate on the "spdx_id" field.
-func SpdxIDHasPrefix(v string) predicate.License {
+// LicenseIDHasPrefix applies the HasPrefix predicate on the "license_id" field.
+func LicenseIDHasPrefix(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldSpdxID), v))
+		s.Where(sql.HasPrefix(s.C(FieldLicenseID), v))
 	})
 }
 
-// SpdxIDHasSuffix applies the HasSuffix predicate on the "spdx_id" field.
-func SpdxIDHasSuffix(v string) predicate.License {
+// LicenseIDHasSuffix applies the HasSuffix predicate on the "license_id" field.
+func LicenseIDHasSuffix(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldSpdxID), v))
+		s.Where(sql.HasSuffix(s.C(FieldLicenseID), v))
 	})
 }
 
-// SpdxIDEqualFold applies the EqualFold predicate on the "spdx_id" field.
-func SpdxIDEqualFold(v string) predicate.License {
+// LicenseIDEqualFold applies the EqualFold predicate on the "license_id" field.
+func LicenseIDEqualFold(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldSpdxID), v))
+		s.Where(sql.EqualFold(s.C(FieldLicenseID), v))
 	})
 }
 
-// SpdxIDContainsFold applies the ContainsFold predicate on the "spdx_id" field.
-func SpdxIDContainsFold(v string) predicate.License {
+// LicenseIDContainsFold applies the ContainsFold predicate on the "license_id" field.
+func LicenseIDContainsFold(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldSpdxID), v))
+		s.Where(sql.ContainsFold(s.C(FieldLicenseID), v))
 	})
 }
 
@@ -331,6 +331,20 @@ func NameHasPrefix(v string) predicate.License {
 func NameHasSuffix(v string) predicate.License {
 	return predicate.License(func(s *sql.Selector) {
 		s.Where(sql.HasSuffix(s.C(FieldName), v))
+	})
+}
+
+// NameIsNil applies the IsNil predicate on the "name" field.
+func NameIsNil() predicate.License {
+	return predicate.License(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldName)))
+	})
+}
+
+// NameNotNil applies the NotNil predicate on the "name" field.
+func NameNotNil() predicate.License {
+	return predicate.License(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldName)))
 	})
 }
 

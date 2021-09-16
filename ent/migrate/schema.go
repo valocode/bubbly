@@ -108,7 +108,6 @@ var (
 		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "code_scan_release", Type: field.TypeInt, Nullable: true},
 		{Name: "release_entry_code_scan", Type: field.TypeInt, Unique: true, Nullable: true},
-		{Name: "release_license_scans", Type: field.TypeInt, Nullable: true},
 	}
 	// CodeScanTable holds the schema information for the "code_scan" table.
 	CodeScanTable = &schema.Table{
@@ -126,12 +125,6 @@ var (
 				Symbol:     "code_scan_release_entry_code_scan",
 				Columns:    []*schema.Column{CodeScanColumns[5]},
 				RefColumns: []*schema.Column{ReleaseEntryColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "code_scan_release_license_scans",
-				Columns:    []*schema.Column{CodeScanColumns[6]},
-				RefColumns: []*schema.Column{ReleaseLicenseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -237,8 +230,8 @@ var (
 	// LicenseColumns holds the columns for the "license" table.
 	LicenseColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "spdx_id", Type: field.TypeString, Unique: true},
-		{Name: "name", Type: field.TypeString},
+		{Name: "license_id", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "reference", Type: field.TypeString, Nullable: true},
 		{Name: "details_url", Type: field.TypeString, Nullable: true},
 		{Name: "is_osi_approved", Type: field.TypeBool, Default: false},
@@ -255,13 +248,6 @@ var (
 				Columns:    []*schema.Column{LicenseColumns[6]},
 				RefColumns: []*schema.Column{OrganizationColumns[0]},
 				OnDelete:   schema.SetNull,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "license_spdx_id",
-				Unique:  true,
-				Columns: []*schema.Column{LicenseColumns[1]},
 			},
 		},
 	}
@@ -760,6 +746,31 @@ var (
 			},
 		},
 	}
+	// ReleaseLicenseScansColumns holds the columns for the "release_license_scans" table.
+	ReleaseLicenseScansColumns = []*schema.Column{
+		{Name: "release_license_id", Type: field.TypeInt},
+		{Name: "code_scan_id", Type: field.TypeInt},
+	}
+	// ReleaseLicenseScansTable holds the schema information for the "release_license_scans" table.
+	ReleaseLicenseScansTable = &schema.Table{
+		Name:       "release_license_scans",
+		Columns:    ReleaseLicenseScansColumns,
+		PrimaryKey: []*schema.Column{ReleaseLicenseScansColumns[0], ReleaseLicenseScansColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "release_license_scans_release_license_id",
+				Columns:    []*schema.Column{ReleaseLicenseScansColumns[0]},
+				RefColumns: []*schema.Column{ReleaseLicenseColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "release_license_scans_code_scan_id",
+				Columns:    []*schema.Column{ReleaseLicenseScansColumns[1]},
+				RefColumns: []*schema.Column{CodeScanColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// ReleasePolicyProjectsColumns holds the columns for the "release_policy_projects" table.
 	ReleasePolicyProjectsColumns = []*schema.Column{
 		{Name: "release_policy_id", Type: field.TypeInt},
@@ -938,6 +949,7 @@ var (
 		ComponentLicensesTable,
 		ReleaseDependenciesTable,
 		ReleaseComponentScansTable,
+		ReleaseLicenseScansTable,
 		ReleasePolicyProjectsTable,
 		ReleasePolicyReposTable,
 		ReleaseVulnerabilityReviewsTable,
@@ -963,7 +975,6 @@ func init() {
 	}
 	CodeScanTable.ForeignKeys[0].RefTable = ReleaseTable
 	CodeScanTable.ForeignKeys[1].RefTable = ReleaseEntryTable
-	CodeScanTable.ForeignKeys[2].RefTable = ReleaseLicenseTable
 	CodeScanTable.Annotation = &entsql.Annotation{
 		Table: "code_scan",
 	}
@@ -1058,6 +1069,8 @@ func init() {
 	ReleaseDependenciesTable.ForeignKeys[1].RefTable = ReleaseTable
 	ReleaseComponentScansTable.ForeignKeys[0].RefTable = ReleaseComponentTable
 	ReleaseComponentScansTable.ForeignKeys[1].RefTable = CodeScanTable
+	ReleaseLicenseScansTable.ForeignKeys[0].RefTable = ReleaseLicenseTable
+	ReleaseLicenseScansTable.ForeignKeys[1].RefTable = CodeScanTable
 	ReleasePolicyProjectsTable.ForeignKeys[0].RefTable = ReleasePolicyTable
 	ReleasePolicyProjectsTable.ForeignKeys[1].RefTable = ProjectTable
 	ReleasePolicyReposTable.ForeignKeys[0].RefTable = ReleasePolicyTable

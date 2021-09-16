@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/artifact"
-
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	schema "github.com/valocode/bubbly/ent/schema/types"

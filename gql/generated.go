@@ -204,9 +204,9 @@ type ComplexityRoot struct {
 		ID            func(childComplexity int) int
 		Instances     func(childComplexity int, first *int, last *int, where *ent.ReleaseLicenseWhereInput) int
 		IsOsiApproved func(childComplexity int) int
+		LicenseID     func(childComplexity int) int
 		Name          func(childComplexity int) int
 		Reference     func(childComplexity int) int
-		SpdxID        func(childComplexity int) int
 	}
 
 	LicenseConnection struct {
@@ -271,6 +271,7 @@ type ComplexityRoot struct {
 		Dependencies         func(childComplexity int, first *int, last *int, where *ent.ReleaseWhereInput, orderBy *ent.ReleaseOrder) int
 		HeadOf               func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		Licenses             func(childComplexity int, first *int, last *int, where *ent.ReleaseLicenseWhereInput) int
 		Log                  func(childComplexity int, first *int, last *int, where *ent.ReleaseEntryWhereInput, orderBy *ent.ReleaseEntryOrder) int
 		Name                 func(childComplexity int) int
 		Status               func(childComplexity int) int
@@ -285,6 +286,7 @@ type ComplexityRoot struct {
 	ReleaseComponent struct {
 		Component       func(childComplexity int) int
 		ID              func(childComplexity int) int
+		Licenses        func(childComplexity int, first *int, last *int, where *ent.ReleaseLicenseWhereInput) int
 		Release         func(childComplexity int) int
 		Scans           func(childComplexity int, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) int
 		Type            func(childComplexity int) int
@@ -578,6 +580,7 @@ type ReleaseResolver interface {
 	Violations(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) ([]*ent.ReleasePolicyViolation, error)
 	Artifacts(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ArtifactWhereInput, orderBy *ent.ArtifactOrder) ([]*ent.Artifact, error)
 	Components(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error)
+	Licenses(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseLicenseWhereInput) ([]*ent.ReleaseLicense, error)
 	Vulnerabilities(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
 	CodeScans(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error)
 	TestRuns(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.TestRunWhereInput, orderBy *ent.TestRunOrder) ([]*ent.TestRun, error)
@@ -587,6 +590,7 @@ type ReleaseComponentResolver interface {
 	Scans(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error)
 
 	Vulnerabilities(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
+	Licenses(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.ReleaseLicenseWhereInput) ([]*ent.ReleaseLicense, error)
 }
 type ReleaseLicenseResolver interface {
 	Scans(ctx context.Context, obj *ent.ReleaseLicense, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error)
@@ -1240,6 +1244,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.License.IsOsiApproved(childComplexity), true
 
+	case "License.license_id":
+		if e.complexity.License.LicenseID == nil {
+			break
+		}
+
+		return e.complexity.License.LicenseID(childComplexity), true
+
 	case "License.name":
 		if e.complexity.License.Name == nil {
 			break
@@ -1253,13 +1264,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.License.Reference(childComplexity), true
-
-	case "License.spdx_id":
-		if e.complexity.License.SpdxID == nil {
-			break
-		}
-
-		return e.complexity.License.SpdxID(childComplexity), true
 
 	case "LicenseConnection.edges":
 		if e.complexity.LicenseConnection.Edges == nil {
@@ -1646,6 +1650,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Release.ID(childComplexity), true
 
+	case "Release.licenses":
+		if e.complexity.Release.Licenses == nil {
+			break
+		}
+
+		args, err := ec.field_Release_licenses_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Release.Licenses(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseLicenseWhereInput)), true
+
 	case "Release.log":
 		if e.complexity.Release.Log == nil {
 			break
@@ -1752,6 +1768,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ReleaseComponent.ID(childComplexity), true
+
+	case "ReleaseComponent.licenses":
+		if e.complexity.ReleaseComponent.Licenses == nil {
+			break
+		}
+
+		args, err := ec.field_ReleaseComponent_licenses_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.ReleaseComponent.Licenses(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseLicenseWhereInput)), true
 
 	case "ReleaseComponent.release":
 		if e.complexity.ReleaseComponent.Release == nil {
@@ -3300,20 +3328,20 @@ input LicenseWhereInput {
   and: [LicenseWhereInput!]
   or: [LicenseWhereInput!]
   
-  """spdx_id field predicates"""
-  spdxID: String
-  spdxIDNEQ: String
-  spdxIDIn: [String!]
-  spdxIDNotIn: [String!]
-  spdxIDGT: String
-  spdxIDGTE: String
-  spdxIDLT: String
-  spdxIDLTE: String
-  spdxIDContains: String
-  spdxIDHasPrefix: String
-  spdxIDHasSuffix: String
-  spdxIDEqualFold: String
-  spdxIDContainsFold: String
+  """license_id field predicates"""
+  licenseID: String
+  licenseIDNEQ: String
+  licenseIDIn: [String!]
+  licenseIDNotIn: [String!]
+  licenseIDGT: String
+  licenseIDGTE: String
+  licenseIDLT: String
+  licenseIDLTE: String
+  licenseIDContains: String
+  licenseIDHasPrefix: String
+  licenseIDHasSuffix: String
+  licenseIDEqualFold: String
+  licenseIDContainsFold: String
   
   """name field predicates"""
   name: String
@@ -3327,6 +3355,8 @@ input LicenseWhereInput {
   nameContains: String
   nameHasPrefix: String
   nameHasSuffix: String
+  nameIsNil: Boolean
+  nameNotNil: Boolean
   nameEqualFold: String
   nameContainsFold: String
   
@@ -3959,6 +3989,10 @@ input CodeScanWhereInput {
   hasVulnerabilities: Boolean
   hasVulnerabilitiesWith: [ReleaseVulnerabilityWhereInput!]
   
+  """licenses edge predicates"""
+  hasLicenses: Boolean
+  hasLicensesWith: [ReleaseLicenseWhereInput!]
+  
   """components edge predicates"""
   hasComponents: Boolean
   hasComponentsWith: [ReleaseComponentWhereInput!]
@@ -4079,6 +4113,10 @@ input ReleaseWhereInput {
   hasVulnerabilities: Boolean
   hasVulnerabilitiesWith: [ReleaseVulnerabilityWhereInput!]
   
+  """licenses edge predicates"""
+  hasLicenses: Boolean
+  hasLicensesWith: [ReleaseLicenseWhereInput!]
+  
   """code_scans edge predicates"""
   hasCodeScans: Boolean
   hasCodeScansWith: [CodeScanWhereInput!]
@@ -4132,6 +4170,10 @@ input ReleaseComponentWhereInput {
   """vulnerabilities edge predicates"""
   hasVulnerabilities: Boolean
   hasVulnerabilitiesWith: [ReleaseVulnerabilityWhereInput!]
+  
+  """licenses edge predicates"""
+  hasLicenses: Boolean
+  hasLicensesWith: [ReleaseLicenseWhereInput!]
 }
 
 """
@@ -4870,6 +4912,7 @@ type Release implements Node {
   violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
   artifacts(first: Int, last: Int, where: ArtifactWhereInput, order_by: ArtifactOrder): [Artifact] @goField(forceResolver: true)
   components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
+  licenses(first: Int, last: Int, where: ReleaseLicenseWhereInput): [ReleaseLicense] @goField(forceResolver: true)
   vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
   code_scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
   test_runs(first: Int, last: Int, where: TestRunWhereInput, order_by: TestRunOrder): [TestRun] @goField(forceResolver: true)
@@ -5098,6 +5141,7 @@ type ReleaseComponent implements Node {
   scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan!] @goField(forceResolver: true)
   component: Component!
   vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+  licenses(first: Int, last: Int, where: ReleaseLicenseWhereInput): [ReleaseLicense] @goField(forceResolver: true)
 }
 
 """
@@ -5227,7 +5271,7 @@ Generated by ent.
 """
 type License implements Node {
   id: ID!
-  spdx_id: String
+  license_id: String
   name: String
   reference: String
   details_url: String
@@ -6452,6 +6496,39 @@ func (ec *executionContext) field_Query_vulnerability_review_args(ctx context.Co
 	return args, nil
 }
 
+func (ec *executionContext) field_ReleaseComponent_licenses_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg1
+	var arg2 *ent.ReleaseLicenseWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg2, err = ec.unmarshalOReleaseLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_ReleaseComponent_scans_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -6884,6 +6961,39 @@ func (ec *executionContext) field_Release_dependencies_args(ctx context.Context,
 		}
 	}
 	args["order_by"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Release_licenses_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg1
+	var arg2 *ent.ReleaseLicenseWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg2, err = ec.unmarshalOReleaseLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg2
 	return args, nil
 }
 
@@ -10161,7 +10271,7 @@ func (ec *executionContext) _License_id(ctx context.Context, field graphql.Colle
 	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _License_spdx_id(ctx context.Context, field graphql.CollectedField, obj *ent.License) (ret graphql.Marshaler) {
+func (ec *executionContext) _License_license_id(ctx context.Context, field graphql.CollectedField, obj *ent.License) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -10179,7 +10289,7 @@ func (ec *executionContext) _License_spdx_id(ctx context.Context, field graphql.
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.SpdxID, nil
+		return obj.LicenseID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -12104,6 +12214,45 @@ func (ec *executionContext) _Release_components(ctx context.Context, field graph
 	return ec.marshalOReleaseComponent2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponent(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Release_licenses(ctx context.Context, field graphql.CollectedField, obj *ent.Release) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Release",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Release_licenses_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Release().Licenses(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseLicenseWhereInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleaseLicense)
+	fc.Result = res
+	return ec.marshalOReleaseLicense2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicense(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Release_vulnerabilities(ctx context.Context, field graphql.CollectedField, obj *ent.Release) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -12473,6 +12622,45 @@ func (ec *executionContext) _ReleaseComponent_vulnerabilities(ctx context.Contex
 	res := resTmp.([]*ent.ReleaseVulnerability)
 	fc.Result = res
 	return ec.marshalOReleaseVulnerability2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseVulnerability(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseComponent_licenses(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseComponent) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseComponent",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_ReleaseComponent_licenses_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ReleaseComponent().Licenses(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseLicenseWhereInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleaseLicense)
+	fc.Result = res
+	return ec.marshalOReleaseLicense2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicense(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ReleaseComponentConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseComponentConnection) (ret graphql.Marshaler) {
@@ -19818,6 +20006,22 @@ func (ec *executionContext) unmarshalInputCodeScanWhereInput(ctx context.Context
 			if err != nil {
 				return it, err
 			}
+		case "hasLicenses":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicenses"))
+			it.HasLicenses, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLicensesWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicensesWith"))
+			it.HasLicensesWith, err = ec.unmarshalOReleaseLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "hasComponents":
 			var err error
 
@@ -21682,107 +21886,107 @@ func (ec *executionContext) unmarshalInputLicenseWhereInput(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
-		case "spdxID":
+		case "licenseID":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxID"))
-			it.SpdxID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseID"))
+			it.LicenseID, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDNEQ":
+		case "licenseIDNEQ":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDNEQ"))
-			it.SpdxIDNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDNEQ"))
+			it.LicenseIDNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDIn":
+		case "licenseIDIn":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDIn"))
-			it.SpdxIDIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDIn"))
+			it.LicenseIDIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDNotIn":
+		case "licenseIDNotIn":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDNotIn"))
-			it.SpdxIDNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDNotIn"))
+			it.LicenseIDNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDGT":
+		case "licenseIDGT":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDGT"))
-			it.SpdxIDGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDGT"))
+			it.LicenseIDGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDGTE":
+		case "licenseIDGTE":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDGTE"))
-			it.SpdxIDGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDGTE"))
+			it.LicenseIDGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDLT":
+		case "licenseIDLT":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDLT"))
-			it.SpdxIDLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDLT"))
+			it.LicenseIDLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDLTE":
+		case "licenseIDLTE":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDLTE"))
-			it.SpdxIDLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDLTE"))
+			it.LicenseIDLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDContains":
+		case "licenseIDContains":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDContains"))
-			it.SpdxIDContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDContains"))
+			it.LicenseIDContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDHasPrefix":
+		case "licenseIDHasPrefix":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDHasPrefix"))
-			it.SpdxIDHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDHasPrefix"))
+			it.LicenseIDHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDHasSuffix":
+		case "licenseIDHasSuffix":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDHasSuffix"))
-			it.SpdxIDHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDHasSuffix"))
+			it.LicenseIDHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDEqualFold":
+		case "licenseIDEqualFold":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDEqualFold"))
-			it.SpdxIDEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDEqualFold"))
+			it.LicenseIDEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDContainsFold":
+		case "licenseIDContainsFold":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDContainsFold"))
-			it.SpdxIDContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDContainsFold"))
+			it.LicenseIDContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -21871,6 +22075,22 @@ func (ec *executionContext) unmarshalInputLicenseWhereInput(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameHasSuffix"))
 			it.NameHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameIsNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameIsNil"))
+			it.NameIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameNotNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameNotNil"))
+			it.NameNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -22995,6 +23215,22 @@ func (ec *executionContext) unmarshalInputReleaseComponentWhereInput(ctx context
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasVulnerabilitiesWith"))
 			it.HasVulnerabilitiesWith, err = ec.unmarshalOReleaseVulnerabilityWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseVulnerabilityWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLicenses":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicenses"))
+			it.HasLicenses, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLicensesWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicensesWith"))
+			it.HasLicensesWith, err = ec.unmarshalOReleaseLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -24866,6 +25102,22 @@ func (ec *executionContext) unmarshalInputReleaseWhereInput(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasVulnerabilitiesWith"))
 			it.HasVulnerabilitiesWith, err = ec.unmarshalOReleaseVulnerabilityWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseVulnerabilityWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLicenses":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicenses"))
+			it.HasLicenses, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLicensesWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicensesWith"))
+			it.HasLicensesWith, err = ec.unmarshalOReleaseLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -28210,8 +28462,8 @@ func (ec *executionContext) _License(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "spdx_id":
-			out.Values[i] = ec._License_spdx_id(ctx, field, obj)
+		case "license_id":
+			out.Values[i] = ec._License_license_id(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._License_name(ctx, field, obj)
 		case "reference":
@@ -28774,6 +29026,17 @@ func (ec *executionContext) _Release(ctx context.Context, sel ast.SelectionSet, 
 				res = ec._Release_components(ctx, field, obj)
 				return res
 			})
+		case "licenses":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Release_licenses(ctx, field, obj)
+				return res
+			})
 		case "vulnerabilities":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -28895,6 +29158,17 @@ func (ec *executionContext) _ReleaseComponent(ctx context.Context, sel ast.Selec
 					}
 				}()
 				res = ec._ReleaseComponent_vulnerabilities(ctx, field, obj)
+				return res
+			})
+		case "licenses":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleaseComponent_licenses(ctx, field, obj)
 				return res
 			})
 		default:

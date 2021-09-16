@@ -39,6 +39,8 @@ const (
 	EdgeComponents = "components"
 	// EdgeVulnerabilities holds the string denoting the vulnerabilities edge name in mutations.
 	EdgeVulnerabilities = "vulnerabilities"
+	// EdgeLicenses holds the string denoting the licenses edge name in mutations.
+	EdgeLicenses = "licenses"
 	// EdgeCodeScans holds the string denoting the code_scans edge name in mutations.
 	EdgeCodeScans = "code_scans"
 	// EdgeTestRuns holds the string denoting the test_runs edge name in mutations.
@@ -100,6 +102,13 @@ const (
 	VulnerabilitiesInverseTable = "release_vulnerability"
 	// VulnerabilitiesColumn is the table column denoting the vulnerabilities relation/edge.
 	VulnerabilitiesColumn = "release_vulnerability_release"
+	// LicensesTable is the table that holds the licenses relation/edge.
+	LicensesTable = "release_license"
+	// LicensesInverseTable is the table name for the ReleaseLicense entity.
+	// It exists in this package in order to avoid circular dependency with the "releaselicense" package.
+	LicensesInverseTable = "release_license"
+	// LicensesColumn is the table column denoting the licenses relation/edge.
+	LicensesColumn = "release_license_release"
 	// CodeScansTable is the table that holds the code_scans relation/edge.
 	CodeScansTable = "code_scan"
 	// CodeScansInverseTable is the table name for the CodeScan entity.

@@ -975,6 +975,10 @@ type CodeScanWhereInput struct {
 	HasVulnerabilities     *bool                             `json:"hasVulnerabilities,omitempty"`
 	HasVulnerabilitiesWith []*ReleaseVulnerabilityWhereInput `json:"hasVulnerabilitiesWith,omitempty"`
 
+	// "licenses" edge predicates.
+	HasLicenses     *bool                       `json:"hasLicenses,omitempty"`
+	HasLicensesWith []*ReleaseLicenseWhereInput `json:"hasLicensesWith,omitempty"`
+
 	// "components" edge predicates.
 	HasComponents     *bool                         `json:"hasComponents,omitempty"`
 	HasComponentsWith []*ReleaseComponentWhereInput `json:"hasComponentsWith,omitempty"`
@@ -1198,6 +1202,24 @@ func (i *CodeScanWhereInput) P() (predicate.CodeScan, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, codescan.HasVulnerabilitiesWith(with...))
+	}
+	if i.HasLicenses != nil {
+		p := codescan.HasLicenses()
+		if !*i.HasLicenses {
+			p = codescan.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasLicensesWith) > 0 {
+		with := make([]predicate.ReleaseLicense, 0, len(i.HasLicensesWith))
+		for _, w := range i.HasLicensesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, codescan.HasLicensesWith(with...))
 	}
 	if i.HasComponents != nil {
 		p := codescan.HasComponents()
@@ -2370,20 +2392,20 @@ type LicenseWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
-	// "spdx_id" field predicates.
-	SpdxID             *string  `json:"spdxID,omitempty"`
-	SpdxIDNEQ          *string  `json:"spdxIDNEQ,omitempty"`
-	SpdxIDIn           []string `json:"spdxIDIn,omitempty"`
-	SpdxIDNotIn        []string `json:"spdxIDNotIn,omitempty"`
-	SpdxIDGT           *string  `json:"spdxIDGT,omitempty"`
-	SpdxIDGTE          *string  `json:"spdxIDGTE,omitempty"`
-	SpdxIDLT           *string  `json:"spdxIDLT,omitempty"`
-	SpdxIDLTE          *string  `json:"spdxIDLTE,omitempty"`
-	SpdxIDContains     *string  `json:"spdxIDContains,omitempty"`
-	SpdxIDHasPrefix    *string  `json:"spdxIDHasPrefix,omitempty"`
-	SpdxIDHasSuffix    *string  `json:"spdxIDHasSuffix,omitempty"`
-	SpdxIDEqualFold    *string  `json:"spdxIDEqualFold,omitempty"`
-	SpdxIDContainsFold *string  `json:"spdxIDContainsFold,omitempty"`
+	// "license_id" field predicates.
+	LicenseID             *string  `json:"licenseID,omitempty"`
+	LicenseIDNEQ          *string  `json:"licenseIDNEQ,omitempty"`
+	LicenseIDIn           []string `json:"licenseIDIn,omitempty"`
+	LicenseIDNotIn        []string `json:"licenseIDNotIn,omitempty"`
+	LicenseIDGT           *string  `json:"licenseIDGT,omitempty"`
+	LicenseIDGTE          *string  `json:"licenseIDGTE,omitempty"`
+	LicenseIDLT           *string  `json:"licenseIDLT,omitempty"`
+	LicenseIDLTE          *string  `json:"licenseIDLTE,omitempty"`
+	LicenseIDContains     *string  `json:"licenseIDContains,omitempty"`
+	LicenseIDHasPrefix    *string  `json:"licenseIDHasPrefix,omitempty"`
+	LicenseIDHasSuffix    *string  `json:"licenseIDHasSuffix,omitempty"`
+	LicenseIDEqualFold    *string  `json:"licenseIDEqualFold,omitempty"`
+	LicenseIDContainsFold *string  `json:"licenseIDContainsFold,omitempty"`
 
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
@@ -2397,6 +2419,8 @@ type LicenseWhereInput struct {
 	NameContains     *string  `json:"nameContains,omitempty"`
 	NameHasPrefix    *string  `json:"nameHasPrefix,omitempty"`
 	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
+	NameIsNil        bool     `json:"nameIsNil,omitempty"`
+	NameNotNil       bool     `json:"nameNotNil,omitempty"`
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
 
@@ -2534,44 +2558,44 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 	if i.IDLTE != nil {
 		predicates = append(predicates, license.IDLTE(*i.IDLTE))
 	}
-	if i.SpdxID != nil {
-		predicates = append(predicates, license.SpdxIDEQ(*i.SpdxID))
+	if i.LicenseID != nil {
+		predicates = append(predicates, license.LicenseIDEQ(*i.LicenseID))
 	}
-	if i.SpdxIDNEQ != nil {
-		predicates = append(predicates, license.SpdxIDNEQ(*i.SpdxIDNEQ))
+	if i.LicenseIDNEQ != nil {
+		predicates = append(predicates, license.LicenseIDNEQ(*i.LicenseIDNEQ))
 	}
-	if len(i.SpdxIDIn) > 0 {
-		predicates = append(predicates, license.SpdxIDIn(i.SpdxIDIn...))
+	if len(i.LicenseIDIn) > 0 {
+		predicates = append(predicates, license.LicenseIDIn(i.LicenseIDIn...))
 	}
-	if len(i.SpdxIDNotIn) > 0 {
-		predicates = append(predicates, license.SpdxIDNotIn(i.SpdxIDNotIn...))
+	if len(i.LicenseIDNotIn) > 0 {
+		predicates = append(predicates, license.LicenseIDNotIn(i.LicenseIDNotIn...))
 	}
-	if i.SpdxIDGT != nil {
-		predicates = append(predicates, license.SpdxIDGT(*i.SpdxIDGT))
+	if i.LicenseIDGT != nil {
+		predicates = append(predicates, license.LicenseIDGT(*i.LicenseIDGT))
 	}
-	if i.SpdxIDGTE != nil {
-		predicates = append(predicates, license.SpdxIDGTE(*i.SpdxIDGTE))
+	if i.LicenseIDGTE != nil {
+		predicates = append(predicates, license.LicenseIDGTE(*i.LicenseIDGTE))
 	}
-	if i.SpdxIDLT != nil {
-		predicates = append(predicates, license.SpdxIDLT(*i.SpdxIDLT))
+	if i.LicenseIDLT != nil {
+		predicates = append(predicates, license.LicenseIDLT(*i.LicenseIDLT))
 	}
-	if i.SpdxIDLTE != nil {
-		predicates = append(predicates, license.SpdxIDLTE(*i.SpdxIDLTE))
+	if i.LicenseIDLTE != nil {
+		predicates = append(predicates, license.LicenseIDLTE(*i.LicenseIDLTE))
 	}
-	if i.SpdxIDContains != nil {
-		predicates = append(predicates, license.SpdxIDContains(*i.SpdxIDContains))
+	if i.LicenseIDContains != nil {
+		predicates = append(predicates, license.LicenseIDContains(*i.LicenseIDContains))
 	}
-	if i.SpdxIDHasPrefix != nil {
-		predicates = append(predicates, license.SpdxIDHasPrefix(*i.SpdxIDHasPrefix))
+	if i.LicenseIDHasPrefix != nil {
+		predicates = append(predicates, license.LicenseIDHasPrefix(*i.LicenseIDHasPrefix))
 	}
-	if i.SpdxIDHasSuffix != nil {
-		predicates = append(predicates, license.SpdxIDHasSuffix(*i.SpdxIDHasSuffix))
+	if i.LicenseIDHasSuffix != nil {
+		predicates = append(predicates, license.LicenseIDHasSuffix(*i.LicenseIDHasSuffix))
 	}
-	if i.SpdxIDEqualFold != nil {
-		predicates = append(predicates, license.SpdxIDEqualFold(*i.SpdxIDEqualFold))
+	if i.LicenseIDEqualFold != nil {
+		predicates = append(predicates, license.LicenseIDEqualFold(*i.LicenseIDEqualFold))
 	}
-	if i.SpdxIDContainsFold != nil {
-		predicates = append(predicates, license.SpdxIDContainsFold(*i.SpdxIDContainsFold))
+	if i.LicenseIDContainsFold != nil {
+		predicates = append(predicates, license.LicenseIDContainsFold(*i.LicenseIDContainsFold))
 	}
 	if i.Name != nil {
 		predicates = append(predicates, license.NameEQ(*i.Name))
@@ -2605,6 +2629,12 @@ func (i *LicenseWhereInput) P() (predicate.License, error) {
 	}
 	if i.NameHasSuffix != nil {
 		predicates = append(predicates, license.NameHasSuffix(*i.NameHasSuffix))
+	}
+	if i.NameIsNil {
+		predicates = append(predicates, license.NameIsNil())
+	}
+	if i.NameNotNil {
+		predicates = append(predicates, license.NameNotNil())
 	}
 	if i.NameEqualFold != nil {
 		predicates = append(predicates, license.NameEqualFold(*i.NameEqualFold))
@@ -3323,6 +3353,10 @@ type ReleaseWhereInput struct {
 	HasVulnerabilities     *bool                             `json:"hasVulnerabilities,omitempty"`
 	HasVulnerabilitiesWith []*ReleaseVulnerabilityWhereInput `json:"hasVulnerabilitiesWith,omitempty"`
 
+	// "licenses" edge predicates.
+	HasLicenses     *bool                       `json:"hasLicenses,omitempty"`
+	HasLicensesWith []*ReleaseLicenseWhereInput `json:"hasLicensesWith,omitempty"`
+
 	// "code_scans" edge predicates.
 	HasCodeScans     *bool                 `json:"hasCodeScans,omitempty"`
 	HasCodeScansWith []*CodeScanWhereInput `json:"hasCodeScansWith,omitempty"`
@@ -3672,6 +3706,24 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 		}
 		predicates = append(predicates, release.HasVulnerabilitiesWith(with...))
 	}
+	if i.HasLicenses != nil {
+		p := release.HasLicenses()
+		if !*i.HasLicenses {
+			p = release.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasLicensesWith) > 0 {
+		with := make([]predicate.ReleaseLicense, 0, len(i.HasLicensesWith))
+		for _, w := range i.HasLicensesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, release.HasLicensesWith(with...))
+	}
 	if i.HasCodeScans != nil {
 		p := release.HasCodeScans()
 		if !*i.HasCodeScans {
@@ -3773,6 +3825,10 @@ type ReleaseComponentWhereInput struct {
 	// "vulnerabilities" edge predicates.
 	HasVulnerabilities     *bool                             `json:"hasVulnerabilities,omitempty"`
 	HasVulnerabilitiesWith []*ReleaseVulnerabilityWhereInput `json:"hasVulnerabilitiesWith,omitempty"`
+
+	// "licenses" edge predicates.
+	HasLicenses     *bool                       `json:"hasLicenses,omitempty"`
+	HasLicensesWith []*ReleaseLicenseWhereInput `json:"hasLicensesWith,omitempty"`
 }
 
 // Filter applies the ReleaseComponentWhereInput filter on the ReleaseComponentQuery builder.
@@ -3942,6 +3998,24 @@ func (i *ReleaseComponentWhereInput) P() (predicate.ReleaseComponent, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, releasecomponent.HasVulnerabilitiesWith(with...))
+	}
+	if i.HasLicenses != nil {
+		p := releasecomponent.HasLicenses()
+		if !*i.HasLicenses {
+			p = releasecomponent.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasLicensesWith) > 0 {
+		with := make([]predicate.ReleaseLicense, 0, len(i.HasLicensesWith))
+		for _, w := range i.HasLicensesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, err
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, releasecomponent.HasLicensesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

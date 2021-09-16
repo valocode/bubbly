@@ -50,7 +50,7 @@ func (CodeScan) Edges() []ent.Edge {
 		// Different results from the scan
 		edge.From("issues", CodeIssue.Type).Ref("scan"),
 		edge.From("vulnerabilities", ReleaseVulnerability.Type).Ref("scan"),
-		// edge.From("licenses", LicenseUse.Type).Ref("scans"),
+		edge.From("licenses", ReleaseLicense.Type).Ref("scans"),
 		edge.From("components", ReleaseComponent.Type).Ref("scans"),
 	}
 }

@@ -22,15 +22,23 @@ type LicenseCreate struct {
 	hooks    []Hook
 }
 
-// SetSpdxID sets the "spdx_id" field.
-func (lc *LicenseCreate) SetSpdxID(s string) *LicenseCreate {
-	lc.mutation.SetSpdxID(s)
+// SetLicenseID sets the "license_id" field.
+func (lc *LicenseCreate) SetLicenseID(s string) *LicenseCreate {
+	lc.mutation.SetLicenseID(s)
 	return lc
 }
 
 // SetName sets the "name" field.
 func (lc *LicenseCreate) SetName(s string) *LicenseCreate {
 	lc.mutation.SetName(s)
+	return lc
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (lc *LicenseCreate) SetNillableName(s *string) *LicenseCreate {
+	if s != nil {
+		lc.SetName(*s)
+	}
 	return lc
 }
 
@@ -196,20 +204,12 @@ func (lc *LicenseCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (lc *LicenseCreate) check() error {
-	if _, ok := lc.mutation.SpdxID(); !ok {
-		return &ValidationError{Name: "spdx_id", err: errors.New(`ent: missing required field "spdx_id"`)}
+	if _, ok := lc.mutation.LicenseID(); !ok {
+		return &ValidationError{Name: "license_id", err: errors.New(`ent: missing required field "license_id"`)}
 	}
-	if v, ok := lc.mutation.SpdxID(); ok {
-		if err := license.SpdxIDValidator(v); err != nil {
-			return &ValidationError{Name: "spdx_id", err: fmt.Errorf(`ent: validator failed for field "spdx_id": %w`, err)}
-		}
-	}
-	if _, ok := lc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
-	}
-	if v, ok := lc.mutation.Name(); ok {
-		if err := license.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
+	if v, ok := lc.mutation.LicenseID(); ok {
+		if err := license.LicenseIDValidator(v); err != nil {
+			return &ValidationError{Name: "license_id", err: fmt.Errorf(`ent: validator failed for field "license_id": %w`, err)}
 		}
 	}
 	if _, ok := lc.mutation.IsOsiApproved(); !ok {
@@ -245,13 +245,13 @@ func (lc *LicenseCreate) createSpec() (*License, *sqlgraph.CreateSpec) {
 			},
 		}
 	)
-	if value, ok := lc.mutation.SpdxID(); ok {
+	if value, ok := lc.mutation.LicenseID(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: license.FieldSpdxID,
+			Column: license.FieldLicenseID,
 		})
-		_node.SpdxID = value
+		_node.LicenseID = value
 	}
 	if value, ok := lc.mutation.Name(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{

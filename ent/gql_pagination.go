@@ -2519,13 +2519,13 @@ func (l *LicenseQuery) Paginate(
 }
 
 var (
-	// LicenseOrderFieldSpdxID orders License by spdx_id.
-	LicenseOrderFieldSpdxID = &LicenseOrderField{
-		field: license.FieldSpdxID,
+	// LicenseOrderFieldLicenseID orders License by license_id.
+	LicenseOrderFieldLicenseID = &LicenseOrderField{
+		field: license.FieldLicenseID,
 		toCursor: func(l *License) Cursor {
 			return Cursor{
 				ID:    l.ID,
-				Value: l.SpdxID,
+				Value: l.LicenseID,
 			}
 		},
 	}
@@ -2545,8 +2545,8 @@ var (
 func (f LicenseOrderField) String() string {
 	var str string
 	switch f.field {
-	case license.FieldSpdxID:
-		str = "spdx_id"
+	case license.FieldLicenseID:
+		str = "license_id"
 	case license.FieldName:
 		str = "name"
 	}
@@ -2565,8 +2565,8 @@ func (f *LicenseOrderField) UnmarshalGQL(v interface{}) error {
 		return fmt.Errorf("LicenseOrderField %T must be a string", v)
 	}
 	switch str {
-	case "spdx_id":
-		*f = *LicenseOrderFieldSpdxID
+	case "license_id":
+		*f = *LicenseOrderFieldLicenseID
 	case "name":
 		*f = *LicenseOrderFieldName
 	default:

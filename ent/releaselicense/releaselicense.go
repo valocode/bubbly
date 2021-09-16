@@ -38,13 +38,11 @@ const (
 	ReleaseInverseTable = "release"
 	// ReleaseColumn is the table column denoting the release relation/edge.
 	ReleaseColumn = "release_license_release"
-	// ScansTable is the table that holds the scans relation/edge.
-	ScansTable = "code_scan"
+	// ScansTable is the table that holds the scans relation/edge. The primary key declared below.
+	ScansTable = "release_license_scans"
 	// ScansInverseTable is the table name for the CodeScan entity.
 	// It exists in this package in order to avoid circular dependency with the "codescan" package.
 	ScansInverseTable = "code_scan"
-	// ScansColumn is the table column denoting the scans relation/edge.
-	ScansColumn = "release_license_scans"
 )
 
 // Columns holds all SQL columns for releaselicense fields.
@@ -59,6 +57,12 @@ var ForeignKeys = []string{
 	"release_license_component",
 	"release_license_release",
 }
+
+var (
+	// ScansPrimaryKey and ScansColumn2 are the table columns denoting the
+	// primary key for the scans relation (M2M).
+	ScansPrimaryKey = []string{"release_license_id", "code_scan_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

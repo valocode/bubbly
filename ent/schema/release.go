@@ -57,7 +57,7 @@ func (Release) Edges() []ent.Edge {
 		edge.From("artifacts", Artifact.Type).Ref("release"),
 		edge.From("components", ReleaseComponent.Type).Ref("release"),
 		edge.From("vulnerabilities", ReleaseVulnerability.Type).Ref("release"),
-		// edge.From("licenses", LicenseUse.Type).Ref("release"),
+		edge.From("licenses", ReleaseLicense.Type).Ref("release"),
 		edge.From("code_scans", CodeScan.Type).Ref("release"),
 		edge.From("test_runs", TestRun.Type).Ref("release"),
 

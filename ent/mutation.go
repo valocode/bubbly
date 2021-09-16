@@ -1815,6 +1815,9 @@ type CodeScanMutation struct {
 	vulnerabilities        map[int]struct{}
 	removedvulnerabilities map[int]struct{}
 	clearedvulnerabilities bool
+	licenses               map[int]struct{}
+	removedlicenses        map[int]struct{}
+	clearedlicenses        bool
 	components             map[int]struct{}
 	removedcomponents      map[int]struct{}
 	clearedcomponents      bool
@@ -2209,6 +2212,60 @@ func (m *CodeScanMutation) ResetVulnerabilities() {
 	m.removedvulnerabilities = nil
 }
 
+// AddLicenseIDs adds the "licenses" edge to the ReleaseLicense entity by ids.
+func (m *CodeScanMutation) AddLicenseIDs(ids ...int) {
+	if m.licenses == nil {
+		m.licenses = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.licenses[ids[i]] = struct{}{}
+	}
+}
+
+// ClearLicenses clears the "licenses" edge to the ReleaseLicense entity.
+func (m *CodeScanMutation) ClearLicenses() {
+	m.clearedlicenses = true
+}
+
+// LicensesCleared reports if the "licenses" edge to the ReleaseLicense entity was cleared.
+func (m *CodeScanMutation) LicensesCleared() bool {
+	return m.clearedlicenses
+}
+
+// RemoveLicenseIDs removes the "licenses" edge to the ReleaseLicense entity by IDs.
+func (m *CodeScanMutation) RemoveLicenseIDs(ids ...int) {
+	if m.removedlicenses == nil {
+		m.removedlicenses = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.licenses, ids[i])
+		m.removedlicenses[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedLicenses returns the removed IDs of the "licenses" edge to the ReleaseLicense entity.
+func (m *CodeScanMutation) RemovedLicensesIDs() (ids []int) {
+	for id := range m.removedlicenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// LicensesIDs returns the "licenses" edge IDs in the mutation.
+func (m *CodeScanMutation) LicensesIDs() (ids []int) {
+	for id := range m.licenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetLicenses resets all changes to the "licenses" edge.
+func (m *CodeScanMutation) ResetLicenses() {
+	m.licenses = nil
+	m.clearedlicenses = false
+	m.removedlicenses = nil
+}
+
 // AddComponentIDs adds the "components" edge to the ReleaseComponent entity by ids.
 func (m *CodeScanMutation) AddComponentIDs(ids ...int) {
 	if m.components == nil {
@@ -2424,7 +2481,7 @@ func (m *CodeScanMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CodeScanMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.release != nil {
 		edges = append(edges, codescan.EdgeRelease)
 	}
@@ -2436,6 +2493,9 @@ func (m *CodeScanMutation) AddedEdges() []string {
 	}
 	if m.vulnerabilities != nil {
 		edges = append(edges, codescan.EdgeVulnerabilities)
+	}
+	if m.licenses != nil {
+		edges = append(edges, codescan.EdgeLicenses)
 	}
 	if m.components != nil {
 		edges = append(edges, codescan.EdgeComponents)
@@ -2467,6 +2527,12 @@ func (m *CodeScanMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case codescan.EdgeLicenses:
+		ids := make([]ent.Value, 0, len(m.licenses))
+		for id := range m.licenses {
+			ids = append(ids, id)
+		}
+		return ids
 	case codescan.EdgeComponents:
 		ids := make([]ent.Value, 0, len(m.components))
 		for id := range m.components {
@@ -2479,12 +2545,15 @@ func (m *CodeScanMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CodeScanMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedissues != nil {
 		edges = append(edges, codescan.EdgeIssues)
 	}
 	if m.removedvulnerabilities != nil {
 		edges = append(edges, codescan.EdgeVulnerabilities)
+	}
+	if m.removedlicenses != nil {
+		edges = append(edges, codescan.EdgeLicenses)
 	}
 	if m.removedcomponents != nil {
 		edges = append(edges, codescan.EdgeComponents)
@@ -2508,6 +2577,12 @@ func (m *CodeScanMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case codescan.EdgeLicenses:
+		ids := make([]ent.Value, 0, len(m.removedlicenses))
+		for id := range m.removedlicenses {
+			ids = append(ids, id)
+		}
+		return ids
 	case codescan.EdgeComponents:
 		ids := make([]ent.Value, 0, len(m.removedcomponents))
 		for id := range m.removedcomponents {
@@ -2520,7 +2595,7 @@ func (m *CodeScanMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CodeScanMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedrelease {
 		edges = append(edges, codescan.EdgeRelease)
 	}
@@ -2532,6 +2607,9 @@ func (m *CodeScanMutation) ClearedEdges() []string {
 	}
 	if m.clearedvulnerabilities {
 		edges = append(edges, codescan.EdgeVulnerabilities)
+	}
+	if m.clearedlicenses {
+		edges = append(edges, codescan.EdgeLicenses)
 	}
 	if m.clearedcomponents {
 		edges = append(edges, codescan.EdgeComponents)
@@ -2551,6 +2629,8 @@ func (m *CodeScanMutation) EdgeCleared(name string) bool {
 		return m.clearedissues
 	case codescan.EdgeVulnerabilities:
 		return m.clearedvulnerabilities
+	case codescan.EdgeLicenses:
+		return m.clearedlicenses
 	case codescan.EdgeComponents:
 		return m.clearedcomponents
 	}
@@ -2586,6 +2666,9 @@ func (m *CodeScanMutation) ResetEdge(name string) error {
 		return nil
 	case codescan.EdgeVulnerabilities:
 		m.ResetVulnerabilities()
+		return nil
+	case codescan.EdgeLicenses:
+		m.ResetLicenses()
 		return nil
 	case codescan.EdgeComponents:
 		m.ResetComponents()
@@ -4731,7 +4814,7 @@ type LicenseMutation struct {
 	op                Op
 	typ               string
 	id                *int
-	spdx_id           *string
+	license_id        *string
 	name              *string
 	reference         *string
 	details_url       *string
@@ -4829,40 +4912,40 @@ func (m *LicenseMutation) ID() (id int, exists bool) {
 	return *m.id, true
 }
 
-// SetSpdxID sets the "spdx_id" field.
-func (m *LicenseMutation) SetSpdxID(s string) {
-	m.spdx_id = &s
+// SetLicenseID sets the "license_id" field.
+func (m *LicenseMutation) SetLicenseID(s string) {
+	m.license_id = &s
 }
 
-// SpdxID returns the value of the "spdx_id" field in the mutation.
-func (m *LicenseMutation) SpdxID() (r string, exists bool) {
-	v := m.spdx_id
+// LicenseID returns the value of the "license_id" field in the mutation.
+func (m *LicenseMutation) LicenseID() (r string, exists bool) {
+	v := m.license_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldSpdxID returns the old "spdx_id" field's value of the License entity.
+// OldLicenseID returns the old "license_id" field's value of the License entity.
 // If the License object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *LicenseMutation) OldSpdxID(ctx context.Context) (v string, err error) {
+func (m *LicenseMutation) OldLicenseID(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldSpdxID is only allowed on UpdateOne operations")
+		return v, fmt.Errorf("OldLicenseID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldSpdxID requires an ID field in the mutation")
+		return v, fmt.Errorf("OldLicenseID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSpdxID: %w", err)
+		return v, fmt.Errorf("querying old value for OldLicenseID: %w", err)
 	}
-	return oldValue.SpdxID, nil
+	return oldValue.LicenseID, nil
 }
 
-// ResetSpdxID resets all changes to the "spdx_id" field.
-func (m *LicenseMutation) ResetSpdxID() {
-	m.spdx_id = nil
+// ResetLicenseID resets all changes to the "license_id" field.
+func (m *LicenseMutation) ResetLicenseID() {
+	m.license_id = nil
 }
 
 // SetName sets the "name" field.
@@ -4896,9 +4979,22 @@ func (m *LicenseMutation) OldName(ctx context.Context) (v string, err error) {
 	return oldValue.Name, nil
 }
 
+// ClearName clears the value of the "name" field.
+func (m *LicenseMutation) ClearName() {
+	m.name = nil
+	m.clearedFields[license.FieldName] = struct{}{}
+}
+
+// NameCleared returns if the "name" field was cleared in this mutation.
+func (m *LicenseMutation) NameCleared() bool {
+	_, ok := m.clearedFields[license.FieldName]
+	return ok
+}
+
 // ResetName resets all changes to the "name" field.
 func (m *LicenseMutation) ResetName() {
 	m.name = nil
+	delete(m.clearedFields, license.FieldName)
 }
 
 // SetReference sets the "reference" field.
@@ -5202,8 +5298,8 @@ func (m *LicenseMutation) Type() string {
 // AddedFields().
 func (m *LicenseMutation) Fields() []string {
 	fields := make([]string, 0, 5)
-	if m.spdx_id != nil {
-		fields = append(fields, license.FieldSpdxID)
+	if m.license_id != nil {
+		fields = append(fields, license.FieldLicenseID)
 	}
 	if m.name != nil {
 		fields = append(fields, license.FieldName)
@@ -5225,8 +5321,8 @@ func (m *LicenseMutation) Fields() []string {
 // schema.
 func (m *LicenseMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case license.FieldSpdxID:
-		return m.SpdxID()
+	case license.FieldLicenseID:
+		return m.LicenseID()
 	case license.FieldName:
 		return m.Name()
 	case license.FieldReference:
@@ -5244,8 +5340,8 @@ func (m *LicenseMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *LicenseMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case license.FieldSpdxID:
-		return m.OldSpdxID(ctx)
+	case license.FieldLicenseID:
+		return m.OldLicenseID(ctx)
 	case license.FieldName:
 		return m.OldName(ctx)
 	case license.FieldReference:
@@ -5263,12 +5359,12 @@ func (m *LicenseMutation) OldField(ctx context.Context, name string) (ent.Value,
 // type.
 func (m *LicenseMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case license.FieldSpdxID:
+	case license.FieldLicenseID:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetSpdxID(v)
+		m.SetLicenseID(v)
 		return nil
 	case license.FieldName:
 		v, ok := value.(string)
@@ -5328,6 +5424,9 @@ func (m *LicenseMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *LicenseMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(license.FieldName) {
+		fields = append(fields, license.FieldName)
+	}
 	if m.FieldCleared(license.FieldReference) {
 		fields = append(fields, license.FieldReference)
 	}
@@ -5348,6 +5447,9 @@ func (m *LicenseMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *LicenseMutation) ClearField(name string) error {
 	switch name {
+	case license.FieldName:
+		m.ClearName()
+		return nil
 	case license.FieldReference:
 		m.ClearReference()
 		return nil
@@ -5362,8 +5464,8 @@ func (m *LicenseMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *LicenseMutation) ResetField(name string) error {
 	switch name {
-	case license.FieldSpdxID:
-		m.ResetSpdxID()
+	case license.FieldLicenseID:
+		m.ResetLicenseID()
 		return nil
 	case license.FieldName:
 		m.ResetName()
@@ -6622,6 +6724,9 @@ type ReleaseMutation struct {
 	vulnerabilities              map[int]struct{}
 	removedvulnerabilities       map[int]struct{}
 	clearedvulnerabilities       bool
+	licenses                     map[int]struct{}
+	removedlicenses              map[int]struct{}
+	clearedlicenses              bool
 	code_scans                   map[int]struct{}
 	removedcode_scans            map[int]struct{}
 	clearedcode_scans            bool
@@ -7279,6 +7384,60 @@ func (m *ReleaseMutation) ResetVulnerabilities() {
 	m.removedvulnerabilities = nil
 }
 
+// AddLicenseIDs adds the "licenses" edge to the ReleaseLicense entity by ids.
+func (m *ReleaseMutation) AddLicenseIDs(ids ...int) {
+	if m.licenses == nil {
+		m.licenses = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.licenses[ids[i]] = struct{}{}
+	}
+}
+
+// ClearLicenses clears the "licenses" edge to the ReleaseLicense entity.
+func (m *ReleaseMutation) ClearLicenses() {
+	m.clearedlicenses = true
+}
+
+// LicensesCleared reports if the "licenses" edge to the ReleaseLicense entity was cleared.
+func (m *ReleaseMutation) LicensesCleared() bool {
+	return m.clearedlicenses
+}
+
+// RemoveLicenseIDs removes the "licenses" edge to the ReleaseLicense entity by IDs.
+func (m *ReleaseMutation) RemoveLicenseIDs(ids ...int) {
+	if m.removedlicenses == nil {
+		m.removedlicenses = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.licenses, ids[i])
+		m.removedlicenses[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedLicenses returns the removed IDs of the "licenses" edge to the ReleaseLicense entity.
+func (m *ReleaseMutation) RemovedLicensesIDs() (ids []int) {
+	for id := range m.removedlicenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// LicensesIDs returns the "licenses" edge IDs in the mutation.
+func (m *ReleaseMutation) LicensesIDs() (ids []int) {
+	for id := range m.licenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetLicenses resets all changes to the "licenses" edge.
+func (m *ReleaseMutation) ResetLicenses() {
+	m.licenses = nil
+	m.clearedlicenses = false
+	m.removedlicenses = nil
+}
+
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by ids.
 func (m *ReleaseMutation) AddCodeScanIDs(ids ...int) {
 	if m.code_scans == nil {
@@ -7593,7 +7752,7 @@ func (m *ReleaseMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ReleaseMutation) AddedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.subreleases != nil {
 		edges = append(edges, release.EdgeSubreleases)
 	}
@@ -7620,6 +7779,9 @@ func (m *ReleaseMutation) AddedEdges() []string {
 	}
 	if m.vulnerabilities != nil {
 		edges = append(edges, release.EdgeVulnerabilities)
+	}
+	if m.licenses != nil {
+		edges = append(edges, release.EdgeLicenses)
 	}
 	if m.code_scans != nil {
 		edges = append(edges, release.EdgeCodeScans)
@@ -7687,6 +7849,12 @@ func (m *ReleaseMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case release.EdgeLicenses:
+		ids := make([]ent.Value, 0, len(m.licenses))
+		for id := range m.licenses {
+			ids = append(ids, id)
+		}
+		return ids
 	case release.EdgeCodeScans:
 		ids := make([]ent.Value, 0, len(m.code_scans))
 		for id := range m.code_scans {
@@ -7711,7 +7879,7 @@ func (m *ReleaseMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReleaseMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.removedsubreleases != nil {
 		edges = append(edges, release.EdgeSubreleases)
 	}
@@ -7732,6 +7900,9 @@ func (m *ReleaseMutation) RemovedEdges() []string {
 	}
 	if m.removedvulnerabilities != nil {
 		edges = append(edges, release.EdgeVulnerabilities)
+	}
+	if m.removedlicenses != nil {
+		edges = append(edges, release.EdgeLicenses)
 	}
 	if m.removedcode_scans != nil {
 		edges = append(edges, release.EdgeCodeScans)
@@ -7791,6 +7962,12 @@ func (m *ReleaseMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case release.EdgeLicenses:
+		ids := make([]ent.Value, 0, len(m.removedlicenses))
+		for id := range m.removedlicenses {
+			ids = append(ids, id)
+		}
+		return ids
 	case release.EdgeCodeScans:
 		ids := make([]ent.Value, 0, len(m.removedcode_scans))
 		for id := range m.removedcode_scans {
@@ -7815,7 +7992,7 @@ func (m *ReleaseMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ReleaseMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.clearedsubreleases {
 		edges = append(edges, release.EdgeSubreleases)
 	}
@@ -7842,6 +8019,9 @@ func (m *ReleaseMutation) ClearedEdges() []string {
 	}
 	if m.clearedvulnerabilities {
 		edges = append(edges, release.EdgeVulnerabilities)
+	}
+	if m.clearedlicenses {
+		edges = append(edges, release.EdgeLicenses)
 	}
 	if m.clearedcode_scans {
 		edges = append(edges, release.EdgeCodeScans)
@@ -7877,6 +8057,8 @@ func (m *ReleaseMutation) EdgeCleared(name string) bool {
 		return m.clearedcomponents
 	case release.EdgeVulnerabilities:
 		return m.clearedvulnerabilities
+	case release.EdgeLicenses:
+		return m.clearedlicenses
 	case release.EdgeCodeScans:
 		return m.clearedcode_scans
 	case release.EdgeTestRuns:
@@ -7932,6 +8114,9 @@ func (m *ReleaseMutation) ResetEdge(name string) error {
 	case release.EdgeVulnerabilities:
 		m.ResetVulnerabilities()
 		return nil
+	case release.EdgeLicenses:
+		m.ResetLicenses()
+		return nil
 	case release.EdgeCodeScans:
 		m.ResetCodeScans()
 		return nil
@@ -7963,6 +8148,9 @@ type ReleaseComponentMutation struct {
 	vulnerabilities        map[int]struct{}
 	removedvulnerabilities map[int]struct{}
 	clearedvulnerabilities bool
+	licenses               map[int]struct{}
+	removedlicenses        map[int]struct{}
+	clearedlicenses        bool
 	done                   bool
 	oldValue               func(context.Context) (*ReleaseComponent, error)
 	predicates             []predicate.ReleaseComponent
@@ -8269,6 +8457,60 @@ func (m *ReleaseComponentMutation) ResetVulnerabilities() {
 	m.removedvulnerabilities = nil
 }
 
+// AddLicenseIDs adds the "licenses" edge to the ReleaseLicense entity by ids.
+func (m *ReleaseComponentMutation) AddLicenseIDs(ids ...int) {
+	if m.licenses == nil {
+		m.licenses = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.licenses[ids[i]] = struct{}{}
+	}
+}
+
+// ClearLicenses clears the "licenses" edge to the ReleaseLicense entity.
+func (m *ReleaseComponentMutation) ClearLicenses() {
+	m.clearedlicenses = true
+}
+
+// LicensesCleared reports if the "licenses" edge to the ReleaseLicense entity was cleared.
+func (m *ReleaseComponentMutation) LicensesCleared() bool {
+	return m.clearedlicenses
+}
+
+// RemoveLicenseIDs removes the "licenses" edge to the ReleaseLicense entity by IDs.
+func (m *ReleaseComponentMutation) RemoveLicenseIDs(ids ...int) {
+	if m.removedlicenses == nil {
+		m.removedlicenses = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.licenses, ids[i])
+		m.removedlicenses[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedLicenses returns the removed IDs of the "licenses" edge to the ReleaseLicense entity.
+func (m *ReleaseComponentMutation) RemovedLicensesIDs() (ids []int) {
+	for id := range m.removedlicenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// LicensesIDs returns the "licenses" edge IDs in the mutation.
+func (m *ReleaseComponentMutation) LicensesIDs() (ids []int) {
+	for id := range m.licenses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetLicenses resets all changes to the "licenses" edge.
+func (m *ReleaseComponentMutation) ResetLicenses() {
+	m.licenses = nil
+	m.clearedlicenses = false
+	m.removedlicenses = nil
+}
+
 // Where appends a list predicates to the ReleaseComponentMutation builder.
 func (m *ReleaseComponentMutation) Where(ps ...predicate.ReleaseComponent) {
 	m.predicates = append(m.predicates, ps...)
@@ -8387,7 +8629,7 @@ func (m *ReleaseComponentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ReleaseComponentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.release != nil {
 		edges = append(edges, releasecomponent.EdgeRelease)
 	}
@@ -8399,6 +8641,9 @@ func (m *ReleaseComponentMutation) AddedEdges() []string {
 	}
 	if m.vulnerabilities != nil {
 		edges = append(edges, releasecomponent.EdgeVulnerabilities)
+	}
+	if m.licenses != nil {
+		edges = append(edges, releasecomponent.EdgeLicenses)
 	}
 	return edges
 }
@@ -8427,18 +8672,27 @@ func (m *ReleaseComponentMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case releasecomponent.EdgeLicenses:
+		ids := make([]ent.Value, 0, len(m.licenses))
+		for id := range m.licenses {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReleaseComponentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.removedscans != nil {
 		edges = append(edges, releasecomponent.EdgeScans)
 	}
 	if m.removedvulnerabilities != nil {
 		edges = append(edges, releasecomponent.EdgeVulnerabilities)
+	}
+	if m.removedlicenses != nil {
+		edges = append(edges, releasecomponent.EdgeLicenses)
 	}
 	return edges
 }
@@ -8459,13 +8713,19 @@ func (m *ReleaseComponentMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case releasecomponent.EdgeLicenses:
+		ids := make([]ent.Value, 0, len(m.removedlicenses))
+		for id := range m.removedlicenses {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ReleaseComponentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedrelease {
 		edges = append(edges, releasecomponent.EdgeRelease)
 	}
@@ -8477,6 +8737,9 @@ func (m *ReleaseComponentMutation) ClearedEdges() []string {
 	}
 	if m.clearedvulnerabilities {
 		edges = append(edges, releasecomponent.EdgeVulnerabilities)
+	}
+	if m.clearedlicenses {
+		edges = append(edges, releasecomponent.EdgeLicenses)
 	}
 	return edges
 }
@@ -8493,6 +8756,8 @@ func (m *ReleaseComponentMutation) EdgeCleared(name string) bool {
 		return m.clearedcomponent
 	case releasecomponent.EdgeVulnerabilities:
 		return m.clearedvulnerabilities
+	case releasecomponent.EdgeLicenses:
+		return m.clearedlicenses
 	}
 	return false
 }
@@ -8526,6 +8791,9 @@ func (m *ReleaseComponentMutation) ResetEdge(name string) error {
 		return nil
 	case releasecomponent.EdgeVulnerabilities:
 		m.ResetVulnerabilities()
+		return nil
+	case releasecomponent.EdgeLicenses:
+		m.ResetLicenses()
 		return nil
 	}
 	return fmt.Errorf("unknown ReleaseComponent edge %s", name)

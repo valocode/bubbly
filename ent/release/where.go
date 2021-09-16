@@ -627,6 +627,34 @@ func HasVulnerabilitiesWith(preds ...predicate.ReleaseVulnerability) predicate.R
 	})
 }
 
+// HasLicenses applies the HasEdge predicate on the "licenses" edge.
+func HasLicenses() predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(LicensesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, LicensesTable, LicensesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasLicensesWith applies the HasEdge predicate on the "licenses" edge with a given conditions (other predicates).
+func HasLicensesWith(preds ...predicate.ReleaseLicense) predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(LicensesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, LicensesTable, LicensesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasCodeScans applies the HasEdge predicate on the "code_scans" edge.
 func HasCodeScans() predicate.Release {
 	return predicate.Release(func(s *sql.Selector) {

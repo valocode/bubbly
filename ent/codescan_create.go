@@ -16,6 +16,7 @@ import (
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	schema "github.com/valocode/bubbly/ent/schema/types"
 )
@@ -111,6 +112,21 @@ func (csc *CodeScanCreate) AddVulnerabilities(r ...*ReleaseVulnerability) *CodeS
 		ids[i] = r[i].ID
 	}
 	return csc.AddVulnerabilityIDs(ids...)
+}
+
+// AddLicenseIDs adds the "licenses" edge to the ReleaseLicense entity by IDs.
+func (csc *CodeScanCreate) AddLicenseIDs(ids ...int) *CodeScanCreate {
+	csc.mutation.AddLicenseIDs(ids...)
+	return csc
+}
+
+// AddLicenses adds the "licenses" edges to the ReleaseLicense entity.
+func (csc *CodeScanCreate) AddLicenses(r ...*ReleaseLicense) *CodeScanCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return csc.AddLicenseIDs(ids...)
 }
 
 // AddComponentIDs adds the "components" edge to the ReleaseComponent entity by IDs.
@@ -348,6 +364,25 @@ func (csc *CodeScanCreate) createSpec() (*CodeScan, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: releasevulnerability.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := csc.mutation.LicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   codescan.LicensesTable,
+			Columns: codescan.LicensesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaselicense.FieldID,
 				},
 			},
 		}

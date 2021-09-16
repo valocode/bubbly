@@ -129,6 +129,7 @@ export interface CodeScan {
 	entry?: ReleaseEntry;
 	issues?: CodeIssue[];
 	vulnerabilities?: ReleaseVulnerability[];
+	licenses?: ReleaseLicense[];
 	components?: ReleaseComponent[];
 }
 
@@ -256,7 +257,7 @@ export interface License_Json {
 
 export interface License {
 	id?: number;
-	spdx_id?: string;
+	license_id?: string;
 	name?: string;
 	reference?: string;
 	details_url?: string;
@@ -359,6 +360,7 @@ export interface Release {
 	artifacts?: Artifact[];
 	components?: ReleaseComponent[];
 	vulnerabilities?: ReleaseVulnerability[];
+	licenses?: ReleaseLicense[];
 	code_scans?: CodeScan[];
 	test_runs?: TestRun[];
 	vulnerability_reviews?: VulnerabilityReview[];
@@ -398,6 +400,7 @@ export interface ReleaseComponent {
 	scans?: CodeScan[];
 	component?: Component;
 	vulnerabilities?: ReleaseVulnerability[];
+	licenses?: ReleaseLicense[];
 }
 
 export interface ReleaseComponent_Relay {
