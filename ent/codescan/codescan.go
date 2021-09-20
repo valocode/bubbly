@@ -27,6 +27,8 @@ const (
 	EdgeIssues = "issues"
 	// EdgeVulnerabilities holds the string denoting the vulnerabilities edge name in mutations.
 	EdgeVulnerabilities = "vulnerabilities"
+	// EdgeLicenses holds the string denoting the licenses edge name in mutations.
+	EdgeLicenses = "licenses"
 	// EdgeComponents holds the string denoting the components edge name in mutations.
 	EdgeComponents = "components"
 	// Table holds the table name of the codescan in the database.
@@ -59,6 +61,11 @@ const (
 	VulnerabilitiesInverseTable = "release_vulnerability"
 	// VulnerabilitiesColumn is the table column denoting the vulnerabilities relation/edge.
 	VulnerabilitiesColumn = "release_vulnerability_scan"
+	// LicensesTable is the table that holds the licenses relation/edge. The primary key declared below.
+	LicensesTable = "release_license_scans"
+	// LicensesInverseTable is the table name for the ReleaseLicense entity.
+	// It exists in this package in order to avoid circular dependency with the "releaselicense" package.
+	LicensesInverseTable = "release_license"
 	// ComponentsTable is the table that holds the components relation/edge. The primary key declared below.
 	ComponentsTable = "release_component_scans"
 	// ComponentsInverseTable is the table name for the ReleaseComponent entity.
@@ -79,10 +86,12 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"code_scan_release",
 	"release_entry_code_scan",
-	"release_license_scans",
 }
 
 var (
+	// LicensesPrimaryKey and LicensesColumn2 are the table columns denoting the
+	// primary key for the licenses relation (M2M).
+	LicensesPrimaryKey = []string{"release_license_id", "code_scan_id"}
 	// ComponentsPrimaryKey and ComponentsColumn2 are the table columns denoting the
 	// primary key for the components relation (M2M).
 	ComponentsPrimaryKey = []string{"release_component_id", "code_scan_id"}

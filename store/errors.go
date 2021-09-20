@@ -65,7 +65,10 @@ type ConflictError struct {
 
 // Error implements the error interface.
 func (e *ConflictError) Error() string {
-	return "conflict on resource " + e.Msg + ": " + e.Err.Error()
+	if e.Err == nil {
+		return e.Msg
+	}
+	return e.Msg + ": " + e.Err.Error()
 }
 
 // IsConflictError returns a boolean indicating whether the error is a conflict error.

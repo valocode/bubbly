@@ -121,15 +121,16 @@ export interface CodeScan_Json {
 }
 
 export interface CodeScan {
-	id?: number
-	tool?: string
-	time?: Date
-	metadata?: UNKNOWN_TYPE_schema.Metadata
-	release?: Release
-	entry?: ReleaseEntry
-	issues?: CodeIssue[]
-	vulnerabilities?: ReleaseVulnerability[]
-	components?: ReleaseComponent[]
+	id?: number;
+	tool?: string;
+	time?: Date;
+	metadata?: UNKNOWN_TYPE_schema.Metadata;
+	release?: Release;
+	entry?: ReleaseEntry;
+	issues?: CodeIssue[];
+	vulnerabilities?: ReleaseVulnerability[];
+	licenses?: ReleaseLicense[];
+	components?: ReleaseComponent[];
 }
 
 export interface CodeScan_Relay {
@@ -189,13 +190,14 @@ export interface Event_Json {
 }
 
 export interface Event {
-	id?: number
-	message?: string
-	type?: EventType
-	time?: Date
-	release?: Release
-	repo?: Repo
-	project?: Project
+	id?: number;
+	message?: string;
+	status?: EventStatus;
+	type?: EventType;
+	time?: Date;
+	release?: Release;
+	repo?: Repo;
+	project?: Project;
 }
 
 export interface Event_Relay {
@@ -212,8 +214,14 @@ export interface Event_Edge {
 	node?: Event
 }
 
+export enum EventStatus {
+	ok = "ok",
+	error = "error",
+}
+
 export enum EventType {
-	evaluate_release = 'evaluate_release',
+	evaluate_release = "evaluate_release",
+	monitor = "monitor",
 }
 
 // #######################################
@@ -255,15 +263,13 @@ export interface License_Json {
 }
 
 export interface License {
-	id?: number
-	spdx_id?: string
-	name?: string
-	reference?: string
-	details_url?: string
-	is_osi_approved?: boolean
-	owner?: Organization
-	components?: Component[]
-	instances?: ReleaseLicense[]
+	id?: number;
+	license_id?: string;
+	name?: string;
+	owner?: Organization;
+	spdx?: SPDXLicense;
+	components?: Component[];
+	instances?: ReleaseLicense[];
 }
 
 export interface License_Relay {
@@ -346,22 +352,22 @@ export interface Release_Json {
 }
 
 export interface Release {
-	id?: number
-	name?: string
-	version?: string
-	status?: ReleaseStatus
-	subreleases?: Release[]
-	dependencies?: Release[]
-	commit?: GitCommit
-	head_of?: Repo
-	log?: ReleaseEntry[]
-	violations?: ReleasePolicyViolation[]
-	artifacts?: Artifact[]
-	components?: ReleaseComponent[]
-	vulnerabilities?: ReleaseVulnerability[]
-	code_scans?: CodeScan[]
-	test_runs?: TestRun[]
-	vulnerability_reviews?: VulnerabilityReview[]
+	id?: number;
+	name?: string;
+	version?: string;
+	subreleases?: Release[];
+	dependencies?: Release[];
+	commit?: GitCommit;
+	head_of?: Repo;
+	log?: ReleaseEntry[];
+	violations?: ReleasePolicyViolation[];
+	artifacts?: Artifact[];
+	components?: ReleaseComponent[];
+	vulnerabilities?: ReleaseVulnerability[];
+	licenses?: ReleaseLicense[];
+	code_scans?: CodeScan[];
+	test_runs?: TestRun[];
+	vulnerability_reviews?: VulnerabilityReview[];
 }
 
 export interface Release_Relay {
@@ -378,12 +384,6 @@ export interface Release_Edge {
 	node?: Release
 }
 
-export enum ReleaseStatus {
-	pending = 'pending',
-	ready = 'ready',
-	blocked = 'blocked',
-}
-
 // #######################################
 // ReleaseComponent
 // #######################################
@@ -392,12 +392,13 @@ export interface ReleaseComponent_Json {
 }
 
 export interface ReleaseComponent {
-	id?: number
-	type?: ReleaseComponentType
-	release?: Release
-	scans?: CodeScan[]
-	component?: Component
-	vulnerabilities?: ReleaseVulnerability[]
+	id?: number;
+	type?: ReleaseComponentType;
+	release?: Release;
+	scans?: CodeScan[];
+	component?: Component;
+	vulnerabilities?: ReleaseVulnerability[];
+	licenses?: ReleaseLicense[];
 }
 
 export interface ReleaseComponent_Relay {
@@ -620,6 +621,36 @@ export interface Repo_Conn {
 
 export interface Repo_Edge {
 	node?: Repo
+}
+
+// #######################################
+// SPDXLicense
+// #######################################
+export interface SPDXLicense_Json {
+	spdx_license?: SPDXLicense[];
+}
+
+export interface SPDXLicense {
+	id?: number;
+	license_id?: string;
+	name?: string;
+	reference?: string;
+	details_url?: string;
+	is_osi_approved?: boolean;
+}
+
+export interface SPDXLicense_Relay {
+	spdx_license_connection?: SPDXLicense_Conn;
+}
+
+export interface SPDXLicense_Conn {
+	totalCount?: number;
+	pageInfo?: pageInfo;
+	edges?: SPDXLicense_Edge[];
+}
+
+export interface SPDXLicense_Edge {
+	node?: SPDXLicense;
 }
 
 // #######################################

@@ -16,6 +16,8 @@ const (
 	FieldID = "id"
 	// FieldMessage holds the string denoting the message field in the database.
 	FieldMessage = "message"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
 	// FieldTime holds the string denoting the time field in the database.
@@ -55,6 +57,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldMessage,
+	FieldStatus,
 	FieldType,
 	FieldTime,
 }
@@ -89,12 +92,39 @@ var (
 	DefaultTime func() time.Time
 )
 
+// Status defines the type for the "status" enum field.
+type Status string
+
+// StatusOk is the default value of the Status enum.
+const DefaultStatus = StatusOk
+
+// Status values.
+const (
+	StatusOk    Status = "ok"
+	StatusError Status = "error"
+)
+
+func (s Status) String() string {
+	return string(s)
+}
+
+// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
+func StatusValidator(s Status) error {
+	switch s {
+	case StatusOk, StatusError:
+		return nil
+	default:
+		return fmt.Errorf("event: invalid enum value for status field: %q", s)
+	}
+}
+
 // Type defines the type for the "type" enum field.
 type Type string
 
 // Type values.
 const (
 	TypeEvaluateRelease Type = "evaluate_release"
+	TypeMonitor         Type = "monitor"
 )
 
 func (_type Type) String() string {
@@ -104,11 +134,29 @@ func (_type Type) String() string {
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type Type) error {
 	switch _type {
-	case TypeEvaluateRelease:
+	case TypeEvaluateRelease, TypeMonitor:
 		return nil
 	default:
 		return fmt.Errorf("event: invalid enum value for type field: %q", _type)
 	}
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (s Status) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(s.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (s *Status) UnmarshalGQL(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("enum %T must be a string", val)
+	}
+	*s = Status(str)
+	if err := StatusValidator(*s); err != nil {
+		return fmt.Errorf("%s is not a valid Status", str)
+	}
+	return nil
 }
 
 // MarshalGQL implements graphql.Marshaler interface.

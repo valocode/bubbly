@@ -48,6 +48,8 @@ type Tx struct {
 	ReleaseVulnerability *ReleaseVulnerabilityClient
 	// Repo is the client for interacting with the Repo builders.
 	Repo *RepoClient
+	// SPDXLicense is the client for interacting with the SPDXLicense builders.
+	SPDXLicense *SPDXLicenseClient
 	// TestCase is the client for interacting with the TestCase builders.
 	TestCase *TestCaseClient
 	// TestRun is the client for interacting with the TestRun builders.
@@ -209,6 +211,7 @@ func (tx *Tx) init() {
 	tx.ReleasePolicyViolation = NewReleasePolicyViolationClient(tx.config)
 	tx.ReleaseVulnerability = NewReleaseVulnerabilityClient(tx.config)
 	tx.Repo = NewRepoClient(tx.config)
+	tx.SPDXLicense = NewSPDXLicenseClient(tx.config)
 	tx.TestCase = NewTestCaseClient(tx.config)
 	tx.TestRun = NewTestRunClient(tx.config)
 	tx.Vulnerability = NewVulnerabilityClient(tx.config)

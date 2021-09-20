@@ -66,7 +66,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 
 func printEvents(dbEvents []*ent.Event) {
 	var eventLines []string
-	eventLines = append(eventLines, "Message | Type | Time")
+	eventLines = append(eventLines, "Message | Type | Status | Time")
 	for _, e := range dbEvents {
 		// The message might contain new lines, therefore split by those
 		// and only add other columns on the first index so that formatting is
@@ -74,11 +74,11 @@ func printEvents(dbEvents []*ent.Event) {
 		for idx, msg := range strings.Split(e.Message, "\n") {
 			if idx == 0 {
 				eventLines = append(eventLines, fmt.Sprintf(
-					"%s | %s | %s", msg, e.Type, e.Time,
+					"%s | %s | %s | %s", msg, e.Type, e.Status, e.Time,
 				))
 			} else {
 				eventLines = append(eventLines, fmt.Sprintf(
-					"%s | %s | %s", msg, "", "",
+					"%s | %s | %s | %s", msg, "", "", "",
 				))
 
 			}

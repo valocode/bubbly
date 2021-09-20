@@ -21,8 +21,6 @@ type Release struct {
 	Name string `json:"name,omitempty"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
-	// Status holds the value of the "status" field.
-	Status release.Status `json:"status,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ReleaseQuery when eager-loading is set.
 	Edges              ReleaseEdges `json:"edges"`
@@ -50,6 +48,8 @@ type ReleaseEdges struct {
 	Components []*ReleaseComponent `json:"components,omitempty"`
 	// Vulnerabilities holds the value of the vulnerabilities edge.
 	Vulnerabilities []*ReleaseVulnerability `json:"vulnerabilities,omitempty"`
+	// Licenses holds the value of the licenses edge.
+	Licenses []*ReleaseLicense `json:"licenses,omitempty"`
 	// CodeScans holds the value of the code_scans edge.
 	CodeScans []*CodeScan `json:"code_scans,omitempty"`
 	// TestRuns holds the value of the test_runs edge.
@@ -58,7 +58,7 @@ type ReleaseEdges struct {
 	VulnerabilityReviews []*VulnerabilityReview `json:"vulnerability_reviews,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [12]bool
+	loadedTypes [13]bool
 }
 
 // SubreleasesOrErr returns the Subreleases value or an error if the edge
@@ -152,10 +152,19 @@ func (e ReleaseEdges) VulnerabilitiesOrErr() ([]*ReleaseVulnerability, error) {
 	return nil, &NotLoadedError{edge: "vulnerabilities"}
 }
 
+// LicensesOrErr returns the Licenses value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReleaseEdges) LicensesOrErr() ([]*ReleaseLicense, error) {
+	if e.loadedTypes[9] {
+		return e.Licenses, nil
+	}
+	return nil, &NotLoadedError{edge: "licenses"}
+}
+
 // CodeScansOrErr returns the CodeScans value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) CodeScansOrErr() ([]*CodeScan, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[10] {
 		return e.CodeScans, nil
 	}
 	return nil, &NotLoadedError{edge: "code_scans"}
@@ -164,7 +173,7 @@ func (e ReleaseEdges) CodeScansOrErr() ([]*CodeScan, error) {
 // TestRunsOrErr returns the TestRuns value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) TestRunsOrErr() ([]*TestRun, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[11] {
 		return e.TestRuns, nil
 	}
 	return nil, &NotLoadedError{edge: "test_runs"}
@@ -173,7 +182,7 @@ func (e ReleaseEdges) TestRunsOrErr() ([]*TestRun, error) {
 // VulnerabilityReviewsOrErr returns the VulnerabilityReviews value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleaseEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error) {
-	if e.loadedTypes[11] {
+	if e.loadedTypes[12] {
 		return e.VulnerabilityReviews, nil
 	}
 	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
@@ -186,7 +195,7 @@ func (*Release) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case release.FieldID:
 			values[i] = new(sql.NullInt64)
-		case release.FieldName, release.FieldVersion, release.FieldStatus:
+		case release.FieldName, release.FieldVersion:
 			values[i] = new(sql.NullString)
 		case release.ForeignKeys[0]: // git_commit_release
 			values[i] = new(sql.NullInt64)
@@ -224,12 +233,6 @@ func (r *Release) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field version", values[i])
 			} else if value.Valid {
 				r.Version = value.String
-			}
-		case release.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				r.Status = release.Status(value.String)
 			}
 		case release.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -295,6 +298,11 @@ func (r *Release) QueryVulnerabilities() *ReleaseVulnerabilityQuery {
 	return (&ReleaseClient{config: r.config}).QueryVulnerabilities(r)
 }
 
+// QueryLicenses queries the "licenses" edge of the Release entity.
+func (r *Release) QueryLicenses() *ReleaseLicenseQuery {
+	return (&ReleaseClient{config: r.config}).QueryLicenses(r)
+}
+
 // QueryCodeScans queries the "code_scans" edge of the Release entity.
 func (r *Release) QueryCodeScans() *CodeScanQuery {
 	return (&ReleaseClient{config: r.config}).QueryCodeScans(r)
@@ -337,8 +345,6 @@ func (r *Release) String() string {
 	builder.WriteString(r.Name)
 	builder.WriteString(", version=")
 	builder.WriteString(r.Version)
-	builder.WriteString(", status=")
-	builder.WriteString(fmt.Sprintf("%v", r.Status))
 	builder.WriteByte(')')
 	return builder.String()
 }

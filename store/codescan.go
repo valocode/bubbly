@@ -4,8 +4,10 @@ import (
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/gitcommit"
+	"github.com/valocode/bubbly/ent/license"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
+	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/vulnerability"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
@@ -62,13 +64,12 @@ func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent
 				existingComp *ent.Component
 				err          error
 			)
-			if err := h.validator.Struct(comp); err != nil {
-				return HandleValidatorError(err, "release component create")
-			}
 			existingComp, err = tx.Component.Query().
-				WhereName(comp.Name).
-				WhereVendor(comp.Vendor).
-				WhereVersion(comp.Version).
+				WhereInput(ent.ComponentWhereInput{
+					Name:    comp.Name,
+					Vendor:  comp.Vendor,
+					Version: comp.Version,
+				}).
 				Only(h.ctx)
 			if err != nil {
 				if !ent.IsNotFound(err) {
@@ -110,9 +111,6 @@ func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent
 					existingVuln *ent.Vulnerability
 					err          error
 				)
-				if err := h.validator.Struct(comp); err != nil {
-					return HandleValidatorError(err, "release vulnerability create")
-				}
 				existingVuln, err = tx.Vulnerability.Query().Where(
 					vulnerability.Vid(*vuln.Vid),
 				).Only(h.ctx)
@@ -158,6 +156,52 @@ func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent
 						Save(h.ctx)
 					if err != nil {
 						return HandleEntError(err, "create vulnerability patch")
+					}
+				}
+			}
+			//
+			// Save component licenses
+			//
+			for _, lic := range comp.Licenses {
+				var (
+					existingLic *ent.License
+					err         error
+				)
+				existingLic, err = tx.License.Query().WhereInput(
+					ent.LicenseWhereInput{
+						LicenseID: lic.LicenseID,
+					}).Only(h.ctx)
+				if err != nil {
+					if !ent.IsNotFound(err) {
+						return HandleEntError(err, "query license")
+					}
+					// If not found, create!
+					existingLic, err = tx.License.Create().
+						SetModelCreate(&lic.LicenseModelCreate).
+						SetOwnerID(h.orgID).
+						Save(h.ctx)
+					if err != nil {
+						return HandleEntError(err, "create license")
+					}
+				}
+				// Check if the release license already exists, which is
+				// the combination of component ID and license ID
+				_, err = tx.ReleaseLicense.Query().Where(
+					releaselicense.HasComponentWith(releasecomponent.ID(relComp.ID)),
+					releaselicense.HasLicenseWith(license.ID(existingLic.ID)),
+				).Only(h.ctx)
+				if err != nil {
+					if !ent.IsNotFound(err) {
+						return HandleEntError(err, "query release license")
+					}
+					_, err = tx.ReleaseLicense.Create().
+						SetRelease(dbRelease).
+						SetLicense(existingLic).
+						AddScans(codeScan).
+						SetComponent(relComp).
+						Save(h.ctx)
+					if err != nil {
+						return HandleEntError(err, "create release license")
 					}
 				}
 			}

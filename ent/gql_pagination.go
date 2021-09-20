@@ -32,6 +32,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -2519,13 +2520,13 @@ func (l *LicenseQuery) Paginate(
 }
 
 var (
-	// LicenseOrderFieldSpdxID orders License by spdx_id.
-	LicenseOrderFieldSpdxID = &LicenseOrderField{
-		field: license.FieldSpdxID,
+	// LicenseOrderFieldLicenseID orders License by license_id.
+	LicenseOrderFieldLicenseID = &LicenseOrderField{
+		field: license.FieldLicenseID,
 		toCursor: func(l *License) Cursor {
 			return Cursor{
 				ID:    l.ID,
-				Value: l.SpdxID,
+				Value: l.LicenseID,
 			}
 		},
 	}
@@ -2545,8 +2546,8 @@ var (
 func (f LicenseOrderField) String() string {
 	var str string
 	switch f.field {
-	case license.FieldSpdxID:
-		str = "spdx_id"
+	case license.FieldLicenseID:
+		str = "license_id"
 	case license.FieldName:
 		str = "name"
 	}
@@ -2565,8 +2566,8 @@ func (f *LicenseOrderField) UnmarshalGQL(v interface{}) error {
 		return fmt.Errorf("LicenseOrderField %T must be a string", v)
 	}
 	switch str {
-	case "spdx_id":
-		*f = *LicenseOrderFieldSpdxID
+	case "license_id":
+		*f = *LicenseOrderFieldLicenseID
 	case "name":
 		*f = *LicenseOrderFieldName
 	default:
@@ -5119,6 +5120,233 @@ func (r *Repo) ToEdge(order *RepoOrder) *RepoEdge {
 	return &RepoEdge{
 		Node:   r,
 		Cursor: order.Field.toCursor(r),
+	}
+}
+
+// SPDXLicenseEdge is the edge representation of SPDXLicense.
+type SPDXLicenseEdge struct {
+	Node   *SPDXLicense `json:"node"`
+	Cursor Cursor       `json:"cursor"`
+}
+
+// SPDXLicenseConnection is the connection containing edges to SPDXLicense.
+type SPDXLicenseConnection struct {
+	Edges      []*SPDXLicenseEdge `json:"edges"`
+	PageInfo   PageInfo           `json:"pageInfo"`
+	TotalCount int                `json:"totalCount"`
+}
+
+// SPDXLicensePaginateOption enables pagination customization.
+type SPDXLicensePaginateOption func(*sPDXLicensePager) error
+
+// WithSPDXLicenseOrder configures pagination ordering.
+func WithSPDXLicenseOrder(order *SPDXLicenseOrder) SPDXLicensePaginateOption {
+	if order == nil {
+		order = DefaultSPDXLicenseOrder
+	}
+	o := *order
+	return func(pager *sPDXLicensePager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultSPDXLicenseOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithSPDXLicenseFilter configures pagination filter.
+func WithSPDXLicenseFilter(filter func(*SPDXLicenseQuery) (*SPDXLicenseQuery, error)) SPDXLicensePaginateOption {
+	return func(pager *sPDXLicensePager) error {
+		if filter == nil {
+			return errors.New("SPDXLicenseQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type sPDXLicensePager struct {
+	order  *SPDXLicenseOrder
+	filter func(*SPDXLicenseQuery) (*SPDXLicenseQuery, error)
+}
+
+func newSPDXLicensePager(opts []SPDXLicensePaginateOption) (*sPDXLicensePager, error) {
+	pager := &sPDXLicensePager{}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultSPDXLicenseOrder
+	}
+	return pager, nil
+}
+
+func (p *sPDXLicensePager) applyFilter(query *SPDXLicenseQuery) (*SPDXLicenseQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *sPDXLicensePager) toCursor(sl *SPDXLicense) Cursor {
+	return p.order.Field.toCursor(sl)
+}
+
+func (p *sPDXLicensePager) applyCursors(query *SPDXLicenseQuery, after, before *Cursor) *SPDXLicenseQuery {
+	for _, predicate := range cursorsToPredicates(
+		p.order.Direction, after, before,
+		p.order.Field.field, DefaultSPDXLicenseOrder.Field.field,
+	) {
+		query = query.Where(predicate)
+	}
+	return query
+}
+
+func (p *sPDXLicensePager) applyOrder(query *SPDXLicenseQuery, reverse bool) *SPDXLicenseQuery {
+	direction := p.order.Direction
+	if reverse {
+		direction = direction.reverse()
+	}
+	query = query.Order(direction.orderFunc(p.order.Field.field))
+	if p.order.Field != DefaultSPDXLicenseOrder.Field {
+		query = query.Order(direction.orderFunc(DefaultSPDXLicenseOrder.Field.field))
+	}
+	return query
+}
+
+// Paginate executes the query and returns a relay based cursor connection to SPDXLicense.
+func (sl *SPDXLicenseQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...SPDXLicensePaginateOption,
+) (*SPDXLicenseConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newSPDXLicensePager(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	if sl, err = pager.applyFilter(sl); err != nil {
+		return nil, err
+	}
+
+	conn := &SPDXLicenseConnection{Edges: []*SPDXLicenseEdge{}}
+	if !hasCollectedField(ctx, edgesField) || first != nil && *first == 0 || last != nil && *last == 0 {
+		if hasCollectedField(ctx, totalCountField) ||
+			hasCollectedField(ctx, pageInfoField) {
+			count, err := sl.Count(ctx)
+			if err != nil {
+				return nil, err
+			}
+			conn.TotalCount = count
+			conn.PageInfo.HasNextPage = first != nil && count > 0
+			conn.PageInfo.HasPreviousPage = last != nil && count > 0
+		}
+		return conn, nil
+	}
+
+	if (after != nil || first != nil || before != nil || last != nil) && hasCollectedField(ctx, totalCountField) {
+		count, err := sl.Clone().Count(ctx)
+		if err != nil {
+			return nil, err
+		}
+		conn.TotalCount = count
+	}
+
+	sl = pager.applyCursors(sl, after, before)
+	sl = pager.applyOrder(sl, last != nil)
+	var limit int
+	if first != nil {
+		limit = *first + 1
+	} else if last != nil {
+		limit = *last + 1
+	}
+	if limit > 0 {
+		sl = sl.Limit(limit)
+	}
+
+	if field := getCollectedField(ctx, edgesField, nodeField); field != nil {
+		sl = sl.collectField(graphql.GetOperationContext(ctx), *field)
+	}
+
+	nodes, err := sl.All(ctx)
+	if err != nil || len(nodes) == 0 {
+		return conn, err
+	}
+
+	if len(nodes) == limit {
+		conn.PageInfo.HasNextPage = first != nil
+		conn.PageInfo.HasPreviousPage = last != nil
+		nodes = nodes[:len(nodes)-1]
+	}
+
+	var nodeAt func(int) *SPDXLicense
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *SPDXLicense {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *SPDXLicense {
+			return nodes[i]
+		}
+	}
+
+	conn.Edges = make([]*SPDXLicenseEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		conn.Edges[i] = &SPDXLicenseEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+
+	conn.PageInfo.StartCursor = &conn.Edges[0].Cursor
+	conn.PageInfo.EndCursor = &conn.Edges[len(conn.Edges)-1].Cursor
+	if conn.TotalCount == 0 {
+		conn.TotalCount = len(nodes)
+	}
+
+	return conn, nil
+}
+
+// SPDXLicenseOrderField defines the ordering field of SPDXLicense.
+type SPDXLicenseOrderField struct {
+	field    string
+	toCursor func(*SPDXLicense) Cursor
+}
+
+// SPDXLicenseOrder defines the ordering of SPDXLicense.
+type SPDXLicenseOrder struct {
+	Direction OrderDirection         `json:"direction"`
+	Field     *SPDXLicenseOrderField `json:"field"`
+}
+
+// DefaultSPDXLicenseOrder is the default ordering of SPDXLicense.
+var DefaultSPDXLicenseOrder = &SPDXLicenseOrder{
+	Direction: OrderDirectionAsc,
+	Field: &SPDXLicenseOrderField{
+		field: spdxlicense.FieldID,
+		toCursor: func(sl *SPDXLicense) Cursor {
+			return Cursor{ID: sl.ID}
+		},
+	},
+}
+
+// ToEdge converts SPDXLicense into SPDXLicenseEdge.
+func (sl *SPDXLicense) ToEdge(order *SPDXLicenseOrder) *SPDXLicenseEdge {
+	if order == nil {
+		order = DefaultSPDXLicenseOrder
+	}
+	return &SPDXLicenseEdge{
+		Node:   sl,
+		Cursor: order.Field.toCursor(sl),
 	}
 }
 

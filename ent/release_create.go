@@ -15,6 +15,7 @@ import (
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
+	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
@@ -38,20 +39,6 @@ func (rc *ReleaseCreate) SetName(s string) *ReleaseCreate {
 // SetVersion sets the "version" field.
 func (rc *ReleaseCreate) SetVersion(s string) *ReleaseCreate {
 	rc.mutation.SetVersion(s)
-	return rc
-}
-
-// SetStatus sets the "status" field.
-func (rc *ReleaseCreate) SetStatus(r release.Status) *ReleaseCreate {
-	rc.mutation.SetStatus(r)
-	return rc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (rc *ReleaseCreate) SetNillableStatus(r *release.Status) *ReleaseCreate {
-	if r != nil {
-		rc.SetStatus(*r)
-	}
 	return rc
 }
 
@@ -190,6 +177,21 @@ func (rc *ReleaseCreate) AddVulnerabilities(r ...*ReleaseVulnerability) *Release
 	return rc.AddVulnerabilityIDs(ids...)
 }
 
+// AddLicenseIDs adds the "licenses" edge to the ReleaseLicense entity by IDs.
+func (rc *ReleaseCreate) AddLicenseIDs(ids ...int) *ReleaseCreate {
+	rc.mutation.AddLicenseIDs(ids...)
+	return rc
+}
+
+// AddLicenses adds the "licenses" edges to the ReleaseLicense entity.
+func (rc *ReleaseCreate) AddLicenses(r ...*ReleaseLicense) *ReleaseCreate {
+	ids := make([]int, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return rc.AddLicenseIDs(ids...)
+}
+
 // AddCodeScanIDs adds the "code_scans" edge to the CodeScan entity by IDs.
 func (rc *ReleaseCreate) AddCodeScanIDs(ids ...int) *ReleaseCreate {
 	rc.mutation.AddCodeScanIDs(ids...)
@@ -246,9 +248,6 @@ func (rc *ReleaseCreate) Save(ctx context.Context) (*Release, error) {
 		err  error
 		node *Release
 	)
-	if err := rc.defaults(); err != nil {
-		return nil, err
-	}
 	if len(rc.hooks) == 0 {
 		if err = rc.check(); err != nil {
 			return nil, err
@@ -306,15 +305,6 @@ func (rc *ReleaseCreate) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (rc *ReleaseCreate) defaults() error {
-	if _, ok := rc.mutation.Status(); !ok {
-		v := release.DefaultStatus
-		rc.mutation.SetStatus(v)
-	}
-	return nil
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (rc *ReleaseCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
@@ -331,14 +321,6 @@ func (rc *ReleaseCreate) check() error {
 	if v, ok := rc.mutation.Version(); ok {
 		if err := release.VersionValidator(v); err != nil {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "version": %w`, err)}
-		}
-	}
-	if _, ok := rc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "status"`)}
-	}
-	if v, ok := rc.mutation.Status(); ok {
-		if err := release.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "status": %w`, err)}
 		}
 	}
 	if _, ok := rc.mutation.CommitID(); !ok {
@@ -386,14 +368,6 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 			Column: release.FieldVersion,
 		})
 		_node.Version = value
-	}
-	if value, ok := rc.mutation.Status(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeEnum,
-			Value:  value,
-			Column: release.FieldStatus,
-		})
-		_node.Status = value
 	}
 	if nodes := rc.mutation.SubreleasesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -568,6 +542,25 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := rc.mutation.LicensesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   release.LicensesTable,
+			Columns: []string{release.LicensesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: releaselicense.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := rc.mutation.CodeScansIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -642,7 +635,6 @@ func (rcb *ReleaseCreateBulk) Save(ctx context.Context) ([]*Release, error) {
 	for i := range rcb.builders {
 		func(i int, root context.Context) {
 			builder := rcb.builders[i]
-			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ReleaseMutation)
 				if !ok {

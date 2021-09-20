@@ -816,6 +816,51 @@ func (r *RepoQuery) Filter(
 	return r.All(ctx)
 }
 
+func (sl *SPDXLicenseQuery) Filter(
+	ctx context.Context, first *int, last *int,
+	orderBy *SPDXLicenseOrder, where *SPDXLicenseWhereInput,
+) ([]*SPDXLicense, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	if orderBy == nil {
+		orderBy = DefaultSPDXLicenseOrder
+	}
+	if err := orderBy.Direction.Validate(); err != nil {
+		return nil, err
+	}
+	if orderBy.Field == nil {
+		orderBy.Field = DefaultSPDXLicenseOrder.Field
+	}
+
+	sl, err := where.Filter(sl)
+	if err != nil {
+		return nil, err
+	}
+
+	// If getting last then reverse the direction
+	if last != nil {
+		orderBy.Direction = orderBy.Direction.reverse()
+	}
+	sl = sl.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
+	// If a custom order was given, also apply the default order
+	if orderBy.Field != DefaultSPDXLicenseOrder.Field {
+		sl = sl.Order(orderBy.Direction.orderFunc(DefaultSPDXLicenseOrder.Field.field))
+	}
+
+	var limit int
+	if first != nil {
+		limit = *first
+	} else if last != nil {
+		limit = *last
+	}
+	if limit > 0 {
+		sl = sl.Limit(limit)
+	}
+
+	return sl.All(ctx)
+}
+
 func (tc *TestCaseQuery) Filter(
 	ctx context.Context, first *int, last *int,
 	orderBy *TestCaseOrder, where *TestCaseWhereInput,

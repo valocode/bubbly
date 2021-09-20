@@ -38,6 +38,7 @@ type (
 	CodeScanComponent struct {
 		ent.ComponentModelCreate `validate:"required" mapstructure:",squash"`
 		Vulnerabilities          []*Vulnerability `json:"vulnerabilities" validate:"dive,required" mapstructure:"vulnerabilities"`
+		Licenses                 []*License       `json:"licenses" validate:"dive,required" mapstructure:"licenses"`
 	}
 )
 

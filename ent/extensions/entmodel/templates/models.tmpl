@@ -8,10 +8,11 @@
 
 import (
 	"time"
-{{ range $n := filterModelNodes $.Nodes }}
 
+{{- range $n := filterModelNodes $.Nodes }}
 	"github.com/valocode/bubbly/ent/{{ $n.Package }}"
-{{ end }}
+{{- end }}
+
 	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
@@ -55,17 +56,6 @@ import (
         return {{ $receiver }}
     }
 
-    {{- range $f := fieldsModelCreate $n }}
-        {{- if $f.Type.Comparable }}
-            func ({{ $receiver }} *{{ $n.QueryName }}) Where{{ $f.StructField }}(value *{{ $f.Type }}) *{{ $n.QueryName }} {
-                if value != nil {
-                    {{ $receiver }}.Where({{ $n.Package }}.{{ $f.StructField }}EQ(*value))
-                }
-                return {{ $receiver }}
-            }    
-        {{- end }}
-    {{- end }}
-
     type  {{ $n.Name }}ModelRead struct {
         {{- range $f := fieldsModelRead $n }}
         {{- $tag := fieldTag $f }}
@@ -95,6 +85,14 @@ import (
 
     func ({{ $receiver }} *{{ $n.Name }}ModelUpdate) Set{{ $n.ID.StructField }}(value {{ $n.ID.Type.String }}) *{{ $n.Name }}ModelUpdate {
         {{ $receiver }}.{{ $n.ID.StructField }} = &value
+        return {{ $receiver }}
+    }
+{{ end }}
+
+{{ range $n := filterNodes $.Nodes }}
+    {{ $receiver := $n.Receiver }}
+    func ({{ $receiver }} *{{ $n.QueryName }}) WhereInput(input {{ $n.Name}}WhereInput) *{{ $n.QueryName }} {
+        input.Filter({{ $receiver }})
         return {{ $receiver }}
     }
 {{ end }}

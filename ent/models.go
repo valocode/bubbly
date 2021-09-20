@@ -5,38 +5,11 @@ package ent
 import (
 	"time"
 
-	"github.com/valocode/bubbly/ent/adapter"
-
 	"github.com/valocode/bubbly/ent/artifact"
-
 	"github.com/valocode/bubbly/ent/codeissue"
-
-	"github.com/valocode/bubbly/ent/codescan"
-
-	"github.com/valocode/bubbly/ent/component"
-
 	"github.com/valocode/bubbly/ent/event"
-
-	"github.com/valocode/bubbly/ent/gitcommit"
-
-	"github.com/valocode/bubbly/ent/organization"
-
-	"github.com/valocode/bubbly/ent/project"
-
-	"github.com/valocode/bubbly/ent/release"
-
 	"github.com/valocode/bubbly/ent/releaseentry"
-
-	"github.com/valocode/bubbly/ent/releasepolicy"
-
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
-
-	"github.com/valocode/bubbly/ent/repo"
-
-	"github.com/valocode/bubbly/ent/testcase"
-
-	"github.com/valocode/bubbly/ent/testrun"
-
 	"github.com/valocode/bubbly/ent/vulnerability"
 
 	schema "github.com/valocode/bubbly/ent/schema/types"
@@ -83,24 +56,6 @@ func (a *AdapterMutation) SetModelCreate(model *AdapterModelCreate) *AdapterMuta
 	}
 	if model.Module != nil {
 		a.SetModule(*model.Module)
-	}
-	return a
-}
-func (a *AdapterQuery) WhereName(value *string) *AdapterQuery {
-	if value != nil {
-		a.Where(adapter.NameEQ(*value))
-	}
-	return a
-}
-func (a *AdapterQuery) WhereTag(value *string) *AdapterQuery {
-	if value != nil {
-		a.Where(adapter.TagEQ(*value))
-	}
-	return a
-}
-func (a *AdapterQuery) WhereModule(value *string) *AdapterQuery {
-	if value != nil {
-		a.Where(adapter.ModuleEQ(*value))
 	}
 	return a
 }
@@ -194,30 +149,6 @@ func (a *ArtifactMutation) SetModelCreate(model *ArtifactModelCreate) *ArtifactM
 	}
 	if model.Metadata != nil {
 		a.SetMetadata(*model.Metadata)
-	}
-	return a
-}
-func (a *ArtifactQuery) WhereName(value *string) *ArtifactQuery {
-	if value != nil {
-		a.Where(artifact.NameEQ(*value))
-	}
-	return a
-}
-func (a *ArtifactQuery) WhereSha256(value *string) *ArtifactQuery {
-	if value != nil {
-		a.Where(artifact.Sha256EQ(*value))
-	}
-	return a
-}
-func (a *ArtifactQuery) WhereType(value *artifact.Type) *ArtifactQuery {
-	if value != nil {
-		a.Where(artifact.TypeEQ(*value))
-	}
-	return a
-}
-func (a *ArtifactQuery) WhereTime(value *time.Time) *ArtifactQuery {
-	if value != nil {
-		a.Where(artifact.TimeEQ(*value))
 	}
 	return a
 }
@@ -318,30 +249,6 @@ func (ci *CodeIssueMutation) SetModelCreate(model *CodeIssueModelCreate) *CodeIs
 	}
 	return ci
 }
-func (ci *CodeIssueQuery) WhereRuleID(value *string) *CodeIssueQuery {
-	if value != nil {
-		ci.Where(codeissue.RuleIDEQ(*value))
-	}
-	return ci
-}
-func (ci *CodeIssueQuery) WhereMessage(value *string) *CodeIssueQuery {
-	if value != nil {
-		ci.Where(codeissue.MessageEQ(*value))
-	}
-	return ci
-}
-func (ci *CodeIssueQuery) WhereSeverity(value *codeissue.Severity) *CodeIssueQuery {
-	if value != nil {
-		ci.Where(codeissue.SeverityEQ(*value))
-	}
-	return ci
-}
-func (ci *CodeIssueQuery) WhereType(value *codeissue.Type) *CodeIssueQuery {
-	if value != nil {
-		ci.Where(codeissue.TypeEQ(*value))
-	}
-	return ci
-}
 
 type CodeIssueModelRead struct {
 	RuleID   *string             `json:"rule_id,omitempty" validate:"required" mapstructure:"rule_id"`
@@ -420,18 +327,6 @@ func (cs *CodeScanMutation) SetModelCreate(model *CodeScanModelCreate) *CodeScan
 	}
 	if model.Metadata != nil {
 		cs.SetMetadata(*model.Metadata)
-	}
-	return cs
-}
-func (cs *CodeScanQuery) WhereTool(value *string) *CodeScanQuery {
-	if value != nil {
-		cs.Where(codescan.ToolEQ(*value))
-	}
-	return cs
-}
-func (cs *CodeScanQuery) WhereTime(value *time.Time) *CodeScanQuery {
-	if value != nil {
-		cs.Where(codescan.TimeEQ(*value))
 	}
 	return cs
 }
@@ -536,36 +431,6 @@ func (c *ComponentMutation) SetModelCreate(model *ComponentModelCreate) *Compone
 	}
 	return c
 }
-func (c *ComponentQuery) WhereName(value *string) *ComponentQuery {
-	if value != nil {
-		c.Where(component.NameEQ(*value))
-	}
-	return c
-}
-func (c *ComponentQuery) WhereVendor(value *string) *ComponentQuery {
-	if value != nil {
-		c.Where(component.VendorEQ(*value))
-	}
-	return c
-}
-func (c *ComponentQuery) WhereVersion(value *string) *ComponentQuery {
-	if value != nil {
-		c.Where(component.VersionEQ(*value))
-	}
-	return c
-}
-func (c *ComponentQuery) WhereDescription(value *string) *ComponentQuery {
-	if value != nil {
-		c.Where(component.DescriptionEQ(*value))
-	}
-	return c
-}
-func (c *ComponentQuery) WhereURL(value *string) *ComponentQuery {
-	if value != nil {
-		c.Where(component.URLEQ(*value))
-	}
-	return c
-}
 
 type ComponentModelRead struct {
 	Name        *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
@@ -606,9 +471,10 @@ func (c *ComponentModelUpdate) SetID(value int) *ComponentModelUpdate {
 }
 
 type EventModelCreate struct {
-	Message *string     `json:"message,omitempty"  mapstructure:"message"`
-	Type    *event.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
-	Time    *time.Time  `json:"time,omitempty"  mapstructure:"time"`
+	Message *string       `json:"message,omitempty"  mapstructure:"message"`
+	Status  *event.Status `json:"status,omitempty"  mapstructure:"status"`
+	Type    *event.Type   `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time    *time.Time    `json:"time,omitempty"  mapstructure:"time"`
 }
 
 func NewEventModelCreate() *EventModelCreate {
@@ -616,6 +482,10 @@ func NewEventModelCreate() *EventModelCreate {
 }
 func (e *EventModelCreate) SetMessage(value string) *EventModelCreate {
 	e.Message = &value
+	return e
+}
+func (e *EventModelCreate) SetStatus(value event.Status) *EventModelCreate {
+	e.Status = &value
 	return e
 }
 func (e *EventModelCreate) SetType(value event.Type) *EventModelCreate {
@@ -641,6 +511,9 @@ func (e *EventMutation) SetModelCreate(model *EventModelCreate) *EventMutation {
 	if model.Message != nil {
 		e.SetMessage(*model.Message)
 	}
+	if model.Status != nil {
+		e.SetStatus(*model.Status)
+	}
 	if model.Type != nil {
 		e.SetType(*model.Type)
 	}
@@ -649,30 +522,13 @@ func (e *EventMutation) SetModelCreate(model *EventModelCreate) *EventMutation {
 	}
 	return e
 }
-func (e *EventQuery) WhereMessage(value *string) *EventQuery {
-	if value != nil {
-		e.Where(event.MessageEQ(*value))
-	}
-	return e
-}
-func (e *EventQuery) WhereType(value *event.Type) *EventQuery {
-	if value != nil {
-		e.Where(event.TypeEQ(*value))
-	}
-	return e
-}
-func (e *EventQuery) WhereTime(value *time.Time) *EventQuery {
-	if value != nil {
-		e.Where(event.TimeEQ(*value))
-	}
-	return e
-}
 
 type EventModelRead struct {
-	Message *string     `json:"message,omitempty"  mapstructure:"message"`
-	Type    *event.Type `json:"type,omitempty" validate:"required" mapstructure:"type"`
-	Time    *time.Time  `json:"time,omitempty"  mapstructure:"time"`
-	ID      *int        `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Message *string       `json:"message,omitempty"  mapstructure:"message"`
+	Status  *event.Status `json:"status,omitempty"  mapstructure:"status"`
+	Type    *event.Type   `json:"type,omitempty" validate:"required" mapstructure:"type"`
+	Time    *time.Time    `json:"time,omitempty"  mapstructure:"time"`
+	ID      *int          `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewEventModelRead() *EventModelRead {
@@ -681,6 +537,7 @@ func NewEventModelRead() *EventModelRead {
 
 func (e *EventModelRead) FromEnt(value *Event) *EventModelRead {
 	e.Message = &value.Message
+	e.Status = &value.Status
 	e.Type = &value.Type
 	e.Time = &value.Time
 	e.ID = &value.ID
@@ -752,30 +609,6 @@ func (gc *GitCommitMutation) SetModelCreate(model *GitCommitModelCreate) *GitCom
 	}
 	return gc
 }
-func (gc *GitCommitQuery) WhereHash(value *string) *GitCommitQuery {
-	if value != nil {
-		gc.Where(gitcommit.HashEQ(*value))
-	}
-	return gc
-}
-func (gc *GitCommitQuery) WhereBranch(value *string) *GitCommitQuery {
-	if value != nil {
-		gc.Where(gitcommit.BranchEQ(*value))
-	}
-	return gc
-}
-func (gc *GitCommitQuery) WhereTag(value *string) *GitCommitQuery {
-	if value != nil {
-		gc.Where(gitcommit.TagEQ(*value))
-	}
-	return gc
-}
-func (gc *GitCommitQuery) WhereTime(value *time.Time) *GitCommitQuery {
-	if value != nil {
-		gc.Where(gitcommit.TimeEQ(*value))
-	}
-	return gc
-}
 
 type GitCommitModelRead struct {
 	Hash   *string    `json:"hash,omitempty" validate:"required" mapstructure:"hash"`
@@ -811,6 +644,73 @@ func (gc *GitCommitModelUpdate) SetID(value int) *GitCommitModelUpdate {
 	return gc
 }
 
+type LicenseModelCreate struct {
+	LicenseID *string `json:"license_id,omitempty" validate:"required" mapstructure:"license_id"`
+	Name      *string `json:"name,omitempty"  mapstructure:"name"`
+}
+
+func NewLicenseModelCreate() *LicenseModelCreate {
+	return &LicenseModelCreate{}
+}
+func (l *LicenseModelCreate) SetLicenseID(value string) *LicenseModelCreate {
+	l.LicenseID = &value
+	return l
+}
+func (l *LicenseModelCreate) SetName(value string) *LicenseModelCreate {
+	l.Name = &value
+	return l
+}
+
+func (l *LicenseCreate) SetModelCreate(model *LicenseModelCreate) *LicenseCreate {
+	l.mutation.SetModelCreate(model)
+	return l
+}
+
+func (l *LicenseUpdateOne) SetModelCreate(model *LicenseModelCreate) *LicenseUpdateOne {
+	l.mutation.SetModelCreate(model)
+	return l
+}
+
+func (l *LicenseMutation) SetModelCreate(model *LicenseModelCreate) *LicenseMutation {
+	if model.LicenseID != nil {
+		l.SetLicenseID(*model.LicenseID)
+	}
+	if model.Name != nil {
+		l.SetName(*model.Name)
+	}
+	return l
+}
+
+type LicenseModelRead struct {
+	LicenseID *string `json:"license_id,omitempty" validate:"required" mapstructure:"license_id"`
+	Name      *string `json:"name,omitempty"  mapstructure:"name"`
+	ID        *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewLicenseModelRead() *LicenseModelRead {
+	return &LicenseModelRead{}
+}
+
+func (l *LicenseModelRead) FromEnt(value *License) *LicenseModelRead {
+	l.LicenseID = &value.LicenseID
+	l.Name = &value.Name
+	l.ID = &value.ID
+	return l
+}
+
+type LicenseModelUpdate struct {
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewLicenseModelUpdate() *LicenseModelUpdate {
+	return &LicenseModelUpdate{}
+}
+
+func (l *LicenseModelUpdate) SetID(value int) *LicenseModelUpdate {
+	l.ID = &value
+	return l
+}
+
 type OrganizationModelCreate struct {
 	Name *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
 }
@@ -836,12 +736,6 @@ func (o *OrganizationUpdateOne) SetModelCreate(model *OrganizationModelCreate) *
 func (o *OrganizationMutation) SetModelCreate(model *OrganizationModelCreate) *OrganizationMutation {
 	if model.Name != nil {
 		o.SetName(*model.Name)
-	}
-	return o
-}
-func (o *OrganizationQuery) WhereName(value *string) *OrganizationQuery {
-	if value != nil {
-		o.Where(organization.NameEQ(*value))
 	}
 	return o
 }
@@ -899,12 +793,6 @@ func (pr *ProjectUpdateOne) SetModelCreate(model *ProjectModelCreate) *ProjectUp
 func (pr *ProjectMutation) SetModelCreate(model *ProjectModelCreate) *ProjectMutation {
 	if model.Name != nil {
 		pr.SetName(*model.Name)
-	}
-	return pr
-}
-func (pr *ProjectQuery) WhereName(value *string) *ProjectQuery {
-	if value != nil {
-		pr.Where(project.NameEQ(*value))
 	}
 	return pr
 }
@@ -973,24 +861,11 @@ func (r *ReleaseMutation) SetModelCreate(model *ReleaseModelCreate) *ReleaseMuta
 	}
 	return r
 }
-func (r *ReleaseQuery) WhereName(value *string) *ReleaseQuery {
-	if value != nil {
-		r.Where(release.NameEQ(*value))
-	}
-	return r
-}
-func (r *ReleaseQuery) WhereVersion(value *string) *ReleaseQuery {
-	if value != nil {
-		r.Where(release.VersionEQ(*value))
-	}
-	return r
-}
 
 type ReleaseModelRead struct {
-	Name    *string         `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Version *string         `json:"version,omitempty" validate:"required" mapstructure:"version"`
-	Status  *release.Status `json:"status,omitempty"  mapstructure:"status"`
-	ID      *int            `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name    *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Version *string `json:"version,omitempty" validate:"required" mapstructure:"version"`
+	ID      *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewReleaseModelRead() *ReleaseModelRead {
@@ -1000,7 +875,6 @@ func NewReleaseModelRead() *ReleaseModelRead {
 func (r *ReleaseModelRead) FromEnt(value *Release) *ReleaseModelRead {
 	r.Name = &value.Name
 	r.Version = &value.Version
-	r.Status = &value.Status
 	r.ID = &value.ID
 	return r
 }
@@ -1051,18 +925,6 @@ func (re *ReleaseEntryMutation) SetModelCreate(model *ReleaseEntryModelCreate) *
 	}
 	if model.Time != nil {
 		re.SetTime(*model.Time)
-	}
-	return re
-}
-func (re *ReleaseEntryQuery) WhereType(value *releaseentry.Type) *ReleaseEntryQuery {
-	if value != nil {
-		re.Where(releaseentry.TypeEQ(*value))
-	}
-	return re
-}
-func (re *ReleaseEntryQuery) WhereTime(value *time.Time) *ReleaseEntryQuery {
-	if value != nil {
-		re.Where(releaseentry.TimeEQ(*value))
 	}
 	return re
 }
@@ -1130,18 +992,6 @@ func (rp *ReleasePolicyMutation) SetModelCreate(model *ReleasePolicyModelCreate)
 	}
 	if model.Module != nil {
 		rp.SetModule(*model.Module)
-	}
-	return rp
-}
-func (rp *ReleasePolicyQuery) WhereName(value *string) *ReleasePolicyQuery {
-	if value != nil {
-		rp.Where(releasepolicy.NameEQ(*value))
-	}
-	return rp
-}
-func (rp *ReleasePolicyQuery) WhereModule(value *string) *ReleasePolicyQuery {
-	if value != nil {
-		rp.Where(releasepolicy.ModuleEQ(*value))
 	}
 	return rp
 }
@@ -1220,24 +1070,6 @@ func (rpv *ReleasePolicyViolationMutation) SetModelCreate(model *ReleasePolicyVi
 	}
 	return rpv
 }
-func (rpv *ReleasePolicyViolationQuery) WhereMessage(value *string) *ReleasePolicyViolationQuery {
-	if value != nil {
-		rpv.Where(releasepolicyviolation.MessageEQ(*value))
-	}
-	return rpv
-}
-func (rpv *ReleasePolicyViolationQuery) WhereType(value *releasepolicyviolation.Type) *ReleasePolicyViolationQuery {
-	if value != nil {
-		rpv.Where(releasepolicyviolation.TypeEQ(*value))
-	}
-	return rpv
-}
-func (rpv *ReleasePolicyViolationQuery) WhereSeverity(value *releasepolicyviolation.Severity) *ReleasePolicyViolationQuery {
-	if value != nil {
-		rpv.Where(releasepolicyviolation.SeverityEQ(*value))
-	}
-	return rpv
-}
 
 type ReleasePolicyViolationModelRead struct {
 	Message  *string                          `json:"message,omitempty" validate:"required" mapstructure:"message"`
@@ -1307,18 +1139,6 @@ func (r *RepoMutation) SetModelCreate(model *RepoModelCreate) *RepoMutation {
 	}
 	return r
 }
-func (r *RepoQuery) WhereName(value *string) *RepoQuery {
-	if value != nil {
-		r.Where(repo.NameEQ(*value))
-	}
-	return r
-}
-func (r *RepoQuery) WhereDefaultBranch(value *string) *RepoQuery {
-	if value != nil {
-		r.Where(repo.DefaultBranchEQ(*value))
-	}
-	return r
-}
 
 type RepoModelRead struct {
 	Name          *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
@@ -1348,6 +1168,103 @@ func NewRepoModelUpdate() *RepoModelUpdate {
 func (r *RepoModelUpdate) SetID(value int) *RepoModelUpdate {
 	r.ID = &value
 	return r
+}
+
+type SPDXLicenseModelCreate struct {
+	LicenseID     *string `json:"license_id,omitempty" validate:"required" mapstructure:"license_id"`
+	Name          *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Reference     *string `json:"reference,omitempty"  mapstructure:"reference"`
+	DetailsURL    *string `json:"details_url,omitempty"  mapstructure:"details_url"`
+	IsOsiApproved *bool   `json:"is_osi_approved,omitempty"  mapstructure:"is_osi_approved"`
+}
+
+func NewSPDXLicenseModelCreate() *SPDXLicenseModelCreate {
+	return &SPDXLicenseModelCreate{}
+}
+func (sl *SPDXLicenseModelCreate) SetLicenseID(value string) *SPDXLicenseModelCreate {
+	sl.LicenseID = &value
+	return sl
+}
+func (sl *SPDXLicenseModelCreate) SetName(value string) *SPDXLicenseModelCreate {
+	sl.Name = &value
+	return sl
+}
+func (sl *SPDXLicenseModelCreate) SetReference(value string) *SPDXLicenseModelCreate {
+	sl.Reference = &value
+	return sl
+}
+func (sl *SPDXLicenseModelCreate) SetDetailsURL(value string) *SPDXLicenseModelCreate {
+	sl.DetailsURL = &value
+	return sl
+}
+func (sl *SPDXLicenseModelCreate) SetIsOsiApproved(value bool) *SPDXLicenseModelCreate {
+	sl.IsOsiApproved = &value
+	return sl
+}
+
+func (sl *SPDXLicenseCreate) SetModelCreate(model *SPDXLicenseModelCreate) *SPDXLicenseCreate {
+	sl.mutation.SetModelCreate(model)
+	return sl
+}
+
+func (sl *SPDXLicenseUpdateOne) SetModelCreate(model *SPDXLicenseModelCreate) *SPDXLicenseUpdateOne {
+	sl.mutation.SetModelCreate(model)
+	return sl
+}
+
+func (sl *SPDXLicenseMutation) SetModelCreate(model *SPDXLicenseModelCreate) *SPDXLicenseMutation {
+	if model.LicenseID != nil {
+		sl.SetLicenseID(*model.LicenseID)
+	}
+	if model.Name != nil {
+		sl.SetName(*model.Name)
+	}
+	if model.Reference != nil {
+		sl.SetReference(*model.Reference)
+	}
+	if model.DetailsURL != nil {
+		sl.SetDetailsURL(*model.DetailsURL)
+	}
+	if model.IsOsiApproved != nil {
+		sl.SetIsOsiApproved(*model.IsOsiApproved)
+	}
+	return sl
+}
+
+type SPDXLicenseModelRead struct {
+	LicenseID     *string `json:"license_id,omitempty" validate:"required" mapstructure:"license_id"`
+	Name          *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Reference     *string `json:"reference,omitempty"  mapstructure:"reference"`
+	DetailsURL    *string `json:"details_url,omitempty"  mapstructure:"details_url"`
+	IsOsiApproved *bool   `json:"is_osi_approved,omitempty"  mapstructure:"is_osi_approved"`
+	ID            *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewSPDXLicenseModelRead() *SPDXLicenseModelRead {
+	return &SPDXLicenseModelRead{}
+}
+
+func (sl *SPDXLicenseModelRead) FromEnt(value *SPDXLicense) *SPDXLicenseModelRead {
+	sl.LicenseID = &value.LicenseID
+	sl.Name = &value.Name
+	sl.Reference = &value.Reference
+	sl.DetailsURL = &value.DetailsURL
+	sl.IsOsiApproved = &value.IsOsiApproved
+	sl.ID = &value.ID
+	return sl
+}
+
+type SPDXLicenseModelUpdate struct {
+	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewSPDXLicenseModelUpdate() *SPDXLicenseModelUpdate {
+	return &SPDXLicenseModelUpdate{}
+}
+
+func (sl *SPDXLicenseModelUpdate) SetID(value int) *SPDXLicenseModelUpdate {
+	sl.ID = &value
+	return sl
 }
 
 type TestCaseModelCreate struct {
@@ -1407,30 +1324,6 @@ func (tc *TestCaseMutation) SetModelCreate(model *TestCaseModelCreate) *TestCase
 	}
 	if model.Metadata != nil {
 		tc.SetMetadata(*model.Metadata)
-	}
-	return tc
-}
-func (tc *TestCaseQuery) WhereName(value *string) *TestCaseQuery {
-	if value != nil {
-		tc.Where(testcase.NameEQ(*value))
-	}
-	return tc
-}
-func (tc *TestCaseQuery) WhereResult(value *bool) *TestCaseQuery {
-	if value != nil {
-		tc.Where(testcase.ResultEQ(*value))
-	}
-	return tc
-}
-func (tc *TestCaseQuery) WhereMessage(value *string) *TestCaseQuery {
-	if value != nil {
-		tc.Where(testcase.MessageEQ(*value))
-	}
-	return tc
-}
-func (tc *TestCaseQuery) WhereElapsed(value *float64) *TestCaseQuery {
-	if value != nil {
-		tc.Where(testcase.ElapsedEQ(*value))
 	}
 	return tc
 }
@@ -1512,18 +1405,6 @@ func (tr *TestRunMutation) SetModelCreate(model *TestRunModelCreate) *TestRunMut
 	}
 	if model.Metadata != nil {
 		tr.SetMetadata(*model.Metadata)
-	}
-	return tr
-}
-func (tr *TestRunQuery) WhereTool(value *string) *TestRunQuery {
-	if value != nil {
-		tr.Where(testrun.ToolEQ(*value))
-	}
-	return tr
-}
-func (tr *TestRunQuery) WhereTime(value *time.Time) *TestRunQuery {
-	if value != nil {
-		tr.Where(testrun.TimeEQ(*value))
 	}
 	return tr
 }
@@ -1644,48 +1525,6 @@ func (v *VulnerabilityMutation) SetModelCreate(model *VulnerabilityModelCreate) 
 	}
 	return v
 }
-func (v *VulnerabilityQuery) WhereVid(value *string) *VulnerabilityQuery {
-	if value != nil {
-		v.Where(vulnerability.VidEQ(*value))
-	}
-	return v
-}
-func (v *VulnerabilityQuery) WhereSummary(value *string) *VulnerabilityQuery {
-	if value != nil {
-		v.Where(vulnerability.SummaryEQ(*value))
-	}
-	return v
-}
-func (v *VulnerabilityQuery) WhereDescription(value *string) *VulnerabilityQuery {
-	if value != nil {
-		v.Where(vulnerability.DescriptionEQ(*value))
-	}
-	return v
-}
-func (v *VulnerabilityQuery) WhereSeverityScore(value *float64) *VulnerabilityQuery {
-	if value != nil {
-		v.Where(vulnerability.SeverityScoreEQ(*value))
-	}
-	return v
-}
-func (v *VulnerabilityQuery) WhereSeverity(value *vulnerability.Severity) *VulnerabilityQuery {
-	if value != nil {
-		v.Where(vulnerability.SeverityEQ(*value))
-	}
-	return v
-}
-func (v *VulnerabilityQuery) WherePublished(value *time.Time) *VulnerabilityQuery {
-	if value != nil {
-		v.Where(vulnerability.PublishedEQ(*value))
-	}
-	return v
-}
-func (v *VulnerabilityQuery) WhereModified(value *time.Time) *VulnerabilityQuery {
-	if value != nil {
-		v.Where(vulnerability.ModifiedEQ(*value))
-	}
-	return v
-}
 
 type VulnerabilityModelRead struct {
 	Vid           *string                 `json:"vid,omitempty" validate:"required" mapstructure:"vid"`
@@ -1727,4 +1566,119 @@ func NewVulnerabilityModelUpdate() *VulnerabilityModelUpdate {
 func (v *VulnerabilityModelUpdate) SetID(value int) *VulnerabilityModelUpdate {
 	v.ID = &value
 	return v
+}
+
+func (a *AdapterQuery) WhereInput(input AdapterWhereInput) *AdapterQuery {
+	input.Filter(a)
+	return a
+}
+
+func (a *ArtifactQuery) WhereInput(input ArtifactWhereInput) *ArtifactQuery {
+	input.Filter(a)
+	return a
+}
+
+func (ci *CodeIssueQuery) WhereInput(input CodeIssueWhereInput) *CodeIssueQuery {
+	input.Filter(ci)
+	return ci
+}
+
+func (cs *CodeScanQuery) WhereInput(input CodeScanWhereInput) *CodeScanQuery {
+	input.Filter(cs)
+	return cs
+}
+
+func (c *ComponentQuery) WhereInput(input ComponentWhereInput) *ComponentQuery {
+	input.Filter(c)
+	return c
+}
+
+func (e *EventQuery) WhereInput(input EventWhereInput) *EventQuery {
+	input.Filter(e)
+	return e
+}
+
+func (gc *GitCommitQuery) WhereInput(input GitCommitWhereInput) *GitCommitQuery {
+	input.Filter(gc)
+	return gc
+}
+
+func (l *LicenseQuery) WhereInput(input LicenseWhereInput) *LicenseQuery {
+	input.Filter(l)
+	return l
+}
+
+func (o *OrganizationQuery) WhereInput(input OrganizationWhereInput) *OrganizationQuery {
+	input.Filter(o)
+	return o
+}
+
+func (pr *ProjectQuery) WhereInput(input ProjectWhereInput) *ProjectQuery {
+	input.Filter(pr)
+	return pr
+}
+
+func (r *ReleaseQuery) WhereInput(input ReleaseWhereInput) *ReleaseQuery {
+	input.Filter(r)
+	return r
+}
+
+func (rc *ReleaseComponentQuery) WhereInput(input ReleaseComponentWhereInput) *ReleaseComponentQuery {
+	input.Filter(rc)
+	return rc
+}
+
+func (re *ReleaseEntryQuery) WhereInput(input ReleaseEntryWhereInput) *ReleaseEntryQuery {
+	input.Filter(re)
+	return re
+}
+
+func (rl *ReleaseLicenseQuery) WhereInput(input ReleaseLicenseWhereInput) *ReleaseLicenseQuery {
+	input.Filter(rl)
+	return rl
+}
+
+func (rp *ReleasePolicyQuery) WhereInput(input ReleasePolicyWhereInput) *ReleasePolicyQuery {
+	input.Filter(rp)
+	return rp
+}
+
+func (rpv *ReleasePolicyViolationQuery) WhereInput(input ReleasePolicyViolationWhereInput) *ReleasePolicyViolationQuery {
+	input.Filter(rpv)
+	return rpv
+}
+
+func (rv *ReleaseVulnerabilityQuery) WhereInput(input ReleaseVulnerabilityWhereInput) *ReleaseVulnerabilityQuery {
+	input.Filter(rv)
+	return rv
+}
+
+func (r *RepoQuery) WhereInput(input RepoWhereInput) *RepoQuery {
+	input.Filter(r)
+	return r
+}
+
+func (sl *SPDXLicenseQuery) WhereInput(input SPDXLicenseWhereInput) *SPDXLicenseQuery {
+	input.Filter(sl)
+	return sl
+}
+
+func (tc *TestCaseQuery) WhereInput(input TestCaseWhereInput) *TestCaseQuery {
+	input.Filter(tc)
+	return tc
+}
+
+func (tr *TestRunQuery) WhereInput(input TestRunWhereInput) *TestRunQuery {
+	input.Filter(tr)
+	return tr
+}
+
+func (v *VulnerabilityQuery) WhereInput(input VulnerabilityWhereInput) *VulnerabilityQuery {
+	input.Filter(v)
+	return v
+}
+
+func (vr *VulnerabilityReviewQuery) WhereInput(input VulnerabilityReviewWhereInput) *VulnerabilityReviewQuery {
+	input.Filter(vr)
+	return vr
 }

@@ -17,14 +17,12 @@
 		let queryPredicates: string[] = [];
 
 		if (filterHeadOnly.isEnabled()) {
-			queryPredicates.push('has_head_of: true');
+			queryPredicates.push('hasHeadOf: true');
 		}
 		const selProjects = filterProjects.selectedProjects();
 		if (selProjects.length > 0) {
 			queryPredicates.push(
-				`has_commit_with: {has_repo_with: {has_project_with: {name_in: ["${selProjects.join(
-					`","`
-				)}"]}}}`
+				`hasCommitWith: {hasRepoWith: {hasProjectWith: {nameIn: ["${selProjects.join(`","`)}"]}}}`
 			);
 		}
 

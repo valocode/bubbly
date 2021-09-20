@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/codescan"
+
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	schema "github.com/valocode/bubbly/ent/schema/types"
@@ -31,7 +32,6 @@ type CodeScan struct {
 	Edges                   CodeScanEdges `json:"edges"`
 	code_scan_release       *int
 	release_entry_code_scan *int
-	release_license_scans   *int
 }
 
 // CodeScanEdges holds the relations/edges for other nodes in the graph.
@@ -44,11 +44,13 @@ type CodeScanEdges struct {
 	Issues []*CodeIssue `json:"issues,omitempty"`
 	// Vulnerabilities holds the value of the vulnerabilities edge.
 	Vulnerabilities []*ReleaseVulnerability `json:"vulnerabilities,omitempty"`
+	// Licenses holds the value of the licenses edge.
+	Licenses []*ReleaseLicense `json:"licenses,omitempty"`
 	// Components holds the value of the components edge.
 	Components []*ReleaseComponent `json:"components,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // ReleaseOrErr returns the Release value or an error if the edge
@@ -97,10 +99,19 @@ func (e CodeScanEdges) VulnerabilitiesOrErr() ([]*ReleaseVulnerability, error) {
 	return nil, &NotLoadedError{edge: "vulnerabilities"}
 }
 
+// LicensesOrErr returns the Licenses value or an error if the edge
+// was not loaded in eager-loading.
+func (e CodeScanEdges) LicensesOrErr() ([]*ReleaseLicense, error) {
+	if e.loadedTypes[4] {
+		return e.Licenses, nil
+	}
+	return nil, &NotLoadedError{edge: "licenses"}
+}
+
 // ComponentsOrErr returns the Components value or an error if the edge
 // was not loaded in eager-loading.
 func (e CodeScanEdges) ComponentsOrErr() ([]*ReleaseComponent, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.Components, nil
 	}
 	return nil, &NotLoadedError{edge: "components"}
@@ -122,8 +133,6 @@ func (*CodeScan) scanValues(columns []string) ([]interface{}, error) {
 		case codescan.ForeignKeys[0]: // code_scan_release
 			values[i] = new(sql.NullInt64)
 		case codescan.ForeignKeys[1]: // release_entry_code_scan
-			values[i] = new(sql.NullInt64)
-		case codescan.ForeignKeys[2]: // release_license_scans
 			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type CodeScan", columns[i])
@@ -180,13 +189,6 @@ func (cs *CodeScan) assignValues(columns []string, values []interface{}) error {
 				cs.release_entry_code_scan = new(int)
 				*cs.release_entry_code_scan = int(value.Int64)
 			}
-		case codescan.ForeignKeys[2]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field release_license_scans", value)
-			} else if value.Valid {
-				cs.release_license_scans = new(int)
-				*cs.release_license_scans = int(value.Int64)
-			}
 		}
 	}
 	return nil
@@ -210,6 +212,11 @@ func (cs *CodeScan) QueryIssues() *CodeIssueQuery {
 // QueryVulnerabilities queries the "vulnerabilities" edge of the CodeScan entity.
 func (cs *CodeScan) QueryVulnerabilities() *ReleaseVulnerabilityQuery {
 	return (&CodeScanClient{config: cs.config}).QueryVulnerabilities(cs)
+}
+
+// QueryLicenses queries the "licenses" edge of the CodeScan entity.
+func (cs *CodeScan) QueryLicenses() *ReleaseLicenseQuery {
+	return (&CodeScanClient{config: cs.config}).QueryLicenses(cs)
 }
 
 // QueryComponents queries the "components" edge of the CodeScan entity.

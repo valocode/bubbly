@@ -37,6 +37,20 @@ func (ec *EventCreate) SetNillableMessage(s *string) *EventCreate {
 	return ec
 }
 
+// SetStatus sets the "status" field.
+func (ec *EventCreate) SetStatus(e event.Status) *EventCreate {
+	ec.mutation.SetStatus(e)
+	return ec
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (ec *EventCreate) SetNillableStatus(e *event.Status) *EventCreate {
+	if e != nil {
+		ec.SetStatus(*e)
+	}
+	return ec
+}
+
 // SetType sets the "type" field.
 func (ec *EventCreate) SetType(e event.Type) *EventCreate {
 	ec.mutation.SetType(e)
@@ -189,6 +203,10 @@ func (ec *EventCreate) defaults() {
 		v := event.DefaultMessage
 		ec.mutation.SetMessage(v)
 	}
+	if _, ok := ec.mutation.Status(); !ok {
+		v := event.DefaultStatus
+		ec.mutation.SetStatus(v)
+	}
 	if _, ok := ec.mutation.Time(); !ok {
 		v := event.DefaultTime()
 		ec.mutation.SetTime(v)
@@ -199,6 +217,14 @@ func (ec *EventCreate) defaults() {
 func (ec *EventCreate) check() error {
 	if _, ok := ec.mutation.Message(); !ok {
 		return &ValidationError{Name: "message", err: errors.New(`ent: missing required field "message"`)}
+	}
+	if _, ok := ec.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "status"`)}
+	}
+	if v, ok := ec.mutation.Status(); ok {
+		if err := event.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "status": %w`, err)}
+		}
 	}
 	if _, ok := ec.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "type"`)}
@@ -245,6 +271,14 @@ func (ec *EventCreate) createSpec() (*Event, *sqlgraph.CreateSpec) {
 			Column: event.FieldMessage,
 		})
 		_node.Message = value
+	}
+	if value, ok := ec.mutation.Status(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: event.FieldStatus,
+		})
+		_node.Status = value
 	}
 	if value, ok := ec.mutation.GetType(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{

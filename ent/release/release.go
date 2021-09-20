@@ -3,10 +3,6 @@
 package release
 
 import (
-	"fmt"
-	"io"
-	"strconv"
-
 	"entgo.io/ent"
 )
 
@@ -19,8 +15,6 @@ const (
 	FieldName = "name"
 	// FieldVersion holds the string denoting the version field in the database.
 	FieldVersion = "version"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
 	// EdgeSubreleases holds the string denoting the subreleases edge name in mutations.
 	EdgeSubreleases = "subreleases"
 	// EdgeDependencies holds the string denoting the dependencies edge name in mutations.
@@ -39,6 +33,8 @@ const (
 	EdgeComponents = "components"
 	// EdgeVulnerabilities holds the string denoting the vulnerabilities edge name in mutations.
 	EdgeVulnerabilities = "vulnerabilities"
+	// EdgeLicenses holds the string denoting the licenses edge name in mutations.
+	EdgeLicenses = "licenses"
 	// EdgeCodeScans holds the string denoting the code_scans edge name in mutations.
 	EdgeCodeScans = "code_scans"
 	// EdgeTestRuns holds the string denoting the test_runs edge name in mutations.
@@ -100,6 +96,13 @@ const (
 	VulnerabilitiesInverseTable = "release_vulnerability"
 	// VulnerabilitiesColumn is the table column denoting the vulnerabilities relation/edge.
 	VulnerabilitiesColumn = "release_vulnerability_release"
+	// LicensesTable is the table that holds the licenses relation/edge.
+	LicensesTable = "release_license"
+	// LicensesInverseTable is the table name for the ReleaseLicense entity.
+	// It exists in this package in order to avoid circular dependency with the "releaselicense" package.
+	LicensesInverseTable = "release_license"
+	// LicensesColumn is the table column denoting the licenses relation/edge.
+	LicensesColumn = "release_license_release"
 	// CodeScansTable is the table that holds the code_scans relation/edge.
 	CodeScansTable = "code_scan"
 	// CodeScansInverseTable is the table name for the CodeScan entity.
@@ -126,7 +129,6 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldVersion,
-	FieldStatus,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "release"
@@ -176,48 +178,3 @@ var (
 	// VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	VersionValidator func(string) error
 )
-
-// Status defines the type for the "status" enum field.
-type Status string
-
-// StatusPending is the default value of the Status enum.
-const DefaultStatus = StatusPending
-
-// Status values.
-const (
-	StatusPending Status = "pending"
-	StatusReady   Status = "ready"
-	StatusBlocked Status = "blocked"
-)
-
-func (s Status) String() string {
-	return string(s)
-}
-
-// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
-func StatusValidator(s Status) error {
-	switch s {
-	case StatusPending, StatusReady, StatusBlocked:
-		return nil
-	default:
-		return fmt.Errorf("release: invalid enum value for status field: %q", s)
-	}
-}
-
-// MarshalGQL implements graphql.Marshaler interface.
-func (s Status) MarshalGQL(w io.Writer) {
-	io.WriteString(w, strconv.Quote(s.String()))
-}
-
-// UnmarshalGQL implements graphql.Unmarshaler interface.
-func (s *Status) UnmarshalGQL(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return fmt.Errorf("enum %T must be a string", val)
-	}
-	*s = Status(str)
-	if err := StatusValidator(*s); err != nil {
-		return fmt.Errorf("%s is not a valid Status", str)
-	}
-	return nil
-}

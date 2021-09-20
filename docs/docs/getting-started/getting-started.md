@@ -155,7 +155,7 @@ code_issue[issue] {
 
 If we save this in a file called `gosec.rego` and then use the bubbly command line we can either run the adapter directly from the file, or save it and run by fetching it from the remote server.
 
-We will need a results file as input also, which can be found here (this is a result from running gosec over bubbly some time back): <https://raw.githubusercontent.com/valocode/bubbly/main/adapter/testdata/adapters/gosec.json>
+We will need a results file as input also, which can be found here (this is a result from running gosec over bubbly some time back): <https://raw.githubusercontent.com/valocode/bubbly/main/adapter/testdata/gosec.json>
 
 ```bash
 # run the adapter by providing the path to it as input

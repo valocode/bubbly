@@ -22,6 +22,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/ent/schema"
+	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -119,7 +120,7 @@ func init() {
 	// event.DefaultMessage holds the default value on creation for the message field.
 	event.DefaultMessage = eventDescMessage.Default.(string)
 	// eventDescTime is the schema descriptor for time field.
-	eventDescTime := eventFields[2].Descriptor()
+	eventDescTime := eventFields[3].Descriptor()
 	// event.DefaultTime holds the default value on creation for the time field.
 	event.DefaultTime = eventDescTime.Default.(func() time.Time)
 	gitcommitFields := schema.GitCommit{}.Fields()
@@ -132,20 +133,28 @@ func init() {
 	gitcommitDescBranch := gitcommitFields[1].Descriptor()
 	// gitcommit.BranchValidator is a validator for the "branch" field. It is called by the builders before save.
 	gitcommit.BranchValidator = gitcommitDescBranch.Validators[0].(func(string) error)
+	licenseHooks := schema.License{}.Hooks()
+	license.Hooks[0] = licenseHooks[0]
 	licenseFields := schema.License{}.Fields()
 	_ = licenseFields
-	// licenseDescSpdxID is the schema descriptor for spdx_id field.
-	licenseDescSpdxID := licenseFields[0].Descriptor()
-	// license.SpdxIDValidator is a validator for the "spdx_id" field. It is called by the builders before save.
-	license.SpdxIDValidator = licenseDescSpdxID.Validators[0].(func(string) error)
-	// licenseDescName is the schema descriptor for name field.
-	licenseDescName := licenseFields[1].Descriptor()
-	// license.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	license.NameValidator = licenseDescName.Validators[0].(func(string) error)
-	// licenseDescIsOsiApproved is the schema descriptor for is_osi_approved field.
-	licenseDescIsOsiApproved := licenseFields[4].Descriptor()
-	// license.DefaultIsOsiApproved holds the default value on creation for the is_osi_approved field.
-	license.DefaultIsOsiApproved = licenseDescIsOsiApproved.Default.(bool)
+	// licenseDescLicenseID is the schema descriptor for license_id field.
+	licenseDescLicenseID := licenseFields[0].Descriptor()
+	// license.LicenseIDValidator is a validator for the "license_id" field. It is called by the builders before save.
+	license.LicenseIDValidator = func() func(string) error {
+		validators := licenseDescLicenseID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(license_id string) error {
+			for _, fn := range fns {
+				if err := fn(license_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	organizationFields := schema.Organization{}.Fields()
 	_ = organizationFields
 	// organizationDescName is the schema descriptor for name field.
@@ -222,6 +231,36 @@ func init() {
 	repo.DefaultDefaultBranch = repoDescDefaultBranch.Default.(string)
 	// repo.DefaultBranchValidator is a validator for the "default_branch" field. It is called by the builders before save.
 	repo.DefaultBranchValidator = repoDescDefaultBranch.Validators[0].(func(string) error)
+	spdxlicenseHooks := schema.SPDXLicense{}.Hooks()
+	spdxlicense.Hooks[0] = spdxlicenseHooks[0]
+	spdxlicenseFields := schema.SPDXLicense{}.Fields()
+	_ = spdxlicenseFields
+	// spdxlicenseDescLicenseID is the schema descriptor for license_id field.
+	spdxlicenseDescLicenseID := spdxlicenseFields[0].Descriptor()
+	// spdxlicense.LicenseIDValidator is a validator for the "license_id" field. It is called by the builders before save.
+	spdxlicense.LicenseIDValidator = func() func(string) error {
+		validators := spdxlicenseDescLicenseID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(license_id string) error {
+			for _, fn := range fns {
+				if err := fn(license_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// spdxlicenseDescName is the schema descriptor for name field.
+	spdxlicenseDescName := spdxlicenseFields[1].Descriptor()
+	// spdxlicense.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	spdxlicense.NameValidator = spdxlicenseDescName.Validators[0].(func(string) error)
+	// spdxlicenseDescIsOsiApproved is the schema descriptor for is_osi_approved field.
+	spdxlicenseDescIsOsiApproved := spdxlicenseFields[4].Descriptor()
+	// spdxlicense.DefaultIsOsiApproved holds the default value on creation for the is_osi_approved field.
+	spdxlicense.DefaultIsOsiApproved = spdxlicenseDescIsOsiApproved.Default.(bool)
 	testcaseFields := schema.TestCase{}.Fields()
 	_ = testcaseFields
 	// testcaseDescName is the schema descriptor for name field.

@@ -225,6 +225,18 @@ func (r *RepoQuery) collectField(ctx *graphql.OperationContext, field graphql.Co
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (sl *SPDXLicenseQuery) CollectFields(ctx context.Context, satisfies ...string) *SPDXLicenseQuery {
+	if fc := graphql.GetFieldContext(ctx); fc != nil {
+		sl = sl.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
+	}
+	return sl
+}
+
+func (sl *SPDXLicenseQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *SPDXLicenseQuery {
+	return sl
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (tc *TestCaseQuery) CollectFields(ctx context.Context, satisfies ...string) *TestCaseQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		tc = tc.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)

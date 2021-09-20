@@ -27,6 +27,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerability"
@@ -78,6 +79,8 @@ type Client struct {
 	ReleaseVulnerability *ReleaseVulnerabilityClient
 	// Repo is the client for interacting with the Repo builders.
 	Repo *RepoClient
+	// SPDXLicense is the client for interacting with the SPDXLicense builders.
+	SPDXLicense *SPDXLicenseClient
 	// TestCase is the client for interacting with the TestCase builders.
 	TestCase *TestCaseClient
 	// TestRun is the client for interacting with the TestRun builders.
@@ -119,6 +122,7 @@ func (c *Client) init() {
 	c.ReleasePolicyViolation = NewReleasePolicyViolationClient(c.config)
 	c.ReleaseVulnerability = NewReleaseVulnerabilityClient(c.config)
 	c.Repo = NewRepoClient(c.config)
+	c.SPDXLicense = NewSPDXLicenseClient(c.config)
 	c.TestCase = NewTestCaseClient(c.config)
 	c.TestRun = NewTestRunClient(c.config)
 	c.Vulnerability = NewVulnerabilityClient(c.config)
@@ -174,6 +178,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ReleasePolicyViolation: NewReleasePolicyViolationClient(cfg),
 		ReleaseVulnerability:   NewReleaseVulnerabilityClient(cfg),
 		Repo:                   NewRepoClient(cfg),
+		SPDXLicense:            NewSPDXLicenseClient(cfg),
 		TestCase:               NewTestCaseClient(cfg),
 		TestRun:                NewTestRunClient(cfg),
 		Vulnerability:          NewVulnerabilityClient(cfg),
@@ -214,6 +219,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ReleasePolicyViolation: NewReleasePolicyViolationClient(cfg),
 		ReleaseVulnerability:   NewReleaseVulnerabilityClient(cfg),
 		Repo:                   NewRepoClient(cfg),
+		SPDXLicense:            NewSPDXLicenseClient(cfg),
 		TestCase:               NewTestCaseClient(cfg),
 		TestRun:                NewTestRunClient(cfg),
 		Vulnerability:          NewVulnerabilityClient(cfg),
@@ -265,6 +271,7 @@ func (c *Client) Use(hooks ...Hook) {
 	c.ReleasePolicyViolation.Use(hooks...)
 	c.ReleaseVulnerability.Use(hooks...)
 	c.Repo.Use(hooks...)
+	c.SPDXLicense.Use(hooks...)
 	c.TestCase.Use(hooks...)
 	c.TestRun.Use(hooks...)
 	c.Vulnerability.Use(hooks...)
@@ -748,6 +755,22 @@ func (c *CodeScanClient) QueryVulnerabilities(cs *CodeScan) *ReleaseVulnerabilit
 			sqlgraph.From(codescan.Table, codescan.FieldID, id),
 			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, codescan.VulnerabilitiesTable, codescan.VulnerabilitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(cs.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryLicenses queries the licenses edge of a CodeScan.
+func (c *CodeScanClient) QueryLicenses(cs *CodeScan) *ReleaseLicenseQuery {
+	query := &ReleaseLicenseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := cs.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(codescan.Table, codescan.FieldID, id),
+			sqlgraph.To(releaselicense.Table, releaselicense.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, codescan.LicensesTable, codescan.LicensesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(cs.driver.Dialect(), step)
 		return fromV, nil
@@ -1292,6 +1315,22 @@ func (c *LicenseClient) QueryOwner(l *License) *OrganizationQuery {
 	return query
 }
 
+// QuerySpdx queries the spdx edge of a License.
+func (c *LicenseClient) QuerySpdx(l *License) *SPDXLicenseQuery {
+	query := &SPDXLicenseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := l.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(license.Table, license.FieldID, id),
+			sqlgraph.To(spdxlicense.Table, spdxlicense.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, license.SpdxTable, license.SpdxColumn),
+		)
+		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryComponents queries the components edge of a License.
 func (c *LicenseClient) QueryComponents(l *License) *ComponentQuery {
 	query := &ComponentQuery{config: c.config}
@@ -1326,7 +1365,8 @@ func (c *LicenseClient) QueryInstances(l *License) *ReleaseLicenseQuery {
 
 // Hooks returns the client hooks.
 func (c *LicenseClient) Hooks() []Hook {
-	return c.hooks.License
+	hooks := c.hooks.License
+	return append(hooks[:len(hooks):len(hooks)], license.Hooks[:]...)
 }
 
 // OrganizationClient is a client for the Organization schema.
@@ -1834,6 +1874,22 @@ func (c *ReleaseClient) QueryVulnerabilities(r *Release) *ReleaseVulnerabilityQu
 	return query
 }
 
+// QueryLicenses queries the licenses edge of a Release.
+func (c *ReleaseClient) QueryLicenses(r *Release) *ReleaseLicenseQuery {
+	query := &ReleaseLicenseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(release.Table, release.FieldID, id),
+			sqlgraph.To(releaselicense.Table, releaselicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, release.LicensesTable, release.LicensesColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryCodeScans queries the code_scans edge of a Release.
 func (c *ReleaseClient) QueryCodeScans(r *Release) *CodeScanQuery {
 	query := &CodeScanQuery{config: c.config}
@@ -2030,6 +2086,22 @@ func (c *ReleaseComponentClient) QueryVulnerabilities(rc *ReleaseComponent) *Rel
 			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, id),
 			sqlgraph.To(releasevulnerability.Table, releasevulnerability.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, releasecomponent.VulnerabilitiesTable, releasecomponent.VulnerabilitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryLicenses queries the licenses edge of a ReleaseComponent.
+func (c *ReleaseComponentClient) QueryLicenses(rc *ReleaseComponent) *ReleaseLicenseQuery {
+	query := &ReleaseLicenseQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := rc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(releasecomponent.Table, releasecomponent.FieldID, id),
+			sqlgraph.To(releaselicense.Table, releaselicense.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, releasecomponent.LicensesTable, releasecomponent.LicensesColumn),
 		)
 		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
 		return fromV, nil
@@ -2338,7 +2410,7 @@ func (c *ReleaseLicenseClient) QueryScans(rl *ReleaseLicense) *CodeScanQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(releaselicense.Table, releaselicense.FieldID, id),
 			sqlgraph.To(codescan.Table, codescan.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, releaselicense.ScansTable, releaselicense.ScansColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, releaselicense.ScansTable, releaselicense.ScansPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(rl.driver.Dialect(), step)
 		return fromV, nil
@@ -2981,6 +3053,97 @@ func (c *RepoClient) QueryPolicies(r *Repo) *ReleasePolicyQuery {
 // Hooks returns the client hooks.
 func (c *RepoClient) Hooks() []Hook {
 	return c.hooks.Repo
+}
+
+// SPDXLicenseClient is a client for the SPDXLicense schema.
+type SPDXLicenseClient struct {
+	config
+}
+
+// NewSPDXLicenseClient returns a client for the SPDXLicense from the given config.
+func NewSPDXLicenseClient(c config) *SPDXLicenseClient {
+	return &SPDXLicenseClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `spdxlicense.Hooks(f(g(h())))`.
+func (c *SPDXLicenseClient) Use(hooks ...Hook) {
+	c.hooks.SPDXLicense = append(c.hooks.SPDXLicense, hooks...)
+}
+
+// Create returns a create builder for SPDXLicense.
+func (c *SPDXLicenseClient) Create() *SPDXLicenseCreate {
+	mutation := newSPDXLicenseMutation(c.config, OpCreate)
+	return &SPDXLicenseCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of SPDXLicense entities.
+func (c *SPDXLicenseClient) CreateBulk(builders ...*SPDXLicenseCreate) *SPDXLicenseCreateBulk {
+	return &SPDXLicenseCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for SPDXLicense.
+func (c *SPDXLicenseClient) Update() *SPDXLicenseUpdate {
+	mutation := newSPDXLicenseMutation(c.config, OpUpdate)
+	return &SPDXLicenseUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SPDXLicenseClient) UpdateOne(sl *SPDXLicense) *SPDXLicenseUpdateOne {
+	mutation := newSPDXLicenseMutation(c.config, OpUpdateOne, withSPDXLicense(sl))
+	return &SPDXLicenseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SPDXLicenseClient) UpdateOneID(id int) *SPDXLicenseUpdateOne {
+	mutation := newSPDXLicenseMutation(c.config, OpUpdateOne, withSPDXLicenseID(id))
+	return &SPDXLicenseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for SPDXLicense.
+func (c *SPDXLicenseClient) Delete() *SPDXLicenseDelete {
+	mutation := newSPDXLicenseMutation(c.config, OpDelete)
+	return &SPDXLicenseDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *SPDXLicenseClient) DeleteOne(sl *SPDXLicense) *SPDXLicenseDeleteOne {
+	return c.DeleteOneID(sl.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *SPDXLicenseClient) DeleteOneID(id int) *SPDXLicenseDeleteOne {
+	builder := c.Delete().Where(spdxlicense.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SPDXLicenseDeleteOne{builder}
+}
+
+// Query returns a query builder for SPDXLicense.
+func (c *SPDXLicenseClient) Query() *SPDXLicenseQuery {
+	return &SPDXLicenseQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a SPDXLicense entity by its id.
+func (c *SPDXLicenseClient) Get(ctx context.Context, id int) (*SPDXLicense, error) {
+	return c.Query().Where(spdxlicense.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SPDXLicenseClient) GetX(ctx context.Context, id int) *SPDXLicense {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *SPDXLicenseClient) Hooks() []Hook {
+	hooks := c.hooks.SPDXLicense
+	return append(hooks[:len(hooks):len(hooks)], spdxlicense.Hooks[:]...)
 }
 
 // TestCaseClient is a client for the TestCase schema.

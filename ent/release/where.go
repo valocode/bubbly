@@ -327,54 +327,6 @@ func VersionContainsFold(v string) predicate.Release {
 	})
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v Status) predicate.Release {
-	return predicate.Release(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldStatus), v))
-	})
-}
-
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v Status) predicate.Release {
-	return predicate.Release(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldStatus), v))
-	})
-}
-
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...Status) predicate.Release {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.Release(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.In(s.C(FieldStatus), v...))
-	})
-}
-
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...Status) predicate.Release {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.Release(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.NotIn(s.C(FieldStatus), v...))
-	})
-}
-
 // HasSubreleases applies the HasEdge predicate on the "subreleases" edge.
 func HasSubreleases() predicate.Release {
 	return predicate.Release(func(s *sql.Selector) {
@@ -618,6 +570,34 @@ func HasVulnerabilitiesWith(preds ...predicate.ReleaseVulnerability) predicate.R
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(VulnerabilitiesInverseTable, FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, VulnerabilitiesTable, VulnerabilitiesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasLicenses applies the HasEdge predicate on the "licenses" edge.
+func HasLicenses() predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(LicensesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, LicensesTable, LicensesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasLicensesWith applies the HasEdge predicate on the "licenses" edge with a given conditions (other predicates).
+func HasLicensesWith(preds ...predicate.ReleaseLicense) predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(LicensesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, LicensesTable, LicensesColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

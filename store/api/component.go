@@ -24,6 +24,10 @@ type (
 		Note *string `json:"note,omitempty" validate:"required" mapstructure:"note"`
 	}
 
+	License struct {
+		ent.LicenseModelCreate `validate:"required" mapstructure:",squash"`
+	}
+
 	ComponentRead struct {
 		ent.ComponentModelRead `validate:"required"`
 	}

@@ -18,7 +18,6 @@ import (
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	"github.com/valocode/bubbly/ent/event"
-	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
@@ -199,14 +198,12 @@ type ComplexityRoot struct {
 	}
 
 	License struct {
-		Components    func(childComplexity int, first *int, last *int, where *ent.ComponentWhereInput, orderBy *ent.ComponentOrder) int
-		DetailsURL    func(childComplexity int) int
-		ID            func(childComplexity int) int
-		Instances     func(childComplexity int, first *int, last *int, where *ent.ReleaseLicenseWhereInput) int
-		IsOsiApproved func(childComplexity int) int
-		Name          func(childComplexity int) int
-		Reference     func(childComplexity int) int
-		SpdxID        func(childComplexity int) int
+		Components func(childComplexity int, first *int, last *int, where *ent.ComponentWhereInput, orderBy *ent.ComponentOrder) int
+		ID         func(childComplexity int) int
+		Instances  func(childComplexity int, first *int, last *int, where *ent.ReleaseLicenseWhereInput) int
+		LicenseID  func(childComplexity int) int
+		Name       func(childComplexity int) int
+		Spdx       func(childComplexity int) int
 	}
 
 	LicenseConnection struct {
@@ -271,9 +268,9 @@ type ComplexityRoot struct {
 		Dependencies         func(childComplexity int, first *int, last *int, where *ent.ReleaseWhereInput, orderBy *ent.ReleaseOrder) int
 		HeadOf               func(childComplexity int) int
 		ID                   func(childComplexity int) int
+		Licenses             func(childComplexity int, first *int, last *int, where *ent.ReleaseLicenseWhereInput) int
 		Log                  func(childComplexity int, first *int, last *int, where *ent.ReleaseEntryWhereInput, orderBy *ent.ReleaseEntryOrder) int
 		Name                 func(childComplexity int) int
-		Status               func(childComplexity int) int
 		Subreleases          func(childComplexity int, first *int, last *int, where *ent.ReleaseWhereInput, orderBy *ent.ReleaseOrder) int
 		TestRuns             func(childComplexity int, first *int, last *int, where *ent.TestRunWhereInput, orderBy *ent.TestRunOrder) int
 		Version              func(childComplexity int) int
@@ -285,6 +282,7 @@ type ComplexityRoot struct {
 	ReleaseComponent struct {
 		Component       func(childComplexity int) int
 		ID              func(childComplexity int) int
+		Licenses        func(childComplexity int, first *int, last *int, where *ent.ReleaseLicenseWhereInput) int
 		Release         func(childComplexity int) int
 		Scans           func(childComplexity int, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) int
 		Type            func(childComplexity int) int
@@ -435,6 +433,15 @@ type ComplexityRoot struct {
 		Node   func(childComplexity int) int
 	}
 
+	SPDXLicense struct {
+		DetailsURL    func(childComplexity int) int
+		ID            func(childComplexity int) int
+		IsOsiApproved func(childComplexity int) int
+		LicenseID     func(childComplexity int) int
+		Name          func(childComplexity int) int
+		Reference     func(childComplexity int) int
+	}
+
 	TestCase struct {
 		Elapsed  func(childComplexity int) int
 		ID       func(childComplexity int) int
@@ -578,6 +585,7 @@ type ReleaseResolver interface {
 	Violations(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleasePolicyViolationWhereInput) ([]*ent.ReleasePolicyViolation, error)
 	Artifacts(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ArtifactWhereInput, orderBy *ent.ArtifactOrder) ([]*ent.Artifact, error)
 	Components(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error)
+	Licenses(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseLicenseWhereInput) ([]*ent.ReleaseLicense, error)
 	Vulnerabilities(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
 	CodeScans(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error)
 	TestRuns(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.TestRunWhereInput, orderBy *ent.TestRunOrder) ([]*ent.TestRun, error)
@@ -587,6 +595,7 @@ type ReleaseComponentResolver interface {
 	Scans(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error)
 
 	Vulnerabilities(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error)
+	Licenses(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.ReleaseLicenseWhereInput) ([]*ent.ReleaseLicense, error)
 }
 type ReleaseLicenseResolver interface {
 	Scans(ctx context.Context, obj *ent.ReleaseLicense, first *int, last *int, where *ent.CodeScanWhereInput, orderBy *ent.CodeScanOrder) ([]*ent.CodeScan, error)
@@ -1207,13 +1216,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.License.Components(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ComponentWhereInput), args["order_by"].(*ent.ComponentOrder)), true
 
-	case "License.details_url":
-		if e.complexity.License.DetailsURL == nil {
-			break
-		}
-
-		return e.complexity.License.DetailsURL(childComplexity), true
-
 	case "License.id":
 		if e.complexity.License.ID == nil {
 			break
@@ -1233,12 +1235,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.License.Instances(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseLicenseWhereInput)), true
 
-	case "License.is_osi_approved":
-		if e.complexity.License.IsOsiApproved == nil {
+	case "License.license_id":
+		if e.complexity.License.LicenseID == nil {
 			break
 		}
 
-		return e.complexity.License.IsOsiApproved(childComplexity), true
+		return e.complexity.License.LicenseID(childComplexity), true
 
 	case "License.name":
 		if e.complexity.License.Name == nil {
@@ -1247,19 +1249,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.License.Name(childComplexity), true
 
-	case "License.reference":
-		if e.complexity.License.Reference == nil {
+	case "License.spdx":
+		if e.complexity.License.Spdx == nil {
 			break
 		}
 
-		return e.complexity.License.Reference(childComplexity), true
-
-	case "License.spdx_id":
-		if e.complexity.License.SpdxID == nil {
-			break
-		}
-
-		return e.complexity.License.SpdxID(childComplexity), true
+		return e.complexity.License.Spdx(childComplexity), true
 
 	case "LicenseConnection.edges":
 		if e.complexity.LicenseConnection.Edges == nil {
@@ -1646,6 +1641,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Release.ID(childComplexity), true
 
+	case "Release.licenses":
+		if e.complexity.Release.Licenses == nil {
+			break
+		}
+
+		args, err := ec.field_Release_licenses_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Release.Licenses(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseLicenseWhereInput)), true
+
 	case "Release.log":
 		if e.complexity.Release.Log == nil {
 			break
@@ -1664,13 +1671,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Release.Name(childComplexity), true
-
-	case "Release.status":
-		if e.complexity.Release.Status == nil {
-			break
-		}
-
-		return e.complexity.Release.Status(childComplexity), true
 
 	case "Release.subreleases":
 		if e.complexity.Release.Subreleases == nil {
@@ -1752,6 +1752,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ReleaseComponent.ID(childComplexity), true
+
+	case "ReleaseComponent.licenses":
+		if e.complexity.ReleaseComponent.Licenses == nil {
+			break
+		}
+
+		args, err := ec.field_ReleaseComponent_licenses_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.ReleaseComponent.Licenses(childComplexity, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseLicenseWhereInput)), true
 
 	case "ReleaseComponent.release":
 		if e.complexity.ReleaseComponent.Release == nil {
@@ -2376,6 +2388,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.RepoEdge.Node(childComplexity), true
+
+	case "SPDXLicense.details_url":
+		if e.complexity.SPDXLicense.DetailsURL == nil {
+			break
+		}
+
+		return e.complexity.SPDXLicense.DetailsURL(childComplexity), true
+
+	case "SPDXLicense.id":
+		if e.complexity.SPDXLicense.ID == nil {
+			break
+		}
+
+		return e.complexity.SPDXLicense.ID(childComplexity), true
+
+	case "SPDXLicense.is_osi_approved":
+		if e.complexity.SPDXLicense.IsOsiApproved == nil {
+			break
+		}
+
+		return e.complexity.SPDXLicense.IsOsiApproved(childComplexity), true
+
+	case "SPDXLicense.license_id":
+		if e.complexity.SPDXLicense.LicenseID == nil {
+			break
+		}
+
+		return e.complexity.SPDXLicense.LicenseID(childComplexity), true
+
+	case "SPDXLicense.name":
+		if e.complexity.SPDXLicense.Name == nil {
+			break
+		}
+
+		return e.complexity.SPDXLicense.Name(childComplexity), true
+
+	case "SPDXLicense.reference":
+		if e.complexity.SPDXLicense.Reference == nil {
+			break
+		}
+
+		return e.complexity.SPDXLicense.Reference(childComplexity), true
 
 	case "TestCase.elapsed":
 		if e.complexity.TestCase.Elapsed == nil {
@@ -3300,20 +3354,20 @@ input LicenseWhereInput {
   and: [LicenseWhereInput!]
   or: [LicenseWhereInput!]
   
-  """spdx_id field predicates"""
-  spdxID: String
-  spdxIDNEQ: String
-  spdxIDIn: [String!]
-  spdxIDNotIn: [String!]
-  spdxIDGT: String
-  spdxIDGTE: String
-  spdxIDLT: String
-  spdxIDLTE: String
-  spdxIDContains: String
-  spdxIDHasPrefix: String
-  spdxIDHasSuffix: String
-  spdxIDEqualFold: String
-  spdxIDContainsFold: String
+  """license_id field predicates"""
+  licenseID: String
+  licenseIDNEQ: String
+  licenseIDIn: [String!]
+  licenseIDNotIn: [String!]
+  licenseIDGT: String
+  licenseIDGTE: String
+  licenseIDLT: String
+  licenseIDLTE: String
+  licenseIDContains: String
+  licenseIDHasPrefix: String
+  licenseIDHasSuffix: String
+  licenseIDEqualFold: String
+  licenseIDContainsFold: String
   
   """name field predicates"""
   name: String
@@ -3327,46 +3381,10 @@ input LicenseWhereInput {
   nameContains: String
   nameHasPrefix: String
   nameHasSuffix: String
+  nameIsNil: Boolean
+  nameNotNil: Boolean
   nameEqualFold: String
   nameContainsFold: String
-  
-  """reference field predicates"""
-  reference: String
-  referenceNEQ: String
-  referenceIn: [String!]
-  referenceNotIn: [String!]
-  referenceGT: String
-  referenceGTE: String
-  referenceLT: String
-  referenceLTE: String
-  referenceContains: String
-  referenceHasPrefix: String
-  referenceHasSuffix: String
-  referenceIsNil: Boolean
-  referenceNotNil: Boolean
-  referenceEqualFold: String
-  referenceContainsFold: String
-  
-  """details_url field predicates"""
-  detailsURL: String
-  detailsURLNEQ: String
-  detailsURLIn: [String!]
-  detailsURLNotIn: [String!]
-  detailsURLGT: String
-  detailsURLGTE: String
-  detailsURLLT: String
-  detailsURLLTE: String
-  detailsURLContains: String
-  detailsURLHasPrefix: String
-  detailsURLHasSuffix: String
-  detailsURLIsNil: Boolean
-  detailsURLNotNil: Boolean
-  detailsURLEqualFold: String
-  detailsURLContainsFold: String
-  
-  """is_osi_approved field predicates"""
-  isOsiApproved: Boolean
-  isOsiApprovedNEQ: Boolean
   
   """id field predicates"""
   id: ID
@@ -3381,6 +3399,10 @@ input LicenseWhereInput {
   """owner edge predicates"""
   hasOwner: Boolean
   hasOwnerWith: [OrganizationWhereInput!]
+  
+  """spdx edge predicates"""
+  hasSpdx: Boolean
+  hasSpdxWith: [SPDXLicenseWhereInput!]
   
   """components edge predicates"""
   hasComponents: Boolean
@@ -3959,6 +3981,10 @@ input CodeScanWhereInput {
   hasVulnerabilities: Boolean
   hasVulnerabilitiesWith: [ReleaseVulnerabilityWhereInput!]
   
+  """licenses edge predicates"""
+  hasLicenses: Boolean
+  hasLicensesWith: [ReleaseLicenseWhereInput!]
+  
   """components edge predicates"""
   hasComponents: Boolean
   hasComponentsWith: [ReleaseComponentWhereInput!]
@@ -4027,12 +4053,6 @@ input ReleaseWhereInput {
   versionEqualFold: String
   versionContainsFold: String
   
-  """status field predicates"""
-  status: ReleaseStatus
-  statusNEQ: ReleaseStatus
-  statusIn: [ReleaseStatus!]
-  statusNotIn: [ReleaseStatus!]
-  
   """id field predicates"""
   id: ID
   idNEQ: ID
@@ -4078,6 +4098,10 @@ input ReleaseWhereInput {
   """vulnerabilities edge predicates"""
   hasVulnerabilities: Boolean
   hasVulnerabilitiesWith: [ReleaseVulnerabilityWhereInput!]
+  
+  """licenses edge predicates"""
+  hasLicenses: Boolean
+  hasLicensesWith: [ReleaseLicenseWhereInput!]
   
   """code_scans edge predicates"""
   hasCodeScans: Boolean
@@ -4132,6 +4156,10 @@ input ReleaseComponentWhereInput {
   """vulnerabilities edge predicates"""
   hasVulnerabilities: Boolean
   hasVulnerabilitiesWith: [ReleaseVulnerabilityWhereInput!]
+  
+  """licenses edge predicates"""
+  hasLicenses: Boolean
+  hasLicensesWith: [ReleaseLicenseWhereInput!]
 }
 
 """
@@ -4378,6 +4406,94 @@ input AdapterWhereInput {
   """owner edge predicates"""
   hasOwner: Boolean
   hasOwnerWith: [OrganizationWhereInput!]
+}
+
+"""
+SPDXLicenseWhereInput is used for filtering SPDXLicense objects.
+Input was generated by ent.
+"""
+input SPDXLicenseWhereInput {
+  not: SPDXLicenseWhereInput
+  and: [SPDXLicenseWhereInput!]
+  or: [SPDXLicenseWhereInput!]
+  
+  """license_id field predicates"""
+  licenseID: String
+  licenseIDNEQ: String
+  licenseIDIn: [String!]
+  licenseIDNotIn: [String!]
+  licenseIDGT: String
+  licenseIDGTE: String
+  licenseIDLT: String
+  licenseIDLTE: String
+  licenseIDContains: String
+  licenseIDHasPrefix: String
+  licenseIDHasSuffix: String
+  licenseIDEqualFold: String
+  licenseIDContainsFold: String
+  
+  """name field predicates"""
+  name: String
+  nameNEQ: String
+  nameIn: [String!]
+  nameNotIn: [String!]
+  nameGT: String
+  nameGTE: String
+  nameLT: String
+  nameLTE: String
+  nameContains: String
+  nameHasPrefix: String
+  nameHasSuffix: String
+  nameEqualFold: String
+  nameContainsFold: String
+  
+  """reference field predicates"""
+  reference: String
+  referenceNEQ: String
+  referenceIn: [String!]
+  referenceNotIn: [String!]
+  referenceGT: String
+  referenceGTE: String
+  referenceLT: String
+  referenceLTE: String
+  referenceContains: String
+  referenceHasPrefix: String
+  referenceHasSuffix: String
+  referenceIsNil: Boolean
+  referenceNotNil: Boolean
+  referenceEqualFold: String
+  referenceContainsFold: String
+  
+  """details_url field predicates"""
+  detailsURL: String
+  detailsURLNEQ: String
+  detailsURLIn: [String!]
+  detailsURLNotIn: [String!]
+  detailsURLGT: String
+  detailsURLGTE: String
+  detailsURLLT: String
+  detailsURLLTE: String
+  detailsURLContains: String
+  detailsURLHasPrefix: String
+  detailsURLHasSuffix: String
+  detailsURLIsNil: Boolean
+  detailsURLNotNil: Boolean
+  detailsURLEqualFold: String
+  detailsURLContainsFold: String
+  
+  """is_osi_approved field predicates"""
+  isOsiApproved: Boolean
+  isOsiApprovedNEQ: Boolean
+  
+  """id field predicates"""
+  id: ID
+  idNEQ: ID
+  idIn: [ID!]
+  idNotIn: [ID!]
+  idGT: ID
+  idGTE: ID
+  idLT: ID
+  idLTE: ID
 }
 `, BuiltIn: false},
 	{Name: "schema.graphql", Input: `
@@ -4861,7 +4977,6 @@ type Release implements Node {
   id: ID!
   name: String
   version: String
-  status: ReleaseStatus
   subreleases(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
   dependencies(first: Int, last: Int, where: ReleaseWhereInput, order_by: ReleaseOrder): [Release] @goField(forceResolver: true)
   commit: GitCommit!
@@ -4870,6 +4985,7 @@ type Release implements Node {
   violations(first: Int, last: Int, where: ReleasePolicyViolationWhereInput): [ReleasePolicyViolation] @goField(forceResolver: true)
   artifacts(first: Int, last: Int, where: ArtifactWhereInput, order_by: ArtifactOrder): [Artifact] @goField(forceResolver: true)
   components(first: Int, last: Int, where: ReleaseComponentWhereInput): [ReleaseComponent] @goField(forceResolver: true)
+  licenses(first: Int, last: Int, where: ReleaseLicenseWhereInput): [ReleaseLicense] @goField(forceResolver: true)
   vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
   code_scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan] @goField(forceResolver: true)
   test_runs(first: Int, last: Int, where: TestRunWhereInput, order_by: TestRunOrder): [TestRun] @goField(forceResolver: true)
@@ -5098,6 +5214,7 @@ type ReleaseComponent implements Node {
   scans(first: Int, last: Int, where: CodeScanWhereInput, order_by: CodeScanOrder): [CodeScan!] @goField(forceResolver: true)
   component: Component!
   vulnerabilities(first: Int, last: Int, where: ReleaseVulnerabilityWhereInput): [ReleaseVulnerability] @goField(forceResolver: true)
+  licenses(first: Int, last: Int, where: ReleaseLicenseWhereInput): [ReleaseLicense] @goField(forceResolver: true)
 }
 
 """
@@ -5222,16 +5339,26 @@ type ReleaseEntryEdge {
 }
 
 """
+SPDXLicense represents the node SPDXLicense in the ent schema.
+"""
+type SPDXLicense implements Node {
+  id: ID!
+  license_id: String
+  name: String
+  reference: String
+  details_url: String
+  is_osi_approved: Boolean
+}
+
+"""
 License represents the node License in the ent schema.
 Generated by ent.
 """
 type License implements Node {
   id: ID!
-  spdx_id: String
+  license_id: String
   name: String
-  reference: String
-  details_url: String
-  is_osi_approved: Boolean
+  spdx: SPDXLicense
   components(first: Int, last: Int, where: ComponentWhereInput, order_by: ComponentOrder): [Component] @goField(forceResolver: true)
   instances(first: Int, last: Int, where: ReleaseLicenseWhereInput): [ReleaseLicense] @goField(forceResolver: true)
 }
@@ -6452,6 +6579,39 @@ func (ec *executionContext) field_Query_vulnerability_review_args(ctx context.Co
 	return args, nil
 }
 
+func (ec *executionContext) field_ReleaseComponent_licenses_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg1
+	var arg2 *ent.ReleaseLicenseWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg2, err = ec.unmarshalOReleaseLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_ReleaseComponent_scans_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -6884,6 +7044,39 @@ func (ec *executionContext) field_Release_dependencies_args(ctx context.Context,
 		}
 	}
 	args["order_by"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Release_licenses_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg1
+	var arg2 *ent.ReleaseLicenseWhereInput
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg2, err = ec.unmarshalOReleaseLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg2
 	return args, nil
 }
 
@@ -10161,7 +10354,7 @@ func (ec *executionContext) _License_id(ctx context.Context, field graphql.Colle
 	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _License_spdx_id(ctx context.Context, field graphql.CollectedField, obj *ent.License) (ret graphql.Marshaler) {
+func (ec *executionContext) _License_license_id(ctx context.Context, field graphql.CollectedField, obj *ent.License) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -10179,7 +10372,7 @@ func (ec *executionContext) _License_spdx_id(ctx context.Context, field graphql.
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.SpdxID, nil
+		return obj.LicenseID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10225,7 +10418,7 @@ func (ec *executionContext) _License_name(ctx context.Context, field graphql.Col
 	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _License_reference(ctx context.Context, field graphql.CollectedField, obj *ent.License) (ret graphql.Marshaler) {
+func (ec *executionContext) _License_spdx(ctx context.Context, field graphql.CollectedField, obj *ent.License) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -10236,14 +10429,14 @@ func (ec *executionContext) _License_reference(ctx context.Context, field graphq
 		Object:     "License",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
+		IsMethod:   true,
 		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Reference, nil
+		return obj.Spdx(ctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10252,73 +10445,9 @@ func (ec *executionContext) _License_reference(ctx context.Context, field graphq
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*ent.SPDXLicense)
 	fc.Result = res
-	return ec.marshalOString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _License_details_url(ctx context.Context, field graphql.CollectedField, obj *ent.License) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "License",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.DetailsURL, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalOString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _License_is_osi_approved(ctx context.Context, field graphql.CollectedField, obj *ent.License) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "License",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsOsiApproved, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalOBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalOSPDXLicense2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐSPDXLicense(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _License_components(ctx context.Context, field graphql.CollectedField, obj *ent.License) (ret graphql.Marshaler) {
@@ -11771,38 +11900,6 @@ func (ec *executionContext) _Release_version(ctx context.Context, field graphql.
 	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Release_status(ctx context.Context, field graphql.CollectedField, obj *ent.Release) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Release",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Status, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(release.Status)
-	fc.Result = res
-	return ec.marshalOReleaseStatus2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Release_subreleases(ctx context.Context, field graphql.CollectedField, obj *ent.Release) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -12102,6 +12199,45 @@ func (ec *executionContext) _Release_components(ctx context.Context, field graph
 	res := resTmp.([]*ent.ReleaseComponent)
 	fc.Result = res
 	return ec.marshalOReleaseComponent2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseComponent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Release_licenses(ctx context.Context, field graphql.CollectedField, obj *ent.Release) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Release",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Release_licenses_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Release().Licenses(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseLicenseWhereInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleaseLicense)
+	fc.Result = res
+	return ec.marshalOReleaseLicense2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicense(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Release_vulnerabilities(ctx context.Context, field graphql.CollectedField, obj *ent.Release) (ret graphql.Marshaler) {
@@ -12473,6 +12609,45 @@ func (ec *executionContext) _ReleaseComponent_vulnerabilities(ctx context.Contex
 	res := resTmp.([]*ent.ReleaseVulnerability)
 	fc.Result = res
 	return ec.marshalOReleaseVulnerability2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseVulnerability(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseComponent_licenses(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseComponent) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseComponent",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_ReleaseComponent_licenses_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ReleaseComponent().Licenses(rctx, obj, args["first"].(*int), args["last"].(*int), args["where"].(*ent.ReleaseLicenseWhereInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReleaseLicense)
+	fc.Result = res
+	return ec.marshalOReleaseLicense2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicense(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ReleaseComponentConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ReleaseComponentConnection) (ret graphql.Marshaler) {
@@ -15139,6 +15314,201 @@ func (ec *executionContext) _RepoEdge_cursor(ctx context.Context, field graphql.
 	res := resTmp.(ent.Cursor)
 	fc.Result = res
 	return ec.marshalNCursor2githubᚗcomᚋvalocodeᚋbubblyᚋentᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SPDXLicense_id(ctx context.Context, field graphql.CollectedField, obj *ent.SPDXLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "SPDXLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SPDXLicense_license_id(ctx context.Context, field graphql.CollectedField, obj *ent.SPDXLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "SPDXLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LicenseID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SPDXLicense_name(ctx context.Context, field graphql.CollectedField, obj *ent.SPDXLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "SPDXLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SPDXLicense_reference(ctx context.Context, field graphql.CollectedField, obj *ent.SPDXLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "SPDXLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Reference, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SPDXLicense_details_url(ctx context.Context, field graphql.CollectedField, obj *ent.SPDXLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "SPDXLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DetailsURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SPDXLicense_is_osi_approved(ctx context.Context, field graphql.CollectedField, obj *ent.SPDXLicense) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "SPDXLicense",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsOsiApproved, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalOBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _TestCase_id(ctx context.Context, field graphql.CollectedField, obj *ent.TestCase) (ret graphql.Marshaler) {
@@ -19818,6 +20188,22 @@ func (ec *executionContext) unmarshalInputCodeScanWhereInput(ctx context.Context
 			if err != nil {
 				return it, err
 			}
+		case "hasLicenses":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicenses"))
+			it.HasLicenses, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLicensesWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicensesWith"))
+			it.HasLicensesWith, err = ec.unmarshalOReleaseLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "hasComponents":
 			var err error
 
@@ -21682,107 +22068,107 @@ func (ec *executionContext) unmarshalInputLicenseWhereInput(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
-		case "spdxID":
+		case "licenseID":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxID"))
-			it.SpdxID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseID"))
+			it.LicenseID, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDNEQ":
+		case "licenseIDNEQ":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDNEQ"))
-			it.SpdxIDNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDNEQ"))
+			it.LicenseIDNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDIn":
+		case "licenseIDIn":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDIn"))
-			it.SpdxIDIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDIn"))
+			it.LicenseIDIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDNotIn":
+		case "licenseIDNotIn":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDNotIn"))
-			it.SpdxIDNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDNotIn"))
+			it.LicenseIDNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDGT":
+		case "licenseIDGT":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDGT"))
-			it.SpdxIDGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDGT"))
+			it.LicenseIDGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDGTE":
+		case "licenseIDGTE":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDGTE"))
-			it.SpdxIDGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDGTE"))
+			it.LicenseIDGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDLT":
+		case "licenseIDLT":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDLT"))
-			it.SpdxIDLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDLT"))
+			it.LicenseIDLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDLTE":
+		case "licenseIDLTE":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDLTE"))
-			it.SpdxIDLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDLTE"))
+			it.LicenseIDLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDContains":
+		case "licenseIDContains":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDContains"))
-			it.SpdxIDContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDContains"))
+			it.LicenseIDContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDHasPrefix":
+		case "licenseIDHasPrefix":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDHasPrefix"))
-			it.SpdxIDHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDHasPrefix"))
+			it.LicenseIDHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDHasSuffix":
+		case "licenseIDHasSuffix":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDHasSuffix"))
-			it.SpdxIDHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDHasSuffix"))
+			it.LicenseIDHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDEqualFold":
+		case "licenseIDEqualFold":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDEqualFold"))
-			it.SpdxIDEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDEqualFold"))
+			it.LicenseIDEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "spdxIDContainsFold":
+		case "licenseIDContainsFold":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spdxIDContainsFold"))
-			it.SpdxIDContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDContainsFold"))
+			it.LicenseIDContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -21874,6 +22260,22 @@ func (ec *executionContext) unmarshalInputLicenseWhereInput(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
+		case "nameIsNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameIsNil"))
+			it.NameIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameNotNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameNotNil"))
+			it.NameNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "nameEqualFold":
 			var err error
 
@@ -21887,262 +22289,6 @@ func (ec *executionContext) unmarshalInputLicenseWhereInput(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameContainsFold"))
 			it.NameContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "reference":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reference"))
-			it.Reference, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceNEQ":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceNEQ"))
-			it.ReferenceNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceIn":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceIn"))
-			it.ReferenceIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceNotIn":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceNotIn"))
-			it.ReferenceNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceGT":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceGT"))
-			it.ReferenceGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceGTE":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceGTE"))
-			it.ReferenceGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceLT":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceLT"))
-			it.ReferenceLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceLTE":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceLTE"))
-			it.ReferenceLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceContains":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceContains"))
-			it.ReferenceContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceHasPrefix":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceHasPrefix"))
-			it.ReferenceHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceHasSuffix":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceHasSuffix"))
-			it.ReferenceHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceIsNil":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceIsNil"))
-			it.ReferenceIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceNotNil":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceNotNil"))
-			it.ReferenceNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceEqualFold":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceEqualFold"))
-			it.ReferenceEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "referenceContainsFold":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceContainsFold"))
-			it.ReferenceContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURL":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURL"))
-			it.DetailsURL, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLNEQ":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLNEQ"))
-			it.DetailsURLNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLIn":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLIn"))
-			it.DetailsURLIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLNotIn":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLNotIn"))
-			it.DetailsURLNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLGT":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLGT"))
-			it.DetailsURLGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLGTE":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLGTE"))
-			it.DetailsURLGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLLT":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLLT"))
-			it.DetailsURLLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLLTE":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLLTE"))
-			it.DetailsURLLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLContains":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLContains"))
-			it.DetailsURLContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLHasPrefix":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLHasPrefix"))
-			it.DetailsURLHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLHasSuffix":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLHasSuffix"))
-			it.DetailsURLHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLIsNil":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLIsNil"))
-			it.DetailsURLIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLNotNil":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLNotNil"))
-			it.DetailsURLNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLEqualFold":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLEqualFold"))
-			it.DetailsURLEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "detailsURLContainsFold":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLContainsFold"))
-			it.DetailsURLContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "isOsiApproved":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isOsiApproved"))
-			it.IsOsiApproved, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "isOsiApprovedNEQ":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isOsiApprovedNEQ"))
-			it.IsOsiApprovedNEQ, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -22223,6 +22369,22 @@ func (ec *executionContext) unmarshalInputLicenseWhereInput(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasOwnerWith"))
 			it.HasOwnerWith, err = ec.unmarshalOOrganizationWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐOrganizationWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasSpdx":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSpdx"))
+			it.HasSpdx, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasSpdxWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasSpdxWith"))
+			it.HasSpdxWith, err = ec.unmarshalOSPDXLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐSPDXLicenseWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -22995,6 +23157,22 @@ func (ec *executionContext) unmarshalInputReleaseComponentWhereInput(ctx context
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasVulnerabilitiesWith"))
 			it.HasVulnerabilitiesWith, err = ec.unmarshalOReleaseVulnerabilityWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseVulnerabilityWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLicenses":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicenses"))
+			it.HasLicenses, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLicensesWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicensesWith"))
+			it.HasLicensesWith, err = ec.unmarshalOReleaseLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -24629,38 +24807,6 @@ func (ec *executionContext) unmarshalInputReleaseWhereInput(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
-		case "status":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
-			it.Status, err = ec.unmarshalOReleaseStatus2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "statusNEQ":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusNEQ"))
-			it.StatusNEQ, err = ec.unmarshalOReleaseStatus2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "statusIn":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusIn"))
-			it.StatusIn, err = ec.unmarshalOReleaseStatus2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatusᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "statusNotIn":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusNotIn"))
-			it.StatusNotIn, err = ec.unmarshalOReleaseStatus2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatusᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "id":
 			var err error
 
@@ -24866,6 +25012,22 @@ func (ec *executionContext) unmarshalInputReleaseWhereInput(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasVulnerabilitiesWith"))
 			it.HasVulnerabilitiesWith, err = ec.unmarshalOReleaseVulnerabilityWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseVulnerabilityWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLicenses":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicenses"))
+			it.HasLicenses, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hasLicensesWith":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLicensesWith"))
+			it.HasLicensesWith, err = ec.unmarshalOReleaseLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseLicenseWhereInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -25352,6 +25514,573 @@ func (ec *executionContext) unmarshalInputRepoWhereInput(ctx context.Context, ob
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasPoliciesWith"))
 			it.HasPoliciesWith, err = ec.unmarshalOReleasePolicyWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleasePolicyWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSPDXLicenseWhereInput(ctx context.Context, obj interface{}) (ent.SPDXLicenseWhereInput, error) {
+	var it ent.SPDXLicenseWhereInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "not":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
+			it.Not, err = ec.unmarshalOSPDXLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐSPDXLicenseWhereInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "and":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
+			it.And, err = ec.unmarshalOSPDXLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐSPDXLicenseWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "or":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
+			it.Or, err = ec.unmarshalOSPDXLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐSPDXLicenseWhereInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseID":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseID"))
+			it.LicenseID, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDNEQ"))
+			it.LicenseIDNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDIn"))
+			it.LicenseIDIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDNotIn"))
+			it.LicenseIDNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDGT"))
+			it.LicenseIDGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDGTE"))
+			it.LicenseIDGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDLT"))
+			it.LicenseIDLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDLTE"))
+			it.LicenseIDLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDContains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDContains"))
+			it.LicenseIDContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDHasPrefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDHasPrefix"))
+			it.LicenseIDHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDHasSuffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDHasSuffix"))
+			it.LicenseIDHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDEqualFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDEqualFold"))
+			it.LicenseIDEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "licenseIDContainsFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("licenseIDContainsFold"))
+			it.LicenseIDContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameNEQ"))
+			it.NameNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameIn"))
+			it.NameIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameNotIn"))
+			it.NameNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameGT"))
+			it.NameGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameGTE"))
+			it.NameGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameLT"))
+			it.NameLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameLTE"))
+			it.NameLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameContains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameContains"))
+			it.NameContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameHasPrefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameHasPrefix"))
+			it.NameHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameHasSuffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameHasSuffix"))
+			it.NameHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameEqualFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameEqualFold"))
+			it.NameEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nameContainsFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameContainsFold"))
+			it.NameContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "reference":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reference"))
+			it.Reference, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceNEQ"))
+			it.ReferenceNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceIn"))
+			it.ReferenceIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceNotIn"))
+			it.ReferenceNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceGT"))
+			it.ReferenceGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceGTE"))
+			it.ReferenceGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceLT"))
+			it.ReferenceLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceLTE"))
+			it.ReferenceLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceContains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceContains"))
+			it.ReferenceContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceHasPrefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceHasPrefix"))
+			it.ReferenceHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceHasSuffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceHasSuffix"))
+			it.ReferenceHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceIsNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceIsNil"))
+			it.ReferenceIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceNotNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceNotNil"))
+			it.ReferenceNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceEqualFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceEqualFold"))
+			it.ReferenceEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "referenceContainsFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referenceContainsFold"))
+			it.ReferenceContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURL":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURL"))
+			it.DetailsURL, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLNEQ"))
+			it.DetailsURLNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLIn"))
+			it.DetailsURLIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLNotIn"))
+			it.DetailsURLNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLGT"))
+			it.DetailsURLGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLGTE"))
+			it.DetailsURLGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLLT"))
+			it.DetailsURLLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLLTE"))
+			it.DetailsURLLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLContains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLContains"))
+			it.DetailsURLContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLHasPrefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLHasPrefix"))
+			it.DetailsURLHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLHasSuffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLHasSuffix"))
+			it.DetailsURLHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLIsNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLIsNil"))
+			it.DetailsURLIsNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLNotNil":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLNotNil"))
+			it.DetailsURLNotNil, err = ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLEqualFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLEqualFold"))
+			it.DetailsURLEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "detailsURLContainsFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("detailsURLContainsFold"))
+			it.DetailsURLContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "isOsiApproved":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isOsiApproved"))
+			it.IsOsiApproved, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "isOsiApprovedNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isOsiApprovedNEQ"))
+			it.IsOsiApprovedNEQ, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNEQ"))
+			it.IDNEQ, err = ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
+			it.IDIn, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idNotIn"))
+			it.IDNotIn, err = ec.unmarshalOID2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGT"))
+			it.IDGT, err = ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idGTE"))
+			it.IDGTE, err = ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLT"))
+			it.IDLT, err = ec.unmarshalOID2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "idLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idLTE"))
+			it.IDLTE, err = ec.unmarshalOID2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -27400,6 +28129,11 @@ func (ec *executionContext) _Node(ctx context.Context, sel ast.SelectionSet, obj
 			return graphql.Null
 		}
 		return ec._Component(ctx, sel, obj)
+	case *ent.SPDXLicense:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SPDXLicense(ctx, sel, obj)
 	case *ent.License:
 		if obj == nil {
 			return graphql.Null
@@ -28210,16 +28944,21 @@ func (ec *executionContext) _License(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "spdx_id":
-			out.Values[i] = ec._License_spdx_id(ctx, field, obj)
+		case "license_id":
+			out.Values[i] = ec._License_license_id(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._License_name(ctx, field, obj)
-		case "reference":
-			out.Values[i] = ec._License_reference(ctx, field, obj)
-		case "details_url":
-			out.Values[i] = ec._License_details_url(ctx, field, obj)
-		case "is_osi_approved":
-			out.Values[i] = ec._License_is_osi_approved(ctx, field, obj)
+		case "spdx":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._License_spdx(ctx, field, obj)
+				return res
+			})
 		case "components":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -28681,8 +29420,6 @@ func (ec *executionContext) _Release(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Release_name(ctx, field, obj)
 		case "version":
 			out.Values[i] = ec._Release_version(ctx, field, obj)
-		case "status":
-			out.Values[i] = ec._Release_status(ctx, field, obj)
 		case "subreleases":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -28772,6 +29509,17 @@ func (ec *executionContext) _Release(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._Release_components(ctx, field, obj)
+				return res
+			})
+		case "licenses":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Release_licenses(ctx, field, obj)
 				return res
 			})
 		case "vulnerabilities":
@@ -28895,6 +29643,17 @@ func (ec *executionContext) _ReleaseComponent(ctx context.Context, sel ast.Selec
 					}
 				}()
 				res = ec._ReleaseComponent_vulnerabilities(ctx, field, obj)
+				return res
+			})
+		case "licenses":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ReleaseComponent_licenses(ctx, field, obj)
 				return res
 			})
 		default:
@@ -29858,6 +30617,43 @@ func (ec *executionContext) _RepoEdge(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var sPDXLicenseImplementors = []string{"SPDXLicense", "Node"}
+
+func (ec *executionContext) _SPDXLicense(ctx context.Context, sel ast.SelectionSet, obj *ent.SPDXLicense) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sPDXLicenseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SPDXLicense")
+		case "id":
+			out.Values[i] = ec._SPDXLicense_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "license_id":
+			out.Values[i] = ec._SPDXLicense_license_id(ctx, field, obj)
+		case "name":
+			out.Values[i] = ec._SPDXLicense_name(ctx, field, obj)
+		case "reference":
+			out.Values[i] = ec._SPDXLicense_reference(ctx, field, obj)
+		case "details_url":
+			out.Values[i] = ec._SPDXLicense_details_url(ctx, field, obj)
+		case "is_osi_approved":
+			out.Values[i] = ec._SPDXLicense_is_osi_approved(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -30997,16 +31793,6 @@ func (ec *executionContext) unmarshalNReleasePolicyWhereInput2ᚖgithubᚗcomᚋ
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNReleaseStatus2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx context.Context, v interface{}) (release.Status, error) {
-	var res release.Status
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNReleaseStatus2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx context.Context, sel ast.SelectionSet, v release.Status) graphql.Marshaler {
-	return v
-}
-
 func (ec *executionContext) unmarshalNReleaseVulnerabilityWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseVulnerabilityWhereInput(ctx context.Context, v interface{}) (*ent.ReleaseVulnerabilityWhereInput, error) {
 	res, err := ec.unmarshalInputReleaseVulnerabilityWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -31029,6 +31815,11 @@ func (ec *executionContext) marshalNRepo2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋe
 
 func (ec *executionContext) unmarshalNRepoWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐRepoWhereInput(ctx context.Context, v interface{}) (*ent.RepoWhereInput, error) {
 	res, err := ec.unmarshalInputRepoWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNSPDXLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐSPDXLicenseWhereInput(ctx context.Context, v interface{}) (*ent.SPDXLicenseWhereInput, error) {
+	res, err := ec.unmarshalInputSPDXLicenseWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -34477,103 +35268,6 @@ func (ec *executionContext) unmarshalOReleasePolicyWhereInput2ᚖgithubᚗcomᚋ
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalOReleaseStatus2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx context.Context, v interface{}) (release.Status, error) {
-	var res release.Status
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOReleaseStatus2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx context.Context, sel ast.SelectionSet, v release.Status) graphql.Marshaler {
-	return v
-}
-
-func (ec *executionContext) unmarshalOReleaseStatus2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatusᚄ(ctx context.Context, v interface{}) ([]release.Status, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]release.Status, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNReleaseStatus2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalOReleaseStatus2ᚕgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatusᚄ(ctx context.Context, sel ast.SelectionSet, v []release.Status) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNReleaseStatus2githubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) unmarshalOReleaseStatus2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx context.Context, v interface{}) (*release.Status, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var res = new(release.Status)
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOReleaseStatus2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚋreleaseᚐStatus(ctx context.Context, sel ast.SelectionSet, v *release.Status) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return v
-}
-
 func (ec *executionContext) marshalOReleaseVulnerability2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐReleaseVulnerability(ctx context.Context, sel ast.SelectionSet, v []*ent.ReleaseVulnerability) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -34890,6 +35584,45 @@ func (ec *executionContext) unmarshalORepoWhereInput2ᚖgithubᚗcomᚋvalocode�
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputRepoWhereInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSPDXLicense2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐSPDXLicense(ctx context.Context, sel ast.SelectionSet, v *ent.SPDXLicense) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SPDXLicense(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOSPDXLicenseWhereInput2ᚕᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐSPDXLicenseWhereInputᚄ(ctx context.Context, v interface{}) ([]*ent.SPDXLicenseWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*ent.SPDXLicenseWhereInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSPDXLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐSPDXLicenseWhereInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOSPDXLicenseWhereInput2ᚖgithubᚗcomᚋvalocodeᚋbubblyᚋentᚐSPDXLicenseWhereInput(ctx context.Context, v interface{}) (*ent.SPDXLicenseWhereInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputSPDXLicenseWhereInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

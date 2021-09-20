@@ -243,6 +243,19 @@ func (f RepoFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return f(ctx, mv)
 }
 
+// The SPDXLicenseFunc type is an adapter to allow the use of ordinary
+// function as SPDXLicense mutator.
+type SPDXLicenseFunc func(context.Context, *ent.SPDXLicenseMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SPDXLicenseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.SPDXLicenseMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SPDXLicenseMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The TestCaseFunc type is an adapter to allow the use of ordinary
 // function as TestCase mutator.
 type TestCaseFunc func(context.Context, *ent.TestCaseMutation) (ent.Value, error)

@@ -3,6 +3,8 @@ package create
 import (
 	"fmt"
 
+	"github.com/fatih/color"
+	"github.com/ryanuber/columnize"
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/release"
@@ -44,7 +46,21 @@ func New(bCtx *env.BubblyConfig) *cobra.Command {
 			if err := client.CreateRelease(bCtx, req); err != nil {
 				return err
 			}
-			fmt.Println("Release Created: ", *req.Release.Name)
+			var tag = ""
+			if req.Commit.Tag != nil {
+				tag = *req.Commit.Tag
+			}
+			color.Green("Release Created!")
+			// Print the release info nicely formatted
+			releaseInfo := []string{
+				"Repo: | " + *req.Repo.Name,
+				"Commit: | " + *req.Commit.Hash,
+				"Tag: | " + tag,
+				"Branch: | " + *req.Commit.Branch,
+				"Name: | " + *req.Release.Name,
+				"Version: | " + *req.Release.Version,
+			}
+			fmt.Println(columnize.SimpleFormat(releaseInfo))
 			return nil
 		},
 	}

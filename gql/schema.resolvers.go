@@ -229,6 +229,14 @@ func (r *releaseResolver) Components(ctx context.Context, obj *ent.Release, firs
 	return result, err
 }
 
+func (r *releaseResolver) Licenses(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseLicenseWhereInput) ([]*ent.ReleaseLicense, error) {
+	result, err := obj.Edges.LicensesOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryLicenses().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
+}
+
 func (r *releaseResolver) Vulnerabilities(ctx context.Context, obj *ent.Release, first *int, last *int, where *ent.ReleaseVulnerabilityWhereInput) ([]*ent.ReleaseVulnerability, error) {
 	result, err := obj.Edges.VulnerabilitiesOrErr()
 	if ent.IsNotLoaded(err) {
@@ -273,6 +281,14 @@ func (r *releaseComponentResolver) Vulnerabilities(ctx context.Context, obj *ent
 	result, err := obj.Edges.VulnerabilitiesOrErr()
 	if ent.IsNotLoaded(err) {
 		result, err = obj.QueryVulnerabilities().Filter(ctx, first, last, nil, where)
+	}
+	return result, err
+}
+
+func (r *releaseComponentResolver) Licenses(ctx context.Context, obj *ent.ReleaseComponent, first *int, last *int, where *ent.ReleaseLicenseWhereInput) ([]*ent.ReleaseLicense, error) {
+	result, err := obj.Edges.LicensesOrErr()
+	if ent.IsNotLoaded(err) {
+		result, err = obj.QueryLicenses().Filter(ctx, first, last, nil, where)
 	}
 	return result, err
 }

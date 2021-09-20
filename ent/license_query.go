@@ -17,6 +17,7 @@ import (
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/releaselicense"
+	"github.com/valocode/bubbly/ent/spdxlicense"
 )
 
 // LicenseQuery is the builder for querying License entities.
@@ -30,6 +31,7 @@ type LicenseQuery struct {
 	predicates []predicate.License
 	// eager-loading edges.
 	withOwner      *OrganizationQuery
+	withSpdx       *SPDXLicenseQuery
 	withComponents *ComponentQuery
 	withInstances  *ReleaseLicenseQuery
 	withFKs        bool
@@ -84,6 +86,28 @@ func (lq *LicenseQuery) QueryOwner() *OrganizationQuery {
 			sqlgraph.From(license.Table, license.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, license.OwnerTable, license.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(lq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySpdx chains the current query on the "spdx" edge.
+func (lq *LicenseQuery) QuerySpdx() *SPDXLicenseQuery {
+	query := &SPDXLicenseQuery{config: lq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := lq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := lq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(license.Table, license.FieldID, selector),
+			sqlgraph.To(spdxlicense.Table, spdxlicense.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, license.SpdxTable, license.SpdxColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(lq.driver.Dialect(), step)
 		return fromU, nil
@@ -317,6 +341,7 @@ func (lq *LicenseQuery) Clone() *LicenseQuery {
 		order:          append([]OrderFunc{}, lq.order...),
 		predicates:     append([]predicate.License{}, lq.predicates...),
 		withOwner:      lq.withOwner.Clone(),
+		withSpdx:       lq.withSpdx.Clone(),
 		withComponents: lq.withComponents.Clone(),
 		withInstances:  lq.withInstances.Clone(),
 		// clone intermediate query.
@@ -333,6 +358,17 @@ func (lq *LicenseQuery) WithOwner(opts ...func(*OrganizationQuery)) *LicenseQuer
 		opt(query)
 	}
 	lq.withOwner = query
+	return lq
+}
+
+// WithSpdx tells the query-builder to eager-load the nodes that are connected to
+// the "spdx" edge. The optional arguments are used to configure the query builder of the edge.
+func (lq *LicenseQuery) WithSpdx(opts ...func(*SPDXLicenseQuery)) *LicenseQuery {
+	query := &SPDXLicenseQuery{config: lq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	lq.withSpdx = query
 	return lq
 }
 
@@ -364,12 +400,12 @@ func (lq *LicenseQuery) WithInstances(opts ...func(*ReleaseLicenseQuery)) *Licen
 // Example:
 //
 //	var v []struct {
-//		SpdxID string `json:"spdx_id,omitempty"`
+//		LicenseID string `json:"license_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.License.Query().
-//		GroupBy(license.FieldSpdxID).
+//		GroupBy(license.FieldLicenseID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 //
@@ -391,11 +427,11 @@ func (lq *LicenseQuery) GroupBy(field string, fields ...string) *LicenseGroupBy 
 // Example:
 //
 //	var v []struct {
-//		SpdxID string `json:"spdx_id,omitempty"`
+//		LicenseID string `json:"license_id,omitempty"`
 //	}
 //
 //	client.License.Query().
-//		Select(license.FieldSpdxID).
+//		Select(license.FieldLicenseID).
 //		Scan(ctx, &v)
 //
 func (lq *LicenseQuery) Select(fields ...string) *LicenseSelect {
@@ -424,13 +460,14 @@ func (lq *LicenseQuery) sqlAll(ctx context.Context) ([]*License, error) {
 		nodes       = []*License{}
 		withFKs     = lq.withFKs
 		_spec       = lq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			lq.withOwner != nil,
+			lq.withSpdx != nil,
 			lq.withComponents != nil,
 			lq.withInstances != nil,
 		}
 	)
-	if lq.withOwner != nil {
+	if lq.withOwner != nil || lq.withSpdx != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -481,6 +518,35 @@ func (lq *LicenseQuery) sqlAll(ctx context.Context) ([]*License, error) {
 			}
 			for i := range nodes {
 				nodes[i].Edges.Owner = n
+			}
+		}
+	}
+
+	if query := lq.withSpdx; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*License)
+		for i := range nodes {
+			if nodes[i].license_spdx == nil {
+				continue
+			}
+			fk := *nodes[i].license_spdx
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(spdxlicense.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "license_spdx" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Spdx = n
 			}
 		}
 	}

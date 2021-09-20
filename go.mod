@@ -9,11 +9,14 @@ require (
 	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/Microsoft/go-winio v0.5.0 // indirect
+	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/bytecodealliance/wasmtime-go v0.29.0 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
 	github.com/coreos/go-oidc/v3 v3.0.0
+	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/docker/docker v20.10.8+incompatible // indirect
 	github.com/fatih/color v1.12.0
+	github.com/go-co-op/gocron v1.9.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
@@ -24,7 +27,7 @@ require (
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/labstack/gommon v0.3.0
 	github.com/mattn/go-isatty v0.0.13 // indirect
-	github.com/mitchellh/mapstructure v1.4.1
+	github.com/mitchellh/mapstructure v1.4.2
 	github.com/moby/buildkit v0.9.0 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/open-policy-agent/conftest v0.27.0
@@ -43,10 +46,11 @@ require (
 	github.com/zclconf/go-cty v1.9.1 // indirect
 	github.com/ziflex/lecho/v2 v2.5.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
+	golang.org/x/mod v0.5.0 // indirect
 	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2 // indirect
+	golang.org/x/sys v0.0.0-20210915083310-ed5796bab164 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.7 // indirect
 )

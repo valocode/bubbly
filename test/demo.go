@@ -1,7 +1,6 @@
 package test
 
 import (
-	"context"
 	"crypto/sha1"
 	"crypto/sha256"
 	"fmt"
@@ -13,7 +12,6 @@ import (
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codeissue"
 	schema "github.com/valocode/bubbly/ent/schema/types"
-	"github.com/valocode/bubbly/integrations"
 	"github.com/valocode/bubbly/store/api"
 )
 
@@ -71,27 +69,6 @@ var demoData = []DemoRepoOptions{
 		CveScanTimeMin: 15,
 		CveScanTimeMax: 20,
 	},
-}
-
-func SaveSPDXData(client *ent.Client) error {
-	list, err := integrations.FetchSPDXLicenses()
-	if err != nil {
-		return err
-	}
-	ctx := context.Background()
-	for _, lic := range list.Licenses {
-		l, err := client.License.Create().
-			SetSpdxID(lic.LicenseID).
-			SetName(lic.Name).
-			SetDetailsURL(lic.DetailsURL).
-			SetIsOsiApproved(lic.IsOSIApproved).SetReference(lic.Reference).
-			Save(ctx)
-		if err != nil {
-			return err
-		}
-		fmt.Println("Created license: " + l.String())
-	}
-	return nil
 }
 
 func CreateDummyData() []RepoData {

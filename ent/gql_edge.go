@@ -68,6 +68,14 @@ func (cs *CodeScan) Vulnerabilities(ctx context.Context) ([]*ReleaseVulnerabilit
 	return result, err
 }
 
+func (cs *CodeScan) Licenses(ctx context.Context) ([]*ReleaseLicense, error) {
+	result, err := cs.Edges.LicensesOrErr()
+	if IsNotLoaded(err) {
+		result, err = cs.QueryLicenses().All(ctx)
+	}
+	return result, err
+}
+
 func (cs *CodeScan) Components(ctx context.Context) ([]*ReleaseComponent, error) {
 	result, err := cs.Edges.ComponentsOrErr()
 	if IsNotLoaded(err) {
@@ -154,6 +162,14 @@ func (l *License) Owner(ctx context.Context) (*Organization, error) {
 		result, err = l.QueryOwner().Only(ctx)
 	}
 	return result, err
+}
+
+func (l *License) Spdx(ctx context.Context) (*SPDXLicense, error) {
+	result, err := l.Edges.SpdxOrErr()
+	if IsNotLoaded(err) {
+		result, err = l.QuerySpdx().Only(ctx)
+	}
+	return result, MaskNotFound(err)
 }
 
 func (l *License) Components(ctx context.Context) ([]*Component, error) {
@@ -292,6 +308,14 @@ func (r *Release) Vulnerabilities(ctx context.Context) ([]*ReleaseVulnerability,
 	return result, err
 }
 
+func (r *Release) Licenses(ctx context.Context) ([]*ReleaseLicense, error) {
+	result, err := r.Edges.LicensesOrErr()
+	if IsNotLoaded(err) {
+		result, err = r.QueryLicenses().All(ctx)
+	}
+	return result, err
+}
+
 func (r *Release) CodeScans(ctx context.Context) ([]*CodeScan, error) {
 	result, err := r.Edges.CodeScansOrErr()
 	if IsNotLoaded(err) {
@@ -344,6 +368,14 @@ func (rc *ReleaseComponent) Vulnerabilities(ctx context.Context) ([]*ReleaseVuln
 	result, err := rc.Edges.VulnerabilitiesOrErr()
 	if IsNotLoaded(err) {
 		result, err = rc.QueryVulnerabilities().All(ctx)
+	}
+	return result, err
+}
+
+func (rc *ReleaseComponent) Licenses(ctx context.Context) ([]*ReleaseLicense, error) {
+	result, err := rc.Edges.LicensesOrErr()
+	if IsNotLoaded(err) {
+		result, err = rc.QueryLicenses().All(ctx)
 	}
 	return result, err
 }

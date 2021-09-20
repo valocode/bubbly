@@ -108,7 +108,6 @@ var (
 		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "code_scan_release", Type: field.TypeInt, Nullable: true},
 		{Name: "release_entry_code_scan", Type: field.TypeInt, Unique: true, Nullable: true},
-		{Name: "release_license_scans", Type: field.TypeInt, Nullable: true},
 	}
 	// CodeScanTable holds the schema information for the "code_scan" table.
 	CodeScanTable = &schema.Table{
@@ -126,12 +125,6 @@ var (
 				Symbol:     "code_scan_release_entry_code_scan",
 				Columns:    []*schema.Column{CodeScanColumns[5]},
 				RefColumns: []*schema.Column{ReleaseEntryColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "code_scan_release_license_scans",
-				Columns:    []*schema.Column{CodeScanColumns[6]},
-				RefColumns: []*schema.Column{ReleaseLicenseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -172,7 +165,8 @@ var (
 	EventColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "message", Type: field.TypeString, Default: ""},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"evaluate_release"}},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"ok", "error"}, Default: "ok"},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"evaluate_release", "monitor"}},
 		{Name: "time", Type: field.TypeTime},
 		{Name: "event_release", Type: field.TypeInt, Nullable: true},
 		{Name: "event_repo", Type: field.TypeInt, Nullable: true},
@@ -186,19 +180,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "event_release_release",
-				Columns:    []*schema.Column{EventColumns[4]},
+				Columns:    []*schema.Column{EventColumns[5]},
 				RefColumns: []*schema.Column{ReleaseColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "event_repo_repo",
-				Columns:    []*schema.Column{EventColumns[5]},
+				Columns:    []*schema.Column{EventColumns[6]},
 				RefColumns: []*schema.Column{RepoColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "event_project_project",
-				Columns:    []*schema.Column{EventColumns[6]},
+				Columns:    []*schema.Column{EventColumns[7]},
 				RefColumns: []*schema.Column{ProjectColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -237,12 +231,10 @@ var (
 	// LicenseColumns holds the columns for the "license" table.
 	LicenseColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "spdx_id", Type: field.TypeString, Unique: true},
-		{Name: "name", Type: field.TypeString},
-		{Name: "reference", Type: field.TypeString, Nullable: true},
-		{Name: "details_url", Type: field.TypeString, Nullable: true},
-		{Name: "is_osi_approved", Type: field.TypeBool, Default: false},
+		{Name: "license_id", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "license_owner", Type: field.TypeInt, Nullable: true},
+		{Name: "license_spdx", Type: field.TypeInt, Nullable: true},
 	}
 	// LicenseTable holds the schema information for the "license" table.
 	LicenseTable = &schema.Table{
@@ -252,16 +244,15 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "license_organization_owner",
-				Columns:    []*schema.Column{LicenseColumns[6]},
+				Columns:    []*schema.Column{LicenseColumns[3]},
 				RefColumns: []*schema.Column{OrganizationColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
-		},
-		Indexes: []*schema.Index{
 			{
-				Name:    "license_spdx_id",
-				Unique:  true,
-				Columns: []*schema.Column{LicenseColumns[1]},
+				Symbol:     "license_spdx_license_spdx",
+				Columns:    []*schema.Column{LicenseColumns[4]},
+				RefColumns: []*schema.Column{SpdxLicenseColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 	}
@@ -308,7 +299,6 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "ready", "blocked"}, Default: "pending"},
 		{Name: "git_commit_release", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "repo_head", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
@@ -320,13 +310,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "release_commit_release",
-				Columns:    []*schema.Column{ReleaseColumns[4]},
+				Columns:    []*schema.Column{ReleaseColumns[3]},
 				RefColumns: []*schema.Column{CommitColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "release_repo_head",
-				Columns:    []*schema.Column{ReleaseColumns[5]},
+				Columns:    []*schema.Column{ReleaseColumns[4]},
 				RefColumns: []*schema.Column{RepoColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -335,7 +325,7 @@ var (
 			{
 				Name:    "release_git_commit_release",
 				Unique:  true,
-				Columns: []*schema.Column{ReleaseColumns[4]},
+				Columns: []*schema.Column{ReleaseColumns[3]},
 			},
 		},
 	}
@@ -552,6 +542,21 @@ var (
 			},
 		},
 	}
+	// SpdxLicenseColumns holds the columns for the "spdx_license" table.
+	SpdxLicenseColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "license_id", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "reference", Type: field.TypeString, Nullable: true},
+		{Name: "details_url", Type: field.TypeString, Nullable: true},
+		{Name: "is_osi_approved", Type: field.TypeBool, Default: false},
+	}
+	// SpdxLicenseTable holds the schema information for the "spdx_license" table.
+	SpdxLicenseTable = &schema.Table{
+		Name:       "spdx_license",
+		Columns:    SpdxLicenseColumns,
+		PrimaryKey: []*schema.Column{SpdxLicenseColumns[0]},
+	}
 	// TestCaseColumns holds the columns for the "test_case" table.
 	TestCaseColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -760,6 +765,31 @@ var (
 			},
 		},
 	}
+	// ReleaseLicenseScansColumns holds the columns for the "release_license_scans" table.
+	ReleaseLicenseScansColumns = []*schema.Column{
+		{Name: "release_license_id", Type: field.TypeInt},
+		{Name: "code_scan_id", Type: field.TypeInt},
+	}
+	// ReleaseLicenseScansTable holds the schema information for the "release_license_scans" table.
+	ReleaseLicenseScansTable = &schema.Table{
+		Name:       "release_license_scans",
+		Columns:    ReleaseLicenseScansColumns,
+		PrimaryKey: []*schema.Column{ReleaseLicenseScansColumns[0], ReleaseLicenseScansColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "release_license_scans_release_license_id",
+				Columns:    []*schema.Column{ReleaseLicenseScansColumns[0]},
+				RefColumns: []*schema.Column{ReleaseLicenseColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "release_license_scans_code_scan_id",
+				Columns:    []*schema.Column{ReleaseLicenseScansColumns[1]},
+				RefColumns: []*schema.Column{CodeScanColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// ReleasePolicyProjectsColumns holds the columns for the "release_policy_projects" table.
 	ReleasePolicyProjectsColumns = []*schema.Column{
 		{Name: "release_policy_id", Type: field.TypeInt},
@@ -930,6 +960,7 @@ var (
 		ReleasePolicyViolationTable,
 		ReleaseVulnerabilityTable,
 		RepoTable,
+		SpdxLicenseTable,
 		TestCaseTable,
 		TestRunTable,
 		VulnerabilityTable,
@@ -938,6 +969,7 @@ var (
 		ComponentLicensesTable,
 		ReleaseDependenciesTable,
 		ReleaseComponentScansTable,
+		ReleaseLicenseScansTable,
 		ReleasePolicyProjectsTable,
 		ReleasePolicyReposTable,
 		ReleaseVulnerabilityReviewsTable,
@@ -963,7 +995,6 @@ func init() {
 	}
 	CodeScanTable.ForeignKeys[0].RefTable = ReleaseTable
 	CodeScanTable.ForeignKeys[1].RefTable = ReleaseEntryTable
-	CodeScanTable.ForeignKeys[2].RefTable = ReleaseLicenseTable
 	CodeScanTable.Annotation = &entsql.Annotation{
 		Table: "code_scan",
 	}
@@ -982,6 +1013,7 @@ func init() {
 		Table: "commit",
 	}
 	LicenseTable.ForeignKeys[0].RefTable = OrganizationTable
+	LicenseTable.ForeignKeys[1].RefTable = SpdxLicenseTable
 	LicenseTable.Annotation = &entsql.Annotation{
 		Table: "license",
 	}
@@ -1033,6 +1065,9 @@ func init() {
 	RepoTable.Annotation = &entsql.Annotation{
 		Table: "repo",
 	}
+	SpdxLicenseTable.Annotation = &entsql.Annotation{
+		Table: "spdx_license",
+	}
 	TestCaseTable.ForeignKeys[0].RefTable = TestRunTable
 	TestCaseTable.Annotation = &entsql.Annotation{
 		Table: "test_case",
@@ -1058,6 +1093,8 @@ func init() {
 	ReleaseDependenciesTable.ForeignKeys[1].RefTable = ReleaseTable
 	ReleaseComponentScansTable.ForeignKeys[0].RefTable = ReleaseComponentTable
 	ReleaseComponentScansTable.ForeignKeys[1].RefTable = CodeScanTable
+	ReleaseLicenseScansTable.ForeignKeys[0].RefTable = ReleaseLicenseTable
+	ReleaseLicenseScansTable.ForeignKeys[1].RefTable = CodeScanTable
 	ReleasePolicyProjectsTable.ForeignKeys[0].RefTable = ReleasePolicyTable
 	ReleasePolicyProjectsTable.ForeignKeys[1].RefTable = ProjectTable
 	ReleasePolicyReposTable.ForeignKeys[0].RefTable = ReleasePolicyTable
