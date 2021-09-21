@@ -5,6 +5,7 @@ package gql
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/valocode/bubbly/ent"
 )
@@ -125,13 +126,6 @@ func (r *queryResolver) Component(ctx context.Context, first *int, last *int, or
 	return r.client.Component.Query().Filter(ctx, first, last, orderBy, where)
 }
 
-func (r *queryResolver) LicenseConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.LicenseOrder, where *ent.LicenseWhereInput) (*ent.LicenseConnection, error) {
-	return r.client.License.Query().Paginate(ctx, after, first, before, last,
-		ent.WithLicenseOrder(orderBy),
-		ent.WithLicenseFilter(where.Filter),
-	)
-}
-
 func (r *queryResolver) VulnerabilityReview(ctx context.Context, first *int, last *int, orderBy *ent.VulnerabilityReviewOrder, where *ent.VulnerabilityReviewWhereInput) ([]*ent.VulnerabilityReview, error) {
 	return r.client.VulnerabilityReview.Query().Filter(ctx, first, last, orderBy, where)
 }
@@ -152,22 +146,8 @@ func (r *queryResolver) Release(ctx context.Context, first *int, last *int, orde
 	return r.client.Release.Query().Filter(ctx, first, last, orderBy, where)
 }
 
-func (r *queryResolver) RepoConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.RepoOrder, where *ent.RepoWhereInput) (*ent.RepoConnection, error) {
-	return r.client.Repo.Query().Paginate(ctx, after, first, before, last,
-		ent.WithRepoOrder(orderBy),
-		ent.WithRepoFilter(where.Filter),
-	)
-}
-
 func (r *queryResolver) Commit(ctx context.Context, first *int, last *int, orderBy *ent.GitCommitOrder, where *ent.GitCommitWhereInput) ([]*ent.GitCommit, error) {
 	return r.client.GitCommit.Query().Filter(ctx, first, last, orderBy, where)
-}
-
-func (r *queryResolver) ProjectConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ProjectOrder, where *ent.ProjectWhereInput) (*ent.ProjectConnection, error) {
-	return r.client.Project.Query().Paginate(ctx, after, first, before, last,
-		ent.WithProjectOrder(orderBy),
-		ent.WithProjectFilter(where.Filter),
-	)
 }
 
 func (r *queryResolver) ReleaseConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ReleaseOrder, where *ent.ReleaseWhereInput) (*ent.ReleaseConnection, error) {
@@ -505,3 +485,31 @@ type testCaseResolver struct{ *Resolver }
 type testRunResolver struct{ *Resolver }
 type vulnerabilityResolver struct{ *Resolver }
 type vulnerabilityReviewResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) ReleaseBase(ctx context.Context) (*ReleaseBase, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+func (r *queryResolver) LicenseConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.LicenseOrder, where *ent.LicenseWhereInput) (*ent.LicenseConnection, error) {
+	return r.client.License.Query().Paginate(ctx, after, first, before, last,
+		ent.WithLicenseOrder(orderBy),
+		ent.WithLicenseFilter(where.Filter),
+	)
+}
+func (r *queryResolver) RepoConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.RepoOrder, where *ent.RepoWhereInput) (*ent.RepoConnection, error) {
+	return r.client.Repo.Query().Paginate(ctx, after, first, before, last,
+		ent.WithRepoOrder(orderBy),
+		ent.WithRepoFilter(where.Filter),
+	)
+}
+func (r *queryResolver) ProjectConnection(ctx context.Context, first *int, last *int, before *ent.Cursor, after *ent.Cursor, orderBy *ent.ProjectOrder, where *ent.ProjectWhereInput) (*ent.ProjectConnection, error) {
+	return r.client.Project.Query().Paginate(ctx, after, first, before, last,
+		ent.WithProjectOrder(orderBy),
+		ent.WithProjectFilter(where.Filter),
+	)
+}

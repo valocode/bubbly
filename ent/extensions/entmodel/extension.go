@@ -21,7 +21,7 @@ var (
 )
 
 type (
-	Extensions struct {
+	Extension struct {
 		entc.DefaultExtension
 	}
 
@@ -30,12 +30,27 @@ type (
 	}
 )
 
-func NewExtension() *Extensions {
-	return &Extensions{}
+func NewExtension() *Extension {
+	return &Extension{}
+}
+
+// Hooks of the extension.
+func (e *Extension) Hooks() []gen.Hook {
+	return []gen.Hook{
+		func(next gen.Generator) gen.Generator {
+			return gen.GenerateFunc(func(g *gen.Graph) error {
+				if err := next.Generate(g); err != nil {
+					return err
+				}
+
+				return genGraphQLTypes(g)
+			})
+		},
+	}
 }
 
 // Templates of the extension.
-func (e *Extensions) Templates() []*gen.Template {
+func (e *Extension) Templates() []*gen.Template {
 	var templates []*gen.Template
 	templates = append(
 		templates,
