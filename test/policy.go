@@ -18,7 +18,9 @@ func ParsePolicies() ([]*api.ReleasePolicySaveRequest, error) {
 	}
 	for _, policy := range policies {
 		reqs = append(reqs, &api.ReleasePolicySaveRequest{
-			Policy: policy,
+			Policy: &api.ReleasePolicyCreate{
+				ReleasePolicyModelCreate: *policy,
+			},
 		})
 	}
 

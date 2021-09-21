@@ -1,6 +1,7 @@
 package policy
 
 import (
+	"github.com/valocode/bubbly/cmd/policy/list"
 	"github.com/valocode/bubbly/cmd/policy/save"
 	"github.com/valocode/bubbly/cmd/policy/set"
 	"github.com/valocode/bubbly/cmd/policy/view"
@@ -17,6 +18,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		Long:  `Manage bubbly policies`,
 	}
 
+	cmd.AddCommand(list.New(bCtx))
 	cmd.AddCommand(save.New(bCtx))
 	cmd.AddCommand(set.New(bCtx))
 	cmd.AddCommand(view.New(bCtx))

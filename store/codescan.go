@@ -66,7 +66,7 @@ func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent
 				err          error
 			)
 			existingComp, err = tx.Component.Query().
-				WhereInput(ent.ComponentWhereInput{
+				WhereInput(&ent.ComponentWhereInput{
 					Name:    comp.Name,
 					Vendor:  comp.Vendor,
 					Version: comp.Version,
@@ -169,7 +169,7 @@ func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent
 					err         error
 				)
 				existingLic, err = tx.License.Query().WhereInput(
-					ent.LicenseWhereInput{
+					&ent.LicenseWhereInput{
 						LicenseID: lic.LicenseID,
 					}).Only(h.ctx)
 				if err != nil {

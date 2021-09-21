@@ -93,6 +93,10 @@ func (c *ClientConfig) V1() string {
 	return c.BubblyAddr + "/api/v1"
 }
 
+func (c *ClientConfig) GraphQL() string {
+	return c.BubblyAddr + "/graphql"
+}
+
 // ##########################
 // CLI
 // ##########################

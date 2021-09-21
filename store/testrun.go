@@ -9,6 +9,9 @@ import (
 )
 
 func (h *Handler) SaveTestRun(req *api.TestRunRequest) (*ent.TestRun, error) {
+	if err := h.validator.Struct(req); err != nil {
+		return nil, HandleValidatorError(err, "save test run")
+	}
 	release, err := h.releaseFromCommit(req.Commit)
 	if err != nil {
 		return nil, err

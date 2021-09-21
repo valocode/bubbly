@@ -292,12 +292,18 @@ func adapterFromID(bCtx *env.BubblyContext, id string) (string, error) {
 	if len(splitID) == 2 {
 		adapterTag = splitID[1]
 	}
-	resp, err := client.GetAdapter(bCtx, &api.AdapterGetRequest{
-		Name: &adapterName,
-		Tag:  &adapterTag,
+	resp, err := client.GetAdapters(bCtx, &api.AdapterGetRequest{
+		Name: adapterName,
+		Tag:  adapterTag,
 	})
 	if err != nil {
 		return "", fmt.Errorf("error getting adapter remotely: %s: %w", id, err)
 	}
-	return *resp.Module, nil
+	if len(resp.Adapters) == 0 {
+		return "", fmt.Errorf("no adapters found remotely with id: %s", id)
+	}
+	if len(resp.Adapters) > 1 {
+		return "", fmt.Errorf("more than one adapter found remotely with id: %s", id)
+	}
+	return *resp.Adapters[0].Module, nil
 }

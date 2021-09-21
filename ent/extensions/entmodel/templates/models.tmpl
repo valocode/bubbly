@@ -21,7 +21,7 @@ import (
     
     type  {{ $n.Name }}ModelCreate struct {
         {{- range $f := fieldsModelCreate $n }}
-        {{- $tag := fieldTag $f }}
+        {{- $tag := fieldCreateTag $f }}
             {{ $f.StructField }} *{{ $f.Type }} `{{ $tag }}`
         {{- end }}
     }
@@ -58,7 +58,7 @@ import (
 
     type  {{ $n.Name }}ModelRead struct {
         {{- range $f := fieldsModelRead $n }}
-        {{- $tag := fieldTag $f }}
+        {{- $tag := fieldCreateTag $f }}
             {{ $f.StructField }} *{{ $f.Type }} `{{ $tag }}`
         {{- end }}
     }
@@ -75,24 +75,45 @@ import (
     }
 
     type  {{ $n.Name }}ModelUpdate struct {
-        {{- $tag := fieldTag $n.ID }}
-        {{ $n.ID.StructField }} *{{ $n.ID.Type }} `{{ $tag }}`
+        {{- range $f := fieldsModelCreate $n }}
+        {{- $tag := fieldUpdateTag $f }}
+            {{ $f.StructField }} *{{ $f.Type }} `{{ $tag }}`
+        {{- end }}
     }
 
     func New{{ $n.Name }}ModelUpdate() *{{ $n.Name }}ModelUpdate {
         return &{{ $n.Name }}ModelUpdate{}
     }
 
-    func ({{ $receiver }} *{{ $n.Name }}ModelUpdate) Set{{ $n.ID.StructField }}(value {{ $n.ID.Type.String }}) *{{ $n.Name }}ModelUpdate {
-        {{ $receiver }}.{{ $n.ID.StructField }} = &value
+    {{- range $f := fieldsModelCreate $n }}
+        func ({{ $receiver }} *{{ $n.Name }}ModelUpdate) Set{{ $f.StructField }}(value {{ $f.Type.String }}) *{{ $n.Name }}ModelUpdate {
+            {{ $receiver }}.{{ $f.StructField }} = &value
+            return {{ $receiver }}
+        }
+    {{- end }}
+
+
+    func ({{ $receiver }} *{{ $n.UpdateOneName }}) SetModelUpdate(model *{{ $n.Name }}ModelUpdate) *{{ $n.UpdateOneName }} {
+        {{ $receiver }}.mutation.SetModelUpdate(model)
+        return {{ $receiver }}
+    }
+
+    func ({{ $receiver }} *{{ $n.MutationName }}) SetModelUpdate(model *{{ $n.Name }}ModelUpdate) *{{ $n.MutationName }} {
+        {{- range $f := fieldsModelCreate $n }}
+            if model.{{ $f.StructField }} != nil {
+                {{ $receiver }}.{{ $f.MutationSet }}(*model.{{ $f.StructField }})
+            }
+        {{- end }}
         return {{ $receiver }}
     }
 {{ end }}
 
 {{ range $n := filterNodes $.Nodes }}
     {{ $receiver := $n.Receiver }}
-    func ({{ $receiver }} *{{ $n.QueryName }}) WhereInput(input {{ $n.Name}}WhereInput) *{{ $n.QueryName }} {
-        input.Filter({{ $receiver }})
+    func ({{ $receiver }} *{{ $n.QueryName }}) WhereInput(input *{{ $n.Name}}WhereInput) *{{ $n.QueryName }} {
+        if input != nil {
+            input.Filter({{ $receiver }})
+        }
         return {{ $receiver }}
     }
 {{ end }}

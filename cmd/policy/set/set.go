@@ -1,6 +1,8 @@
 package set
 
 import (
+	"fmt"
+
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/store/api"
@@ -42,13 +44,26 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
-			if err := client.SetPolicy(bCtx, &api.ReleasePolicySetRequest{
-				Policy: &name,
-				Affects: &api.ReleasePolicyAffects{
-					Projects:    setProjects,
-					NotProjects: notSetProjects,
-					Repos:       setRepos,
-					NotRepos:    notSetRepos,
+			resp, err := client.GetPolicies(bCtx, &api.ReleasePolicyGetRequest{
+				Name: name,
+			})
+			if err != nil {
+				return fmt.Errorf("getting policies: %w", err)
+			}
+			if len(resp.Policies) == 0 {
+				fmt.Println("No policies with name: " + name)
+				return nil
+			}
+			policy := resp.Policies[0]
+			if err := client.SetPolicy(bCtx, &api.ReleasePolicyUpdateRequest{
+				ID: policy.ID,
+				Policy: &api.ReleasePolicyUpdate{
+					Affects: &api.ReleasePolicyAffectsSet{
+						Projects:    setProjects,
+						NotProjects: notSetProjects,
+						Repos:       setRepos,
+						NotRepos:    notSetRepos,
+					},
 				},
 			}); err != nil {
 				return err

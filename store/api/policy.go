@@ -4,30 +4,51 @@ import "github.com/valocode/bubbly/ent"
 
 type (
 	ReleasePolicySaveRequest struct {
-		Policy  *ent.ReleasePolicyModelCreate `json:"policy,omitempty" validate:"required"`
-		Affects *ReleasePolicyAffects         `json:"affects,omitempty"`
+		Policy *ReleasePolicyCreate `json:"policy,omitempty" validate:"required"`
 	}
 
-	ReleasePolicySetRequest struct {
-		Policy  *string               `json:"policy,omitempty" validate:"required"`
-		Affects *ReleasePolicyAffects `json:"affects,omitempty"`
+	ReleasePolicyUpdateRequest struct {
+		ID     *int                 `param:"id" validate:"required"`
+		Policy *ReleasePolicyUpdate `json:"policy,omitempty" validate:"required"`
 	}
 
 	ReleasePolicyGetRequest struct {
-		Name *string `json:"name,omitempty" param:"name" validate:"required"`
+		Name string `json:"name" query:"name"`
+
+		WithAffects bool `json:"with_affects,string" query:"with_affects"`
 	}
 
 	ReleasePolicyGetResponse struct {
-		ent.ReleasePolicyModelRead `validate:"required"`
+		Policies []*ReleasePolicy `json:"policies"`
 	}
 
-	// ReleasePolicyAffects defines the entities that a policy should affect.
-	// The Not will remove the entity from the policy relationship (if exists).
-	ReleasePolicyAffects struct {
-		Projects    []string
-		NotProjects []string
+	ReleasePolicyCreate struct {
+		ent.ReleasePolicyModelCreate
+		Affects *ReleasePolicyAffectsSet `json:"affects,omitempty"`
+	}
+	ReleasePolicyUpdate struct {
+		ent.ReleasePolicyModelUpdate
+		Affects *ReleasePolicyAffectsSet `json:"affects,omitempty"`
+	}
 
-		Repos    []string
-		NotRepos []string
+	ReleasePolicy struct {
+		ent.ReleasePolicyModelRead
+		Affects *ReleasePolicyAffects `json:"affects,omitempty"`
+	}
+
+	// ReleasePolicyAffects
+	ReleasePolicyAffects struct {
+		Projects []string `json:"projects,omitempty"`
+		Repos    []string `json:"repos,omitempty"`
+	}
+
+	// ReleasePolicyAffectsSet defines the entities that a policy should affect.
+	// The Not will remove the entity from the policy relationship (if exists).
+	ReleasePolicyAffectsSet struct {
+		Projects    []string `json:"projects,omitempty"`
+		NotProjects []string `json:"not_projects,omitempty"`
+
+		Repos    []string `json:"repos,omitempty"`
+		NotRepos []string `json:"not_repos,omitempty"`
 	}
 )

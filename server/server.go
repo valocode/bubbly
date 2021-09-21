@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/gql"
 	"github.com/valocode/bubbly/store"
@@ -29,9 +32,10 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 	var (
 		e = echo.New()
 		s = Server{
-			store: store,
-			bCtx:  bCtx,
-			e:     e,
+			store:     store,
+			bCtx:      bCtx,
+			e:         e,
+			validator: newValidator(),
 		}
 	)
 	// Create an echo logger from our existing zerolog
@@ -99,17 +103,22 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 
 	v1 := e.Group("/api/v1")
 	v1.GET("/events", s.getEvents)
+	v1.GET("/projects", s.getProjects)
 	v1.POST("/projects", s.postProject)
+	v1.GET("/releases", s.getReleases)
 	v1.POST("/releases", s.postRelease)
-	v1.GET("/releases", s.getRelease)
 	v1.POST("/artifacts", s.postArtifact)
 	v1.POST("/codescans", s.postCodeScan)
 	v1.POST("/testruns", s.postTestRun)
 	v1.POST("/adapters", s.postAdapter)
-	v1.GET("/adapters/:name", s.getAdapter)
+	v1.GET("/adapters", s.getAdapters)
 	v1.POST("/policies", s.postPolicy)
-	v1.PUT("/policies", s.putPolicy)
-	v1.GET("/policies/:name", s.getPolicy)
+	v1.PUT("/policies/:id", s.putPolicy)
+	v1.GET("/policies", s.getPolicies)
+
+	v1.GET("/vulnerabilityreviews", s.getVulnerabilityReviews)
+	v1.POST("/vulnerabilityreviews", s.postVulnerabilityReview)
+	v1.PUT("/vulnerabilityreviews/:id", s.putVulnerabilityReview)
 
 	// TODO: Miika - integrate Casbin as middleware or similar
 	// https://echo.labstack.com/middleware/casbin-auth/
@@ -152,9 +161,10 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 }
 
 type Server struct {
-	store *store.Store
-	bCtx  *env.BubblyContext
-	e     *echo.Echo
+	store     *store.Store
+	bCtx      *env.BubblyContext
+	e         *echo.Echo
+	validator *validator.Validate
 }
 
 func (s *Server) Start() error {
@@ -185,6 +195,28 @@ func (s *Server) getEvents(c echo.Context) error {
 	})
 }
 
+func (s *Server) getProjects(c echo.Context) error {
+	var req api.ProjectGetRequest
+	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
+		return err
+	}
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	var where ent.ProjectWhereInput
+	if req.Name != "" {
+		where.Name = &req.Name
+	}
+	projects, err := h.GetProjects(&store.ProjectQuery{Where: &where})
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, api.ProjectGetResponse{
+		Projects: projects,
+	})
+}
+
 func (s *Server) postProject(c echo.Context) error {
 	var req api.ProjectCreateRequest
 	binder := &echo.DefaultBinder{}
@@ -198,7 +230,48 @@ func (s *Server) postProject(c echo.Context) error {
 	if _, err := h.CreateProject(&req); err != nil {
 		return err
 	}
-	return nil
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *Server) getReleases(c echo.Context) error {
+	var req api.ReleaseGetRequest
+	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
+		return err
+	}
+
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	var where ent.ReleaseWhereInput
+	if req.Commit != "" {
+		where.HasCommitWith = append(where.HasCommitWith, &ent.GitCommitWhereInput{
+			Hash: &req.Commit,
+		})
+	}
+	if req.Repo != "" {
+		where.HasCommitWith = append(where.HasCommitWith, &ent.GitCommitWhereInput{
+			HasRepoWith: []*ent.RepoWhereInput{{Name: &req.Repo}},
+		})
+	}
+	if req.Project != "" {
+		where.HasCommitWith = append(where.HasCommitWith, &ent.GitCommitWhereInput{
+			HasRepoWith: []*ent.RepoWhereInput{{HasProjectWith: []*ent.ProjectWhereInput{{Name: &req.Project}}}},
+		})
+	}
+
+	dbReleases, err := h.GetReleases(&store.ReleaseQuery{
+		Where:          &where,
+		WithLog:        req.Log,
+		WithPolicies:   req.Policies,
+		WithViolations: true,
+	})
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, api.ReleaseGetResponse{
+		Releases: dbReleases,
+	})
 }
 
 func (s *Server) postRelease(c echo.Context) error {
@@ -221,23 +294,6 @@ func (s *Server) postRelease(c echo.Context) error {
 	return nil
 }
 
-func (s *Server) getRelease(c echo.Context) error {
-	var req api.ReleaseGetRequest
-	if err := (&echo.DefaultBinder{}).BindQueryParams(c, &req); err != nil {
-		return err
-	}
-
-	h, err := store.NewHandler(store.WithStore(s.store))
-	if err != nil {
-		return err
-	}
-	dbRelease, err := h.GetReleases(&req)
-	if err != nil {
-		return err
-	}
-	return c.JSON(http.StatusOK, dbRelease)
-}
-
 func (s *Server) postArtifact(c echo.Context) error {
 	var req api.ArtifactLogRequest
 	binder := &echo.DefaultBinder{}
@@ -251,7 +307,7 @@ func (s *Server) postArtifact(c echo.Context) error {
 	if _, err := h.LogArtifact(&req); err != nil {
 		return err
 	}
-	return nil
+	return c.NoContent(http.StatusOK)
 }
 
 func (s *Server) postCodeScan(c echo.Context) error {
@@ -267,7 +323,7 @@ func (s *Server) postCodeScan(c echo.Context) error {
 	if _, err := h.SaveCodeScan(&req); err != nil {
 		return err
 	}
-	return nil
+	return c.NoContent(http.StatusOK)
 }
 
 func (s *Server) postTestRun(c echo.Context) error {
@@ -283,10 +339,10 @@ func (s *Server) postTestRun(c echo.Context) error {
 	if _, err := h.SaveTestRun(&req); err != nil {
 		return err
 	}
-	return nil
+	return c.NoContent(http.StatusOK)
 }
 
-func (s *Server) getAdapter(c echo.Context) error {
+func (s *Server) getAdapters(c echo.Context) error {
 	var req api.AdapterGetRequest
 	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
 		return err
@@ -295,11 +351,22 @@ func (s *Server) getAdapter(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	adapter, err := h.GetAdapter(&req)
+	var where ent.AdapterWhereInput
+	if req.Name != "" {
+		where.Name = &req.Name
+	}
+	if req.Tag != "" {
+		where.Tag = &req.Tag
+	}
+	adapters, err := h.GetAdapters(&store.AdapterQuery{
+		Where: &where,
+	})
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, adapter)
+	return c.JSON(http.StatusOK, api.AdapterGetResponse{
+		Adapters: adapters,
+	})
 }
 
 func (s *Server) postAdapter(c echo.Context) error {
@@ -315,10 +382,10 @@ func (s *Server) postAdapter(c echo.Context) error {
 	if _, err := h.SaveAdapter(&req); err != nil {
 		return err
 	}
-	return nil
+	return c.NoContent(http.StatusOK)
 }
 
-func (s *Server) getPolicy(c echo.Context) error {
+func (s *Server) getPolicies(c echo.Context) error {
 	var req api.ReleasePolicyGetRequest
 	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
 		return err
@@ -327,11 +394,20 @@ func (s *Server) getPolicy(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	adapter, err := h.GetReleasePolicy(&req)
+	var where ent.ReleasePolicyWhereInput
+	if req.Name != "" {
+		where.Name = &req.Name
+	}
+	policies, err := h.GetReleasePolicies(&store.ReleasePolicyQuery{
+		Where:       &where,
+		WithAffects: req.WithAffects,
+	})
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, adapter)
+	return c.JSON(http.StatusOK, api.ReleasePolicyGetResponse{
+		Policies: policies,
+	})
 }
 
 func (s *Server) postPolicy(c echo.Context) error {
@@ -347,21 +423,122 @@ func (s *Server) postPolicy(c echo.Context) error {
 	if _, err := h.SaveReleasePolicy(&req); err != nil {
 		return err
 	}
-	return nil
+	return c.NoContent(http.StatusOK)
 }
 
 func (s *Server) putPolicy(c echo.Context) error {
-	var req api.ReleasePolicySetRequest
-	binder := &echo.DefaultBinder{}
-	if err := binder.BindBody(c, &req); err != nil {
+	var req api.ReleasePolicyUpdateRequest
+	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
 		return err
+	}
+	if err := (&echo.DefaultBinder{}).BindPathParams(c, &req); err != nil {
+		return err
+	}
+	fmt.Println("req: ", req.ID)
+	fmt.Println("req: ", c.Param("id"))
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	if _, err := h.UpdateReleasePolicy(&req); err != nil {
+		return err
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *Server) getVulnerabilityReviews(c echo.Context) error {
+	var req api.VulnerabilityReviewGetRequest
+	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
+		return err
+	}
+	if err := s.validator.Struct(req); err != nil {
+		return store.HandleValidatorError(err, "query vulnerability reviews")
 	}
 	h, err := store.NewHandler(store.WithStore(s.store))
 	if err != nil {
 		return err
 	}
-	if _, err := h.SetReleasePolicyAffects(&req); err != nil {
+	var (
+		where         ent.VulnerabilityReviewWhereInput
+		whereVulns    = strings.Split(req.Vulnerabilities, ",")
+		whereProjects = strings.Split(req.Projects, ",")
+		whereRepos    = strings.Split(req.Repos, ",")
+	)
+
+	for _, vulnID := range whereVulns {
+		where.HasVulnerabilityWith = append(where.HasVulnerabilityWith,
+			&ent.VulnerabilityWhereInput{
+				Vid: &vulnID,
+			},
+		)
+	}
+	for _, project := range whereProjects {
+		where.HasProjectsWith = append(where.HasProjectsWith,
+			&ent.ProjectWhereInput{
+				Name: &project,
+			},
+		)
+	}
+	for _, repo := range whereRepos {
+		where.HasReposWith = append(where.HasReposWith,
+			&ent.RepoWhereInput{
+				Name: &repo,
+			},
+		)
+	}
+	if req.Commit != "" {
+		// Add where condition for releases with that Hash (should only be one, or none)
+		where.HasReleasesWith = append(where.HasReleasesWith, &ent.ReleaseWhereInput{
+			HasCommitWith: []*ent.GitCommitWhereInput{{Hash: &req.Commit}},
+		})
+	}
+
+	vulnReviews, err := h.GetVulnerabilityReviews(&store.VulnerabilityReviewQuery{
+		Where:        &where,
+		WithProjects: req.WithProjects,
+		WithRepos:    req.WithRepos,
+	})
+	if err != nil {
 		return err
 	}
-	return nil
+	return c.JSON(http.StatusOK, api.VulnerabilityReviewGetResponse{
+		Reviews: vulnReviews,
+	})
+}
+
+func (s *Server) postVulnerabilityReview(c echo.Context) error {
+	var req api.VulnerabilityReviewSaveRequest
+	binder := &echo.DefaultBinder{}
+	if err := binder.BindBody(c, &req); err != nil {
+		return err
+	}
+	if err := s.validator.Struct(req); err != nil {
+		return store.HandleValidatorError(err, "save vulnerability review")
+	}
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	if _, err := h.SaveVulnerabilityReview(&req); err != nil {
+		return err
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *Server) putVulnerabilityReview(c echo.Context) error {
+	var req api.VulnerabilityReviewUpdateRequest
+	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
+		return err
+	}
+	if err := s.validator.Struct(req); err != nil {
+		return store.HandleValidatorError(err, "update vulnerability review")
+	}
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	if _, err := h.UpdateVulnerabilityReview(&req); err != nil {
+		return err
+	}
+	return c.NoContent(http.StatusOK)
 }

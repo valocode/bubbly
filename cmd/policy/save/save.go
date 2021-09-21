@@ -63,14 +63,16 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 				return fmt.Errorf("validating policy module: %w", err)
 			}
 			if err := client.SavePolicy(bCtx, &api.ReleasePolicySaveRequest{
-				Policy: ent.NewReleasePolicyModelCreate().
-					SetName(name).
-					SetModule(module),
-				Affects: &api.ReleasePolicyAffects{
-					Projects:    setProjects,
-					NotProjects: notSetProjects,
-					Repos:       setRepos,
-					NotRepos:    notSetRepos,
+				Policy: &api.ReleasePolicyCreate{
+					ReleasePolicyModelCreate: *ent.NewReleasePolicyModelCreate().
+						SetName(name).
+						SetModule(module),
+					Affects: &api.ReleasePolicyAffectsSet{
+						Projects:    setProjects,
+						NotProjects: notSetProjects,
+						Repos:       setRepos,
+						NotRepos:    notSetRepos,
+					},
 				},
 			}); err != nil {
 				return err
