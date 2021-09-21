@@ -48,7 +48,7 @@ func (h *Handler) PopulateStoreWithPolicies() error {
 		log.Warnf("creating project failed: %s", projectErr.Error())
 	}
 	for _, req := range reqs {
-		req.Affects = &api.ReleasePolicyAffects{
+		req.Policy.Affects = &api.ReleasePolicyAffectsSet{
 			Projects: []string{"demo"},
 		}
 		if _, err := h.SaveReleasePolicy(req); err != nil {

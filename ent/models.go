@@ -11,6 +11,7 @@ import (
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/vulnerability"
+	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 
 	schema "github.com/valocode/bubbly/ent/schema/types"
 )
@@ -80,15 +81,42 @@ func (a *AdapterModelRead) FromEnt(value *Adapter) *AdapterModelRead {
 }
 
 type AdapterModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name   *string `json:"name,omitempty"  mapstructure:"name"`
+	Tag    *string `json:"tag,omitempty"  mapstructure:"tag"`
+	Module *string `json:"module,omitempty"  mapstructure:"module"`
 }
 
 func NewAdapterModelUpdate() *AdapterModelUpdate {
 	return &AdapterModelUpdate{}
 }
+func (a *AdapterModelUpdate) SetName(value string) *AdapterModelUpdate {
+	a.Name = &value
+	return a
+}
+func (a *AdapterModelUpdate) SetTag(value string) *AdapterModelUpdate {
+	a.Tag = &value
+	return a
+}
+func (a *AdapterModelUpdate) SetModule(value string) *AdapterModelUpdate {
+	a.Module = &value
+	return a
+}
 
-func (a *AdapterModelUpdate) SetID(value int) *AdapterModelUpdate {
-	a.ID = &value
+func (a *AdapterUpdateOne) SetModelUpdate(model *AdapterModelUpdate) *AdapterUpdateOne {
+	a.mutation.SetModelUpdate(model)
+	return a
+}
+
+func (a *AdapterMutation) SetModelUpdate(model *AdapterModelUpdate) *AdapterMutation {
+	if model.Name != nil {
+		a.SetName(*model.Name)
+	}
+	if model.Tag != nil {
+		a.SetTag(*model.Tag)
+	}
+	if model.Module != nil {
+		a.SetModule(*model.Module)
+	}
 	return a
 }
 
@@ -177,15 +205,58 @@ func (a *ArtifactModelRead) FromEnt(value *Artifact) *ArtifactModelRead {
 }
 
 type ArtifactModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name     *string          `json:"name,omitempty"  mapstructure:"name"`
+	Sha256   *string          `json:"sha256,omitempty"  mapstructure:"sha256"`
+	Type     *artifact.Type   `json:"type,omitempty"  mapstructure:"type"`
+	Time     *time.Time       `json:"time,omitempty"  mapstructure:"time"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewArtifactModelUpdate() *ArtifactModelUpdate {
 	return &ArtifactModelUpdate{}
 }
+func (a *ArtifactModelUpdate) SetName(value string) *ArtifactModelUpdate {
+	a.Name = &value
+	return a
+}
+func (a *ArtifactModelUpdate) SetSha256(value string) *ArtifactModelUpdate {
+	a.Sha256 = &value
+	return a
+}
+func (a *ArtifactModelUpdate) SetType(value artifact.Type) *ArtifactModelUpdate {
+	a.Type = &value
+	return a
+}
+func (a *ArtifactModelUpdate) SetTime(value time.Time) *ArtifactModelUpdate {
+	a.Time = &value
+	return a
+}
+func (a *ArtifactModelUpdate) SetMetadata(value schema.Metadata) *ArtifactModelUpdate {
+	a.Metadata = &value
+	return a
+}
 
-func (a *ArtifactModelUpdate) SetID(value int) *ArtifactModelUpdate {
-	a.ID = &value
+func (a *ArtifactUpdateOne) SetModelUpdate(model *ArtifactModelUpdate) *ArtifactUpdateOne {
+	a.mutation.SetModelUpdate(model)
+	return a
+}
+
+func (a *ArtifactMutation) SetModelUpdate(model *ArtifactModelUpdate) *ArtifactMutation {
+	if model.Name != nil {
+		a.SetName(*model.Name)
+	}
+	if model.Sha256 != nil {
+		a.SetSha256(*model.Sha256)
+	}
+	if model.Type != nil {
+		a.SetType(*model.Type)
+	}
+	if model.Time != nil {
+		a.SetTime(*model.Time)
+	}
+	if model.Metadata != nil {
+		a.SetMetadata(*model.Metadata)
+	}
 	return a
 }
 
@@ -274,15 +345,58 @@ func (ci *CodeIssueModelRead) FromEnt(value *CodeIssue) *CodeIssueModelRead {
 }
 
 type CodeIssueModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	RuleID   *string             `json:"rule_id,omitempty"  mapstructure:"rule_id"`
+	Message  *string             `json:"message,omitempty"  mapstructure:"message"`
+	Severity *codeissue.Severity `json:"severity,omitempty"  mapstructure:"severity"`
+	Type     *codeissue.Type     `json:"type,omitempty"  mapstructure:"type"`
+	Metadata *schema.Metadata    `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewCodeIssueModelUpdate() *CodeIssueModelUpdate {
 	return &CodeIssueModelUpdate{}
 }
+func (ci *CodeIssueModelUpdate) SetRuleID(value string) *CodeIssueModelUpdate {
+	ci.RuleID = &value
+	return ci
+}
+func (ci *CodeIssueModelUpdate) SetMessage(value string) *CodeIssueModelUpdate {
+	ci.Message = &value
+	return ci
+}
+func (ci *CodeIssueModelUpdate) SetSeverity(value codeissue.Severity) *CodeIssueModelUpdate {
+	ci.Severity = &value
+	return ci
+}
+func (ci *CodeIssueModelUpdate) SetType(value codeissue.Type) *CodeIssueModelUpdate {
+	ci.Type = &value
+	return ci
+}
+func (ci *CodeIssueModelUpdate) SetMetadata(value schema.Metadata) *CodeIssueModelUpdate {
+	ci.Metadata = &value
+	return ci
+}
 
-func (ci *CodeIssueModelUpdate) SetID(value int) *CodeIssueModelUpdate {
-	ci.ID = &value
+func (ci *CodeIssueUpdateOne) SetModelUpdate(model *CodeIssueModelUpdate) *CodeIssueUpdateOne {
+	ci.mutation.SetModelUpdate(model)
+	return ci
+}
+
+func (ci *CodeIssueMutation) SetModelUpdate(model *CodeIssueModelUpdate) *CodeIssueMutation {
+	if model.RuleID != nil {
+		ci.SetRuleID(*model.RuleID)
+	}
+	if model.Message != nil {
+		ci.SetMessage(*model.Message)
+	}
+	if model.Severity != nil {
+		ci.SetSeverity(*model.Severity)
+	}
+	if model.Type != nil {
+		ci.SetType(*model.Type)
+	}
+	if model.Metadata != nil {
+		ci.SetMetadata(*model.Metadata)
+	}
 	return ci
 }
 
@@ -351,15 +465,42 @@ func (cs *CodeScanModelRead) FromEnt(value *CodeScan) *CodeScanModelRead {
 }
 
 type CodeScanModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Tool     *string          `json:"tool,omitempty"  mapstructure:"tool"`
+	Time     *time.Time       `json:"time,omitempty"  mapstructure:"time"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewCodeScanModelUpdate() *CodeScanModelUpdate {
 	return &CodeScanModelUpdate{}
 }
+func (cs *CodeScanModelUpdate) SetTool(value string) *CodeScanModelUpdate {
+	cs.Tool = &value
+	return cs
+}
+func (cs *CodeScanModelUpdate) SetTime(value time.Time) *CodeScanModelUpdate {
+	cs.Time = &value
+	return cs
+}
+func (cs *CodeScanModelUpdate) SetMetadata(value schema.Metadata) *CodeScanModelUpdate {
+	cs.Metadata = &value
+	return cs
+}
 
-func (cs *CodeScanModelUpdate) SetID(value int) *CodeScanModelUpdate {
-	cs.ID = &value
+func (cs *CodeScanUpdateOne) SetModelUpdate(model *CodeScanModelUpdate) *CodeScanUpdateOne {
+	cs.mutation.SetModelUpdate(model)
+	return cs
+}
+
+func (cs *CodeScanMutation) SetModelUpdate(model *CodeScanModelUpdate) *CodeScanMutation {
+	if model.Tool != nil {
+		cs.SetTool(*model.Tool)
+	}
+	if model.Time != nil {
+		cs.SetTime(*model.Time)
+	}
+	if model.Metadata != nil {
+		cs.SetMetadata(*model.Metadata)
+	}
 	return cs
 }
 
@@ -458,15 +599,66 @@ func (c *ComponentModelRead) FromEnt(value *Component) *ComponentModelRead {
 }
 
 type ComponentModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name        *string          `json:"name,omitempty"  mapstructure:"name"`
+	Vendor      *string          `json:"vendor,omitempty"  mapstructure:"vendor"`
+	Version     *string          `json:"version,omitempty"  mapstructure:"version"`
+	Description *string          `json:"description,omitempty"  mapstructure:"description"`
+	URL         *string          `json:"url,omitempty"  mapstructure:"url"`
+	Metadata    *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewComponentModelUpdate() *ComponentModelUpdate {
 	return &ComponentModelUpdate{}
 }
+func (c *ComponentModelUpdate) SetName(value string) *ComponentModelUpdate {
+	c.Name = &value
+	return c
+}
+func (c *ComponentModelUpdate) SetVendor(value string) *ComponentModelUpdate {
+	c.Vendor = &value
+	return c
+}
+func (c *ComponentModelUpdate) SetVersion(value string) *ComponentModelUpdate {
+	c.Version = &value
+	return c
+}
+func (c *ComponentModelUpdate) SetDescription(value string) *ComponentModelUpdate {
+	c.Description = &value
+	return c
+}
+func (c *ComponentModelUpdate) SetURL(value string) *ComponentModelUpdate {
+	c.URL = &value
+	return c
+}
+func (c *ComponentModelUpdate) SetMetadata(value schema.Metadata) *ComponentModelUpdate {
+	c.Metadata = &value
+	return c
+}
 
-func (c *ComponentModelUpdate) SetID(value int) *ComponentModelUpdate {
-	c.ID = &value
+func (c *ComponentUpdateOne) SetModelUpdate(model *ComponentModelUpdate) *ComponentUpdateOne {
+	c.mutation.SetModelUpdate(model)
+	return c
+}
+
+func (c *ComponentMutation) SetModelUpdate(model *ComponentModelUpdate) *ComponentMutation {
+	if model.Name != nil {
+		c.SetName(*model.Name)
+	}
+	if model.Vendor != nil {
+		c.SetVendor(*model.Vendor)
+	}
+	if model.Version != nil {
+		c.SetVersion(*model.Version)
+	}
+	if model.Description != nil {
+		c.SetDescription(*model.Description)
+	}
+	if model.URL != nil {
+		c.SetURL(*model.URL)
+	}
+	if model.Metadata != nil {
+		c.SetMetadata(*model.Metadata)
+	}
 	return c
 }
 
@@ -545,15 +737,50 @@ func (e *EventModelRead) FromEnt(value *Event) *EventModelRead {
 }
 
 type EventModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Message *string       `json:"message,omitempty"  mapstructure:"message"`
+	Status  *event.Status `json:"status,omitempty"  mapstructure:"status"`
+	Type    *event.Type   `json:"type,omitempty"  mapstructure:"type"`
+	Time    *time.Time    `json:"time,omitempty"  mapstructure:"time"`
 }
 
 func NewEventModelUpdate() *EventModelUpdate {
 	return &EventModelUpdate{}
 }
+func (e *EventModelUpdate) SetMessage(value string) *EventModelUpdate {
+	e.Message = &value
+	return e
+}
+func (e *EventModelUpdate) SetStatus(value event.Status) *EventModelUpdate {
+	e.Status = &value
+	return e
+}
+func (e *EventModelUpdate) SetType(value event.Type) *EventModelUpdate {
+	e.Type = &value
+	return e
+}
+func (e *EventModelUpdate) SetTime(value time.Time) *EventModelUpdate {
+	e.Time = &value
+	return e
+}
 
-func (e *EventModelUpdate) SetID(value int) *EventModelUpdate {
-	e.ID = &value
+func (e *EventUpdateOne) SetModelUpdate(model *EventModelUpdate) *EventUpdateOne {
+	e.mutation.SetModelUpdate(model)
+	return e
+}
+
+func (e *EventMutation) SetModelUpdate(model *EventModelUpdate) *EventMutation {
+	if model.Message != nil {
+		e.SetMessage(*model.Message)
+	}
+	if model.Status != nil {
+		e.SetStatus(*model.Status)
+	}
+	if model.Type != nil {
+		e.SetType(*model.Type)
+	}
+	if model.Time != nil {
+		e.SetTime(*model.Time)
+	}
 	return e
 }
 
@@ -632,15 +859,50 @@ func (gc *GitCommitModelRead) FromEnt(value *GitCommit) *GitCommitModelRead {
 }
 
 type GitCommitModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Hash   *string    `json:"hash,omitempty"  mapstructure:"hash"`
+	Branch *string    `json:"branch,omitempty"  mapstructure:"branch"`
+	Tag    *string    `json:"tag,omitempty"  mapstructure:"tag"`
+	Time   *time.Time `json:"time,omitempty"  mapstructure:"time"`
 }
 
 func NewGitCommitModelUpdate() *GitCommitModelUpdate {
 	return &GitCommitModelUpdate{}
 }
+func (gc *GitCommitModelUpdate) SetHash(value string) *GitCommitModelUpdate {
+	gc.Hash = &value
+	return gc
+}
+func (gc *GitCommitModelUpdate) SetBranch(value string) *GitCommitModelUpdate {
+	gc.Branch = &value
+	return gc
+}
+func (gc *GitCommitModelUpdate) SetTag(value string) *GitCommitModelUpdate {
+	gc.Tag = &value
+	return gc
+}
+func (gc *GitCommitModelUpdate) SetTime(value time.Time) *GitCommitModelUpdate {
+	gc.Time = &value
+	return gc
+}
 
-func (gc *GitCommitModelUpdate) SetID(value int) *GitCommitModelUpdate {
-	gc.ID = &value
+func (gc *GitCommitUpdateOne) SetModelUpdate(model *GitCommitModelUpdate) *GitCommitUpdateOne {
+	gc.mutation.SetModelUpdate(model)
+	return gc
+}
+
+func (gc *GitCommitMutation) SetModelUpdate(model *GitCommitModelUpdate) *GitCommitMutation {
+	if model.Hash != nil {
+		gc.SetHash(*model.Hash)
+	}
+	if model.Branch != nil {
+		gc.SetBranch(*model.Branch)
+	}
+	if model.Tag != nil {
+		gc.SetTag(*model.Tag)
+	}
+	if model.Time != nil {
+		gc.SetTime(*model.Time)
+	}
 	return gc
 }
 
@@ -699,15 +961,34 @@ func (l *LicenseModelRead) FromEnt(value *License) *LicenseModelRead {
 }
 
 type LicenseModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	LicenseID *string `json:"license_id,omitempty"  mapstructure:"license_id"`
+	Name      *string `json:"name,omitempty"  mapstructure:"name"`
 }
 
 func NewLicenseModelUpdate() *LicenseModelUpdate {
 	return &LicenseModelUpdate{}
 }
+func (l *LicenseModelUpdate) SetLicenseID(value string) *LicenseModelUpdate {
+	l.LicenseID = &value
+	return l
+}
+func (l *LicenseModelUpdate) SetName(value string) *LicenseModelUpdate {
+	l.Name = &value
+	return l
+}
 
-func (l *LicenseModelUpdate) SetID(value int) *LicenseModelUpdate {
-	l.ID = &value
+func (l *LicenseUpdateOne) SetModelUpdate(model *LicenseModelUpdate) *LicenseUpdateOne {
+	l.mutation.SetModelUpdate(model)
+	return l
+}
+
+func (l *LicenseMutation) SetModelUpdate(model *LicenseModelUpdate) *LicenseMutation {
+	if model.LicenseID != nil {
+		l.SetLicenseID(*model.LicenseID)
+	}
+	if model.Name != nil {
+		l.SetName(*model.Name)
+	}
 	return l
 }
 
@@ -756,15 +1037,26 @@ func (o *OrganizationModelRead) FromEnt(value *Organization) *OrganizationModelR
 }
 
 type OrganizationModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name *string `json:"name,omitempty"  mapstructure:"name"`
 }
 
 func NewOrganizationModelUpdate() *OrganizationModelUpdate {
 	return &OrganizationModelUpdate{}
 }
+func (o *OrganizationModelUpdate) SetName(value string) *OrganizationModelUpdate {
+	o.Name = &value
+	return o
+}
 
-func (o *OrganizationModelUpdate) SetID(value int) *OrganizationModelUpdate {
-	o.ID = &value
+func (o *OrganizationUpdateOne) SetModelUpdate(model *OrganizationModelUpdate) *OrganizationUpdateOne {
+	o.mutation.SetModelUpdate(model)
+	return o
+}
+
+func (o *OrganizationMutation) SetModelUpdate(model *OrganizationModelUpdate) *OrganizationMutation {
+	if model.Name != nil {
+		o.SetName(*model.Name)
+	}
 	return o
 }
 
@@ -813,15 +1105,26 @@ func (pr *ProjectModelRead) FromEnt(value *Project) *ProjectModelRead {
 }
 
 type ProjectModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name *string `json:"name,omitempty"  mapstructure:"name"`
 }
 
 func NewProjectModelUpdate() *ProjectModelUpdate {
 	return &ProjectModelUpdate{}
 }
+func (pr *ProjectModelUpdate) SetName(value string) *ProjectModelUpdate {
+	pr.Name = &value
+	return pr
+}
 
-func (pr *ProjectModelUpdate) SetID(value int) *ProjectModelUpdate {
-	pr.ID = &value
+func (pr *ProjectUpdateOne) SetModelUpdate(model *ProjectModelUpdate) *ProjectUpdateOne {
+	pr.mutation.SetModelUpdate(model)
+	return pr
+}
+
+func (pr *ProjectMutation) SetModelUpdate(model *ProjectModelUpdate) *ProjectMutation {
+	if model.Name != nil {
+		pr.SetName(*model.Name)
+	}
 	return pr
 }
 
@@ -880,15 +1183,34 @@ func (r *ReleaseModelRead) FromEnt(value *Release) *ReleaseModelRead {
 }
 
 type ReleaseModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name    *string `json:"name,omitempty"  mapstructure:"name"`
+	Version *string `json:"version,omitempty"  mapstructure:"version"`
 }
 
 func NewReleaseModelUpdate() *ReleaseModelUpdate {
 	return &ReleaseModelUpdate{}
 }
+func (r *ReleaseModelUpdate) SetName(value string) *ReleaseModelUpdate {
+	r.Name = &value
+	return r
+}
+func (r *ReleaseModelUpdate) SetVersion(value string) *ReleaseModelUpdate {
+	r.Version = &value
+	return r
+}
 
-func (r *ReleaseModelUpdate) SetID(value int) *ReleaseModelUpdate {
-	r.ID = &value
+func (r *ReleaseUpdateOne) SetModelUpdate(model *ReleaseModelUpdate) *ReleaseUpdateOne {
+	r.mutation.SetModelUpdate(model)
+	return r
+}
+
+func (r *ReleaseMutation) SetModelUpdate(model *ReleaseModelUpdate) *ReleaseMutation {
+	if model.Name != nil {
+		r.SetName(*model.Name)
+	}
+	if model.Version != nil {
+		r.SetVersion(*model.Version)
+	}
 	return r
 }
 
@@ -947,15 +1269,34 @@ func (re *ReleaseEntryModelRead) FromEnt(value *ReleaseEntry) *ReleaseEntryModel
 }
 
 type ReleaseEntryModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Type *releaseentry.Type `json:"type,omitempty"  mapstructure:"type"`
+	Time *time.Time         `json:"time,omitempty"  mapstructure:"time"`
 }
 
 func NewReleaseEntryModelUpdate() *ReleaseEntryModelUpdate {
 	return &ReleaseEntryModelUpdate{}
 }
+func (re *ReleaseEntryModelUpdate) SetType(value releaseentry.Type) *ReleaseEntryModelUpdate {
+	re.Type = &value
+	return re
+}
+func (re *ReleaseEntryModelUpdate) SetTime(value time.Time) *ReleaseEntryModelUpdate {
+	re.Time = &value
+	return re
+}
 
-func (re *ReleaseEntryModelUpdate) SetID(value int) *ReleaseEntryModelUpdate {
-	re.ID = &value
+func (re *ReleaseEntryUpdateOne) SetModelUpdate(model *ReleaseEntryModelUpdate) *ReleaseEntryUpdateOne {
+	re.mutation.SetModelUpdate(model)
+	return re
+}
+
+func (re *ReleaseEntryMutation) SetModelUpdate(model *ReleaseEntryModelUpdate) *ReleaseEntryMutation {
+	if model.Type != nil {
+		re.SetType(*model.Type)
+	}
+	if model.Time != nil {
+		re.SetTime(*model.Time)
+	}
 	return re
 }
 
@@ -1014,15 +1355,34 @@ func (rp *ReleasePolicyModelRead) FromEnt(value *ReleasePolicy) *ReleasePolicyMo
 }
 
 type ReleasePolicyModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name   *string `json:"name,omitempty"  mapstructure:"name"`
+	Module *string `json:"module,omitempty"  mapstructure:"module"`
 }
 
 func NewReleasePolicyModelUpdate() *ReleasePolicyModelUpdate {
 	return &ReleasePolicyModelUpdate{}
 }
+func (rp *ReleasePolicyModelUpdate) SetName(value string) *ReleasePolicyModelUpdate {
+	rp.Name = &value
+	return rp
+}
+func (rp *ReleasePolicyModelUpdate) SetModule(value string) *ReleasePolicyModelUpdate {
+	rp.Module = &value
+	return rp
+}
 
-func (rp *ReleasePolicyModelUpdate) SetID(value int) *ReleasePolicyModelUpdate {
-	rp.ID = &value
+func (rp *ReleasePolicyUpdateOne) SetModelUpdate(model *ReleasePolicyModelUpdate) *ReleasePolicyUpdateOne {
+	rp.mutation.SetModelUpdate(model)
+	return rp
+}
+
+func (rp *ReleasePolicyMutation) SetModelUpdate(model *ReleasePolicyModelUpdate) *ReleasePolicyMutation {
+	if model.Name != nil {
+		rp.SetName(*model.Name)
+	}
+	if model.Module != nil {
+		rp.SetModule(*model.Module)
+	}
 	return rp
 }
 
@@ -1091,15 +1451,42 @@ func (rpv *ReleasePolicyViolationModelRead) FromEnt(value *ReleasePolicyViolatio
 }
 
 type ReleasePolicyViolationModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Message  *string                          `json:"message,omitempty"  mapstructure:"message"`
+	Type     *releasepolicyviolation.Type     `json:"type,omitempty"  mapstructure:"type"`
+	Severity *releasepolicyviolation.Severity `json:"severity,omitempty"  mapstructure:"severity"`
 }
 
 func NewReleasePolicyViolationModelUpdate() *ReleasePolicyViolationModelUpdate {
 	return &ReleasePolicyViolationModelUpdate{}
 }
+func (rpv *ReleasePolicyViolationModelUpdate) SetMessage(value string) *ReleasePolicyViolationModelUpdate {
+	rpv.Message = &value
+	return rpv
+}
+func (rpv *ReleasePolicyViolationModelUpdate) SetType(value releasepolicyviolation.Type) *ReleasePolicyViolationModelUpdate {
+	rpv.Type = &value
+	return rpv
+}
+func (rpv *ReleasePolicyViolationModelUpdate) SetSeverity(value releasepolicyviolation.Severity) *ReleasePolicyViolationModelUpdate {
+	rpv.Severity = &value
+	return rpv
+}
 
-func (rpv *ReleasePolicyViolationModelUpdate) SetID(value int) *ReleasePolicyViolationModelUpdate {
-	rpv.ID = &value
+func (rpv *ReleasePolicyViolationUpdateOne) SetModelUpdate(model *ReleasePolicyViolationModelUpdate) *ReleasePolicyViolationUpdateOne {
+	rpv.mutation.SetModelUpdate(model)
+	return rpv
+}
+
+func (rpv *ReleasePolicyViolationMutation) SetModelUpdate(model *ReleasePolicyViolationModelUpdate) *ReleasePolicyViolationMutation {
+	if model.Message != nil {
+		rpv.SetMessage(*model.Message)
+	}
+	if model.Type != nil {
+		rpv.SetType(*model.Type)
+	}
+	if model.Severity != nil {
+		rpv.SetSeverity(*model.Severity)
+	}
 	return rpv
 }
 
@@ -1158,15 +1545,34 @@ func (r *RepoModelRead) FromEnt(value *Repo) *RepoModelRead {
 }
 
 type RepoModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name          *string `json:"name,omitempty"  mapstructure:"name"`
+	DefaultBranch *string `json:"default_branch,omitempty"  mapstructure:"default_branch"`
 }
 
 func NewRepoModelUpdate() *RepoModelUpdate {
 	return &RepoModelUpdate{}
 }
+func (r *RepoModelUpdate) SetName(value string) *RepoModelUpdate {
+	r.Name = &value
+	return r
+}
+func (r *RepoModelUpdate) SetDefaultBranch(value string) *RepoModelUpdate {
+	r.DefaultBranch = &value
+	return r
+}
 
-func (r *RepoModelUpdate) SetID(value int) *RepoModelUpdate {
-	r.ID = &value
+func (r *RepoUpdateOne) SetModelUpdate(model *RepoModelUpdate) *RepoUpdateOne {
+	r.mutation.SetModelUpdate(model)
+	return r
+}
+
+func (r *RepoMutation) SetModelUpdate(model *RepoModelUpdate) *RepoMutation {
+	if model.Name != nil {
+		r.SetName(*model.Name)
+	}
+	if model.DefaultBranch != nil {
+		r.SetDefaultBranch(*model.DefaultBranch)
+	}
 	return r
 }
 
@@ -1255,15 +1661,58 @@ func (sl *SPDXLicenseModelRead) FromEnt(value *SPDXLicense) *SPDXLicenseModelRea
 }
 
 type SPDXLicenseModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	LicenseID     *string `json:"license_id,omitempty"  mapstructure:"license_id"`
+	Name          *string `json:"name,omitempty"  mapstructure:"name"`
+	Reference     *string `json:"reference,omitempty"  mapstructure:"reference"`
+	DetailsURL    *string `json:"details_url,omitempty"  mapstructure:"details_url"`
+	IsOsiApproved *bool   `json:"is_osi_approved,omitempty"  mapstructure:"is_osi_approved"`
 }
 
 func NewSPDXLicenseModelUpdate() *SPDXLicenseModelUpdate {
 	return &SPDXLicenseModelUpdate{}
 }
+func (sl *SPDXLicenseModelUpdate) SetLicenseID(value string) *SPDXLicenseModelUpdate {
+	sl.LicenseID = &value
+	return sl
+}
+func (sl *SPDXLicenseModelUpdate) SetName(value string) *SPDXLicenseModelUpdate {
+	sl.Name = &value
+	return sl
+}
+func (sl *SPDXLicenseModelUpdate) SetReference(value string) *SPDXLicenseModelUpdate {
+	sl.Reference = &value
+	return sl
+}
+func (sl *SPDXLicenseModelUpdate) SetDetailsURL(value string) *SPDXLicenseModelUpdate {
+	sl.DetailsURL = &value
+	return sl
+}
+func (sl *SPDXLicenseModelUpdate) SetIsOsiApproved(value bool) *SPDXLicenseModelUpdate {
+	sl.IsOsiApproved = &value
+	return sl
+}
 
-func (sl *SPDXLicenseModelUpdate) SetID(value int) *SPDXLicenseModelUpdate {
-	sl.ID = &value
+func (sl *SPDXLicenseUpdateOne) SetModelUpdate(model *SPDXLicenseModelUpdate) *SPDXLicenseUpdateOne {
+	sl.mutation.SetModelUpdate(model)
+	return sl
+}
+
+func (sl *SPDXLicenseMutation) SetModelUpdate(model *SPDXLicenseModelUpdate) *SPDXLicenseMutation {
+	if model.LicenseID != nil {
+		sl.SetLicenseID(*model.LicenseID)
+	}
+	if model.Name != nil {
+		sl.SetName(*model.Name)
+	}
+	if model.Reference != nil {
+		sl.SetReference(*model.Reference)
+	}
+	if model.DetailsURL != nil {
+		sl.SetDetailsURL(*model.DetailsURL)
+	}
+	if model.IsOsiApproved != nil {
+		sl.SetIsOsiApproved(*model.IsOsiApproved)
+	}
 	return sl
 }
 
@@ -1352,15 +1801,58 @@ func (tc *TestCaseModelRead) FromEnt(value *TestCase) *TestCaseModelRead {
 }
 
 type TestCaseModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name     *string          `json:"name,omitempty"  mapstructure:"name"`
+	Result   *bool            `json:"result,omitempty"  mapstructure:"result"`
+	Message  *string          `json:"message,omitempty"  mapstructure:"message"`
+	Elapsed  *float64         `json:"elapsed,omitempty"  mapstructure:"elapsed"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewTestCaseModelUpdate() *TestCaseModelUpdate {
 	return &TestCaseModelUpdate{}
 }
+func (tc *TestCaseModelUpdate) SetName(value string) *TestCaseModelUpdate {
+	tc.Name = &value
+	return tc
+}
+func (tc *TestCaseModelUpdate) SetResult(value bool) *TestCaseModelUpdate {
+	tc.Result = &value
+	return tc
+}
+func (tc *TestCaseModelUpdate) SetMessage(value string) *TestCaseModelUpdate {
+	tc.Message = &value
+	return tc
+}
+func (tc *TestCaseModelUpdate) SetElapsed(value float64) *TestCaseModelUpdate {
+	tc.Elapsed = &value
+	return tc
+}
+func (tc *TestCaseModelUpdate) SetMetadata(value schema.Metadata) *TestCaseModelUpdate {
+	tc.Metadata = &value
+	return tc
+}
 
-func (tc *TestCaseModelUpdate) SetID(value int) *TestCaseModelUpdate {
-	tc.ID = &value
+func (tc *TestCaseUpdateOne) SetModelUpdate(model *TestCaseModelUpdate) *TestCaseUpdateOne {
+	tc.mutation.SetModelUpdate(model)
+	return tc
+}
+
+func (tc *TestCaseMutation) SetModelUpdate(model *TestCaseModelUpdate) *TestCaseMutation {
+	if model.Name != nil {
+		tc.SetName(*model.Name)
+	}
+	if model.Result != nil {
+		tc.SetResult(*model.Result)
+	}
+	if model.Message != nil {
+		tc.SetMessage(*model.Message)
+	}
+	if model.Elapsed != nil {
+		tc.SetElapsed(*model.Elapsed)
+	}
+	if model.Metadata != nil {
+		tc.SetMetadata(*model.Metadata)
+	}
 	return tc
 }
 
@@ -1429,15 +1921,42 @@ func (tr *TestRunModelRead) FromEnt(value *TestRun) *TestRunModelRead {
 }
 
 type TestRunModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Tool     *string          `json:"tool,omitempty"  mapstructure:"tool"`
+	Time     *time.Time       `json:"time,omitempty"  mapstructure:"time"`
+	Metadata *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewTestRunModelUpdate() *TestRunModelUpdate {
 	return &TestRunModelUpdate{}
 }
+func (tr *TestRunModelUpdate) SetTool(value string) *TestRunModelUpdate {
+	tr.Tool = &value
+	return tr
+}
+func (tr *TestRunModelUpdate) SetTime(value time.Time) *TestRunModelUpdate {
+	tr.Time = &value
+	return tr
+}
+func (tr *TestRunModelUpdate) SetMetadata(value schema.Metadata) *TestRunModelUpdate {
+	tr.Metadata = &value
+	return tr
+}
 
-func (tr *TestRunModelUpdate) SetID(value int) *TestRunModelUpdate {
-	tr.ID = &value
+func (tr *TestRunUpdateOne) SetModelUpdate(model *TestRunModelUpdate) *TestRunUpdateOne {
+	tr.mutation.SetModelUpdate(model)
+	return tr
+}
+
+func (tr *TestRunMutation) SetModelUpdate(model *TestRunModelUpdate) *TestRunMutation {
+	if model.Tool != nil {
+		tr.SetTool(*model.Tool)
+	}
+	if model.Time != nil {
+		tr.SetTime(*model.Time)
+	}
+	if model.Metadata != nil {
+		tr.SetMetadata(*model.Metadata)
+	}
 	return tr
 }
 
@@ -1556,129 +2075,328 @@ func (v *VulnerabilityModelRead) FromEnt(value *Vulnerability) *VulnerabilityMod
 }
 
 type VulnerabilityModelUpdate struct {
-	ID *int `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Vid           *string                 `json:"vid,omitempty"  mapstructure:"vid"`
+	Summary       *string                 `json:"summary,omitempty"  mapstructure:"summary"`
+	Description   *string                 `json:"description,omitempty"  mapstructure:"description"`
+	SeverityScore *float64                `json:"severity_score,omitempty"  mapstructure:"severity_score"`
+	Severity      *vulnerability.Severity `json:"severity,omitempty"  mapstructure:"severity"`
+	Published     *time.Time              `json:"published,omitempty"  mapstructure:"published"`
+	Modified      *time.Time              `json:"modified,omitempty"  mapstructure:"modified"`
+	Metadata      *schema.Metadata        `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
 func NewVulnerabilityModelUpdate() *VulnerabilityModelUpdate {
 	return &VulnerabilityModelUpdate{}
 }
-
-func (v *VulnerabilityModelUpdate) SetID(value int) *VulnerabilityModelUpdate {
-	v.ID = &value
+func (v *VulnerabilityModelUpdate) SetVid(value string) *VulnerabilityModelUpdate {
+	v.Vid = &value
+	return v
+}
+func (v *VulnerabilityModelUpdate) SetSummary(value string) *VulnerabilityModelUpdate {
+	v.Summary = &value
+	return v
+}
+func (v *VulnerabilityModelUpdate) SetDescription(value string) *VulnerabilityModelUpdate {
+	v.Description = &value
+	return v
+}
+func (v *VulnerabilityModelUpdate) SetSeverityScore(value float64) *VulnerabilityModelUpdate {
+	v.SeverityScore = &value
+	return v
+}
+func (v *VulnerabilityModelUpdate) SetSeverity(value vulnerability.Severity) *VulnerabilityModelUpdate {
+	v.Severity = &value
+	return v
+}
+func (v *VulnerabilityModelUpdate) SetPublished(value time.Time) *VulnerabilityModelUpdate {
+	v.Published = &value
+	return v
+}
+func (v *VulnerabilityModelUpdate) SetModified(value time.Time) *VulnerabilityModelUpdate {
+	v.Modified = &value
+	return v
+}
+func (v *VulnerabilityModelUpdate) SetMetadata(value schema.Metadata) *VulnerabilityModelUpdate {
+	v.Metadata = &value
 	return v
 }
 
-func (a *AdapterQuery) WhereInput(input AdapterWhereInput) *AdapterQuery {
-	input.Filter(a)
+func (v *VulnerabilityUpdateOne) SetModelUpdate(model *VulnerabilityModelUpdate) *VulnerabilityUpdateOne {
+	v.mutation.SetModelUpdate(model)
+	return v
+}
+
+func (v *VulnerabilityMutation) SetModelUpdate(model *VulnerabilityModelUpdate) *VulnerabilityMutation {
+	if model.Vid != nil {
+		v.SetVid(*model.Vid)
+	}
+	if model.Summary != nil {
+		v.SetSummary(*model.Summary)
+	}
+	if model.Description != nil {
+		v.SetDescription(*model.Description)
+	}
+	if model.SeverityScore != nil {
+		v.SetSeverityScore(*model.SeverityScore)
+	}
+	if model.Severity != nil {
+		v.SetSeverity(*model.Severity)
+	}
+	if model.Published != nil {
+		v.SetPublished(*model.Published)
+	}
+	if model.Modified != nil {
+		v.SetModified(*model.Modified)
+	}
+	if model.Metadata != nil {
+		v.SetMetadata(*model.Metadata)
+	}
+	return v
+}
+
+type VulnerabilityReviewModelCreate struct {
+	Note     *string                       `json:"note,omitempty" validate:"required" mapstructure:"note"`
+	Decision *vulnerabilityreview.Decision `json:"decision,omitempty"  mapstructure:"decision"`
+}
+
+func NewVulnerabilityReviewModelCreate() *VulnerabilityReviewModelCreate {
+	return &VulnerabilityReviewModelCreate{}
+}
+func (vr *VulnerabilityReviewModelCreate) SetNote(value string) *VulnerabilityReviewModelCreate {
+	vr.Note = &value
+	return vr
+}
+func (vr *VulnerabilityReviewModelCreate) SetDecision(value vulnerabilityreview.Decision) *VulnerabilityReviewModelCreate {
+	vr.Decision = &value
+	return vr
+}
+
+func (vr *VulnerabilityReviewCreate) SetModelCreate(model *VulnerabilityReviewModelCreate) *VulnerabilityReviewCreate {
+	vr.mutation.SetModelCreate(model)
+	return vr
+}
+
+func (vr *VulnerabilityReviewUpdateOne) SetModelCreate(model *VulnerabilityReviewModelCreate) *VulnerabilityReviewUpdateOne {
+	vr.mutation.SetModelCreate(model)
+	return vr
+}
+
+func (vr *VulnerabilityReviewMutation) SetModelCreate(model *VulnerabilityReviewModelCreate) *VulnerabilityReviewMutation {
+	if model.Note != nil {
+		vr.SetNote(*model.Note)
+	}
+	if model.Decision != nil {
+		vr.SetDecision(*model.Decision)
+	}
+	return vr
+}
+
+type VulnerabilityReviewModelRead struct {
+	Note     *string                       `json:"note,omitempty" validate:"required" mapstructure:"note"`
+	Decision *vulnerabilityreview.Decision `json:"decision,omitempty"  mapstructure:"decision"`
+	ID       *int                          `json:"id,omitempty" validate:"required" mapstructure:"id"`
+}
+
+func NewVulnerabilityReviewModelRead() *VulnerabilityReviewModelRead {
+	return &VulnerabilityReviewModelRead{}
+}
+
+func (vr *VulnerabilityReviewModelRead) FromEnt(value *VulnerabilityReview) *VulnerabilityReviewModelRead {
+	vr.Note = &value.Note
+	vr.Decision = &value.Decision
+	vr.ID = &value.ID
+	return vr
+}
+
+type VulnerabilityReviewModelUpdate struct {
+	Note     *string                       `json:"note,omitempty"  mapstructure:"note"`
+	Decision *vulnerabilityreview.Decision `json:"decision,omitempty"  mapstructure:"decision"`
+}
+
+func NewVulnerabilityReviewModelUpdate() *VulnerabilityReviewModelUpdate {
+	return &VulnerabilityReviewModelUpdate{}
+}
+func (vr *VulnerabilityReviewModelUpdate) SetNote(value string) *VulnerabilityReviewModelUpdate {
+	vr.Note = &value
+	return vr
+}
+func (vr *VulnerabilityReviewModelUpdate) SetDecision(value vulnerabilityreview.Decision) *VulnerabilityReviewModelUpdate {
+	vr.Decision = &value
+	return vr
+}
+
+func (vr *VulnerabilityReviewUpdateOne) SetModelUpdate(model *VulnerabilityReviewModelUpdate) *VulnerabilityReviewUpdateOne {
+	vr.mutation.SetModelUpdate(model)
+	return vr
+}
+
+func (vr *VulnerabilityReviewMutation) SetModelUpdate(model *VulnerabilityReviewModelUpdate) *VulnerabilityReviewMutation {
+	if model.Note != nil {
+		vr.SetNote(*model.Note)
+	}
+	if model.Decision != nil {
+		vr.SetDecision(*model.Decision)
+	}
+	return vr
+}
+
+func (a *AdapterQuery) WhereInput(input *AdapterWhereInput) *AdapterQuery {
+	if input != nil {
+		input.Filter(a)
+	}
 	return a
 }
 
-func (a *ArtifactQuery) WhereInput(input ArtifactWhereInput) *ArtifactQuery {
-	input.Filter(a)
+func (a *ArtifactQuery) WhereInput(input *ArtifactWhereInput) *ArtifactQuery {
+	if input != nil {
+		input.Filter(a)
+	}
 	return a
 }
 
-func (ci *CodeIssueQuery) WhereInput(input CodeIssueWhereInput) *CodeIssueQuery {
-	input.Filter(ci)
+func (ci *CodeIssueQuery) WhereInput(input *CodeIssueWhereInput) *CodeIssueQuery {
+	if input != nil {
+		input.Filter(ci)
+	}
 	return ci
 }
 
-func (cs *CodeScanQuery) WhereInput(input CodeScanWhereInput) *CodeScanQuery {
-	input.Filter(cs)
+func (cs *CodeScanQuery) WhereInput(input *CodeScanWhereInput) *CodeScanQuery {
+	if input != nil {
+		input.Filter(cs)
+	}
 	return cs
 }
 
-func (c *ComponentQuery) WhereInput(input ComponentWhereInput) *ComponentQuery {
-	input.Filter(c)
+func (c *ComponentQuery) WhereInput(input *ComponentWhereInput) *ComponentQuery {
+	if input != nil {
+		input.Filter(c)
+	}
 	return c
 }
 
-func (e *EventQuery) WhereInput(input EventWhereInput) *EventQuery {
-	input.Filter(e)
+func (e *EventQuery) WhereInput(input *EventWhereInput) *EventQuery {
+	if input != nil {
+		input.Filter(e)
+	}
 	return e
 }
 
-func (gc *GitCommitQuery) WhereInput(input GitCommitWhereInput) *GitCommitQuery {
-	input.Filter(gc)
+func (gc *GitCommitQuery) WhereInput(input *GitCommitWhereInput) *GitCommitQuery {
+	if input != nil {
+		input.Filter(gc)
+	}
 	return gc
 }
 
-func (l *LicenseQuery) WhereInput(input LicenseWhereInput) *LicenseQuery {
-	input.Filter(l)
+func (l *LicenseQuery) WhereInput(input *LicenseWhereInput) *LicenseQuery {
+	if input != nil {
+		input.Filter(l)
+	}
 	return l
 }
 
-func (o *OrganizationQuery) WhereInput(input OrganizationWhereInput) *OrganizationQuery {
-	input.Filter(o)
+func (o *OrganizationQuery) WhereInput(input *OrganizationWhereInput) *OrganizationQuery {
+	if input != nil {
+		input.Filter(o)
+	}
 	return o
 }
 
-func (pr *ProjectQuery) WhereInput(input ProjectWhereInput) *ProjectQuery {
-	input.Filter(pr)
+func (pr *ProjectQuery) WhereInput(input *ProjectWhereInput) *ProjectQuery {
+	if input != nil {
+		input.Filter(pr)
+	}
 	return pr
 }
 
-func (r *ReleaseQuery) WhereInput(input ReleaseWhereInput) *ReleaseQuery {
-	input.Filter(r)
+func (r *ReleaseQuery) WhereInput(input *ReleaseWhereInput) *ReleaseQuery {
+	if input != nil {
+		input.Filter(r)
+	}
 	return r
 }
 
-func (rc *ReleaseComponentQuery) WhereInput(input ReleaseComponentWhereInput) *ReleaseComponentQuery {
-	input.Filter(rc)
+func (rc *ReleaseComponentQuery) WhereInput(input *ReleaseComponentWhereInput) *ReleaseComponentQuery {
+	if input != nil {
+		input.Filter(rc)
+	}
 	return rc
 }
 
-func (re *ReleaseEntryQuery) WhereInput(input ReleaseEntryWhereInput) *ReleaseEntryQuery {
-	input.Filter(re)
+func (re *ReleaseEntryQuery) WhereInput(input *ReleaseEntryWhereInput) *ReleaseEntryQuery {
+	if input != nil {
+		input.Filter(re)
+	}
 	return re
 }
 
-func (rl *ReleaseLicenseQuery) WhereInput(input ReleaseLicenseWhereInput) *ReleaseLicenseQuery {
-	input.Filter(rl)
+func (rl *ReleaseLicenseQuery) WhereInput(input *ReleaseLicenseWhereInput) *ReleaseLicenseQuery {
+	if input != nil {
+		input.Filter(rl)
+	}
 	return rl
 }
 
-func (rp *ReleasePolicyQuery) WhereInput(input ReleasePolicyWhereInput) *ReleasePolicyQuery {
-	input.Filter(rp)
+func (rp *ReleasePolicyQuery) WhereInput(input *ReleasePolicyWhereInput) *ReleasePolicyQuery {
+	if input != nil {
+		input.Filter(rp)
+	}
 	return rp
 }
 
-func (rpv *ReleasePolicyViolationQuery) WhereInput(input ReleasePolicyViolationWhereInput) *ReleasePolicyViolationQuery {
-	input.Filter(rpv)
+func (rpv *ReleasePolicyViolationQuery) WhereInput(input *ReleasePolicyViolationWhereInput) *ReleasePolicyViolationQuery {
+	if input != nil {
+		input.Filter(rpv)
+	}
 	return rpv
 }
 
-func (rv *ReleaseVulnerabilityQuery) WhereInput(input ReleaseVulnerabilityWhereInput) *ReleaseVulnerabilityQuery {
-	input.Filter(rv)
+func (rv *ReleaseVulnerabilityQuery) WhereInput(input *ReleaseVulnerabilityWhereInput) *ReleaseVulnerabilityQuery {
+	if input != nil {
+		input.Filter(rv)
+	}
 	return rv
 }
 
-func (r *RepoQuery) WhereInput(input RepoWhereInput) *RepoQuery {
-	input.Filter(r)
+func (r *RepoQuery) WhereInput(input *RepoWhereInput) *RepoQuery {
+	if input != nil {
+		input.Filter(r)
+	}
 	return r
 }
 
-func (sl *SPDXLicenseQuery) WhereInput(input SPDXLicenseWhereInput) *SPDXLicenseQuery {
-	input.Filter(sl)
+func (sl *SPDXLicenseQuery) WhereInput(input *SPDXLicenseWhereInput) *SPDXLicenseQuery {
+	if input != nil {
+		input.Filter(sl)
+	}
 	return sl
 }
 
-func (tc *TestCaseQuery) WhereInput(input TestCaseWhereInput) *TestCaseQuery {
-	input.Filter(tc)
+func (tc *TestCaseQuery) WhereInput(input *TestCaseWhereInput) *TestCaseQuery {
+	if input != nil {
+		input.Filter(tc)
+	}
 	return tc
 }
 
-func (tr *TestRunQuery) WhereInput(input TestRunWhereInput) *TestRunQuery {
-	input.Filter(tr)
+func (tr *TestRunQuery) WhereInput(input *TestRunWhereInput) *TestRunQuery {
+	if input != nil {
+		input.Filter(tr)
+	}
 	return tr
 }
 
-func (v *VulnerabilityQuery) WhereInput(input VulnerabilityWhereInput) *VulnerabilityQuery {
-	input.Filter(v)
+func (v *VulnerabilityQuery) WhereInput(input *VulnerabilityWhereInput) *VulnerabilityQuery {
+	if input != nil {
+		input.Filter(v)
+	}
 	return v
 }
 
-func (vr *VulnerabilityReviewQuery) WhereInput(input VulnerabilityReviewWhereInput) *VulnerabilityReviewQuery {
-	input.Filter(vr)
+func (vr *VulnerabilityReviewQuery) WhereInput(input *VulnerabilityReviewWhereInput) *VulnerabilityReviewQuery {
+	if input != nil {
+		input.Filter(vr)
+	}
 	return vr
 }

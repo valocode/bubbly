@@ -13,17 +13,18 @@ type (
 	}
 
 	ReleaseGetRequest struct {
-		Commit   *string `json:"commit,omitempty" query:"commit" validate:"required"`
-		Repo     *string `json:"repo,omitempty" query:"repo"`
-		Policies bool    `json:"policies,string" query:"policies"`
-		Log      bool    `json:"log,string" query:"log"`
+		Commit   string `json:"commit,omitempty" query:"commit"`
+		Repo     string `json:"repo,omitempty" query:"repo"`
+		Project  string `json:"project,omitempty" query:"project"`
+		Policies bool   `json:"policies,string" query:"policies"`
+		Log      bool   `json:"log,string" query:"log"`
 	}
 
 	ReleaseGetResponse struct {
-		Releases []*ReleaseRead `json:"releases,omitempty" validate:"dive,required"`
+		Releases []*Release `json:"releases,omitempty" validate:"dive,required"`
 	}
 
-	ReleaseRead struct {
+	Release struct {
 		Project    *ent.ProjectModelRead                  `json:"project,omitempty" validate:"required"`
 		Repo       *ent.RepoModelRead                     `json:"repo,omitempty" validate:"required"`
 		Commit     *ent.GitCommitModelRead                `json:"commit,omitempty" validate:"required"`

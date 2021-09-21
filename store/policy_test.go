@@ -31,10 +31,12 @@ func TestPolicyAffects(t *testing.T) {
 	require.NoError(t, err)
 	for _, p := range policies {
 		_, policyErr := h.SaveReleasePolicy(&api.ReleasePolicySaveRequest{
-			Policy: ent.NewReleasePolicyModelCreate().SetName(*p.Policy.Name).SetModule(*p.Policy.Module),
-			Affects: &api.ReleasePolicyAffects{
-				Projects: []string{"test"},
-				Repos:    []string{"test"},
+			Policy: &api.ReleasePolicyCreate{
+				ReleasePolicyModelCreate: *ent.NewReleasePolicyModelCreate().SetName(*p.Policy.Name).SetModule(*p.Policy.Module),
+				Affects: &api.ReleasePolicyAffectsSet{
+					Projects: []string{"test"},
+					Repos:    []string{"test"},
+				},
 			},
 		})
 		require.NoError(t, policyErr)

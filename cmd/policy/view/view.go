@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/env"
@@ -29,28 +30,46 @@ var (
 )
 
 func New(bCtx *env.BubblyConfig) *cobra.Command {
+	var withAffects bool
+
 	cmd := &cobra.Command{
-		Use:     "view name[:tag] [flags]",
+		Use:     "view name [flags]",
 		Short:   "View a Bubbly policy",
 		Long:    cmdLong + "\n\n",
 		Example: cmdExamples,
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
-			a, err := client.GetPolicy(bCtx, &api.ReleasePolicyGetRequest{
-				Name: &name,
+			resp, err := client.GetPolicies(bCtx, &api.ReleasePolicyGetRequest{
+				Name:        name,
+				WithAffects: withAffects,
 			})
 			if err != nil {
 				return err
 			}
-			fmt.Println("Name: " + *a.Name)
+			if err != nil {
+				return fmt.Errorf("getting policies: %w", err)
+			}
+			if len(resp.Policies) == 0 {
+				fmt.Println("No policies with name: " + name)
+				return nil
+			}
+			p := resp.Policies[0]
+			fmt.Println("Name: " + *p.Name)
 			fmt.Println("")
+			if withAffects {
+				fmt.Println("Projects:", strings.Join(p.Affects.Projects, ", "))
+				fmt.Println("Repos:", strings.Join(p.Affects.Repos, ", "))
+				fmt.Println("")
+			}
 			fmt.Println("===")
 			fmt.Println("")
-			fmt.Println(*a.Module)
+			fmt.Println(*p.Module)
 			return nil
 		},
 	}
+	f := cmd.Flags()
+	f.BoolVar(&withAffects, "affects", false, "Include projects, repos that the policy applies to")
 
 	return cmd
 }

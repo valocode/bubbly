@@ -41,13 +41,22 @@ func New(bCtx *env.BubblyConfig) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			a, err := client.GetAdapter(bCtx, &api.AdapterGetRequest{
-				Name: &name,
-				Tag:  &tag,
+			resp, err := client.GetAdapters(bCtx, &api.AdapterGetRequest{
+				Name: name,
+				Tag:  tag,
 			})
 			if err != nil {
 				return err
 			}
+			if len(resp.Adapters) == 0 {
+				fmt.Println("No adapters found")
+				return nil
+			}
+			if len(resp.Adapters) > 1 {
+				fmt.Println("More than one adapter found with id: ", args[0])
+				return nil
+			}
+			a := resp.Adapters[0]
 			fmt.Println("Name: " + *a.Name)
 			fmt.Println("Tag: " + *a.Tag)
 			fmt.Println("")

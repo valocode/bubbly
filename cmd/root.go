@@ -9,9 +9,11 @@ import (
 	"github.com/valocode/bubbly/cmd/demo"
 	"github.com/valocode/bubbly/cmd/events"
 	"github.com/valocode/bubbly/cmd/policy"
+	"github.com/valocode/bubbly/cmd/query"
 	"github.com/valocode/bubbly/cmd/release"
 	"github.com/valocode/bubbly/cmd/server"
-	versionCmd "github.com/valocode/bubbly/cmd/version"
+	"github.com/valocode/bubbly/cmd/version"
+	"github.com/valocode/bubbly/cmd/vulnerabilityreview"
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/env"
 )
@@ -55,8 +57,10 @@ func NewCmdRoot(bCtx *env.BubblyConfig) *cobra.Command {
 	cmd.AddCommand(events.New(bCtx))
 	cmd.AddCommand(policy.New(bCtx))
 	cmd.AddCommand(release.New(bCtx))
+	cmd.AddCommand(query.New(bCtx))
 	cmd.AddCommand(server.New(bCtx))
-	cmd.AddCommand(versionCmd.New(bCtx))
+	cmd.AddCommand(version.New(bCtx))
+	cmd.AddCommand(vulnerabilityreview.New(bCtx))
 
 	// finally, print the final configuration to be used by bubbly
 	bCtx.Logger.Debug().

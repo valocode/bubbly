@@ -10,12 +10,16 @@ type (
 	}
 
 	AdapterGetRequest struct {
-		Name *string `json:"name,omitempty" param:"name" validate:"required"`
-		Tag  *string `json:"tag,omitempty" query:"tag"`
+		Name string `json:"name,omitempty" query:"name"`
+		Tag  string `json:"tag,omitempty" query:"tag"`
 	}
 
 	AdapterGetResponse struct {
-		ent.AdapterModelRead `validate:"required"`
+		Adapters []*Adapter `json:"adapters,omitempty"`
+	}
+
+	Adapter struct {
+		ent.AdapterModelRead
 	}
 )
 

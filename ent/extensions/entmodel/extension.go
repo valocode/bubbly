@@ -45,7 +45,8 @@ func (e *Extensions) Templates() []*gen.Template {
 				"fieldsModelCreate":       fieldsModelCreate,
 				"fieldsModelRead":         fieldsModelRead,
 				"fieldsRequiredNoDefault": fieldsRequiredNoDefault,
-				"fieldTag":                fieldTag,
+				"fieldCreateTag":          fieldCreateTag,
+				"fieldUpdateTag":          fieldUpdateTag,
 				"fieldsAndID":             fieldsAndID,
 				"filterNodes":             filterNodes,
 			}).ParseDir(
@@ -117,16 +118,27 @@ func fieldsRequiredNoDefault(node *gen.Type) []*gen.Field {
 	return fields
 }
 
-func fieldTag(field *gen.Field) string {
+func fieldCreateTag(field *gen.Field) string {
 	var (
 		jsonTag     = fmt.Sprintf(`json:"%s,omitempty"`, field.Name)
 		validateTag string
-		hclTag      = fmt.Sprintf(`mapstructure:"%s"`, field.Name)
+		mapTag      = fmt.Sprintf(`mapstructure:"%s"`, field.Name)
 	)
 	if isFieldRequiredNoDefault(field) {
 		validateTag = `validate:"required"`
 	}
-	return jsonTag + " " + validateTag + " " + hclTag
+	return jsonTag + " " + validateTag + " " + mapTag
+}
+
+// fieldUpdateTag is like fieldCreateTag but made for update operations where no
+// fields are required - only the fields that should be updated are provided
+func fieldUpdateTag(field *gen.Field) string {
+	var (
+		jsonTag     = fmt.Sprintf(`json:"%s,omitempty"`, field.Name)
+		validateTag string
+		mapTag      = fmt.Sprintf(`mapstructure:"%s"`, field.Name)
+	)
+	return jsonTag + " " + validateTag + " " + mapTag
 }
 
 func isFieldRequiredNoDefault(field *gen.Field) bool {

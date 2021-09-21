@@ -53,19 +53,20 @@ func New(bCtx *env.BubblyConfig) *cobra.Command {
 					return err
 				}
 			}
-			rel, err := client.GetRelease(bCtx, &api.ReleaseGetRequest{
-				Commit:   &commit,
-				Repo:     &repo,
+			resp, err := client.GetReleases(bCtx, &api.ReleaseGetRequest{
+				Commit:   commit,
+				Repo:     repo,
 				Policies: policies,
+				Log:      log,
 			})
 			if err != nil {
 				return err
 			}
-			switch len(rel.Releases) {
+			switch len(resp.Releases) {
 			case 0:
 				fmt.Printf("No release for current commit %s. Please create one.\n", commit)
 			case 1:
-				printRelease(rel.Releases[0], policies)
+				printRelease(resp.Releases[0], policies, log)
 			default:
 				return errors.New("received more than one release")
 			}
@@ -81,7 +82,7 @@ func New(bCtx *env.BubblyConfig) *cobra.Command {
 	return cmd
 }
 
-func printRelease(rel *api.ReleaseRead, policies bool) {
+func printRelease(rel *api.Release, policies bool, log bool) {
 	fmt.Println("Project: " + *rel.Project.Name)
 	fmt.Println("Repo: " + *rel.Repo.Name)
 	fmt.Println("Commit: " + *rel.Commit.Hash)
@@ -115,7 +116,7 @@ func printRelease(rel *api.ReleaseRead, policies bool) {
 		fmt.Println(columnize.SimpleFormat(violationLines))
 	}
 
-	if policies {
+	if log {
 		fmt.Println("")
 		fmt.Println("=== Log ===")
 		if len(rel.Entries) == 0 {

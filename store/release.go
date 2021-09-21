@@ -9,6 +9,14 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
+type ReleaseQuery struct {
+	Where *ent.ReleaseWhereInput
+
+	WithLog        bool
+	WithViolations bool
+	WithPolicies   bool
+}
+
 func (h *Handler) CreateRelease(req *api.ReleaseCreateRequest) (*ent.Release, error) {
 	dbRelease, err := h.createRelease(req)
 	if err != nil {
@@ -22,34 +30,39 @@ func (h *Handler) CreateRelease(req *api.ReleaseCreateRequest) (*ent.Release, er
 	return dbRelease, nil
 }
 
-func (h *Handler) GetReleases(req *api.ReleaseGetRequest) (*api.ReleaseGetResponse, error) {
-	dbReleases, err := h.client.Release.Query().
-		Where(release.HasCommitWith(gitcommit.Hash(*req.Commit))).
-		// Get the commit, repo and project
+func (h *Handler) GetReleases(query *ReleaseQuery) ([]*api.Release, error) {
+	entQuery := h.client.Release.Query().
+		WhereInput(query.Where).
 		WithCommit(func(gcq *ent.GitCommitQuery) {
-			gcq.WithRepo(func(rq *ent.RepoQuery) { rq.WithProject() })
-		}).
-		WithLog().
-		WithViolations().
-		All(h.ctx)
+			gcq.WithRepo(func(rq *ent.RepoQuery) {
+				rq.WithProject()
+			})
+		})
+	if query.WithLog {
+		entQuery.WithLog()
+	}
+	if query.WithViolations {
+		entQuery.WithViolations()
+	}
+	dbReleases, err := entQuery.All(h.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "getting releases by commit")
 	}
-	var resp api.ReleaseGetResponse
+	var releases = make([]*api.Release, 0, len(dbReleases))
 	for _, dbRelease := range dbReleases {
 		var (
 			commit  = dbRelease.Edges.Commit
 			repo    = commit.Edges.Repo
 			project = repo.Edges.Project
 		)
-		r := &api.ReleaseRead{
+		r := &api.Release{
 			Project: ent.NewProjectModelRead().FromEnt(project),
 			Repo:    ent.NewRepoModelRead().FromEnt(repo),
 			Commit:  ent.NewGitCommitModelRead().FromEnt(commit),
 			Release: ent.NewReleaseModelRead().FromEnt(dbRelease),
 		}
 		// If the request said to get policies, then fetch the policies for the release.
-		if req.Policies {
+		if query.WithPolicies {
 			dbPolicies, err := h.policiesForRelease(h.client, dbRelease.ID)
 			if err != nil {
 				return nil, err
@@ -68,9 +81,9 @@ func (h *Handler) GetReleases(req *api.ReleaseGetRequest) (*api.ReleaseGetRespon
 		for _, dbEntry := range dbRelease.Edges.Log {
 			r.Entries = append(r.Entries, ent.NewReleaseEntryModelRead().FromEnt(dbEntry))
 		}
-		resp.Releases = append(resp.Releases, r)
+		releases = append(releases, r)
 	}
-	return &resp, nil
+	return releases, nil
 }
 
 func (h *Handler) LogArtifact(req *api.ArtifactLogRequest) (*ent.Artifact, error) {
