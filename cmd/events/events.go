@@ -33,8 +33,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *env.BubblyConfig) *cobra.Command {
 	var req api.EventGetRequest
 
 	cmd := &cobra.Command{
@@ -80,7 +79,6 @@ func printEvents(dbEvents []*ent.Event) {
 				eventLines = append(eventLines, fmt.Sprintf(
 					"%s | %s | %s | %s", msg, "", "", "",
 				))
-
 			}
 		}
 	}

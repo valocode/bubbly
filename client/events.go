@@ -8,7 +8,7 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-func GetEvents(bCtx *env.BubblyContext, req *api.EventGetRequest) (*api.EventGetResponse, error) {
+func GetEvents(bCtx *env.BubblyConfig, req *api.EventGetRequest) (*api.EventGetResponse, error) {
 	var (
 		a      api.EventGetResponse
 		params = make(map[string]string)

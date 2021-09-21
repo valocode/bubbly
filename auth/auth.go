@@ -11,7 +11,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var authContextKey = "AUTHCONTEXT"
+// ContextKey is used to store the auth context value in the request context
+type ContextKey string
+
+var contextKey ContextKey = "AUTH_CONTEXT"
 
 // Session is used to store authentication data as a context value
 type Session struct {
@@ -19,19 +22,25 @@ type Session struct {
 	Email  string `json:"email"`
 }
 
+// Config defines the configuration used for the authentication middleware and
+// the token verifier
 type Config struct {
 	ProviderURL  string
 	ClientID     string
 	ClientSecret string
 	RedirectURL  string
 
-	Scopes []string
+	Scopes  []string
+	Enabled bool
 }
 
+// Provider stores the runtime configuration and verifier for the authorizer
+// and the middleware
 type Provider struct {
 	oidc       *oidc.Provider
 	oidcConfig *oauth2.Config
 	Verifier   *oidc.IDTokenVerifier
+	Disabled   bool
 }
 
 // NewProvider creates a new OIDC provider instance
@@ -53,9 +62,12 @@ func NewProvider(ctx context.Context, conf *Config) (*Provider, error) {
 		oidc:       provider,
 		oidcConfig: cf,
 		Verifier:   provider.Verifier(&oidc.Config{ClientID: cf.ClientID}),
+		Disabled:   !conf.Enabled,
 	}, nil
 }
 
+// AuthorizeHandler validates the authentication code from the client and
+// returns a access token as a response
 func (p *Provider) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	oauth2Token, err := p.oidcConfig.Exchange(ctx, r.URL.Query().Get("code"))
@@ -92,14 +104,28 @@ func (p *Provider) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+// EchoAuthorizeHandler returns a wrapped http handler for the echo router
 func (p *Provider) EchoAuthorizeHandler() echo.HandlerFunc {
 	return echo.WrapHandler(http.HandlerFunc(p.AuthorizeHandler))
 }
 
-// Middleware reads and verifies the bearer tokens and injects the extracted data to the request context
+// Middleware reads and verifies the bearer tokens and injects the extracted
+// data to the request context
 func (p *Provider) Middleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+		if p.Disabled {
+			session := &Session{
+				UserID: "ANONYMOUS",
+				Email:  "noemail",
+			}
+			ctx = context.WithValue(ctx, contextKey, session)
+			r = r.WithContext(ctx)
+
+			h.ServeHTTP(w, r)
+			return
+		}
+
 		rawIDToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		idToken, err := p.Verifier.Verify(ctx, rawIDToken)
 		if err != nil {
@@ -114,21 +140,22 @@ func (p *Provider) Middleware(h http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx, authContextKey, session)
+		ctx = context.WithValue(ctx, contextKey, session)
 		r = r.WithContext(ctx)
 
 		h.ServeHTTP(w, r)
 	})
 }
 
-// EchoMiddleware returns an instance of Middleware wrapped for Echo
+// EchoMiddleware returns an instance of the Middleware wrapped for Echo
 func (p *Provider) EchoMiddleware() echo.MiddlewareFunc {
 	return echo.WrapMiddleware(p.Middleware)
 }
 
-// Get session is a helper function to return the session struct from the request context
+// GetSession is a helper function to return the session struct stored in
+// the request context
 func GetSession(ctx context.Context) *Session {
-	session, ok := ctx.Value(authContextKey).(*Session)
+	session, ok := ctx.Value(contextKey).(*Session)
 	if !ok {
 		return nil
 	}

@@ -175,5 +175,6 @@ func DefaultAuthConfig() *auth.Config {
 		ClientSecret: DefaultEnvStr("AUTH_CLIENT_SECRET", ""),
 		RedirectURL:  DefaultEnvStr("AUTH_REDIRECT_URL", ""),
 		Scopes:       []string{"email"},
+		Enabled:      DefaultEnvBool("BUBBLY_AUTH_ENABLED", false),
 	}
 }
