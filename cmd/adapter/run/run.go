@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/gommon/color"
 	"github.com/valocode/bubbly/adapter"
 	"github.com/valocode/bubbly/client"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/release"
 	"github.com/valocode/bubbly/store/api"
 
@@ -33,8 +33,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *config.BubblyConfig) *cobra.Command {
 	var (
 		// runner runner.AdapterRun
 		trace      bool
@@ -93,7 +92,6 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 					return err
 				}
 			}
-
 			switch output {
 			case "json":
 				printJSON(result)

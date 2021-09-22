@@ -1,4 +1,3 @@
-
 ![bubbly-logo](/docs/static/img/bubbly-blue-wide.png)
 
 > Release Readiness in a Bubble.

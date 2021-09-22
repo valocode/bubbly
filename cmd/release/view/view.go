@@ -6,7 +6,7 @@ import (
 
 	"github.com/ryanuber/columnize"
 	"github.com/valocode/bubbly/client"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/release"
 	"github.com/valocode/bubbly/store/api"
 
@@ -31,8 +31,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *config.BubblyConfig) *cobra.Command {
 	var (
 		commit   string
 		repo     string

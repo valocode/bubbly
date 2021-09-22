@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/valocode/bubbly/client"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/store/api"
 
 	"github.com/spf13/cobra"
@@ -28,11 +28,8 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
-	var (
-		name string
-	)
+func New(bCtx *config.BubblyConfig) *cobra.Command {
+	var name string
 	cmd := &cobra.Command{
 		Use:     "list [flags]",
 		Short:   "List Bubbly policies",

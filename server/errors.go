@@ -4,11 +4,11 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/store"
 )
 
-func httpErrorHandler(bCtx *env.BubblyContext, err error, c echo.Context) error {
+func httpErrorHandler(bCtx *config.BubblyConfig, err error, c echo.Context) error {
 	bCtx.Logger.Error().
 		Str("Path", c.Path()).
 		Strs("QueryParams", c.ParamValues()).

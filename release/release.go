@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/store/api"
 )
 
@@ -32,13 +32,13 @@ type ReleaseSpecWrap struct {
 	Release ReleaseSpec `json:"release"`
 }
 
-func DefaultReleaseSpec(bCtx *env.BubblyContext) *ReleaseSpec {
+func DefaultReleaseSpec(bCtx *config.BubblyConfig) *ReleaseSpec {
 	return &ReleaseSpec{
 		Project: bCtx.ReleaseConfig.Project,
 	}
 }
 
-func Commit(bCtx *env.BubblyContext) (string, error) {
+func Commit(bCtx *config.BubblyConfig) (string, error) {
 	spec, err := ParseReleaseSpec(bCtx)
 	if err != nil {
 		return "", err
@@ -51,7 +51,7 @@ func Commit(bCtx *env.BubblyContext) (string, error) {
 	return commit, nil
 }
 
-func CreateRelease(bCtx *env.BubblyContext) (*api.ReleaseCreateRequest, error) {
+func CreateRelease(bCtx *config.BubblyConfig) (*api.ReleaseCreateRequest, error) {
 	spec, err := ParseReleaseSpec(bCtx)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func CreateRelease(bCtx *env.BubblyContext) (*api.ReleaseCreateRequest, error) {
 	}, nil
 }
 
-func ParseReleaseSpec(bCtx *env.BubblyContext) (*ReleaseSpec, error) {
+func ParseReleaseSpec(bCtx *config.BubblyConfig) (*ReleaseSpec, error) {
 	release, err := decodeReleaseSpec(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("decoding release spec: %w", err)
@@ -91,9 +91,9 @@ func ParseReleaseSpec(bCtx *env.BubblyContext) (*ReleaseSpec, error) {
 	return release, nil
 }
 
-func decodeReleaseSpec(bCtx *env.BubblyContext) (*ReleaseSpec, error) {
+func decodeReleaseSpec(bCtx *config.BubblyConfig) (*ReleaseSpec, error) {
 	spec := DefaultReleaseSpec(bCtx)
-	var possiblePaths = []string{
+	possiblePaths := []string{
 		".bubbly.json",
 		filepath.Join(bCtx.ReleaseConfig.BubblyDir, ".bubbly.json"),
 	}

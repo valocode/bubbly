@@ -13,7 +13,7 @@ import (
 	"entgo.io/ent/entc/gen"
 	"github.com/spf13/cobra/doc"
 	"github.com/valocode/bubbly/cmd"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 }
 
 func genCLIDocs() {
-	cmd := cmd.NewCmdRoot(env.NewBubblyContext())
+	cmd := cmd.NewCmdRoot(config.NewBubblyConfig())
 	err := doc.GenMarkdownTreeCustom(cmd, "./docs/docs/cli",
 		func(s string) string {
 			filename := filepath.Base(s)

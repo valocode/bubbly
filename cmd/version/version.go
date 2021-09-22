@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 )
 
 // New creates a new Cobra command
-func New(bCtx *env.BubblyContext) *cobra.Command {
+func New(bCtx *config.BubblyConfig) *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Show the Bubbly version",

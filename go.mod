@@ -12,6 +12,7 @@ require (
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/bytecodealliance/wasmtime-go v0.29.0 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
+	github.com/coreos/go-oidc/v3 v3.0.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/docker/docker v20.10.8+incompatible // indirect
 	github.com/fatih/color v1.12.0
@@ -48,6 +49,7 @@ require (
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/mod v0.5.0 // indirect
 	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
+	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210915083310-ed5796bab164 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect

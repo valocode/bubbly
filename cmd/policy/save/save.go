@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/valocode/bubbly/client"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/policy"
 	"github.com/valocode/bubbly/store/api"
 
@@ -33,8 +33,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *config.BubblyConfig) *cobra.Command {
 	var (
 		name           string
 		setProjects    []string

@@ -6,7 +6,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/ryanuber/columnize"
 	"github.com/valocode/bubbly/client"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/release"
 
 	"github.com/spf13/cobra"
@@ -30,8 +30,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *config.BubblyConfig) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "create [flags]",
 		Short:   "Create a bubbly release",

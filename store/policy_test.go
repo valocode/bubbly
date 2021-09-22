@@ -6,14 +6,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/store/api"
 	"github.com/valocode/bubbly/test"
 )
 
 func TestPolicyAffects(t *testing.T) {
-	s, err := New(env.NewBubblyContext())
+	s, err := New(config.NewBubblyConfig())
 	require.NoError(t, err)
 
 	h, err := NewHandler(WithStore(s))

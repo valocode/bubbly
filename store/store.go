@@ -13,7 +13,6 @@ import (
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/migrate"
 	"github.com/valocode/bubbly/ent/organization"
-	"github.com/valocode/bubbly/env"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	_ "github.com/xiaoqidun/entps"
@@ -22,8 +21,7 @@ import (
 	_ "github.com/valocode/bubbly/ent/runtime"
 )
 
-func New(bCtx *env.BubblyContext) (*Store, error) {
-
+func New(bCtx *config.BubblyConfig) (*Store, error) {
 	var (
 		client *ent.Client
 		err    error

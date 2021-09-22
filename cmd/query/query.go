@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/valocode/bubbly/client"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 
 	"github.com/spf13/cobra"
 
@@ -32,8 +32,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *config.BubblyConfig) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "query [flags]",
 		Short:   "Run a GraphQL query against the Bubbly server",

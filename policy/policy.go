@@ -107,7 +107,7 @@ func Validate(module string, opts ...func(r *runOptions)) error {
 	ctx := context.Background()
 	regoInstance, err := newRego(module, opts...)
 	if err != nil {
-		return fmt.Errorf("creating rego instance: %w", err)
+		return err
 	}
 	query, pErr := regoInstance.PrepareForEval(ctx)
 	if pErr != nil {

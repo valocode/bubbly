@@ -19,7 +19,7 @@ type fakeResolver struct {
 }
 
 func (r *fakeResolver) Functions() []func(*rego.Rego) {
-	var funcs = make([]func(*rego.Rego), 0, len(r.data))
+	funcs := make([]func(*rego.Rego), 0, len(r.data))
 	for name, value := range r.data {
 		funcs = append(funcs,
 			rego.Function1(&rego.Function{

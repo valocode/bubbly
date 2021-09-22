@@ -9,8 +9,6 @@ commit := $(shell git rev-list -1 HEAD)
 version := $(shell git describe --tags --dirty=-dirty)
 pre := github.com/valocode/bubbly
 
-
-
 all: build
 
 .PHONY: build
@@ -40,7 +38,7 @@ display-coverage: test-coverage
 test-report:
 	go test -coverprofile=coverage.txt -covermode=atomic -json ./... > test_report.json
 
-# The integration tests depend on Bubbly Server and its Store (currently Postgres) being accessible. 
+# The integration tests depend on Bubbly Server and its Store (currently Postgres) being accessible.
 # This is what the env variables in the beginning of this Makefile are for.
 # The count flag prevents Go from caching test results as they are dependent on the DB content.
 test-integration:
@@ -59,8 +57,7 @@ cleanup:
 	docker-compose down
 
 # Project is CI-enabled with Github Actions. You can run CI locally
-# using act (https://github.com/nektos/act). 
+# using act (https://github.com/nektos/act).
 # There are some caveats, but the following target should work:
-act: 
+act:
 	act -P ubuntu-latest=golang:latest --env-file act.env -j simple
-	

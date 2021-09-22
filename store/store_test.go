@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/repo"
-	"github.com/valocode/bubbly/env"
 )
 
 func TestStore(t *testing.T) {
-	bCtx := env.NewBubblyContext()
+	bCtx := config.NewBubblyConfig()
 	s, err := New(bCtx)
 	require.NoError(t, err)
 	h, err := NewHandler(WithStore(s))
@@ -47,5 +47,4 @@ func TestStore(t *testing.T) {
 	for _, v := range vs {
 		t.Log(v.String())
 	}
-
 }

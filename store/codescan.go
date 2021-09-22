@@ -38,7 +38,6 @@ func (h *Handler) SaveCodeScan(req *api.CodeScanRequest) (*ent.CodeScan, error) 
 func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent.CodeScan, error) {
 	var codeScan *ent.CodeScan
 	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
-
 		var err error
 		codeScan, err = tx.CodeScan.Create().
 			SetModelCreate(&scan.CodeScanModelCreate).

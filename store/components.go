@@ -16,7 +16,7 @@ func (h *Handler) SaveComponentVulnerabilities(req *api.ComponentVulnerabilityRe
 			if err != nil {
 				return err
 			}
-			var dbVulns = make([]*ent.Vulnerability, 0, len(comp.Vulnerabilities))
+			dbVulns := make([]*ent.Vulnerability, 0, len(comp.Vulnerabilities))
 			for _, vuln := range comp.Vulnerabilities {
 				dbVuln, err := h.GetVulnerabilityOrCreate(tx.Client(), vuln)
 				if err != nil {

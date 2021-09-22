@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/gommon/color"
 	"github.com/open-policy-agent/opa/tester"
 	"github.com/valocode/bubbly/adapter"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 
 	"github.com/spf13/cobra"
 
@@ -33,8 +33,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *config.BubblyConfig) *cobra.Command {
 	var (
 		trace  bool
 		output string

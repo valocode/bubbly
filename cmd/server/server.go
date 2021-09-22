@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/valocode/bubbly/config"
-	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/server"
 
 	"github.com/spf13/cobra"
@@ -31,8 +30,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *config.BubblyConfig) *cobra.Command {
 	var dbProvider string
 
 	cmd := &cobra.Command{
@@ -47,7 +45,7 @@ func New(bCtx *env.BubblyContext) *cobra.Command {
 
 			s, err := server.New(bCtx)
 			if err != nil {
-				return fmt.Errorf("initializing store: %w", err)
+				return fmt.Errorf("initializing server: %w", err)
 			}
 			if err := s.Start(); err != nil {
 				return err

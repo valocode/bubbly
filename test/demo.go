@@ -155,7 +155,7 @@ func createRepoData(opt DemoRepoOptions) []ReleaseData {
 					SetTime(cTime),
 			}
 
-			var passAll = false
+			passAll := false
 			if rand.Intn(10) > 3 {
 				passAll = true
 			}

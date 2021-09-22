@@ -3,10 +3,10 @@ package client
 import (
 	"net/http"
 
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 )
 
-func RunQuery(bCtx *env.BubblyContext, query string) (map[string]interface{}, error) {
+func RunQuery(bCtx *config.BubblyConfig, query string) (map[string]interface{}, error) {
 	var resp map[string]interface{}
 
 	req := struct {
@@ -15,7 +15,7 @@ func RunQuery(bCtx *env.BubblyContext, query string) (map[string]interface{}, er
 		Query: &query,
 	}
 	if err := handleRequest(
-		WithBubblyContext(bCtx), WithGraphQL(true), WithMethod(http.MethodPost),
+		WithBubblyConfig(bCtx), WithGraphQL(true), WithMethod(http.MethodPost),
 		WithPayload(req), WithRequestURL("graphql"), WithResponse(&resp),
 	); err != nil {
 		return nil, err

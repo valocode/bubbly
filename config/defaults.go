@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"strconv"
+
+	"github.com/valocode/bubbly/auth"
 )
 
 // Default CLI configuration
@@ -159,5 +161,20 @@ func DefaultClientConfig() *ClientConfig {
 func DefaultCLIConfig() *CLIConfig {
 	return &CLIConfig{
 		NoColor: DefaultEnvBool("NO_COLOR", DefaultCLINoColorToggle),
+	}
+}
+
+// ###########################################
+// Auth
+// ###########################################
+
+func DefaultAuthConfig() *auth.Config {
+	return &auth.Config{
+		ProviderURL:  DefaultEnvStr("AUTH_PROVIDER_URL", ""),
+		ClientID:     DefaultEnvStr("AUTH_CLIENT_ID", ""),
+		ClientSecret: DefaultEnvStr("AUTH_CLIENT_SECRET", ""),
+		RedirectURL:  DefaultEnvStr("AUTH_REDIRECT_URL", ""),
+		Scopes:       []string{"email"},
+		Enabled:      DefaultEnvBool("BUBBLY_AUTH_ENABLED", false),
 	}
 }

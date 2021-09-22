@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -12,15 +13,16 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/valocode/bubbly/auth"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/gql"
 	"github.com/valocode/bubbly/store"
 	"github.com/valocode/bubbly/store/api"
 	"github.com/ziflex/lecho/v2"
 )
 
-func New(bCtx *env.BubblyContext) (*Server, error) {
+func New(bCtx *config.BubblyConfig) (*Server, error) {
 	store, err := store.New(bCtx)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing store: %w", err)
@@ -28,7 +30,7 @@ func New(bCtx *env.BubblyContext) (*Server, error) {
 	return NewWithStore(bCtx, store)
 }
 
-func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) {
+func NewWithStore(bCtx *config.BubblyConfig, store *store.Store) (*Server, error) {
 	var (
 		e = echo.New()
 		s = Server{
@@ -60,10 +62,14 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 		e.DefaultHTTPErrorHandler(httpError, c)
 	}
 
-	// TODO: use only for dev/debugging, but disable by default
-	if true {
-		e.Use(middleware.CORS())
+	authProvider, err := auth.NewProvider(context.TODO(), bCtx.AuthConfig)
+	if err != nil {
+		return &s, err
 	}
+
+	e.Use(authProvider.EchoMiddleware())
+
+	e.GET("/auth/token", authProvider.EchoAuthorizeHandler())
 
 	//
 	// Setup the Bubbly UI
@@ -120,37 +126,21 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 	v1.POST("/vulnerabilityreviews", s.postVulnerabilityReview)
 	v1.PUT("/vulnerabilityreviews/:id", s.putVulnerabilityReview)
 
-	// TODO: Miika - integrate Casbin as middleware or similar
-	// https://echo.labstack.com/middleware/casbin-auth/
-
 	// Authentication
 	// /login endpoint that redirects to OIDC provider, which provides access token
+	// v1.POST("/users", nil)
+	// v1.PUT("/users/me", nil)
+	// v1.PUT("/users/:id", nil)
+	// v1.GET("/users/me", nil)
+	// v1.GET("/users/:id", nil)
+	// v1.DELETE("/users/:id", nil)
 
-	// Send X-Bubbly-Flavour=oss then auto redirect to default org
-
-	// If SaaS, create a group "/o/:organization" and mount these under there
-	v1.POST("/users", nil)
-	v1.PUT("/users/me", nil)
-	v1.PUT("/users/:id", nil)
-	v1.GET("/users/me", nil)
-	v1.GET("/users/:id", nil)
-	v1.DELETE("/users/:id", nil)
-
-	v1.POST("/groups", nil)
-	v1.POST("/groups/:id/users", nil) // Add users to a group
-	v1.POST("/groups/:id/roles", nil) // Add roles to a group
-	v1.PUT("/groups/:id", nil)
-	v1.GET("/groups/:id", nil)
-	v1.DELETE("/groups/:id", nil)
-
-	// What are the predifined roles?
-	// admins: can add/remove users/groups from their organization
-	// users: ??
-	// Nice to have:
-	// - access control by project (that they are assigned to, either by user or by group)
-
-	// SaaS specific things:
-	// - organizations/ PUT,GET, etc
+	// v1.POST("/groups", nil)
+	// v1.POST("/groups/:id/users", nil) // Add users to a group
+	// v1.POST("/groups/:id/roles", nil) // Add roles to a group
+	// v1.PUT("/groups/:id", nil)
+	// v1.GET("/groups/:id", nil)
+	// v1.DELETE("/groups/:id", nil)
 
 	// Initialise monitoring services
 	if err := s.initMonitoring(); err != nil {
@@ -162,13 +152,12 @@ func NewWithStore(bCtx *env.BubblyContext, store *store.Store) (*Server, error) 
 
 type Server struct {
 	store     *store.Store
-	bCtx      *env.BubblyContext
+	bCtx      *config.BubblyConfig
 	e         *echo.Echo
 	validator *validator.Validate
 }
 
 func (s *Server) Start() error {
-
 	addr := fmt.Sprintf("%s:%s", s.bCtx.ServerConfig.Host, s.bCtx.ServerConfig.Port)
 	if err := s.e.Start(addr); err != http.ErrServerClosed {
 		return err

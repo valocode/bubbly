@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/valocode/bubbly/client"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/store/api"
 
 	"github.com/spf13/cobra"
@@ -29,11 +29,8 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
-	var (
-		withAffects bool
-	)
+func New(bCtx *config.BubblyConfig) *cobra.Command {
+	var withAffects bool
 
 	cmd := &cobra.Command{
 		Use:     "view name [flags]",

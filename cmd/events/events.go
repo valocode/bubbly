@@ -6,8 +6,8 @@ import (
 
 	"github.com/ryanuber/columnize"
 	"github.com/valocode/bubbly/client"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/store/api"
 
 	"github.com/spf13/cobra"
@@ -33,8 +33,7 @@ var (
 	)
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *config.BubblyConfig) *cobra.Command {
 	var req api.EventGetRequest
 
 	cmd := &cobra.Command{
@@ -80,7 +79,6 @@ func printEvents(dbEvents []*ent.Event) {
 				eventLines = append(eventLines, fmt.Sprintf(
 					"%s | %s | %s | %s", msg, "", "", "",
 				))
-
 			}
 		}
 	}

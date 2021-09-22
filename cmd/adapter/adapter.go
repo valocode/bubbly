@@ -5,13 +5,12 @@ import (
 	"github.com/valocode/bubbly/cmd/adapter/save"
 	"github.com/valocode/bubbly/cmd/adapter/test"
 	"github.com/valocode/bubbly/cmd/adapter/view"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 
 	"github.com/spf13/cobra"
 )
 
-func New(bCtx *env.BubblyContext) *cobra.Command {
-
+func New(bCtx *config.BubblyConfig) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "adapter <command>",
 		Short: "Manage bubbly adapters",

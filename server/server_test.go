@@ -12,8 +12,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/env"
 	"github.com/valocode/bubbly/store/api"
 	"github.com/valocode/bubbly/test"
 )
@@ -64,7 +64,7 @@ func testPutRequest(t *testing.T, e *echo.Echo, h echo.HandlerFunc, path string,
 }
 
 func TestRelease(t *testing.T) {
-	s, err := New(env.NewBubblyContext())
+	s, err := New(config.NewBubblyConfig())
 	require.NoError(t, err)
 
 	{
@@ -102,7 +102,7 @@ func TestRelease(t *testing.T) {
 }
 
 func TestAdapter(t *testing.T) {
-	s, err := New(env.NewBubblyContext())
+	s, err := New(config.NewBubblyConfig())
 	require.NoError(t, err)
 
 	{
@@ -141,7 +141,7 @@ func TestAdapter(t *testing.T) {
 }
 
 func TestPolicy(t *testing.T) {
-	s, err := New(env.NewBubblyContext())
+	s, err := New(config.NewBubblyConfig())
 	require.NoError(t, err)
 
 	{
@@ -193,7 +193,7 @@ func TestPolicy(t *testing.T) {
 }
 
 func TestServer(t *testing.T) {
-	s, err := New(env.NewBubblyContext())
+	s, err := New(config.NewBubblyConfig())
 	require.NoError(t, err)
 
 	data := test.CreateDummyData()

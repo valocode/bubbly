@@ -9,11 +9,11 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/valocode/bubbly/env"
+	"github.com/valocode/bubbly/config"
 )
 
 type request struct {
-	bCtx              *env.BubblyContext
+	bCtx              *config.BubblyConfig
 	apiV1             bool
 	graphql           bool
 	method            string
@@ -24,7 +24,7 @@ type request struct {
 	payload           interface{}
 }
 
-func WithBubblyContext(bCtx *env.BubblyContext) func(r *request) {
+func WithBubblyConfig(bCtx *config.BubblyConfig) func(r *request) {
 	return func(r *request) {
 		r.bCtx = bCtx
 	}

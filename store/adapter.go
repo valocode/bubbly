@@ -46,7 +46,7 @@ func (h *Handler) GetAdapters(query *AdapterQuery) ([]*api.Adapter, error) {
 	if err != nil {
 		return nil, HandleEntError(err, "get adapters")
 	}
-	var adapters = make([]*api.Adapter, 0, len(dbAdapters))
+	adapters := make([]*api.Adapter, 0, len(dbAdapters))
 	for _, a := range dbAdapters {
 		adapters = append(adapters, &api.Adapter{
 			AdapterModelRead: *ent.NewAdapterModelRead().FromEnt(a),
