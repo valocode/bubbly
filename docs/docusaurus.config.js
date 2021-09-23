@@ -9,7 +9,18 @@ module.exports = {
   favicon: 'img/logo.svg',
   organizationName: 'valocode', // Usually your GitHub org/user name.
   projectName: 'bubbly', // Usually your repo name.
+  plugins: ['@docusaurus/plugin-google-gtag'],
   themeConfig: {
+    algolia: {
+      apiKey: 'ca1ab1964bb937e1a54cef191b9a949a',
+      indexName: 'bubbly',
+    },
+    gtag: {
+      // You can also use your "G-" Measurement ID here.
+      trackingID: 'UA-187455286-1',
+      // Optional fields.
+      anonymizeIP: true, // Should IPs be anonymized?
+    },
     prism: {
       additionalLanguages: ['rego'],
     },
