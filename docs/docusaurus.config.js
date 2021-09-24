@@ -9,7 +9,7 @@ module.exports = {
   favicon: 'img/logo.svg',
   organizationName: 'valocode', // Usually your GitHub org/user name.
   projectName: 'bubbly', // Usually your repo name.
-  plugins: ['@docusaurus/plugin-google-gtag'],
+  // plugins: ['@docusaurus/plugin-google-gtag'],
   themeConfig: {
     algolia: {
       apiKey: 'ca1ab1964bb937e1a54cef191b9a949a',
