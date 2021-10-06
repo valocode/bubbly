@@ -112,6 +112,11 @@ In terms of feature completeness, we are working on implementing the core featur
   * [ ] Commit to Release Ready
   * [ ] Release Stability
   * [ ] Bottleneck identification
+* [ ] Authentication
+  * [x] Backend OpenID Connect configuration
+  * [ ] UI login
+* [ ] Authorization
+  * [ ] RBAC using Casbin
 
 If you are interested in getting involved in the project, or want some help getting started, please reach out to us though our website: [https://bubbly.dev](https://bubbly.dev)
 
