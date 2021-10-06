@@ -82,6 +82,37 @@ In terms of stability, the existing features should work and if they do not plea
 
 In terms of feature completeness, we are working on implementing the core features of Bubbly, and hence there are missing features, such as Subscriptions and Monitoring of vulnerabilities.
 
+### Feature Completeness
+
+* [ ] Adapters
+  * [x] Structured input (JSON, XML, YAML)
+  * [ ] CSV
+  * [ ] Regex
+* [ ] Policies
+  * [x] Deny rules
+  * [x] Require rules
+  * [x] Release Log
+  * [x] Code Scans
+  * [x] Test Runs
+  * [ ] Components
+  * [ ] Vulnerabilities
+  * [ ] Licenses
+* [ ] Subscriptions
+  * [ ] Basic subscription to events
+  * [ ] Filtering with query
+* [ ] Notifications
+  * [ ] Email
+  * [ ] Slack
+  * [ ] Teams
+* [ ] Importers
+  * [x] [SPDX](https://github.com/spdx/license-list-data)
+  * [ ] [VulnerableCode](https://github.com/nexB/vulnerablecode)
+  * [ ] [OSV](https://osv.dev/)
+* [ ] Analytics
+  * [ ] Commit to Release Ready
+  * [ ] Release Stability
+  * [ ] Bottleneck identification
+
 If you are interested in getting involved in the project, or want some help getting started, please reach out to us though our website: [https://bubbly.dev](https://bubbly.dev)
 
 ## Architecture
