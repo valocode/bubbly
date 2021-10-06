@@ -104,6 +104,10 @@ In terms of feature completeness, we are working on implementing the core featur
   * [ ] Email
   * [ ] Slack
   * [ ] Teams
+* [ ] PR Integration
+  * [ ] GitHub
+  * [ ] GitLab
+  * [ ] BitBucket
 * [ ] Importers
   * [x] [SPDX](https://github.com/spdx/license-list-data)
   * [ ] [VulnerableCode](https://github.com/nexB/vulnerablecode)
