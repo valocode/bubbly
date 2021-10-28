@@ -355,6 +355,7 @@ export interface Release {
 	id?: number;
 	name?: string;
 	version?: string;
+	labels?: UNKNOWN_TYPE_schema.Labels;
 	subreleases?: Release[];
 	dependencies?: Release[];
 	commit?: GitCommit;

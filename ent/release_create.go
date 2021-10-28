@@ -9,16 +9,18 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/release"
+
 	"github.com/valocode/bubbly/ent/artifact"
 	"github.com/valocode/bubbly/ent/codescan"
 	"github.com/valocode/bubbly/ent/gitcommit"
-	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -39,6 +41,12 @@ func (rc *ReleaseCreate) SetName(s string) *ReleaseCreate {
 // SetVersion sets the "version" field.
 func (rc *ReleaseCreate) SetVersion(s string) *ReleaseCreate {
 	rc.mutation.SetVersion(s)
+	return rc
+}
+
+// SetLabels sets the "labels" field.
+func (rc *ReleaseCreate) SetLabels(s schema.Labels) *ReleaseCreate {
+	rc.mutation.SetLabels(s)
 	return rc
 }
 
@@ -368,6 +376,14 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 			Column: release.FieldVersion,
 		})
 		_node.Version = value
+	}
+	if value, ok := rc.mutation.Labels(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: release.FieldLabels,
+		})
+		_node.Labels = value
 	}
 	if nodes := rc.mutation.SubreleasesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -21,6 +21,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
 	"github.com/valocode/bubbly/ent/repo"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -47,6 +48,18 @@ func (ru *ReleaseUpdate) SetName(s string) *ReleaseUpdate {
 // SetVersion sets the "version" field.
 func (ru *ReleaseUpdate) SetVersion(s string) *ReleaseUpdate {
 	ru.mutation.SetVersion(s)
+	return ru
+}
+
+// SetLabels sets the "labels" field.
+func (ru *ReleaseUpdate) SetLabels(s schema.Labels) *ReleaseUpdate {
+	ru.mutation.SetLabels(s)
+	return ru
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (ru *ReleaseUpdate) ClearLabels() *ReleaseUpdate {
+	ru.mutation.ClearLabels()
 	return ru
 }
 
@@ -601,6 +614,19 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeString,
 			Value:  value,
 			Column: release.FieldVersion,
+		})
+	}
+	if value, ok := ru.mutation.Labels(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: release.FieldLabels,
+		})
+	}
+	if ru.mutation.LabelsCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: release.FieldLabels,
 		})
 	}
 	if ru.mutation.SubreleasesCleared() {
@@ -1298,6 +1324,18 @@ func (ruo *ReleaseUpdateOne) SetVersion(s string) *ReleaseUpdateOne {
 	return ruo
 }
 
+// SetLabels sets the "labels" field.
+func (ruo *ReleaseUpdateOne) SetLabels(s schema.Labels) *ReleaseUpdateOne {
+	ruo.mutation.SetLabels(s)
+	return ruo
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (ruo *ReleaseUpdateOne) ClearLabels() *ReleaseUpdateOne {
+	ruo.mutation.ClearLabels()
+	return ruo
+}
+
 // AddSubreleaseIDs adds the "subreleases" edge to the Release entity by IDs.
 func (ruo *ReleaseUpdateOne) AddSubreleaseIDs(ids ...int) *ReleaseUpdateOne {
 	ruo.mutation.AddSubreleaseIDs(ids...)
@@ -1873,6 +1911,19 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 			Type:   field.TypeString,
 			Value:  value,
 			Column: release.FieldVersion,
+		})
+	}
+	if value, ok := ruo.mutation.Labels(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: release.FieldLabels,
+		})
+	}
+	if ruo.mutation.LabelsCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: release.FieldLabels,
 		})
 	}
 	if ruo.mutation.SubreleasesCleared() {

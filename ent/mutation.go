@@ -6612,6 +6612,7 @@ type ReleaseMutation struct {
 	id                           *int
 	name                         *string
 	version                      *string
+	labels                       *schema.Labels
 	clearedFields                map[string]struct{}
 	subreleases                  map[int]struct{}
 	removedsubreleases           map[int]struct{}
@@ -6804,6 +6805,55 @@ func (m *ReleaseMutation) OldVersion(ctx context.Context) (v string, err error) 
 // ResetVersion resets all changes to the "version" field.
 func (m *ReleaseMutation) ResetVersion() {
 	m.version = nil
+}
+
+// SetLabels sets the "labels" field.
+func (m *ReleaseMutation) SetLabels(s schema.Labels) {
+	m.labels = &s
+}
+
+// Labels returns the value of the "labels" field in the mutation.
+func (m *ReleaseMutation) Labels() (r schema.Labels, exists bool) {
+	v := m.labels
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLabels returns the old "labels" field's value of the Release entity.
+// If the Release object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReleaseMutation) OldLabels(ctx context.Context) (v schema.Labels, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldLabels is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldLabels requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (m *ReleaseMutation) ClearLabels() {
+	m.labels = nil
+	m.clearedFields[release.FieldLabels] = struct{}{}
+}
+
+// LabelsCleared returns if the "labels" field was cleared in this mutation.
+func (m *ReleaseMutation) LabelsCleared() bool {
+	_, ok := m.clearedFields[release.FieldLabels]
+	return ok
+}
+
+// ResetLabels resets all changes to the "labels" field.
+func (m *ReleaseMutation) ResetLabels() {
+	m.labels = nil
+	delete(m.clearedFields, release.FieldLabels)
 }
 
 // AddSubreleaseIDs adds the "subreleases" edge to the Release entity by ids.
@@ -7497,12 +7547,15 @@ func (m *ReleaseMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ReleaseMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, release.FieldName)
 	}
 	if m.version != nil {
 		fields = append(fields, release.FieldVersion)
+	}
+	if m.labels != nil {
+		fields = append(fields, release.FieldLabels)
 	}
 	return fields
 }
@@ -7516,6 +7569,8 @@ func (m *ReleaseMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case release.FieldVersion:
 		return m.Version()
+	case release.FieldLabels:
+		return m.Labels()
 	}
 	return nil, false
 }
@@ -7529,6 +7584,8 @@ func (m *ReleaseMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldName(ctx)
 	case release.FieldVersion:
 		return m.OldVersion(ctx)
+	case release.FieldLabels:
+		return m.OldLabels(ctx)
 	}
 	return nil, fmt.Errorf("unknown Release field %s", name)
 }
@@ -7551,6 +7608,13 @@ func (m *ReleaseMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetVersion(v)
+		return nil
+	case release.FieldLabels:
+		v, ok := value.(schema.Labels)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabels(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Release field %s", name)
@@ -7581,7 +7645,11 @@ func (m *ReleaseMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ReleaseMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(release.FieldLabels) {
+		fields = append(fields, release.FieldLabels)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -7594,6 +7662,11 @@ func (m *ReleaseMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ReleaseMutation) ClearField(name string) error {
+	switch name {
+	case release.FieldLabels:
+		m.ClearLabels()
+		return nil
+	}
 	return fmt.Errorf("unknown Release nullable field %s", name)
 }
 
@@ -7606,6 +7679,9 @@ func (m *ReleaseMutation) ResetField(name string) error {
 		return nil
 	case release.FieldVersion:
 		m.ResetVersion()
+		return nil
+	case release.FieldLabels:
+		m.ResetLabels()
 		return nil
 	}
 	return fmt.Errorf("unknown Release field %s", name)

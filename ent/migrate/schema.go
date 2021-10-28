@@ -299,6 +299,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJSON, Nullable: true},
 		{Name: "git_commit_release", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "repo_head", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
@@ -310,13 +311,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "release_commit_release",
-				Columns:    []*schema.Column{ReleaseColumns[3]},
+				Columns:    []*schema.Column{ReleaseColumns[4]},
 				RefColumns: []*schema.Column{CommitColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "release_repo_head",
-				Columns:    []*schema.Column{ReleaseColumns[4]},
+				Columns:    []*schema.Column{ReleaseColumns[5]},
 				RefColumns: []*schema.Column{RepoColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -325,7 +326,7 @@ var (
 			{
 				Name:    "release_git_commit_release",
 				Unique:  true,
-				Columns: []*schema.Column{ReleaseColumns[3]},
+				Columns: []*schema.Column{ReleaseColumns[4]},
 			},
 		},
 	}

@@ -3,13 +3,16 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/release"
+
+	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/repo"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // Release is the model entity for the Release schema.
@@ -21,6 +24,8 @@ type Release struct {
 	Name string `json:"name,omitempty"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
+	// Labels holds the value of the "labels" field.
+	Labels schema.Labels `json:"labels,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ReleaseQuery when eager-loading is set.
 	Edges              ReleaseEdges `json:"edges"`
@@ -193,6 +198,8 @@ func (*Release) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case release.FieldLabels:
+			values[i] = new([]byte)
 		case release.FieldID:
 			values[i] = new(sql.NullInt64)
 		case release.FieldName, release.FieldVersion:
@@ -233,6 +240,14 @@ func (r *Release) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field version", values[i])
 			} else if value.Valid {
 				r.Version = value.String
+			}
+		case release.FieldLabels:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field labels", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &r.Labels); err != nil {
+					return fmt.Errorf("unmarshal field labels: %w", err)
+				}
 			}
 		case release.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -345,6 +360,8 @@ func (r *Release) String() string {
 	builder.WriteString(r.Name)
 	builder.WriteString(", version=")
 	builder.WriteString(r.Version)
+	builder.WriteString(", labels=")
+	builder.WriteString(fmt.Sprintf("%v", r.Labels))
 	builder.WriteByte(')')
 	return builder.String()
 }

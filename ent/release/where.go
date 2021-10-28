@@ -327,6 +327,20 @@ func VersionContainsFold(v string) predicate.Release {
 	})
 }
 
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldLabels)))
+	})
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Release {
+	return predicate.Release(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldLabels)))
+	})
+}
+
 // HasSubreleases applies the HasEdge predicate on the "subreleases" edge.
 func HasSubreleases() predicate.Release {
 	return predicate.Release(func(s *sql.Selector) {

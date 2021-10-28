@@ -201,9 +201,8 @@ func (h *Handler) createRelease(req *api.ReleaseCreateRequest) (*ent.Release, er
 	}
 
 	dbRelease, err = h.client.Release.Create().
+		SetModelCreate(req.Release).
 		SetCommit(dbCommit).
-		SetName(*req.Release.Name).
-		SetVersion(*req.Release.Version).
 		Save(h.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "release")

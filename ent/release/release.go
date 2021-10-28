@@ -15,6 +15,8 @@ const (
 	FieldName = "name"
 	// FieldVersion holds the string denoting the version field in the database.
 	FieldVersion = "version"
+	// FieldLabels holds the string denoting the labels field in the database.
+	FieldLabels = "labels"
 	// EdgeSubreleases holds the string denoting the subreleases edge name in mutations.
 	EdgeSubreleases = "subreleases"
 	// EdgeDependencies holds the string denoting the dependencies edge name in mutations.
@@ -129,6 +131,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldVersion,
+	FieldLabels,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "release"

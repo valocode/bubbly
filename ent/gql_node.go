@@ -744,7 +744,7 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     r.ID,
 		Type:   "Release",
-		Fields: make([]*Field, 2),
+		Fields: make([]*Field, 3),
 		Edges:  make([]*Edge, 13),
 	}
 	var buf []byte

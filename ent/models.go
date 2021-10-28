@@ -1129,8 +1129,9 @@ func (pr *ProjectMutation) SetModelUpdate(model *ProjectModelUpdate) *ProjectMut
 }
 
 type ReleaseModelCreate struct {
-	Name    *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Version *string `json:"version,omitempty" validate:"required" mapstructure:"version"`
+	Name    *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Version *string        `json:"version,omitempty" validate:"required" mapstructure:"version"`
+	Labels  *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
 }
 
 func NewReleaseModelCreate() *ReleaseModelCreate {
@@ -1142,6 +1143,10 @@ func (r *ReleaseModelCreate) SetName(value string) *ReleaseModelCreate {
 }
 func (r *ReleaseModelCreate) SetVersion(value string) *ReleaseModelCreate {
 	r.Version = &value
+	return r
+}
+func (r *ReleaseModelCreate) SetLabels(value schema.Labels) *ReleaseModelCreate {
+	r.Labels = &value
 	return r
 }
 
@@ -1162,13 +1167,17 @@ func (r *ReleaseMutation) SetModelCreate(model *ReleaseModelCreate) *ReleaseMuta
 	if model.Version != nil {
 		r.SetVersion(*model.Version)
 	}
+	if model.Labels != nil {
+		r.SetLabels(*model.Labels)
+	}
 	return r
 }
 
 type ReleaseModelRead struct {
-	Name    *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Version *string `json:"version,omitempty" validate:"required" mapstructure:"version"`
-	ID      *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name    *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Version *string        `json:"version,omitempty" validate:"required" mapstructure:"version"`
+	Labels  *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
+	ID      *int           `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewReleaseModelRead() *ReleaseModelRead {
@@ -1178,13 +1187,15 @@ func NewReleaseModelRead() *ReleaseModelRead {
 func (r *ReleaseModelRead) FromEnt(value *Release) *ReleaseModelRead {
 	r.Name = &value.Name
 	r.Version = &value.Version
+	r.Labels = &value.Labels
 	r.ID = &value.ID
 	return r
 }
 
 type ReleaseModelUpdate struct {
-	Name    *string `json:"name,omitempty"  mapstructure:"name"`
-	Version *string `json:"version,omitempty"  mapstructure:"version"`
+	Name    *string        `json:"name,omitempty"  mapstructure:"name"`
+	Version *string        `json:"version,omitempty"  mapstructure:"version"`
+	Labels  *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
 }
 
 func NewReleaseModelUpdate() *ReleaseModelUpdate {
@@ -1196,6 +1207,10 @@ func (r *ReleaseModelUpdate) SetName(value string) *ReleaseModelUpdate {
 }
 func (r *ReleaseModelUpdate) SetVersion(value string) *ReleaseModelUpdate {
 	r.Version = &value
+	return r
+}
+func (r *ReleaseModelUpdate) SetLabels(value schema.Labels) *ReleaseModelUpdate {
+	r.Labels = &value
 	return r
 }
 
@@ -1210,6 +1225,9 @@ func (r *ReleaseMutation) SetModelUpdate(model *ReleaseModelUpdate) *ReleaseMuta
 	}
 	if model.Version != nil {
 		r.SetVersion(*model.Version)
+	}
+	if model.Labels != nil {
+		r.SetLabels(*model.Labels)
 	}
 	return r
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/valocode/bubbly/ent/extensions/entmodel"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/hook"
+	types "github.com/valocode/bubbly/ent/schema/types"
 )
 
 type Release struct {
@@ -37,6 +38,11 @@ func (Release) Fields() []ent.Field {
 		field.String("version").NotEmpty().
 			Annotations(
 				entgql.OrderField("version"),
+			),
+
+		field.JSON("labels", types.Labels{}).Optional().
+			Annotations(
+				entgql.Skip(),
 			),
 	}
 }
