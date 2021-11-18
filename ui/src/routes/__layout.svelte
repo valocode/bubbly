@@ -9,8 +9,7 @@
 
 	// Setup the urql graphql client
 	const client = createClient({
-		// url: bubblyAPI + '/o/' + $page.params.org + '/graphql',
-		url: 'http://localhost:8111/graphql'
+		url: bubblyAPI + '/graphql'
 		// fetchOptions: () => {
 		// 	return {
 		// 		headers: {
