@@ -12,6 +12,7 @@ component := [comp |
 	pkg.versionInfo
 
 	comp := {
+		"scheme": "TODO",
 		"name": pkg.name,
 		"version": pkg.versionInfo,
 		"description": pkg.description,
@@ -25,6 +26,8 @@ component := [comp |
 				"patch": {"note": "patch detected by meta-doubleopen"},
 			}
 		],
+		# TODO: get CPE from the component
+		"labels": {"bubbly/component/cpe": concat(",", ["a", "b"])},
 		"licenses": [lic |
 			not pkg.licenseDeclared == "NOASSERTION"
 

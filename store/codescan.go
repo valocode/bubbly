@@ -66,9 +66,10 @@ func (h *Handler) saveCodeScan(dbRelease *ent.Release, scan *api.CodeScan) (*ent
 			)
 			existingComp, err = tx.Component.Query().
 				WhereInput(&ent.ComponentWhereInput{
-					Name:    comp.Name,
-					Vendor:  comp.Vendor,
-					Version: comp.Version,
+					Scheme:    comp.Scheme,
+					Namespace: comp.Namespace,
+					Name:      comp.Name,
+					Version:   comp.Version,
 				}).
 				Only(h.ctx)
 			if err != nil {

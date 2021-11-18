@@ -400,12 +400,12 @@ func (cq *ComponentQuery) WithUses(opts ...func(*ReleaseComponentQuery)) *Compon
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Scheme string `json:"scheme,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Component.Query().
-//		GroupBy(component.FieldName).
+//		GroupBy(component.FieldScheme).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 //
@@ -427,11 +427,11 @@ func (cq *ComponentQuery) GroupBy(field string, fields ...string) *ComponentGrou
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Scheme string `json:"scheme,omitempty"`
 //	}
 //
 //	client.Component.Query().
-//		Select(component.FieldName).
+//		Select(component.FieldScheme).
 //		Scan(ctx, &v)
 //
 func (cq *ComponentQuery) Select(fields ...string) *ComponentSelect {

@@ -344,30 +344,38 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     c.ID,
 		Type:   "Component",
-		Fields: make([]*Field, 6),
+		Fields: make([]*Field, 8),
 		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
-	if buf, err = json.Marshal(c.Name); err != nil {
+	if buf, err = json.Marshal(c.Scheme); err != nil {
 		return nil, err
 	}
 	node.Fields[0] = &Field{
 		Type:  "string",
-		Name:  "name",
+		Name:  "scheme",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(c.Vendor); err != nil {
+	if buf, err = json.Marshal(c.Namespace); err != nil {
 		return nil, err
 	}
 	node.Fields[1] = &Field{
 		Type:  "string",
-		Name:  "vendor",
+		Name:  "namespace",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(c.Name); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "string",
+		Name:  "name",
 		Value: string(buf),
 	}
 	if buf, err = json.Marshal(c.Version); err != nil {
 		return nil, err
 	}
-	node.Fields[2] = &Field{
+	node.Fields[3] = &Field{
 		Type:  "string",
 		Name:  "version",
 		Value: string(buf),
@@ -375,7 +383,7 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 	if buf, err = json.Marshal(c.Description); err != nil {
 		return nil, err
 	}
-	node.Fields[3] = &Field{
+	node.Fields[4] = &Field{
 		Type:  "string",
 		Name:  "description",
 		Value: string(buf),
@@ -383,7 +391,7 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 	if buf, err = json.Marshal(c.URL); err != nil {
 		return nil, err
 	}
-	node.Fields[4] = &Field{
+	node.Fields[5] = &Field{
 		Type:  "string",
 		Name:  "url",
 		Value: string(buf),
@@ -391,7 +399,7 @@ func (c *Component) Node(ctx context.Context) (node *Node, err error) {
 	if buf, err = json.Marshal(c.Metadata); err != nil {
 		return nil, err
 	}
-	node.Fields[5] = &Field{
+	node.Fields[6] = &Field{
 		Type:  "schema.Metadata",
 		Name:  "metadata",
 		Value: string(buf),

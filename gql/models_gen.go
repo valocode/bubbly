@@ -54,8 +54,9 @@ type CodeScanBase struct {
 // Component
 type ComponentBase struct {
 	ID          int                    `json:"id"`
+	Scheme      *string                `json:"scheme"`
+	Namespace   *string                `json:"namespace"`
 	Name        *string                `json:"name"`
-	Vendor      *string                `json:"vendor"`
 	Version     *string                `json:"version"`
 	Description *string                `json:"description"`
 	URL         *string                `json:"url"`

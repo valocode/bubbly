@@ -156,12 +156,14 @@ export interface Component_Json {
 
 export interface Component {
 	id?: number;
+	scheme?: string;
+	namespace?: string;
 	name?: string;
-	vendor?: string;
 	version?: string;
 	description?: string;
 	url?: string;
 	metadata?: UNKNOWN_TYPE_schema.Metadata;
+	labels?: UNKNOWN_TYPE_schema.Labels;
 	owner?: Organization;
 	vulnerabilities?: Vulnerability[];
 	licenses?: License[];

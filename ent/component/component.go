@@ -7,10 +7,12 @@ const (
 	Label = "component"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldScheme holds the string denoting the scheme field in the database.
+	FieldScheme = "scheme"
+	// FieldNamespace holds the string denoting the namespace field in the database.
+	FieldNamespace = "namespace"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldVendor holds the string denoting the vendor field in the database.
-	FieldVendor = "vendor"
 	// FieldVersion holds the string denoting the version field in the database.
 	FieldVersion = "version"
 	// FieldDescription holds the string denoting the description field in the database.
@@ -19,6 +21,8 @@ const (
 	FieldURL = "url"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
+	// FieldLabels holds the string denoting the labels field in the database.
+	FieldLabels = "labels"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeVulnerabilities holds the string denoting the vulnerabilities edge name in mutations.
@@ -58,12 +62,14 @@ const (
 // Columns holds all SQL columns for component fields.
 var Columns = []string{
 	FieldID,
+	FieldScheme,
+	FieldNamespace,
 	FieldName,
-	FieldVendor,
 	FieldVersion,
 	FieldDescription,
 	FieldURL,
 	FieldMetadata,
+	FieldLabels,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "component"
@@ -97,10 +103,12 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// SchemeValidator is a validator for the "scheme" field. It is called by the builders before save.
+	SchemeValidator func(string) error
+	// DefaultNamespace holds the default value on creation for the "namespace" field.
+	DefaultNamespace string
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
-	// DefaultVendor holds the default value on creation for the "vendor" field.
-	DefaultVendor string
 	// VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	VersionValidator func(string) error
 )

@@ -24,6 +24,13 @@ type (
 		Releases []*Release `json:"releases,omitempty" validate:"dive,required"`
 	}
 
+	ReleaseGetByIDRequest struct {
+		ID int `param:"id"`
+	}
+
+	ReleaseGetByIDResponse struct {
+		Release *Release `json:"release,omitempty" validate:"required"`
+	}
 	Release struct {
 		Project    *ent.ProjectModelRead                  `json:"project,omitempty" validate:"required"`
 		Repo       *ent.RepoModelRead                     `json:"repo,omitempty" validate:"required"`

@@ -32,23 +32,29 @@ func (cu *ComponentUpdate) Where(ps ...predicate.Component) *ComponentUpdate {
 	return cu
 }
 
+// SetScheme sets the "scheme" field.
+func (cu *ComponentUpdate) SetScheme(s string) *ComponentUpdate {
+	cu.mutation.SetScheme(s)
+	return cu
+}
+
+// SetNamespace sets the "namespace" field.
+func (cu *ComponentUpdate) SetNamespace(s string) *ComponentUpdate {
+	cu.mutation.SetNamespace(s)
+	return cu
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (cu *ComponentUpdate) SetNillableNamespace(s *string) *ComponentUpdate {
+	if s != nil {
+		cu.SetNamespace(*s)
+	}
+	return cu
+}
+
 // SetName sets the "name" field.
 func (cu *ComponentUpdate) SetName(s string) *ComponentUpdate {
 	cu.mutation.SetName(s)
-	return cu
-}
-
-// SetVendor sets the "vendor" field.
-func (cu *ComponentUpdate) SetVendor(s string) *ComponentUpdate {
-	cu.mutation.SetVendor(s)
-	return cu
-}
-
-// SetNillableVendor sets the "vendor" field if the given value is not nil.
-func (cu *ComponentUpdate) SetNillableVendor(s *string) *ComponentUpdate {
-	if s != nil {
-		cu.SetVendor(*s)
-	}
 	return cu
 }
 
@@ -107,6 +113,18 @@ func (cu *ComponentUpdate) SetMetadata(s schema.Metadata) *ComponentUpdate {
 // ClearMetadata clears the value of the "metadata" field.
 func (cu *ComponentUpdate) ClearMetadata() *ComponentUpdate {
 	cu.mutation.ClearMetadata()
+	return cu
+}
+
+// SetLabels sets the "labels" field.
+func (cu *ComponentUpdate) SetLabels(s schema.Labels) *ComponentUpdate {
+	cu.mutation.SetLabels(s)
+	return cu
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (cu *ComponentUpdate) ClearLabels() *ComponentUpdate {
+	cu.mutation.ClearLabels()
 	return cu
 }
 
@@ -302,6 +320,11 @@ func (cu *ComponentUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (cu *ComponentUpdate) check() error {
+	if v, ok := cu.mutation.Scheme(); ok {
+		if err := component.SchemeValidator(v); err != nil {
+			return &ValidationError{Name: "scheme", err: fmt.Errorf("ent: validator failed for field \"scheme\": %w", err)}
+		}
+	}
 	if v, ok := cu.mutation.Name(); ok {
 		if err := component.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
@@ -336,18 +359,25 @@ func (cu *ComponentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := cu.mutation.Scheme(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: component.FieldScheme,
+		})
+	}
+	if value, ok := cu.mutation.Namespace(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: component.FieldNamespace,
+		})
+	}
 	if value, ok := cu.mutation.Name(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
 			Column: component.FieldName,
-		})
-	}
-	if value, ok := cu.mutation.Vendor(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: component.FieldVendor,
 		})
 	}
 	if value, ok := cu.mutation.Version(); ok {
@@ -394,6 +424,19 @@ func (cu *ComponentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
 			Type:   field.TypeJSON,
 			Column: component.FieldMetadata,
+		})
+	}
+	if value, ok := cu.mutation.Labels(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: component.FieldLabels,
+		})
+	}
+	if cu.mutation.LabelsCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: component.FieldLabels,
 		})
 	}
 	if cu.mutation.OwnerCleared() {
@@ -612,23 +655,29 @@ type ComponentUpdateOne struct {
 	mutation *ComponentMutation
 }
 
+// SetScheme sets the "scheme" field.
+func (cuo *ComponentUpdateOne) SetScheme(s string) *ComponentUpdateOne {
+	cuo.mutation.SetScheme(s)
+	return cuo
+}
+
+// SetNamespace sets the "namespace" field.
+func (cuo *ComponentUpdateOne) SetNamespace(s string) *ComponentUpdateOne {
+	cuo.mutation.SetNamespace(s)
+	return cuo
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (cuo *ComponentUpdateOne) SetNillableNamespace(s *string) *ComponentUpdateOne {
+	if s != nil {
+		cuo.SetNamespace(*s)
+	}
+	return cuo
+}
+
 // SetName sets the "name" field.
 func (cuo *ComponentUpdateOne) SetName(s string) *ComponentUpdateOne {
 	cuo.mutation.SetName(s)
-	return cuo
-}
-
-// SetVendor sets the "vendor" field.
-func (cuo *ComponentUpdateOne) SetVendor(s string) *ComponentUpdateOne {
-	cuo.mutation.SetVendor(s)
-	return cuo
-}
-
-// SetNillableVendor sets the "vendor" field if the given value is not nil.
-func (cuo *ComponentUpdateOne) SetNillableVendor(s *string) *ComponentUpdateOne {
-	if s != nil {
-		cuo.SetVendor(*s)
-	}
 	return cuo
 }
 
@@ -687,6 +736,18 @@ func (cuo *ComponentUpdateOne) SetMetadata(s schema.Metadata) *ComponentUpdateOn
 // ClearMetadata clears the value of the "metadata" field.
 func (cuo *ComponentUpdateOne) ClearMetadata() *ComponentUpdateOne {
 	cuo.mutation.ClearMetadata()
+	return cuo
+}
+
+// SetLabels sets the "labels" field.
+func (cuo *ComponentUpdateOne) SetLabels(s schema.Labels) *ComponentUpdateOne {
+	cuo.mutation.SetLabels(s)
+	return cuo
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (cuo *ComponentUpdateOne) ClearLabels() *ComponentUpdateOne {
+	cuo.mutation.ClearLabels()
 	return cuo
 }
 
@@ -889,6 +950,11 @@ func (cuo *ComponentUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (cuo *ComponentUpdateOne) check() error {
+	if v, ok := cuo.mutation.Scheme(); ok {
+		if err := component.SchemeValidator(v); err != nil {
+			return &ValidationError{Name: "scheme", err: fmt.Errorf("ent: validator failed for field \"scheme\": %w", err)}
+		}
+	}
 	if v, ok := cuo.mutation.Name(); ok {
 		if err := component.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
@@ -940,18 +1006,25 @@ func (cuo *ComponentUpdateOne) sqlSave(ctx context.Context) (_node *Component, e
 			}
 		}
 	}
+	if value, ok := cuo.mutation.Scheme(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: component.FieldScheme,
+		})
+	}
+	if value, ok := cuo.mutation.Namespace(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: component.FieldNamespace,
+		})
+	}
 	if value, ok := cuo.mutation.Name(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
 			Column: component.FieldName,
-		})
-	}
-	if value, ok := cuo.mutation.Vendor(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: component.FieldVendor,
 		})
 	}
 	if value, ok := cuo.mutation.Version(); ok {
@@ -998,6 +1071,19 @@ func (cuo *ComponentUpdateOne) sqlSave(ctx context.Context) (_node *Component, e
 		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
 			Type:   field.TypeJSON,
 			Column: component.FieldMetadata,
+		})
+	}
+	if value, ok := cuo.mutation.Labels(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: component.FieldLabels,
+		})
+	}
+	if cuo.mutation.LabelsCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: component.FieldLabels,
 		})
 	}
 	if cuo.mutation.OwnerCleared() {

@@ -229,7 +229,7 @@ func createRepoData(opt DemoRepoOptions) []ReleaseData {
 			for _, c := range components {
 				scan.Components = append(scan.Components, &api.CodeScanComponent{
 					ComponentModelCreate: *ent.NewComponentModelCreate().
-						SetName(c.Name).SetVendor(c.Vendor).SetVersion(c.Version),
+						SetName(c.Name).SetScheme("pkg").SetVersion(c.Version),
 				})
 			}
 			data.CodeScans = append(data.CodeScans, &api.CodeScanRequest{

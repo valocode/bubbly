@@ -146,8 +146,9 @@ Component
 """
 type ComponentBase {
 	id: ID!
+	scheme: String
+	namespace: String
 	name: String
-	vendor: String
 	version: String
 	description: String
 	url: String
@@ -155,8 +156,9 @@ type ComponentBase {
 }
 
 enum ComponentOrderField {
+	scheme
+	namespace
 	name
-	vendor
 	version
 }
 

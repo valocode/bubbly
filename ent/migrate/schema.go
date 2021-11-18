@@ -132,12 +132,14 @@ var (
 	// ComponentColumns holds the columns for the "component" table.
 	ComponentColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "scheme", Type: field.TypeString},
+		{Name: "namespace", Type: field.TypeString, Default: ""},
 		{Name: "name", Type: field.TypeString},
-		{Name: "vendor", Type: field.TypeString, Default: ""},
 		{Name: "version", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "url", Type: field.TypeString, Nullable: true},
 		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "labels", Type: field.TypeJSON, Nullable: true},
 		{Name: "component_owner", Type: field.TypeInt, Nullable: true},
 	}
 	// ComponentTable holds the schema information for the "component" table.
@@ -148,16 +150,16 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "component_organization_owner",
-				Columns:    []*schema.Column{ComponentColumns[7]},
+				Columns:    []*schema.Column{ComponentColumns[9]},
 				RefColumns: []*schema.Column{OrganizationColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "component_name_vendor_version",
+				Name:    "component_scheme_namespace_name_version",
 				Unique:  true,
-				Columns: []*schema.Column{ComponentColumns[1], ComponentColumns[2], ComponentColumns[3]},
+				Columns: []*schema.Column{ComponentColumns[1], ComponentColumns[2], ComponentColumns[3], ComponentColumns[4]},
 			},
 		},
 	}

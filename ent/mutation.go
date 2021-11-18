@@ -2685,12 +2685,14 @@ type ComponentMutation struct {
 	op                     Op
 	typ                    string
 	id                     *int
+	scheme                 *string
+	namespace              *string
 	name                   *string
-	vendor                 *string
 	version                *string
 	description            *string
 	url                    *string
 	metadata               *schema.Metadata
+	labels                 *schema.Labels
 	clearedFields          map[string]struct{}
 	owner                  *int
 	clearedowner           bool
@@ -2787,6 +2789,78 @@ func (m *ComponentMutation) ID() (id int, exists bool) {
 	return *m.id, true
 }
 
+// SetScheme sets the "scheme" field.
+func (m *ComponentMutation) SetScheme(s string) {
+	m.scheme = &s
+}
+
+// Scheme returns the value of the "scheme" field in the mutation.
+func (m *ComponentMutation) Scheme() (r string, exists bool) {
+	v := m.scheme
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScheme returns the old "scheme" field's value of the Component entity.
+// If the Component object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ComponentMutation) OldScheme(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldScheme is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldScheme requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScheme: %w", err)
+	}
+	return oldValue.Scheme, nil
+}
+
+// ResetScheme resets all changes to the "scheme" field.
+func (m *ComponentMutation) ResetScheme() {
+	m.scheme = nil
+}
+
+// SetNamespace sets the "namespace" field.
+func (m *ComponentMutation) SetNamespace(s string) {
+	m.namespace = &s
+}
+
+// Namespace returns the value of the "namespace" field in the mutation.
+func (m *ComponentMutation) Namespace() (r string, exists bool) {
+	v := m.namespace
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNamespace returns the old "namespace" field's value of the Component entity.
+// If the Component object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ComponentMutation) OldNamespace(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldNamespace is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldNamespace requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNamespace: %w", err)
+	}
+	return oldValue.Namespace, nil
+}
+
+// ResetNamespace resets all changes to the "namespace" field.
+func (m *ComponentMutation) ResetNamespace() {
+	m.namespace = nil
+}
+
 // SetName sets the "name" field.
 func (m *ComponentMutation) SetName(s string) {
 	m.name = &s
@@ -2821,42 +2895,6 @@ func (m *ComponentMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *ComponentMutation) ResetName() {
 	m.name = nil
-}
-
-// SetVendor sets the "vendor" field.
-func (m *ComponentMutation) SetVendor(s string) {
-	m.vendor = &s
-}
-
-// Vendor returns the value of the "vendor" field in the mutation.
-func (m *ComponentMutation) Vendor() (r string, exists bool) {
-	v := m.vendor
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldVendor returns the old "vendor" field's value of the Component entity.
-// If the Component object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ComponentMutation) OldVendor(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldVendor is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldVendor requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldVendor: %w", err)
-	}
-	return oldValue.Vendor, nil
-}
-
-// ResetVendor resets all changes to the "vendor" field.
-func (m *ComponentMutation) ResetVendor() {
-	m.vendor = nil
 }
 
 // SetVersion sets the "version" field.
@@ -3040,6 +3078,55 @@ func (m *ComponentMutation) MetadataCleared() bool {
 func (m *ComponentMutation) ResetMetadata() {
 	m.metadata = nil
 	delete(m.clearedFields, component.FieldMetadata)
+}
+
+// SetLabels sets the "labels" field.
+func (m *ComponentMutation) SetLabels(s schema.Labels) {
+	m.labels = &s
+}
+
+// Labels returns the value of the "labels" field in the mutation.
+func (m *ComponentMutation) Labels() (r schema.Labels, exists bool) {
+	v := m.labels
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLabels returns the old "labels" field's value of the Component entity.
+// If the Component object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ComponentMutation) OldLabels(ctx context.Context) (v schema.Labels, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldLabels is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldLabels requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (m *ComponentMutation) ClearLabels() {
+	m.labels = nil
+	m.clearedFields[component.FieldLabels] = struct{}{}
+}
+
+// LabelsCleared returns if the "labels" field was cleared in this mutation.
+func (m *ComponentMutation) LabelsCleared() bool {
+	_, ok := m.clearedFields[component.FieldLabels]
+	return ok
+}
+
+// ResetLabels resets all changes to the "labels" field.
+func (m *ComponentMutation) ResetLabels() {
+	m.labels = nil
+	delete(m.clearedFields, component.FieldLabels)
 }
 
 // SetOwnerID sets the "owner" edge to the Organization entity by id.
@@ -3262,12 +3349,15 @@ func (m *ComponentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ComponentMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 8)
+	if m.scheme != nil {
+		fields = append(fields, component.FieldScheme)
+	}
+	if m.namespace != nil {
+		fields = append(fields, component.FieldNamespace)
+	}
 	if m.name != nil {
 		fields = append(fields, component.FieldName)
-	}
-	if m.vendor != nil {
-		fields = append(fields, component.FieldVendor)
 	}
 	if m.version != nil {
 		fields = append(fields, component.FieldVersion)
@@ -3281,6 +3371,9 @@ func (m *ComponentMutation) Fields() []string {
 	if m.metadata != nil {
 		fields = append(fields, component.FieldMetadata)
 	}
+	if m.labels != nil {
+		fields = append(fields, component.FieldLabels)
+	}
 	return fields
 }
 
@@ -3289,10 +3382,12 @@ func (m *ComponentMutation) Fields() []string {
 // schema.
 func (m *ComponentMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case component.FieldScheme:
+		return m.Scheme()
+	case component.FieldNamespace:
+		return m.Namespace()
 	case component.FieldName:
 		return m.Name()
-	case component.FieldVendor:
-		return m.Vendor()
 	case component.FieldVersion:
 		return m.Version()
 	case component.FieldDescription:
@@ -3301,6 +3396,8 @@ func (m *ComponentMutation) Field(name string) (ent.Value, bool) {
 		return m.URL()
 	case component.FieldMetadata:
 		return m.Metadata()
+	case component.FieldLabels:
+		return m.Labels()
 	}
 	return nil, false
 }
@@ -3310,10 +3407,12 @@ func (m *ComponentMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *ComponentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case component.FieldScheme:
+		return m.OldScheme(ctx)
+	case component.FieldNamespace:
+		return m.OldNamespace(ctx)
 	case component.FieldName:
 		return m.OldName(ctx)
-	case component.FieldVendor:
-		return m.OldVendor(ctx)
 	case component.FieldVersion:
 		return m.OldVersion(ctx)
 	case component.FieldDescription:
@@ -3322,6 +3421,8 @@ func (m *ComponentMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldURL(ctx)
 	case component.FieldMetadata:
 		return m.OldMetadata(ctx)
+	case component.FieldLabels:
+		return m.OldLabels(ctx)
 	}
 	return nil, fmt.Errorf("unknown Component field %s", name)
 }
@@ -3331,19 +3432,26 @@ func (m *ComponentMutation) OldField(ctx context.Context, name string) (ent.Valu
 // type.
 func (m *ComponentMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case component.FieldScheme:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScheme(v)
+		return nil
+	case component.FieldNamespace:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNamespace(v)
+		return nil
 	case component.FieldName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
-		return nil
-	case component.FieldVendor:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetVendor(v)
 		return nil
 	case component.FieldVersion:
 		v, ok := value.(string)
@@ -3372,6 +3480,13 @@ func (m *ComponentMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMetadata(v)
+		return nil
+	case component.FieldLabels:
+		v, ok := value.(schema.Labels)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabels(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Component field %s", name)
@@ -3412,6 +3527,9 @@ func (m *ComponentMutation) ClearedFields() []string {
 	if m.FieldCleared(component.FieldMetadata) {
 		fields = append(fields, component.FieldMetadata)
 	}
+	if m.FieldCleared(component.FieldLabels) {
+		fields = append(fields, component.FieldLabels)
+	}
 	return fields
 }
 
@@ -3435,6 +3553,9 @@ func (m *ComponentMutation) ClearField(name string) error {
 	case component.FieldMetadata:
 		m.ClearMetadata()
 		return nil
+	case component.FieldLabels:
+		m.ClearLabels()
+		return nil
 	}
 	return fmt.Errorf("unknown Component nullable field %s", name)
 }
@@ -3443,11 +3564,14 @@ func (m *ComponentMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *ComponentMutation) ResetField(name string) error {
 	switch name {
+	case component.FieldScheme:
+		m.ResetScheme()
+		return nil
+	case component.FieldNamespace:
+		m.ResetNamespace()
+		return nil
 	case component.FieldName:
 		m.ResetName()
-		return nil
-	case component.FieldVendor:
-		m.ResetVendor()
 		return nil
 	case component.FieldVersion:
 		m.ResetVersion()
@@ -3460,6 +3584,9 @@ func (m *ComponentMutation) ResetField(name string) error {
 		return nil
 	case component.FieldMetadata:
 		m.ResetMetadata()
+		return nil
+	case component.FieldLabels:
+		m.ResetLabels()
 		return nil
 	}
 	return fmt.Errorf("unknown Component field %s", name)

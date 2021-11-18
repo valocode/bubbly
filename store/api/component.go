@@ -5,6 +5,13 @@ import (
 )
 
 type (
+	ComponentGetRequest struct {
+	}
+
+	ComponentGetResponse struct {
+		Components []*Component
+	}
+
 	ComponentVulnerabilityRequest struct {
 		DataSource *string                   `json:"data_source,omitempty" validate:"required"`
 		Components []*ComponentVulnerability `json:"components,omitempty" validate:"required,dive,required"`
@@ -28,7 +35,7 @@ type (
 		ent.LicenseModelCreate `validate:"required" mapstructure:",squash"`
 	}
 
-	ComponentRead struct {
+	Component struct {
 		ent.ComponentModelRead `validate:"required"`
 	}
 )

@@ -9,7 +9,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/codeissue"
-
 	"github.com/valocode/bubbly/ent/codescan"
 	schema "github.com/valocode/bubbly/ent/schema/types"
 )

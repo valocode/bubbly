@@ -1266,6 +1266,36 @@ type ComponentWhereInput struct {
 	IDLT    *int  `json:"idLT,omitempty"`
 	IDLTE   *int  `json:"idLTE,omitempty"`
 
+	// "scheme" field predicates.
+	Scheme             *string  `json:"scheme,omitempty"`
+	SchemeNEQ          *string  `json:"schemeNEQ,omitempty"`
+	SchemeIn           []string `json:"schemeIn,omitempty"`
+	SchemeNotIn        []string `json:"schemeNotIn,omitempty"`
+	SchemeGT           *string  `json:"schemeGT,omitempty"`
+	SchemeGTE          *string  `json:"schemeGTE,omitempty"`
+	SchemeLT           *string  `json:"schemeLT,omitempty"`
+	SchemeLTE          *string  `json:"schemeLTE,omitempty"`
+	SchemeContains     *string  `json:"schemeContains,omitempty"`
+	SchemeHasPrefix    *string  `json:"schemeHasPrefix,omitempty"`
+	SchemeHasSuffix    *string  `json:"schemeHasSuffix,omitempty"`
+	SchemeEqualFold    *string  `json:"schemeEqualFold,omitempty"`
+	SchemeContainsFold *string  `json:"schemeContainsFold,omitempty"`
+
+	// "namespace" field predicates.
+	Namespace             *string  `json:"namespace,omitempty"`
+	NamespaceNEQ          *string  `json:"namespaceNEQ,omitempty"`
+	NamespaceIn           []string `json:"namespaceIn,omitempty"`
+	NamespaceNotIn        []string `json:"namespaceNotIn,omitempty"`
+	NamespaceGT           *string  `json:"namespaceGT,omitempty"`
+	NamespaceGTE          *string  `json:"namespaceGTE,omitempty"`
+	NamespaceLT           *string  `json:"namespaceLT,omitempty"`
+	NamespaceLTE          *string  `json:"namespaceLTE,omitempty"`
+	NamespaceContains     *string  `json:"namespaceContains,omitempty"`
+	NamespaceHasPrefix    *string  `json:"namespaceHasPrefix,omitempty"`
+	NamespaceHasSuffix    *string  `json:"namespaceHasSuffix,omitempty"`
+	NamespaceEqualFold    *string  `json:"namespaceEqualFold,omitempty"`
+	NamespaceContainsFold *string  `json:"namespaceContainsFold,omitempty"`
+
 	// "name" field predicates.
 	Name             *string  `json:"name,omitempty"`
 	NameNEQ          *string  `json:"nameNEQ,omitempty"`
@@ -1280,21 +1310,6 @@ type ComponentWhereInput struct {
 	NameHasSuffix    *string  `json:"nameHasSuffix,omitempty"`
 	NameEqualFold    *string  `json:"nameEqualFold,omitempty"`
 	NameContainsFold *string  `json:"nameContainsFold,omitempty"`
-
-	// "vendor" field predicates.
-	Vendor             *string  `json:"vendor,omitempty"`
-	VendorNEQ          *string  `json:"vendorNEQ,omitempty"`
-	VendorIn           []string `json:"vendorIn,omitempty"`
-	VendorNotIn        []string `json:"vendorNotIn,omitempty"`
-	VendorGT           *string  `json:"vendorGT,omitempty"`
-	VendorGTE          *string  `json:"vendorGTE,omitempty"`
-	VendorLT           *string  `json:"vendorLT,omitempty"`
-	VendorLTE          *string  `json:"vendorLTE,omitempty"`
-	VendorContains     *string  `json:"vendorContains,omitempty"`
-	VendorHasPrefix    *string  `json:"vendorHasPrefix,omitempty"`
-	VendorHasSuffix    *string  `json:"vendorHasSuffix,omitempty"`
-	VendorEqualFold    *string  `json:"vendorEqualFold,omitempty"`
-	VendorContainsFold *string  `json:"vendorContainsFold,omitempty"`
 
 	// "version" field predicates.
 	Version             *string  `json:"version,omitempty"`
@@ -1445,6 +1460,84 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 	if i.IDLTE != nil {
 		predicates = append(predicates, component.IDLTE(*i.IDLTE))
 	}
+	if i.Scheme != nil {
+		predicates = append(predicates, component.SchemeEQ(*i.Scheme))
+	}
+	if i.SchemeNEQ != nil {
+		predicates = append(predicates, component.SchemeNEQ(*i.SchemeNEQ))
+	}
+	if len(i.SchemeIn) > 0 {
+		predicates = append(predicates, component.SchemeIn(i.SchemeIn...))
+	}
+	if len(i.SchemeNotIn) > 0 {
+		predicates = append(predicates, component.SchemeNotIn(i.SchemeNotIn...))
+	}
+	if i.SchemeGT != nil {
+		predicates = append(predicates, component.SchemeGT(*i.SchemeGT))
+	}
+	if i.SchemeGTE != nil {
+		predicates = append(predicates, component.SchemeGTE(*i.SchemeGTE))
+	}
+	if i.SchemeLT != nil {
+		predicates = append(predicates, component.SchemeLT(*i.SchemeLT))
+	}
+	if i.SchemeLTE != nil {
+		predicates = append(predicates, component.SchemeLTE(*i.SchemeLTE))
+	}
+	if i.SchemeContains != nil {
+		predicates = append(predicates, component.SchemeContains(*i.SchemeContains))
+	}
+	if i.SchemeHasPrefix != nil {
+		predicates = append(predicates, component.SchemeHasPrefix(*i.SchemeHasPrefix))
+	}
+	if i.SchemeHasSuffix != nil {
+		predicates = append(predicates, component.SchemeHasSuffix(*i.SchemeHasSuffix))
+	}
+	if i.SchemeEqualFold != nil {
+		predicates = append(predicates, component.SchemeEqualFold(*i.SchemeEqualFold))
+	}
+	if i.SchemeContainsFold != nil {
+		predicates = append(predicates, component.SchemeContainsFold(*i.SchemeContainsFold))
+	}
+	if i.Namespace != nil {
+		predicates = append(predicates, component.NamespaceEQ(*i.Namespace))
+	}
+	if i.NamespaceNEQ != nil {
+		predicates = append(predicates, component.NamespaceNEQ(*i.NamespaceNEQ))
+	}
+	if len(i.NamespaceIn) > 0 {
+		predicates = append(predicates, component.NamespaceIn(i.NamespaceIn...))
+	}
+	if len(i.NamespaceNotIn) > 0 {
+		predicates = append(predicates, component.NamespaceNotIn(i.NamespaceNotIn...))
+	}
+	if i.NamespaceGT != nil {
+		predicates = append(predicates, component.NamespaceGT(*i.NamespaceGT))
+	}
+	if i.NamespaceGTE != nil {
+		predicates = append(predicates, component.NamespaceGTE(*i.NamespaceGTE))
+	}
+	if i.NamespaceLT != nil {
+		predicates = append(predicates, component.NamespaceLT(*i.NamespaceLT))
+	}
+	if i.NamespaceLTE != nil {
+		predicates = append(predicates, component.NamespaceLTE(*i.NamespaceLTE))
+	}
+	if i.NamespaceContains != nil {
+		predicates = append(predicates, component.NamespaceContains(*i.NamespaceContains))
+	}
+	if i.NamespaceHasPrefix != nil {
+		predicates = append(predicates, component.NamespaceHasPrefix(*i.NamespaceHasPrefix))
+	}
+	if i.NamespaceHasSuffix != nil {
+		predicates = append(predicates, component.NamespaceHasSuffix(*i.NamespaceHasSuffix))
+	}
+	if i.NamespaceEqualFold != nil {
+		predicates = append(predicates, component.NamespaceEqualFold(*i.NamespaceEqualFold))
+	}
+	if i.NamespaceContainsFold != nil {
+		predicates = append(predicates, component.NamespaceContainsFold(*i.NamespaceContainsFold))
+	}
 	if i.Name != nil {
 		predicates = append(predicates, component.NameEQ(*i.Name))
 	}
@@ -1483,45 +1576,6 @@ func (i *ComponentWhereInput) P() (predicate.Component, error) {
 	}
 	if i.NameContainsFold != nil {
 		predicates = append(predicates, component.NameContainsFold(*i.NameContainsFold))
-	}
-	if i.Vendor != nil {
-		predicates = append(predicates, component.VendorEQ(*i.Vendor))
-	}
-	if i.VendorNEQ != nil {
-		predicates = append(predicates, component.VendorNEQ(*i.VendorNEQ))
-	}
-	if len(i.VendorIn) > 0 {
-		predicates = append(predicates, component.VendorIn(i.VendorIn...))
-	}
-	if len(i.VendorNotIn) > 0 {
-		predicates = append(predicates, component.VendorNotIn(i.VendorNotIn...))
-	}
-	if i.VendorGT != nil {
-		predicates = append(predicates, component.VendorGT(*i.VendorGT))
-	}
-	if i.VendorGTE != nil {
-		predicates = append(predicates, component.VendorGTE(*i.VendorGTE))
-	}
-	if i.VendorLT != nil {
-		predicates = append(predicates, component.VendorLT(*i.VendorLT))
-	}
-	if i.VendorLTE != nil {
-		predicates = append(predicates, component.VendorLTE(*i.VendorLTE))
-	}
-	if i.VendorContains != nil {
-		predicates = append(predicates, component.VendorContains(*i.VendorContains))
-	}
-	if i.VendorHasPrefix != nil {
-		predicates = append(predicates, component.VendorHasPrefix(*i.VendorHasPrefix))
-	}
-	if i.VendorHasSuffix != nil {
-		predicates = append(predicates, component.VendorHasSuffix(*i.VendorHasSuffix))
-	}
-	if i.VendorEqualFold != nil {
-		predicates = append(predicates, component.VendorEqualFold(*i.VendorEqualFold))
-	}
-	if i.VendorContainsFold != nil {
-		predicates = append(predicates, component.VendorContainsFold(*i.VendorContainsFold))
 	}
 	if i.Version != nil {
 		predicates = append(predicates, component.VersionEQ(*i.Version))

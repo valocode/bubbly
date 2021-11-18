@@ -24,14 +24,20 @@ func (Component) Annotations() []schema.Annotation {
 }
 
 func (Component) Fields() []ent.Field {
+	// Follow the Package URL (purl) schema for components:
+	// https://github.com/package-url/purl-spec
 	return []ent.Field{
+		field.String("scheme").NotEmpty().
+			Annotations(
+				entgql.OrderField("scheme"),
+			),
+		field.String("namespace").Default("").
+			Annotations(
+				entgql.OrderField("namespace"),
+			),
 		field.String("name").NotEmpty().
 			Annotations(
 				entgql.OrderField("name"),
-			),
-		field.String("vendor").Default("").
-			Annotations(
-				entgql.OrderField("vendor"),
 			),
 		field.String("version").NotEmpty().
 			Annotations(
@@ -40,6 +46,10 @@ func (Component) Fields() []ent.Field {
 		field.String("description").Optional(),
 		field.String("url").Optional(),
 		field.JSON("metadata", types.Metadata{}).Optional(),
+		field.JSON("labels", types.Labels{}).Optional().
+			Annotations(
+				entgql.Skip(),
+			),
 	}
 }
 
@@ -54,7 +64,7 @@ func (Component) Edges() []ent.Edge {
 
 func (Component) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("name", "vendor", "version").
+		index.Fields("scheme", "namespace", "name", "version").
 			Unique(),
 	}
 }

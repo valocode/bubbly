@@ -505,23 +505,29 @@ func (cs *CodeScanMutation) SetModelUpdate(model *CodeScanModelUpdate) *CodeScan
 }
 
 type ComponentModelCreate struct {
+	Scheme      *string          `json:"scheme,omitempty" validate:"required" mapstructure:"scheme"`
+	Namespace   *string          `json:"namespace,omitempty"  mapstructure:"namespace"`
 	Name        *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Vendor      *string          `json:"vendor,omitempty"  mapstructure:"vendor"`
 	Version     *string          `json:"version,omitempty" validate:"required" mapstructure:"version"`
 	Description *string          `json:"description,omitempty"  mapstructure:"description"`
 	URL         *string          `json:"url,omitempty"  mapstructure:"url"`
 	Metadata    *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
+	Labels      *schema.Labels   `json:"labels,omitempty"  mapstructure:"labels"`
 }
 
 func NewComponentModelCreate() *ComponentModelCreate {
 	return &ComponentModelCreate{}
 }
-func (c *ComponentModelCreate) SetName(value string) *ComponentModelCreate {
-	c.Name = &value
+func (c *ComponentModelCreate) SetScheme(value string) *ComponentModelCreate {
+	c.Scheme = &value
 	return c
 }
-func (c *ComponentModelCreate) SetVendor(value string) *ComponentModelCreate {
-	c.Vendor = &value
+func (c *ComponentModelCreate) SetNamespace(value string) *ComponentModelCreate {
+	c.Namespace = &value
+	return c
+}
+func (c *ComponentModelCreate) SetName(value string) *ComponentModelCreate {
+	c.Name = &value
 	return c
 }
 func (c *ComponentModelCreate) SetVersion(value string) *ComponentModelCreate {
@@ -540,6 +546,10 @@ func (c *ComponentModelCreate) SetMetadata(value schema.Metadata) *ComponentMode
 	c.Metadata = &value
 	return c
 }
+func (c *ComponentModelCreate) SetLabels(value schema.Labels) *ComponentModelCreate {
+	c.Labels = &value
+	return c
+}
 
 func (c *ComponentCreate) SetModelCreate(model *ComponentModelCreate) *ComponentCreate {
 	c.mutation.SetModelCreate(model)
@@ -552,11 +562,14 @@ func (c *ComponentUpdateOne) SetModelCreate(model *ComponentModelCreate) *Compon
 }
 
 func (c *ComponentMutation) SetModelCreate(model *ComponentModelCreate) *ComponentMutation {
+	if model.Scheme != nil {
+		c.SetScheme(*model.Scheme)
+	}
+	if model.Namespace != nil {
+		c.SetNamespace(*model.Namespace)
+	}
 	if model.Name != nil {
 		c.SetName(*model.Name)
-	}
-	if model.Vendor != nil {
-		c.SetVendor(*model.Vendor)
 	}
 	if model.Version != nil {
 		c.SetVersion(*model.Version)
@@ -570,16 +583,21 @@ func (c *ComponentMutation) SetModelCreate(model *ComponentModelCreate) *Compone
 	if model.Metadata != nil {
 		c.SetMetadata(*model.Metadata)
 	}
+	if model.Labels != nil {
+		c.SetLabels(*model.Labels)
+	}
 	return c
 }
 
 type ComponentModelRead struct {
+	Scheme      *string          `json:"scheme,omitempty" validate:"required" mapstructure:"scheme"`
+	Namespace   *string          `json:"namespace,omitempty"  mapstructure:"namespace"`
 	Name        *string          `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	Vendor      *string          `json:"vendor,omitempty"  mapstructure:"vendor"`
 	Version     *string          `json:"version,omitempty" validate:"required" mapstructure:"version"`
 	Description *string          `json:"description,omitempty"  mapstructure:"description"`
 	URL         *string          `json:"url,omitempty"  mapstructure:"url"`
 	Metadata    *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
+	Labels      *schema.Labels   `json:"labels,omitempty"  mapstructure:"labels"`
 	ID          *int             `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
@@ -588,34 +606,42 @@ func NewComponentModelRead() *ComponentModelRead {
 }
 
 func (c *ComponentModelRead) FromEnt(value *Component) *ComponentModelRead {
+	c.Scheme = &value.Scheme
+	c.Namespace = &value.Namespace
 	c.Name = &value.Name
-	c.Vendor = &value.Vendor
 	c.Version = &value.Version
 	c.Description = &value.Description
 	c.URL = &value.URL
 	c.Metadata = &value.Metadata
+	c.Labels = &value.Labels
 	c.ID = &value.ID
 	return c
 }
 
 type ComponentModelUpdate struct {
+	Scheme      *string          `json:"scheme,omitempty"  mapstructure:"scheme"`
+	Namespace   *string          `json:"namespace,omitempty"  mapstructure:"namespace"`
 	Name        *string          `json:"name,omitempty"  mapstructure:"name"`
-	Vendor      *string          `json:"vendor,omitempty"  mapstructure:"vendor"`
 	Version     *string          `json:"version,omitempty"  mapstructure:"version"`
 	Description *string          `json:"description,omitempty"  mapstructure:"description"`
 	URL         *string          `json:"url,omitempty"  mapstructure:"url"`
 	Metadata    *schema.Metadata `json:"metadata,omitempty"  mapstructure:"metadata"`
+	Labels      *schema.Labels   `json:"labels,omitempty"  mapstructure:"labels"`
 }
 
 func NewComponentModelUpdate() *ComponentModelUpdate {
 	return &ComponentModelUpdate{}
 }
-func (c *ComponentModelUpdate) SetName(value string) *ComponentModelUpdate {
-	c.Name = &value
+func (c *ComponentModelUpdate) SetScheme(value string) *ComponentModelUpdate {
+	c.Scheme = &value
 	return c
 }
-func (c *ComponentModelUpdate) SetVendor(value string) *ComponentModelUpdate {
-	c.Vendor = &value
+func (c *ComponentModelUpdate) SetNamespace(value string) *ComponentModelUpdate {
+	c.Namespace = &value
+	return c
+}
+func (c *ComponentModelUpdate) SetName(value string) *ComponentModelUpdate {
+	c.Name = &value
 	return c
 }
 func (c *ComponentModelUpdate) SetVersion(value string) *ComponentModelUpdate {
@@ -634,6 +660,10 @@ func (c *ComponentModelUpdate) SetMetadata(value schema.Metadata) *ComponentMode
 	c.Metadata = &value
 	return c
 }
+func (c *ComponentModelUpdate) SetLabels(value schema.Labels) *ComponentModelUpdate {
+	c.Labels = &value
+	return c
+}
 
 func (c *ComponentUpdateOne) SetModelUpdate(model *ComponentModelUpdate) *ComponentUpdateOne {
 	c.mutation.SetModelUpdate(model)
@@ -641,11 +671,14 @@ func (c *ComponentUpdateOne) SetModelUpdate(model *ComponentModelUpdate) *Compon
 }
 
 func (c *ComponentMutation) SetModelUpdate(model *ComponentModelUpdate) *ComponentMutation {
+	if model.Scheme != nil {
+		c.SetScheme(*model.Scheme)
+	}
+	if model.Namespace != nil {
+		c.SetNamespace(*model.Namespace)
+	}
 	if model.Name != nil {
 		c.SetName(*model.Name)
-	}
-	if model.Vendor != nil {
-		c.SetVendor(*model.Vendor)
 	}
 	if model.Version != nil {
 		c.SetVersion(*model.Version)
@@ -658,6 +691,9 @@ func (c *ComponentMutation) SetModelUpdate(model *ComponentModelUpdate) *Compone
 	}
 	if model.Metadata != nil {
 		c.SetMetadata(*model.Metadata)
+	}
+	if model.Labels != nil {
+		c.SetLabels(*model.Labels)
 	}
 	return c
 }

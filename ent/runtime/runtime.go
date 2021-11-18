@@ -101,16 +101,20 @@ func init() {
 	codescan.DefaultTime = codescanDescTime.Default.(func() time.Time)
 	componentFields := schema.Component{}.Fields()
 	_ = componentFields
+	// componentDescScheme is the schema descriptor for scheme field.
+	componentDescScheme := componentFields[0].Descriptor()
+	// component.SchemeValidator is a validator for the "scheme" field. It is called by the builders before save.
+	component.SchemeValidator = componentDescScheme.Validators[0].(func(string) error)
+	// componentDescNamespace is the schema descriptor for namespace field.
+	componentDescNamespace := componentFields[1].Descriptor()
+	// component.DefaultNamespace holds the default value on creation for the namespace field.
+	component.DefaultNamespace = componentDescNamespace.Default.(string)
 	// componentDescName is the schema descriptor for name field.
-	componentDescName := componentFields[0].Descriptor()
+	componentDescName := componentFields[2].Descriptor()
 	// component.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	component.NameValidator = componentDescName.Validators[0].(func(string) error)
-	// componentDescVendor is the schema descriptor for vendor field.
-	componentDescVendor := componentFields[1].Descriptor()
-	// component.DefaultVendor holds the default value on creation for the vendor field.
-	component.DefaultVendor = componentDescVendor.Default.(string)
 	// componentDescVersion is the schema descriptor for version field.
-	componentDescVersion := componentFields[2].Descriptor()
+	componentDescVersion := componentFields[3].Descriptor()
 	// component.VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	component.VersionValidator = componentDescVersion.Validators[0].(func(string) error)
 	eventFields := schema.Event{}.Fields()

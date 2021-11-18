@@ -1626,6 +1626,26 @@ func (c *ComponentQuery) Paginate(
 }
 
 var (
+	// ComponentOrderFieldScheme orders Component by scheme.
+	ComponentOrderFieldScheme = &ComponentOrderField{
+		field: component.FieldScheme,
+		toCursor: func(c *Component) Cursor {
+			return Cursor{
+				ID:    c.ID,
+				Value: c.Scheme,
+			}
+		},
+	}
+	// ComponentOrderFieldNamespace orders Component by namespace.
+	ComponentOrderFieldNamespace = &ComponentOrderField{
+		field: component.FieldNamespace,
+		toCursor: func(c *Component) Cursor {
+			return Cursor{
+				ID:    c.ID,
+				Value: c.Namespace,
+			}
+		},
+	}
 	// ComponentOrderFieldName orders Component by name.
 	ComponentOrderFieldName = &ComponentOrderField{
 		field: component.FieldName,
@@ -1633,16 +1653,6 @@ var (
 			return Cursor{
 				ID:    c.ID,
 				Value: c.Name,
-			}
-		},
-	}
-	// ComponentOrderFieldVendor orders Component by vendor.
-	ComponentOrderFieldVendor = &ComponentOrderField{
-		field: component.FieldVendor,
-		toCursor: func(c *Component) Cursor {
-			return Cursor{
-				ID:    c.ID,
-				Value: c.Vendor,
 			}
 		},
 	}
@@ -1662,10 +1672,12 @@ var (
 func (f ComponentOrderField) String() string {
 	var str string
 	switch f.field {
+	case component.FieldScheme:
+		str = "scheme"
+	case component.FieldNamespace:
+		str = "namespace"
 	case component.FieldName:
 		str = "name"
-	case component.FieldVendor:
-		str = "vendor"
 	case component.FieldVersion:
 		str = "version"
 	}
@@ -1684,10 +1696,12 @@ func (f *ComponentOrderField) UnmarshalGQL(v interface{}) error {
 		return fmt.Errorf("ComponentOrderField %T must be a string", v)
 	}
 	switch str {
+	case "scheme":
+		*f = *ComponentOrderFieldScheme
+	case "namespace":
+		*f = *ComponentOrderFieldNamespace
 	case "name":
 		*f = *ComponentOrderFieldName
-	case "vendor":
-		*f = *ComponentOrderFieldVendor
 	case "version":
 		*f = *ComponentOrderFieldVersion
 	default:

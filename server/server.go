@@ -113,6 +113,7 @@ func NewWithStore(bCtx *config.BubblyConfig, store *store.Store) (*Server, error
 	v1.GET("/projects", s.getProjects)
 	v1.POST("/projects", s.postProject)
 	v1.GET("/releases", s.getReleases)
+	v1.GET("/releases/:id", s.getReleaseByID)
 	v1.POST("/releases", s.postRelease)
 	v1.POST("/artifacts", s.postArtifact)
 	v1.POST("/codescans", s.postCodeScan)
@@ -122,6 +123,8 @@ func NewWithStore(bCtx *config.BubblyConfig, store *store.Store) (*Server, error
 	v1.POST("/policies", s.postPolicy)
 	v1.PUT("/policies/:id", s.putPolicy)
 	v1.GET("/policies", s.getPolicies)
+
+	v1.GET("/components", s.getComponents)
 
 	v1.GET("/vulnerabilityreviews", s.getVulnerabilityReviews)
 	v1.POST("/vulnerabilityreviews", s.postVulnerabilityReview)
@@ -261,6 +264,33 @@ func (s *Server) getReleases(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, api.ReleaseGetResponse{
 		Releases: dbReleases,
+	})
+}
+
+func (s *Server) getReleaseByID(c echo.Context) error {
+	var req api.ReleaseGetByIDRequest
+	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
+		return err
+	}
+
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+
+	dbReleases, err := h.GetReleases(&store.ReleaseQuery{
+		Where: &ent.ReleaseWhereInput{
+			ID: &req.ID,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if len(dbReleases) == 0 {
+		return store.NewNotFoundError(nil, "release with id %d not found", req.ID)
+	}
+	return c.JSON(http.StatusOK, api.ReleaseGetByIDResponse{
+		Release: dbReleases[0],
 	})
 }
 
@@ -436,6 +466,27 @@ func (s *Server) putPolicy(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+func (s *Server) getComponents(c echo.Context) error {
+	var req api.ComponentGetRequest
+	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
+		return err
+	}
+	if err := s.validator.Struct(req); err != nil {
+		return store.HandleValidatorError(err, "query components")
+	}
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+
+	components, err := h.GetComponents(&store.ComponentQuery{})
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, api.ComponentGetResponse{
+		Components: components,
+	})
+}
 func (s *Server) getVulnerabilityReviews(c echo.Context) error {
 	var req api.VulnerabilityReviewGetRequest
 	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {

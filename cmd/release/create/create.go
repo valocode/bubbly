@@ -7,6 +7,7 @@ import (
 	"github.com/ryanuber/columnize"
 	"github.com/valocode/bubbly/client"
 	"github.com/valocode/bubbly/config"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/release"
 
 	"github.com/spf13/cobra"
@@ -31,6 +32,7 @@ var (
 )
 
 func New(bCtx *config.BubblyConfig) *cobra.Command {
+	var labels map[string]string
 	cmd := &cobra.Command{
 		Use:     "create [flags]",
 		Short:   "Create a bubbly release",
@@ -43,6 +45,7 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 				return err
 			}
 
+			req.Release.Labels = schema.LabelsFromMap(labels)
 			if err := client.CreateRelease(bCtx, req); err != nil {
 				return err
 			}
@@ -59,10 +62,13 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 				"Branch: | " + *req.Commit.Branch,
 				"Name: | " + *req.Release.Name,
 				"Version: | " + *req.Release.Version,
+				"Labels: | " + req.Release.Labels.String(),
 			}
 			fmt.Println(columnize.SimpleFormat(releaseInfo))
 			return nil
 		},
 	}
+
+	cmd.Flags().StringToStringVar(&labels, "labels", nil, "Labels to apply to the release")
 	return cmd
 }

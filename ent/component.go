@@ -9,7 +9,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/component"
-
 	"github.com/valocode/bubbly/ent/organization"
 	schema "github.com/valocode/bubbly/ent/schema/types"
 )
@@ -19,10 +18,12 @@ type Component struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// Scheme holds the value of the "scheme" field.
+	Scheme string `json:"scheme,omitempty"`
+	// Namespace holds the value of the "namespace" field.
+	Namespace string `json:"namespace,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// Vendor holds the value of the "vendor" field.
-	Vendor string `json:"vendor,omitempty"`
 	// Version holds the value of the "version" field.
 	Version string `json:"version,omitempty"`
 	// Description holds the value of the "description" field.
@@ -31,6 +32,8 @@ type Component struct {
 	URL string `json:"url,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata schema.Metadata `json:"metadata,omitempty"`
+	// Labels holds the value of the "labels" field.
+	Labels schema.Labels `json:"labels,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ComponentQuery when eager-loading is set.
 	Edges           ComponentEdges `json:"edges"`
@@ -98,11 +101,11 @@ func (*Component) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case component.FieldMetadata:
+		case component.FieldMetadata, component.FieldLabels:
 			values[i] = new([]byte)
 		case component.FieldID:
 			values[i] = new(sql.NullInt64)
-		case component.FieldName, component.FieldVendor, component.FieldVersion, component.FieldDescription, component.FieldURL:
+		case component.FieldScheme, component.FieldNamespace, component.FieldName, component.FieldVersion, component.FieldDescription, component.FieldURL:
 			values[i] = new(sql.NullString)
 		case component.ForeignKeys[0]: // component_owner
 			values[i] = new(sql.NullInt64)
@@ -127,17 +130,23 @@ func (c *Component) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			c.ID = int(value.Int64)
+		case component.FieldScheme:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field scheme", values[i])
+			} else if value.Valid {
+				c.Scheme = value.String
+			}
+		case component.FieldNamespace:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field namespace", values[i])
+			} else if value.Valid {
+				c.Namespace = value.String
+			}
 		case component.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				c.Name = value.String
-			}
-		case component.FieldVendor:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field vendor", values[i])
-			} else if value.Valid {
-				c.Vendor = value.String
 			}
 		case component.FieldVersion:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -163,6 +172,14 @@ func (c *Component) assignValues(columns []string, values []interface{}) error {
 			} else if value != nil && len(*value) > 0 {
 				if err := json.Unmarshal(*value, &c.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
+			}
+		case component.FieldLabels:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field labels", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &c.Labels); err != nil {
+					return fmt.Errorf("unmarshal field labels: %w", err)
 				}
 			}
 		case component.ForeignKeys[0]:
@@ -220,10 +237,12 @@ func (c *Component) String() string {
 	var builder strings.Builder
 	builder.WriteString("Component(")
 	builder.WriteString(fmt.Sprintf("id=%v", c.ID))
+	builder.WriteString(", scheme=")
+	builder.WriteString(c.Scheme)
+	builder.WriteString(", namespace=")
+	builder.WriteString(c.Namespace)
 	builder.WriteString(", name=")
 	builder.WriteString(c.Name)
-	builder.WriteString(", vendor=")
-	builder.WriteString(c.Vendor)
 	builder.WriteString(", version=")
 	builder.WriteString(c.Version)
 	builder.WriteString(", description=")
@@ -232,6 +251,8 @@ func (c *Component) String() string {
 	builder.WriteString(c.URL)
 	builder.WriteString(", metadata=")
 	builder.WriteString(fmt.Sprintf("%v", c.Metadata))
+	builder.WriteString(", labels=")
+	builder.WriteString(fmt.Sprintf("%v", c.Labels))
 	builder.WriteByte(')')
 	return builder.String()
 }

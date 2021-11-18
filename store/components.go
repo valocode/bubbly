@@ -6,6 +6,26 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
+type ComponentQuery struct {
+	Where *ent.ComponentWhereInput
+}
+
+func (h *Handler) GetComponents(query *ComponentQuery) ([]*api.Component, error) {
+	dbComonents, err := h.client.Component.Query().
+		WhereInput(query.Where).
+		All(h.ctx)
+	if err != nil {
+		return nil, HandleEntError(err, "getting components")
+	}
+	var components = make([]*api.Component, 0, len(dbComonents))
+	for _, comp := range dbComonents {
+		components = append(components, &api.Component{
+			ComponentModelRead: *ent.NewComponentModelRead().FromEnt(comp),
+		})
+	}
+	return components, nil
+}
+
 func (h *Handler) SaveComponentVulnerabilities(req *api.ComponentVulnerabilityRequest) error {
 	if err := h.validator.Struct(req); err != nil {
 		return HandleValidatorError(err, "component vulnerabilities")

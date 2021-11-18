@@ -275,6 +275,36 @@ input ComponentWhereInput {
   and: [ComponentWhereInput!]
   or: [ComponentWhereInput!]
   
+  """scheme field predicates"""
+  scheme: String
+  schemeNEQ: String
+  schemeIn: [String!]
+  schemeNotIn: [String!]
+  schemeGT: String
+  schemeGTE: String
+  schemeLT: String
+  schemeLTE: String
+  schemeContains: String
+  schemeHasPrefix: String
+  schemeHasSuffix: String
+  schemeEqualFold: String
+  schemeContainsFold: String
+  
+  """namespace field predicates"""
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  
   """name field predicates"""
   name: String
   nameNEQ: String
@@ -289,21 +319,6 @@ input ComponentWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
-  
-  """vendor field predicates"""
-  vendor: String
-  vendorNEQ: String
-  vendorIn: [String!]
-  vendorNotIn: [String!]
-  vendorGT: String
-  vendorGTE: String
-  vendorLT: String
-  vendorLTE: String
-  vendorContains: String
-  vendorHasPrefix: String
-  vendorHasSuffix: String
-  vendorEqualFold: String
-  vendorContainsFold: String
   
   """version field predicates"""
   version: String

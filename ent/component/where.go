@@ -91,17 +91,24 @@ func IDLTE(id int) predicate.Component {
 	})
 }
 
+// Scheme applies equality check predicate on the "scheme" field. It's identical to SchemeEQ.
+func Scheme(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldScheme), v))
+	})
+}
+
+// Namespace applies equality check predicate on the "namespace" field. It's identical to NamespaceEQ.
+func Namespace(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldNamespace), v))
+	})
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.Component {
 	return predicate.Component(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldName), v))
-	})
-}
-
-// Vendor applies equality check predicate on the "vendor" field. It's identical to VendorEQ.
-func Vendor(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldVendor), v))
 	})
 }
 
@@ -123,6 +130,228 @@ func Description(v string) predicate.Component {
 func URL(v string) predicate.Component {
 	return predicate.Component(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldURL), v))
+	})
+}
+
+// SchemeEQ applies the EQ predicate on the "scheme" field.
+func SchemeEQ(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldScheme), v))
+	})
+}
+
+// SchemeNEQ applies the NEQ predicate on the "scheme" field.
+func SchemeNEQ(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldScheme), v))
+	})
+}
+
+// SchemeIn applies the In predicate on the "scheme" field.
+func SchemeIn(vs ...string) predicate.Component {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Component(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldScheme), v...))
+	})
+}
+
+// SchemeNotIn applies the NotIn predicate on the "scheme" field.
+func SchemeNotIn(vs ...string) predicate.Component {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Component(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldScheme), v...))
+	})
+}
+
+// SchemeGT applies the GT predicate on the "scheme" field.
+func SchemeGT(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldScheme), v))
+	})
+}
+
+// SchemeGTE applies the GTE predicate on the "scheme" field.
+func SchemeGTE(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldScheme), v))
+	})
+}
+
+// SchemeLT applies the LT predicate on the "scheme" field.
+func SchemeLT(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldScheme), v))
+	})
+}
+
+// SchemeLTE applies the LTE predicate on the "scheme" field.
+func SchemeLTE(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldScheme), v))
+	})
+}
+
+// SchemeContains applies the Contains predicate on the "scheme" field.
+func SchemeContains(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldScheme), v))
+	})
+}
+
+// SchemeHasPrefix applies the HasPrefix predicate on the "scheme" field.
+func SchemeHasPrefix(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldScheme), v))
+	})
+}
+
+// SchemeHasSuffix applies the HasSuffix predicate on the "scheme" field.
+func SchemeHasSuffix(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldScheme), v))
+	})
+}
+
+// SchemeEqualFold applies the EqualFold predicate on the "scheme" field.
+func SchemeEqualFold(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldScheme), v))
+	})
+}
+
+// SchemeContainsFold applies the ContainsFold predicate on the "scheme" field.
+func SchemeContainsFold(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldScheme), v))
+	})
+}
+
+// NamespaceEQ applies the EQ predicate on the "namespace" field.
+func NamespaceEQ(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldNamespace), v))
+	})
+}
+
+// NamespaceNEQ applies the NEQ predicate on the "namespace" field.
+func NamespaceNEQ(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldNamespace), v))
+	})
+}
+
+// NamespaceIn applies the In predicate on the "namespace" field.
+func NamespaceIn(vs ...string) predicate.Component {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Component(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldNamespace), v...))
+	})
+}
+
+// NamespaceNotIn applies the NotIn predicate on the "namespace" field.
+func NamespaceNotIn(vs ...string) predicate.Component {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Component(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldNamespace), v...))
+	})
+}
+
+// NamespaceGT applies the GT predicate on the "namespace" field.
+func NamespaceGT(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldNamespace), v))
+	})
+}
+
+// NamespaceGTE applies the GTE predicate on the "namespace" field.
+func NamespaceGTE(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldNamespace), v))
+	})
+}
+
+// NamespaceLT applies the LT predicate on the "namespace" field.
+func NamespaceLT(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldNamespace), v))
+	})
+}
+
+// NamespaceLTE applies the LTE predicate on the "namespace" field.
+func NamespaceLTE(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldNamespace), v))
+	})
+}
+
+// NamespaceContains applies the Contains predicate on the "namespace" field.
+func NamespaceContains(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldNamespace), v))
+	})
+}
+
+// NamespaceHasPrefix applies the HasPrefix predicate on the "namespace" field.
+func NamespaceHasPrefix(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldNamespace), v))
+	})
+}
+
+// NamespaceHasSuffix applies the HasSuffix predicate on the "namespace" field.
+func NamespaceHasSuffix(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldNamespace), v))
+	})
+}
+
+// NamespaceEqualFold applies the EqualFold predicate on the "namespace" field.
+func NamespaceEqualFold(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldNamespace), v))
+	})
+}
+
+// NamespaceContainsFold applies the ContainsFold predicate on the "namespace" field.
+func NamespaceContainsFold(v string) predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldNamespace), v))
 	})
 }
 
@@ -234,117 +463,6 @@ func NameEqualFold(v string) predicate.Component {
 func NameContainsFold(v string) predicate.Component {
 	return predicate.Component(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldName), v))
-	})
-}
-
-// VendorEQ applies the EQ predicate on the "vendor" field.
-func VendorEQ(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldVendor), v))
-	})
-}
-
-// VendorNEQ applies the NEQ predicate on the "vendor" field.
-func VendorNEQ(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldVendor), v))
-	})
-}
-
-// VendorIn applies the In predicate on the "vendor" field.
-func VendorIn(vs ...string) predicate.Component {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.Component(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.In(s.C(FieldVendor), v...))
-	})
-}
-
-// VendorNotIn applies the NotIn predicate on the "vendor" field.
-func VendorNotIn(vs ...string) predicate.Component {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.Component(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.NotIn(s.C(FieldVendor), v...))
-	})
-}
-
-// VendorGT applies the GT predicate on the "vendor" field.
-func VendorGT(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldVendor), v))
-	})
-}
-
-// VendorGTE applies the GTE predicate on the "vendor" field.
-func VendorGTE(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldVendor), v))
-	})
-}
-
-// VendorLT applies the LT predicate on the "vendor" field.
-func VendorLT(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldVendor), v))
-	})
-}
-
-// VendorLTE applies the LTE predicate on the "vendor" field.
-func VendorLTE(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldVendor), v))
-	})
-}
-
-// VendorContains applies the Contains predicate on the "vendor" field.
-func VendorContains(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldVendor), v))
-	})
-}
-
-// VendorHasPrefix applies the HasPrefix predicate on the "vendor" field.
-func VendorHasPrefix(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldVendor), v))
-	})
-}
-
-// VendorHasSuffix applies the HasSuffix predicate on the "vendor" field.
-func VendorHasSuffix(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldVendor), v))
-	})
-}
-
-// VendorEqualFold applies the EqualFold predicate on the "vendor" field.
-func VendorEqualFold(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldVendor), v))
-	})
-}
-
-// VendorContainsFold applies the ContainsFold predicate on the "vendor" field.
-func VendorContainsFold(v string) predicate.Component {
-	return predicate.Component(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldVendor), v))
 	})
 }
 
@@ -720,6 +838,20 @@ func MetadataIsNil() predicate.Component {
 func MetadataNotNil() predicate.Component {
 	return predicate.Component(func(s *sql.Selector) {
 		s.Where(sql.NotNull(s.C(FieldMetadata)))
+	})
+}
+
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldLabels)))
+	})
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Component {
+	return predicate.Component(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldLabels)))
 	})
 }
 

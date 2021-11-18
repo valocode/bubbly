@@ -25,23 +25,29 @@ type ComponentCreate struct {
 	hooks    []Hook
 }
 
+// SetScheme sets the "scheme" field.
+func (cc *ComponentCreate) SetScheme(s string) *ComponentCreate {
+	cc.mutation.SetScheme(s)
+	return cc
+}
+
+// SetNamespace sets the "namespace" field.
+func (cc *ComponentCreate) SetNamespace(s string) *ComponentCreate {
+	cc.mutation.SetNamespace(s)
+	return cc
+}
+
+// SetNillableNamespace sets the "namespace" field if the given value is not nil.
+func (cc *ComponentCreate) SetNillableNamespace(s *string) *ComponentCreate {
+	if s != nil {
+		cc.SetNamespace(*s)
+	}
+	return cc
+}
+
 // SetName sets the "name" field.
 func (cc *ComponentCreate) SetName(s string) *ComponentCreate {
 	cc.mutation.SetName(s)
-	return cc
-}
-
-// SetVendor sets the "vendor" field.
-func (cc *ComponentCreate) SetVendor(s string) *ComponentCreate {
-	cc.mutation.SetVendor(s)
-	return cc
-}
-
-// SetNillableVendor sets the "vendor" field if the given value is not nil.
-func (cc *ComponentCreate) SetNillableVendor(s *string) *ComponentCreate {
-	if s != nil {
-		cc.SetVendor(*s)
-	}
 	return cc
 }
 
@@ -82,6 +88,12 @@ func (cc *ComponentCreate) SetNillableURL(s *string) *ComponentCreate {
 // SetMetadata sets the "metadata" field.
 func (cc *ComponentCreate) SetMetadata(s schema.Metadata) *ComponentCreate {
 	cc.mutation.SetMetadata(s)
+	return cc
+}
+
+// SetLabels sets the "labels" field.
+func (cc *ComponentCreate) SetLabels(s schema.Labels) *ComponentCreate {
+	cc.mutation.SetLabels(s)
 	return cc
 }
 
@@ -212,14 +224,25 @@ func (cc *ComponentCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (cc *ComponentCreate) defaults() {
-	if _, ok := cc.mutation.Vendor(); !ok {
-		v := component.DefaultVendor
-		cc.mutation.SetVendor(v)
+	if _, ok := cc.mutation.Namespace(); !ok {
+		v := component.DefaultNamespace
+		cc.mutation.SetNamespace(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (cc *ComponentCreate) check() error {
+	if _, ok := cc.mutation.Scheme(); !ok {
+		return &ValidationError{Name: "scheme", err: errors.New(`ent: missing required field "scheme"`)}
+	}
+	if v, ok := cc.mutation.Scheme(); ok {
+		if err := component.SchemeValidator(v); err != nil {
+			return &ValidationError{Name: "scheme", err: fmt.Errorf(`ent: validator failed for field "scheme": %w`, err)}
+		}
+	}
+	if _, ok := cc.mutation.Namespace(); !ok {
+		return &ValidationError{Name: "namespace", err: errors.New(`ent: missing required field "namespace"`)}
+	}
 	if _, ok := cc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
 	}
@@ -227,9 +250,6 @@ func (cc *ComponentCreate) check() error {
 		if err := component.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
 		}
-	}
-	if _, ok := cc.mutation.Vendor(); !ok {
-		return &ValidationError{Name: "vendor", err: errors.New(`ent: missing required field "vendor"`)}
 	}
 	if _, ok := cc.mutation.Version(); !ok {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "version"`)}
@@ -269,6 +289,22 @@ func (cc *ComponentCreate) createSpec() (*Component, *sqlgraph.CreateSpec) {
 			},
 		}
 	)
+	if value, ok := cc.mutation.Scheme(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: component.FieldScheme,
+		})
+		_node.Scheme = value
+	}
+	if value, ok := cc.mutation.Namespace(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: component.FieldNamespace,
+		})
+		_node.Namespace = value
+	}
 	if value, ok := cc.mutation.Name(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
@@ -276,14 +312,6 @@ func (cc *ComponentCreate) createSpec() (*Component, *sqlgraph.CreateSpec) {
 			Column: component.FieldName,
 		})
 		_node.Name = value
-	}
-	if value, ok := cc.mutation.Vendor(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: component.FieldVendor,
-		})
-		_node.Vendor = value
 	}
 	if value, ok := cc.mutation.Version(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -316,6 +344,14 @@ func (cc *ComponentCreate) createSpec() (*Component, *sqlgraph.CreateSpec) {
 			Column: component.FieldMetadata,
 		})
 		_node.Metadata = value
+	}
+	if value, ok := cc.mutation.Labels(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: component.FieldLabels,
+		})
+		_node.Labels = value
 	}
 	if nodes := cc.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

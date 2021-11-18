@@ -46,6 +46,10 @@ func (r *codeScanResolver) Components(ctx context.Context, obj *ent.CodeScan, fi
 	return result, err
 }
 
+func (r *componentResolver) Vendor(ctx context.Context, obj *ent.Component) (*string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *componentResolver) Metadata(ctx context.Context, obj *ent.Component) (map[string]interface{}, error) {
 	return obj.Metadata, nil
 }

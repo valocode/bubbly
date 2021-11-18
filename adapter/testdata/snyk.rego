@@ -7,6 +7,7 @@ code_scan[scan] {
 component := [comp |
 	vuln := input[_].vulnerabilities[_]
 	comp := {
+		"scheme": vuln.language,
 		"name": vuln.name,
 		"version": vuln.version,
 		"vulnerabilities": [{

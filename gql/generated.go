@@ -202,8 +202,9 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 		Metadata    func(childComplexity int) int
 		Name        func(childComplexity int) int
+		Namespace   func(childComplexity int) int
+		Scheme      func(childComplexity int) int
 		URL         func(childComplexity int) int
-		Vendor      func(childComplexity int) int
 		Version     func(childComplexity int) int
 	}
 
@@ -705,6 +706,8 @@ type CodeScanResolver interface {
 	Components(ctx context.Context, obj *ent.CodeScan, first *int, last *int, where *ent.ReleaseComponentWhereInput) ([]*ent.ReleaseComponent, error)
 }
 type ComponentResolver interface {
+	Vendor(ctx context.Context, obj *ent.Component) (*string, error)
+
 	Metadata(ctx context.Context, obj *ent.Component) (map[string]interface{}, error)
 	Vulnerabilities(ctx context.Context, obj *ent.Component, first *int, last *int, where *ent.VulnerabilityWhereInput, orderBy *ent.VulnerabilityOrder) ([]*ent.Vulnerability, error)
 	Licenses(ctx context.Context, obj *ent.Component, first *int, last *int, where *ent.LicenseWhereInput, orderBy *ent.LicenseOrder) ([]*ent.License, error)
@@ -1408,19 +1411,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ComponentBase.Name(childComplexity), true
 
+	case "ComponentBase.namespace":
+		if e.complexity.ComponentBase.Namespace == nil {
+			break
+		}
+
+		return e.complexity.ComponentBase.Namespace(childComplexity), true
+
+	case "ComponentBase.scheme":
+		if e.complexity.ComponentBase.Scheme == nil {
+			break
+		}
+
+		return e.complexity.ComponentBase.Scheme(childComplexity), true
+
 	case "ComponentBase.url":
 		if e.complexity.ComponentBase.URL == nil {
 			break
 		}
 
 		return e.complexity.ComponentBase.URL(childComplexity), true
-
-	case "ComponentBase.vendor":
-		if e.complexity.ComponentBase.Vendor == nil {
-			break
-		}
-
-		return e.complexity.ComponentBase.Vendor(childComplexity), true
 
 	case "ComponentBase.version":
 		if e.complexity.ComponentBase.Version == nil {
@@ -3939,6 +3949,36 @@ input ComponentWhereInput {
   and: [ComponentWhereInput!]
   or: [ComponentWhereInput!]
   
+  """scheme field predicates"""
+  scheme: String
+  schemeNEQ: String
+  schemeIn: [String!]
+  schemeNotIn: [String!]
+  schemeGT: String
+  schemeGTE: String
+  schemeLT: String
+  schemeLTE: String
+  schemeContains: String
+  schemeHasPrefix: String
+  schemeHasSuffix: String
+  schemeEqualFold: String
+  schemeContainsFold: String
+  
+  """namespace field predicates"""
+  namespace: String
+  namespaceNEQ: String
+  namespaceIn: [String!]
+  namespaceNotIn: [String!]
+  namespaceGT: String
+  namespaceGTE: String
+  namespaceLT: String
+  namespaceLTE: String
+  namespaceContains: String
+  namespaceHasPrefix: String
+  namespaceHasSuffix: String
+  namespaceEqualFold: String
+  namespaceContainsFold: String
+  
   """name field predicates"""
   name: String
   nameNEQ: String
@@ -3953,21 +3993,6 @@ input ComponentWhereInput {
   nameHasSuffix: String
   nameEqualFold: String
   nameContainsFold: String
-  
-  """vendor field predicates"""
-  vendor: String
-  vendorNEQ: String
-  vendorIn: [String!]
-  vendorNotIn: [String!]
-  vendorGT: String
-  vendorGTE: String
-  vendorLT: String
-  vendorLTE: String
-  vendorContains: String
-  vendorHasPrefix: String
-  vendorHasSuffix: String
-  vendorEqualFold: String
-  vendorContainsFold: String
   
   """version field predicates"""
   version: String
@@ -6090,8 +6115,9 @@ Component
 """
 type ComponentBase {
 	id: ID!
+	scheme: String
+	namespace: String
 	name: String
-	vendor: String
 	version: String
 	description: String
 	url: String
@@ -6099,8 +6125,9 @@ type ComponentBase {
 }
 
 enum ComponentOrderField {
+	scheme
+	namespace
 	name
-	vendor
 	version
 }
 
@@ -10940,14 +10967,14 @@ func (ec *executionContext) _Component_vendor(ctx context.Context, field graphql
 		Object:     "Component",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Vendor, nil
+		return ec.resolvers.Component().Vendor(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10956,9 +10983,9 @@ func (ec *executionContext) _Component_vendor(ctx context.Context, field graphql
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalOString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Component_version(ctx context.Context, field graphql.CollectedField, obj *ent.Component) (ret graphql.Marshaler) {
@@ -11241,6 +11268,70 @@ func (ec *executionContext) _ComponentBase_id(ctx context.Context, field graphql
 	return ec.marshalNID2int(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ComponentBase_scheme(ctx context.Context, field graphql.CollectedField, obj *ComponentBase) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ComponentBase",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Scheme, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ComponentBase_namespace(ctx context.Context, field graphql.CollectedField, obj *ComponentBase) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ComponentBase",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Namespace, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _ComponentBase_name(ctx context.Context, field graphql.CollectedField, obj *ComponentBase) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -11260,38 +11351,6 @@ func (ec *executionContext) _ComponentBase_name(ctx context.Context, field graph
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _ComponentBase_vendor(ctx context.Context, field graphql.CollectedField, obj *ComponentBase) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "ComponentBase",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Vendor, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -23989,6 +24048,214 @@ func (ec *executionContext) unmarshalInputComponentWhereInput(ctx context.Contex
 			if err != nil {
 				return it, err
 			}
+		case "scheme":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("scheme"))
+			it.Scheme, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeNEQ"))
+			it.SchemeNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeIn"))
+			it.SchemeIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeNotIn"))
+			it.SchemeNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeGT"))
+			it.SchemeGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeGTE"))
+			it.SchemeGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeLT"))
+			it.SchemeLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeLTE"))
+			it.SchemeLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeContains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeContains"))
+			it.SchemeContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeHasPrefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeHasPrefix"))
+			it.SchemeHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeHasSuffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeHasSuffix"))
+			it.SchemeHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeEqualFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeEqualFold"))
+			it.SchemeEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "schemeContainsFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("schemeContainsFold"))
+			it.SchemeContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespace":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			it.Namespace, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceNEQ":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNEQ"))
+			it.NamespaceNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceIn"))
+			it.NamespaceIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceNotIn":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceNotIn"))
+			it.NamespaceNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceGT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGT"))
+			it.NamespaceGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceGTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceGTE"))
+			it.NamespaceGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceLT":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLT"))
+			it.NamespaceLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceLTE":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceLTE"))
+			it.NamespaceLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceContains":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContains"))
+			it.NamespaceContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceHasPrefix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasPrefix"))
+			it.NamespaceHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceHasSuffix":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceHasSuffix"))
+			it.NamespaceHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceEqualFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceEqualFold"))
+			it.NamespaceEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "namespaceContainsFold":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespaceContainsFold"))
+			it.NamespaceContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "name":
 			var err error
 
@@ -24090,110 +24357,6 @@ func (ec *executionContext) unmarshalInputComponentWhereInput(ctx context.Contex
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nameContainsFold"))
 			it.NameContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendor":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendor"))
-			it.Vendor, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorNEQ":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorNEQ"))
-			it.VendorNEQ, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorIn":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorIn"))
-			it.VendorIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorNotIn":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorNotIn"))
-			it.VendorNotIn, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorGT":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorGT"))
-			it.VendorGT, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorGTE":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorGTE"))
-			it.VendorGTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorLT":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorLT"))
-			it.VendorLT, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorLTE":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorLTE"))
-			it.VendorLTE, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorContains":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorContains"))
-			it.VendorContains, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorHasPrefix":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorHasPrefix"))
-			it.VendorHasPrefix, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorHasSuffix":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorHasSuffix"))
-			it.VendorHasSuffix, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorEqualFold":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorEqualFold"))
-			it.VendorEqualFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "vendorContainsFold":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorContainsFold"))
-			it.VendorContainsFold, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -32463,7 +32626,16 @@ func (ec *executionContext) _Component(ctx context.Context, sel ast.SelectionSet
 		case "name":
 			out.Values[i] = ec._Component_name(ctx, field, obj)
 		case "vendor":
-			out.Values[i] = ec._Component_vendor(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Component_vendor(ctx, field, obj)
+				return res
+			})
 		case "version":
 			out.Values[i] = ec._Component_version(ctx, field, obj)
 		case "description":
@@ -32541,10 +32713,12 @@ func (ec *executionContext) _ComponentBase(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "scheme":
+			out.Values[i] = ec._ComponentBase_scheme(ctx, field, obj)
+		case "namespace":
+			out.Values[i] = ec._ComponentBase_namespace(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._ComponentBase_name(ctx, field, obj)
-		case "vendor":
-			out.Values[i] = ec._ComponentBase_vendor(ctx, field, obj)
 		case "version":
 			out.Values[i] = ec._ComponentBase_version(ctx, field, obj)
 		case "description":
