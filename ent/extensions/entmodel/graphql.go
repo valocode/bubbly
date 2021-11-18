@@ -75,10 +75,19 @@ enum OrderDirection {
 		//
 		// TODO: once we remove the Base suffix, it should also implement the Noder
 		// interface defined in ent
-		// fmt.Fprintf(&b, "type %s implements Node {\n", node.Name)
 		fmt.Fprintf(&b, "type %sBase {\n", node.Name)
 		fmt.Fprintf(&b, "\t%s: ID!\n", node.ID.Name)
 		for _, field := range node.Fields {
+			ant := &entgql.Annotation{}
+			if field.Annotations != nil && field.Annotations[ant.Name()] != nil {
+				if err := ant.Decode(field.Annotations[ant.Name()]); err != nil {
+					return err
+				}
+				// Skip fields that are marked as skip
+				if ant.Skip {
+					continue
+				}
+			}
 			fmt.Fprintf(&b, "\t%s: %s\n", field.Name, entFieldToGraphQL(node, field))
 		}
 		fmt.Fprintf(&b, "}\n\n")
