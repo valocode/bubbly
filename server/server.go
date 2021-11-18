@@ -112,9 +112,14 @@ func NewWithStore(bCtx *config.BubblyConfig, store *store.Store) (*Server, error
 	v1.GET("/events", s.getEvents)
 	v1.GET("/projects", s.getProjects)
 	v1.POST("/projects", s.postProject)
+
 	v1.GET("/releases", s.getReleases)
-	v1.GET("/releases/:id", s.getReleaseByID)
 	v1.POST("/releases", s.postRelease)
+	v1.GET("/releases/:id", s.getReleaseByID)
+	// Add/remove a label to a release
+	v1.POST("/releases/:id/labels", nil)
+	v1.DELETE("/releases/:id/labels/:key", nil)
+
 	v1.POST("/artifacts", s.postArtifact)
 	v1.POST("/codescans", s.postCodeScan)
 	v1.POST("/testruns", s.postTestRun)
