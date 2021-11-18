@@ -51,6 +51,7 @@ func NewWithStore(bCtx *config.BubblyConfig, store *store.Store) (*Server, error
 		lecho.Middleware(lecho.Config{
 			Logger: eLogger,
 		}),
+		middleware.CORS(),
 	)
 
 	// Setup the error handler
