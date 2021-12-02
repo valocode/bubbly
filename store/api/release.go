@@ -14,14 +14,17 @@ type (
 
 	ReleaseGetRequest struct {
 		Commit   string `json:"commit,omitempty" query:"commit"`
-		Repo     string `json:"repo,omitempty" query:"repo"`
-		Project  string `json:"project,omitempty" query:"project"`
+		Repos    string `json:"repos,omitempty" query:"repos"`
+		Projects string `json:"projects,omitempty" query:"projects"`
 		Policies bool   `json:"policies,string" query:"policies"`
 		Log      bool   `json:"log,string" query:"log"`
+		HeadOnly bool   `json:"head_only,string" query:"head_only"`
+
+		SortBy string `json:"sort_by,omitempty" query:"sort_by"`
 	}
 
 	ReleaseGetResponse struct {
-		Releases []*Release `json:"releases,omitempty" validate:"dive,required"`
+		Releases []*Release `json:"releases" validate:"dive,required"`
 	}
 
 	ReleaseGetByIDRequest struct {

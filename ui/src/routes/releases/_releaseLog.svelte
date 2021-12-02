@@ -1,11 +1,8 @@
 <script lang="ts">
 	import dayjs from 'dayjs';
-	import { releaseStatusColor, releaseStatusText } from '$utils/release';
-	import type { Release } from '$schema/schema_gen';
 	import { ReleaseEntryType } from '$schema/schema_gen';
 	import Icon from '$lib/Icon.svelte';
-	import { loop_guard } from 'svelte/internal';
-	export let release: Release;
+	export let release;
 
 	let previousEvent: Date = null;
 
@@ -58,11 +55,11 @@
 			</div>
 		</li>
 
-		{#each release.log as entry, i}
+		{#each release.entries as entry, i}
 			<li>
 				<div class="relative pb-10">
 					<!-- If the last entry, don't create a line -->
-					{#if i + 1 !== release.log.length}
+					{#if i + 1 !== release.entries.length}
 						<span
 							class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
 							aria-hidden="true"

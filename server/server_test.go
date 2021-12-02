@@ -93,7 +93,7 @@ func TestRelease(t *testing.T) {
 		assert.Len(t, resp.Releases, 2)
 	})
 	t.Run("get project releases", func(t *testing.T) {
-		rec, err := testGetRequest(t, s.e, s.getReleases, "/releases?project=test-project", nil)
+		rec, err := testGetRequest(t, s.e, s.getReleases, "/releases?projects=test-project", nil)
 		assert.NoError(t, err)
 		var resp api.ReleaseGetResponse
 		json.NewDecoder(rec.Body).Decode(&resp)

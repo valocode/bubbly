@@ -34,21 +34,6 @@ func NewExtension() *Extension {
 	return &Extension{}
 }
 
-// Hooks of the extension.
-func (e *Extension) Hooks() []gen.Hook {
-	return []gen.Hook{
-		func(next gen.Generator) gen.Generator {
-			return gen.GenerateFunc(func(g *gen.Graph) error {
-				if err := next.Generate(g); err != nil {
-					return err
-				}
-
-				return genGraphQLTypes(g)
-			})
-		},
-	}
-}
-
 // Templates of the extension.
 func (e *Extension) Templates() []*gen.Template {
 	var templates []*gen.Template

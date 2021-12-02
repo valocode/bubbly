@@ -16,16 +16,8 @@ import (
 )
 
 func main() {
-	// var templates []*gen.Template
-	// templates = append(
-	// 	templates,
-	// 	gen.MustParse(gen.NewTemplate("static").
-	// 		ParseDir("templates")),
-	// )
 
 	ex, err := entgql.NewExtension(
-		entgql.WithSchemaPath("../gql/ent.graphql"),
-		entgql.WithConfigPath("../gql/gqlgen.yaml"),
 		entgql.WithWhereFilters(true),
 		entgql.WithMapScalarFunc(func(f *gen.Field, o gen.Op) string {
 			if f.StructField() == "Metadata" {

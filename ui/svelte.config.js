@@ -15,9 +15,9 @@ const config = {
 		// svelte to use /ui as the prefix so that files can be found (e.g. js/css).
 		// Due to some current issues in sveltekit, these lines should be commented
 		// out during dev mode
-		paths: {
-			base: '/ui',
-		},
+		// paths: {
+		// 	base: '/ui',
+		// },
 		adapter: adapter({
 			// Run in "true" SPA mode
 			fallback: 'index.html'

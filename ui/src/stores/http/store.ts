@@ -28,11 +28,6 @@ export function httpStore<Data = any>(user: User) {
 	const store = writable<HTTPStore<Data>>({ data: undefined, error: undefined, fetching: false });
 
 	async function request(method: string, path: string, params: object = null, data: object = null) {
-		// Add a guard to make sure this is not performed until we have a signed
-		// in user
-		if (user === null) {
-			return;
-		}
 
 		// Clear the store as we are about to make a new request
 		store.update((value) => {
@@ -44,13 +39,15 @@ export function httpStore<Data = any>(user: User) {
 		});
 
 		// TODO: figure this out
-		const baseURL = bubblyAPI;
+		const baseURL = bubblyAPI + "/api/v1";
 
-		// create the headers
-		const headers = {
-			'Content-type': 'application/json',
-			Authorization: user.token
-		};
+		let headers = {}
+		if (user !== null) {
+			headers = {
+				'Content-type': 'application/json',
+				Authorization: user.token
+			};
+		}
 
 		return new Promise<Data>((resolve, reject) => {
 			axios

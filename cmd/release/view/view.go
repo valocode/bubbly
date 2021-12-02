@@ -34,6 +34,7 @@ var (
 func New(bCtx *config.BubblyConfig) *cobra.Command {
 	var (
 		commit   string
+		project  string
 		repo     string
 		policies bool
 		log      bool
@@ -55,7 +56,8 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 			}
 			resp, err := client.GetReleases(bCtx, &api.ReleaseGetRequest{
 				Commit:   commit,
-				Repo:     repo,
+				Projects: project,
+				Repos:    repo,
 				Policies: policies,
 				Log:      log,
 			})
@@ -75,7 +77,8 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&commit, "commit", "", "Specify the git commit for which to view a release")
-	cmd.Flags().StringVar(&repo, "repo", "", "Specify the repo name for which to view a release. Requires also the --commit flag")
+	cmd.Flags().StringVar(&project, "project", "", "Specify the project name for which to view a release")
+	cmd.Flags().StringVar(&repo, "repo", "", "Specify the repo name for which to view a release")
 	cmd.Flags().BoolVar(&policies, "policies", false, "Whether to also fetch the policies that apply to this release")
 	cmd.Flags().BoolVar(&log, "log", false, "Whether to also fetch the release log")
 

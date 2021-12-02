@@ -7,14 +7,12 @@
   https://www.w3.org/TR/wai-aria-practices/examples/listbox/listbox-collapsible.html
 -->
 <script lang="ts">
-	import type { Project, Project_Json } from '$schema/schema_gen';
-
 	import { onMount } from 'svelte';
 
 	import { filterProjects } from './stores';
 	import type { ProjectSelectMap } from './stores';
 	import Icon from '$lib/Icon.svelte';
-	import { operationStore, query } from '@urql/svelte';
+	import { httpStore } from '$stores/http/store';
 
 	let show: boolean = false;
 	let projectMenu = null;
@@ -54,19 +52,13 @@
 		};
 	});
 
-	const projectQuery = `
-	{
-		project {
-			name
-		}
-	}`;
-	const store = operationStore<Project_Json>(projectQuery);
-	query(store);
+	const store = httpStore(null);
+	store.get('/projects').catch((err) => {});
 
 	store.subscribe((value) => {
 		if (!value.fetching && !value.error) {
 			let projectList: ProjectSelectMap = {};
-			value.data.project.forEach((p) => {
+			value.data.projects.forEach((p) => {
 				projectList[p.name] = false;
 			});
 			filterProjects.set(projectList);

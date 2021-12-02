@@ -7,7 +7,7 @@ type ProjectCreateRequest struct {
 }
 
 type ProjectGetResponse struct {
-	Projects []*Project
+	Projects []*Project `json:"projects"`
 }
 
 type ProjectGetRequest struct {

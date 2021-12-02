@@ -1,94 +1,42 @@
 <script lang="ts">
 	import Icon from '$lib/Icon.svelte';
 
-	import { operationStore, query } from '@urql/svelte';
+	import { httpStore } from '$stores/http/store';
 	import HeadFilterToggle from './_headFilterToggle.svelte';
 	import ReleaseSort from './_releaseSort.svelte';
-	import type { Release, Release_Relay } from '$schema/schema_gen';
 	import Loading from '$lib/Loading.svelte';
 	import ReleaseRow from './_releaseRow.svelte';
 	import { filterHeadOnly, filterProjects, sortReleases } from './stores';
 	import ProjectFilter from './projectFilter.svelte';
 
-	export let selectedRelease: Release;
+	export let selectedRelease;
 
-	const releaseQuery = (): string => {
-		let releaseCursor = null;
-		let queryPredicates: string[] = [];
-
-		if (filterHeadOnly.isEnabled()) {
-			queryPredicates.push('hasHeadOf: true');
-		}
-		const selProjects = filterProjects.selectedProjects();
-		if (selProjects.length > 0) {
-			queryPredicates.push(
-				`hasCommitWith: {hasRepoWith: {hasProjectWith: {nameIn: ["${selProjects.join(`","`)}"]}}}`
-			);
-		}
-
-		let queryArgs: string[] = [
-			'first: 20',
-			`after: ${releaseCursor ? '"' + releaseCursor + '"' : 'null'}`
-		];
+	const queryParams = (): object => {
+		let params = {
+			head_only: filterHeadOnly.isEnabled(),
+			projects: filterProjects.selectedProjects().join(',')
+		};
 		if (sortReleases.sortByField() !== null) {
-			queryArgs.push(
-				`order_by: {field: ${sortReleases.sortByField().toLowerCase()}, direction: DESC}`
-			);
+			params['sort_by'] = sortReleases.sortByField().toLowerCase();
 		}
-		if (queryPredicates.length > 0) {
-			queryArgs.push(`where: { ${queryPredicates.join(', ')} }`);
-		}
-		return `
-    {
-	
-    release_connection(${queryArgs.join(', ')}) {
-	    totalCount
-	    pageInfo {
-	      hasNextPage
-	      startCursor
-	      endCursor
-	    }
-	    edges {
-	      cursor
-	      node {
-          id
-          name
-	        version
-          violations {
-            type
-            severity
-          }
-	        commit {
-	          hash
-	          branch
-	          tag
-	          time
-			  repo {
-				  name
-			  }
-	        }
-	      }
-	    }
-	  }
-	}`;
+		return params;
 	};
 
-	const store = operationStore<Release_Relay>(releaseQuery());
+	const store = httpStore(null);
+	store.get('/releases', queryParams()).catch((err) => {});
 
 	// Subscribe to changes from the different filter stores we have
 	filterHeadOnly.subscribe((b) => {
-		store.query = releaseQuery();
+		store.get('/releases', queryParams()).catch((err) => {});
 	});
 
 	filterProjects.subscribe((p) => {
-		store.query = releaseQuery();
+		store.get('/releases', queryParams()).catch((err) => {});
 	});
 
 	sortReleases.subscribe((s) => {
-		store.query = releaseQuery();
+		store.get('/releases', queryParams()).catch((err) => {});
 	});
-
-	query(store);
 </script>
 
 <div class="my-6 mx-8 flex items-center justify-between">
@@ -113,7 +61,7 @@
 		<h1 class="mt-5 md:mt-20 text-xl font-bold text-center leading-tight text-red-700">
 			Error fetching data: {$store.error.toString()}
 		</h1>
-	{:else if $store.data.release_connection.totalCount === 0}
+	{:else if $store.data.releases.length === 0}
 		<div class="mt-12 flex justify-center">
 			<div
 				class="relative block w-96 border-2 border-gray-300 border-dashed rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -125,8 +73,8 @@
 	{:else}
 		<div class="bg-white shadow overflow-hidden sm:rounded-md">
 			<ul class="divide-y divide-gray-200">
-				{#each $store.data.release_connection.edges as release}
-					<ReleaseRow release={release.node} bind:selectedRelease />
+				{#each $store.data.releases as release}
+					<ReleaseRow {release} bind:selectedRelease />
 				{/each}
 			</ul>
 		</div>

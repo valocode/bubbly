@@ -1,6 +1,8 @@
 package store
 
 import (
+	"fmt"
+
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/project"
@@ -11,6 +13,7 @@ import (
 
 type ReleaseQuery struct {
 	Where *ent.ReleaseWhereInput
+	Order *api.Order
 
 	WithLog        bool
 	WithViolations bool
@@ -43,6 +46,16 @@ func (h *Handler) GetReleases(query *ReleaseQuery) ([]*api.Release, error) {
 	}
 	if query.WithViolations {
 		entQuery.WithViolations()
+	}
+	if query.Order != nil {
+		switch query.Order.Field {
+		case "name":
+			entQuery.Order(query.Order.Func("name"))
+		case "version":
+			entQuery.QueryCommit().Order(query.Order.Func("time")).QueryRelease()
+		default:
+			return nil, NewValidationError(nil, fmt.Sprintf("unknown order field: %s", query.Order.Field))
+		}
 	}
 	dbReleases, err := entQuery.All(h.ctx)
 	if err != nil {

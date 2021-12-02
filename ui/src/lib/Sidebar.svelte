@@ -14,11 +14,6 @@
 			name: 'Releases',
 			href: `${base}/releases`,
 			icon: 'hashtag'
-		},
-		{
-			name: 'Playground',
-			href: `/playground`,
-			icon: 'play'
 		}
 		// {
 		// 	name: 'Repos',

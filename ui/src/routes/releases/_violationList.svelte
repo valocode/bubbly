@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { ReleasePolicyViolationSeverity } from '$schema/schema_gen';
-	import type { ReleasePolicyViolation } from '$schema/schema_gen';
 
-	export let violations: ReleasePolicyViolation[];
+	export let violations = [];
 
 	const violationColor = (severity: ReleasePolicyViolationSeverity): string => {
 		switch (severity) {

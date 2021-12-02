@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -16,7 +14,6 @@ import (
 	"github.com/valocode/bubbly/auth"
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/gql"
 	"github.com/valocode/bubbly/store"
 	"github.com/valocode/bubbly/store/api"
 	"github.com/ziflex/lecho/v2"
@@ -94,18 +91,6 @@ func NewWithStore(bCtx *config.BubblyConfig, store *store.Store) (*Server, error
 	// Keep Alive Test
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "still standin'")
-	})
-
-	// Setup graphql query and playground
-	srv := handler.NewDefaultServer(gql.NewSchema(s.store.Client()))
-	playgroundHandler := playground.Handler("Bubbly", "/graphql")
-	e.POST("/graphql", func(c echo.Context) error {
-		srv.ServeHTTP(c.Response(), c.Request())
-		return nil
-	})
-	e.GET("/playground", func(c echo.Context) error {
-		playgroundHandler.ServeHTTP(c.Response(), c.Request())
-		return nil
 	})
 
 	v1 := e.Group("/api/v1")
@@ -242,19 +227,31 @@ func (s *Server) getReleases(c echo.Context) error {
 			Hash: &req.Commit,
 		})
 	}
-	if req.Repo != "" {
+	if req.Repos != "" {
 		where.HasCommitWith = append(where.HasCommitWith, &ent.GitCommitWhereInput{
-			HasRepoWith: []*ent.RepoWhereInput{{Name: &req.Repo}},
+			HasRepoWith: []*ent.RepoWhereInput{{NameIn: strings.Split(req.Repos, ",")}},
 		})
 	}
-	if req.Project != "" {
+	if req.Projects != "" {
 		where.HasCommitWith = append(where.HasCommitWith, &ent.GitCommitWhereInput{
-			HasRepoWith: []*ent.RepoWhereInput{{HasProjectWith: []*ent.ProjectWhereInput{{Name: &req.Project}}}},
+			HasRepoWith: []*ent.RepoWhereInput{{HasProjectWith: []*ent.ProjectWhereInput{{NameIn: strings.Split(req.Projects, ",")}}}},
 		})
+	}
+	if req.HeadOnly {
+		where.HasHeadOf = &req.HeadOnly
+	}
+
+	var order *api.Order
+	if req.SortBy != "" {
+		order, err = api.OrderFromSortBy(req.SortBy)
+		if err != nil {
+			return err
+		}
 	}
 
 	dbReleases, err := h.GetReleases(&store.ReleaseQuery{
 		Where:          &where,
+		Order:          order,
 		WithLog:        req.Log,
 		WithPolicies:   req.Policies,
 		WithViolations: true,
@@ -282,6 +279,9 @@ func (s *Server) getReleaseByID(c echo.Context) error {
 		Where: &ent.ReleaseWhereInput{
 			ID: &req.ID,
 		},
+		WithLog:        true,
+		WithViolations: true,
+		WithPolicies:   true,
 	})
 	if err != nil {
 		return err
