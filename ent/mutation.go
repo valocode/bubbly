@@ -6128,6 +6128,7 @@ type ProjectMutation struct {
 	typ                          string
 	id                           *int
 	name                         *string
+	labels                       *schema.Labels
 	clearedFields                map[string]struct{}
 	owner                        *int
 	clearedowner                 bool
@@ -6258,6 +6259,55 @@ func (m *ProjectMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *ProjectMutation) ResetName() {
 	m.name = nil
+}
+
+// SetLabels sets the "labels" field.
+func (m *ProjectMutation) SetLabels(s schema.Labels) {
+	m.labels = &s
+}
+
+// Labels returns the value of the "labels" field in the mutation.
+func (m *ProjectMutation) Labels() (r schema.Labels, exists bool) {
+	v := m.labels
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLabels returns the old "labels" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldLabels(ctx context.Context) (v schema.Labels, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldLabels is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldLabels requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (m *ProjectMutation) ClearLabels() {
+	m.labels = nil
+	m.clearedFields[project.FieldLabels] = struct{}{}
+}
+
+// LabelsCleared returns if the "labels" field was cleared in this mutation.
+func (m *ProjectMutation) LabelsCleared() bool {
+	_, ok := m.clearedFields[project.FieldLabels]
+	return ok
+}
+
+// ResetLabels resets all changes to the "labels" field.
+func (m *ProjectMutation) ResetLabels() {
+	m.labels = nil
+	delete(m.clearedFields, project.FieldLabels)
 }
 
 // SetOwnerID sets the "owner" edge to the Organization entity by id.
@@ -6480,9 +6530,12 @@ func (m *ProjectMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectMutation) Fields() []string {
-	fields := make([]string, 0, 1)
+	fields := make([]string, 0, 2)
 	if m.name != nil {
 		fields = append(fields, project.FieldName)
+	}
+	if m.labels != nil {
+		fields = append(fields, project.FieldLabels)
 	}
 	return fields
 }
@@ -6494,6 +6547,8 @@ func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case project.FieldName:
 		return m.Name()
+	case project.FieldLabels:
+		return m.Labels()
 	}
 	return nil, false
 }
@@ -6505,6 +6560,8 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 	switch name {
 	case project.FieldName:
 		return m.OldName(ctx)
+	case project.FieldLabels:
+		return m.OldLabels(ctx)
 	}
 	return nil, fmt.Errorf("unknown Project field %s", name)
 }
@@ -6520,6 +6577,13 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case project.FieldLabels:
+		v, ok := value.(schema.Labels)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabels(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Project field %s", name)
@@ -6550,7 +6614,11 @@ func (m *ProjectMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ProjectMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(project.FieldLabels) {
+		fields = append(fields, project.FieldLabels)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -6563,6 +6631,11 @@ func (m *ProjectMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ProjectMutation) ClearField(name string) error {
+	switch name {
+	case project.FieldLabels:
+		m.ClearLabels()
+		return nil
+	}
 	return fmt.Errorf("unknown Project nullable field %s", name)
 }
 
@@ -6572,6 +6645,9 @@ func (m *ProjectMutation) ResetField(name string) error {
 	switch name {
 	case project.FieldName:
 		m.ResetName()
+		return nil
+	case project.FieldLabels:
+		m.ResetLabels()
 		return nil
 	}
 	return fmt.Errorf("unknown Project field %s", name)
@@ -11714,6 +11790,7 @@ type RepoMutation struct {
 	id                           *int
 	name                         *string
 	default_branch               *string
+	labels                       *schema.Labels
 	clearedFields                map[string]struct{}
 	owner                        *int
 	clearedowner                 bool
@@ -11884,6 +11961,55 @@ func (m *RepoMutation) OldDefaultBranch(ctx context.Context) (v string, err erro
 // ResetDefaultBranch resets all changes to the "default_branch" field.
 func (m *RepoMutation) ResetDefaultBranch() {
 	m.default_branch = nil
+}
+
+// SetLabels sets the "labels" field.
+func (m *RepoMutation) SetLabels(s schema.Labels) {
+	m.labels = &s
+}
+
+// Labels returns the value of the "labels" field in the mutation.
+func (m *RepoMutation) Labels() (r schema.Labels, exists bool) {
+	v := m.labels
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLabels returns the old "labels" field's value of the Repo entity.
+// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RepoMutation) OldLabels(ctx context.Context) (v schema.Labels, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldLabels is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldLabels requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (m *RepoMutation) ClearLabels() {
+	m.labels = nil
+	m.clearedFields[repo.FieldLabels] = struct{}{}
+}
+
+// LabelsCleared returns if the "labels" field was cleared in this mutation.
+func (m *RepoMutation) LabelsCleared() bool {
+	_, ok := m.clearedFields[repo.FieldLabels]
+	return ok
+}
+
+// ResetLabels resets all changes to the "labels" field.
+func (m *RepoMutation) ResetLabels() {
+	m.labels = nil
+	delete(m.clearedFields, repo.FieldLabels)
 }
 
 // SetOwnerID sets the "owner" edge to the Organization entity by id.
@@ -12184,12 +12310,15 @@ func (m *RepoMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RepoMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, repo.FieldName)
 	}
 	if m.default_branch != nil {
 		fields = append(fields, repo.FieldDefaultBranch)
+	}
+	if m.labels != nil {
+		fields = append(fields, repo.FieldLabels)
 	}
 	return fields
 }
@@ -12203,6 +12332,8 @@ func (m *RepoMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case repo.FieldDefaultBranch:
 		return m.DefaultBranch()
+	case repo.FieldLabels:
+		return m.Labels()
 	}
 	return nil, false
 }
@@ -12216,6 +12347,8 @@ func (m *RepoMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case repo.FieldDefaultBranch:
 		return m.OldDefaultBranch(ctx)
+	case repo.FieldLabels:
+		return m.OldLabels(ctx)
 	}
 	return nil, fmt.Errorf("unknown Repo field %s", name)
 }
@@ -12238,6 +12371,13 @@ func (m *RepoMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDefaultBranch(v)
+		return nil
+	case repo.FieldLabels:
+		v, ok := value.(schema.Labels)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabels(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Repo field %s", name)
@@ -12268,7 +12408,11 @@ func (m *RepoMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *RepoMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(repo.FieldLabels) {
+		fields = append(fields, repo.FieldLabels)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -12281,6 +12425,11 @@ func (m *RepoMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *RepoMutation) ClearField(name string) error {
+	switch name {
+	case repo.FieldLabels:
+		m.ClearLabels()
+		return nil
+	}
 	return fmt.Errorf("unknown Repo nullable field %s", name)
 }
 
@@ -12293,6 +12442,9 @@ func (m *RepoMutation) ResetField(name string) error {
 		return nil
 	case repo.FieldDefaultBranch:
 		m.ResetDefaultBranch()
+		return nil
+	case repo.FieldLabels:
+		m.ResetLabels()
 		return nil
 	}
 	return fmt.Errorf("unknown Repo field %s", name)
@@ -14319,6 +14471,7 @@ type VulnerabilityMutation struct {
 	severity          *vulnerability.Severity
 	published         *time.Time
 	modified          *time.Time
+	labels            *schema.Labels
 	metadata          *schema.Metadata
 	clearedFields     map[string]struct{}
 	owner             *int
@@ -14740,6 +14893,55 @@ func (m *VulnerabilityMutation) ResetModified() {
 	delete(m.clearedFields, vulnerability.FieldModified)
 }
 
+// SetLabels sets the "labels" field.
+func (m *VulnerabilityMutation) SetLabels(s schema.Labels) {
+	m.labels = &s
+}
+
+// Labels returns the value of the "labels" field in the mutation.
+func (m *VulnerabilityMutation) Labels() (r schema.Labels, exists bool) {
+	v := m.labels
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLabels returns the old "labels" field's value of the Vulnerability entity.
+// If the Vulnerability object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VulnerabilityMutation) OldLabels(ctx context.Context) (v schema.Labels, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldLabels is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldLabels requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (m *VulnerabilityMutation) ClearLabels() {
+	m.labels = nil
+	m.clearedFields[vulnerability.FieldLabels] = struct{}{}
+}
+
+// LabelsCleared returns if the "labels" field was cleared in this mutation.
+func (m *VulnerabilityMutation) LabelsCleared() bool {
+	_, ok := m.clearedFields[vulnerability.FieldLabels]
+	return ok
+}
+
+// ResetLabels resets all changes to the "labels" field.
+func (m *VulnerabilityMutation) ResetLabels() {
+	m.labels = nil
+	delete(m.clearedFields, vulnerability.FieldLabels)
+}
+
 // SetMetadata sets the "metadata" field.
 func (m *VulnerabilityMutation) SetMetadata(s schema.Metadata) {
 	m.metadata = &s
@@ -15009,7 +15211,7 @@ func (m *VulnerabilityMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *VulnerabilityMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.vid != nil {
 		fields = append(fields, vulnerability.FieldVid)
 	}
@@ -15030,6 +15232,9 @@ func (m *VulnerabilityMutation) Fields() []string {
 	}
 	if m.modified != nil {
 		fields = append(fields, vulnerability.FieldModified)
+	}
+	if m.labels != nil {
+		fields = append(fields, vulnerability.FieldLabels)
 	}
 	if m.metadata != nil {
 		fields = append(fields, vulnerability.FieldMetadata)
@@ -15056,6 +15261,8 @@ func (m *VulnerabilityMutation) Field(name string) (ent.Value, bool) {
 		return m.Published()
 	case vulnerability.FieldModified:
 		return m.Modified()
+	case vulnerability.FieldLabels:
+		return m.Labels()
 	case vulnerability.FieldMetadata:
 		return m.Metadata()
 	}
@@ -15081,6 +15288,8 @@ func (m *VulnerabilityMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldPublished(ctx)
 	case vulnerability.FieldModified:
 		return m.OldModified(ctx)
+	case vulnerability.FieldLabels:
+		return m.OldLabels(ctx)
 	case vulnerability.FieldMetadata:
 		return m.OldMetadata(ctx)
 	}
@@ -15140,6 +15349,13 @@ func (m *VulnerabilityMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetModified(v)
+		return nil
+	case vulnerability.FieldLabels:
+		v, ok := value.(schema.Labels)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabels(v)
 		return nil
 	case vulnerability.FieldMetadata:
 		v, ok := value.(schema.Metadata)
@@ -15205,6 +15421,9 @@ func (m *VulnerabilityMutation) ClearedFields() []string {
 	if m.FieldCleared(vulnerability.FieldModified) {
 		fields = append(fields, vulnerability.FieldModified)
 	}
+	if m.FieldCleared(vulnerability.FieldLabels) {
+		fields = append(fields, vulnerability.FieldLabels)
+	}
 	if m.FieldCleared(vulnerability.FieldMetadata) {
 		fields = append(fields, vulnerability.FieldMetadata)
 	}
@@ -15233,6 +15452,9 @@ func (m *VulnerabilityMutation) ClearField(name string) error {
 		return nil
 	case vulnerability.FieldModified:
 		m.ClearModified()
+		return nil
+	case vulnerability.FieldLabels:
+		m.ClearLabels()
 		return nil
 	case vulnerability.FieldMetadata:
 		m.ClearMetadata()
@@ -15265,6 +15487,9 @@ func (m *VulnerabilityMutation) ResetField(name string) error {
 		return nil
 	case vulnerability.FieldModified:
 		m.ResetModified()
+		return nil
+	case vulnerability.FieldLabels:
+		m.ResetLabels()
 		return nil
 	case vulnerability.FieldMetadata:
 		m.ResetMetadata()

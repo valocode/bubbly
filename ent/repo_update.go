@@ -17,6 +17,7 @@ import (
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/repo"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
@@ -50,6 +51,18 @@ func (ru *RepoUpdate) SetNillableDefaultBranch(s *string) *RepoUpdate {
 	if s != nil {
 		ru.SetDefaultBranch(*s)
 	}
+	return ru
+}
+
+// SetLabels sets the "labels" field.
+func (ru *RepoUpdate) SetLabels(s schema.Labels) *RepoUpdate {
+	ru.mutation.SetLabels(s)
+	return ru
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (ru *RepoUpdate) ClearLabels() *RepoUpdate {
+	ru.mutation.ClearLabels()
 	return ru
 }
 
@@ -336,6 +349,19 @@ func (ru *RepoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeString,
 			Value:  value,
 			Column: repo.FieldDefaultBranch,
+		})
+	}
+	if value, ok := ru.mutation.Labels(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: repo.FieldLabels,
+		})
+	}
+	if ru.mutation.LabelsCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: repo.FieldLabels,
 		})
 	}
 	if ru.mutation.OwnerCleared() {
@@ -641,6 +667,18 @@ func (ruo *RepoUpdateOne) SetNillableDefaultBranch(s *string) *RepoUpdateOne {
 	if s != nil {
 		ruo.SetDefaultBranch(*s)
 	}
+	return ruo
+}
+
+// SetLabels sets the "labels" field.
+func (ruo *RepoUpdateOne) SetLabels(s schema.Labels) *RepoUpdateOne {
+	ruo.mutation.SetLabels(s)
+	return ruo
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (ruo *RepoUpdateOne) ClearLabels() *RepoUpdateOne {
+	ruo.mutation.ClearLabels()
 	return ruo
 }
 
@@ -951,6 +989,19 @@ func (ruo *RepoUpdateOne) sqlSave(ctx context.Context) (_node *Repo, err error) 
 			Type:   field.TypeString,
 			Value:  value,
 			Column: repo.FieldDefaultBranch,
+		})
+	}
+	if value, ok := ruo.mutation.Labels(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: repo.FieldLabels,
+		})
+	}
+	if ruo.mutation.LabelsCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: repo.FieldLabels,
 		})
 	}
 	if ruo.mutation.OwnerCleared() {

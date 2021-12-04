@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/valocode/bubbly/ent/extensions/entmodel"
+	types "github.com/valocode/bubbly/ent/schema/types"
 )
 
 type Repo struct {
@@ -31,6 +32,7 @@ func (Repo) Fields() []ent.Field {
 		field.String("default_branch").
 			NotEmpty().
 			Default("main"),
+		field.JSON("labels", types.Labels{}).Optional(),
 	}
 }
 

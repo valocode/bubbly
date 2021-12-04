@@ -9,12 +9,14 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/valocode/bubbly/ent/repo"
+
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasepolicy"
-	"github.com/valocode/bubbly/ent/repo"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
@@ -42,6 +44,12 @@ func (rc *RepoCreate) SetNillableDefaultBranch(s *string) *RepoCreate {
 	if s != nil {
 		rc.SetDefaultBranch(*s)
 	}
+	return rc
+}
+
+// SetLabels sets the "labels" field.
+func (rc *RepoCreate) SetLabels(s schema.Labels) *RepoCreate {
+	rc.mutation.SetLabels(s)
 	return rc
 }
 
@@ -274,6 +282,14 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 			Column: repo.FieldDefaultBranch,
 		})
 		_node.DefaultBranch = value
+	}
+	if value, ok := rc.mutation.Labels(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: repo.FieldLabels,
+		})
+		_node.Labels = value
 	}
 	if nodes := rc.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

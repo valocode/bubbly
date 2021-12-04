@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/valocode/bubbly/ent/extensions/entmodel"
+	types "github.com/valocode/bubbly/ent/schema/types"
 )
 
 type Project struct {
@@ -28,6 +29,7 @@ func (Project) Fields() []ent.Field {
 			Annotations(
 				entgql.OrderField("name"),
 			),
+		field.JSON("labels", types.Labels{}).Optional(),
 	}
 }
 

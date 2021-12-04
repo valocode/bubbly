@@ -693,7 +693,7 @@ func (pr *Project) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     pr.ID,
 		Type:   "Project",
-		Fields: make([]*Field, 1),
+		Fields: make([]*Field, 2),
 		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
@@ -703,6 +703,14 @@ func (pr *Project) Node(ctx context.Context) (node *Node, err error) {
 	node.Fields[0] = &Field{
 		Type:  "string",
 		Name:  "name",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(pr.Labels); err != nil {
+		return nil, err
+	}
+	node.Fields[1] = &Field{
+		Type:  "schema.Labels",
+		Name:  "labels",
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
@@ -1277,7 +1285,7 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     r.ID,
 		Type:   "Repo",
-		Fields: make([]*Field, 2),
+		Fields: make([]*Field, 3),
 		Edges:  make([]*Edge, 6),
 	}
 	var buf []byte
@@ -1295,6 +1303,14 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 	node.Fields[1] = &Field{
 		Type:  "string",
 		Name:  "default_branch",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(r.Labels); err != nil {
+		return nil, err
+	}
+	node.Fields[2] = &Field{
+		Type:  "schema.Labels",
+		Name:  "labels",
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
@@ -1541,7 +1557,7 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     v.ID,
 		Type:   "Vulnerability",
-		Fields: make([]*Field, 8),
+		Fields: make([]*Field, 9),
 		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
@@ -1601,10 +1617,18 @@ func (v *Vulnerability) Node(ctx context.Context) (node *Node, err error) {
 		Name:  "modified",
 		Value: string(buf),
 	}
-	if buf, err = json.Marshal(v.Metadata); err != nil {
+	if buf, err = json.Marshal(v.Labels); err != nil {
 		return nil, err
 	}
 	node.Fields[7] = &Field{
+		Type:  "schema.Labels",
+		Name:  "labels",
+		Value: string(buf),
+	}
+	if buf, err = json.Marshal(v.Metadata); err != nil {
+		return nil, err
+	}
+	node.Fields[8] = &Field{
 		Type:  "schema.Metadata",
 		Name:  "metadata",
 		Value: string(buf),

@@ -327,6 +327,20 @@ func DefaultBranchContainsFold(v string) predicate.Repo {
 	})
 }
 
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldLabels)))
+	})
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Repo {
+	return predicate.Repo(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldLabels)))
+	})
+}
+
 // HasOwner applies the HasEdge predicate on the "owner" edge.
 func HasOwner() predicate.Repo {
 	return predicate.Repo(func(s *sql.Selector) {

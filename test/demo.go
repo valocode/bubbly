@@ -225,24 +225,24 @@ func createRepoData(opt DemoRepoOptions) []ReleaseData {
 			//
 			// TODO:: set components with "real" data...
 			//
-			var components []*ent.Component
-			for _, c := range components {
-				scan.Components = append(scan.Components, &api.CodeScanComponent{
-					ComponentModelCreate: *ent.NewComponentModelCreate().
-						SetName(c.Name).SetScheme("pkg").SetVersion(c.Version),
-				})
-			}
+			// var components []*ent.Component
+			// for _, c := range components {
+			scan.Components = append(scan.Components, &api.CodeScanComponent{
+				ComponentModelCreate: *ent.NewComponentModelCreate().
+					SetName("comp-1").SetScheme("pkg").SetVersion("123"),
+				Vulnerabilities: []*api.VulnerabilityCreate{
+					{
+						VulnerabilityModelCreate: *ent.NewVulnerabilityModelCreate().SetVid("demo-123").SetLabels(schema.Labels{
+							"bubbly/os": "windows",
+						}),
+					},
+				},
+			})
+			// }
 			data.CodeScans = append(data.CodeScans, &api.CodeScanRequest{
 				Commit:   &hash,
 				CodeScan: &scan,
 			})
-			// _, err := store.SaveCodeScan(&api.CodeScanRequest{
-			// 	Commit:   &hash,
-			// 	CodeScan: &scan,
-			// })
-			// if err != nil {
-			// 	return err
-			// }
 		}
 
 		// Prepend the release so that the dates of the releases go in ascending order

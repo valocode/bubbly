@@ -3,14 +3,17 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/valocode/bubbly/ent/repo"
+
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/repo"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
 // Repo is the model entity for the Repo schema.
@@ -22,6 +25,8 @@ type Repo struct {
 	Name string `json:"name,omitempty"`
 	// DefaultBranch holds the value of the "default_branch" field.
 	DefaultBranch string `json:"default_branch,omitempty"`
+	// Labels holds the value of the "labels" field.
+	Labels schema.Labels `json:"labels,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RepoQuery when eager-loading is set.
 	Edges        RepoEdges `json:"edges"`
@@ -122,6 +127,8 @@ func (*Repo) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case repo.FieldLabels:
+			values[i] = new([]byte)
 		case repo.FieldID:
 			values[i] = new(sql.NullInt64)
 		case repo.FieldName, repo.FieldDefaultBranch:
@@ -162,6 +169,14 @@ func (r *Repo) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field default_branch", values[i])
 			} else if value.Valid {
 				r.DefaultBranch = value.String
+			}
+		case repo.FieldLabels:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field labels", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &r.Labels); err != nil {
+					return fmt.Errorf("unmarshal field labels: %w", err)
+				}
 			}
 		case repo.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -239,6 +254,8 @@ func (r *Repo) String() string {
 	builder.WriteString(r.Name)
 	builder.WriteString(", default_branch=")
 	builder.WriteString(r.DefaultBranch)
+	builder.WriteString(", labels=")
+	builder.WriteString(fmt.Sprintf("%v", r.Labels))
 	builder.WriteByte(')')
 	return builder.String()
 }

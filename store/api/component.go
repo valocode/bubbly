@@ -9,7 +9,15 @@ type (
 	}
 
 	ComponentGetResponse struct {
-		Components []*Component
+		Components []*Component `json:"components"`
+	}
+
+	ComponentSaveRequest struct {
+		Component *ComponentCreate `json:"component,omitempty" validate:"required"`
+	}
+
+	ComponentCreate struct {
+		ent.ComponentModelCreate
 	}
 
 	ComponentVulnerabilityRequest struct {
@@ -18,17 +26,8 @@ type (
 	}
 
 	ComponentVulnerability struct {
-		ComponentID     *int             `json:"component_id" validate:"required"`
-		Vulnerabilities []*Vulnerability `json:"vulnerabilities,omitempty" validate:"dive,required"`
-	}
-
-	Vulnerability struct {
-		ent.VulnerabilityModelCreate `validate:"required" mapstructure:",squash"`
-		Patch                        *VulnerabilityPatch `json:"patch,omitempty" mapstructure:"patch"`
-	}
-
-	VulnerabilityPatch struct {
-		Note *string `json:"note,omitempty" validate:"required" mapstructure:"note"`
+		ComponentID     *int                   `json:"component_id" validate:"required"`
+		Vulnerabilities []*VulnerabilityCreate `json:"vulnerabilities,omitempty" validate:"dive,required"`
 	}
 
 	License struct {

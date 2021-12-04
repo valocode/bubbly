@@ -2,6 +2,7 @@ package store
 
 import (
 	"github.com/valocode/bubbly/ent"
+	"github.com/valocode/bubbly/ent/component"
 	"github.com/valocode/bubbly/ent/vulnerability"
 	"github.com/valocode/bubbly/store/api"
 )
@@ -24,6 +25,40 @@ func (h *Handler) GetComponents(query *ComponentQuery) ([]*api.Component, error)
 		})
 	}
 	return components, nil
+}
+
+func (h *Handler) SaveComponent(req *api.ComponentSaveRequest) (*ent.Component, error) {
+	if err := h.validator.Struct(req); err != nil {
+		return nil, HandleValidatorError(err, "component create")
+	}
+	var dbComponent *ent.Component
+	txErr := WithTx(h.ctx, h.client, func(tx *ent.Tx) error {
+		var err error
+		// TODO
+		dbComponent, err = tx.Component.Query().Where(
+			component.Scheme(*req.Component.Scheme),
+			component.Namespace(*req.Component.Namespace),
+			component.Name(*req.Component.Name),
+			component.Version(*req.Component.Version),
+		).Only(h.ctx)
+		if err != nil {
+			if !ent.IsNotFound(err) {
+				return HandleEntError(err, "component query")
+			}
+			// If not found, then create it
+			dbComponent, err = tx.Component.Create().
+				SetModelCreate(&req.Component.ComponentModelCreate).
+				Save(h.ctx)
+			if err != nil {
+				return HandleEntError(err, "component create")
+			}
+		}
+		return nil
+	})
+	if txErr != nil {
+		return nil, txErr
+	}
+	return dbComponent, nil
 }
 
 func (h *Handler) SaveComponentVulnerabilities(req *api.ComponentVulnerabilityRequest) error {
@@ -70,7 +105,7 @@ func (h *Handler) GetComponentOrError(client *ent.Client, id int) (*ent.Componen
 	return dbComp, nil
 }
 
-func (h *Handler) GetVulnerabilityOrCreate(client *ent.Client, vuln *api.Vulnerability) (*ent.Vulnerability, error) {
+func (h *Handler) GetVulnerabilityOrCreate(client *ent.Client, vuln *api.VulnerabilityCreate) (*ent.Vulnerability, error) {
 	dbVuln, err := client.Vulnerability.Query().
 		Where(vulnerability.Vid(*vuln.Vid)).
 		Only(h.ctx)

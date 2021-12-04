@@ -110,6 +110,9 @@ func NewWithStore(bCtx *config.BubblyConfig, store *store.Store) (*Server, error
 	v1.GET("/policies", s.getPolicies)
 
 	v1.GET("/components", s.getComponents)
+	v1.GET("/components", s.postComponent)
+
+	v1.GET("/vulnerabilities", s.getVulnerabilities)
 
 	v1.GET("/vulnerabilityreviews", s.getVulnerabilityReviews)
 	v1.POST("/vulnerabilityreviews", s.postVulnerabilityReview)
@@ -487,6 +490,45 @@ func (s *Server) getComponents(c echo.Context) error {
 		Components: components,
 	})
 }
+
+func (s *Server) postComponent(c echo.Context) error {
+	var req api.ComponentSaveRequest
+	binder := &echo.DefaultBinder{}
+	if err := binder.BindBody(c, &req); err != nil {
+		return err
+	}
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+	if _, err := h.SaveComponent(&req); err != nil {
+		return err
+	}
+	return c.NoContent(http.StatusOK)
+}
+
+func (s *Server) getVulnerabilities(c echo.Context) error {
+	var req api.VulnerabilityGetRequest
+	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
+		return err
+	}
+	if err := s.validator.Struct(req); err != nil {
+		return store.HandleValidatorError(err, "query vulnerabilities")
+	}
+	h, err := store.NewHandler(store.WithStore(s.store))
+	if err != nil {
+		return err
+	}
+
+	vulnerabilities, err := h.GetVulnerabilities(&store.VulnerabilityQuery{})
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, api.VulnerabilityGetResponse{
+		Vulnerabilities: vulnerabilities,
+	})
+}
+
 func (s *Server) getVulnerabilityReviews(c echo.Context) error {
 	var req api.VulnerabilityReviewGetRequest
 	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {

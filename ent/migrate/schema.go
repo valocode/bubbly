@@ -273,6 +273,7 @@ var (
 	ProjectColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJSON, Nullable: true},
 		{Name: "project_owner", Type: field.TypeInt, Nullable: true},
 	}
 	// ProjectTable holds the schema information for the "project" table.
@@ -283,7 +284,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "project_organization_owner",
-				Columns:    []*schema.Column{ProjectColumns[2]},
+				Columns:    []*schema.Column{ProjectColumns[3]},
 				RefColumns: []*schema.Column{OrganizationColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -292,7 +293,7 @@ var (
 			{
 				Name:    "project_name_project_owner",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectColumns[1], ProjectColumns[2]},
+				Columns: []*schema.Column{ProjectColumns[1], ProjectColumns[3]},
 			},
 		},
 	}
@@ -515,6 +516,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "default_branch", Type: field.TypeString, Default: "main"},
+		{Name: "labels", Type: field.TypeJSON, Nullable: true},
 		{Name: "repo_owner", Type: field.TypeInt, Nullable: true},
 		{Name: "repo_project", Type: field.TypeInt, Nullable: true},
 	}
@@ -526,13 +528,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "repo_organization_owner",
-				Columns:    []*schema.Column{RepoColumns[3]},
+				Columns:    []*schema.Column{RepoColumns[4]},
 				RefColumns: []*schema.Column{OrganizationColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "repo_project_project",
-				Columns:    []*schema.Column{RepoColumns[4]},
+				Columns:    []*schema.Column{RepoColumns[5]},
 				RefColumns: []*schema.Column{ProjectColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -541,7 +543,7 @@ var (
 			{
 				Name:    "repo_name_repo_owner",
 				Unique:  true,
-				Columns: []*schema.Column{RepoColumns[1], RepoColumns[3]},
+				Columns: []*schema.Column{RepoColumns[1], RepoColumns[4]},
 			},
 		},
 	}
@@ -623,6 +625,7 @@ var (
 		{Name: "severity", Type: field.TypeEnum, Enums: []string{"None", "Low", "Medium", "High", "Critical"}, Default: "None"},
 		{Name: "published", Type: field.TypeTime, Nullable: true},
 		{Name: "modified", Type: field.TypeTime, Nullable: true},
+		{Name: "labels", Type: field.TypeJSON, Nullable: true},
 		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "vulnerability_owner", Type: field.TypeInt, Nullable: true},
 	}
@@ -634,7 +637,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "vulnerability_organization_owner",
-				Columns:    []*schema.Column{VulnerabilityColumns[9]},
+				Columns:    []*schema.Column{VulnerabilityColumns[10]},
 				RefColumns: []*schema.Column{OrganizationColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

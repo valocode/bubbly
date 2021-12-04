@@ -15,6 +15,7 @@ import (
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/repo"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
@@ -34,6 +35,18 @@ func (pu *ProjectUpdate) Where(ps ...predicate.Project) *ProjectUpdate {
 // SetName sets the "name" field.
 func (pu *ProjectUpdate) SetName(s string) *ProjectUpdate {
 	pu.mutation.SetName(s)
+	return pu
+}
+
+// SetLabels sets the "labels" field.
+func (pu *ProjectUpdate) SetLabels(s schema.Labels) *ProjectUpdate {
+	pu.mutation.SetLabels(s)
+	return pu
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (pu *ProjectUpdate) ClearLabels() *ProjectUpdate {
+	pu.mutation.ClearLabels()
 	return pu
 }
 
@@ -265,6 +278,19 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: project.FieldName,
 		})
 	}
+	if value, ok := pu.mutation.Labels(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: project.FieldLabels,
+		})
+	}
+	if pu.mutation.LabelsCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: project.FieldLabels,
+		})
+	}
 	if pu.mutation.OwnerCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -484,6 +510,18 @@ type ProjectUpdateOne struct {
 // SetName sets the "name" field.
 func (puo *ProjectUpdateOne) SetName(s string) *ProjectUpdateOne {
 	puo.mutation.SetName(s)
+	return puo
+}
+
+// SetLabels sets the "labels" field.
+func (puo *ProjectUpdateOne) SetLabels(s schema.Labels) *ProjectUpdateOne {
+	puo.mutation.SetLabels(s)
+	return puo
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (puo *ProjectUpdateOne) ClearLabels() *ProjectUpdateOne {
+	puo.mutation.ClearLabels()
 	return puo
 }
 
@@ -737,6 +775,19 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			Type:   field.TypeString,
 			Value:  value,
 			Column: project.FieldName,
+		})
+	}
+	if value, ok := puo.mutation.Labels(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: project.FieldLabels,
+		})
+	}
+	if puo.mutation.LabelsCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Column: project.FieldLabels,
 		})
 	}
 	if puo.mutation.OwnerCleared() {

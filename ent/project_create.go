@@ -9,10 +9,12 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
+
+	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/repo"
+	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
@@ -26,6 +28,12 @@ type ProjectCreate struct {
 // SetName sets the "name" field.
 func (pc *ProjectCreate) SetName(s string) *ProjectCreate {
 	pc.mutation.SetName(s)
+	return pc
+}
+
+// SetLabels sets the "labels" field.
+func (pc *ProjectCreate) SetLabels(s schema.Labels) *ProjectCreate {
+	pc.mutation.SetLabels(s)
 	return pc
 }
 
@@ -200,6 +208,14 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 			Column: project.FieldName,
 		})
 		_node.Name = value
+	}
+	if value, ok := pc.mutation.Labels(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeJSON,
+			Value:  value,
+			Column: project.FieldLabels,
+		})
+		_node.Labels = value
 	}
 	if nodes := pc.mutation.OwnerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -11,6 +11,8 @@ const (
 	FieldName = "name"
 	// FieldDefaultBranch holds the string denoting the default_branch field in the database.
 	FieldDefaultBranch = "default_branch"
+	// FieldLabels holds the string denoting the labels field in the database.
+	FieldLabels = "labels"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeProject holds the string denoting the project edge name in mutations.
@@ -70,6 +72,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldDefaultBranch,
+	FieldLabels,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "repo"

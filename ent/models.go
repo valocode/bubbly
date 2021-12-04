@@ -1097,7 +1097,8 @@ func (o *OrganizationMutation) SetModelUpdate(model *OrganizationModelUpdate) *O
 }
 
 type ProjectModelCreate struct {
-	Name *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Name   *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Labels *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
 }
 
 func NewProjectModelCreate() *ProjectModelCreate {
@@ -1105,6 +1106,10 @@ func NewProjectModelCreate() *ProjectModelCreate {
 }
 func (pr *ProjectModelCreate) SetName(value string) *ProjectModelCreate {
 	pr.Name = &value
+	return pr
+}
+func (pr *ProjectModelCreate) SetLabels(value schema.Labels) *ProjectModelCreate {
+	pr.Labels = &value
 	return pr
 }
 
@@ -1122,12 +1127,16 @@ func (pr *ProjectMutation) SetModelCreate(model *ProjectModelCreate) *ProjectMut
 	if model.Name != nil {
 		pr.SetName(*model.Name)
 	}
+	if model.Labels != nil {
+		pr.SetLabels(*model.Labels)
+	}
 	return pr
 }
 
 type ProjectModelRead struct {
-	Name *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	ID   *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name   *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	Labels *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
+	ID     *int           `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewProjectModelRead() *ProjectModelRead {
@@ -1136,12 +1145,14 @@ func NewProjectModelRead() *ProjectModelRead {
 
 func (pr *ProjectModelRead) FromEnt(value *Project) *ProjectModelRead {
 	pr.Name = &value.Name
+	pr.Labels = &value.Labels
 	pr.ID = &value.ID
 	return pr
 }
 
 type ProjectModelUpdate struct {
-	Name *string `json:"name,omitempty"  mapstructure:"name"`
+	Name   *string        `json:"name,omitempty"  mapstructure:"name"`
+	Labels *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
 }
 
 func NewProjectModelUpdate() *ProjectModelUpdate {
@@ -1149,6 +1160,10 @@ func NewProjectModelUpdate() *ProjectModelUpdate {
 }
 func (pr *ProjectModelUpdate) SetName(value string) *ProjectModelUpdate {
 	pr.Name = &value
+	return pr
+}
+func (pr *ProjectModelUpdate) SetLabels(value schema.Labels) *ProjectModelUpdate {
+	pr.Labels = &value
 	return pr
 }
 
@@ -1160,6 +1175,9 @@ func (pr *ProjectUpdateOne) SetModelUpdate(model *ProjectModelUpdate) *ProjectUp
 func (pr *ProjectMutation) SetModelUpdate(model *ProjectModelUpdate) *ProjectMutation {
 	if model.Name != nil {
 		pr.SetName(*model.Name)
+	}
+	if model.Labels != nil {
+		pr.SetLabels(*model.Labels)
 	}
 	return pr
 }
@@ -1545,8 +1563,9 @@ func (rpv *ReleasePolicyViolationMutation) SetModelUpdate(model *ReleasePolicyVi
 }
 
 type RepoModelCreate struct {
-	Name          *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	DefaultBranch *string `json:"default_branch,omitempty"  mapstructure:"default_branch"`
+	Name          *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	DefaultBranch *string        `json:"default_branch,omitempty"  mapstructure:"default_branch"`
+	Labels        *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
 }
 
 func NewRepoModelCreate() *RepoModelCreate {
@@ -1558,6 +1577,10 @@ func (r *RepoModelCreate) SetName(value string) *RepoModelCreate {
 }
 func (r *RepoModelCreate) SetDefaultBranch(value string) *RepoModelCreate {
 	r.DefaultBranch = &value
+	return r
+}
+func (r *RepoModelCreate) SetLabels(value schema.Labels) *RepoModelCreate {
+	r.Labels = &value
 	return r
 }
 
@@ -1578,13 +1601,17 @@ func (r *RepoMutation) SetModelCreate(model *RepoModelCreate) *RepoMutation {
 	if model.DefaultBranch != nil {
 		r.SetDefaultBranch(*model.DefaultBranch)
 	}
+	if model.Labels != nil {
+		r.SetLabels(*model.Labels)
+	}
 	return r
 }
 
 type RepoModelRead struct {
-	Name          *string `json:"name,omitempty" validate:"required" mapstructure:"name"`
-	DefaultBranch *string `json:"default_branch,omitempty"  mapstructure:"default_branch"`
-	ID            *int    `json:"id,omitempty" validate:"required" mapstructure:"id"`
+	Name          *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
+	DefaultBranch *string        `json:"default_branch,omitempty"  mapstructure:"default_branch"`
+	Labels        *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
+	ID            *int           `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
 func NewRepoModelRead() *RepoModelRead {
@@ -1594,13 +1621,15 @@ func NewRepoModelRead() *RepoModelRead {
 func (r *RepoModelRead) FromEnt(value *Repo) *RepoModelRead {
 	r.Name = &value.Name
 	r.DefaultBranch = &value.DefaultBranch
+	r.Labels = &value.Labels
 	r.ID = &value.ID
 	return r
 }
 
 type RepoModelUpdate struct {
-	Name          *string `json:"name,omitempty"  mapstructure:"name"`
-	DefaultBranch *string `json:"default_branch,omitempty"  mapstructure:"default_branch"`
+	Name          *string        `json:"name,omitempty"  mapstructure:"name"`
+	DefaultBranch *string        `json:"default_branch,omitempty"  mapstructure:"default_branch"`
+	Labels        *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
 }
 
 func NewRepoModelUpdate() *RepoModelUpdate {
@@ -1612,6 +1641,10 @@ func (r *RepoModelUpdate) SetName(value string) *RepoModelUpdate {
 }
 func (r *RepoModelUpdate) SetDefaultBranch(value string) *RepoModelUpdate {
 	r.DefaultBranch = &value
+	return r
+}
+func (r *RepoModelUpdate) SetLabels(value schema.Labels) *RepoModelUpdate {
+	r.Labels = &value
 	return r
 }
 
@@ -1626,6 +1659,9 @@ func (r *RepoMutation) SetModelUpdate(model *RepoModelUpdate) *RepoMutation {
 	}
 	if model.DefaultBranch != nil {
 		r.SetDefaultBranch(*model.DefaultBranch)
+	}
+	if model.Labels != nil {
+		r.SetLabels(*model.Labels)
 	}
 	return r
 }
@@ -2022,6 +2058,7 @@ type VulnerabilityModelCreate struct {
 	Severity      *vulnerability.Severity `json:"severity,omitempty"  mapstructure:"severity"`
 	Published     *time.Time              `json:"published,omitempty"  mapstructure:"published"`
 	Modified      *time.Time              `json:"modified,omitempty"  mapstructure:"modified"`
+	Labels        *schema.Labels          `json:"labels,omitempty"  mapstructure:"labels"`
 	Metadata      *schema.Metadata        `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
@@ -2054,6 +2091,10 @@ func (v *VulnerabilityModelCreate) SetPublished(value time.Time) *VulnerabilityM
 }
 func (v *VulnerabilityModelCreate) SetModified(value time.Time) *VulnerabilityModelCreate {
 	v.Modified = &value
+	return v
+}
+func (v *VulnerabilityModelCreate) SetLabels(value schema.Labels) *VulnerabilityModelCreate {
+	v.Labels = &value
 	return v
 }
 func (v *VulnerabilityModelCreate) SetMetadata(value schema.Metadata) *VulnerabilityModelCreate {
@@ -2093,6 +2134,9 @@ func (v *VulnerabilityMutation) SetModelCreate(model *VulnerabilityModelCreate) 
 	if model.Modified != nil {
 		v.SetModified(*model.Modified)
 	}
+	if model.Labels != nil {
+		v.SetLabels(*model.Labels)
+	}
 	if model.Metadata != nil {
 		v.SetMetadata(*model.Metadata)
 	}
@@ -2107,6 +2151,7 @@ type VulnerabilityModelRead struct {
 	Severity      *vulnerability.Severity `json:"severity,omitempty"  mapstructure:"severity"`
 	Published     *time.Time              `json:"published,omitempty"  mapstructure:"published"`
 	Modified      *time.Time              `json:"modified,omitempty"  mapstructure:"modified"`
+	Labels        *schema.Labels          `json:"labels,omitempty"  mapstructure:"labels"`
 	Metadata      *schema.Metadata        `json:"metadata,omitempty"  mapstructure:"metadata"`
 	ID            *int                    `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
@@ -2123,6 +2168,7 @@ func (v *VulnerabilityModelRead) FromEnt(value *Vulnerability) *VulnerabilityMod
 	v.Severity = &value.Severity
 	v.Published = &value.Published
 	v.Modified = &value.Modified
+	v.Labels = &value.Labels
 	v.Metadata = &value.Metadata
 	v.ID = &value.ID
 	return v
@@ -2136,6 +2182,7 @@ type VulnerabilityModelUpdate struct {
 	Severity      *vulnerability.Severity `json:"severity,omitempty"  mapstructure:"severity"`
 	Published     *time.Time              `json:"published,omitempty"  mapstructure:"published"`
 	Modified      *time.Time              `json:"modified,omitempty"  mapstructure:"modified"`
+	Labels        *schema.Labels          `json:"labels,omitempty"  mapstructure:"labels"`
 	Metadata      *schema.Metadata        `json:"metadata,omitempty"  mapstructure:"metadata"`
 }
 
@@ -2170,6 +2217,10 @@ func (v *VulnerabilityModelUpdate) SetModified(value time.Time) *VulnerabilityMo
 	v.Modified = &value
 	return v
 }
+func (v *VulnerabilityModelUpdate) SetLabels(value schema.Labels) *VulnerabilityModelUpdate {
+	v.Labels = &value
+	return v
+}
 func (v *VulnerabilityModelUpdate) SetMetadata(value schema.Metadata) *VulnerabilityModelUpdate {
 	v.Metadata = &value
 	return v
@@ -2201,6 +2252,9 @@ func (v *VulnerabilityMutation) SetModelUpdate(model *VulnerabilityModelUpdate) 
 	}
 	if model.Modified != nil {
 		v.SetModified(*model.Modified)
+	}
+	if model.Labels != nil {
+		v.SetLabels(*model.Labels)
 	}
 	if model.Metadata != nil {
 		v.SetMetadata(*model.Metadata)
