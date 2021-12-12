@@ -58,11 +58,11 @@ const (
 	CommitColumn = "git_commit_release"
 	// HeadOfTable is the table that holds the head_of relation/edge.
 	HeadOfTable = "release"
-	// HeadOfInverseTable is the table name for the Repo entity.
-	// It exists in this package in order to avoid circular dependency with the "repo" package.
-	HeadOfInverseTable = "repo"
+	// HeadOfInverseTable is the table name for the Repository entity.
+	// It exists in this package in order to avoid circular dependency with the "repository" package.
+	HeadOfInverseTable = "repositories"
 	// HeadOfColumn is the table column denoting the head_of relation/edge.
-	HeadOfColumn = "repo_head"
+	HeadOfColumn = "repository_head"
 	// LogTable is the table that holds the log relation/edge.
 	LogTable = "release_entry"
 	// LogInverseTable is the table name for the ReleaseEntry entity.
@@ -138,7 +138,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"git_commit_release",
-	"repo_head",
+	"repository_head",
 }
 
 var (

@@ -418,25 +418,25 @@ func HasReleaseWith(preds ...predicate.Release) predicate.Event {
 	})
 }
 
-// HasRepo applies the HasEdge predicate on the "repo" edge.
-func HasRepo() predicate.Event {
+// HasRepository applies the HasEdge predicate on the "repository" edge.
+func HasRepository() predicate.Event {
 	return predicate.Event(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(RepoTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, RepoTable, RepoColumn),
+			sqlgraph.To(RepositoryTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, RepositoryTable, RepositoryColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasRepoWith applies the HasEdge predicate on the "repo" edge with a given conditions (other predicates).
-func HasRepoWith(preds ...predicate.Repo) predicate.Event {
+// HasRepositoryWith applies the HasEdge predicate on the "repository" edge with a given conditions (other predicates).
+func HasRepositoryWith(preds ...predicate.Repository) predicate.Event {
 	return predicate.Event(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(RepoInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, RepoTable, RepoColumn),
+			sqlgraph.To(RepositoryInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, RepositoryTable, RepositoryColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

@@ -438,7 +438,7 @@ func HasHeadOf() predicate.Release {
 }
 
 // HasHeadOfWith applies the HasEdge predicate on the "head_of" edge with a given conditions (other predicates).
-func HasHeadOfWith(preds ...predicate.Repo) predicate.Release {
+func HasHeadOfWith(preds ...predicate.Repository) predicate.Release {
 	return predicate.Release(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),

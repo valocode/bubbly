@@ -68,7 +68,7 @@ func GetPolicies(bCtx *config.BubblyConfig, req *api.ReleasePolicyGetRequest) (*
 	return &r, nil
 }
 
-func SavePolicy(bCtx *config.BubblyConfig, req *api.ReleasePolicySaveRequest) error {
+func SavePolicy(bCtx *config.BubblyConfig, req *api.ReleasePolicyCreateRequest) error {
 	return handleRequest(
 		WithBubblyConfig(bCtx), WithAPIV1(true), WithMethod(http.MethodPost),
 		WithPayload(req), WithRequestURL("policies"),

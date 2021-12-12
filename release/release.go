@@ -63,10 +63,10 @@ func CreateRelease(bCtx *config.BubblyConfig) (*api.ReleaseCreateRequest, error)
 	}
 
 	return &api.ReleaseCreateRequest{
-		Project: ent.NewProjectModelCreate().SetName(spec.Project),
-		Repo:    ent.NewRepoModelCreate().SetName(spec.Repo),
-		Release: ent.NewReleaseModelCreate().SetName(spec.Name).SetVersion(spec.Version),
-		Commit:  commit,
+		Project:    &spec.Project,
+		Repository: ent.NewRepositoryModelCreate().SetName(spec.Repo),
+		Release:    ent.NewReleaseModelCreate().SetName(spec.Name).SetVersion(spec.Version),
+		Commit:     commit,
 	}, nil
 }
 

@@ -41,7 +41,7 @@ type hooks struct {
 	ReleasePolicy          []ent.Hook
 	ReleasePolicyViolation []ent.Hook
 	ReleaseVulnerability   []ent.Hook
-	Repo                   []ent.Hook
+	Repository             []ent.Hook
 	SPDXLicense            []ent.Hook
 	TestCase               []ent.Hook
 	TestRun                []ent.Hook

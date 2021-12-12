@@ -8,10 +8,9 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/valocode/bubbly/ent/release"
-
 	"github.com/valocode/bubbly/ent/gitcommit"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/release"
+	"github.com/valocode/bubbly/ent/repository"
 	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
@@ -30,7 +29,7 @@ type Release struct {
 	// The values are being populated by the ReleaseQuery when eager-loading is set.
 	Edges              ReleaseEdges `json:"edges"`
 	git_commit_release *int
-	repo_head          *int
+	repository_head    *int
 }
 
 // ReleaseEdges holds the relations/edges for other nodes in the graph.
@@ -42,7 +41,7 @@ type ReleaseEdges struct {
 	// Commit holds the value of the commit edge.
 	Commit *GitCommit `json:"commit,omitempty"`
 	// HeadOf holds the value of the head_of edge.
-	HeadOf *Repo `json:"head_of,omitempty"`
+	HeadOf *Repository `json:"head_of,omitempty"`
 	// Log holds the value of the log edge.
 	Log []*ReleaseEntry `json:"log,omitempty"`
 	// Violations holds the value of the violations edge.
@@ -100,12 +99,12 @@ func (e ReleaseEdges) CommitOrErr() (*GitCommit, error) {
 
 // HeadOfOrErr returns the HeadOf value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ReleaseEdges) HeadOfOrErr() (*Repo, error) {
+func (e ReleaseEdges) HeadOfOrErr() (*Repository, error) {
 	if e.loadedTypes[3] {
 		if e.HeadOf == nil {
 			// The edge head_of was loaded in eager-loading,
 			// but was not found.
-			return nil, &NotFoundError{label: repo.Label}
+			return nil, &NotFoundError{label: repository.Label}
 		}
 		return e.HeadOf, nil
 	}
@@ -206,7 +205,7 @@ func (*Release) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullString)
 		case release.ForeignKeys[0]: // git_commit_release
 			values[i] = new(sql.NullInt64)
-		case release.ForeignKeys[1]: // repo_head
+		case release.ForeignKeys[1]: // repository_head
 			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Release", columns[i])
@@ -258,10 +257,10 @@ func (r *Release) assignValues(columns []string, values []interface{}) error {
 			}
 		case release.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field repo_head", value)
+				return fmt.Errorf("unexpected type %T for edge-field repository_head", value)
 			} else if value.Valid {
-				r.repo_head = new(int)
-				*r.repo_head = int(value.Int64)
+				r.repository_head = new(int)
+				*r.repository_head = int(value.Int64)
 			}
 		}
 	}
@@ -284,7 +283,7 @@ func (r *Release) QueryCommit() *GitCommitQuery {
 }
 
 // QueryHeadOf queries the "head_of" edge of the Release entity.
-func (r *Release) QueryHeadOf() *RepoQuery {
+func (r *Release) QueryHeadOf() *RepositoryQuery {
 	return (&ReleaseClient{config: r.config}).QueryHeadOf(r)
 }
 

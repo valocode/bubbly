@@ -61,7 +61,7 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 			if err := policy.Validate(module, policy.WithResolver(&policy.EntResolver{})); err != nil {
 				return fmt.Errorf("validating policy module: %w", err)
 			}
-			if err := client.SavePolicy(bCtx, &api.ReleasePolicySaveRequest{
+			if err := client.SavePolicy(bCtx, &api.ReleasePolicyCreateRequest{
 				Policy: &api.ReleasePolicyCreate{
 					ReleasePolicyModelCreate: *ent.NewReleasePolicyModelCreate().
 						SetName(name).
@@ -89,7 +89,7 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 	)
 	f.StringSliceVar(&setProjects, "set-projects", nil, "List of project (names) to associate the policy with")
 	f.StringSliceVar(&notSetProjects, "not-set-projects", nil, "List of project (names) to disassociate the policy with")
-	f.StringSliceVar(&setRepos, "set-repos", nil, "List of repo (names) to associate the policy with")
-	f.StringSliceVar(&notSetRepos, "not-set-repos", nil, "List of repo (names) to disassociate the policy with")
+	f.StringSliceVar(&setRepos, "set-repositories", nil, "List of repo (names) to associate the policy with")
+	f.StringSliceVar(&notSetRepos, "not-set-repositories", nil, "List of repo (names) to disassociate the policy with")
 	return cmd
 }

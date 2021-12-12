@@ -45,7 +45,7 @@ func (GitCommit) Fields() []ent.Field {
 
 func (GitCommit) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("repo", Repo.Type).
+		edge.To("repository", Repository.Type).
 			Unique().Required(),
 		edge.To("release", Release.Type).
 			Unique(),
@@ -55,7 +55,7 @@ func (GitCommit) Edges() []ent.Edge {
 func (GitCommit) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("hash").
-			Edges("repo").
+			Edges("repository").
 			Unique(),
 	}
 }

@@ -237,25 +237,25 @@ func HasProjectsWith(preds ...predicate.Project) predicate.Organization {
 	})
 }
 
-// HasRepos applies the HasEdge predicate on the "repos" edge.
-func HasRepos() predicate.Organization {
+// HasRepositories applies the HasEdge predicate on the "repositories" edge.
+func HasRepositories() predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ReposTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, ReposTable, ReposColumn),
+			sqlgraph.To(RepositoriesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, RepositoriesTable, RepositoriesColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasReposWith applies the HasEdge predicate on the "repos" edge with a given conditions (other predicates).
-func HasReposWith(preds ...predicate.Repo) predicate.Organization {
+// HasRepositoriesWith applies the HasEdge predicate on the "repositories" edge with a given conditions (other predicates).
+func HasRepositoriesWith(preds ...predicate.Repository) predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ReposInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, ReposTable, ReposColumn),
+			sqlgraph.To(RepositoriesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, RepositoriesTable, RepositoriesColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

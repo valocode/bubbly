@@ -12,10 +12,8 @@ import (
 	"github.com/valocode/bubbly/ent/project"
 
 	"github.com/valocode/bubbly/ent/organization"
-	"github.com/valocode/bubbly/ent/releasepolicy"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	schema "github.com/valocode/bubbly/ent/schema/types"
-	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // ProjectCreate is the builder for creating a Project entity.
@@ -48,49 +46,19 @@ func (pc *ProjectCreate) SetOwner(o *Organization) *ProjectCreate {
 	return pc.SetOwnerID(o.ID)
 }
 
-// AddRepoIDs adds the "repos" edge to the Repo entity by IDs.
-func (pc *ProjectCreate) AddRepoIDs(ids ...int) *ProjectCreate {
-	pc.mutation.AddRepoIDs(ids...)
+// AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
+func (pc *ProjectCreate) AddRepositoryIDs(ids ...int) *ProjectCreate {
+	pc.mutation.AddRepositoryIDs(ids...)
 	return pc
 }
 
-// AddRepos adds the "repos" edges to the Repo entity.
-func (pc *ProjectCreate) AddRepos(r ...*Repo) *ProjectCreate {
+// AddRepositories adds the "repositories" edges to the Repository entity.
+func (pc *ProjectCreate) AddRepositories(r ...*Repository) *ProjectCreate {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return pc.AddRepoIDs(ids...)
-}
-
-// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
-func (pc *ProjectCreate) AddVulnerabilityReviewIDs(ids ...int) *ProjectCreate {
-	pc.mutation.AddVulnerabilityReviewIDs(ids...)
-	return pc
-}
-
-// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
-func (pc *ProjectCreate) AddVulnerabilityReviews(v ...*VulnerabilityReview) *ProjectCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return pc.AddVulnerabilityReviewIDs(ids...)
-}
-
-// AddPolicyIDs adds the "policies" edge to the ReleasePolicy entity by IDs.
-func (pc *ProjectCreate) AddPolicyIDs(ids ...int) *ProjectCreate {
-	pc.mutation.AddPolicyIDs(ids...)
-	return pc
-}
-
-// AddPolicies adds the "policies" edges to the ReleasePolicy entity.
-func (pc *ProjectCreate) AddPolicies(r ...*ReleasePolicy) *ProjectCreate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return pc.AddPolicyIDs(ids...)
+	return pc.AddRepositoryIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
@@ -237,55 +205,17 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		_node.project_owner = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pc.mutation.ReposIDs(); len(nodes) > 0 {
+	if nodes := pc.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   project.ReposTable,
-			Columns: []string{project.ReposColumn},
+			Table:   project.RepositoriesTable,
+			Columns: []string{project.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := pc.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.VulnerabilityReviewsTable,
-			Columns: project.VulnerabilityReviewsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: vulnerabilityreview.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := pc.mutation.PoliciesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.PoliciesTable,
-			Columns: project.PoliciesPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releasepolicy.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}

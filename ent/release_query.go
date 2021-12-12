@@ -22,7 +22,7 @@ import (
 	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
@@ -40,7 +40,7 @@ type ReleaseQuery struct {
 	withSubreleases          *ReleaseQuery
 	withDependencies         *ReleaseQuery
 	withCommit               *GitCommitQuery
-	withHeadOf               *RepoQuery
+	withHeadOf               *RepositoryQuery
 	withLog                  *ReleaseEntryQuery
 	withViolations           *ReleasePolicyViolationQuery
 	withArtifacts            *ArtifactQuery
@@ -154,8 +154,8 @@ func (rq *ReleaseQuery) QueryCommit() *GitCommitQuery {
 }
 
 // QueryHeadOf chains the current query on the "head_of" edge.
-func (rq *ReleaseQuery) QueryHeadOf() *RepoQuery {
-	query := &RepoQuery{config: rq.config}
+func (rq *ReleaseQuery) QueryHeadOf() *RepositoryQuery {
+	query := &RepositoryQuery{config: rq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -166,7 +166,7 @@ func (rq *ReleaseQuery) QueryHeadOf() *RepoQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(release.Table, release.FieldID, selector),
-			sqlgraph.To(repo.Table, repo.FieldID),
+			sqlgraph.To(repository.Table, repository.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, release.HeadOfTable, release.HeadOfColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
@@ -608,8 +608,8 @@ func (rq *ReleaseQuery) WithCommit(opts ...func(*GitCommitQuery)) *ReleaseQuery 
 
 // WithHeadOf tells the query-builder to eager-load the nodes that are connected to
 // the "head_of" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *ReleaseQuery) WithHeadOf(opts ...func(*RepoQuery)) *ReleaseQuery {
-	query := &RepoQuery{config: rq.config}
+func (rq *ReleaseQuery) WithHeadOf(opts ...func(*RepositoryQuery)) *ReleaseQuery {
+	query := &RepositoryQuery{config: rq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -987,16 +987,16 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		ids := make([]int, 0, len(nodes))
 		nodeids := make(map[int][]*Release)
 		for i := range nodes {
-			if nodes[i].repo_head == nil {
+			if nodes[i].repository_head == nil {
 				continue
 			}
-			fk := *nodes[i].repo_head
+			fk := *nodes[i].repository_head
 			if _, ok := nodeids[fk]; !ok {
 				ids = append(ids, fk)
 			}
 			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
-		query.Where(repo.IDIn(ids...))
+		query.Where(repository.IDIn(ids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
@@ -1004,7 +1004,7 @@ func (rq *ReleaseQuery) sqlAll(ctx context.Context) ([]*Release, error) {
 		for _, n := range neighbors {
 			nodes, ok := nodeids[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "repo_head" returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "repository_head" returned %v`, n.ID)
 			}
 			for i := range nodes {
 				nodes[i].Edges.HeadOf = n

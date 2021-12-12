@@ -49,7 +49,7 @@ func (Event) Edges() []ent.Edge {
 	return []ent.Edge{
 		// Edges to a release, repo or project (i.e. the "scope" of the event) are optional
 		edge.To("release", Release.Type).Unique(),
-		edge.To("repo", Repo.Type).Unique(),
+		edge.To("repository", Repository.Type).Unique(),
 		edge.To("project", Project.Type).Unique(),
 	}
 }

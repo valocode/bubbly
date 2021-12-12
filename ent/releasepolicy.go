@@ -31,15 +31,11 @@ type ReleasePolicy struct {
 type ReleasePolicyEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Organization `json:"owner,omitempty"`
-	// Projects holds the value of the projects edge.
-	Projects []*Project `json:"projects,omitempty"`
-	// Repos holds the value of the repos edge.
-	Repos []*Repo `json:"repos,omitempty"`
 	// Violations holds the value of the violations edge.
 	Violations []*ReleasePolicyViolation `json:"violations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [2]bool
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -56,28 +52,10 @@ func (e ReleasePolicyEdges) OwnerOrErr() (*Organization, error) {
 	return nil, &NotLoadedError{edge: "owner"}
 }
 
-// ProjectsOrErr returns the Projects value or an error if the edge
-// was not loaded in eager-loading.
-func (e ReleasePolicyEdges) ProjectsOrErr() ([]*Project, error) {
-	if e.loadedTypes[1] {
-		return e.Projects, nil
-	}
-	return nil, &NotLoadedError{edge: "projects"}
-}
-
-// ReposOrErr returns the Repos value or an error if the edge
-// was not loaded in eager-loading.
-func (e ReleasePolicyEdges) ReposOrErr() ([]*Repo, error) {
-	if e.loadedTypes[2] {
-		return e.Repos, nil
-	}
-	return nil, &NotLoadedError{edge: "repos"}
-}
-
 // ViolationsOrErr returns the Violations value or an error if the edge
 // was not loaded in eager-loading.
 func (e ReleasePolicyEdges) ViolationsOrErr() ([]*ReleasePolicyViolation, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[1] {
 		return e.Violations, nil
 	}
 	return nil, &NotLoadedError{edge: "violations"}
@@ -142,16 +120,6 @@ func (rp *ReleasePolicy) assignValues(columns []string, values []interface{}) er
 // QueryOwner queries the "owner" edge of the ReleasePolicy entity.
 func (rp *ReleasePolicy) QueryOwner() *OrganizationQuery {
 	return (&ReleasePolicyClient{config: rp.config}).QueryOwner(rp)
-}
-
-// QueryProjects queries the "projects" edge of the ReleasePolicy entity.
-func (rp *ReleasePolicy) QueryProjects() *ProjectQuery {
-	return (&ReleasePolicyClient{config: rp.config}).QueryProjects(rp)
-}
-
-// QueryRepos queries the "repos" edge of the ReleasePolicy entity.
-func (rp *ReleasePolicy) QueryRepos() *RepoQuery {
-	return (&ReleasePolicyClient{config: rp.config}).QueryRepos(rp)
 }
 
 // QueryViolations queries the "violations" edge of the ReleasePolicy entity.

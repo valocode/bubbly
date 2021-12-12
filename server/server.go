@@ -95,12 +95,22 @@ func NewWithStore(bCtx *config.BubblyConfig, store *store.Store) (*Server, error
 
 	v1 := e.Group("/api/v1")
 	v1.GET("/events", s.getEvents)
+
 	v1.GET("/projects", s.getProjects)
 	v1.POST("/projects", s.postProject)
+
+	v1.GET("/repositories", s.getRepositories)
+	v1.POST("/repositories", s.postRepository)
+
 	v1.GET("/releases", s.getReleases)
 	v1.GET("/releases/:id", s.getReleaseByID)
 	v1.POST("/releases", s.postRelease)
+
+	v1.GET("/artifacts", s.getArtifacts)
 	v1.POST("/artifacts", s.postArtifact)
+
+	v1.POST("/analysis", s.postAnalysis)
+
 	v1.POST("/codescans", s.postCodeScan)
 	v1.POST("/testruns", s.postTestRun)
 	v1.POST("/adapters", s.postAdapter)
@@ -155,182 +165,6 @@ func (s *Server) Start() error {
 		return err
 	}
 	return nil
-}
-
-func (s *Server) getEvents(c echo.Context) error {
-	var req api.EventGetRequest
-	if err := (&echo.DefaultBinder{}).BindQueryParams(c, &req); err != nil {
-		return err
-	}
-
-	h, err := store.NewHandler(store.WithStore(s.store))
-	if err != nil {
-		return err
-	}
-	dbEvents, err := h.GetEvents(&req)
-	if err != nil {
-		return err
-	}
-	return c.JSON(http.StatusOK, api.EventGetResponse{
-		Events: dbEvents,
-	})
-}
-
-func (s *Server) getProjects(c echo.Context) error {
-	var req api.ProjectGetRequest
-	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
-		return err
-	}
-	h, err := store.NewHandler(store.WithStore(s.store))
-	if err != nil {
-		return err
-	}
-	var where ent.ProjectWhereInput
-	if req.Name != "" {
-		where.Name = &req.Name
-	}
-	projects, err := h.GetProjects(&store.ProjectQuery{Where: &where})
-	if err != nil {
-		return err
-	}
-	return c.JSON(http.StatusOK, api.ProjectGetResponse{
-		Projects: projects,
-	})
-}
-
-func (s *Server) postProject(c echo.Context) error {
-	var req api.ProjectCreateRequest
-	binder := &echo.DefaultBinder{}
-	if err := binder.BindBody(c, &req); err != nil {
-		return err
-	}
-	h, err := store.NewHandler(store.WithStore(s.store))
-	if err != nil {
-		return err
-	}
-	if _, err := h.CreateProject(&req); err != nil {
-		return err
-	}
-	return c.NoContent(http.StatusOK)
-}
-
-func (s *Server) getReleases(c echo.Context) error {
-	var req api.ReleaseGetRequest
-	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
-		return err
-	}
-
-	h, err := store.NewHandler(store.WithStore(s.store))
-	if err != nil {
-		return err
-	}
-	var where ent.ReleaseWhereInput
-	if req.Commit != "" {
-		where.HasCommitWith = append(where.HasCommitWith, &ent.GitCommitWhereInput{
-			Hash: &req.Commit,
-		})
-	}
-	if req.Repos != "" {
-		where.HasCommitWith = append(where.HasCommitWith, &ent.GitCommitWhereInput{
-			HasRepoWith: []*ent.RepoWhereInput{{NameIn: strings.Split(req.Repos, ",")}},
-		})
-	}
-	if req.Projects != "" {
-		where.HasCommitWith = append(where.HasCommitWith, &ent.GitCommitWhereInput{
-			HasRepoWith: []*ent.RepoWhereInput{{HasProjectWith: []*ent.ProjectWhereInput{{NameIn: strings.Split(req.Projects, ",")}}}},
-		})
-	}
-	if req.HeadOnly {
-		where.HasHeadOf = &req.HeadOnly
-	}
-
-	var order *api.Order
-	if req.SortBy != "" {
-		order, err = api.OrderFromSortBy(req.SortBy)
-		if err != nil {
-			return err
-		}
-	}
-
-	dbReleases, err := h.GetReleases(&store.ReleaseQuery{
-		Where:          &where,
-		Order:          order,
-		WithLog:        req.Log,
-		WithPolicies:   req.Policies,
-		WithViolations: true,
-	})
-	if err != nil {
-		return err
-	}
-	return c.JSON(http.StatusOK, api.ReleaseGetResponse{
-		Releases: dbReleases,
-	})
-}
-
-func (s *Server) getReleaseByID(c echo.Context) error {
-	var req api.ReleaseGetByIDRequest
-	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
-		return err
-	}
-
-	h, err := store.NewHandler(store.WithStore(s.store))
-	if err != nil {
-		return err
-	}
-
-	dbReleases, err := h.GetReleases(&store.ReleaseQuery{
-		Where: &ent.ReleaseWhereInput{
-			ID: &req.ID,
-		},
-		WithLog:        true,
-		WithViolations: true,
-		WithPolicies:   true,
-	})
-	if err != nil {
-		return err
-	}
-	if len(dbReleases) == 0 {
-		return store.NewNotFoundError(nil, "release with id %d not found", req.ID)
-	}
-	return c.JSON(http.StatusOK, api.ReleaseGetByIDResponse{
-		Release: dbReleases[0],
-	})
-}
-
-func (s *Server) postRelease(c echo.Context) error {
-	var req api.ReleaseCreateRequest
-	binder := &echo.DefaultBinder{}
-	if err := binder.BindBody(c, &req); err != nil {
-		return err
-	}
-	h, err := store.NewHandler(
-		store.WithStore(s.store),
-		// TODO(miika): here is how to set user id for handler
-		// store.WithUserID(""),
-	)
-	if err != nil {
-		return err
-	}
-	if _, err := h.CreateRelease(&req); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Server) postArtifact(c echo.Context) error {
-	var req api.ArtifactLogRequest
-	binder := &echo.DefaultBinder{}
-	if err := binder.BindBody(c, &req); err != nil {
-		return err
-	}
-	h, err := store.NewHandler(store.WithStore(s.store))
-	if err != nil {
-		return err
-	}
-	if _, err := h.LogArtifact(&req); err != nil {
-		return err
-	}
-	return c.NoContent(http.StatusOK)
 }
 
 func (s *Server) postCodeScan(c echo.Context) error {
@@ -434,7 +268,7 @@ func (s *Server) getPolicies(c echo.Context) error {
 }
 
 func (s *Server) postPolicy(c echo.Context) error {
-	var req api.ReleasePolicySaveRequest
+	var req api.ReleasePolicyCreateRequest
 	binder := &echo.DefaultBinder{}
 	if err := binder.BindBody(c, &req); err != nil {
 		return err
@@ -443,7 +277,7 @@ func (s *Server) postPolicy(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	if _, err := h.SaveReleasePolicy(&req); err != nil {
+	if _, err := h.CreateReleasePolicy(&req); err != nil {
 		return err
 	}
 	return c.NoContent(http.StatusOK)
@@ -464,44 +298,6 @@ func (s *Server) putPolicy(c echo.Context) error {
 		return err
 	}
 	if _, err := h.UpdateReleasePolicy(&req); err != nil {
-		return err
-	}
-	return c.NoContent(http.StatusOK)
-}
-
-func (s *Server) getComponents(c echo.Context) error {
-	var req api.ComponentGetRequest
-	if err := (&echo.DefaultBinder{}).Bind(&req, c); err != nil {
-		return err
-	}
-	if err := s.validator.Struct(req); err != nil {
-		return store.HandleValidatorError(err, "query components")
-	}
-	h, err := store.NewHandler(store.WithStore(s.store))
-	if err != nil {
-		return err
-	}
-
-	components, err := h.GetComponents(&store.ComponentQuery{})
-	if err != nil {
-		return err
-	}
-	return c.JSON(http.StatusOK, api.ComponentGetResponse{
-		Components: components,
-	})
-}
-
-func (s *Server) postComponent(c echo.Context) error {
-	var req api.ComponentSaveRequest
-	binder := &echo.DefaultBinder{}
-	if err := binder.BindBody(c, &req); err != nil {
-		return err
-	}
-	h, err := store.NewHandler(store.WithStore(s.store))
-	if err != nil {
-		return err
-	}
-	if _, err := h.SaveComponent(&req); err != nil {
 		return err
 	}
 	return c.NoContent(http.StatusOK)
@@ -542,10 +338,10 @@ func (s *Server) getVulnerabilityReviews(c echo.Context) error {
 		return err
 	}
 	var (
-		where         ent.VulnerabilityReviewWhereInput
-		whereVulns    = strings.Split(req.Vulnerabilities, ",")
-		whereProjects = strings.Split(req.Projects, ",")
-		whereRepos    = strings.Split(req.Repos, ",")
+		where      ent.VulnerabilityReviewWhereInput
+		whereVulns = strings.Split(req.Vulnerabilities, ",")
+		// whereProjects = strings.Split(req.Projects, ",")
+		// whereRepos    = strings.Split(req.Repos, ",")
 	)
 
 	for _, vulnID := range whereVulns {
@@ -555,20 +351,20 @@ func (s *Server) getVulnerabilityReviews(c echo.Context) error {
 			},
 		)
 	}
-	for _, project := range whereProjects {
-		where.HasProjectsWith = append(where.HasProjectsWith,
-			&ent.ProjectWhereInput{
-				Name: &project,
-			},
-		)
-	}
-	for _, repo := range whereRepos {
-		where.HasReposWith = append(where.HasReposWith,
-			&ent.RepoWhereInput{
-				Name: &repo,
-			},
-		)
-	}
+	// for _, project := range whereProjects {
+	// 	where.HasProjectsWith = append(where.HasProjectsWith,
+	// 		&ent.ProjectWhereInput{
+	// 			Name: &project,
+	// 		},
+	// 	)
+	// }
+	// for _, repo := range whereRepos {
+	// 	where.HasReposWith = append(where.HasReposWith,
+	// 		&ent.RepoWhereInput{
+	// 			Name: &repo,
+	// 		},
+	// 	)
+	// }
 	if req.Commit != "" {
 		// Add where condition for releases with that Hash (should only be one, or none)
 		where.HasReleasesWith = append(where.HasReleasesWith, &ent.ReleaseWhereInput{

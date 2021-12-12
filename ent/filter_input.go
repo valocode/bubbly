@@ -771,21 +771,21 @@ func (rv *ReleaseVulnerabilityQuery) Filter(
 	return rv.All(ctx)
 }
 
-func (r *RepoQuery) Filter(
+func (r *RepositoryQuery) Filter(
 	ctx context.Context, first *int, last *int,
-	orderBy *RepoOrder, where *RepoWhereInput,
-) ([]*Repo, error) {
+	orderBy *RepositoryOrder, where *RepositoryWhereInput,
+) ([]*Repository, error) {
 	if err := validateFirstLast(first, last); err != nil {
 		return nil, err
 	}
 	if orderBy == nil {
-		orderBy = DefaultRepoOrder
+		orderBy = DefaultRepositoryOrder
 	}
 	if err := orderBy.Direction.Validate(); err != nil {
 		return nil, err
 	}
 	if orderBy.Field == nil {
-		orderBy.Field = DefaultRepoOrder.Field
+		orderBy.Field = DefaultRepositoryOrder.Field
 	}
 
 	r, err := where.Filter(r)
@@ -799,8 +799,8 @@ func (r *RepoQuery) Filter(
 	}
 	r = r.Order(orderBy.Direction.orderFunc(orderBy.Field.field))
 	// If a custom order was given, also apply the default order
-	if orderBy.Field != DefaultRepoOrder.Field {
-		r = r.Order(orderBy.Direction.orderFunc(DefaultRepoOrder.Field.field))
+	if orderBy.Field != DefaultRepositoryOrder.Field {
+		r = r.Order(orderBy.Direction.orderFunc(DefaultRepositoryOrder.Field.field))
 	}
 
 	var limit int

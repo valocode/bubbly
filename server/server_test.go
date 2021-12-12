@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -63,44 +62,6 @@ func testPutRequest(t *testing.T, e *echo.Echo, h echo.HandlerFunc, path string,
 	return h(c)
 }
 
-func TestRelease(t *testing.T) {
-	s, err := New(config.NewBubblyConfig())
-	require.NoError(t, err)
-
-	{
-		err := testPostRequest(t, s.e, s.postRelease, "/releases", &api.ReleaseCreateRequest{
-			Project: ent.NewProjectModelCreate().SetName("test-project"),
-			Repo:    ent.NewRepoModelCreate().SetName("test-repo"),
-			Commit:  ent.NewGitCommitModelCreate().SetHash("123").SetBranch("main").SetTime(time.Now()),
-			Release: ent.NewReleaseModelCreate().SetName("test-repo").SetVersion("123"),
-		})
-		require.NoError(t, err)
-	}
-	{
-		err := testPostRequest(t, s.e, s.postRelease, "/releases", &api.ReleaseCreateRequest{
-			Project: ent.NewProjectModelCreate().SetName("another-project"),
-			Repo:    ent.NewRepoModelCreate().SetName("another-repo"),
-			Commit:  ent.NewGitCommitModelCreate().SetHash("456").SetBranch("main").SetTime(time.Now()),
-			Release: ent.NewReleaseModelCreate().SetName("another-repo").SetVersion("456"),
-		})
-		require.NoError(t, err)
-	}
-	t.Run("get all releases", func(t *testing.T) {
-		rec, err := testGetRequest(t, s.e, s.getReleases, "/releases", nil)
-		assert.NoError(t, err)
-		var resp api.ReleaseGetResponse
-		json.NewDecoder(rec.Body).Decode(&resp)
-		assert.Len(t, resp.Releases, 2)
-	})
-	t.Run("get project releases", func(t *testing.T) {
-		rec, err := testGetRequest(t, s.e, s.getReleases, "/releases?projects=test-project", nil)
-		assert.NoError(t, err)
-		var resp api.ReleaseGetResponse
-		json.NewDecoder(rec.Body).Decode(&resp)
-		assert.Len(t, resp.Releases, 1)
-	})
-}
-
 func TestAdapter(t *testing.T) {
 	s, err := New(config.NewBubblyConfig())
 	require.NoError(t, err)
@@ -145,7 +106,7 @@ func TestPolicy(t *testing.T) {
 	require.NoError(t, err)
 
 	{
-		err := testPostRequest(t, s.e, s.postPolicy, "/policies", &api.ReleasePolicySaveRequest{
+		err := testPostRequest(t, s.e, s.postPolicy, "/policies", &api.ReleasePolicyCreateRequest{
 			Policy: &api.ReleasePolicyCreate{
 				ReleasePolicyModelCreate: *ent.NewReleasePolicyModelCreate().
 					SetName("test").SetModule("package test"),
@@ -154,7 +115,7 @@ func TestPolicy(t *testing.T) {
 		require.NoError(t, err)
 	}
 	{
-		err := testPostRequest(t, s.e, s.postPolicy, "/policies", &api.ReleasePolicySaveRequest{
+		err := testPostRequest(t, s.e, s.postPolicy, "/policies", &api.ReleasePolicyCreateRequest{
 			Policy: &api.ReleasePolicyCreate{
 				ReleasePolicyModelCreate: *ent.NewReleasePolicyModelCreate().
 					SetName("another").SetModule("package test"),
@@ -199,16 +160,12 @@ func TestServer(t *testing.T) {
 	data := test.CreateDummyData()
 	for _, repo := range data {
 		for _, release := range repo.Releases {
-			// t.Log("Creating Release: ", release.Release.Commit.Hash)
 			testPostRequest(t, s.e, s.postRelease, "/releases", release.Release)
 			for _, art := range release.Artifacts {
 				testPostRequest(t, s.e, s.postArtifact, "/artifacts", art)
 			}
-			for _, scan := range release.CodeScans {
-				testPostRequest(t, s.e, s.postCodeScan, "/codescans", scan)
-			}
-			for _, run := range release.TestRuns {
-				testPostRequest(t, s.e, s.postTestRun, "/testruns", run)
+			for _, comp := range release.Components {
+				testPostRequest(t, s.e, s.postComponent, "/components", comp)
 			}
 		}
 	}

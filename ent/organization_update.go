@@ -12,7 +12,7 @@ import (
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // OrganizationUpdate is the builder for updating Organization entities.
@@ -49,19 +49,19 @@ func (ou *OrganizationUpdate) AddProjects(p ...*Project) *OrganizationUpdate {
 	return ou.AddProjectIDs(ids...)
 }
 
-// AddRepoIDs adds the "repos" edge to the Repo entity by IDs.
-func (ou *OrganizationUpdate) AddRepoIDs(ids ...int) *OrganizationUpdate {
-	ou.mutation.AddRepoIDs(ids...)
+// AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
+func (ou *OrganizationUpdate) AddRepositoryIDs(ids ...int) *OrganizationUpdate {
+	ou.mutation.AddRepositoryIDs(ids...)
 	return ou
 }
 
-// AddRepos adds the "repos" edges to the Repo entity.
-func (ou *OrganizationUpdate) AddRepos(r ...*Repo) *OrganizationUpdate {
+// AddRepositories adds the "repositories" edges to the Repository entity.
+func (ou *OrganizationUpdate) AddRepositories(r ...*Repository) *OrganizationUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return ou.AddRepoIDs(ids...)
+	return ou.AddRepositoryIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -90,25 +90,25 @@ func (ou *OrganizationUpdate) RemoveProjects(p ...*Project) *OrganizationUpdate 
 	return ou.RemoveProjectIDs(ids...)
 }
 
-// ClearRepos clears all "repos" edges to the Repo entity.
-func (ou *OrganizationUpdate) ClearRepos() *OrganizationUpdate {
-	ou.mutation.ClearRepos()
+// ClearRepositories clears all "repositories" edges to the Repository entity.
+func (ou *OrganizationUpdate) ClearRepositories() *OrganizationUpdate {
+	ou.mutation.ClearRepositories()
 	return ou
 }
 
-// RemoveRepoIDs removes the "repos" edge to Repo entities by IDs.
-func (ou *OrganizationUpdate) RemoveRepoIDs(ids ...int) *OrganizationUpdate {
-	ou.mutation.RemoveRepoIDs(ids...)
+// RemoveRepositoryIDs removes the "repositories" edge to Repository entities by IDs.
+func (ou *OrganizationUpdate) RemoveRepositoryIDs(ids ...int) *OrganizationUpdate {
+	ou.mutation.RemoveRepositoryIDs(ids...)
 	return ou
 }
 
-// RemoveRepos removes "repos" edges to Repo entities.
-func (ou *OrganizationUpdate) RemoveRepos(r ...*Repo) *OrganizationUpdate {
+// RemoveRepositories removes "repositories" edges to Repository entities.
+func (ou *OrganizationUpdate) RemoveRepositories(r ...*Repository) *OrganizationUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return ou.RemoveRepoIDs(ids...)
+	return ou.RemoveRepositoryIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -260,33 +260,33 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ou.mutation.ReposCleared() {
+	if ou.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   organization.ReposTable,
-			Columns: []string{organization.ReposColumn},
+			Table:   organization.RepositoriesTable,
+			Columns: []string{organization.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ou.mutation.RemovedReposIDs(); len(nodes) > 0 && !ou.mutation.ReposCleared() {
+	if nodes := ou.mutation.RemovedRepositoriesIDs(); len(nodes) > 0 && !ou.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   organization.ReposTable,
-			Columns: []string{organization.ReposColumn},
+			Table:   organization.RepositoriesTable,
+			Columns: []string{organization.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -295,17 +295,17 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ou.mutation.ReposIDs(); len(nodes) > 0 {
+	if nodes := ou.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   organization.ReposTable,
-			Columns: []string{organization.ReposColumn},
+			Table:   organization.RepositoriesTable,
+			Columns: []string{organization.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -354,19 +354,19 @@ func (ouo *OrganizationUpdateOne) AddProjects(p ...*Project) *OrganizationUpdate
 	return ouo.AddProjectIDs(ids...)
 }
 
-// AddRepoIDs adds the "repos" edge to the Repo entity by IDs.
-func (ouo *OrganizationUpdateOne) AddRepoIDs(ids ...int) *OrganizationUpdateOne {
-	ouo.mutation.AddRepoIDs(ids...)
+// AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
+func (ouo *OrganizationUpdateOne) AddRepositoryIDs(ids ...int) *OrganizationUpdateOne {
+	ouo.mutation.AddRepositoryIDs(ids...)
 	return ouo
 }
 
-// AddRepos adds the "repos" edges to the Repo entity.
-func (ouo *OrganizationUpdateOne) AddRepos(r ...*Repo) *OrganizationUpdateOne {
+// AddRepositories adds the "repositories" edges to the Repository entity.
+func (ouo *OrganizationUpdateOne) AddRepositories(r ...*Repository) *OrganizationUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return ouo.AddRepoIDs(ids...)
+	return ouo.AddRepositoryIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -395,25 +395,25 @@ func (ouo *OrganizationUpdateOne) RemoveProjects(p ...*Project) *OrganizationUpd
 	return ouo.RemoveProjectIDs(ids...)
 }
 
-// ClearRepos clears all "repos" edges to the Repo entity.
-func (ouo *OrganizationUpdateOne) ClearRepos() *OrganizationUpdateOne {
-	ouo.mutation.ClearRepos()
+// ClearRepositories clears all "repositories" edges to the Repository entity.
+func (ouo *OrganizationUpdateOne) ClearRepositories() *OrganizationUpdateOne {
+	ouo.mutation.ClearRepositories()
 	return ouo
 }
 
-// RemoveRepoIDs removes the "repos" edge to Repo entities by IDs.
-func (ouo *OrganizationUpdateOne) RemoveRepoIDs(ids ...int) *OrganizationUpdateOne {
-	ouo.mutation.RemoveRepoIDs(ids...)
+// RemoveRepositoryIDs removes the "repositories" edge to Repository entities by IDs.
+func (ouo *OrganizationUpdateOne) RemoveRepositoryIDs(ids ...int) *OrganizationUpdateOne {
+	ouo.mutation.RemoveRepositoryIDs(ids...)
 	return ouo
 }
 
-// RemoveRepos removes "repos" edges to Repo entities.
-func (ouo *OrganizationUpdateOne) RemoveRepos(r ...*Repo) *OrganizationUpdateOne {
+// RemoveRepositories removes "repositories" edges to Repository entities.
+func (ouo *OrganizationUpdateOne) RemoveRepositories(r ...*Repository) *OrganizationUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return ouo.RemoveRepoIDs(ids...)
+	return ouo.RemoveRepositoryIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -589,33 +589,33 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if ouo.mutation.ReposCleared() {
+	if ouo.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   organization.ReposTable,
-			Columns: []string{organization.ReposColumn},
+			Table:   organization.RepositoriesTable,
+			Columns: []string{organization.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ouo.mutation.RemovedReposIDs(); len(nodes) > 0 && !ouo.mutation.ReposCleared() {
+	if nodes := ouo.mutation.RemovedRepositoriesIDs(); len(nodes) > 0 && !ouo.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   organization.ReposTable,
-			Columns: []string{organization.ReposColumn},
+			Table:   organization.RepositoriesTable,
+			Columns: []string{organization.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -624,17 +624,17 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ouo.mutation.ReposIDs(); len(nodes) > 0 {
+	if nodes := ouo.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   organization.ReposTable,
-			Columns: []string{organization.ReposColumn},
+			Table:   organization.RepositoriesTable,
+			Columns: []string{organization.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}

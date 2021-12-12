@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
@@ -44,14 +45,6 @@ func (au *ArtifactUpdate) ClearMetadata() *ArtifactUpdate {
 // SetReleaseID sets the "release" edge to the Release entity by ID.
 func (au *ArtifactUpdate) SetReleaseID(id int) *ArtifactUpdate {
 	au.mutation.SetReleaseID(id)
-	return au
-}
-
-// SetNillableReleaseID sets the "release" edge to the Release entity by ID if the given value is not nil.
-func (au *ArtifactUpdate) SetNillableReleaseID(id *int) *ArtifactUpdate {
-	if id != nil {
-		au = au.SetReleaseID(*id)
-	}
 	return au
 }
 
@@ -103,12 +96,18 @@ func (au *ArtifactUpdate) Save(ctx context.Context) (int, error) {
 		affected int
 	)
 	if len(au.hooks) == 0 {
+		if err = au.check(); err != nil {
+			return 0, err
+		}
 		affected, err = au.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ArtifactMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = au.check(); err != nil {
+				return 0, err
 			}
 			au.mutation = mutation
 			affected, err = au.sqlSave(ctx)
@@ -148,6 +147,14 @@ func (au *ArtifactUpdate) ExecX(ctx context.Context) {
 	if err := au.Exec(ctx); err != nil {
 		panic(err)
 	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (au *ArtifactUpdate) check() error {
+	if _, ok := au.mutation.ReleaseID(); au.mutation.ReleaseCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"release\"")
+	}
+	return nil
 }
 
 func (au *ArtifactUpdate) sqlSave(ctx context.Context) (n int, err error) {
@@ -288,14 +295,6 @@ func (auo *ArtifactUpdateOne) SetReleaseID(id int) *ArtifactUpdateOne {
 	return auo
 }
 
-// SetNillableReleaseID sets the "release" edge to the Release entity by ID if the given value is not nil.
-func (auo *ArtifactUpdateOne) SetNillableReleaseID(id *int) *ArtifactUpdateOne {
-	if id != nil {
-		auo = auo.SetReleaseID(*id)
-	}
-	return auo
-}
-
 // SetRelease sets the "release" edge to the Release entity.
 func (auo *ArtifactUpdateOne) SetRelease(r *Release) *ArtifactUpdateOne {
 	return auo.SetReleaseID(r.ID)
@@ -351,12 +350,18 @@ func (auo *ArtifactUpdateOne) Save(ctx context.Context) (*Artifact, error) {
 		node *Artifact
 	)
 	if len(auo.hooks) == 0 {
+		if err = auo.check(); err != nil {
+			return nil, err
+		}
 		node, err = auo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*ArtifactMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = auo.check(); err != nil {
+				return nil, err
 			}
 			auo.mutation = mutation
 			node, err = auo.sqlSave(ctx)
@@ -396,6 +401,14 @@ func (auo *ArtifactUpdateOne) ExecX(ctx context.Context) {
 	if err := auo.Exec(ctx); err != nil {
 		panic(err)
 	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (auo *ArtifactUpdateOne) check() error {
+	if _, ok := auo.mutation.ReleaseID(); auo.mutation.ReleaseCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"release\"")
+	}
+	return nil
 }
 
 func (auo *ArtifactUpdateOne) sqlSave(ctx context.Context) (_node *Artifact, err error) {

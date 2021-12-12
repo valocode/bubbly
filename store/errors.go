@@ -31,7 +31,6 @@ func HandleValidatorError(err error, msg string) error {
 }
 
 func HandleEntError(entErr error, msg string) error {
-
 	switch {
 	case ent.IsConstraintError(entErr):
 		return NewConflictError(entErr, msg)

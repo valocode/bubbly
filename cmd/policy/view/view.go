@@ -69,7 +69,7 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
-	f.BoolVar(&withAffects, "affects", false, "Include projects, repos that the policy applies to")
+	f.BoolVar(&withAffects, "affects", false, "Include projects, repositories that the policy applies to")
 
 	return cmd
 }

@@ -24,7 +24,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
@@ -1846,9 +1846,9 @@ type EventWhereInput struct {
 	HasRelease     *bool                `json:"hasRelease,omitempty"`
 	HasReleaseWith []*ReleaseWhereInput `json:"hasReleaseWith,omitempty"`
 
-	// "repo" edge predicates.
-	HasRepo     *bool             `json:"hasRepo,omitempty"`
-	HasRepoWith []*RepoWhereInput `json:"hasRepoWith,omitempty"`
+	// "repository" edge predicates.
+	HasRepository     *bool                   `json:"hasRepository,omitempty"`
+	HasRepositoryWith []*RepositoryWhereInput `json:"hasRepositoryWith,omitempty"`
 
 	// "project" edge predicates.
 	HasProject     *bool                `json:"hasProject,omitempty"`
@@ -2044,23 +2044,23 @@ func (i *EventWhereInput) P() (predicate.Event, error) {
 		}
 		predicates = append(predicates, event.HasReleaseWith(with...))
 	}
-	if i.HasRepo != nil {
-		p := event.HasRepo()
-		if !*i.HasRepo {
+	if i.HasRepository != nil {
+		p := event.HasRepository()
+		if !*i.HasRepository {
 			p = event.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasRepoWith) > 0 {
-		with := make([]predicate.Repo, 0, len(i.HasRepoWith))
-		for _, w := range i.HasRepoWith {
+	if len(i.HasRepositoryWith) > 0 {
+		with := make([]predicate.Repository, 0, len(i.HasRepositoryWith))
+		for _, w := range i.HasRepositoryWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, event.HasRepoWith(with...))
+		predicates = append(predicates, event.HasRepositoryWith(with...))
 	}
 	if i.HasProject != nil {
 		p := event.HasProject()
@@ -2163,9 +2163,9 @@ type GitCommitWhereInput struct {
 	TimeLT    *time.Time  `json:"timeLT,omitempty"`
 	TimeLTE   *time.Time  `json:"timeLTE,omitempty"`
 
-	// "repo" edge predicates.
-	HasRepo     *bool             `json:"hasRepo,omitempty"`
-	HasRepoWith []*RepoWhereInput `json:"hasRepoWith,omitempty"`
+	// "repository" edge predicates.
+	HasRepository     *bool                   `json:"hasRepository,omitempty"`
+	HasRepositoryWith []*RepositoryWhereInput `json:"hasRepositoryWith,omitempty"`
 
 	// "release" edge predicates.
 	HasRelease     *bool                `json:"hasRelease,omitempty"`
@@ -2403,23 +2403,23 @@ func (i *GitCommitWhereInput) P() (predicate.GitCommit, error) {
 		predicates = append(predicates, gitcommit.TimeLTE(*i.TimeLTE))
 	}
 
-	if i.HasRepo != nil {
-		p := gitcommit.HasRepo()
-		if !*i.HasRepo {
+	if i.HasRepository != nil {
+		p := gitcommit.HasRepository()
+		if !*i.HasRepository {
 			p = gitcommit.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasRepoWith) > 0 {
-		with := make([]predicate.Repo, 0, len(i.HasRepoWith))
-		for _, w := range i.HasRepoWith {
+	if len(i.HasRepositoryWith) > 0 {
+		with := make([]predicate.Repository, 0, len(i.HasRepositoryWith))
+		for _, w := range i.HasRepositoryWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, gitcommit.HasRepoWith(with...))
+		predicates = append(predicates, gitcommit.HasRepositoryWith(with...))
 	}
 	if i.HasRelease != nil {
 		p := gitcommit.HasRelease()
@@ -2799,9 +2799,9 @@ type OrganizationWhereInput struct {
 	HasProjects     *bool                `json:"hasProjects,omitempty"`
 	HasProjectsWith []*ProjectWhereInput `json:"hasProjectsWith,omitempty"`
 
-	// "repos" edge predicates.
-	HasRepos     *bool             `json:"hasRepos,omitempty"`
-	HasReposWith []*RepoWhereInput `json:"hasReposWith,omitempty"`
+	// "repositories" edge predicates.
+	HasRepositories     *bool                   `json:"hasRepositories,omitempty"`
+	HasRepositoriesWith []*RepositoryWhereInput `json:"hasRepositoriesWith,omitempty"`
 }
 
 // Filter applies the OrganizationWhereInput filter on the OrganizationQuery builder.
@@ -2945,23 +2945,23 @@ func (i *OrganizationWhereInput) P() (predicate.Organization, error) {
 		}
 		predicates = append(predicates, organization.HasProjectsWith(with...))
 	}
-	if i.HasRepos != nil {
-		p := organization.HasRepos()
-		if !*i.HasRepos {
+	if i.HasRepositories != nil {
+		p := organization.HasRepositories()
+		if !*i.HasRepositories {
 			p = organization.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasReposWith) > 0 {
-		with := make([]predicate.Repo, 0, len(i.HasReposWith))
-		for _, w := range i.HasReposWith {
+	if len(i.HasRepositoriesWith) > 0 {
+		with := make([]predicate.Repository, 0, len(i.HasRepositoriesWith))
+		for _, w := range i.HasRepositoriesWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, organization.HasReposWith(with...))
+		predicates = append(predicates, organization.HasRepositoriesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -3008,17 +3008,9 @@ type ProjectWhereInput struct {
 	HasOwner     *bool                     `json:"hasOwner,omitempty"`
 	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
 
-	// "repos" edge predicates.
-	HasRepos     *bool             `json:"hasRepos,omitempty"`
-	HasReposWith []*RepoWhereInput `json:"hasReposWith,omitempty"`
-
-	// "vulnerability_reviews" edge predicates.
-	HasVulnerabilityReviews     *bool                            `json:"hasVulnerabilityReviews,omitempty"`
-	HasVulnerabilityReviewsWith []*VulnerabilityReviewWhereInput `json:"hasVulnerabilityReviewsWith,omitempty"`
-
-	// "policies" edge predicates.
-	HasPolicies     *bool                      `json:"hasPolicies,omitempty"`
-	HasPoliciesWith []*ReleasePolicyWhereInput `json:"hasPoliciesWith,omitempty"`
+	// "repositories" edge predicates.
+	HasRepositories     *bool                   `json:"hasRepositories,omitempty"`
+	HasRepositoriesWith []*RepositoryWhereInput `json:"hasRepositoriesWith,omitempty"`
 }
 
 // Filter applies the ProjectWhereInput filter on the ProjectQuery builder.
@@ -3162,59 +3154,23 @@ func (i *ProjectWhereInput) P() (predicate.Project, error) {
 		}
 		predicates = append(predicates, project.HasOwnerWith(with...))
 	}
-	if i.HasRepos != nil {
-		p := project.HasRepos()
-		if !*i.HasRepos {
+	if i.HasRepositories != nil {
+		p := project.HasRepositories()
+		if !*i.HasRepositories {
 			p = project.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
-	if len(i.HasReposWith) > 0 {
-		with := make([]predicate.Repo, 0, len(i.HasReposWith))
-		for _, w := range i.HasReposWith {
+	if len(i.HasRepositoriesWith) > 0 {
+		with := make([]predicate.Repository, 0, len(i.HasRepositoriesWith))
+		for _, w := range i.HasRepositoriesWith {
 			p, err := w.P()
 			if err != nil {
 				return nil, err
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, project.HasReposWith(with...))
-	}
-	if i.HasVulnerabilityReviews != nil {
-		p := project.HasVulnerabilityReviews()
-		if !*i.HasVulnerabilityReviews {
-			p = project.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasVulnerabilityReviewsWith) > 0 {
-		with := make([]predicate.VulnerabilityReview, 0, len(i.HasVulnerabilityReviewsWith))
-		for _, w := range i.HasVulnerabilityReviewsWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, project.HasVulnerabilityReviewsWith(with...))
-	}
-	if i.HasPolicies != nil {
-		p := project.HasPolicies()
-		if !*i.HasPolicies {
-			p = project.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasPoliciesWith) > 0 {
-		with := make([]predicate.ReleasePolicy, 0, len(i.HasPoliciesWith))
-		for _, w := range i.HasPoliciesWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, project.HasPoliciesWith(with...))
+		predicates = append(predicates, project.HasRepositoriesWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -3285,8 +3241,8 @@ type ReleaseWhereInput struct {
 	HasCommitWith []*GitCommitWhereInput `json:"hasCommitWith,omitempty"`
 
 	// "head_of" edge predicates.
-	HasHeadOf     *bool             `json:"hasHeadOf,omitempty"`
-	HasHeadOfWith []*RepoWhereInput `json:"hasHeadOfWith,omitempty"`
+	HasHeadOf     *bool                   `json:"hasHeadOf,omitempty"`
+	HasHeadOfWith []*RepositoryWhereInput `json:"hasHeadOfWith,omitempty"`
 
 	// "log" edge predicates.
 	HasLog     *bool                     `json:"hasLog,omitempty"`
@@ -3549,7 +3505,7 @@ func (i *ReleaseWhereInput) P() (predicate.Release, error) {
 		predicates = append(predicates, p)
 	}
 	if len(i.HasHeadOfWith) > 0 {
-		with := make([]predicate.Repo, 0, len(i.HasHeadOfWith))
+		with := make([]predicate.Repository, 0, len(i.HasHeadOfWith))
 		for _, w := range i.HasHeadOfWith {
 			p, err := w.P()
 			if err != nil {
@@ -4470,14 +4426,6 @@ type ReleasePolicyWhereInput struct {
 	HasOwner     *bool                     `json:"hasOwner,omitempty"`
 	HasOwnerWith []*OrganizationWhereInput `json:"hasOwnerWith,omitempty"`
 
-	// "projects" edge predicates.
-	HasProjects     *bool                `json:"hasProjects,omitempty"`
-	HasProjectsWith []*ProjectWhereInput `json:"hasProjectsWith,omitempty"`
-
-	// "repos" edge predicates.
-	HasRepos     *bool             `json:"hasRepos,omitempty"`
-	HasReposWith []*RepoWhereInput `json:"hasReposWith,omitempty"`
-
 	// "violations" edge predicates.
 	HasViolations     *bool                               `json:"hasViolations,omitempty"`
 	HasViolationsWith []*ReleasePolicyViolationWhereInput `json:"hasViolationsWith,omitempty"`
@@ -4662,42 +4610,6 @@ func (i *ReleasePolicyWhereInput) P() (predicate.ReleasePolicy, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, releasepolicy.HasOwnerWith(with...))
-	}
-	if i.HasProjects != nil {
-		p := releasepolicy.HasProjects()
-		if !*i.HasProjects {
-			p = releasepolicy.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasProjectsWith) > 0 {
-		with := make([]predicate.Project, 0, len(i.HasProjectsWith))
-		for _, w := range i.HasProjectsWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, releasepolicy.HasProjectsWith(with...))
-	}
-	if i.HasRepos != nil {
-		p := releasepolicy.HasRepos()
-		if !*i.HasRepos {
-			p = releasepolicy.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasReposWith) > 0 {
-		with := make([]predicate.Repo, 0, len(i.HasReposWith))
-		for _, w := range i.HasReposWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, releasepolicy.HasReposWith(with...))
 	}
 	if i.HasViolations != nil {
 		p := releasepolicy.HasViolations()
@@ -5193,11 +5105,11 @@ func (i *ReleaseVulnerabilityWhereInput) P() (predicate.ReleaseVulnerability, er
 	}
 }
 
-// RepoWhereInput represents a where input for filtering Repo queries.
-type RepoWhereInput struct {
-	Not *RepoWhereInput   `json:"not,omitempty"`
-	Or  []*RepoWhereInput `json:"or,omitempty"`
-	And []*RepoWhereInput `json:"and,omitempty"`
+// RepositoryWhereInput represents a where input for filtering Repository queries.
+type RepositoryWhereInput struct {
+	Not *RepositoryWhereInput   `json:"not,omitempty"`
+	Or  []*RepositoryWhereInput `json:"or,omitempty"`
+	And []*RepositoryWhereInput `json:"and,omitempty"`
 
 	// "id" field predicates.
 	ID      *int  `json:"id,omitempty"`
@@ -5254,18 +5166,10 @@ type RepoWhereInput struct {
 	// "commits" edge predicates.
 	HasCommits     *bool                  `json:"hasCommits,omitempty"`
 	HasCommitsWith []*GitCommitWhereInput `json:"hasCommitsWith,omitempty"`
-
-	// "vulnerability_reviews" edge predicates.
-	HasVulnerabilityReviews     *bool                            `json:"hasVulnerabilityReviews,omitempty"`
-	HasVulnerabilityReviewsWith []*VulnerabilityReviewWhereInput `json:"hasVulnerabilityReviewsWith,omitempty"`
-
-	// "policies" edge predicates.
-	HasPolicies     *bool                      `json:"hasPolicies,omitempty"`
-	HasPoliciesWith []*ReleasePolicyWhereInput `json:"hasPoliciesWith,omitempty"`
 }
 
-// Filter applies the RepoWhereInput filter on the RepoQuery builder.
-func (i *RepoWhereInput) Filter(q *RepoQuery) (*RepoQuery, error) {
+// Filter applies the RepositoryWhereInput filter on the RepositoryQuery builder.
+func (i *RepositoryWhereInput) Filter(q *RepositoryQuery) (*RepositoryQuery, error) {
 	if i == nil {
 		return q, nil
 	}
@@ -5276,16 +5180,16 @@ func (i *RepoWhereInput) Filter(q *RepoQuery) (*RepoQuery, error) {
 	return q.Where(p), nil
 }
 
-// P returns a predicate for filtering repos.
+// P returns a predicate for filtering repositories.
 // An error is returned if the input is empty or invalid.
-func (i *RepoWhereInput) P() (predicate.Repo, error) {
-	var predicates []predicate.Repo
+func (i *RepositoryWhereInput) P() (predicate.Repository, error) {
+	var predicates []predicate.Repository
 	if i.Not != nil {
 		p, err := i.Not.P()
 		if err != nil {
 			return nil, err
 		}
-		predicates = append(predicates, repo.Not(p))
+		predicates = append(predicates, repository.Not(p))
 	}
 	switch n := len(i.Or); {
 	case n == 1:
@@ -5295,7 +5199,7 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 		}
 		predicates = append(predicates, p)
 	case n > 1:
-		or := make([]predicate.Repo, 0, n)
+		or := make([]predicate.Repository, 0, n)
 		for _, w := range i.Or {
 			p, err := w.P()
 			if err != nil {
@@ -5303,7 +5207,7 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 			}
 			or = append(or, p)
 		}
-		predicates = append(predicates, repo.Or(or...))
+		predicates = append(predicates, repository.Or(or...))
 	}
 	switch n := len(i.And); {
 	case n == 1:
@@ -5313,7 +5217,7 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 		}
 		predicates = append(predicates, p)
 	case n > 1:
-		and := make([]predicate.Repo, 0, n)
+		and := make([]predicate.Repository, 0, n)
 		for _, w := range i.And {
 			p, err := w.P()
 			if err != nil {
@@ -5321,115 +5225,115 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 			}
 			and = append(and, p)
 		}
-		predicates = append(predicates, repo.And(and...))
+		predicates = append(predicates, repository.And(and...))
 	}
 	if i.ID != nil {
-		predicates = append(predicates, repo.IDEQ(*i.ID))
+		predicates = append(predicates, repository.IDEQ(*i.ID))
 	}
 	if i.IDNEQ != nil {
-		predicates = append(predicates, repo.IDNEQ(*i.IDNEQ))
+		predicates = append(predicates, repository.IDNEQ(*i.IDNEQ))
 	}
 	if len(i.IDIn) > 0 {
-		predicates = append(predicates, repo.IDIn(i.IDIn...))
+		predicates = append(predicates, repository.IDIn(i.IDIn...))
 	}
 	if len(i.IDNotIn) > 0 {
-		predicates = append(predicates, repo.IDNotIn(i.IDNotIn...))
+		predicates = append(predicates, repository.IDNotIn(i.IDNotIn...))
 	}
 	if i.IDGT != nil {
-		predicates = append(predicates, repo.IDGT(*i.IDGT))
+		predicates = append(predicates, repository.IDGT(*i.IDGT))
 	}
 	if i.IDGTE != nil {
-		predicates = append(predicates, repo.IDGTE(*i.IDGTE))
+		predicates = append(predicates, repository.IDGTE(*i.IDGTE))
 	}
 	if i.IDLT != nil {
-		predicates = append(predicates, repo.IDLT(*i.IDLT))
+		predicates = append(predicates, repository.IDLT(*i.IDLT))
 	}
 	if i.IDLTE != nil {
-		predicates = append(predicates, repo.IDLTE(*i.IDLTE))
+		predicates = append(predicates, repository.IDLTE(*i.IDLTE))
 	}
 	if i.Name != nil {
-		predicates = append(predicates, repo.NameEQ(*i.Name))
+		predicates = append(predicates, repository.NameEQ(*i.Name))
 	}
 	if i.NameNEQ != nil {
-		predicates = append(predicates, repo.NameNEQ(*i.NameNEQ))
+		predicates = append(predicates, repository.NameNEQ(*i.NameNEQ))
 	}
 	if len(i.NameIn) > 0 {
-		predicates = append(predicates, repo.NameIn(i.NameIn...))
+		predicates = append(predicates, repository.NameIn(i.NameIn...))
 	}
 	if len(i.NameNotIn) > 0 {
-		predicates = append(predicates, repo.NameNotIn(i.NameNotIn...))
+		predicates = append(predicates, repository.NameNotIn(i.NameNotIn...))
 	}
 	if i.NameGT != nil {
-		predicates = append(predicates, repo.NameGT(*i.NameGT))
+		predicates = append(predicates, repository.NameGT(*i.NameGT))
 	}
 	if i.NameGTE != nil {
-		predicates = append(predicates, repo.NameGTE(*i.NameGTE))
+		predicates = append(predicates, repository.NameGTE(*i.NameGTE))
 	}
 	if i.NameLT != nil {
-		predicates = append(predicates, repo.NameLT(*i.NameLT))
+		predicates = append(predicates, repository.NameLT(*i.NameLT))
 	}
 	if i.NameLTE != nil {
-		predicates = append(predicates, repo.NameLTE(*i.NameLTE))
+		predicates = append(predicates, repository.NameLTE(*i.NameLTE))
 	}
 	if i.NameContains != nil {
-		predicates = append(predicates, repo.NameContains(*i.NameContains))
+		predicates = append(predicates, repository.NameContains(*i.NameContains))
 	}
 	if i.NameHasPrefix != nil {
-		predicates = append(predicates, repo.NameHasPrefix(*i.NameHasPrefix))
+		predicates = append(predicates, repository.NameHasPrefix(*i.NameHasPrefix))
 	}
 	if i.NameHasSuffix != nil {
-		predicates = append(predicates, repo.NameHasSuffix(*i.NameHasSuffix))
+		predicates = append(predicates, repository.NameHasSuffix(*i.NameHasSuffix))
 	}
 	if i.NameEqualFold != nil {
-		predicates = append(predicates, repo.NameEqualFold(*i.NameEqualFold))
+		predicates = append(predicates, repository.NameEqualFold(*i.NameEqualFold))
 	}
 	if i.NameContainsFold != nil {
-		predicates = append(predicates, repo.NameContainsFold(*i.NameContainsFold))
+		predicates = append(predicates, repository.NameContainsFold(*i.NameContainsFold))
 	}
 	if i.DefaultBranch != nil {
-		predicates = append(predicates, repo.DefaultBranchEQ(*i.DefaultBranch))
+		predicates = append(predicates, repository.DefaultBranchEQ(*i.DefaultBranch))
 	}
 	if i.DefaultBranchNEQ != nil {
-		predicates = append(predicates, repo.DefaultBranchNEQ(*i.DefaultBranchNEQ))
+		predicates = append(predicates, repository.DefaultBranchNEQ(*i.DefaultBranchNEQ))
 	}
 	if len(i.DefaultBranchIn) > 0 {
-		predicates = append(predicates, repo.DefaultBranchIn(i.DefaultBranchIn...))
+		predicates = append(predicates, repository.DefaultBranchIn(i.DefaultBranchIn...))
 	}
 	if len(i.DefaultBranchNotIn) > 0 {
-		predicates = append(predicates, repo.DefaultBranchNotIn(i.DefaultBranchNotIn...))
+		predicates = append(predicates, repository.DefaultBranchNotIn(i.DefaultBranchNotIn...))
 	}
 	if i.DefaultBranchGT != nil {
-		predicates = append(predicates, repo.DefaultBranchGT(*i.DefaultBranchGT))
+		predicates = append(predicates, repository.DefaultBranchGT(*i.DefaultBranchGT))
 	}
 	if i.DefaultBranchGTE != nil {
-		predicates = append(predicates, repo.DefaultBranchGTE(*i.DefaultBranchGTE))
+		predicates = append(predicates, repository.DefaultBranchGTE(*i.DefaultBranchGTE))
 	}
 	if i.DefaultBranchLT != nil {
-		predicates = append(predicates, repo.DefaultBranchLT(*i.DefaultBranchLT))
+		predicates = append(predicates, repository.DefaultBranchLT(*i.DefaultBranchLT))
 	}
 	if i.DefaultBranchLTE != nil {
-		predicates = append(predicates, repo.DefaultBranchLTE(*i.DefaultBranchLTE))
+		predicates = append(predicates, repository.DefaultBranchLTE(*i.DefaultBranchLTE))
 	}
 	if i.DefaultBranchContains != nil {
-		predicates = append(predicates, repo.DefaultBranchContains(*i.DefaultBranchContains))
+		predicates = append(predicates, repository.DefaultBranchContains(*i.DefaultBranchContains))
 	}
 	if i.DefaultBranchHasPrefix != nil {
-		predicates = append(predicates, repo.DefaultBranchHasPrefix(*i.DefaultBranchHasPrefix))
+		predicates = append(predicates, repository.DefaultBranchHasPrefix(*i.DefaultBranchHasPrefix))
 	}
 	if i.DefaultBranchHasSuffix != nil {
-		predicates = append(predicates, repo.DefaultBranchHasSuffix(*i.DefaultBranchHasSuffix))
+		predicates = append(predicates, repository.DefaultBranchHasSuffix(*i.DefaultBranchHasSuffix))
 	}
 	if i.DefaultBranchEqualFold != nil {
-		predicates = append(predicates, repo.DefaultBranchEqualFold(*i.DefaultBranchEqualFold))
+		predicates = append(predicates, repository.DefaultBranchEqualFold(*i.DefaultBranchEqualFold))
 	}
 	if i.DefaultBranchContainsFold != nil {
-		predicates = append(predicates, repo.DefaultBranchContainsFold(*i.DefaultBranchContainsFold))
+		predicates = append(predicates, repository.DefaultBranchContainsFold(*i.DefaultBranchContainsFold))
 	}
 
 	if i.HasOwner != nil {
-		p := repo.HasOwner()
+		p := repository.HasOwner()
 		if !*i.HasOwner {
-			p = repo.Not(p)
+			p = repository.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
@@ -5442,12 +5346,12 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, repo.HasOwnerWith(with...))
+		predicates = append(predicates, repository.HasOwnerWith(with...))
 	}
 	if i.HasProject != nil {
-		p := repo.HasProject()
+		p := repository.HasProject()
 		if !*i.HasProject {
-			p = repo.Not(p)
+			p = repository.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
@@ -5460,12 +5364,12 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, repo.HasProjectWith(with...))
+		predicates = append(predicates, repository.HasProjectWith(with...))
 	}
 	if i.HasHead != nil {
-		p := repo.HasHead()
+		p := repository.HasHead()
 		if !*i.HasHead {
-			p = repo.Not(p)
+			p = repository.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
@@ -5478,12 +5382,12 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, repo.HasHeadWith(with...))
+		predicates = append(predicates, repository.HasHeadWith(with...))
 	}
 	if i.HasCommits != nil {
-		p := repo.HasCommits()
+		p := repository.HasCommits()
 		if !*i.HasCommits {
-			p = repo.Not(p)
+			p = repository.Not(p)
 		}
 		predicates = append(predicates, p)
 	}
@@ -5496,51 +5400,15 @@ func (i *RepoWhereInput) P() (predicate.Repo, error) {
 			}
 			with = append(with, p)
 		}
-		predicates = append(predicates, repo.HasCommitsWith(with...))
-	}
-	if i.HasVulnerabilityReviews != nil {
-		p := repo.HasVulnerabilityReviews()
-		if !*i.HasVulnerabilityReviews {
-			p = repo.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasVulnerabilityReviewsWith) > 0 {
-		with := make([]predicate.VulnerabilityReview, 0, len(i.HasVulnerabilityReviewsWith))
-		for _, w := range i.HasVulnerabilityReviewsWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, repo.HasVulnerabilityReviewsWith(with...))
-	}
-	if i.HasPolicies != nil {
-		p := repo.HasPolicies()
-		if !*i.HasPolicies {
-			p = repo.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasPoliciesWith) > 0 {
-		with := make([]predicate.ReleasePolicy, 0, len(i.HasPoliciesWith))
-		for _, w := range i.HasPoliciesWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, repo.HasPoliciesWith(with...))
+		predicates = append(predicates, repository.HasCommitsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
-		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate RepoWhereInput")
+		return nil, fmt.Errorf("github.com/valocode/bubbly/ent: empty predicate RepositoryWhereInput")
 	case 1:
 		return predicates[0], nil
 	default:
-		return repo.And(predicates...), nil
+		return repository.And(predicates...), nil
 	}
 }
 
@@ -7001,14 +6869,6 @@ type VulnerabilityReviewWhereInput struct {
 	HasVulnerability     *bool                      `json:"hasVulnerability,omitempty"`
 	HasVulnerabilityWith []*VulnerabilityWhereInput `json:"hasVulnerabilityWith,omitempty"`
 
-	// "projects" edge predicates.
-	HasProjects     *bool                `json:"hasProjects,omitempty"`
-	HasProjectsWith []*ProjectWhereInput `json:"hasProjectsWith,omitempty"`
-
-	// "repos" edge predicates.
-	HasRepos     *bool             `json:"hasRepos,omitempty"`
-	HasReposWith []*RepoWhereInput `json:"hasReposWith,omitempty"`
-
 	// "releases" edge predicates.
 	HasReleases     *bool                `json:"hasReleases,omitempty"`
 	HasReleasesWith []*ReleaseWhereInput `json:"hasReleasesWith,omitempty"`
@@ -7170,42 +7030,6 @@ func (i *VulnerabilityReviewWhereInput) P() (predicate.VulnerabilityReview, erro
 			with = append(with, p)
 		}
 		predicates = append(predicates, vulnerabilityreview.HasVulnerabilityWith(with...))
-	}
-	if i.HasProjects != nil {
-		p := vulnerabilityreview.HasProjects()
-		if !*i.HasProjects {
-			p = vulnerabilityreview.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasProjectsWith) > 0 {
-		with := make([]predicate.Project, 0, len(i.HasProjectsWith))
-		for _, w := range i.HasProjectsWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, vulnerabilityreview.HasProjectsWith(with...))
-	}
-	if i.HasRepos != nil {
-		p := vulnerabilityreview.HasRepos()
-		if !*i.HasRepos {
-			p = vulnerabilityreview.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasReposWith) > 0 {
-		with := make([]predicate.Repo, 0, len(i.HasReposWith))
-		for _, w := range i.HasReposWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, err
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, vulnerabilityreview.HasReposWith(with...))
 	}
 	if i.HasReleases != nil {
 		p := vulnerabilityreview.HasReleases()

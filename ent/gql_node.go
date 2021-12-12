@@ -32,7 +32,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
@@ -498,11 +498,11 @@ func (e *Event) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "Repo",
-		Name: "repo",
+		Type: "Repository",
+		Name: "repository",
 	}
-	err = e.QueryRepo().
-		Select(repo.FieldID).
+	err = e.QueryRepository().
+		Select(repository.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
@@ -561,11 +561,11 @@ func (gc *GitCommit) Node(ctx context.Context) (node *Node, err error) {
 		Value: string(buf),
 	}
 	node.Edges[0] = &Edge{
-		Type: "Repo",
-		Name: "repo",
+		Type: "Repository",
+		Name: "repository",
 	}
-	err = gc.QueryRepo().
-		Select(repo.FieldID).
+	err = gc.QueryRepository().
+		Select(repository.FieldID).
 		Scan(ctx, &node.Edges[0].IDs)
 	if err != nil {
 		return nil, err
@@ -677,11 +677,11 @@ func (o *Organization) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "Repo",
-		Name: "repos",
+		Type: "Repository",
+		Name: "repositories",
 	}
-	err = o.QueryRepos().
-		Select(repo.FieldID).
+	err = o.QueryRepositories().
+		Select(repository.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
@@ -694,7 +694,7 @@ func (pr *Project) Node(ctx context.Context) (node *Node, err error) {
 		ID:     pr.ID,
 		Type:   "Project",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 4),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(pr.Name); err != nil {
@@ -724,32 +724,12 @@ func (pr *Project) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "Repo",
-		Name: "repos",
+		Type: "Repository",
+		Name: "repositories",
 	}
-	err = pr.QueryRepos().
-		Select(repo.FieldID).
+	err = pr.QueryRepositories().
+		Select(repository.FieldID).
 		Scan(ctx, &node.Edges[1].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[2] = &Edge{
-		Type: "VulnerabilityReview",
-		Name: "vulnerability_reviews",
-	}
-	err = pr.QueryVulnerabilityReviews().
-		Select(vulnerabilityreview.FieldID).
-		Scan(ctx, &node.Edges[2].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[3] = &Edge{
-		Type: "ReleasePolicy",
-		Name: "policies",
-	}
-	err = pr.QueryPolicies().
-		Select(releasepolicy.FieldID).
-		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -811,11 +791,11 @@ func (r *Release) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[3] = &Edge{
-		Type: "Repo",
+		Type: "Repository",
 		Name: "head_of",
 	}
 	err = r.QueryHeadOf().
-		Select(repo.FieldID).
+		Select(repository.FieldID).
 		Scan(ctx, &node.Edges[3].IDs)
 	if err != nil {
 		return nil, err
@@ -1104,7 +1084,7 @@ func (rp *ReleasePolicy) Node(ctx context.Context) (node *Node, err error) {
 		ID:     rp.ID,
 		Type:   "ReleasePolicy",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 4),
+		Edges:  make([]*Edge, 2),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(rp.Name); err != nil {
@@ -1134,32 +1114,12 @@ func (rp *ReleasePolicy) Node(ctx context.Context) (node *Node, err error) {
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "Project",
-		Name: "projects",
-	}
-	err = rp.QueryProjects().
-		Select(project.FieldID).
-		Scan(ctx, &node.Edges[1].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[2] = &Edge{
-		Type: "Repo",
-		Name: "repos",
-	}
-	err = rp.QueryRepos().
-		Select(repo.FieldID).
-		Scan(ctx, &node.Edges[2].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[3] = &Edge{
 		Type: "ReleasePolicyViolation",
 		Name: "violations",
 	}
 	err = rp.QueryViolations().
 		Select(releasepolicyviolation.FieldID).
-		Scan(ctx, &node.Edges[3].IDs)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1281,12 +1241,12 @@ func (rv *ReleaseVulnerability) Node(ctx context.Context) (node *Node, err error
 	return node, nil
 }
 
-func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
+func (r *Repository) Node(ctx context.Context) (node *Node, err error) {
 	node = &Node{
 		ID:     r.ID,
-		Type:   "Repo",
+		Type:   "Repository",
 		Fields: make([]*Field, 3),
-		Edges:  make([]*Edge, 6),
+		Edges:  make([]*Edge, 4),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(r.Name); err != nil {
@@ -1350,26 +1310,6 @@ func (r *Repo) Node(ctx context.Context) (node *Node, err error) {
 	err = r.QueryCommits().
 		Select(gitcommit.FieldID).
 		Scan(ctx, &node.Edges[3].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[4] = &Edge{
-		Type: "VulnerabilityReview",
-		Name: "vulnerability_reviews",
-	}
-	err = r.QueryVulnerabilityReviews().
-		Select(vulnerabilityreview.FieldID).
-		Scan(ctx, &node.Edges[4].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[5] = &Edge{
-		Type: "ReleasePolicy",
-		Name: "policies",
-	}
-	err = r.QueryPolicies().
-		Select(releasepolicy.FieldID).
-		Scan(ctx, &node.Edges[5].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1681,7 +1621,7 @@ func (vr *VulnerabilityReview) Node(ctx context.Context) (node *Node, err error)
 		ID:     vr.ID,
 		Type:   "VulnerabilityReview",
 		Fields: make([]*Field, 2),
-		Edges:  make([]*Edge, 5),
+		Edges:  make([]*Edge, 3),
 	}
 	var buf []byte
 	if buf, err = json.Marshal(vr.Note); err != nil {
@@ -1711,42 +1651,22 @@ func (vr *VulnerabilityReview) Node(ctx context.Context) (node *Node, err error)
 		return nil, err
 	}
 	node.Edges[1] = &Edge{
-		Type: "Project",
-		Name: "projects",
-	}
-	err = vr.QueryProjects().
-		Select(project.FieldID).
-		Scan(ctx, &node.Edges[1].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[2] = &Edge{
-		Type: "Repo",
-		Name: "repos",
-	}
-	err = vr.QueryRepos().
-		Select(repo.FieldID).
-		Scan(ctx, &node.Edges[2].IDs)
-	if err != nil {
-		return nil, err
-	}
-	node.Edges[3] = &Edge{
 		Type: "Release",
 		Name: "releases",
 	}
 	err = vr.QueryReleases().
 		Select(release.FieldID).
-		Scan(ctx, &node.Edges[3].IDs)
+		Scan(ctx, &node.Edges[1].IDs)
 	if err != nil {
 		return nil, err
 	}
-	node.Edges[4] = &Edge{
+	node.Edges[2] = &Edge{
 		Type: "ReleaseVulnerability",
 		Name: "instances",
 	}
 	err = vr.QueryInstances().
 		Select(releasevulnerability.FieldID).
-		Scan(ctx, &node.Edges[4].IDs)
+		Scan(ctx, &node.Edges[2].IDs)
 	if err != nil {
 		return nil, err
 	}
@@ -1956,9 +1876,9 @@ func (c *Client) noder(ctx context.Context, table string, id int) (Noder, error)
 			return nil, err
 		}
 		return n, nil
-	case repo.Table:
-		n, err := c.Repo.Query().
-			Where(repo.ID(id)).
+	case repository.Table:
+		n, err := c.Repository.Query().
+			Where(repository.ID(id)).
 			Only(ctx)
 		if err != nil {
 			return nil, err
@@ -2281,9 +2201,9 @@ func (c *Client) noders(ctx context.Context, table string, ids []int) ([]Noder, 
 				*noder = node
 			}
 		}
-	case repo.Table:
-		nodes, err := c.Repo.Query().
-			Where(repo.IDIn(ids...)).
+	case repository.Table:
+		nodes, err := c.Repository.Query().
+			Where(repository.IDIn(ids...)).
 			All(ctx)
 		if err != nil {
 			return nil, err

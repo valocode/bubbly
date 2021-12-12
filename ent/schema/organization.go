@@ -31,6 +31,6 @@ func (Organization) Fields() []ent.Field {
 func (Organization) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("projects", Project.Type).Ref("owner"),
-		edge.From("repos", Repo.Type).Ref("owner"),
+		edge.From("repositories", Repository.Type).Ref("owner"),
 	}
 }

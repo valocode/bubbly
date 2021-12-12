@@ -11,8 +11,8 @@ const (
 	FieldName = "name"
 	// EdgeProjects holds the string denoting the projects edge name in mutations.
 	EdgeProjects = "projects"
-	// EdgeRepos holds the string denoting the repos edge name in mutations.
-	EdgeRepos = "repos"
+	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
+	EdgeRepositories = "repositories"
 	// Table holds the table name of the organization in the database.
 	Table = "organization"
 	// ProjectsTable is the table that holds the projects relation/edge.
@@ -22,13 +22,13 @@ const (
 	ProjectsInverseTable = "project"
 	// ProjectsColumn is the table column denoting the projects relation/edge.
 	ProjectsColumn = "project_owner"
-	// ReposTable is the table that holds the repos relation/edge.
-	ReposTable = "repo"
-	// ReposInverseTable is the table name for the Repo entity.
-	// It exists in this package in order to avoid circular dependency with the "repo" package.
-	ReposInverseTable = "repo"
-	// ReposColumn is the table column denoting the repos relation/edge.
-	ReposColumn = "repo_owner"
+	// RepositoriesTable is the table that holds the repositories relation/edge.
+	RepositoriesTable = "repositories"
+	// RepositoriesInverseTable is the table name for the Repository entity.
+	// It exists in this package in order to avoid circular dependency with the "repository" package.
+	RepositoriesInverseTable = "repositories"
+	// RepositoriesColumn is the table column denoting the repositories relation/edge.
+	RepositoriesColumn = "repository_owner"
 )
 
 // Columns holds all SQL columns for organization fields.

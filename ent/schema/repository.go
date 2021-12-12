@@ -3,7 +3,6 @@ package schema
 import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
-	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -12,19 +11,19 @@ import (
 	types "github.com/valocode/bubbly/ent/schema/types"
 )
 
-type Repo struct {
+type Repository struct {
 	ent.Schema
 }
 
-func (Repo) Annotations() []schema.Annotation {
+func (Repository) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entsql.Annotation{Table: "repo"},
 		entmodel.Annotation{},
 	}
 }
 
-func (Repo) Fields() []ent.Field {
+func (Repository) Fields() []ent.Field {
 	return []ent.Field{
+		// github.com/valocode/bubbly
 		field.String("name").NotEmpty().
 			Annotations(
 				entgql.OrderField("name"),
@@ -36,18 +35,16 @@ func (Repo) Fields() []ent.Field {
 	}
 }
 
-func (Repo) Edges() []ent.Edge {
+func (Repository) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("owner", Organization.Type).Unique().Required(),
 		edge.To("project", Project.Type).Unique().Required(),
 		edge.To("head", Release.Type).Unique(),
-		edge.From("commits", GitCommit.Type).Ref("repo"),
-		edge.From("vulnerability_reviews", VulnerabilityReview.Type).Ref("repos"),
-		edge.From("policies", ReleasePolicy.Type).Ref("repos"),
+		edge.From("commits", GitCommit.Type).Ref("repository"),
 	}
 }
 
-func (Repo) Indexes() []ent.Index {
+func (Repository) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("name").
 			Edges("owner").

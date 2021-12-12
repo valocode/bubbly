@@ -24,8 +24,8 @@ const (
 	FieldTime = "time"
 	// EdgeRelease holds the string denoting the release edge name in mutations.
 	EdgeRelease = "release"
-	// EdgeRepo holds the string denoting the repo edge name in mutations.
-	EdgeRepo = "repo"
+	// EdgeRepository holds the string denoting the repository edge name in mutations.
+	EdgeRepository = "repository"
 	// EdgeProject holds the string denoting the project edge name in mutations.
 	EdgeProject = "project"
 	// Table holds the table name of the event in the database.
@@ -37,13 +37,13 @@ const (
 	ReleaseInverseTable = "release"
 	// ReleaseColumn is the table column denoting the release relation/edge.
 	ReleaseColumn = "event_release"
-	// RepoTable is the table that holds the repo relation/edge.
-	RepoTable = "event"
-	// RepoInverseTable is the table name for the Repo entity.
-	// It exists in this package in order to avoid circular dependency with the "repo" package.
-	RepoInverseTable = "repo"
-	// RepoColumn is the table column denoting the repo relation/edge.
-	RepoColumn = "event_repo"
+	// RepositoryTable is the table that holds the repository relation/edge.
+	RepositoryTable = "event"
+	// RepositoryInverseTable is the table name for the Repository entity.
+	// It exists in this package in order to avoid circular dependency with the "repository" package.
+	RepositoryInverseTable = "repositories"
+	// RepositoryColumn is the table column denoting the repository relation/edge.
+	RepositoryColumn = "event_repository"
 	// ProjectTable is the table that holds the project relation/edge.
 	ProjectTable = "event"
 	// ProjectInverseTable is the table name for the Project entity.
@@ -66,7 +66,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"event_release",
-	"event_repo",
+	"event_repository",
 	"event_project",
 }
 

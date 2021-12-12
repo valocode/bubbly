@@ -355,62 +355,6 @@ func HasOwnerWith(preds ...predicate.Organization) predicate.ReleasePolicy {
 	})
 }
 
-// HasProjects applies the HasEdge predicate on the "projects" edge.
-func HasProjects() predicate.ReleasePolicy {
-	return predicate.ReleasePolicy(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ProjectsTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, ProjectsTable, ProjectsPrimaryKey...),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasProjectsWith applies the HasEdge predicate on the "projects" edge with a given conditions (other predicates).
-func HasProjectsWith(preds ...predicate.Project) predicate.ReleasePolicy {
-	return predicate.ReleasePolicy(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ProjectsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, ProjectsTable, ProjectsPrimaryKey...),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasRepos applies the HasEdge predicate on the "repos" edge.
-func HasRepos() predicate.ReleasePolicy {
-	return predicate.ReleasePolicy(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ReposTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, ReposTable, ReposPrimaryKey...),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasReposWith applies the HasEdge predicate on the "repos" edge with a given conditions (other predicates).
-func HasReposWith(preds ...predicate.Repo) predicate.ReleasePolicy {
-	return predicate.ReleasePolicy(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(ReposInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, ReposTable, ReposPrimaryKey...),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasViolations applies the HasEdge predicate on the "violations" edge.
 func HasViolations() predicate.ReleasePolicy {
 	return predicate.ReleasePolicy(func(s *sql.Selector) {

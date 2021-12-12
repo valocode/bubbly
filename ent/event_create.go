@@ -13,7 +13,7 @@ import (
 	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // EventCreate is the builder for creating a Event entity.
@@ -90,23 +90,23 @@ func (ec *EventCreate) SetRelease(r *Release) *EventCreate {
 	return ec.SetReleaseID(r.ID)
 }
 
-// SetRepoID sets the "repo" edge to the Repo entity by ID.
-func (ec *EventCreate) SetRepoID(id int) *EventCreate {
-	ec.mutation.SetRepoID(id)
+// SetRepositoryID sets the "repository" edge to the Repository entity by ID.
+func (ec *EventCreate) SetRepositoryID(id int) *EventCreate {
+	ec.mutation.SetRepositoryID(id)
 	return ec
 }
 
-// SetNillableRepoID sets the "repo" edge to the Repo entity by ID if the given value is not nil.
-func (ec *EventCreate) SetNillableRepoID(id *int) *EventCreate {
+// SetNillableRepositoryID sets the "repository" edge to the Repository entity by ID if the given value is not nil.
+func (ec *EventCreate) SetNillableRepositoryID(id *int) *EventCreate {
 	if id != nil {
-		ec = ec.SetRepoID(*id)
+		ec = ec.SetRepositoryID(*id)
 	}
 	return ec
 }
 
-// SetRepo sets the "repo" edge to the Repo entity.
-func (ec *EventCreate) SetRepo(r *Repo) *EventCreate {
-	return ec.SetRepoID(r.ID)
+// SetRepository sets the "repository" edge to the Repository entity.
+func (ec *EventCreate) SetRepository(r *Repository) *EventCreate {
+	return ec.SetRepositoryID(r.ID)
 }
 
 // SetProjectID sets the "project" edge to the Project entity by ID.
@@ -316,24 +316,24 @@ func (ec *EventCreate) createSpec() (*Event, *sqlgraph.CreateSpec) {
 		_node.event_release = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := ec.mutation.RepoIDs(); len(nodes) > 0 {
+	if nodes := ec.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   event.RepoTable,
-			Columns: []string{event.RepoColumn},
+			Table:   event.RepositoryTable,
+			Columns: []string{event.RepositoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.event_repo = &nodes[0]
+		_node.event_repository = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ec.mutation.ProjectIDs(); len(nodes) > 0 {

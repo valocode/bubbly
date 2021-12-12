@@ -15,7 +15,7 @@ import (
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // EventQuery is the builder for querying Event entities.
@@ -28,10 +28,10 @@ type EventQuery struct {
 	fields     []string
 	predicates []predicate.Event
 	// eager-loading edges.
-	withRelease *ReleaseQuery
-	withRepo    *RepoQuery
-	withProject *ProjectQuery
-	withFKs     bool
+	withRelease    *ReleaseQuery
+	withRepository *RepositoryQuery
+	withProject    *ProjectQuery
+	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -90,9 +90,9 @@ func (eq *EventQuery) QueryRelease() *ReleaseQuery {
 	return query
 }
 
-// QueryRepo chains the current query on the "repo" edge.
-func (eq *EventQuery) QueryRepo() *RepoQuery {
-	query := &RepoQuery{config: eq.config}
+// QueryRepository chains the current query on the "repository" edge.
+func (eq *EventQuery) QueryRepository() *RepositoryQuery {
+	query := &RepositoryQuery{config: eq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := eq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -103,8 +103,8 @@ func (eq *EventQuery) QueryRepo() *RepoQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(event.Table, event.FieldID, selector),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, event.RepoTable, event.RepoColumn),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, event.RepositoryTable, event.RepositoryColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
 		return fromU, nil
@@ -310,14 +310,14 @@ func (eq *EventQuery) Clone() *EventQuery {
 		return nil
 	}
 	return &EventQuery{
-		config:      eq.config,
-		limit:       eq.limit,
-		offset:      eq.offset,
-		order:       append([]OrderFunc{}, eq.order...),
-		predicates:  append([]predicate.Event{}, eq.predicates...),
-		withRelease: eq.withRelease.Clone(),
-		withRepo:    eq.withRepo.Clone(),
-		withProject: eq.withProject.Clone(),
+		config:         eq.config,
+		limit:          eq.limit,
+		offset:         eq.offset,
+		order:          append([]OrderFunc{}, eq.order...),
+		predicates:     append([]predicate.Event{}, eq.predicates...),
+		withRelease:    eq.withRelease.Clone(),
+		withRepository: eq.withRepository.Clone(),
+		withProject:    eq.withProject.Clone(),
 		// clone intermediate query.
 		sql:  eq.sql.Clone(),
 		path: eq.path,
@@ -335,14 +335,14 @@ func (eq *EventQuery) WithRelease(opts ...func(*ReleaseQuery)) *EventQuery {
 	return eq
 }
 
-// WithRepo tells the query-builder to eager-load the nodes that are connected to
-// the "repo" edge. The optional arguments are used to configure the query builder of the edge.
-func (eq *EventQuery) WithRepo(opts ...func(*RepoQuery)) *EventQuery {
-	query := &RepoQuery{config: eq.config}
+// WithRepository tells the query-builder to eager-load the nodes that are connected to
+// the "repository" edge. The optional arguments are used to configure the query builder of the edge.
+func (eq *EventQuery) WithRepository(opts ...func(*RepositoryQuery)) *EventQuery {
+	query := &RepositoryQuery{config: eq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	eq.withRepo = query
+	eq.withRepository = query
 	return eq
 }
 
@@ -425,11 +425,11 @@ func (eq *EventQuery) sqlAll(ctx context.Context) ([]*Event, error) {
 		_spec       = eq.querySpec()
 		loadedTypes = [3]bool{
 			eq.withRelease != nil,
-			eq.withRepo != nil,
+			eq.withRepository != nil,
 			eq.withProject != nil,
 		}
 	)
-	if eq.withRelease != nil || eq.withRepo != nil || eq.withProject != nil {
+	if eq.withRelease != nil || eq.withRepository != nil || eq.withProject != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -484,20 +484,20 @@ func (eq *EventQuery) sqlAll(ctx context.Context) ([]*Event, error) {
 		}
 	}
 
-	if query := eq.withRepo; query != nil {
+	if query := eq.withRepository; query != nil {
 		ids := make([]int, 0, len(nodes))
 		nodeids := make(map[int][]*Event)
 		for i := range nodes {
-			if nodes[i].event_repo == nil {
+			if nodes[i].event_repository == nil {
 				continue
 			}
-			fk := *nodes[i].event_repo
+			fk := *nodes[i].event_repository
 			if _, ok := nodeids[fk]; !ok {
 				ids = append(ids, fk)
 			}
 			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
-		query.Where(repo.IDIn(ids...))
+		query.Where(repository.IDIn(ids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
@@ -505,10 +505,10 @@ func (eq *EventQuery) sqlAll(ctx context.Context) ([]*Event, error) {
 		for _, n := range neighbors {
 			nodes, ok := nodeids[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "event_repo" returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "event_repository" returned %v`, n.ID)
 			}
 			for i := range nodes {
-				nodes[i].Edges.Repo = n
+				nodes[i].Edges.Repository = n
 			}
 		}
 	}

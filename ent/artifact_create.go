@@ -68,14 +68,6 @@ func (ac *ArtifactCreate) SetReleaseID(id int) *ArtifactCreate {
 	return ac
 }
 
-// SetNillableReleaseID sets the "release" edge to the Release entity by ID if the given value is not nil.
-func (ac *ArtifactCreate) SetNillableReleaseID(id *int) *ArtifactCreate {
-	if id != nil {
-		ac = ac.SetReleaseID(*id)
-	}
-	return ac
-}
-
 // SetRelease sets the "release" edge to the Release entity.
 func (ac *ArtifactCreate) SetRelease(r *Release) *ArtifactCreate {
 	return ac.SetReleaseID(r.ID)
@@ -211,6 +203,9 @@ func (ac *ArtifactCreate) check() error {
 	}
 	if _, ok := ac.mutation.Time(); !ok {
 		return &ValidationError{Name: "time", err: errors.New(`ent: missing required field "time"`)}
+	}
+	if _, ok := ac.mutation.ReleaseID(); !ok {
+		return &ValidationError{Name: "release", err: errors.New("ent: missing required edge \"release\"")}
 	}
 	return nil
 }

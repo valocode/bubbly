@@ -36,9 +36,7 @@ func (Project) Fields() []ent.Field {
 func (Project) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("owner", Organization.Type).Unique().Required(),
-		edge.From("repos", Repo.Type).Ref("project"),
-		edge.From("vulnerability_reviews", VulnerabilityReview.Type).Ref("projects"),
-		edge.From("policies", ReleasePolicy.Type).Ref("projects"),
+		edge.From("repositories", Repository.Type).Ref("project"),
 	}
 }
 

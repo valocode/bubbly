@@ -15,9 +15,7 @@ import (
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
-	"github.com/valocode/bubbly/ent/releasepolicy"
-	"github.com/valocode/bubbly/ent/repo"
-	"github.com/valocode/bubbly/ent/vulnerabilityreview"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // ProjectQuery is the builder for querying Project entities.
@@ -30,11 +28,9 @@ type ProjectQuery struct {
 	fields     []string
 	predicates []predicate.Project
 	// eager-loading edges.
-	withOwner                *OrganizationQuery
-	withRepos                *RepoQuery
-	withVulnerabilityReviews *VulnerabilityReviewQuery
-	withPolicies             *ReleasePolicyQuery
-	withFKs                  bool
+	withOwner        *OrganizationQuery
+	withRepositories *RepositoryQuery
+	withFKs          bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -93,9 +89,9 @@ func (pq *ProjectQuery) QueryOwner() *OrganizationQuery {
 	return query
 }
 
-// QueryRepos chains the current query on the "repos" edge.
-func (pq *ProjectQuery) QueryRepos() *RepoQuery {
-	query := &RepoQuery{config: pq.config}
+// QueryRepositories chains the current query on the "repositories" edge.
+func (pq *ProjectQuery) QueryRepositories() *RepositoryQuery {
+	query := &RepositoryQuery{config: pq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -106,52 +102,8 @@ func (pq *ProjectQuery) QueryRepos() *RepoQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, project.ReposTable, project.ReposColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryVulnerabilityReviews chains the current query on the "vulnerability_reviews" edge.
-func (pq *ProjectQuery) QueryVulnerabilityReviews() *VulnerabilityReviewQuery {
-	query := &VulnerabilityReviewQuery{config: pq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, project.VulnerabilityReviewsTable, project.VulnerabilityReviewsPrimaryKey...),
-		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryPolicies chains the current query on the "policies" edge.
-func (pq *ProjectQuery) QueryPolicies() *ReleasePolicyQuery {
-	query := &ReleasePolicyQuery{config: pq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(releasepolicy.Table, releasepolicy.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, project.PoliciesTable, project.PoliciesPrimaryKey...),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, project.RepositoriesTable, project.RepositoriesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -335,15 +287,13 @@ func (pq *ProjectQuery) Clone() *ProjectQuery {
 		return nil
 	}
 	return &ProjectQuery{
-		config:                   pq.config,
-		limit:                    pq.limit,
-		offset:                   pq.offset,
-		order:                    append([]OrderFunc{}, pq.order...),
-		predicates:               append([]predicate.Project{}, pq.predicates...),
-		withOwner:                pq.withOwner.Clone(),
-		withRepos:                pq.withRepos.Clone(),
-		withVulnerabilityReviews: pq.withVulnerabilityReviews.Clone(),
-		withPolicies:             pq.withPolicies.Clone(),
+		config:           pq.config,
+		limit:            pq.limit,
+		offset:           pq.offset,
+		order:            append([]OrderFunc{}, pq.order...),
+		predicates:       append([]predicate.Project{}, pq.predicates...),
+		withOwner:        pq.withOwner.Clone(),
+		withRepositories: pq.withRepositories.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
@@ -361,36 +311,14 @@ func (pq *ProjectQuery) WithOwner(opts ...func(*OrganizationQuery)) *ProjectQuer
 	return pq
 }
 
-// WithRepos tells the query-builder to eager-load the nodes that are connected to
-// the "repos" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithRepos(opts ...func(*RepoQuery)) *ProjectQuery {
-	query := &RepoQuery{config: pq.config}
+// WithRepositories tells the query-builder to eager-load the nodes that are connected to
+// the "repositories" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *ProjectQuery) WithRepositories(opts ...func(*RepositoryQuery)) *ProjectQuery {
+	query := &RepositoryQuery{config: pq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	pq.withRepos = query
-	return pq
-}
-
-// WithVulnerabilityReviews tells the query-builder to eager-load the nodes that are connected to
-// the "vulnerability_reviews" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithVulnerabilityReviews(opts ...func(*VulnerabilityReviewQuery)) *ProjectQuery {
-	query := &VulnerabilityReviewQuery{config: pq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	pq.withVulnerabilityReviews = query
-	return pq
-}
-
-// WithPolicies tells the query-builder to eager-load the nodes that are connected to
-// the "policies" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithPolicies(opts ...func(*ReleasePolicyQuery)) *ProjectQuery {
-	query := &ReleasePolicyQuery{config: pq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	pq.withPolicies = query
+	pq.withRepositories = query
 	return pq
 }
 
@@ -460,11 +388,9 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context) ([]*Project, error) {
 		nodes       = []*Project{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [2]bool{
 			pq.withOwner != nil,
-			pq.withRepos != nil,
-			pq.withVulnerabilityReviews != nil,
-			pq.withPolicies != nil,
+			pq.withRepositories != nil,
 		}
 	)
 	if pq.withOwner != nil {
@@ -522,162 +448,32 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context) ([]*Project, error) {
 		}
 	}
 
-	if query := pq.withRepos; query != nil {
+	if query := pq.withRepositories; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[int]*Project)
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Repos = []*Repo{}
+			nodes[i].Edges.Repositories = []*Repository{}
 		}
 		query.withFKs = true
-		query.Where(predicate.Repo(func(s *sql.Selector) {
-			s.Where(sql.InValues(project.ReposColumn, fks...))
+		query.Where(predicate.Repository(func(s *sql.Selector) {
+			s.Where(sql.InValues(project.RepositoriesColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.repo_project
+			fk := n.repository_project
 			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "repo_project" is nil for node %v`, n.ID)
+				return nil, fmt.Errorf(`foreign-key "repository_project" is nil for node %v`, n.ID)
 			}
 			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "repo_project" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "repository_project" returned %v for node %v`, *fk, n.ID)
 			}
-			node.Edges.Repos = append(node.Edges.Repos, n)
-		}
-	}
-
-	if query := pq.withVulnerabilityReviews; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*Project, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.VulnerabilityReviews = []*VulnerabilityReview{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*Project)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   project.VulnerabilityReviewsTable,
-				Columns: project.VulnerabilityReviewsPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(project.VulnerabilityReviewsPrimaryKey[1], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, pq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "vulnerability_reviews": %w`, err)
-		}
-		query.Where(vulnerabilityreview.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "vulnerability_reviews" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.VulnerabilityReviews = append(nodes[i].Edges.VulnerabilityReviews, n)
-			}
-		}
-	}
-
-	if query := pq.withPolicies; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*Project, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Policies = []*ReleasePolicy{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*Project)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   project.PoliciesTable,
-				Columns: project.PoliciesPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(project.PoliciesPrimaryKey[1], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, pq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "policies": %w`, err)
-		}
-		query.Where(releasepolicy.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "policies" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Policies = append(nodes[i].Edges.Policies, n)
-			}
+			node.Edges.Repositories = append(node.Edges.Repositories, n)
 		}
 	}
 

@@ -9,38 +9,36 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasepolicy"
 	schema "github.com/valocode/bubbly/ent/schema/types"
-	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
-// RepoCreate is the builder for creating a Repo entity.
-type RepoCreate struct {
+// RepositoryCreate is the builder for creating a Repository entity.
+type RepositoryCreate struct {
 	config
-	mutation *RepoMutation
+	mutation *RepositoryMutation
 	hooks    []Hook
 }
 
 // SetName sets the "name" field.
-func (rc *RepoCreate) SetName(s string) *RepoCreate {
+func (rc *RepositoryCreate) SetName(s string) *RepositoryCreate {
 	rc.mutation.SetName(s)
 	return rc
 }
 
 // SetDefaultBranch sets the "default_branch" field.
-func (rc *RepoCreate) SetDefaultBranch(s string) *RepoCreate {
+func (rc *RepositoryCreate) SetDefaultBranch(s string) *RepositoryCreate {
 	rc.mutation.SetDefaultBranch(s)
 	return rc
 }
 
 // SetNillableDefaultBranch sets the "default_branch" field if the given value is not nil.
-func (rc *RepoCreate) SetNillableDefaultBranch(s *string) *RepoCreate {
+func (rc *RepositoryCreate) SetNillableDefaultBranch(s *string) *RepositoryCreate {
 	if s != nil {
 		rc.SetDefaultBranch(*s)
 	}
@@ -48,41 +46,41 @@ func (rc *RepoCreate) SetNillableDefaultBranch(s *string) *RepoCreate {
 }
 
 // SetLabels sets the "labels" field.
-func (rc *RepoCreate) SetLabels(s schema.Labels) *RepoCreate {
+func (rc *RepositoryCreate) SetLabels(s schema.Labels) *RepositoryCreate {
 	rc.mutation.SetLabels(s)
 	return rc
 }
 
 // SetOwnerID sets the "owner" edge to the Organization entity by ID.
-func (rc *RepoCreate) SetOwnerID(id int) *RepoCreate {
+func (rc *RepositoryCreate) SetOwnerID(id int) *RepositoryCreate {
 	rc.mutation.SetOwnerID(id)
 	return rc
 }
 
 // SetOwner sets the "owner" edge to the Organization entity.
-func (rc *RepoCreate) SetOwner(o *Organization) *RepoCreate {
+func (rc *RepositoryCreate) SetOwner(o *Organization) *RepositoryCreate {
 	return rc.SetOwnerID(o.ID)
 }
 
 // SetProjectID sets the "project" edge to the Project entity by ID.
-func (rc *RepoCreate) SetProjectID(id int) *RepoCreate {
+func (rc *RepositoryCreate) SetProjectID(id int) *RepositoryCreate {
 	rc.mutation.SetProjectID(id)
 	return rc
 }
 
 // SetProject sets the "project" edge to the Project entity.
-func (rc *RepoCreate) SetProject(p *Project) *RepoCreate {
+func (rc *RepositoryCreate) SetProject(p *Project) *RepositoryCreate {
 	return rc.SetProjectID(p.ID)
 }
 
 // SetHeadID sets the "head" edge to the Release entity by ID.
-func (rc *RepoCreate) SetHeadID(id int) *RepoCreate {
+func (rc *RepositoryCreate) SetHeadID(id int) *RepositoryCreate {
 	rc.mutation.SetHeadID(id)
 	return rc
 }
 
 // SetNillableHeadID sets the "head" edge to the Release entity by ID if the given value is not nil.
-func (rc *RepoCreate) SetNillableHeadID(id *int) *RepoCreate {
+func (rc *RepositoryCreate) SetNillableHeadID(id *int) *RepositoryCreate {
 	if id != nil {
 		rc = rc.SetHeadID(*id)
 	}
@@ -90,18 +88,18 @@ func (rc *RepoCreate) SetNillableHeadID(id *int) *RepoCreate {
 }
 
 // SetHead sets the "head" edge to the Release entity.
-func (rc *RepoCreate) SetHead(r *Release) *RepoCreate {
+func (rc *RepositoryCreate) SetHead(r *Release) *RepositoryCreate {
 	return rc.SetHeadID(r.ID)
 }
 
 // AddCommitIDs adds the "commits" edge to the GitCommit entity by IDs.
-func (rc *RepoCreate) AddCommitIDs(ids ...int) *RepoCreate {
+func (rc *RepositoryCreate) AddCommitIDs(ids ...int) *RepositoryCreate {
 	rc.mutation.AddCommitIDs(ids...)
 	return rc
 }
 
 // AddCommits adds the "commits" edges to the GitCommit entity.
-func (rc *RepoCreate) AddCommits(g ...*GitCommit) *RepoCreate {
+func (rc *RepositoryCreate) AddCommits(g ...*GitCommit) *RepositoryCreate {
 	ids := make([]int, len(g))
 	for i := range g {
 		ids[i] = g[i].ID
@@ -109,46 +107,16 @@ func (rc *RepoCreate) AddCommits(g ...*GitCommit) *RepoCreate {
 	return rc.AddCommitIDs(ids...)
 }
 
-// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
-func (rc *RepoCreate) AddVulnerabilityReviewIDs(ids ...int) *RepoCreate {
-	rc.mutation.AddVulnerabilityReviewIDs(ids...)
-	return rc
-}
-
-// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
-func (rc *RepoCreate) AddVulnerabilityReviews(v ...*VulnerabilityReview) *RepoCreate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return rc.AddVulnerabilityReviewIDs(ids...)
-}
-
-// AddPolicyIDs adds the "policies" edge to the ReleasePolicy entity by IDs.
-func (rc *RepoCreate) AddPolicyIDs(ids ...int) *RepoCreate {
-	rc.mutation.AddPolicyIDs(ids...)
-	return rc
-}
-
-// AddPolicies adds the "policies" edges to the ReleasePolicy entity.
-func (rc *RepoCreate) AddPolicies(r ...*ReleasePolicy) *RepoCreate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return rc.AddPolicyIDs(ids...)
-}
-
-// Mutation returns the RepoMutation object of the builder.
-func (rc *RepoCreate) Mutation() *RepoMutation {
+// Mutation returns the RepositoryMutation object of the builder.
+func (rc *RepositoryCreate) Mutation() *RepositoryMutation {
 	return rc.mutation
 }
 
-// Save creates the Repo in the database.
-func (rc *RepoCreate) Save(ctx context.Context) (*Repo, error) {
+// Save creates the Repository in the database.
+func (rc *RepositoryCreate) Save(ctx context.Context) (*Repository, error) {
 	var (
 		err  error
-		node *Repo
+		node *Repository
 	)
 	rc.defaults()
 	if len(rc.hooks) == 0 {
@@ -158,7 +126,7 @@ func (rc *RepoCreate) Save(ctx context.Context) (*Repo, error) {
 		node, err = rc.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*RepoMutation)
+			mutation, ok := m.(*RepositoryMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
 			}
@@ -187,7 +155,7 @@ func (rc *RepoCreate) Save(ctx context.Context) (*Repo, error) {
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (rc *RepoCreate) SaveX(ctx context.Context) *Repo {
+func (rc *RepositoryCreate) SaveX(ctx context.Context) *Repository {
 	v, err := rc.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -196,33 +164,33 @@ func (rc *RepoCreate) SaveX(ctx context.Context) *Repo {
 }
 
 // Exec executes the query.
-func (rc *RepoCreate) Exec(ctx context.Context) error {
+func (rc *RepositoryCreate) Exec(ctx context.Context) error {
 	_, err := rc.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (rc *RepoCreate) ExecX(ctx context.Context) {
+func (rc *RepositoryCreate) ExecX(ctx context.Context) {
 	if err := rc.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (rc *RepoCreate) defaults() {
+func (rc *RepositoryCreate) defaults() {
 	if _, ok := rc.mutation.DefaultBranch(); !ok {
-		v := repo.DefaultDefaultBranch
+		v := repository.DefaultDefaultBranch
 		rc.mutation.SetDefaultBranch(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (rc *RepoCreate) check() error {
+func (rc *RepositoryCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
 	}
 	if v, ok := rc.mutation.Name(); ok {
-		if err := repo.NameValidator(v); err != nil {
+		if err := repository.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "name": %w`, err)}
 		}
 	}
@@ -230,7 +198,7 @@ func (rc *RepoCreate) check() error {
 		return &ValidationError{Name: "default_branch", err: errors.New(`ent: missing required field "default_branch"`)}
 	}
 	if v, ok := rc.mutation.DefaultBranch(); ok {
-		if err := repo.DefaultBranchValidator(v); err != nil {
+		if err := repository.DefaultBranchValidator(v); err != nil {
 			return &ValidationError{Name: "default_branch", err: fmt.Errorf(`ent: validator failed for field "default_branch": %w`, err)}
 		}
 	}
@@ -243,7 +211,7 @@ func (rc *RepoCreate) check() error {
 	return nil
 }
 
-func (rc *RepoCreate) sqlSave(ctx context.Context) (*Repo, error) {
+func (rc *RepositoryCreate) sqlSave(ctx context.Context) (*Repository, error) {
 	_node, _spec := rc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, rc.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
@@ -256,14 +224,14 @@ func (rc *RepoCreate) sqlSave(ctx context.Context) (*Repo, error) {
 	return _node, nil
 }
 
-func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
+func (rc *RepositoryCreate) createSpec() (*Repository, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Repo{config: rc.config}
+		_node = &Repository{config: rc.config}
 		_spec = &sqlgraph.CreateSpec{
-			Table: repo.Table,
+			Table: repository.Table,
 			ID: &sqlgraph.FieldSpec{
 				Type:   field.TypeInt,
-				Column: repo.FieldID,
+				Column: repository.FieldID,
 			},
 		}
 	)
@@ -271,7 +239,7 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: repo.FieldName,
+			Column: repository.FieldName,
 		})
 		_node.Name = value
 	}
@@ -279,7 +247,7 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: repo.FieldDefaultBranch,
+			Column: repository.FieldDefaultBranch,
 		})
 		_node.DefaultBranch = value
 	}
@@ -287,7 +255,7 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeJSON,
 			Value:  value,
-			Column: repo.FieldLabels,
+			Column: repository.FieldLabels,
 		})
 		_node.Labels = value
 	}
@@ -295,8 +263,8 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   repo.OwnerTable,
-			Columns: []string{repo.OwnerColumn},
+			Table:   repository.OwnerTable,
+			Columns: []string{repository.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -308,15 +276,15 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.repo_owner = &nodes[0]
+		_node.repository_owner = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.ProjectIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   repo.ProjectTable,
-			Columns: []string{repo.ProjectColumn},
+			Table:   repository.ProjectTable,
+			Columns: []string{repository.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -328,15 +296,15 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.repo_project = &nodes[0]
+		_node.repository_project = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.HeadIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
-			Table:   repo.HeadTable,
-			Columns: []string{repo.HeadColumn},
+			Table:   repository.HeadTable,
+			Columns: []string{repository.HeadColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -354,8 +322,8 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   repo.CommitsTable,
-			Columns: []string{repo.CommitsColumn},
+			Table:   repository.CommitsTable,
+			Columns: []string{repository.CommitsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -369,64 +337,26 @@ func (rc *RepoCreate) createSpec() (*Repo, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := rc.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   repo.VulnerabilityReviewsTable,
-			Columns: repo.VulnerabilityReviewsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: vulnerabilityreview.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rc.mutation.PoliciesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   repo.PoliciesTable,
-			Columns: repo.PoliciesPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releasepolicy.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	return _node, _spec
 }
 
-// RepoCreateBulk is the builder for creating many Repo entities in bulk.
-type RepoCreateBulk struct {
+// RepositoryCreateBulk is the builder for creating many Repository entities in bulk.
+type RepositoryCreateBulk struct {
 	config
-	builders []*RepoCreate
+	builders []*RepositoryCreate
 }
 
-// Save creates the Repo entities in the database.
-func (rcb *RepoCreateBulk) Save(ctx context.Context) ([]*Repo, error) {
+// Save creates the Repository entities in the database.
+func (rcb *RepositoryCreateBulk) Save(ctx context.Context) ([]*Repository, error) {
 	specs := make([]*sqlgraph.CreateSpec, len(rcb.builders))
-	nodes := make([]*Repo, len(rcb.builders))
+	nodes := make([]*Repository, len(rcb.builders))
 	mutators := make([]Mutator, len(rcb.builders))
 	for i := range rcb.builders {
 		func(i int, root context.Context) {
 			builder := rcb.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*RepoMutation)
+				mutation, ok := m.(*RepositoryMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -473,7 +403,7 @@ func (rcb *RepoCreateBulk) Save(ctx context.Context) ([]*Repo, error) {
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (rcb *RepoCreateBulk) SaveX(ctx context.Context) []*Repo {
+func (rcb *RepositoryCreateBulk) SaveX(ctx context.Context) []*Repository {
 	v, err := rcb.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -482,13 +412,13 @@ func (rcb *RepoCreateBulk) SaveX(ctx context.Context) []*Repo {
 }
 
 // Exec executes the query.
-func (rcb *RepoCreateBulk) Exec(ctx context.Context) error {
+func (rcb *RepositoryCreateBulk) Exec(ctx context.Context) error {
 	_, err := rcb.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (rcb *RepoCreateBulk) ExecX(ctx context.Context) {
+func (rcb *RepositoryCreateBulk) ExecX(ctx context.Context) {
 	if err := rcb.Exec(ctx); err != nil {
 		panic(err)
 	}

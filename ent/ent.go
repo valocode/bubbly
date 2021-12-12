@@ -25,7 +25,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
@@ -68,7 +68,7 @@ func columnChecker(table string) func(string) error {
 		releasepolicy.Table:          releasepolicy.ValidColumn,
 		releasepolicyviolation.Table: releasepolicyviolation.ValidColumn,
 		releasevulnerability.Table:   releasevulnerability.ValidColumn,
-		repo.Table:                   repo.ValidColumn,
+		repository.Table:             repository.ValidColumn,
 		spdxlicense.Table:            spdxlicense.ValidColumn,
 		testcase.Table:               testcase.ValidColumn,
 		testrun.Table:                testrun.ValidColumn,

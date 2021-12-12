@@ -17,7 +17,7 @@ func (a *Artifact) Release(ctx context.Context) (*Release, error) {
 	if IsNotLoaded(err) {
 		result, err = a.QueryRelease().Only(ctx)
 	}
-	return result, MaskNotFound(err)
+	return result, err
 }
 
 func (a *Artifact) Entry(ctx context.Context) (*ReleaseEntry, error) {
@@ -124,10 +124,10 @@ func (e *Event) Release(ctx context.Context) (*Release, error) {
 	return result, MaskNotFound(err)
 }
 
-func (e *Event) Repo(ctx context.Context) (*Repo, error) {
-	result, err := e.Edges.RepoOrErr()
+func (e *Event) Repository(ctx context.Context) (*Repository, error) {
+	result, err := e.Edges.RepositoryOrErr()
 	if IsNotLoaded(err) {
-		result, err = e.QueryRepo().Only(ctx)
+		result, err = e.QueryRepository().Only(ctx)
 	}
 	return result, MaskNotFound(err)
 }
@@ -140,10 +140,10 @@ func (e *Event) Project(ctx context.Context) (*Project, error) {
 	return result, MaskNotFound(err)
 }
 
-func (gc *GitCommit) Repo(ctx context.Context) (*Repo, error) {
-	result, err := gc.Edges.RepoOrErr()
+func (gc *GitCommit) Repository(ctx context.Context) (*Repository, error) {
+	result, err := gc.Edges.RepositoryOrErr()
 	if IsNotLoaded(err) {
-		result, err = gc.QueryRepo().Only(ctx)
+		result, err = gc.QueryRepository().Only(ctx)
 	}
 	return result, err
 }
@@ -196,10 +196,10 @@ func (o *Organization) Projects(ctx context.Context) ([]*Project, error) {
 	return result, err
 }
 
-func (o *Organization) Repos(ctx context.Context) ([]*Repo, error) {
-	result, err := o.Edges.ReposOrErr()
+func (o *Organization) Repositories(ctx context.Context) ([]*Repository, error) {
+	result, err := o.Edges.RepositoriesOrErr()
 	if IsNotLoaded(err) {
-		result, err = o.QueryRepos().All(ctx)
+		result, err = o.QueryRepositories().All(ctx)
 	}
 	return result, err
 }
@@ -212,26 +212,10 @@ func (pr *Project) Owner(ctx context.Context) (*Organization, error) {
 	return result, err
 }
 
-func (pr *Project) Repos(ctx context.Context) ([]*Repo, error) {
-	result, err := pr.Edges.ReposOrErr()
+func (pr *Project) Repositories(ctx context.Context) ([]*Repository, error) {
+	result, err := pr.Edges.RepositoriesOrErr()
 	if IsNotLoaded(err) {
-		result, err = pr.QueryRepos().All(ctx)
-	}
-	return result, err
-}
-
-func (pr *Project) VulnerabilityReviews(ctx context.Context) ([]*VulnerabilityReview, error) {
-	result, err := pr.Edges.VulnerabilityReviewsOrErr()
-	if IsNotLoaded(err) {
-		result, err = pr.QueryVulnerabilityReviews().All(ctx)
-	}
-	return result, err
-}
-
-func (pr *Project) Policies(ctx context.Context) ([]*ReleasePolicy, error) {
-	result, err := pr.Edges.PoliciesOrErr()
-	if IsNotLoaded(err) {
-		result, err = pr.QueryPolicies().All(ctx)
+		result, err = pr.QueryRepositories().All(ctx)
 	}
 	return result, err
 }
@@ -260,7 +244,7 @@ func (r *Release) Commit(ctx context.Context) (*GitCommit, error) {
 	return result, err
 }
 
-func (r *Release) HeadOf(ctx context.Context) (*Repo, error) {
+func (r *Release) HeadOf(ctx context.Context) (*Repository, error) {
 	result, err := r.Edges.HeadOfOrErr()
 	if IsNotLoaded(err) {
 		result, err = r.QueryHeadOf().Only(ctx)
@@ -452,22 +436,6 @@ func (rp *ReleasePolicy) Owner(ctx context.Context) (*Organization, error) {
 	return result, err
 }
 
-func (rp *ReleasePolicy) Projects(ctx context.Context) ([]*Project, error) {
-	result, err := rp.Edges.ProjectsOrErr()
-	if IsNotLoaded(err) {
-		result, err = rp.QueryProjects().All(ctx)
-	}
-	return result, err
-}
-
-func (rp *ReleasePolicy) Repos(ctx context.Context) ([]*Repo, error) {
-	result, err := rp.Edges.ReposOrErr()
-	if IsNotLoaded(err) {
-		result, err = rp.QueryRepos().All(ctx)
-	}
-	return result, err
-}
-
 func (rp *ReleasePolicy) Violations(ctx context.Context) ([]*ReleasePolicyViolation, error) {
 	result, err := rp.Edges.ViolationsOrErr()
 	if IsNotLoaded(err) {
@@ -532,7 +500,7 @@ func (rv *ReleaseVulnerability) Scan(ctx context.Context) (*CodeScan, error) {
 	return result, MaskNotFound(err)
 }
 
-func (r *Repo) Owner(ctx context.Context) (*Organization, error) {
+func (r *Repository) Owner(ctx context.Context) (*Organization, error) {
 	result, err := r.Edges.OwnerOrErr()
 	if IsNotLoaded(err) {
 		result, err = r.QueryOwner().Only(ctx)
@@ -540,7 +508,7 @@ func (r *Repo) Owner(ctx context.Context) (*Organization, error) {
 	return result, err
 }
 
-func (r *Repo) Project(ctx context.Context) (*Project, error) {
+func (r *Repository) Project(ctx context.Context) (*Project, error) {
 	result, err := r.Edges.ProjectOrErr()
 	if IsNotLoaded(err) {
 		result, err = r.QueryProject().Only(ctx)
@@ -548,7 +516,7 @@ func (r *Repo) Project(ctx context.Context) (*Project, error) {
 	return result, err
 }
 
-func (r *Repo) Head(ctx context.Context) (*Release, error) {
+func (r *Repository) Head(ctx context.Context) (*Release, error) {
 	result, err := r.Edges.HeadOrErr()
 	if IsNotLoaded(err) {
 		result, err = r.QueryHead().Only(ctx)
@@ -556,26 +524,10 @@ func (r *Repo) Head(ctx context.Context) (*Release, error) {
 	return result, MaskNotFound(err)
 }
 
-func (r *Repo) Commits(ctx context.Context) ([]*GitCommit, error) {
+func (r *Repository) Commits(ctx context.Context) ([]*GitCommit, error) {
 	result, err := r.Edges.CommitsOrErr()
 	if IsNotLoaded(err) {
 		result, err = r.QueryCommits().All(ctx)
-	}
-	return result, err
-}
-
-func (r *Repo) VulnerabilityReviews(ctx context.Context) ([]*VulnerabilityReview, error) {
-	result, err := r.Edges.VulnerabilityReviewsOrErr()
-	if IsNotLoaded(err) {
-		result, err = r.QueryVulnerabilityReviews().All(ctx)
-	}
-	return result, err
-}
-
-func (r *Repo) Policies(ctx context.Context) ([]*ReleasePolicy, error) {
-	result, err := r.Edges.PoliciesOrErr()
-	if IsNotLoaded(err) {
-		result, err = r.QueryPolicies().All(ctx)
 	}
 	return result, err
 }
@@ -648,22 +600,6 @@ func (vr *VulnerabilityReview) Vulnerability(ctx context.Context) (*Vulnerabilit
 	result, err := vr.Edges.VulnerabilityOrErr()
 	if IsNotLoaded(err) {
 		result, err = vr.QueryVulnerability().Only(ctx)
-	}
-	return result, err
-}
-
-func (vr *VulnerabilityReview) Projects(ctx context.Context) ([]*Project, error) {
-	result, err := vr.Edges.ProjectsOrErr()
-	if IsNotLoaded(err) {
-		result, err = vr.QueryProjects().All(ctx)
-	}
-	return result, err
-}
-
-func (vr *VulnerabilityReview) Repos(ctx context.Context) ([]*Repo, error) {
-	result, err := vr.Edges.ReposOrErr()
-	if IsNotLoaded(err) {
-		result, err = vr.QueryRepos().All(ctx)
 	}
 	return result, err
 }

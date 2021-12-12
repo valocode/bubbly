@@ -13,10 +13,8 @@ import (
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
-	"github.com/valocode/bubbly/ent/releasepolicy"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	schema "github.com/valocode/bubbly/ent/schema/types"
-	"github.com/valocode/bubbly/ent/vulnerabilityreview"
 )
 
 // ProjectUpdate is the builder for updating Project entities.
@@ -61,49 +59,19 @@ func (pu *ProjectUpdate) SetOwner(o *Organization) *ProjectUpdate {
 	return pu.SetOwnerID(o.ID)
 }
 
-// AddRepoIDs adds the "repos" edge to the Repo entity by IDs.
-func (pu *ProjectUpdate) AddRepoIDs(ids ...int) *ProjectUpdate {
-	pu.mutation.AddRepoIDs(ids...)
+// AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
+func (pu *ProjectUpdate) AddRepositoryIDs(ids ...int) *ProjectUpdate {
+	pu.mutation.AddRepositoryIDs(ids...)
 	return pu
 }
 
-// AddRepos adds the "repos" edges to the Repo entity.
-func (pu *ProjectUpdate) AddRepos(r ...*Repo) *ProjectUpdate {
+// AddRepositories adds the "repositories" edges to the Repository entity.
+func (pu *ProjectUpdate) AddRepositories(r ...*Repository) *ProjectUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return pu.AddRepoIDs(ids...)
-}
-
-// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
-func (pu *ProjectUpdate) AddVulnerabilityReviewIDs(ids ...int) *ProjectUpdate {
-	pu.mutation.AddVulnerabilityReviewIDs(ids...)
-	return pu
-}
-
-// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
-func (pu *ProjectUpdate) AddVulnerabilityReviews(v ...*VulnerabilityReview) *ProjectUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return pu.AddVulnerabilityReviewIDs(ids...)
-}
-
-// AddPolicyIDs adds the "policies" edge to the ReleasePolicy entity by IDs.
-func (pu *ProjectUpdate) AddPolicyIDs(ids ...int) *ProjectUpdate {
-	pu.mutation.AddPolicyIDs(ids...)
-	return pu
-}
-
-// AddPolicies adds the "policies" edges to the ReleasePolicy entity.
-func (pu *ProjectUpdate) AddPolicies(r ...*ReleasePolicy) *ProjectUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return pu.AddPolicyIDs(ids...)
+	return pu.AddRepositoryIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
@@ -117,67 +85,25 @@ func (pu *ProjectUpdate) ClearOwner() *ProjectUpdate {
 	return pu
 }
 
-// ClearRepos clears all "repos" edges to the Repo entity.
-func (pu *ProjectUpdate) ClearRepos() *ProjectUpdate {
-	pu.mutation.ClearRepos()
+// ClearRepositories clears all "repositories" edges to the Repository entity.
+func (pu *ProjectUpdate) ClearRepositories() *ProjectUpdate {
+	pu.mutation.ClearRepositories()
 	return pu
 }
 
-// RemoveRepoIDs removes the "repos" edge to Repo entities by IDs.
-func (pu *ProjectUpdate) RemoveRepoIDs(ids ...int) *ProjectUpdate {
-	pu.mutation.RemoveRepoIDs(ids...)
+// RemoveRepositoryIDs removes the "repositories" edge to Repository entities by IDs.
+func (pu *ProjectUpdate) RemoveRepositoryIDs(ids ...int) *ProjectUpdate {
+	pu.mutation.RemoveRepositoryIDs(ids...)
 	return pu
 }
 
-// RemoveRepos removes "repos" edges to Repo entities.
-func (pu *ProjectUpdate) RemoveRepos(r ...*Repo) *ProjectUpdate {
+// RemoveRepositories removes "repositories" edges to Repository entities.
+func (pu *ProjectUpdate) RemoveRepositories(r ...*Repository) *ProjectUpdate {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return pu.RemoveRepoIDs(ids...)
-}
-
-// ClearVulnerabilityReviews clears all "vulnerability_reviews" edges to the VulnerabilityReview entity.
-func (pu *ProjectUpdate) ClearVulnerabilityReviews() *ProjectUpdate {
-	pu.mutation.ClearVulnerabilityReviews()
-	return pu
-}
-
-// RemoveVulnerabilityReviewIDs removes the "vulnerability_reviews" edge to VulnerabilityReview entities by IDs.
-func (pu *ProjectUpdate) RemoveVulnerabilityReviewIDs(ids ...int) *ProjectUpdate {
-	pu.mutation.RemoveVulnerabilityReviewIDs(ids...)
-	return pu
-}
-
-// RemoveVulnerabilityReviews removes "vulnerability_reviews" edges to VulnerabilityReview entities.
-func (pu *ProjectUpdate) RemoveVulnerabilityReviews(v ...*VulnerabilityReview) *ProjectUpdate {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return pu.RemoveVulnerabilityReviewIDs(ids...)
-}
-
-// ClearPolicies clears all "policies" edges to the ReleasePolicy entity.
-func (pu *ProjectUpdate) ClearPolicies() *ProjectUpdate {
-	pu.mutation.ClearPolicies()
-	return pu
-}
-
-// RemovePolicyIDs removes the "policies" edge to ReleasePolicy entities by IDs.
-func (pu *ProjectUpdate) RemovePolicyIDs(ids ...int) *ProjectUpdate {
-	pu.mutation.RemovePolicyIDs(ids...)
-	return pu
-}
-
-// RemovePolicies removes "policies" edges to ReleasePolicy entities.
-func (pu *ProjectUpdate) RemovePolicies(r ...*ReleasePolicy) *ProjectUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return pu.RemovePolicyIDs(ids...)
+	return pu.RemoveRepositoryIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -326,33 +252,33 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if pu.mutation.ReposCleared() {
+	if pu.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   project.ReposTable,
-			Columns: []string{project.ReposColumn},
+			Table:   project.RepositoriesTable,
+			Columns: []string{project.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.RemovedReposIDs(); len(nodes) > 0 && !pu.mutation.ReposCleared() {
+	if nodes := pu.mutation.RemovedRepositoriesIDs(); len(nodes) > 0 && !pu.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   project.ReposTable,
-			Columns: []string{project.ReposColumn},
+			Table:   project.RepositoriesTable,
+			Columns: []string{project.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -361,125 +287,17 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.ReposIDs(); len(nodes) > 0 {
+	if nodes := pu.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   project.ReposTable,
-			Columns: []string{project.ReposColumn},
+			Table:   project.RepositoriesTable,
+			Columns: []string{project.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if pu.mutation.VulnerabilityReviewsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.VulnerabilityReviewsTable,
-			Columns: project.VulnerabilityReviewsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: vulnerabilityreview.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.RemovedVulnerabilityReviewsIDs(); len(nodes) > 0 && !pu.mutation.VulnerabilityReviewsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.VulnerabilityReviewsTable,
-			Columns: project.VulnerabilityReviewsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: vulnerabilityreview.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.VulnerabilityReviewsTable,
-			Columns: project.VulnerabilityReviewsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: vulnerabilityreview.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if pu.mutation.PoliciesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.PoliciesTable,
-			Columns: project.PoliciesPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releasepolicy.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.RemovedPoliciesIDs(); len(nodes) > 0 && !pu.mutation.PoliciesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.PoliciesTable,
-			Columns: project.PoliciesPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releasepolicy.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.PoliciesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.PoliciesTable,
-			Columns: project.PoliciesPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releasepolicy.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -536,49 +354,19 @@ func (puo *ProjectUpdateOne) SetOwner(o *Organization) *ProjectUpdateOne {
 	return puo.SetOwnerID(o.ID)
 }
 
-// AddRepoIDs adds the "repos" edge to the Repo entity by IDs.
-func (puo *ProjectUpdateOne) AddRepoIDs(ids ...int) *ProjectUpdateOne {
-	puo.mutation.AddRepoIDs(ids...)
+// AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
+func (puo *ProjectUpdateOne) AddRepositoryIDs(ids ...int) *ProjectUpdateOne {
+	puo.mutation.AddRepositoryIDs(ids...)
 	return puo
 }
 
-// AddRepos adds the "repos" edges to the Repo entity.
-func (puo *ProjectUpdateOne) AddRepos(r ...*Repo) *ProjectUpdateOne {
+// AddRepositories adds the "repositories" edges to the Repository entity.
+func (puo *ProjectUpdateOne) AddRepositories(r ...*Repository) *ProjectUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return puo.AddRepoIDs(ids...)
-}
-
-// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
-func (puo *ProjectUpdateOne) AddVulnerabilityReviewIDs(ids ...int) *ProjectUpdateOne {
-	puo.mutation.AddVulnerabilityReviewIDs(ids...)
-	return puo
-}
-
-// AddVulnerabilityReviews adds the "vulnerability_reviews" edges to the VulnerabilityReview entity.
-func (puo *ProjectUpdateOne) AddVulnerabilityReviews(v ...*VulnerabilityReview) *ProjectUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return puo.AddVulnerabilityReviewIDs(ids...)
-}
-
-// AddPolicyIDs adds the "policies" edge to the ReleasePolicy entity by IDs.
-func (puo *ProjectUpdateOne) AddPolicyIDs(ids ...int) *ProjectUpdateOne {
-	puo.mutation.AddPolicyIDs(ids...)
-	return puo
-}
-
-// AddPolicies adds the "policies" edges to the ReleasePolicy entity.
-func (puo *ProjectUpdateOne) AddPolicies(r ...*ReleasePolicy) *ProjectUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return puo.AddPolicyIDs(ids...)
+	return puo.AddRepositoryIDs(ids...)
 }
 
 // Mutation returns the ProjectMutation object of the builder.
@@ -592,67 +380,25 @@ func (puo *ProjectUpdateOne) ClearOwner() *ProjectUpdateOne {
 	return puo
 }
 
-// ClearRepos clears all "repos" edges to the Repo entity.
-func (puo *ProjectUpdateOne) ClearRepos() *ProjectUpdateOne {
-	puo.mutation.ClearRepos()
+// ClearRepositories clears all "repositories" edges to the Repository entity.
+func (puo *ProjectUpdateOne) ClearRepositories() *ProjectUpdateOne {
+	puo.mutation.ClearRepositories()
 	return puo
 }
 
-// RemoveRepoIDs removes the "repos" edge to Repo entities by IDs.
-func (puo *ProjectUpdateOne) RemoveRepoIDs(ids ...int) *ProjectUpdateOne {
-	puo.mutation.RemoveRepoIDs(ids...)
+// RemoveRepositoryIDs removes the "repositories" edge to Repository entities by IDs.
+func (puo *ProjectUpdateOne) RemoveRepositoryIDs(ids ...int) *ProjectUpdateOne {
+	puo.mutation.RemoveRepositoryIDs(ids...)
 	return puo
 }
 
-// RemoveRepos removes "repos" edges to Repo entities.
-func (puo *ProjectUpdateOne) RemoveRepos(r ...*Repo) *ProjectUpdateOne {
+// RemoveRepositories removes "repositories" edges to Repository entities.
+func (puo *ProjectUpdateOne) RemoveRepositories(r ...*Repository) *ProjectUpdateOne {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return puo.RemoveRepoIDs(ids...)
-}
-
-// ClearVulnerabilityReviews clears all "vulnerability_reviews" edges to the VulnerabilityReview entity.
-func (puo *ProjectUpdateOne) ClearVulnerabilityReviews() *ProjectUpdateOne {
-	puo.mutation.ClearVulnerabilityReviews()
-	return puo
-}
-
-// RemoveVulnerabilityReviewIDs removes the "vulnerability_reviews" edge to VulnerabilityReview entities by IDs.
-func (puo *ProjectUpdateOne) RemoveVulnerabilityReviewIDs(ids ...int) *ProjectUpdateOne {
-	puo.mutation.RemoveVulnerabilityReviewIDs(ids...)
-	return puo
-}
-
-// RemoveVulnerabilityReviews removes "vulnerability_reviews" edges to VulnerabilityReview entities.
-func (puo *ProjectUpdateOne) RemoveVulnerabilityReviews(v ...*VulnerabilityReview) *ProjectUpdateOne {
-	ids := make([]int, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return puo.RemoveVulnerabilityReviewIDs(ids...)
-}
-
-// ClearPolicies clears all "policies" edges to the ReleasePolicy entity.
-func (puo *ProjectUpdateOne) ClearPolicies() *ProjectUpdateOne {
-	puo.mutation.ClearPolicies()
-	return puo
-}
-
-// RemovePolicyIDs removes the "policies" edge to ReleasePolicy entities by IDs.
-func (puo *ProjectUpdateOne) RemovePolicyIDs(ids ...int) *ProjectUpdateOne {
-	puo.mutation.RemovePolicyIDs(ids...)
-	return puo
-}
-
-// RemovePolicies removes "policies" edges to ReleasePolicy entities.
-func (puo *ProjectUpdateOne) RemovePolicies(r ...*ReleasePolicy) *ProjectUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return puo.RemovePolicyIDs(ids...)
+	return puo.RemoveRepositoryIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -825,33 +571,33 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if puo.mutation.ReposCleared() {
+	if puo.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   project.ReposTable,
-			Columns: []string{project.ReposColumn},
+			Table:   project.RepositoriesTable,
+			Columns: []string{project.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.RemovedReposIDs(); len(nodes) > 0 && !puo.mutation.ReposCleared() {
+	if nodes := puo.mutation.RemovedRepositoriesIDs(); len(nodes) > 0 && !puo.mutation.RepositoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   project.ReposTable,
-			Columns: []string{project.ReposColumn},
+			Table:   project.RepositoriesTable,
+			Columns: []string{project.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -860,125 +606,17 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.ReposIDs(); len(nodes) > 0 {
+	if nodes := puo.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   project.ReposTable,
-			Columns: []string{project.ReposColumn},
+			Table:   project.RepositoriesTable,
+			Columns: []string{project.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if puo.mutation.VulnerabilityReviewsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.VulnerabilityReviewsTable,
-			Columns: project.VulnerabilityReviewsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: vulnerabilityreview.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.RemovedVulnerabilityReviewsIDs(); len(nodes) > 0 && !puo.mutation.VulnerabilityReviewsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.VulnerabilityReviewsTable,
-			Columns: project.VulnerabilityReviewsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: vulnerabilityreview.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.VulnerabilityReviewsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.VulnerabilityReviewsTable,
-			Columns: project.VulnerabilityReviewsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: vulnerabilityreview.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if puo.mutation.PoliciesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.PoliciesTable,
-			Columns: project.PoliciesPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releasepolicy.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.RemovedPoliciesIDs(); len(nodes) > 0 && !puo.mutation.PoliciesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.PoliciesTable,
-			Columns: project.PoliciesPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releasepolicy.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.PoliciesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   project.PoliciesTable,
-			Columns: project.PoliciesPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: releasepolicy.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}

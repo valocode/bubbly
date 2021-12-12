@@ -3,13 +3,21 @@ package api
 import "github.com/valocode/bubbly/ent"
 
 type (
-	ReleasePolicySaveRequest struct {
+	ReleasePolicyCreateRequest struct {
 		Policy *ReleasePolicyCreate `json:"policy,omitempty" validate:"required"`
+	}
+
+	ReleasePolicyCreateResponse struct {
+		Policy *ent.ReleasePolicyModelRead `json:"policy"`
 	}
 
 	ReleasePolicyUpdateRequest struct {
 		ID     *int                 `param:"id" validate:"required"`
 		Policy *ReleasePolicyUpdate `json:"policy,omitempty" validate:"required"`
+	}
+
+	ReleasePolicyUpdateResponse struct {
+		Policy *ent.ReleasePolicyModelRead `json:"policy"`
 	}
 
 	ReleasePolicyGetRequest struct {

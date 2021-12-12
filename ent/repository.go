@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
@@ -16,8 +16,8 @@ import (
 	schema "github.com/valocode/bubbly/ent/schema/types"
 )
 
-// Repo is the model entity for the Repo schema.
-type Repo struct {
+// Repository is the model entity for the Repository schema.
+type Repository struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
@@ -28,14 +28,14 @@ type Repo struct {
 	// Labels holds the value of the "labels" field.
 	Labels schema.Labels `json:"labels,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the RepoQuery when eager-loading is set.
-	Edges        RepoEdges `json:"edges"`
-	repo_owner   *int
-	repo_project *int
+	// The values are being populated by the RepositoryQuery when eager-loading is set.
+	Edges              RepositoryEdges `json:"edges"`
+	repository_owner   *int
+	repository_project *int
 }
 
-// RepoEdges holds the relations/edges for other nodes in the graph.
-type RepoEdges struct {
+// RepositoryEdges holds the relations/edges for other nodes in the graph.
+type RepositoryEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Organization `json:"owner,omitempty"`
 	// Project holds the value of the project edge.
@@ -44,18 +44,14 @@ type RepoEdges struct {
 	Head *Release `json:"head,omitempty"`
 	// Commits holds the value of the commits edge.
 	Commits []*GitCommit `json:"commits,omitempty"`
-	// VulnerabilityReviews holds the value of the vulnerability_reviews edge.
-	VulnerabilityReviews []*VulnerabilityReview `json:"vulnerability_reviews,omitempty"`
-	// Policies holds the value of the policies edge.
-	Policies []*ReleasePolicy `json:"policies,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [4]bool
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e RepoEdges) OwnerOrErr() (*Organization, error) {
+func (e RepositoryEdges) OwnerOrErr() (*Organization, error) {
 	if e.loadedTypes[0] {
 		if e.Owner == nil {
 			// The edge owner was loaded in eager-loading,
@@ -69,7 +65,7 @@ func (e RepoEdges) OwnerOrErr() (*Organization, error) {
 
 // ProjectOrErr returns the Project value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e RepoEdges) ProjectOrErr() (*Project, error) {
+func (e RepositoryEdges) ProjectOrErr() (*Project, error) {
 	if e.loadedTypes[1] {
 		if e.Project == nil {
 			// The edge project was loaded in eager-loading,
@@ -83,7 +79,7 @@ func (e RepoEdges) ProjectOrErr() (*Project, error) {
 
 // HeadOrErr returns the Head value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e RepoEdges) HeadOrErr() (*Release, error) {
+func (e RepositoryEdges) HeadOrErr() (*Release, error) {
 	if e.loadedTypes[2] {
 		if e.Head == nil {
 			// The edge head was loaded in eager-loading,
@@ -97,80 +93,62 @@ func (e RepoEdges) HeadOrErr() (*Release, error) {
 
 // CommitsOrErr returns the Commits value or an error if the edge
 // was not loaded in eager-loading.
-func (e RepoEdges) CommitsOrErr() ([]*GitCommit, error) {
+func (e RepositoryEdges) CommitsOrErr() ([]*GitCommit, error) {
 	if e.loadedTypes[3] {
 		return e.Commits, nil
 	}
 	return nil, &NotLoadedError{edge: "commits"}
 }
 
-// VulnerabilityReviewsOrErr returns the VulnerabilityReviews value or an error if the edge
-// was not loaded in eager-loading.
-func (e RepoEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error) {
-	if e.loadedTypes[4] {
-		return e.VulnerabilityReviews, nil
-	}
-	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
-}
-
-// PoliciesOrErr returns the Policies value or an error if the edge
-// was not loaded in eager-loading.
-func (e RepoEdges) PoliciesOrErr() ([]*ReleasePolicy, error) {
-	if e.loadedTypes[5] {
-		return e.Policies, nil
-	}
-	return nil, &NotLoadedError{edge: "policies"}
-}
-
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Repo) scanValues(columns []string) ([]interface{}, error) {
+func (*Repository) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case repo.FieldLabels:
+		case repository.FieldLabels:
 			values[i] = new([]byte)
-		case repo.FieldID:
+		case repository.FieldID:
 			values[i] = new(sql.NullInt64)
-		case repo.FieldName, repo.FieldDefaultBranch:
+		case repository.FieldName, repository.FieldDefaultBranch:
 			values[i] = new(sql.NullString)
-		case repo.ForeignKeys[0]: // repo_owner
+		case repository.ForeignKeys[0]: // repository_owner
 			values[i] = new(sql.NullInt64)
-		case repo.ForeignKeys[1]: // repo_project
+		case repository.ForeignKeys[1]: // repository_project
 			values[i] = new(sql.NullInt64)
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Repo", columns[i])
+			return nil, fmt.Errorf("unexpected column %q for type Repository", columns[i])
 		}
 	}
 	return values, nil
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Repo fields.
-func (r *Repo) assignValues(columns []string, values []interface{}) error {
+// to the Repository fields.
+func (r *Repository) assignValues(columns []string, values []interface{}) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case repo.FieldID:
+		case repository.FieldID:
 			value, ok := values[i].(*sql.NullInt64)
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			r.ID = int(value.Int64)
-		case repo.FieldName:
+		case repository.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				r.Name = value.String
 			}
-		case repo.FieldDefaultBranch:
+		case repository.FieldDefaultBranch:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field default_branch", values[i])
 			} else if value.Valid {
 				r.DefaultBranch = value.String
 			}
-		case repo.FieldLabels:
+		case repository.FieldLabels:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field labels", values[i])
 			} else if value != nil && len(*value) > 0 {
@@ -178,77 +156,67 @@ func (r *Repo) assignValues(columns []string, values []interface{}) error {
 					return fmt.Errorf("unmarshal field labels: %w", err)
 				}
 			}
-		case repo.ForeignKeys[0]:
+		case repository.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field repo_owner", value)
+				return fmt.Errorf("unexpected type %T for edge-field repository_owner", value)
 			} else if value.Valid {
-				r.repo_owner = new(int)
-				*r.repo_owner = int(value.Int64)
+				r.repository_owner = new(int)
+				*r.repository_owner = int(value.Int64)
 			}
-		case repo.ForeignKeys[1]:
+		case repository.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field repo_project", value)
+				return fmt.Errorf("unexpected type %T for edge-field repository_project", value)
 			} else if value.Valid {
-				r.repo_project = new(int)
-				*r.repo_project = int(value.Int64)
+				r.repository_project = new(int)
+				*r.repository_project = int(value.Int64)
 			}
 		}
 	}
 	return nil
 }
 
-// QueryOwner queries the "owner" edge of the Repo entity.
-func (r *Repo) QueryOwner() *OrganizationQuery {
-	return (&RepoClient{config: r.config}).QueryOwner(r)
+// QueryOwner queries the "owner" edge of the Repository entity.
+func (r *Repository) QueryOwner() *OrganizationQuery {
+	return (&RepositoryClient{config: r.config}).QueryOwner(r)
 }
 
-// QueryProject queries the "project" edge of the Repo entity.
-func (r *Repo) QueryProject() *ProjectQuery {
-	return (&RepoClient{config: r.config}).QueryProject(r)
+// QueryProject queries the "project" edge of the Repository entity.
+func (r *Repository) QueryProject() *ProjectQuery {
+	return (&RepositoryClient{config: r.config}).QueryProject(r)
 }
 
-// QueryHead queries the "head" edge of the Repo entity.
-func (r *Repo) QueryHead() *ReleaseQuery {
-	return (&RepoClient{config: r.config}).QueryHead(r)
+// QueryHead queries the "head" edge of the Repository entity.
+func (r *Repository) QueryHead() *ReleaseQuery {
+	return (&RepositoryClient{config: r.config}).QueryHead(r)
 }
 
-// QueryCommits queries the "commits" edge of the Repo entity.
-func (r *Repo) QueryCommits() *GitCommitQuery {
-	return (&RepoClient{config: r.config}).QueryCommits(r)
+// QueryCommits queries the "commits" edge of the Repository entity.
+func (r *Repository) QueryCommits() *GitCommitQuery {
+	return (&RepositoryClient{config: r.config}).QueryCommits(r)
 }
 
-// QueryVulnerabilityReviews queries the "vulnerability_reviews" edge of the Repo entity.
-func (r *Repo) QueryVulnerabilityReviews() *VulnerabilityReviewQuery {
-	return (&RepoClient{config: r.config}).QueryVulnerabilityReviews(r)
-}
-
-// QueryPolicies queries the "policies" edge of the Repo entity.
-func (r *Repo) QueryPolicies() *ReleasePolicyQuery {
-	return (&RepoClient{config: r.config}).QueryPolicies(r)
-}
-
-// Update returns a builder for updating this Repo.
-// Note that you need to call Repo.Unwrap() before calling this method if this Repo
+// Update returns a builder for updating this Repository.
+// Note that you need to call Repository.Unwrap() before calling this method if this Repository
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (r *Repo) Update() *RepoUpdateOne {
-	return (&RepoClient{config: r.config}).UpdateOne(r)
+func (r *Repository) Update() *RepositoryUpdateOne {
+	return (&RepositoryClient{config: r.config}).UpdateOne(r)
 }
 
-// Unwrap unwraps the Repo entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the Repository entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (r *Repo) Unwrap() *Repo {
+func (r *Repository) Unwrap() *Repository {
 	tx, ok := r.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Repo is not a transactional entity")
+		panic("ent: Repository is not a transactional entity")
 	}
 	r.config.driver = tx.drv
 	return r
 }
 
 // String implements the fmt.Stringer.
-func (r *Repo) String() string {
+func (r *Repository) String() string {
 	var builder strings.Builder
-	builder.WriteString("Repo(")
+	builder.WriteString("Repository(")
 	builder.WriteString(fmt.Sprintf("id=%v", r.ID))
 	builder.WriteString(", name=")
 	builder.WriteString(r.Name)
@@ -260,10 +228,10 @@ func (r *Repo) String() string {
 	return builder.String()
 }
 
-// Repos is a parsable slice of Repo.
-type Repos []*Repo
+// Repositories is a parsable slice of Repository.
+type Repositories []*Repository
 
-func (r Repos) config(cfg config) {
+func (r Repositories) config(cfg config) {
 	for _i := range r {
 		r[_i].config = cfg
 	}

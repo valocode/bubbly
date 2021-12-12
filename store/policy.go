@@ -6,13 +6,10 @@ import (
 
 	"github.com/valocode/bubbly/ent"
 	"github.com/valocode/bubbly/ent/event"
-	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/organization"
-	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
-	"github.com/valocode/bubbly/ent/repo"
 	"github.com/valocode/bubbly/policy"
 	"github.com/valocode/bubbly/store/api"
 )
@@ -23,7 +20,33 @@ type ReleasePolicyQuery struct {
 	WithAffects bool
 }
 
-func (h *Handler) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.ReleasePolicy, error) {
+func (h *Handler) GetReleasePolicies(query *ReleasePolicyQuery) ([]*api.ReleasePolicy, error) {
+	entQuery := h.client.ReleasePolicy.Query().WhereInput(query.Where)
+	// if query.WithAffects {
+	// 	entQuery.WithProjects().WithRepository()
+	// }
+	dbPolicies, err := entQuery.All(h.ctx)
+	if err != nil {
+		return nil, HandleEntError(err, "get release policy")
+	}
+	var policies []*api.ReleasePolicy
+	for _, p := range dbPolicies {
+		var affects api.ReleasePolicyAffects
+		// for _, p := range p.Edges.Projects {
+		// 	affects.Projects = append(affects.Projects, p.Name)
+		// }
+		// for _, r := range p.Edges.Repositories {
+		// 	affects.Repos = append(affects.Repos, r.Name)
+		// }
+		policies = append(policies, &api.ReleasePolicy{
+			ReleasePolicyModelRead: *ent.NewReleasePolicyModelRead().FromEnt(p),
+			Affects:                &affects,
+		})
+	}
+	return policies, nil
+}
+
+func (h *Handler) CreateReleasePolicy(req *api.ReleasePolicyCreateRequest) (*ent.ReleasePolicy, error) {
 	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "release policy create")
 	}
@@ -67,32 +90,6 @@ func (h *Handler) SaveReleasePolicy(req *api.ReleasePolicySaveRequest) (*ent.Rel
 	}
 
 	return dbPolicy, nil
-}
-
-func (h *Handler) GetReleasePolicies(query *ReleasePolicyQuery) ([]*api.ReleasePolicy, error) {
-	entQuery := h.client.ReleasePolicy.Query().WhereInput(query.Where)
-	if query.WithAffects {
-		entQuery.WithProjects().WithRepos()
-	}
-	dbPolicies, err := entQuery.All(h.ctx)
-	if err != nil {
-		return nil, HandleEntError(err, "get release policy")
-	}
-	var policies []*api.ReleasePolicy
-	for _, p := range dbPolicies {
-		var affects api.ReleasePolicyAffects
-		for _, p := range p.Edges.Projects {
-			affects.Projects = append(affects.Projects, p.Name)
-		}
-		for _, r := range p.Edges.Repos {
-			affects.Repos = append(affects.Repos, r.Name)
-		}
-		policies = append(policies, &api.ReleasePolicy{
-			ReleasePolicyModelRead: *ent.NewReleasePolicyModelRead().FromEnt(p),
-			Affects:                &affects,
-		})
-	}
-	return policies, nil
 }
 
 func (h *Handler) UpdateReleasePolicy(req *api.ReleasePolicyUpdateRequest) (*ent.ReleasePolicy, error) {
@@ -183,7 +180,7 @@ func (h *Handler) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyVi
 	} else {
 		policyStr = strings.Join(policies, ",")
 	}
-	if _, err := h.SaveEvent(&api.EventSaveRequest{
+	if _, err := h.CreateEvent(&api.EventSaveRequest{
 		ReleaseID: &releaseID,
 		Event: ent.NewEventModelCreate().
 			SetMessage(fmt.Sprintf("Policies: %s\nViolations: %d", policyStr, len(dbViolations))).
@@ -198,24 +195,24 @@ func (h *Handler) EvaluateReleasePolicies(releaseID int) ([]*ent.ReleasePolicyVi
 func (h *Handler) policiesForRelease(client *ent.Client, releaseID int) ([]*ent.ReleasePolicy, error) {
 	dbPolicies, err := client.ReleasePolicy.Query().
 		Where(
-			releasepolicy.Or(
-				releasepolicy.HasProjectsWith(
-					project.HasReposWith(
-						repo.HasCommitsWith(
-							gitcommit.HasReleaseWith(
-								release.ID(releaseID),
-							),
-						),
-					),
-				),
-				releasepolicy.HasReposWith(
-					repo.HasCommitsWith(
-						gitcommit.HasReleaseWith(
-							release.ID(releaseID),
-						),
-					),
-				),
-			),
+		// releasepolicy.Or(
+		// 	releasepolicy.HasProjectsWith(
+		// 		project.HasReposWith(
+		// 			repository.HasCommitsWith(
+		// 				gitcommit.HasReleaseWith(
+		// 					release.ID(releaseID),
+		// 				),
+		// 			),
+		// 		),
+		// 	),
+		// 	releasepolicy.HasReposWith(
+		// 		repository.HasCommitsWith(
+		// 			gitcommit.HasReleaseWith(
+		// 				release.ID(releaseID),
+		// 			),
+		// 		),
+		// 	),
+		// ),
 		).All(h.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "getting policies for release")
@@ -228,29 +225,29 @@ func (h *Handler) updatePolicyAffects(client *ent.Client, dbPolicy *ent.ReleaseP
 		return dbPolicy, nil
 	}
 
-	projectSetIDs, err := h.projectIDs(client, affects.Projects)
-	if err != nil {
-		return nil, err
-	}
-	projectSetNotIDs, err := h.projectIDs(client, affects.NotProjects)
-	if err != nil {
-		return nil, err
-	}
-	repoSetIDs, err := h.repoIDs(client, affects.Repos)
-	if err != nil {
-		return nil, err
-	}
-	repoSetNotIDs, err := h.repoIDs(client, affects.NotRepos)
-	if err != nil {
-		return nil, err
-	}
+	// projectSetIDs, err := h.projectIDs(client, affects.Projects)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// projectSetNotIDs, err := h.projectIDs(client, affects.NotProjects)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// repoSetIDs, err := h.repoIDs(client, affects.Repos)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// repoSetNotIDs, err := h.repoIDs(client, affects.NotRepos)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// Update the policy with the entities that it affects
-	dbPolicy, err = client.ReleasePolicy.UpdateOne(dbPolicy).
-		AddProjectIDs(projectSetIDs...).
-		RemoveProjectIDs(projectSetNotIDs...).
-		AddRepoIDs(repoSetIDs...).
-		RemoveRepoIDs(repoSetNotIDs...).
+	dbPolicy, err := client.ReleasePolicy.UpdateOne(dbPolicy).
+		// AddProjectIDs(projectSetIDs...).
+		// RemoveProjectIDs(projectSetNotIDs...).
+		// AddRepoIDs(repoSetIDs...).
+		// RemoveRepoIDs(repoSetNotIDs...).
 		Save(h.ctx)
 	if err != nil {
 		return nil, HandleEntError(err, "set policy affects")

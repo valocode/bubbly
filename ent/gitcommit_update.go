@@ -13,7 +13,7 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // GitCommitUpdate is the builder for updating GitCommit entities.
@@ -29,15 +29,15 @@ func (gcu *GitCommitUpdate) Where(ps ...predicate.GitCommit) *GitCommitUpdate {
 	return gcu
 }
 
-// SetRepoID sets the "repo" edge to the Repo entity by ID.
-func (gcu *GitCommitUpdate) SetRepoID(id int) *GitCommitUpdate {
-	gcu.mutation.SetRepoID(id)
+// SetRepositoryID sets the "repository" edge to the Repository entity by ID.
+func (gcu *GitCommitUpdate) SetRepositoryID(id int) *GitCommitUpdate {
+	gcu.mutation.SetRepositoryID(id)
 	return gcu
 }
 
-// SetRepo sets the "repo" edge to the Repo entity.
-func (gcu *GitCommitUpdate) SetRepo(r *Repo) *GitCommitUpdate {
-	return gcu.SetRepoID(r.ID)
+// SetRepository sets the "repository" edge to the Repository entity.
+func (gcu *GitCommitUpdate) SetRepository(r *Repository) *GitCommitUpdate {
+	return gcu.SetRepositoryID(r.ID)
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by ID.
@@ -64,9 +64,9 @@ func (gcu *GitCommitUpdate) Mutation() *GitCommitMutation {
 	return gcu.mutation
 }
 
-// ClearRepo clears the "repo" edge to the Repo entity.
-func (gcu *GitCommitUpdate) ClearRepo() *GitCommitUpdate {
-	gcu.mutation.ClearRepo()
+// ClearRepository clears the "repository" edge to the Repository entity.
+func (gcu *GitCommitUpdate) ClearRepository() *GitCommitUpdate {
+	gcu.mutation.ClearRepository()
 	return gcu
 }
 
@@ -138,8 +138,8 @@ func (gcu *GitCommitUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (gcu *GitCommitUpdate) check() error {
-	if _, ok := gcu.mutation.RepoID(); gcu.mutation.RepoCleared() && !ok {
-		return errors.New("ent: clearing a required unique edge \"repo\"")
+	if _, ok := gcu.mutation.RepositoryID(); gcu.mutation.RepositoryCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"repository\"")
 	}
 	return nil
 }
@@ -168,33 +168,33 @@ func (gcu *GitCommitUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: gitcommit.FieldTag,
 		})
 	}
-	if gcu.mutation.RepoCleared() {
+	if gcu.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   gitcommit.RepoTable,
-			Columns: []string{gitcommit.RepoColumn},
+			Table:   gitcommit.RepositoryTable,
+			Columns: []string{gitcommit.RepositoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gcu.mutation.RepoIDs(); len(nodes) > 0 {
+	if nodes := gcu.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   gitcommit.RepoTable,
-			Columns: []string{gitcommit.RepoColumn},
+			Table:   gitcommit.RepositoryTable,
+			Columns: []string{gitcommit.RepositoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -257,15 +257,15 @@ type GitCommitUpdateOne struct {
 	mutation *GitCommitMutation
 }
 
-// SetRepoID sets the "repo" edge to the Repo entity by ID.
-func (gcuo *GitCommitUpdateOne) SetRepoID(id int) *GitCommitUpdateOne {
-	gcuo.mutation.SetRepoID(id)
+// SetRepositoryID sets the "repository" edge to the Repository entity by ID.
+func (gcuo *GitCommitUpdateOne) SetRepositoryID(id int) *GitCommitUpdateOne {
+	gcuo.mutation.SetRepositoryID(id)
 	return gcuo
 }
 
-// SetRepo sets the "repo" edge to the Repo entity.
-func (gcuo *GitCommitUpdateOne) SetRepo(r *Repo) *GitCommitUpdateOne {
-	return gcuo.SetRepoID(r.ID)
+// SetRepository sets the "repository" edge to the Repository entity.
+func (gcuo *GitCommitUpdateOne) SetRepository(r *Repository) *GitCommitUpdateOne {
+	return gcuo.SetRepositoryID(r.ID)
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by ID.
@@ -292,9 +292,9 @@ func (gcuo *GitCommitUpdateOne) Mutation() *GitCommitMutation {
 	return gcuo.mutation
 }
 
-// ClearRepo clears the "repo" edge to the Repo entity.
-func (gcuo *GitCommitUpdateOne) ClearRepo() *GitCommitUpdateOne {
-	gcuo.mutation.ClearRepo()
+// ClearRepository clears the "repository" edge to the Repository entity.
+func (gcuo *GitCommitUpdateOne) ClearRepository() *GitCommitUpdateOne {
+	gcuo.mutation.ClearRepository()
 	return gcuo
 }
 
@@ -373,8 +373,8 @@ func (gcuo *GitCommitUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (gcuo *GitCommitUpdateOne) check() error {
-	if _, ok := gcuo.mutation.RepoID(); gcuo.mutation.RepoCleared() && !ok {
-		return errors.New("ent: clearing a required unique edge \"repo\"")
+	if _, ok := gcuo.mutation.RepositoryID(); gcuo.mutation.RepositoryCleared() && !ok {
+		return errors.New("ent: clearing a required unique edge \"repository\"")
 	}
 	return nil
 }
@@ -420,33 +420,33 @@ func (gcuo *GitCommitUpdateOne) sqlSave(ctx context.Context) (_node *GitCommit, 
 			Column: gitcommit.FieldTag,
 		})
 	}
-	if gcuo.mutation.RepoCleared() {
+	if gcuo.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   gitcommit.RepoTable,
-			Columns: []string{gitcommit.RepoColumn},
+			Table:   gitcommit.RepositoryTable,
+			Columns: []string{gitcommit.RepositoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gcuo.mutation.RepoIDs(); len(nodes) > 0 {
+	if nodes := gcuo.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   gitcommit.RepoTable,
-			Columns: []string{gitcommit.RepoColumn},
+			Table:   gitcommit.RepositoryTable,
+			Columns: []string{gitcommit.RepositoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}

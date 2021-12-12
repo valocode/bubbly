@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // GitCommit is the model entity for the GitCommit schema.
@@ -28,14 +28,14 @@ type GitCommit struct {
 	Time time.Time `json:"time,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GitCommitQuery when eager-loading is set.
-	Edges           GitCommitEdges `json:"edges"`
-	git_commit_repo *int
+	Edges                 GitCommitEdges `json:"edges"`
+	git_commit_repository *int
 }
 
 // GitCommitEdges holds the relations/edges for other nodes in the graph.
 type GitCommitEdges struct {
-	// Repo holds the value of the repo edge.
-	Repo *Repo `json:"repo,omitempty"`
+	// Repository holds the value of the repository edge.
+	Repository *Repository `json:"repository,omitempty"`
 	// Release holds the value of the release edge.
 	Release *Release `json:"release,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -43,18 +43,18 @@ type GitCommitEdges struct {
 	loadedTypes [2]bool
 }
 
-// RepoOrErr returns the Repo value or an error if the edge
+// RepositoryOrErr returns the Repository value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e GitCommitEdges) RepoOrErr() (*Repo, error) {
+func (e GitCommitEdges) RepositoryOrErr() (*Repository, error) {
 	if e.loadedTypes[0] {
-		if e.Repo == nil {
-			// The edge repo was loaded in eager-loading,
+		if e.Repository == nil {
+			// The edge repository was loaded in eager-loading,
 			// but was not found.
-			return nil, &NotFoundError{label: repo.Label}
+			return nil, &NotFoundError{label: repository.Label}
 		}
-		return e.Repo, nil
+		return e.Repository, nil
 	}
-	return nil, &NotLoadedError{edge: "repo"}
+	return nil, &NotLoadedError{edge: "repository"}
 }
 
 // ReleaseOrErr returns the Release value or an error if the edge
@@ -82,7 +82,7 @@ func (*GitCommit) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullString)
 		case gitcommit.FieldTime:
 			values[i] = new(sql.NullTime)
-		case gitcommit.ForeignKeys[0]: // git_commit_repo
+		case gitcommit.ForeignKeys[0]: // git_commit_repository
 			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type GitCommit", columns[i])
@@ -131,19 +131,19 @@ func (gc *GitCommit) assignValues(columns []string, values []interface{}) error 
 			}
 		case gitcommit.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field git_commit_repo", value)
+				return fmt.Errorf("unexpected type %T for edge-field git_commit_repository", value)
 			} else if value.Valid {
-				gc.git_commit_repo = new(int)
-				*gc.git_commit_repo = int(value.Int64)
+				gc.git_commit_repository = new(int)
+				*gc.git_commit_repository = int(value.Int64)
 			}
 		}
 	}
 	return nil
 }
 
-// QueryRepo queries the "repo" edge of the GitCommit entity.
-func (gc *GitCommit) QueryRepo() *RepoQuery {
-	return (&GitCommitClient{config: gc.config}).QueryRepo(gc)
+// QueryRepository queries the "repository" edge of the GitCommit entity.
+func (gc *GitCommit) QueryRepository() *RepositoryQuery {
+	return (&GitCommitClient{config: gc.config}).QueryRepository(gc)
 }
 
 // QueryRelease queries the "release" edge of the GitCommit entity.

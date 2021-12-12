@@ -107,7 +107,7 @@ export enum ReleasePolicyViolationSeverity {
 // ReleaseVulnerability
 // #######################################
 // #######################################
-// Repo
+// Repository
 // #######################################
 // #######################################
 // SPDXLicense

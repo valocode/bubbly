@@ -13,7 +13,7 @@ import (
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // EventUpdate is the builder for updating Event entities.
@@ -48,23 +48,23 @@ func (eu *EventUpdate) SetRelease(r *Release) *EventUpdate {
 	return eu.SetReleaseID(r.ID)
 }
 
-// SetRepoID sets the "repo" edge to the Repo entity by ID.
-func (eu *EventUpdate) SetRepoID(id int) *EventUpdate {
-	eu.mutation.SetRepoID(id)
+// SetRepositoryID sets the "repository" edge to the Repository entity by ID.
+func (eu *EventUpdate) SetRepositoryID(id int) *EventUpdate {
+	eu.mutation.SetRepositoryID(id)
 	return eu
 }
 
-// SetNillableRepoID sets the "repo" edge to the Repo entity by ID if the given value is not nil.
-func (eu *EventUpdate) SetNillableRepoID(id *int) *EventUpdate {
+// SetNillableRepositoryID sets the "repository" edge to the Repository entity by ID if the given value is not nil.
+func (eu *EventUpdate) SetNillableRepositoryID(id *int) *EventUpdate {
 	if id != nil {
-		eu = eu.SetRepoID(*id)
+		eu = eu.SetRepositoryID(*id)
 	}
 	return eu
 }
 
-// SetRepo sets the "repo" edge to the Repo entity.
-func (eu *EventUpdate) SetRepo(r *Repo) *EventUpdate {
-	return eu.SetRepoID(r.ID)
+// SetRepository sets the "repository" edge to the Repository entity.
+func (eu *EventUpdate) SetRepository(r *Repository) *EventUpdate {
+	return eu.SetRepositoryID(r.ID)
 }
 
 // SetProjectID sets the "project" edge to the Project entity by ID.
@@ -97,9 +97,9 @@ func (eu *EventUpdate) ClearRelease() *EventUpdate {
 	return eu
 }
 
-// ClearRepo clears the "repo" edge to the Repo entity.
-func (eu *EventUpdate) ClearRepo() *EventUpdate {
-	eu.mutation.ClearRepo()
+// ClearRepository clears the "repository" edge to the Repository entity.
+func (eu *EventUpdate) ClearRepository() *EventUpdate {
+	eu.mutation.ClearRepository()
 	return eu
 }
 
@@ -216,33 +216,33 @@ func (eu *EventUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if eu.mutation.RepoCleared() {
+	if eu.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   event.RepoTable,
-			Columns: []string{event.RepoColumn},
+			Table:   event.RepositoryTable,
+			Columns: []string{event.RepositoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := eu.mutation.RepoIDs(); len(nodes) > 0 {
+	if nodes := eu.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   event.RepoTable,
-			Columns: []string{event.RepoColumn},
+			Table:   event.RepositoryTable,
+			Columns: []string{event.RepositoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -324,23 +324,23 @@ func (euo *EventUpdateOne) SetRelease(r *Release) *EventUpdateOne {
 	return euo.SetReleaseID(r.ID)
 }
 
-// SetRepoID sets the "repo" edge to the Repo entity by ID.
-func (euo *EventUpdateOne) SetRepoID(id int) *EventUpdateOne {
-	euo.mutation.SetRepoID(id)
+// SetRepositoryID sets the "repository" edge to the Repository entity by ID.
+func (euo *EventUpdateOne) SetRepositoryID(id int) *EventUpdateOne {
+	euo.mutation.SetRepositoryID(id)
 	return euo
 }
 
-// SetNillableRepoID sets the "repo" edge to the Repo entity by ID if the given value is not nil.
-func (euo *EventUpdateOne) SetNillableRepoID(id *int) *EventUpdateOne {
+// SetNillableRepositoryID sets the "repository" edge to the Repository entity by ID if the given value is not nil.
+func (euo *EventUpdateOne) SetNillableRepositoryID(id *int) *EventUpdateOne {
 	if id != nil {
-		euo = euo.SetRepoID(*id)
+		euo = euo.SetRepositoryID(*id)
 	}
 	return euo
 }
 
-// SetRepo sets the "repo" edge to the Repo entity.
-func (euo *EventUpdateOne) SetRepo(r *Repo) *EventUpdateOne {
-	return euo.SetRepoID(r.ID)
+// SetRepository sets the "repository" edge to the Repository entity.
+func (euo *EventUpdateOne) SetRepository(r *Repository) *EventUpdateOne {
+	return euo.SetRepositoryID(r.ID)
 }
 
 // SetProjectID sets the "project" edge to the Project entity by ID.
@@ -373,9 +373,9 @@ func (euo *EventUpdateOne) ClearRelease() *EventUpdateOne {
 	return euo
 }
 
-// ClearRepo clears the "repo" edge to the Repo entity.
-func (euo *EventUpdateOne) ClearRepo() *EventUpdateOne {
-	euo.mutation.ClearRepo()
+// ClearRepository clears the "repository" edge to the Repository entity.
+func (euo *EventUpdateOne) ClearRepository() *EventUpdateOne {
+	euo.mutation.ClearRepository()
 	return euo
 }
 
@@ -516,33 +516,33 @@ func (euo *EventUpdateOne) sqlSave(ctx context.Context) (_node *Event, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if euo.mutation.RepoCleared() {
+	if euo.mutation.RepositoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   event.RepoTable,
-			Columns: []string{event.RepoColumn},
+			Table:   event.RepositoryTable,
+			Columns: []string{event.RepositoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := euo.mutation.RepoIDs(); len(nodes) > 0 {
+	if nodes := euo.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   event.RepoTable,
-			Columns: []string{event.RepoColumn},
+			Table:   event.RepositoryTable,
+			Columns: []string{event.RepositoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}

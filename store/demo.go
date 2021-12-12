@@ -17,17 +17,7 @@ func (h *Handler) PopulateStoreWithDummyData() error {
 				return err
 			}
 			for _, art := range release.Artifacts {
-				if _, err := h.LogArtifact(art); err != nil {
-					return err
-				}
-			}
-			for _, scan := range release.CodeScans {
-				if _, err := h.SaveCodeScan(scan); err != nil {
-					return err
-				}
-			}
-			for _, run := range release.TestRuns {
-				if _, err := h.SaveTestRun(run); err != nil {
+				if _, err := h.CreateArtifact(art); err != nil {
 					return err
 				}
 			}
@@ -51,7 +41,7 @@ func (h *Handler) PopulateStoreWithPolicies() error {
 		req.Policy.Affects = &api.ReleasePolicyAffectsSet{
 			Projects: []string{"demo"},
 		}
-		if _, err := h.SaveReleasePolicy(req); err != nil {
+		if _, err := h.CreateReleasePolicy(req); err != nil {
 			return err
 		}
 		fmt.Println("saved policy: ", *req.Policy.Name)

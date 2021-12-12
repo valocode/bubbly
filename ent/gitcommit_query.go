@@ -15,7 +15,7 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // GitCommitQuery is the builder for querying GitCommit entities.
@@ -28,9 +28,9 @@ type GitCommitQuery struct {
 	fields     []string
 	predicates []predicate.GitCommit
 	// eager-loading edges.
-	withRepo    *RepoQuery
-	withRelease *ReleaseQuery
-	withFKs     bool
+	withRepository *RepositoryQuery
+	withRelease    *ReleaseQuery
+	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -67,9 +67,9 @@ func (gcq *GitCommitQuery) Order(o ...OrderFunc) *GitCommitQuery {
 	return gcq
 }
 
-// QueryRepo chains the current query on the "repo" edge.
-func (gcq *GitCommitQuery) QueryRepo() *RepoQuery {
-	query := &RepoQuery{config: gcq.config}
+// QueryRepository chains the current query on the "repository" edge.
+func (gcq *GitCommitQuery) QueryRepository() *RepositoryQuery {
+	query := &RepositoryQuery{config: gcq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := gcq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -80,8 +80,8 @@ func (gcq *GitCommitQuery) QueryRepo() *RepoQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(gitcommit.Table, gitcommit.FieldID, selector),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, gitcommit.RepoTable, gitcommit.RepoColumn),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, gitcommit.RepositoryTable, gitcommit.RepositoryColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(gcq.driver.Dialect(), step)
 		return fromU, nil
@@ -287,27 +287,27 @@ func (gcq *GitCommitQuery) Clone() *GitCommitQuery {
 		return nil
 	}
 	return &GitCommitQuery{
-		config:      gcq.config,
-		limit:       gcq.limit,
-		offset:      gcq.offset,
-		order:       append([]OrderFunc{}, gcq.order...),
-		predicates:  append([]predicate.GitCommit{}, gcq.predicates...),
-		withRepo:    gcq.withRepo.Clone(),
-		withRelease: gcq.withRelease.Clone(),
+		config:         gcq.config,
+		limit:          gcq.limit,
+		offset:         gcq.offset,
+		order:          append([]OrderFunc{}, gcq.order...),
+		predicates:     append([]predicate.GitCommit{}, gcq.predicates...),
+		withRepository: gcq.withRepository.Clone(),
+		withRelease:    gcq.withRelease.Clone(),
 		// clone intermediate query.
 		sql:  gcq.sql.Clone(),
 		path: gcq.path,
 	}
 }
 
-// WithRepo tells the query-builder to eager-load the nodes that are connected to
-// the "repo" edge. The optional arguments are used to configure the query builder of the edge.
-func (gcq *GitCommitQuery) WithRepo(opts ...func(*RepoQuery)) *GitCommitQuery {
-	query := &RepoQuery{config: gcq.config}
+// WithRepository tells the query-builder to eager-load the nodes that are connected to
+// the "repository" edge. The optional arguments are used to configure the query builder of the edge.
+func (gcq *GitCommitQuery) WithRepository(opts ...func(*RepositoryQuery)) *GitCommitQuery {
+	query := &RepositoryQuery{config: gcq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	gcq.withRepo = query
+	gcq.withRepository = query
 	return gcq
 }
 
@@ -389,11 +389,11 @@ func (gcq *GitCommitQuery) sqlAll(ctx context.Context) ([]*GitCommit, error) {
 		withFKs     = gcq.withFKs
 		_spec       = gcq.querySpec()
 		loadedTypes = [2]bool{
-			gcq.withRepo != nil,
+			gcq.withRepository != nil,
 			gcq.withRelease != nil,
 		}
 	)
-	if gcq.withRepo != nil {
+	if gcq.withRepository != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -419,20 +419,20 @@ func (gcq *GitCommitQuery) sqlAll(ctx context.Context) ([]*GitCommit, error) {
 		return nodes, nil
 	}
 
-	if query := gcq.withRepo; query != nil {
+	if query := gcq.withRepository; query != nil {
 		ids := make([]int, 0, len(nodes))
 		nodeids := make(map[int][]*GitCommit)
 		for i := range nodes {
-			if nodes[i].git_commit_repo == nil {
+			if nodes[i].git_commit_repository == nil {
 				continue
 			}
-			fk := *nodes[i].git_commit_repo
+			fk := *nodes[i].git_commit_repository
 			if _, ok := nodeids[fk]; !ok {
 				ids = append(ids, fk)
 			}
 			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
-		query.Where(repo.IDIn(ids...))
+		query.Where(repository.IDIn(ids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
@@ -440,10 +440,10 @@ func (gcq *GitCommitQuery) sqlAll(ctx context.Context) ([]*GitCommit, error) {
 		for _, n := range neighbors {
 			nodes, ok := nodeids[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "git_commit_repo" returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "git_commit_repository" returned %v`, n.ID)
 			}
 			for i := range nodes {
-				nodes[i].Edges.Repo = n
+				nodes[i].Edges.Repository = n
 			}
 		}
 	}

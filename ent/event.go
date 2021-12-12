@@ -11,7 +11,7 @@ import (
 	"github.com/valocode/bubbly/ent/event"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // Event is the model entity for the Event schema.
@@ -29,18 +29,18 @@ type Event struct {
 	Time time.Time `json:"time,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EventQuery when eager-loading is set.
-	Edges         EventEdges `json:"edges"`
-	event_release *int
-	event_repo    *int
-	event_project *int
+	Edges            EventEdges `json:"edges"`
+	event_release    *int
+	event_repository *int
+	event_project    *int
 }
 
 // EventEdges holds the relations/edges for other nodes in the graph.
 type EventEdges struct {
 	// Release holds the value of the release edge.
 	Release *Release `json:"release,omitempty"`
-	// Repo holds the value of the repo edge.
-	Repo *Repo `json:"repo,omitempty"`
+	// Repository holds the value of the repository edge.
+	Repository *Repository `json:"repository,omitempty"`
 	// Project holds the value of the project edge.
 	Project *Project `json:"project,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -62,18 +62,18 @@ func (e EventEdges) ReleaseOrErr() (*Release, error) {
 	return nil, &NotLoadedError{edge: "release"}
 }
 
-// RepoOrErr returns the Repo value or an error if the edge
+// RepositoryOrErr returns the Repository value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e EventEdges) RepoOrErr() (*Repo, error) {
+func (e EventEdges) RepositoryOrErr() (*Repository, error) {
 	if e.loadedTypes[1] {
-		if e.Repo == nil {
-			// The edge repo was loaded in eager-loading,
+		if e.Repository == nil {
+			// The edge repository was loaded in eager-loading,
 			// but was not found.
-			return nil, &NotFoundError{label: repo.Label}
+			return nil, &NotFoundError{label: repository.Label}
 		}
-		return e.Repo, nil
+		return e.Repository, nil
 	}
-	return nil, &NotLoadedError{edge: "repo"}
+	return nil, &NotLoadedError{edge: "repository"}
 }
 
 // ProjectOrErr returns the Project value or an error if the edge
@@ -103,7 +103,7 @@ func (*Event) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullTime)
 		case event.ForeignKeys[0]: // event_release
 			values[i] = new(sql.NullInt64)
-		case event.ForeignKeys[1]: // event_repo
+		case event.ForeignKeys[1]: // event_repository
 			values[i] = new(sql.NullInt64)
 		case event.ForeignKeys[2]: // event_project
 			values[i] = new(sql.NullInt64)
@@ -161,10 +161,10 @@ func (e *Event) assignValues(columns []string, values []interface{}) error {
 			}
 		case event.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field event_repo", value)
+				return fmt.Errorf("unexpected type %T for edge-field event_repository", value)
 			} else if value.Valid {
-				e.event_repo = new(int)
-				*e.event_repo = int(value.Int64)
+				e.event_repository = new(int)
+				*e.event_repository = int(value.Int64)
 			}
 		case event.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -183,9 +183,9 @@ func (e *Event) QueryRelease() *ReleaseQuery {
 	return (&EventClient{config: e.config}).QueryRelease(e)
 }
 
-// QueryRepo queries the "repo" edge of the Event entity.
-func (e *Event) QueryRepo() *RepoQuery {
-	return (&EventClient{config: e.config}).QueryRepo(e)
+// QueryRepository queries the "repository" edge of the Event entity.
+func (e *Event) QueryRepository() *RepositoryQuery {
+	return (&EventClient{config: e.config}).QueryRepository(e)
 }
 
 // QueryProject queries the "project" edge of the Event entity.

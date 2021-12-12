@@ -74,7 +74,7 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 	f := cmd.PersistentFlags()
 	f.StringSliceVar(&setProjects, "projects", nil, "List of project (names) to associate the policy with")
 	f.StringSliceVar(&notSetProjects, "not-projects", nil, "List of project (names) to disassociate the policy with")
-	f.StringSliceVar(&setRepos, "repos", nil, "List of repo (names) to associate the policy with")
-	f.StringSliceVar(&notSetRepos, "not-repos", nil, "List of repo (names) to disassociate the policy with")
+	f.StringSliceVar(&setRepos, "repositories", nil, "List of repo (names) to associate the policy with")
+	f.StringSliceVar(&notSetRepos, "not-repositories", nil, "List of repo (names) to disassociate the policy with")
 	return cmd
 }

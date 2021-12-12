@@ -56,7 +56,7 @@ func (Artifact) Fields() []ent.Field {
 
 func (Artifact) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("release", Release.Type).Unique(),
+		edge.To("release", Release.Type).Unique().Required(),
 		edge.From("entry", ReleaseEntry.Type).Ref("artifact").Unique(),
 	}
 }

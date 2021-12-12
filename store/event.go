@@ -9,7 +9,7 @@ import (
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	"github.com/valocode/bubbly/store/api"
 )
 
@@ -19,7 +19,7 @@ func (h *Handler) GetEvents(req *api.EventGetRequest) ([]*ent.Event, error) {
 		eQuery.Where(event.HasProjectWith(project.Name(req.Project)))
 	}
 	if req.Repo != "" {
-		eQuery.Where(event.HasRepoWith(repo.Name(req.Repo)))
+		eQuery.Where(event.HasRepositoryWith(repository.Name(req.Repo)))
 	}
 	if req.ReleaseName != "" {
 		eQuery.Where(event.HasReleaseWith(release.Name(req.ReleaseName)))
@@ -48,7 +48,7 @@ func (h *Handler) GetEvents(req *api.EventGetRequest) ([]*ent.Event, error) {
 	return dbEvents, nil
 }
 
-func (h *Handler) SaveEvent(req *api.EventSaveRequest) (*ent.Event, error) {
+func (h *Handler) CreateEvent(req *api.EventSaveRequest) (*ent.Event, error) {
 	if err := h.validator.Struct(req); err != nil {
 		return nil, HandleValidatorError(err, "create event")
 	}
@@ -58,7 +58,7 @@ func (h *Handler) SaveEvent(req *api.EventSaveRequest) (*ent.Event, error) {
 		eventCreate.SetReleaseID(*req.ReleaseID)
 	}
 	if req.RepoID != nil {
-		eventCreate.SetRepoID(*req.RepoID)
+		eventCreate.SetRepositoryID(*req.RepoID)
 	}
 	if req.ProjectID != nil {
 		eventCreate.SetProjectID(*req.ProjectID)

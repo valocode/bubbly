@@ -33,11 +33,11 @@ var (
 
 func New(bCtx *config.BubblyConfig) *cobra.Command {
 	var (
-		commit   string
-		project  string
-		repo     string
-		policies bool
-		log      bool
+		commit     string
+		project    string
+		repository string
+		policies   bool
+		log        bool
 	)
 	cmd := &cobra.Command{
 		Use:     "view [flags]",
@@ -55,11 +55,11 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 				}
 			}
 			resp, err := client.GetReleases(bCtx, &api.ReleaseGetRequest{
-				Commit:   commit,
-				Projects: project,
-				Repos:    repo,
-				Policies: policies,
-				Log:      log,
+				Commit:       commit,
+				Projects:     project,
+				Repositories: repository,
+				Policies:     policies,
+				Log:          log,
 			})
 			if err != nil {
 				return err
@@ -78,7 +78,7 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 
 	cmd.Flags().StringVar(&commit, "commit", "", "Specify the git commit for which to view a release")
 	cmd.Flags().StringVar(&project, "project", "", "Specify the project name for which to view a release")
-	cmd.Flags().StringVar(&repo, "repo", "", "Specify the repo name for which to view a release")
+	cmd.Flags().StringVar(&repository, "repository", "", "Specify the repository name for which to view a release")
 	cmd.Flags().BoolVar(&policies, "policies", false, "Whether to also fetch the policies that apply to this release")
 	cmd.Flags().BoolVar(&log, "log", false, "Whether to also fetch the release log")
 
@@ -87,7 +87,7 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 
 func printRelease(rel *api.Release, policies bool, log bool) {
 	fmt.Println("Project: " + *rel.Project.Name)
-	fmt.Println("Repo: " + *rel.Repo.Name)
+	fmt.Println("Repo: " + *rel.Repository.Name)
 	fmt.Println("Commit: " + *rel.Commit.Hash)
 	fmt.Println("Branch: " + *rel.Commit.Branch)
 	fmt.Println("Name: " + *rel.Release.Name)

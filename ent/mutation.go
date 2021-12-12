@@ -26,7 +26,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
@@ -63,7 +63,7 @@ const (
 	TypeReleasePolicy          = "ReleasePolicy"
 	TypeReleasePolicyViolation = "ReleasePolicyViolation"
 	TypeReleaseVulnerability   = "ReleaseVulnerability"
-	TypeRepo                   = "Repo"
+	TypeRepository             = "Repository"
 	TypeSPDXLicense            = "SPDXLicense"
 	TypeTestCase               = "TestCase"
 	TypeTestRun                = "TestRun"
@@ -3749,23 +3749,23 @@ func (m *ComponentMutation) ResetEdge(name string) error {
 // EventMutation represents an operation that mutates the Event nodes in the graph.
 type EventMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int
-	message        *string
-	status         *event.Status
-	_type          *event.Type
-	time           *time.Time
-	clearedFields  map[string]struct{}
-	release        *int
-	clearedrelease bool
-	repo           *int
-	clearedrepo    bool
-	project        *int
-	clearedproject bool
-	done           bool
-	oldValue       func(context.Context) (*Event, error)
-	predicates     []predicate.Event
+	op                Op
+	typ               string
+	id                *int
+	message           *string
+	status            *event.Status
+	_type             *event.Type
+	time              *time.Time
+	clearedFields     map[string]struct{}
+	release           *int
+	clearedrelease    bool
+	repository        *int
+	clearedrepository bool
+	project           *int
+	clearedproject    bool
+	done              bool
+	oldValue          func(context.Context) (*Event, error)
+	predicates        []predicate.Event
 }
 
 var _ ent.Mutation = (*EventMutation)(nil)
@@ -4030,43 +4030,43 @@ func (m *EventMutation) ResetRelease() {
 	m.clearedrelease = false
 }
 
-// SetRepoID sets the "repo" edge to the Repo entity by id.
-func (m *EventMutation) SetRepoID(id int) {
-	m.repo = &id
+// SetRepositoryID sets the "repository" edge to the Repository entity by id.
+func (m *EventMutation) SetRepositoryID(id int) {
+	m.repository = &id
 }
 
-// ClearRepo clears the "repo" edge to the Repo entity.
-func (m *EventMutation) ClearRepo() {
-	m.clearedrepo = true
+// ClearRepository clears the "repository" edge to the Repository entity.
+func (m *EventMutation) ClearRepository() {
+	m.clearedrepository = true
 }
 
-// RepoCleared reports if the "repo" edge to the Repo entity was cleared.
-func (m *EventMutation) RepoCleared() bool {
-	return m.clearedrepo
+// RepositoryCleared reports if the "repository" edge to the Repository entity was cleared.
+func (m *EventMutation) RepositoryCleared() bool {
+	return m.clearedrepository
 }
 
-// RepoID returns the "repo" edge ID in the mutation.
-func (m *EventMutation) RepoID() (id int, exists bool) {
-	if m.repo != nil {
-		return *m.repo, true
+// RepositoryID returns the "repository" edge ID in the mutation.
+func (m *EventMutation) RepositoryID() (id int, exists bool) {
+	if m.repository != nil {
+		return *m.repository, true
 	}
 	return
 }
 
-// RepoIDs returns the "repo" edge IDs in the mutation.
+// RepositoryIDs returns the "repository" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// RepoID instead. It exists only for internal usage by the builders.
-func (m *EventMutation) RepoIDs() (ids []int) {
-	if id := m.repo; id != nil {
+// RepositoryID instead. It exists only for internal usage by the builders.
+func (m *EventMutation) RepositoryIDs() (ids []int) {
+	if id := m.repository; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetRepo resets all changes to the "repo" edge.
-func (m *EventMutation) ResetRepo() {
-	m.repo = nil
-	m.clearedrepo = false
+// ResetRepository resets all changes to the "repository" edge.
+func (m *EventMutation) ResetRepository() {
+	m.repository = nil
+	m.clearedrepository = false
 }
 
 // SetProjectID sets the "project" edge to the Project entity by id.
@@ -4281,8 +4281,8 @@ func (m *EventMutation) AddedEdges() []string {
 	if m.release != nil {
 		edges = append(edges, event.EdgeRelease)
 	}
-	if m.repo != nil {
-		edges = append(edges, event.EdgeRepo)
+	if m.repository != nil {
+		edges = append(edges, event.EdgeRepository)
 	}
 	if m.project != nil {
 		edges = append(edges, event.EdgeProject)
@@ -4298,8 +4298,8 @@ func (m *EventMutation) AddedIDs(name string) []ent.Value {
 		if id := m.release; id != nil {
 			return []ent.Value{*id}
 		}
-	case event.EdgeRepo:
-		if id := m.repo; id != nil {
+	case event.EdgeRepository:
+		if id := m.repository; id != nil {
 			return []ent.Value{*id}
 		}
 	case event.EdgeProject:
@@ -4330,8 +4330,8 @@ func (m *EventMutation) ClearedEdges() []string {
 	if m.clearedrelease {
 		edges = append(edges, event.EdgeRelease)
 	}
-	if m.clearedrepo {
-		edges = append(edges, event.EdgeRepo)
+	if m.clearedrepository {
+		edges = append(edges, event.EdgeRepository)
 	}
 	if m.clearedproject {
 		edges = append(edges, event.EdgeProject)
@@ -4345,8 +4345,8 @@ func (m *EventMutation) EdgeCleared(name string) bool {
 	switch name {
 	case event.EdgeRelease:
 		return m.clearedrelease
-	case event.EdgeRepo:
-		return m.clearedrepo
+	case event.EdgeRepository:
+		return m.clearedrepository
 	case event.EdgeProject:
 		return m.clearedproject
 	}
@@ -4360,8 +4360,8 @@ func (m *EventMutation) ClearEdge(name string) error {
 	case event.EdgeRelease:
 		m.ClearRelease()
 		return nil
-	case event.EdgeRepo:
-		m.ClearRepo()
+	case event.EdgeRepository:
+		m.ClearRepository()
 		return nil
 	case event.EdgeProject:
 		m.ClearProject()
@@ -4377,8 +4377,8 @@ func (m *EventMutation) ResetEdge(name string) error {
 	case event.EdgeRelease:
 		m.ResetRelease()
 		return nil
-	case event.EdgeRepo:
-		m.ResetRepo()
+	case event.EdgeRepository:
+		m.ResetRepository()
 		return nil
 	case event.EdgeProject:
 		m.ResetProject()
@@ -4390,21 +4390,21 @@ func (m *EventMutation) ResetEdge(name string) error {
 // GitCommitMutation represents an operation that mutates the GitCommit nodes in the graph.
 type GitCommitMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int
-	hash           *string
-	branch         *string
-	tag            *string
-	time           *time.Time
-	clearedFields  map[string]struct{}
-	repo           *int
-	clearedrepo    bool
-	release        *int
-	clearedrelease bool
-	done           bool
-	oldValue       func(context.Context) (*GitCommit, error)
-	predicates     []predicate.GitCommit
+	op                Op
+	typ               string
+	id                *int
+	hash              *string
+	branch            *string
+	tag               *string
+	time              *time.Time
+	clearedFields     map[string]struct{}
+	repository        *int
+	clearedrepository bool
+	release           *int
+	clearedrelease    bool
+	done              bool
+	oldValue          func(context.Context) (*GitCommit, error)
+	predicates        []predicate.GitCommit
 }
 
 var _ ent.Mutation = (*GitCommitMutation)(nil)
@@ -4643,43 +4643,43 @@ func (m *GitCommitMutation) ResetTime() {
 	m.time = nil
 }
 
-// SetRepoID sets the "repo" edge to the Repo entity by id.
-func (m *GitCommitMutation) SetRepoID(id int) {
-	m.repo = &id
+// SetRepositoryID sets the "repository" edge to the Repository entity by id.
+func (m *GitCommitMutation) SetRepositoryID(id int) {
+	m.repository = &id
 }
 
-// ClearRepo clears the "repo" edge to the Repo entity.
-func (m *GitCommitMutation) ClearRepo() {
-	m.clearedrepo = true
+// ClearRepository clears the "repository" edge to the Repository entity.
+func (m *GitCommitMutation) ClearRepository() {
+	m.clearedrepository = true
 }
 
-// RepoCleared reports if the "repo" edge to the Repo entity was cleared.
-func (m *GitCommitMutation) RepoCleared() bool {
-	return m.clearedrepo
+// RepositoryCleared reports if the "repository" edge to the Repository entity was cleared.
+func (m *GitCommitMutation) RepositoryCleared() bool {
+	return m.clearedrepository
 }
 
-// RepoID returns the "repo" edge ID in the mutation.
-func (m *GitCommitMutation) RepoID() (id int, exists bool) {
-	if m.repo != nil {
-		return *m.repo, true
+// RepositoryID returns the "repository" edge ID in the mutation.
+func (m *GitCommitMutation) RepositoryID() (id int, exists bool) {
+	if m.repository != nil {
+		return *m.repository, true
 	}
 	return
 }
 
-// RepoIDs returns the "repo" edge IDs in the mutation.
+// RepositoryIDs returns the "repository" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// RepoID instead. It exists only for internal usage by the builders.
-func (m *GitCommitMutation) RepoIDs() (ids []int) {
-	if id := m.repo; id != nil {
+// RepositoryID instead. It exists only for internal usage by the builders.
+func (m *GitCommitMutation) RepositoryIDs() (ids []int) {
+	if id := m.repository; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetRepo resets all changes to the "repo" edge.
-func (m *GitCommitMutation) ResetRepo() {
-	m.repo = nil
-	m.clearedrepo = false
+// ResetRepository resets all changes to the "repository" edge.
+func (m *GitCommitMutation) ResetRepository() {
+	m.repository = nil
+	m.clearedrepository = false
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by id.
@@ -4900,8 +4900,8 @@ func (m *GitCommitMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GitCommitMutation) AddedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m.repo != nil {
-		edges = append(edges, gitcommit.EdgeRepo)
+	if m.repository != nil {
+		edges = append(edges, gitcommit.EdgeRepository)
 	}
 	if m.release != nil {
 		edges = append(edges, gitcommit.EdgeRelease)
@@ -4913,8 +4913,8 @@ func (m *GitCommitMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *GitCommitMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case gitcommit.EdgeRepo:
-		if id := m.repo; id != nil {
+	case gitcommit.EdgeRepository:
+		if id := m.repository; id != nil {
 			return []ent.Value{*id}
 		}
 	case gitcommit.EdgeRelease:
@@ -4942,8 +4942,8 @@ func (m *GitCommitMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GitCommitMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m.clearedrepo {
-		edges = append(edges, gitcommit.EdgeRepo)
+	if m.clearedrepository {
+		edges = append(edges, gitcommit.EdgeRepository)
 	}
 	if m.clearedrelease {
 		edges = append(edges, gitcommit.EdgeRelease)
@@ -4955,8 +4955,8 @@ func (m *GitCommitMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *GitCommitMutation) EdgeCleared(name string) bool {
 	switch name {
-	case gitcommit.EdgeRepo:
-		return m.clearedrepo
+	case gitcommit.EdgeRepository:
+		return m.clearedrepository
 	case gitcommit.EdgeRelease:
 		return m.clearedrelease
 	}
@@ -4967,8 +4967,8 @@ func (m *GitCommitMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *GitCommitMutation) ClearEdge(name string) error {
 	switch name {
-	case gitcommit.EdgeRepo:
-		m.ClearRepo()
+	case gitcommit.EdgeRepository:
+		m.ClearRepository()
 		return nil
 	case gitcommit.EdgeRelease:
 		m.ClearRelease()
@@ -4981,8 +4981,8 @@ func (m *GitCommitMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *GitCommitMutation) ResetEdge(name string) error {
 	switch name {
-	case gitcommit.EdgeRepo:
-		m.ResetRepo()
+	case gitcommit.EdgeRepository:
+		m.ResetRepository()
 		return nil
 	case gitcommit.EdgeRelease:
 		m.ResetRelease()
@@ -5656,20 +5656,20 @@ func (m *LicenseMutation) ResetEdge(name string) error {
 // OrganizationMutation represents an operation that mutates the Organization nodes in the graph.
 type OrganizationMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *int
-	name            *string
-	clearedFields   map[string]struct{}
-	projects        map[int]struct{}
-	removedprojects map[int]struct{}
-	clearedprojects bool
-	repos           map[int]struct{}
-	removedrepos    map[int]struct{}
-	clearedrepos    bool
-	done            bool
-	oldValue        func(context.Context) (*Organization, error)
-	predicates      []predicate.Organization
+	op                  Op
+	typ                 string
+	id                  *int
+	name                *string
+	clearedFields       map[string]struct{}
+	projects            map[int]struct{}
+	removedprojects     map[int]struct{}
+	clearedprojects     bool
+	repositories        map[int]struct{}
+	removedrepositories map[int]struct{}
+	clearedrepositories bool
+	done                bool
+	oldValue            func(context.Context) (*Organization, error)
+	predicates          []predicate.Organization
 }
 
 var _ ent.Mutation = (*OrganizationMutation)(nil)
@@ -5841,58 +5841,58 @@ func (m *OrganizationMutation) ResetProjects() {
 	m.removedprojects = nil
 }
 
-// AddRepoIDs adds the "repos" edge to the Repo entity by ids.
-func (m *OrganizationMutation) AddRepoIDs(ids ...int) {
-	if m.repos == nil {
-		m.repos = make(map[int]struct{})
+// AddRepositoryIDs adds the "repositories" edge to the Repository entity by ids.
+func (m *OrganizationMutation) AddRepositoryIDs(ids ...int) {
+	if m.repositories == nil {
+		m.repositories = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.repos[ids[i]] = struct{}{}
+		m.repositories[ids[i]] = struct{}{}
 	}
 }
 
-// ClearRepos clears the "repos" edge to the Repo entity.
-func (m *OrganizationMutation) ClearRepos() {
-	m.clearedrepos = true
+// ClearRepositories clears the "repositories" edge to the Repository entity.
+func (m *OrganizationMutation) ClearRepositories() {
+	m.clearedrepositories = true
 }
 
-// ReposCleared reports if the "repos" edge to the Repo entity was cleared.
-func (m *OrganizationMutation) ReposCleared() bool {
-	return m.clearedrepos
+// RepositoriesCleared reports if the "repositories" edge to the Repository entity was cleared.
+func (m *OrganizationMutation) RepositoriesCleared() bool {
+	return m.clearedrepositories
 }
 
-// RemoveRepoIDs removes the "repos" edge to the Repo entity by IDs.
-func (m *OrganizationMutation) RemoveRepoIDs(ids ...int) {
-	if m.removedrepos == nil {
-		m.removedrepos = make(map[int]struct{})
+// RemoveRepositoryIDs removes the "repositories" edge to the Repository entity by IDs.
+func (m *OrganizationMutation) RemoveRepositoryIDs(ids ...int) {
+	if m.removedrepositories == nil {
+		m.removedrepositories = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.repos, ids[i])
-		m.removedrepos[ids[i]] = struct{}{}
+		delete(m.repositories, ids[i])
+		m.removedrepositories[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedRepos returns the removed IDs of the "repos" edge to the Repo entity.
-func (m *OrganizationMutation) RemovedReposIDs() (ids []int) {
-	for id := range m.removedrepos {
+// RemovedRepositories returns the removed IDs of the "repositories" edge to the Repository entity.
+func (m *OrganizationMutation) RemovedRepositoriesIDs() (ids []int) {
+	for id := range m.removedrepositories {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ReposIDs returns the "repos" edge IDs in the mutation.
-func (m *OrganizationMutation) ReposIDs() (ids []int) {
-	for id := range m.repos {
+// RepositoriesIDs returns the "repositories" edge IDs in the mutation.
+func (m *OrganizationMutation) RepositoriesIDs() (ids []int) {
+	for id := range m.repositories {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetRepos resets all changes to the "repos" edge.
-func (m *OrganizationMutation) ResetRepos() {
-	m.repos = nil
-	m.clearedrepos = false
-	m.removedrepos = nil
+// ResetRepositories resets all changes to the "repositories" edge.
+func (m *OrganizationMutation) ResetRepositories() {
+	m.repositories = nil
+	m.clearedrepositories = false
+	m.removedrepositories = nil
 }
 
 // Where appends a list predicates to the OrganizationMutation builder.
@@ -6017,8 +6017,8 @@ func (m *OrganizationMutation) AddedEdges() []string {
 	if m.projects != nil {
 		edges = append(edges, organization.EdgeProjects)
 	}
-	if m.repos != nil {
-		edges = append(edges, organization.EdgeRepos)
+	if m.repositories != nil {
+		edges = append(edges, organization.EdgeRepositories)
 	}
 	return edges
 }
@@ -6033,9 +6033,9 @@ func (m *OrganizationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case organization.EdgeRepos:
-		ids := make([]ent.Value, 0, len(m.repos))
-		for id := range m.repos {
+	case organization.EdgeRepositories:
+		ids := make([]ent.Value, 0, len(m.repositories))
+		for id := range m.repositories {
 			ids = append(ids, id)
 		}
 		return ids
@@ -6049,8 +6049,8 @@ func (m *OrganizationMutation) RemovedEdges() []string {
 	if m.removedprojects != nil {
 		edges = append(edges, organization.EdgeProjects)
 	}
-	if m.removedrepos != nil {
-		edges = append(edges, organization.EdgeRepos)
+	if m.removedrepositories != nil {
+		edges = append(edges, organization.EdgeRepositories)
 	}
 	return edges
 }
@@ -6065,9 +6065,9 @@ func (m *OrganizationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case organization.EdgeRepos:
-		ids := make([]ent.Value, 0, len(m.removedrepos))
-		for id := range m.removedrepos {
+	case organization.EdgeRepositories:
+		ids := make([]ent.Value, 0, len(m.removedrepositories))
+		for id := range m.removedrepositories {
 			ids = append(ids, id)
 		}
 		return ids
@@ -6081,8 +6081,8 @@ func (m *OrganizationMutation) ClearedEdges() []string {
 	if m.clearedprojects {
 		edges = append(edges, organization.EdgeProjects)
 	}
-	if m.clearedrepos {
-		edges = append(edges, organization.EdgeRepos)
+	if m.clearedrepositories {
+		edges = append(edges, organization.EdgeRepositories)
 	}
 	return edges
 }
@@ -6093,8 +6093,8 @@ func (m *OrganizationMutation) EdgeCleared(name string) bool {
 	switch name {
 	case organization.EdgeProjects:
 		return m.clearedprojects
-	case organization.EdgeRepos:
-		return m.clearedrepos
+	case organization.EdgeRepositories:
+		return m.clearedrepositories
 	}
 	return false
 }
@@ -6114,8 +6114,8 @@ func (m *OrganizationMutation) ResetEdge(name string) error {
 	case organization.EdgeProjects:
 		m.ResetProjects()
 		return nil
-	case organization.EdgeRepos:
-		m.ResetRepos()
+	case organization.EdgeRepositories:
+		m.ResetRepositories()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization edge %s", name)
@@ -6124,26 +6124,20 @@ func (m *OrganizationMutation) ResetEdge(name string) error {
 // ProjectMutation represents an operation that mutates the Project nodes in the graph.
 type ProjectMutation struct {
 	config
-	op                           Op
-	typ                          string
-	id                           *int
-	name                         *string
-	labels                       *schema.Labels
-	clearedFields                map[string]struct{}
-	owner                        *int
-	clearedowner                 bool
-	repos                        map[int]struct{}
-	removedrepos                 map[int]struct{}
-	clearedrepos                 bool
-	vulnerability_reviews        map[int]struct{}
-	removedvulnerability_reviews map[int]struct{}
-	clearedvulnerability_reviews bool
-	policies                     map[int]struct{}
-	removedpolicies              map[int]struct{}
-	clearedpolicies              bool
-	done                         bool
-	oldValue                     func(context.Context) (*Project, error)
-	predicates                   []predicate.Project
+	op                  Op
+	typ                 string
+	id                  *int
+	name                *string
+	labels              *schema.Labels
+	clearedFields       map[string]struct{}
+	owner               *int
+	clearedowner        bool
+	repositories        map[int]struct{}
+	removedrepositories map[int]struct{}
+	clearedrepositories bool
+	done                bool
+	oldValue            func(context.Context) (*Project, error)
+	predicates          []predicate.Project
 }
 
 var _ ent.Mutation = (*ProjectMutation)(nil)
@@ -6349,166 +6343,58 @@ func (m *ProjectMutation) ResetOwner() {
 	m.clearedowner = false
 }
 
-// AddRepoIDs adds the "repos" edge to the Repo entity by ids.
-func (m *ProjectMutation) AddRepoIDs(ids ...int) {
-	if m.repos == nil {
-		m.repos = make(map[int]struct{})
+// AddRepositoryIDs adds the "repositories" edge to the Repository entity by ids.
+func (m *ProjectMutation) AddRepositoryIDs(ids ...int) {
+	if m.repositories == nil {
+		m.repositories = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.repos[ids[i]] = struct{}{}
+		m.repositories[ids[i]] = struct{}{}
 	}
 }
 
-// ClearRepos clears the "repos" edge to the Repo entity.
-func (m *ProjectMutation) ClearRepos() {
-	m.clearedrepos = true
+// ClearRepositories clears the "repositories" edge to the Repository entity.
+func (m *ProjectMutation) ClearRepositories() {
+	m.clearedrepositories = true
 }
 
-// ReposCleared reports if the "repos" edge to the Repo entity was cleared.
-func (m *ProjectMutation) ReposCleared() bool {
-	return m.clearedrepos
+// RepositoriesCleared reports if the "repositories" edge to the Repository entity was cleared.
+func (m *ProjectMutation) RepositoriesCleared() bool {
+	return m.clearedrepositories
 }
 
-// RemoveRepoIDs removes the "repos" edge to the Repo entity by IDs.
-func (m *ProjectMutation) RemoveRepoIDs(ids ...int) {
-	if m.removedrepos == nil {
-		m.removedrepos = make(map[int]struct{})
+// RemoveRepositoryIDs removes the "repositories" edge to the Repository entity by IDs.
+func (m *ProjectMutation) RemoveRepositoryIDs(ids ...int) {
+	if m.removedrepositories == nil {
+		m.removedrepositories = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.repos, ids[i])
-		m.removedrepos[ids[i]] = struct{}{}
+		delete(m.repositories, ids[i])
+		m.removedrepositories[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedRepos returns the removed IDs of the "repos" edge to the Repo entity.
-func (m *ProjectMutation) RemovedReposIDs() (ids []int) {
-	for id := range m.removedrepos {
+// RemovedRepositories returns the removed IDs of the "repositories" edge to the Repository entity.
+func (m *ProjectMutation) RemovedRepositoriesIDs() (ids []int) {
+	for id := range m.removedrepositories {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ReposIDs returns the "repos" edge IDs in the mutation.
-func (m *ProjectMutation) ReposIDs() (ids []int) {
-	for id := range m.repos {
+// RepositoriesIDs returns the "repositories" edge IDs in the mutation.
+func (m *ProjectMutation) RepositoriesIDs() (ids []int) {
+	for id := range m.repositories {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetRepos resets all changes to the "repos" edge.
-func (m *ProjectMutation) ResetRepos() {
-	m.repos = nil
-	m.clearedrepos = false
-	m.removedrepos = nil
-}
-
-// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by ids.
-func (m *ProjectMutation) AddVulnerabilityReviewIDs(ids ...int) {
-	if m.vulnerability_reviews == nil {
-		m.vulnerability_reviews = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.vulnerability_reviews[ids[i]] = struct{}{}
-	}
-}
-
-// ClearVulnerabilityReviews clears the "vulnerability_reviews" edge to the VulnerabilityReview entity.
-func (m *ProjectMutation) ClearVulnerabilityReviews() {
-	m.clearedvulnerability_reviews = true
-}
-
-// VulnerabilityReviewsCleared reports if the "vulnerability_reviews" edge to the VulnerabilityReview entity was cleared.
-func (m *ProjectMutation) VulnerabilityReviewsCleared() bool {
-	return m.clearedvulnerability_reviews
-}
-
-// RemoveVulnerabilityReviewIDs removes the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
-func (m *ProjectMutation) RemoveVulnerabilityReviewIDs(ids ...int) {
-	if m.removedvulnerability_reviews == nil {
-		m.removedvulnerability_reviews = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.vulnerability_reviews, ids[i])
-		m.removedvulnerability_reviews[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedVulnerabilityReviews returns the removed IDs of the "vulnerability_reviews" edge to the VulnerabilityReview entity.
-func (m *ProjectMutation) RemovedVulnerabilityReviewsIDs() (ids []int) {
-	for id := range m.removedvulnerability_reviews {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// VulnerabilityReviewsIDs returns the "vulnerability_reviews" edge IDs in the mutation.
-func (m *ProjectMutation) VulnerabilityReviewsIDs() (ids []int) {
-	for id := range m.vulnerability_reviews {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetVulnerabilityReviews resets all changes to the "vulnerability_reviews" edge.
-func (m *ProjectMutation) ResetVulnerabilityReviews() {
-	m.vulnerability_reviews = nil
-	m.clearedvulnerability_reviews = false
-	m.removedvulnerability_reviews = nil
-}
-
-// AddPolicyIDs adds the "policies" edge to the ReleasePolicy entity by ids.
-func (m *ProjectMutation) AddPolicyIDs(ids ...int) {
-	if m.policies == nil {
-		m.policies = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.policies[ids[i]] = struct{}{}
-	}
-}
-
-// ClearPolicies clears the "policies" edge to the ReleasePolicy entity.
-func (m *ProjectMutation) ClearPolicies() {
-	m.clearedpolicies = true
-}
-
-// PoliciesCleared reports if the "policies" edge to the ReleasePolicy entity was cleared.
-func (m *ProjectMutation) PoliciesCleared() bool {
-	return m.clearedpolicies
-}
-
-// RemovePolicyIDs removes the "policies" edge to the ReleasePolicy entity by IDs.
-func (m *ProjectMutation) RemovePolicyIDs(ids ...int) {
-	if m.removedpolicies == nil {
-		m.removedpolicies = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.policies, ids[i])
-		m.removedpolicies[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedPolicies returns the removed IDs of the "policies" edge to the ReleasePolicy entity.
-func (m *ProjectMutation) RemovedPoliciesIDs() (ids []int) {
-	for id := range m.removedpolicies {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// PoliciesIDs returns the "policies" edge IDs in the mutation.
-func (m *ProjectMutation) PoliciesIDs() (ids []int) {
-	for id := range m.policies {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetPolicies resets all changes to the "policies" edge.
-func (m *ProjectMutation) ResetPolicies() {
-	m.policies = nil
-	m.clearedpolicies = false
-	m.removedpolicies = nil
+// ResetRepositories resets all changes to the "repositories" edge.
+func (m *ProjectMutation) ResetRepositories() {
+	m.repositories = nil
+	m.clearedrepositories = false
+	m.removedrepositories = nil
 }
 
 // Where appends a list predicates to the ProjectMutation builder.
@@ -6655,18 +6541,12 @@ func (m *ProjectMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 2)
 	if m.owner != nil {
 		edges = append(edges, project.EdgeOwner)
 	}
-	if m.repos != nil {
-		edges = append(edges, project.EdgeRepos)
-	}
-	if m.vulnerability_reviews != nil {
-		edges = append(edges, project.EdgeVulnerabilityReviews)
-	}
-	if m.policies != nil {
-		edges = append(edges, project.EdgePolicies)
+	if m.repositories != nil {
+		edges = append(edges, project.EdgeRepositories)
 	}
 	return edges
 }
@@ -6679,21 +6559,9 @@ func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 		if id := m.owner; id != nil {
 			return []ent.Value{*id}
 		}
-	case project.EdgeRepos:
-		ids := make([]ent.Value, 0, len(m.repos))
-		for id := range m.repos {
-			ids = append(ids, id)
-		}
-		return ids
-	case project.EdgeVulnerabilityReviews:
-		ids := make([]ent.Value, 0, len(m.vulnerability_reviews))
-		for id := range m.vulnerability_reviews {
-			ids = append(ids, id)
-		}
-		return ids
-	case project.EdgePolicies:
-		ids := make([]ent.Value, 0, len(m.policies))
-		for id := range m.policies {
+	case project.EdgeRepositories:
+		ids := make([]ent.Value, 0, len(m.repositories))
+		for id := range m.repositories {
 			ids = append(ids, id)
 		}
 		return ids
@@ -6703,15 +6571,9 @@ func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
-	if m.removedrepos != nil {
-		edges = append(edges, project.EdgeRepos)
-	}
-	if m.removedvulnerability_reviews != nil {
-		edges = append(edges, project.EdgeVulnerabilityReviews)
-	}
-	if m.removedpolicies != nil {
-		edges = append(edges, project.EdgePolicies)
+	edges := make([]string, 0, 2)
+	if m.removedrepositories != nil {
+		edges = append(edges, project.EdgeRepositories)
 	}
 	return edges
 }
@@ -6720,21 +6582,9 @@ func (m *ProjectMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *ProjectMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case project.EdgeRepos:
-		ids := make([]ent.Value, 0, len(m.removedrepos))
-		for id := range m.removedrepos {
-			ids = append(ids, id)
-		}
-		return ids
-	case project.EdgeVulnerabilityReviews:
-		ids := make([]ent.Value, 0, len(m.removedvulnerability_reviews))
-		for id := range m.removedvulnerability_reviews {
-			ids = append(ids, id)
-		}
-		return ids
-	case project.EdgePolicies:
-		ids := make([]ent.Value, 0, len(m.removedpolicies))
-		for id := range m.removedpolicies {
+	case project.EdgeRepositories:
+		ids := make([]ent.Value, 0, len(m.removedrepositories))
+		for id := range m.removedrepositories {
 			ids = append(ids, id)
 		}
 		return ids
@@ -6744,18 +6594,12 @@ func (m *ProjectMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 2)
 	if m.clearedowner {
 		edges = append(edges, project.EdgeOwner)
 	}
-	if m.clearedrepos {
-		edges = append(edges, project.EdgeRepos)
-	}
-	if m.clearedvulnerability_reviews {
-		edges = append(edges, project.EdgeVulnerabilityReviews)
-	}
-	if m.clearedpolicies {
-		edges = append(edges, project.EdgePolicies)
+	if m.clearedrepositories {
+		edges = append(edges, project.EdgeRepositories)
 	}
 	return edges
 }
@@ -6766,12 +6610,8 @@ func (m *ProjectMutation) EdgeCleared(name string) bool {
 	switch name {
 	case project.EdgeOwner:
 		return m.clearedowner
-	case project.EdgeRepos:
-		return m.clearedrepos
-	case project.EdgeVulnerabilityReviews:
-		return m.clearedvulnerability_reviews
-	case project.EdgePolicies:
-		return m.clearedpolicies
+	case project.EdgeRepositories:
+		return m.clearedrepositories
 	}
 	return false
 }
@@ -6794,14 +6634,8 @@ func (m *ProjectMutation) ResetEdge(name string) error {
 	case project.EdgeOwner:
 		m.ResetOwner()
 		return nil
-	case project.EdgeRepos:
-		m.ResetRepos()
-		return nil
-	case project.EdgeVulnerabilityReviews:
-		m.ResetVulnerabilityReviews()
-		return nil
-	case project.EdgePolicies:
-		m.ResetPolicies()
+	case project.EdgeRepositories:
+		m.ResetRepositories()
 		return nil
 	}
 	return fmt.Errorf("unknown Project edge %s", name)
@@ -7206,17 +7040,17 @@ func (m *ReleaseMutation) ResetCommit() {
 	m.clearedcommit = false
 }
 
-// SetHeadOfID sets the "head_of" edge to the Repo entity by id.
+// SetHeadOfID sets the "head_of" edge to the Repository entity by id.
 func (m *ReleaseMutation) SetHeadOfID(id int) {
 	m.head_of = &id
 }
 
-// ClearHeadOf clears the "head_of" edge to the Repo entity.
+// ClearHeadOf clears the "head_of" edge to the Repository entity.
 func (m *ReleaseMutation) ClearHeadOf() {
 	m.clearedhead_of = true
 }
 
-// HeadOfCleared reports if the "head_of" edge to the Repo entity was cleared.
+// HeadOfCleared reports if the "head_of" edge to the Repository entity was cleared.
 func (m *ReleaseMutation) HeadOfCleared() bool {
 	return m.clearedhead_of
 }
@@ -10042,12 +9876,6 @@ type ReleasePolicyMutation struct {
 	clearedFields     map[string]struct{}
 	owner             *int
 	clearedowner      bool
-	projects          map[int]struct{}
-	removedprojects   map[int]struct{}
-	clearedprojects   bool
-	repos             map[int]struct{}
-	removedrepos      map[int]struct{}
-	clearedrepos      bool
 	violations        map[int]struct{}
 	removedviolations map[int]struct{}
 	clearedviolations bool
@@ -10246,114 +10074,6 @@ func (m *ReleasePolicyMutation) ResetOwner() {
 	m.clearedowner = false
 }
 
-// AddProjectIDs adds the "projects" edge to the Project entity by ids.
-func (m *ReleasePolicyMutation) AddProjectIDs(ids ...int) {
-	if m.projects == nil {
-		m.projects = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.projects[ids[i]] = struct{}{}
-	}
-}
-
-// ClearProjects clears the "projects" edge to the Project entity.
-func (m *ReleasePolicyMutation) ClearProjects() {
-	m.clearedprojects = true
-}
-
-// ProjectsCleared reports if the "projects" edge to the Project entity was cleared.
-func (m *ReleasePolicyMutation) ProjectsCleared() bool {
-	return m.clearedprojects
-}
-
-// RemoveProjectIDs removes the "projects" edge to the Project entity by IDs.
-func (m *ReleasePolicyMutation) RemoveProjectIDs(ids ...int) {
-	if m.removedprojects == nil {
-		m.removedprojects = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.projects, ids[i])
-		m.removedprojects[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedProjects returns the removed IDs of the "projects" edge to the Project entity.
-func (m *ReleasePolicyMutation) RemovedProjectsIDs() (ids []int) {
-	for id := range m.removedprojects {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ProjectsIDs returns the "projects" edge IDs in the mutation.
-func (m *ReleasePolicyMutation) ProjectsIDs() (ids []int) {
-	for id := range m.projects {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetProjects resets all changes to the "projects" edge.
-func (m *ReleasePolicyMutation) ResetProjects() {
-	m.projects = nil
-	m.clearedprojects = false
-	m.removedprojects = nil
-}
-
-// AddRepoIDs adds the "repos" edge to the Repo entity by ids.
-func (m *ReleasePolicyMutation) AddRepoIDs(ids ...int) {
-	if m.repos == nil {
-		m.repos = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.repos[ids[i]] = struct{}{}
-	}
-}
-
-// ClearRepos clears the "repos" edge to the Repo entity.
-func (m *ReleasePolicyMutation) ClearRepos() {
-	m.clearedrepos = true
-}
-
-// ReposCleared reports if the "repos" edge to the Repo entity was cleared.
-func (m *ReleasePolicyMutation) ReposCleared() bool {
-	return m.clearedrepos
-}
-
-// RemoveRepoIDs removes the "repos" edge to the Repo entity by IDs.
-func (m *ReleasePolicyMutation) RemoveRepoIDs(ids ...int) {
-	if m.removedrepos == nil {
-		m.removedrepos = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.repos, ids[i])
-		m.removedrepos[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedRepos returns the removed IDs of the "repos" edge to the Repo entity.
-func (m *ReleasePolicyMutation) RemovedReposIDs() (ids []int) {
-	for id := range m.removedrepos {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ReposIDs returns the "repos" edge IDs in the mutation.
-func (m *ReleasePolicyMutation) ReposIDs() (ids []int) {
-	for id := range m.repos {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetRepos resets all changes to the "repos" edge.
-func (m *ReleasePolicyMutation) ResetRepos() {
-	m.repos = nil
-	m.clearedrepos = false
-	m.removedrepos = nil
-}
-
 // AddViolationIDs adds the "violations" edge to the ReleasePolicyViolation entity by ids.
 func (m *ReleasePolicyMutation) AddViolationIDs(ids ...int) {
 	if m.violations == nil {
@@ -10543,15 +10263,9 @@ func (m *ReleasePolicyMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ReleasePolicyMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 2)
 	if m.owner != nil {
 		edges = append(edges, releasepolicy.EdgeOwner)
-	}
-	if m.projects != nil {
-		edges = append(edges, releasepolicy.EdgeProjects)
-	}
-	if m.repos != nil {
-		edges = append(edges, releasepolicy.EdgeRepos)
 	}
 	if m.violations != nil {
 		edges = append(edges, releasepolicy.EdgeViolations)
@@ -10567,18 +10281,6 @@ func (m *ReleasePolicyMutation) AddedIDs(name string) []ent.Value {
 		if id := m.owner; id != nil {
 			return []ent.Value{*id}
 		}
-	case releasepolicy.EdgeProjects:
-		ids := make([]ent.Value, 0, len(m.projects))
-		for id := range m.projects {
-			ids = append(ids, id)
-		}
-		return ids
-	case releasepolicy.EdgeRepos:
-		ids := make([]ent.Value, 0, len(m.repos))
-		for id := range m.repos {
-			ids = append(ids, id)
-		}
-		return ids
 	case releasepolicy.EdgeViolations:
 		ids := make([]ent.Value, 0, len(m.violations))
 		for id := range m.violations {
@@ -10591,13 +10293,7 @@ func (m *ReleasePolicyMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ReleasePolicyMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
-	if m.removedprojects != nil {
-		edges = append(edges, releasepolicy.EdgeProjects)
-	}
-	if m.removedrepos != nil {
-		edges = append(edges, releasepolicy.EdgeRepos)
-	}
+	edges := make([]string, 0, 2)
 	if m.removedviolations != nil {
 		edges = append(edges, releasepolicy.EdgeViolations)
 	}
@@ -10608,18 +10304,6 @@ func (m *ReleasePolicyMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *ReleasePolicyMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case releasepolicy.EdgeProjects:
-		ids := make([]ent.Value, 0, len(m.removedprojects))
-		for id := range m.removedprojects {
-			ids = append(ids, id)
-		}
-		return ids
-	case releasepolicy.EdgeRepos:
-		ids := make([]ent.Value, 0, len(m.removedrepos))
-		for id := range m.removedrepos {
-			ids = append(ids, id)
-		}
-		return ids
 	case releasepolicy.EdgeViolations:
 		ids := make([]ent.Value, 0, len(m.removedviolations))
 		for id := range m.removedviolations {
@@ -10632,15 +10316,9 @@ func (m *ReleasePolicyMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ReleasePolicyMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 2)
 	if m.clearedowner {
 		edges = append(edges, releasepolicy.EdgeOwner)
-	}
-	if m.clearedprojects {
-		edges = append(edges, releasepolicy.EdgeProjects)
-	}
-	if m.clearedrepos {
-		edges = append(edges, releasepolicy.EdgeRepos)
 	}
 	if m.clearedviolations {
 		edges = append(edges, releasepolicy.EdgeViolations)
@@ -10654,10 +10332,6 @@ func (m *ReleasePolicyMutation) EdgeCleared(name string) bool {
 	switch name {
 	case releasepolicy.EdgeOwner:
 		return m.clearedowner
-	case releasepolicy.EdgeProjects:
-		return m.clearedprojects
-	case releasepolicy.EdgeRepos:
-		return m.clearedrepos
 	case releasepolicy.EdgeViolations:
 		return m.clearedviolations
 	}
@@ -10681,12 +10355,6 @@ func (m *ReleasePolicyMutation) ResetEdge(name string) error {
 	switch name {
 	case releasepolicy.EdgeOwner:
 		m.ResetOwner()
-		return nil
-	case releasepolicy.EdgeProjects:
-		m.ResetProjects()
-		return nil
-	case releasepolicy.EdgeRepos:
-		m.ResetRepos()
 		return nil
 	case releasepolicy.EdgeViolations:
 		m.ResetViolations()
@@ -11782,47 +11450,41 @@ func (m *ReleaseVulnerabilityMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown ReleaseVulnerability edge %s", name)
 }
 
-// RepoMutation represents an operation that mutates the Repo nodes in the graph.
-type RepoMutation struct {
+// RepositoryMutation represents an operation that mutates the Repository nodes in the graph.
+type RepositoryMutation struct {
 	config
-	op                           Op
-	typ                          string
-	id                           *int
-	name                         *string
-	default_branch               *string
-	labels                       *schema.Labels
-	clearedFields                map[string]struct{}
-	owner                        *int
-	clearedowner                 bool
-	project                      *int
-	clearedproject               bool
-	head                         *int
-	clearedhead                  bool
-	commits                      map[int]struct{}
-	removedcommits               map[int]struct{}
-	clearedcommits               bool
-	vulnerability_reviews        map[int]struct{}
-	removedvulnerability_reviews map[int]struct{}
-	clearedvulnerability_reviews bool
-	policies                     map[int]struct{}
-	removedpolicies              map[int]struct{}
-	clearedpolicies              bool
-	done                         bool
-	oldValue                     func(context.Context) (*Repo, error)
-	predicates                   []predicate.Repo
+	op             Op
+	typ            string
+	id             *int
+	name           *string
+	default_branch *string
+	labels         *schema.Labels
+	clearedFields  map[string]struct{}
+	owner          *int
+	clearedowner   bool
+	project        *int
+	clearedproject bool
+	head           *int
+	clearedhead    bool
+	commits        map[int]struct{}
+	removedcommits map[int]struct{}
+	clearedcommits bool
+	done           bool
+	oldValue       func(context.Context) (*Repository, error)
+	predicates     []predicate.Repository
 }
 
-var _ ent.Mutation = (*RepoMutation)(nil)
+var _ ent.Mutation = (*RepositoryMutation)(nil)
 
-// repoOption allows management of the mutation configuration using functional options.
-type repoOption func(*RepoMutation)
+// repositoryOption allows management of the mutation configuration using functional options.
+type repositoryOption func(*RepositoryMutation)
 
-// newRepoMutation creates new mutation for the Repo entity.
-func newRepoMutation(c config, op Op, opts ...repoOption) *RepoMutation {
-	m := &RepoMutation{
+// newRepositoryMutation creates new mutation for the Repository entity.
+func newRepositoryMutation(c config, op Op, opts ...repositoryOption) *RepositoryMutation {
+	m := &RepositoryMutation{
 		config:        c,
 		op:            op,
-		typ:           TypeRepo,
+		typ:           TypeRepository,
 		clearedFields: make(map[string]struct{}),
 	}
 	for _, opt := range opts {
@@ -11831,20 +11493,20 @@ func newRepoMutation(c config, op Op, opts ...repoOption) *RepoMutation {
 	return m
 }
 
-// withRepoID sets the ID field of the mutation.
-func withRepoID(id int) repoOption {
-	return func(m *RepoMutation) {
+// withRepositoryID sets the ID field of the mutation.
+func withRepositoryID(id int) repositoryOption {
+	return func(m *RepositoryMutation) {
 		var (
 			err   error
 			once  sync.Once
-			value *Repo
+			value *Repository
 		)
-		m.oldValue = func(ctx context.Context) (*Repo, error) {
+		m.oldValue = func(ctx context.Context) (*Repository, error) {
 			once.Do(func() {
 				if m.done {
 					err = fmt.Errorf("querying old values post mutation is not allowed")
 				} else {
-					value, err = m.Client().Repo.Get(ctx, id)
+					value, err = m.Client().Repository.Get(ctx, id)
 				}
 			})
 			return value, err
@@ -11853,10 +11515,10 @@ func withRepoID(id int) repoOption {
 	}
 }
 
-// withRepo sets the old Repo of the mutation.
-func withRepo(node *Repo) repoOption {
-	return func(m *RepoMutation) {
-		m.oldValue = func(context.Context) (*Repo, error) {
+// withRepository sets the old Repository of the mutation.
+func withRepository(node *Repository) repositoryOption {
+	return func(m *RepositoryMutation) {
+		m.oldValue = func(context.Context) (*Repository, error) {
 			return node, nil
 		}
 		m.id = &node.ID
@@ -11865,7 +11527,7 @@ func withRepo(node *Repo) repoOption {
 
 // Client returns a new `ent.Client` from the mutation. If the mutation was
 // executed in a transaction (ent.Tx), a transactional client is returned.
-func (m RepoMutation) Client() *Client {
+func (m RepositoryMutation) Client() *Client {
 	client := &Client{config: m.config}
 	client.init()
 	return client
@@ -11873,7 +11535,7 @@ func (m RepoMutation) Client() *Client {
 
 // Tx returns an `ent.Tx` for mutations that were executed in transactions;
 // it returns an error otherwise.
-func (m RepoMutation) Tx() (*Tx, error) {
+func (m RepositoryMutation) Tx() (*Tx, error) {
 	if _, ok := m.driver.(*txDriver); !ok {
 		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
 	}
@@ -11884,7 +11546,7 @@ func (m RepoMutation) Tx() (*Tx, error) {
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *RepoMutation) ID() (id int, exists bool) {
+func (m *RepositoryMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -11892,12 +11554,12 @@ func (m *RepoMutation) ID() (id int, exists bool) {
 }
 
 // SetName sets the "name" field.
-func (m *RepoMutation) SetName(s string) {
+func (m *RepositoryMutation) SetName(s string) {
 	m.name = &s
 }
 
 // Name returns the value of the "name" field in the mutation.
-func (m *RepoMutation) Name() (r string, exists bool) {
+func (m *RepositoryMutation) Name() (r string, exists bool) {
 	v := m.name
 	if v == nil {
 		return
@@ -11905,10 +11567,10 @@ func (m *RepoMutation) Name() (r string, exists bool) {
 	return *v, true
 }
 
-// OldName returns the old "name" field's value of the Repo entity.
-// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// OldName returns the old "name" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepoMutation) OldName(ctx context.Context) (v string, err error) {
+func (m *RepositoryMutation) OldName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, fmt.Errorf("OldName is only allowed on UpdateOne operations")
 	}
@@ -11923,17 +11585,17 @@ func (m *RepoMutation) OldName(ctx context.Context) (v string, err error) {
 }
 
 // ResetName resets all changes to the "name" field.
-func (m *RepoMutation) ResetName() {
+func (m *RepositoryMutation) ResetName() {
 	m.name = nil
 }
 
 // SetDefaultBranch sets the "default_branch" field.
-func (m *RepoMutation) SetDefaultBranch(s string) {
+func (m *RepositoryMutation) SetDefaultBranch(s string) {
 	m.default_branch = &s
 }
 
 // DefaultBranch returns the value of the "default_branch" field in the mutation.
-func (m *RepoMutation) DefaultBranch() (r string, exists bool) {
+func (m *RepositoryMutation) DefaultBranch() (r string, exists bool) {
 	v := m.default_branch
 	if v == nil {
 		return
@@ -11941,10 +11603,10 @@ func (m *RepoMutation) DefaultBranch() (r string, exists bool) {
 	return *v, true
 }
 
-// OldDefaultBranch returns the old "default_branch" field's value of the Repo entity.
-// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// OldDefaultBranch returns the old "default_branch" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepoMutation) OldDefaultBranch(ctx context.Context) (v string, err error) {
+func (m *RepositoryMutation) OldDefaultBranch(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, fmt.Errorf("OldDefaultBranch is only allowed on UpdateOne operations")
 	}
@@ -11959,17 +11621,17 @@ func (m *RepoMutation) OldDefaultBranch(ctx context.Context) (v string, err erro
 }
 
 // ResetDefaultBranch resets all changes to the "default_branch" field.
-func (m *RepoMutation) ResetDefaultBranch() {
+func (m *RepositoryMutation) ResetDefaultBranch() {
 	m.default_branch = nil
 }
 
 // SetLabels sets the "labels" field.
-func (m *RepoMutation) SetLabels(s schema.Labels) {
+func (m *RepositoryMutation) SetLabels(s schema.Labels) {
 	m.labels = &s
 }
 
 // Labels returns the value of the "labels" field in the mutation.
-func (m *RepoMutation) Labels() (r schema.Labels, exists bool) {
+func (m *RepositoryMutation) Labels() (r schema.Labels, exists bool) {
 	v := m.labels
 	if v == nil {
 		return
@@ -11977,10 +11639,10 @@ func (m *RepoMutation) Labels() (r schema.Labels, exists bool) {
 	return *v, true
 }
 
-// OldLabels returns the old "labels" field's value of the Repo entity.
-// If the Repo object wasn't provided to the builder, the object is fetched from the database.
+// OldLabels returns the old "labels" field's value of the Repository entity.
+// If the Repository object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RepoMutation) OldLabels(ctx context.Context) (v schema.Labels, err error) {
+func (m *RepositoryMutation) OldLabels(ctx context.Context) (v schema.Labels, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, fmt.Errorf("OldLabels is only allowed on UpdateOne operations")
 	}
@@ -11995,40 +11657,40 @@ func (m *RepoMutation) OldLabels(ctx context.Context) (v schema.Labels, err erro
 }
 
 // ClearLabels clears the value of the "labels" field.
-func (m *RepoMutation) ClearLabels() {
+func (m *RepositoryMutation) ClearLabels() {
 	m.labels = nil
-	m.clearedFields[repo.FieldLabels] = struct{}{}
+	m.clearedFields[repository.FieldLabels] = struct{}{}
 }
 
 // LabelsCleared returns if the "labels" field was cleared in this mutation.
-func (m *RepoMutation) LabelsCleared() bool {
-	_, ok := m.clearedFields[repo.FieldLabels]
+func (m *RepositoryMutation) LabelsCleared() bool {
+	_, ok := m.clearedFields[repository.FieldLabels]
 	return ok
 }
 
 // ResetLabels resets all changes to the "labels" field.
-func (m *RepoMutation) ResetLabels() {
+func (m *RepositoryMutation) ResetLabels() {
 	m.labels = nil
-	delete(m.clearedFields, repo.FieldLabels)
+	delete(m.clearedFields, repository.FieldLabels)
 }
 
 // SetOwnerID sets the "owner" edge to the Organization entity by id.
-func (m *RepoMutation) SetOwnerID(id int) {
+func (m *RepositoryMutation) SetOwnerID(id int) {
 	m.owner = &id
 }
 
 // ClearOwner clears the "owner" edge to the Organization entity.
-func (m *RepoMutation) ClearOwner() {
+func (m *RepositoryMutation) ClearOwner() {
 	m.clearedowner = true
 }
 
 // OwnerCleared reports if the "owner" edge to the Organization entity was cleared.
-func (m *RepoMutation) OwnerCleared() bool {
+func (m *RepositoryMutation) OwnerCleared() bool {
 	return m.clearedowner
 }
 
 // OwnerID returns the "owner" edge ID in the mutation.
-func (m *RepoMutation) OwnerID() (id int, exists bool) {
+func (m *RepositoryMutation) OwnerID() (id int, exists bool) {
 	if m.owner != nil {
 		return *m.owner, true
 	}
@@ -12038,7 +11700,7 @@ func (m *RepoMutation) OwnerID() (id int, exists bool) {
 // OwnerIDs returns the "owner" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // OwnerID instead. It exists only for internal usage by the builders.
-func (m *RepoMutation) OwnerIDs() (ids []int) {
+func (m *RepositoryMutation) OwnerIDs() (ids []int) {
 	if id := m.owner; id != nil {
 		ids = append(ids, *id)
 	}
@@ -12046,28 +11708,28 @@ func (m *RepoMutation) OwnerIDs() (ids []int) {
 }
 
 // ResetOwner resets all changes to the "owner" edge.
-func (m *RepoMutation) ResetOwner() {
+func (m *RepositoryMutation) ResetOwner() {
 	m.owner = nil
 	m.clearedowner = false
 }
 
 // SetProjectID sets the "project" edge to the Project entity by id.
-func (m *RepoMutation) SetProjectID(id int) {
+func (m *RepositoryMutation) SetProjectID(id int) {
 	m.project = &id
 }
 
 // ClearProject clears the "project" edge to the Project entity.
-func (m *RepoMutation) ClearProject() {
+func (m *RepositoryMutation) ClearProject() {
 	m.clearedproject = true
 }
 
 // ProjectCleared reports if the "project" edge to the Project entity was cleared.
-func (m *RepoMutation) ProjectCleared() bool {
+func (m *RepositoryMutation) ProjectCleared() bool {
 	return m.clearedproject
 }
 
 // ProjectID returns the "project" edge ID in the mutation.
-func (m *RepoMutation) ProjectID() (id int, exists bool) {
+func (m *RepositoryMutation) ProjectID() (id int, exists bool) {
 	if m.project != nil {
 		return *m.project, true
 	}
@@ -12077,7 +11739,7 @@ func (m *RepoMutation) ProjectID() (id int, exists bool) {
 // ProjectIDs returns the "project" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // ProjectID instead. It exists only for internal usage by the builders.
-func (m *RepoMutation) ProjectIDs() (ids []int) {
+func (m *RepositoryMutation) ProjectIDs() (ids []int) {
 	if id := m.project; id != nil {
 		ids = append(ids, *id)
 	}
@@ -12085,28 +11747,28 @@ func (m *RepoMutation) ProjectIDs() (ids []int) {
 }
 
 // ResetProject resets all changes to the "project" edge.
-func (m *RepoMutation) ResetProject() {
+func (m *RepositoryMutation) ResetProject() {
 	m.project = nil
 	m.clearedproject = false
 }
 
 // SetHeadID sets the "head" edge to the Release entity by id.
-func (m *RepoMutation) SetHeadID(id int) {
+func (m *RepositoryMutation) SetHeadID(id int) {
 	m.head = &id
 }
 
 // ClearHead clears the "head" edge to the Release entity.
-func (m *RepoMutation) ClearHead() {
+func (m *RepositoryMutation) ClearHead() {
 	m.clearedhead = true
 }
 
 // HeadCleared reports if the "head" edge to the Release entity was cleared.
-func (m *RepoMutation) HeadCleared() bool {
+func (m *RepositoryMutation) HeadCleared() bool {
 	return m.clearedhead
 }
 
 // HeadID returns the "head" edge ID in the mutation.
-func (m *RepoMutation) HeadID() (id int, exists bool) {
+func (m *RepositoryMutation) HeadID() (id int, exists bool) {
 	if m.head != nil {
 		return *m.head, true
 	}
@@ -12116,7 +11778,7 @@ func (m *RepoMutation) HeadID() (id int, exists bool) {
 // HeadIDs returns the "head" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // HeadID instead. It exists only for internal usage by the builders.
-func (m *RepoMutation) HeadIDs() (ids []int) {
+func (m *RepositoryMutation) HeadIDs() (ids []int) {
 	if id := m.head; id != nil {
 		ids = append(ids, *id)
 	}
@@ -12124,13 +11786,13 @@ func (m *RepoMutation) HeadIDs() (ids []int) {
 }
 
 // ResetHead resets all changes to the "head" edge.
-func (m *RepoMutation) ResetHead() {
+func (m *RepositoryMutation) ResetHead() {
 	m.head = nil
 	m.clearedhead = false
 }
 
 // AddCommitIDs adds the "commits" edge to the GitCommit entity by ids.
-func (m *RepoMutation) AddCommitIDs(ids ...int) {
+func (m *RepositoryMutation) AddCommitIDs(ids ...int) {
 	if m.commits == nil {
 		m.commits = make(map[int]struct{})
 	}
@@ -12140,17 +11802,17 @@ func (m *RepoMutation) AddCommitIDs(ids ...int) {
 }
 
 // ClearCommits clears the "commits" edge to the GitCommit entity.
-func (m *RepoMutation) ClearCommits() {
+func (m *RepositoryMutation) ClearCommits() {
 	m.clearedcommits = true
 }
 
 // CommitsCleared reports if the "commits" edge to the GitCommit entity was cleared.
-func (m *RepoMutation) CommitsCleared() bool {
+func (m *RepositoryMutation) CommitsCleared() bool {
 	return m.clearedcommits
 }
 
 // RemoveCommitIDs removes the "commits" edge to the GitCommit entity by IDs.
-func (m *RepoMutation) RemoveCommitIDs(ids ...int) {
+func (m *RepositoryMutation) RemoveCommitIDs(ids ...int) {
 	if m.removedcommits == nil {
 		m.removedcommits = make(map[int]struct{})
 	}
@@ -12161,7 +11823,7 @@ func (m *RepoMutation) RemoveCommitIDs(ids ...int) {
 }
 
 // RemovedCommits returns the removed IDs of the "commits" edge to the GitCommit entity.
-func (m *RepoMutation) RemovedCommitsIDs() (ids []int) {
+func (m *RepositoryMutation) RemovedCommitsIDs() (ids []int) {
 	for id := range m.removedcommits {
 		ids = append(ids, id)
 	}
@@ -12169,7 +11831,7 @@ func (m *RepoMutation) RemovedCommitsIDs() (ids []int) {
 }
 
 // CommitsIDs returns the "commits" edge IDs in the mutation.
-func (m *RepoMutation) CommitsIDs() (ids []int) {
+func (m *RepositoryMutation) CommitsIDs() (ids []int) {
 	for id := range m.commits {
 		ids = append(ids, id)
 	}
@@ -12177,148 +11839,40 @@ func (m *RepoMutation) CommitsIDs() (ids []int) {
 }
 
 // ResetCommits resets all changes to the "commits" edge.
-func (m *RepoMutation) ResetCommits() {
+func (m *RepositoryMutation) ResetCommits() {
 	m.commits = nil
 	m.clearedcommits = false
 	m.removedcommits = nil
 }
 
-// AddVulnerabilityReviewIDs adds the "vulnerability_reviews" edge to the VulnerabilityReview entity by ids.
-func (m *RepoMutation) AddVulnerabilityReviewIDs(ids ...int) {
-	if m.vulnerability_reviews == nil {
-		m.vulnerability_reviews = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.vulnerability_reviews[ids[i]] = struct{}{}
-	}
-}
-
-// ClearVulnerabilityReviews clears the "vulnerability_reviews" edge to the VulnerabilityReview entity.
-func (m *RepoMutation) ClearVulnerabilityReviews() {
-	m.clearedvulnerability_reviews = true
-}
-
-// VulnerabilityReviewsCleared reports if the "vulnerability_reviews" edge to the VulnerabilityReview entity was cleared.
-func (m *RepoMutation) VulnerabilityReviewsCleared() bool {
-	return m.clearedvulnerability_reviews
-}
-
-// RemoveVulnerabilityReviewIDs removes the "vulnerability_reviews" edge to the VulnerabilityReview entity by IDs.
-func (m *RepoMutation) RemoveVulnerabilityReviewIDs(ids ...int) {
-	if m.removedvulnerability_reviews == nil {
-		m.removedvulnerability_reviews = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.vulnerability_reviews, ids[i])
-		m.removedvulnerability_reviews[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedVulnerabilityReviews returns the removed IDs of the "vulnerability_reviews" edge to the VulnerabilityReview entity.
-func (m *RepoMutation) RemovedVulnerabilityReviewsIDs() (ids []int) {
-	for id := range m.removedvulnerability_reviews {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// VulnerabilityReviewsIDs returns the "vulnerability_reviews" edge IDs in the mutation.
-func (m *RepoMutation) VulnerabilityReviewsIDs() (ids []int) {
-	for id := range m.vulnerability_reviews {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetVulnerabilityReviews resets all changes to the "vulnerability_reviews" edge.
-func (m *RepoMutation) ResetVulnerabilityReviews() {
-	m.vulnerability_reviews = nil
-	m.clearedvulnerability_reviews = false
-	m.removedvulnerability_reviews = nil
-}
-
-// AddPolicyIDs adds the "policies" edge to the ReleasePolicy entity by ids.
-func (m *RepoMutation) AddPolicyIDs(ids ...int) {
-	if m.policies == nil {
-		m.policies = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.policies[ids[i]] = struct{}{}
-	}
-}
-
-// ClearPolicies clears the "policies" edge to the ReleasePolicy entity.
-func (m *RepoMutation) ClearPolicies() {
-	m.clearedpolicies = true
-}
-
-// PoliciesCleared reports if the "policies" edge to the ReleasePolicy entity was cleared.
-func (m *RepoMutation) PoliciesCleared() bool {
-	return m.clearedpolicies
-}
-
-// RemovePolicyIDs removes the "policies" edge to the ReleasePolicy entity by IDs.
-func (m *RepoMutation) RemovePolicyIDs(ids ...int) {
-	if m.removedpolicies == nil {
-		m.removedpolicies = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.policies, ids[i])
-		m.removedpolicies[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedPolicies returns the removed IDs of the "policies" edge to the ReleasePolicy entity.
-func (m *RepoMutation) RemovedPoliciesIDs() (ids []int) {
-	for id := range m.removedpolicies {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// PoliciesIDs returns the "policies" edge IDs in the mutation.
-func (m *RepoMutation) PoliciesIDs() (ids []int) {
-	for id := range m.policies {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetPolicies resets all changes to the "policies" edge.
-func (m *RepoMutation) ResetPolicies() {
-	m.policies = nil
-	m.clearedpolicies = false
-	m.removedpolicies = nil
-}
-
-// Where appends a list predicates to the RepoMutation builder.
-func (m *RepoMutation) Where(ps ...predicate.Repo) {
+// Where appends a list predicates to the RepositoryMutation builder.
+func (m *RepositoryMutation) Where(ps ...predicate.Repository) {
 	m.predicates = append(m.predicates, ps...)
 }
 
 // Op returns the operation name.
-func (m *RepoMutation) Op() Op {
+func (m *RepositoryMutation) Op() Op {
 	return m.op
 }
 
-// Type returns the node type of this mutation (Repo).
-func (m *RepoMutation) Type() string {
+// Type returns the node type of this mutation (Repository).
+func (m *RepositoryMutation) Type() string {
 	return m.typ
 }
 
 // Fields returns all fields that were changed during this mutation. Note that in
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
-func (m *RepoMutation) Fields() []string {
+func (m *RepositoryMutation) Fields() []string {
 	fields := make([]string, 0, 3)
 	if m.name != nil {
-		fields = append(fields, repo.FieldName)
+		fields = append(fields, repository.FieldName)
 	}
 	if m.default_branch != nil {
-		fields = append(fields, repo.FieldDefaultBranch)
+		fields = append(fields, repository.FieldDefaultBranch)
 	}
 	if m.labels != nil {
-		fields = append(fields, repo.FieldLabels)
+		fields = append(fields, repository.FieldLabels)
 	}
 	return fields
 }
@@ -12326,13 +11880,13 @@ func (m *RepoMutation) Fields() []string {
 // Field returns the value of a field with the given name. The second boolean
 // return value indicates that this field was not set, or was not defined in the
 // schema.
-func (m *RepoMutation) Field(name string) (ent.Value, bool) {
+func (m *RepositoryMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case repo.FieldName:
+	case repository.FieldName:
 		return m.Name()
-	case repo.FieldDefaultBranch:
+	case repository.FieldDefaultBranch:
 		return m.DefaultBranch()
-	case repo.FieldLabels:
+	case repository.FieldLabels:
 		return m.Labels()
 	}
 	return nil, false
@@ -12341,38 +11895,38 @@ func (m *RepoMutation) Field(name string) (ent.Value, bool) {
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
-func (m *RepoMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+func (m *RepositoryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case repo.FieldName:
+	case repository.FieldName:
 		return m.OldName(ctx)
-	case repo.FieldDefaultBranch:
+	case repository.FieldDefaultBranch:
 		return m.OldDefaultBranch(ctx)
-	case repo.FieldLabels:
+	case repository.FieldLabels:
 		return m.OldLabels(ctx)
 	}
-	return nil, fmt.Errorf("unknown Repo field %s", name)
+	return nil, fmt.Errorf("unknown Repository field %s", name)
 }
 
 // SetField sets the value of a field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *RepoMutation) SetField(name string, value ent.Value) error {
+func (m *RepositoryMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case repo.FieldName:
+	case repository.FieldName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
 		return nil
-	case repo.FieldDefaultBranch:
+	case repository.FieldDefaultBranch:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDefaultBranch(v)
 		return nil
-	case repo.FieldLabels:
+	case repository.FieldLabels:
 		v, ok := value.(schema.Labels)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
@@ -12380,131 +11934,113 @@ func (m *RepoMutation) SetField(name string, value ent.Value) error {
 		m.SetLabels(v)
 		return nil
 	}
-	return fmt.Errorf("unknown Repo field %s", name)
+	return fmt.Errorf("unknown Repository field %s", name)
 }
 
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
-func (m *RepoMutation) AddedFields() []string {
+func (m *RepositoryMutation) AddedFields() []string {
 	return nil
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
-func (m *RepoMutation) AddedField(name string) (ent.Value, bool) {
+func (m *RepositoryMutation) AddedField(name string) (ent.Value, bool) {
 	return nil, false
 }
 
 // AddField adds the value to the field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *RepoMutation) AddField(name string, value ent.Value) error {
+func (m *RepositoryMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	}
-	return fmt.Errorf("unknown Repo numeric field %s", name)
+	return fmt.Errorf("unknown Repository numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
-func (m *RepoMutation) ClearedFields() []string {
+func (m *RepositoryMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(repo.FieldLabels) {
-		fields = append(fields, repo.FieldLabels)
+	if m.FieldCleared(repository.FieldLabels) {
+		fields = append(fields, repository.FieldLabels)
 	}
 	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
 // cleared in this mutation.
-func (m *RepoMutation) FieldCleared(name string) bool {
+func (m *RepositoryMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
-func (m *RepoMutation) ClearField(name string) error {
+func (m *RepositoryMutation) ClearField(name string) error {
 	switch name {
-	case repo.FieldLabels:
+	case repository.FieldLabels:
 		m.ClearLabels()
 		return nil
 	}
-	return fmt.Errorf("unknown Repo nullable field %s", name)
+	return fmt.Errorf("unknown Repository nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
-func (m *RepoMutation) ResetField(name string) error {
+func (m *RepositoryMutation) ResetField(name string) error {
 	switch name {
-	case repo.FieldName:
+	case repository.FieldName:
 		m.ResetName()
 		return nil
-	case repo.FieldDefaultBranch:
+	case repository.FieldDefaultBranch:
 		m.ResetDefaultBranch()
 		return nil
-	case repo.FieldLabels:
+	case repository.FieldLabels:
 		m.ResetLabels()
 		return nil
 	}
-	return fmt.Errorf("unknown Repo field %s", name)
+	return fmt.Errorf("unknown Repository field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
-func (m *RepoMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+func (m *RepositoryMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
 	if m.owner != nil {
-		edges = append(edges, repo.EdgeOwner)
+		edges = append(edges, repository.EdgeOwner)
 	}
 	if m.project != nil {
-		edges = append(edges, repo.EdgeProject)
+		edges = append(edges, repository.EdgeProject)
 	}
 	if m.head != nil {
-		edges = append(edges, repo.EdgeHead)
+		edges = append(edges, repository.EdgeHead)
 	}
 	if m.commits != nil {
-		edges = append(edges, repo.EdgeCommits)
-	}
-	if m.vulnerability_reviews != nil {
-		edges = append(edges, repo.EdgeVulnerabilityReviews)
-	}
-	if m.policies != nil {
-		edges = append(edges, repo.EdgePolicies)
+		edges = append(edges, repository.EdgeCommits)
 	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *RepoMutation) AddedIDs(name string) []ent.Value {
+func (m *RepositoryMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case repo.EdgeOwner:
+	case repository.EdgeOwner:
 		if id := m.owner; id != nil {
 			return []ent.Value{*id}
 		}
-	case repo.EdgeProject:
+	case repository.EdgeProject:
 		if id := m.project; id != nil {
 			return []ent.Value{*id}
 		}
-	case repo.EdgeHead:
+	case repository.EdgeHead:
 		if id := m.head; id != nil {
 			return []ent.Value{*id}
 		}
-	case repo.EdgeCommits:
+	case repository.EdgeCommits:
 		ids := make([]ent.Value, 0, len(m.commits))
 		for id := range m.commits {
-			ids = append(ids, id)
-		}
-		return ids
-	case repo.EdgeVulnerabilityReviews:
-		ids := make([]ent.Value, 0, len(m.vulnerability_reviews))
-		for id := range m.vulnerability_reviews {
-			ids = append(ids, id)
-		}
-		return ids
-	case repo.EdgePolicies:
-		ids := make([]ent.Value, 0, len(m.policies))
-		for id := range m.policies {
 			ids = append(ids, id)
 		}
 		return ids
@@ -12513,39 +12049,21 @@ func (m *RepoMutation) AddedIDs(name string) []ent.Value {
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
-func (m *RepoMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+func (m *RepositoryMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
 	if m.removedcommits != nil {
-		edges = append(edges, repo.EdgeCommits)
-	}
-	if m.removedvulnerability_reviews != nil {
-		edges = append(edges, repo.EdgeVulnerabilityReviews)
-	}
-	if m.removedpolicies != nil {
-		edges = append(edges, repo.EdgePolicies)
+		edges = append(edges, repository.EdgeCommits)
 	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *RepoMutation) RemovedIDs(name string) []ent.Value {
+func (m *RepositoryMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case repo.EdgeCommits:
+	case repository.EdgeCommits:
 		ids := make([]ent.Value, 0, len(m.removedcommits))
 		for id := range m.removedcommits {
-			ids = append(ids, id)
-		}
-		return ids
-	case repo.EdgeVulnerabilityReviews:
-		ids := make([]ent.Value, 0, len(m.removedvulnerability_reviews))
-		for id := range m.removedvulnerability_reviews {
-			ids = append(ids, id)
-		}
-		return ids
-	case repo.EdgePolicies:
-		ids := make([]ent.Value, 0, len(m.removedpolicies))
-		for id := range m.removedpolicies {
 			ids = append(ids, id)
 		}
 		return ids
@@ -12554,90 +12072,74 @@ func (m *RepoMutation) RemovedIDs(name string) []ent.Value {
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *RepoMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+func (m *RepositoryMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
 	if m.clearedowner {
-		edges = append(edges, repo.EdgeOwner)
+		edges = append(edges, repository.EdgeOwner)
 	}
 	if m.clearedproject {
-		edges = append(edges, repo.EdgeProject)
+		edges = append(edges, repository.EdgeProject)
 	}
 	if m.clearedhead {
-		edges = append(edges, repo.EdgeHead)
+		edges = append(edges, repository.EdgeHead)
 	}
 	if m.clearedcommits {
-		edges = append(edges, repo.EdgeCommits)
-	}
-	if m.clearedvulnerability_reviews {
-		edges = append(edges, repo.EdgeVulnerabilityReviews)
-	}
-	if m.clearedpolicies {
-		edges = append(edges, repo.EdgePolicies)
+		edges = append(edges, repository.EdgeCommits)
 	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
-func (m *RepoMutation) EdgeCleared(name string) bool {
+func (m *RepositoryMutation) EdgeCleared(name string) bool {
 	switch name {
-	case repo.EdgeOwner:
+	case repository.EdgeOwner:
 		return m.clearedowner
-	case repo.EdgeProject:
+	case repository.EdgeProject:
 		return m.clearedproject
-	case repo.EdgeHead:
+	case repository.EdgeHead:
 		return m.clearedhead
-	case repo.EdgeCommits:
+	case repository.EdgeCommits:
 		return m.clearedcommits
-	case repo.EdgeVulnerabilityReviews:
-		return m.clearedvulnerability_reviews
-	case repo.EdgePolicies:
-		return m.clearedpolicies
 	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
-func (m *RepoMutation) ClearEdge(name string) error {
+func (m *RepositoryMutation) ClearEdge(name string) error {
 	switch name {
-	case repo.EdgeOwner:
+	case repository.EdgeOwner:
 		m.ClearOwner()
 		return nil
-	case repo.EdgeProject:
+	case repository.EdgeProject:
 		m.ClearProject()
 		return nil
-	case repo.EdgeHead:
+	case repository.EdgeHead:
 		m.ClearHead()
 		return nil
 	}
-	return fmt.Errorf("unknown Repo unique edge %s", name)
+	return fmt.Errorf("unknown Repository unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
-func (m *RepoMutation) ResetEdge(name string) error {
+func (m *RepositoryMutation) ResetEdge(name string) error {
 	switch name {
-	case repo.EdgeOwner:
+	case repository.EdgeOwner:
 		m.ResetOwner()
 		return nil
-	case repo.EdgeProject:
+	case repository.EdgeProject:
 		m.ResetProject()
 		return nil
-	case repo.EdgeHead:
+	case repository.EdgeHead:
 		m.ResetHead()
 		return nil
-	case repo.EdgeCommits:
+	case repository.EdgeCommits:
 		m.ResetCommits()
 		return nil
-	case repo.EdgeVulnerabilityReviews:
-		m.ResetVulnerabilityReviews()
-		return nil
-	case repo.EdgePolicies:
-		m.ResetPolicies()
-		return nil
 	}
-	return fmt.Errorf("unknown Repo edge %s", name)
+	return fmt.Errorf("unknown Repository edge %s", name)
 }
 
 // SPDXLicenseMutation represents an operation that mutates the SPDXLicense nodes in the graph.
@@ -15663,12 +15165,6 @@ type VulnerabilityReviewMutation struct {
 	clearedFields        map[string]struct{}
 	vulnerability        *int
 	clearedvulnerability bool
-	projects             map[int]struct{}
-	removedprojects      map[int]struct{}
-	clearedprojects      bool
-	repos                map[int]struct{}
-	removedrepos         map[int]struct{}
-	clearedrepos         bool
 	releases             map[int]struct{}
 	removedreleases      map[int]struct{}
 	clearedreleases      bool
@@ -15868,114 +15364,6 @@ func (m *VulnerabilityReviewMutation) VulnerabilityIDs() (ids []int) {
 func (m *VulnerabilityReviewMutation) ResetVulnerability() {
 	m.vulnerability = nil
 	m.clearedvulnerability = false
-}
-
-// AddProjectIDs adds the "projects" edge to the Project entity by ids.
-func (m *VulnerabilityReviewMutation) AddProjectIDs(ids ...int) {
-	if m.projects == nil {
-		m.projects = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.projects[ids[i]] = struct{}{}
-	}
-}
-
-// ClearProjects clears the "projects" edge to the Project entity.
-func (m *VulnerabilityReviewMutation) ClearProjects() {
-	m.clearedprojects = true
-}
-
-// ProjectsCleared reports if the "projects" edge to the Project entity was cleared.
-func (m *VulnerabilityReviewMutation) ProjectsCleared() bool {
-	return m.clearedprojects
-}
-
-// RemoveProjectIDs removes the "projects" edge to the Project entity by IDs.
-func (m *VulnerabilityReviewMutation) RemoveProjectIDs(ids ...int) {
-	if m.removedprojects == nil {
-		m.removedprojects = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.projects, ids[i])
-		m.removedprojects[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedProjects returns the removed IDs of the "projects" edge to the Project entity.
-func (m *VulnerabilityReviewMutation) RemovedProjectsIDs() (ids []int) {
-	for id := range m.removedprojects {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ProjectsIDs returns the "projects" edge IDs in the mutation.
-func (m *VulnerabilityReviewMutation) ProjectsIDs() (ids []int) {
-	for id := range m.projects {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetProjects resets all changes to the "projects" edge.
-func (m *VulnerabilityReviewMutation) ResetProjects() {
-	m.projects = nil
-	m.clearedprojects = false
-	m.removedprojects = nil
-}
-
-// AddRepoIDs adds the "repos" edge to the Repo entity by ids.
-func (m *VulnerabilityReviewMutation) AddRepoIDs(ids ...int) {
-	if m.repos == nil {
-		m.repos = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.repos[ids[i]] = struct{}{}
-	}
-}
-
-// ClearRepos clears the "repos" edge to the Repo entity.
-func (m *VulnerabilityReviewMutation) ClearRepos() {
-	m.clearedrepos = true
-}
-
-// ReposCleared reports if the "repos" edge to the Repo entity was cleared.
-func (m *VulnerabilityReviewMutation) ReposCleared() bool {
-	return m.clearedrepos
-}
-
-// RemoveRepoIDs removes the "repos" edge to the Repo entity by IDs.
-func (m *VulnerabilityReviewMutation) RemoveRepoIDs(ids ...int) {
-	if m.removedrepos == nil {
-		m.removedrepos = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.repos, ids[i])
-		m.removedrepos[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedRepos returns the removed IDs of the "repos" edge to the Repo entity.
-func (m *VulnerabilityReviewMutation) RemovedReposIDs() (ids []int) {
-	for id := range m.removedrepos {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ReposIDs returns the "repos" edge IDs in the mutation.
-func (m *VulnerabilityReviewMutation) ReposIDs() (ids []int) {
-	for id := range m.repos {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetRepos resets all changes to the "repos" edge.
-func (m *VulnerabilityReviewMutation) ResetRepos() {
-	m.repos = nil
-	m.clearedrepos = false
-	m.removedrepos = nil
 }
 
 // AddReleaseIDs adds the "releases" edge to the Release entity by ids.
@@ -16221,15 +15609,9 @@ func (m *VulnerabilityReviewMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *VulnerabilityReviewMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 3)
 	if m.vulnerability != nil {
 		edges = append(edges, vulnerabilityreview.EdgeVulnerability)
-	}
-	if m.projects != nil {
-		edges = append(edges, vulnerabilityreview.EdgeProjects)
-	}
-	if m.repos != nil {
-		edges = append(edges, vulnerabilityreview.EdgeRepos)
 	}
 	if m.releases != nil {
 		edges = append(edges, vulnerabilityreview.EdgeReleases)
@@ -16248,18 +15630,6 @@ func (m *VulnerabilityReviewMutation) AddedIDs(name string) []ent.Value {
 		if id := m.vulnerability; id != nil {
 			return []ent.Value{*id}
 		}
-	case vulnerabilityreview.EdgeProjects:
-		ids := make([]ent.Value, 0, len(m.projects))
-		for id := range m.projects {
-			ids = append(ids, id)
-		}
-		return ids
-	case vulnerabilityreview.EdgeRepos:
-		ids := make([]ent.Value, 0, len(m.repos))
-		for id := range m.repos {
-			ids = append(ids, id)
-		}
-		return ids
 	case vulnerabilityreview.EdgeReleases:
 		ids := make([]ent.Value, 0, len(m.releases))
 		for id := range m.releases {
@@ -16278,13 +15648,7 @@ func (m *VulnerabilityReviewMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *VulnerabilityReviewMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
-	if m.removedprojects != nil {
-		edges = append(edges, vulnerabilityreview.EdgeProjects)
-	}
-	if m.removedrepos != nil {
-		edges = append(edges, vulnerabilityreview.EdgeRepos)
-	}
+	edges := make([]string, 0, 3)
 	if m.removedreleases != nil {
 		edges = append(edges, vulnerabilityreview.EdgeReleases)
 	}
@@ -16298,18 +15662,6 @@ func (m *VulnerabilityReviewMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *VulnerabilityReviewMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case vulnerabilityreview.EdgeProjects:
-		ids := make([]ent.Value, 0, len(m.removedprojects))
-		for id := range m.removedprojects {
-			ids = append(ids, id)
-		}
-		return ids
-	case vulnerabilityreview.EdgeRepos:
-		ids := make([]ent.Value, 0, len(m.removedrepos))
-		for id := range m.removedrepos {
-			ids = append(ids, id)
-		}
-		return ids
 	case vulnerabilityreview.EdgeReleases:
 		ids := make([]ent.Value, 0, len(m.removedreleases))
 		for id := range m.removedreleases {
@@ -16328,15 +15680,9 @@ func (m *VulnerabilityReviewMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *VulnerabilityReviewMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 3)
 	if m.clearedvulnerability {
 		edges = append(edges, vulnerabilityreview.EdgeVulnerability)
-	}
-	if m.clearedprojects {
-		edges = append(edges, vulnerabilityreview.EdgeProjects)
-	}
-	if m.clearedrepos {
-		edges = append(edges, vulnerabilityreview.EdgeRepos)
 	}
 	if m.clearedreleases {
 		edges = append(edges, vulnerabilityreview.EdgeReleases)
@@ -16353,10 +15699,6 @@ func (m *VulnerabilityReviewMutation) EdgeCleared(name string) bool {
 	switch name {
 	case vulnerabilityreview.EdgeVulnerability:
 		return m.clearedvulnerability
-	case vulnerabilityreview.EdgeProjects:
-		return m.clearedprojects
-	case vulnerabilityreview.EdgeRepos:
-		return m.clearedrepos
 	case vulnerabilityreview.EdgeReleases:
 		return m.clearedreleases
 	case vulnerabilityreview.EdgeInstances:
@@ -16382,12 +15724,6 @@ func (m *VulnerabilityReviewMutation) ResetEdge(name string) error {
 	switch name {
 	case vulnerabilityreview.EdgeVulnerability:
 		m.ResetVulnerability()
-		return nil
-	case vulnerabilityreview.EdgeProjects:
-		m.ResetProjects()
-		return nil
-	case vulnerabilityreview.EdgeRepos:
-		m.ResetRepos()
 		return nil
 	case vulnerabilityreview.EdgeReleases:
 		m.ResetReleases()

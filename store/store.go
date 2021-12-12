@@ -11,7 +11,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent"
-	"github.com/valocode/bubbly/ent/migrate"
 	"github.com/valocode/bubbly/ent/organization"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -55,10 +54,7 @@ func New(bCtx *config.BubblyConfig) (*Store, error) {
 
 	ctx := context.Background()
 	// Run the automatic migration tool to create all schema resources.
-	if err := client.Schema.Create(ctx,
-		// TODO: https://entgo.io/docs/migrate/#universal-ids
-		migrate.WithGlobalUniqueID(true),
-	); err != nil {
+	if err := client.Schema.Create(ctx); err != nil {
 		return nil, fmt.Errorf("failed creating schema resources: %w", err)
 	}
 
@@ -117,7 +113,7 @@ func (s *Store) initDB() error {
 	// Make sure default project exists
 	//
 	_, projErr := s.client.Project.Create().
-		SetName(config.DefaultReleaseProject).
+		SetName(config.DefaultProject).
 		SetOwner(dbOrg).
 		Save(s.ctx)
 	// Constraint error is fine (in case it already exists). Everything else is not

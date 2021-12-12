@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // OrganizationCreate is the builder for creating a Organization entity.
@@ -42,19 +42,19 @@ func (oc *OrganizationCreate) AddProjects(p ...*Project) *OrganizationCreate {
 	return oc.AddProjectIDs(ids...)
 }
 
-// AddRepoIDs adds the "repos" edge to the Repo entity by IDs.
-func (oc *OrganizationCreate) AddRepoIDs(ids ...int) *OrganizationCreate {
-	oc.mutation.AddRepoIDs(ids...)
+// AddRepositoryIDs adds the "repositories" edge to the Repository entity by IDs.
+func (oc *OrganizationCreate) AddRepositoryIDs(ids ...int) *OrganizationCreate {
+	oc.mutation.AddRepositoryIDs(ids...)
 	return oc
 }
 
-// AddRepos adds the "repos" edges to the Repo entity.
-func (oc *OrganizationCreate) AddRepos(r ...*Repo) *OrganizationCreate {
+// AddRepositories adds the "repositories" edges to the Repository entity.
+func (oc *OrganizationCreate) AddRepositories(r ...*Repository) *OrganizationCreate {
 	ids := make([]int, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return oc.AddRepoIDs(ids...)
+	return oc.AddRepositoryIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -189,17 +189,17 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := oc.mutation.ReposIDs(); len(nodes) > 0 {
+	if nodes := oc.mutation.RepositoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   organization.ReposTable,
-			Columns: []string{organization.ReposColumn},
+			Table:   organization.RepositoriesTable,
+			Columns: []string{organization.RepositoriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}

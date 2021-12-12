@@ -19,18 +19,23 @@ func TestPolicyAffects(t *testing.T) {
 	h, err := NewHandler(WithStore(s))
 	require.NoError(t, err)
 
-	dbRelease, relErr := h.CreateRelease(&api.ReleaseCreateRequest{
+	dbProject, projErr := h.CreateProject(&api.ProjectCreateRequest{
 		Project: ent.NewProjectModelCreate().SetName("test"),
-		Repo:    ent.NewRepoModelCreate().SetName("test"),
-		Commit:  ent.NewGitCommitModelCreate().SetHash("123").SetBranch("main").SetTime(time.Now()),
-		Release: ent.NewReleaseModelCreate().SetName("test").SetVersion("test"),
+	})
+	require.NoError(t, projErr)
+
+	dbRelease, relErr := h.CreateRelease(&api.ReleaseCreateRequest{
+		Project:    dbProject.Name,
+		Repository: ent.NewRepositoryModelCreate().SetName("test"),
+		Commit:     ent.NewGitCommitModelCreate().SetHash("123").SetBranch("main").SetTime(time.Now()),
+		Release:    ent.NewReleaseModelCreate().SetName("test").SetVersion("test"),
 	})
 	require.NoError(t, relErr)
 
 	policies, err := test.ParsePolicies()
 	require.NoError(t, err)
 	for _, p := range policies {
-		_, policyErr := h.SaveReleasePolicy(&api.ReleasePolicySaveRequest{
+		_, policyErr := h.CreateReleasePolicy(&api.ReleasePolicyCreateRequest{
 			Policy: &api.ReleasePolicyCreate{
 				ReleasePolicyModelCreate: *ent.NewReleasePolicyModelCreate().SetName(*p.Policy.Name).SetModule(*p.Policy.Module),
 				Affects: &api.ReleasePolicyAffectsSet{

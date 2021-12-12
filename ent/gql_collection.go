@@ -213,14 +213,14 @@ func (rv *ReleaseVulnerabilityQuery) collectField(ctx *graphql.OperationContext,
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (r *RepoQuery) CollectFields(ctx context.Context, satisfies ...string) *RepoQuery {
+func (r *RepositoryQuery) CollectFields(ctx context.Context, satisfies ...string) *RepositoryQuery {
 	if fc := graphql.GetFieldContext(ctx); fc != nil {
 		r = r.collectField(graphql.GetOperationContext(ctx), fc.Field, satisfies...)
 	}
 	return r
 }
 
-func (r *RepoQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *RepoQuery {
+func (r *RepositoryQuery) collectField(ctx *graphql.OperationContext, field graphql.CollectedField, satisfies ...string) *RepositoryQuery {
 	return r
 }
 

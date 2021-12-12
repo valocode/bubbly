@@ -15,10 +15,10 @@ const (
 
 // Default Bubbly Release configuration
 const (
-	DefaultBubblyDir      = ".bubbly"
-	DefaultReleaseSpec    = "" // default spec is under bubbly dir
-	DefaultReleaseProject = "default"
-	DefaultOrganization   = "bubbly"
+	DefaultBubblyDir    = ".bubbly"
+	DefaultReleaseSpec  = "" // default spec is under bubbly dir
+	DefaultProject      = "default"
+	DefaultOrganization = "bubbly"
 )
 
 // Default Bubbly Server configuration
@@ -88,7 +88,7 @@ func DefaultReleaseConfig() *ReleaseConfig {
 	return &ReleaseConfig{
 		BubblyDir:   DefaultEnvStr("BUBBLY_DIR", DefaultBubblyDir),
 		ReleaseSpec: DefaultEnvStr("BUBBLY_RELEASE", DefaultBubblyDir),
-		Project:     DefaultEnvStr("BUBBLY_PROJECT", DefaultReleaseProject),
+		Project:     DefaultEnvStr("BUBBLY_PROJECT", DefaultProject),
 	}
 }
 

@@ -19,7 +19,7 @@ import (
 	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
@@ -91,13 +91,13 @@ func (rc *ReleaseCreate) SetCommit(g *GitCommit) *ReleaseCreate {
 	return rc.SetCommitID(g.ID)
 }
 
-// SetHeadOfID sets the "head_of" edge to the Repo entity by ID.
+// SetHeadOfID sets the "head_of" edge to the Repository entity by ID.
 func (rc *ReleaseCreate) SetHeadOfID(id int) *ReleaseCreate {
 	rc.mutation.SetHeadOfID(id)
 	return rc
 }
 
-// SetNillableHeadOfID sets the "head_of" edge to the Repo entity by ID if the given value is not nil.
+// SetNillableHeadOfID sets the "head_of" edge to the Repository entity by ID if the given value is not nil.
 func (rc *ReleaseCreate) SetNillableHeadOfID(id *int) *ReleaseCreate {
 	if id != nil {
 		rc = rc.SetHeadOfID(*id)
@@ -105,8 +105,8 @@ func (rc *ReleaseCreate) SetNillableHeadOfID(id *int) *ReleaseCreate {
 	return rc
 }
 
-// SetHeadOf sets the "head_of" edge to the Repo entity.
-func (rc *ReleaseCreate) SetHeadOf(r *Repo) *ReleaseCreate {
+// SetHeadOf sets the "head_of" edge to the Repository entity.
+func (rc *ReleaseCreate) SetHeadOf(r *Repository) *ReleaseCreate {
 	return rc.SetHeadOfID(r.ID)
 }
 
@@ -453,14 +453,14 @@ func (rc *ReleaseCreate) createSpec() (*Release, *sqlgraph.CreateSpec) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.repo_head = &nodes[0]
+		_node.repository_head = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rc.mutation.LogIDs(); len(nodes) > 0 {

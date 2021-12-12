@@ -17,66 +17,62 @@ import (
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasepolicy"
-	"github.com/valocode/bubbly/ent/repo"
-	"github.com/valocode/bubbly/ent/vulnerabilityreview"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
-// RepoQuery is the builder for querying Repo entities.
-type RepoQuery struct {
+// RepositoryQuery is the builder for querying Repository entities.
+type RepositoryQuery struct {
 	config
 	limit      *int
 	offset     *int
 	unique     *bool
 	order      []OrderFunc
 	fields     []string
-	predicates []predicate.Repo
+	predicates []predicate.Repository
 	// eager-loading edges.
-	withOwner                *OrganizationQuery
-	withProject              *ProjectQuery
-	withHead                 *ReleaseQuery
-	withCommits              *GitCommitQuery
-	withVulnerabilityReviews *VulnerabilityReviewQuery
-	withPolicies             *ReleasePolicyQuery
-	withFKs                  bool
+	withOwner   *OrganizationQuery
+	withProject *ProjectQuery
+	withHead    *ReleaseQuery
+	withCommits *GitCommitQuery
+	withFKs     bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the RepoQuery builder.
-func (rq *RepoQuery) Where(ps ...predicate.Repo) *RepoQuery {
+// Where adds a new predicate for the RepositoryQuery builder.
+func (rq *RepositoryQuery) Where(ps ...predicate.Repository) *RepositoryQuery {
 	rq.predicates = append(rq.predicates, ps...)
 	return rq
 }
 
 // Limit adds a limit step to the query.
-func (rq *RepoQuery) Limit(limit int) *RepoQuery {
+func (rq *RepositoryQuery) Limit(limit int) *RepositoryQuery {
 	rq.limit = &limit
 	return rq
 }
 
 // Offset adds an offset step to the query.
-func (rq *RepoQuery) Offset(offset int) *RepoQuery {
+func (rq *RepositoryQuery) Offset(offset int) *RepositoryQuery {
 	rq.offset = &offset
 	return rq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (rq *RepoQuery) Unique(unique bool) *RepoQuery {
+func (rq *RepositoryQuery) Unique(unique bool) *RepositoryQuery {
 	rq.unique = &unique
 	return rq
 }
 
 // Order adds an order step to the query.
-func (rq *RepoQuery) Order(o ...OrderFunc) *RepoQuery {
+func (rq *RepositoryQuery) Order(o ...OrderFunc) *RepositoryQuery {
 	rq.order = append(rq.order, o...)
 	return rq
 }
 
 // QueryOwner chains the current query on the "owner" edge.
-func (rq *RepoQuery) QueryOwner() *OrganizationQuery {
+func (rq *RepositoryQuery) QueryOwner() *OrganizationQuery {
 	query := &OrganizationQuery{config: rq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
@@ -87,9 +83,9 @@ func (rq *RepoQuery) QueryOwner() *OrganizationQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, selector),
+			sqlgraph.From(repository.Table, repository.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, repo.OwnerTable, repo.OwnerColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, repository.OwnerTable, repository.OwnerColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -98,7 +94,7 @@ func (rq *RepoQuery) QueryOwner() *OrganizationQuery {
 }
 
 // QueryProject chains the current query on the "project" edge.
-func (rq *RepoQuery) QueryProject() *ProjectQuery {
+func (rq *RepositoryQuery) QueryProject() *ProjectQuery {
 	query := &ProjectQuery{config: rq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
@@ -109,9 +105,9 @@ func (rq *RepoQuery) QueryProject() *ProjectQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, selector),
+			sqlgraph.From(repository.Table, repository.FieldID, selector),
 			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, repo.ProjectTable, repo.ProjectColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, repository.ProjectTable, repository.ProjectColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -120,7 +116,7 @@ func (rq *RepoQuery) QueryProject() *ProjectQuery {
 }
 
 // QueryHead chains the current query on the "head" edge.
-func (rq *RepoQuery) QueryHead() *ReleaseQuery {
+func (rq *RepositoryQuery) QueryHead() *ReleaseQuery {
 	query := &ReleaseQuery{config: rq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
@@ -131,9 +127,9 @@ func (rq *RepoQuery) QueryHead() *ReleaseQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, selector),
+			sqlgraph.From(repository.Table, repository.FieldID, selector),
 			sqlgraph.To(release.Table, release.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, repo.HeadTable, repo.HeadColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, repository.HeadTable, repository.HeadColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -142,7 +138,7 @@ func (rq *RepoQuery) QueryHead() *ReleaseQuery {
 }
 
 // QueryCommits chains the current query on the "commits" edge.
-func (rq *RepoQuery) QueryCommits() *GitCommitQuery {
+func (rq *RepositoryQuery) QueryCommits() *GitCommitQuery {
 	query := &GitCommitQuery{config: rq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
@@ -153,9 +149,9 @@ func (rq *RepoQuery) QueryCommits() *GitCommitQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, selector),
+			sqlgraph.From(repository.Table, repository.FieldID, selector),
 			sqlgraph.To(gitcommit.Table, gitcommit.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, repo.CommitsTable, repo.CommitsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, repository.CommitsTable, repository.CommitsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -163,65 +159,21 @@ func (rq *RepoQuery) QueryCommits() *GitCommitQuery {
 	return query
 }
 
-// QueryVulnerabilityReviews chains the current query on the "vulnerability_reviews" edge.
-func (rq *RepoQuery) QueryVulnerabilityReviews() *VulnerabilityReviewQuery {
-	query := &VulnerabilityReviewQuery{config: rq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, selector),
-			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, repo.VulnerabilityReviewsTable, repo.VulnerabilityReviewsPrimaryKey...),
-		)
-		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryPolicies chains the current query on the "policies" edge.
-func (rq *RepoQuery) QueryPolicies() *ReleasePolicyQuery {
-	query := &ReleasePolicyQuery{config: rq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, selector),
-			sqlgraph.To(releasepolicy.Table, releasepolicy.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, repo.PoliciesTable, repo.PoliciesPrimaryKey...),
-		)
-		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// First returns the first Repo entity from the query.
-// Returns a *NotFoundError when no Repo was found.
-func (rq *RepoQuery) First(ctx context.Context) (*Repo, error) {
+// First returns the first Repository entity from the query.
+// Returns a *NotFoundError when no Repository was found.
+func (rq *RepositoryQuery) First(ctx context.Context) (*Repository, error) {
 	nodes, err := rq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{repo.Label}
+		return nil, &NotFoundError{repository.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (rq *RepoQuery) FirstX(ctx context.Context) *Repo {
+func (rq *RepositoryQuery) FirstX(ctx context.Context) *Repository {
 	node, err := rq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -229,22 +181,22 @@ func (rq *RepoQuery) FirstX(ctx context.Context) *Repo {
 	return node
 }
 
-// FirstID returns the first Repo ID from the query.
-// Returns a *NotFoundError when no Repo ID was found.
-func (rq *RepoQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first Repository ID from the query.
+// Returns a *NotFoundError when no Repository ID was found.
+func (rq *RepositoryQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = rq.Limit(1).IDs(ctx); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{repo.Label}
+		err = &NotFoundError{repository.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (rq *RepoQuery) FirstIDX(ctx context.Context) int {
+func (rq *RepositoryQuery) FirstIDX(ctx context.Context) int {
 	id, err := rq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -252,10 +204,10 @@ func (rq *RepoQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single Repo entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when exactly one Repo entity is not found.
-// Returns a *NotFoundError when no Repo entities are found.
-func (rq *RepoQuery) Only(ctx context.Context) (*Repo, error) {
+// Only returns a single Repository entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when exactly one Repository entity is not found.
+// Returns a *NotFoundError when no Repository entities are found.
+func (rq *RepositoryQuery) Only(ctx context.Context) (*Repository, error) {
 	nodes, err := rq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
@@ -264,14 +216,14 @@ func (rq *RepoQuery) Only(ctx context.Context) (*Repo, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{repo.Label}
+		return nil, &NotFoundError{repository.Label}
 	default:
-		return nil, &NotSingularError{repo.Label}
+		return nil, &NotSingularError{repository.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (rq *RepoQuery) OnlyX(ctx context.Context) *Repo {
+func (rq *RepositoryQuery) OnlyX(ctx context.Context) *Repository {
 	node, err := rq.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -279,10 +231,10 @@ func (rq *RepoQuery) OnlyX(ctx context.Context) *Repo {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Repo ID in the query.
-// Returns a *NotSingularError when exactly one Repo ID is not found.
+// OnlyID is like Only, but returns the only Repository ID in the query.
+// Returns a *NotSingularError when exactly one Repository ID is not found.
 // Returns a *NotFoundError when no entities are found.
-func (rq *RepoQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (rq *RepositoryQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = rq.Limit(2).IDs(ctx); err != nil {
 		return
@@ -291,15 +243,15 @@ func (rq *RepoQuery) OnlyID(ctx context.Context) (id int, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{repo.Label}
+		err = &NotFoundError{repository.Label}
 	default:
-		err = &NotSingularError{repo.Label}
+		err = &NotSingularError{repository.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (rq *RepoQuery) OnlyIDX(ctx context.Context) int {
+func (rq *RepositoryQuery) OnlyIDX(ctx context.Context) int {
 	id, err := rq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -307,8 +259,8 @@ func (rq *RepoQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of Repos.
-func (rq *RepoQuery) All(ctx context.Context) ([]*Repo, error) {
+// All executes the query and returns a list of Repositories.
+func (rq *RepositoryQuery) All(ctx context.Context) ([]*Repository, error) {
 	if err := rq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -316,7 +268,7 @@ func (rq *RepoQuery) All(ctx context.Context) ([]*Repo, error) {
 }
 
 // AllX is like All, but panics if an error occurs.
-func (rq *RepoQuery) AllX(ctx context.Context) []*Repo {
+func (rq *RepositoryQuery) AllX(ctx context.Context) []*Repository {
 	nodes, err := rq.All(ctx)
 	if err != nil {
 		panic(err)
@@ -324,17 +276,17 @@ func (rq *RepoQuery) AllX(ctx context.Context) []*Repo {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Repo IDs.
-func (rq *RepoQuery) IDs(ctx context.Context) ([]int, error) {
+// IDs executes the query and returns a list of Repository IDs.
+func (rq *RepositoryQuery) IDs(ctx context.Context) ([]int, error) {
 	var ids []int
-	if err := rq.Select(repo.FieldID).Scan(ctx, &ids); err != nil {
+	if err := rq.Select(repository.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (rq *RepoQuery) IDsX(ctx context.Context) []int {
+func (rq *RepositoryQuery) IDsX(ctx context.Context) []int {
 	ids, err := rq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -343,7 +295,7 @@ func (rq *RepoQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (rq *RepoQuery) Count(ctx context.Context) (int, error) {
+func (rq *RepositoryQuery) Count(ctx context.Context) (int, error) {
 	if err := rq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -351,7 +303,7 @@ func (rq *RepoQuery) Count(ctx context.Context) (int, error) {
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (rq *RepoQuery) CountX(ctx context.Context) int {
+func (rq *RepositoryQuery) CountX(ctx context.Context) int {
 	count, err := rq.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -360,7 +312,7 @@ func (rq *RepoQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (rq *RepoQuery) Exist(ctx context.Context) (bool, error) {
+func (rq *RepositoryQuery) Exist(ctx context.Context) (bool, error) {
 	if err := rq.prepareQuery(ctx); err != nil {
 		return false, err
 	}
@@ -368,7 +320,7 @@ func (rq *RepoQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (rq *RepoQuery) ExistX(ctx context.Context) bool {
+func (rq *RepositoryQuery) ExistX(ctx context.Context) bool {
 	exist, err := rq.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -376,24 +328,22 @@ func (rq *RepoQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the RepoQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the RepositoryQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (rq *RepoQuery) Clone() *RepoQuery {
+func (rq *RepositoryQuery) Clone() *RepositoryQuery {
 	if rq == nil {
 		return nil
 	}
-	return &RepoQuery{
-		config:                   rq.config,
-		limit:                    rq.limit,
-		offset:                   rq.offset,
-		order:                    append([]OrderFunc{}, rq.order...),
-		predicates:               append([]predicate.Repo{}, rq.predicates...),
-		withOwner:                rq.withOwner.Clone(),
-		withProject:              rq.withProject.Clone(),
-		withHead:                 rq.withHead.Clone(),
-		withCommits:              rq.withCommits.Clone(),
-		withVulnerabilityReviews: rq.withVulnerabilityReviews.Clone(),
-		withPolicies:             rq.withPolicies.Clone(),
+	return &RepositoryQuery{
+		config:      rq.config,
+		limit:       rq.limit,
+		offset:      rq.offset,
+		order:       append([]OrderFunc{}, rq.order...),
+		predicates:  append([]predicate.Repository{}, rq.predicates...),
+		withOwner:   rq.withOwner.Clone(),
+		withProject: rq.withProject.Clone(),
+		withHead:    rq.withHead.Clone(),
+		withCommits: rq.withCommits.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
@@ -402,7 +352,7 @@ func (rq *RepoQuery) Clone() *RepoQuery {
 
 // WithOwner tells the query-builder to eager-load the nodes that are connected to
 // the "owner" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *RepoQuery) WithOwner(opts ...func(*OrganizationQuery)) *RepoQuery {
+func (rq *RepositoryQuery) WithOwner(opts ...func(*OrganizationQuery)) *RepositoryQuery {
 	query := &OrganizationQuery{config: rq.config}
 	for _, opt := range opts {
 		opt(query)
@@ -413,7 +363,7 @@ func (rq *RepoQuery) WithOwner(opts ...func(*OrganizationQuery)) *RepoQuery {
 
 // WithProject tells the query-builder to eager-load the nodes that are connected to
 // the "project" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *RepoQuery) WithProject(opts ...func(*ProjectQuery)) *RepoQuery {
+func (rq *RepositoryQuery) WithProject(opts ...func(*ProjectQuery)) *RepositoryQuery {
 	query := &ProjectQuery{config: rq.config}
 	for _, opt := range opts {
 		opt(query)
@@ -424,7 +374,7 @@ func (rq *RepoQuery) WithProject(opts ...func(*ProjectQuery)) *RepoQuery {
 
 // WithHead tells the query-builder to eager-load the nodes that are connected to
 // the "head" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *RepoQuery) WithHead(opts ...func(*ReleaseQuery)) *RepoQuery {
+func (rq *RepositoryQuery) WithHead(opts ...func(*ReleaseQuery)) *RepositoryQuery {
 	query := &ReleaseQuery{config: rq.config}
 	for _, opt := range opts {
 		opt(query)
@@ -435,34 +385,12 @@ func (rq *RepoQuery) WithHead(opts ...func(*ReleaseQuery)) *RepoQuery {
 
 // WithCommits tells the query-builder to eager-load the nodes that are connected to
 // the "commits" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *RepoQuery) WithCommits(opts ...func(*GitCommitQuery)) *RepoQuery {
+func (rq *RepositoryQuery) WithCommits(opts ...func(*GitCommitQuery)) *RepositoryQuery {
 	query := &GitCommitQuery{config: rq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
 	rq.withCommits = query
-	return rq
-}
-
-// WithVulnerabilityReviews tells the query-builder to eager-load the nodes that are connected to
-// the "vulnerability_reviews" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *RepoQuery) WithVulnerabilityReviews(opts ...func(*VulnerabilityReviewQuery)) *RepoQuery {
-	query := &VulnerabilityReviewQuery{config: rq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	rq.withVulnerabilityReviews = query
-	return rq
-}
-
-// WithPolicies tells the query-builder to eager-load the nodes that are connected to
-// the "policies" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *RepoQuery) WithPolicies(opts ...func(*ReleasePolicyQuery)) *RepoQuery {
-	query := &ReleasePolicyQuery{config: rq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	rq.withPolicies = query
 	return rq
 }
 
@@ -476,13 +404,13 @@ func (rq *RepoQuery) WithPolicies(opts ...func(*ReleasePolicyQuery)) *RepoQuery 
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Repo.Query().
-//		GroupBy(repo.FieldName).
+//	client.Repository.Query().
+//		GroupBy(repository.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 //
-func (rq *RepoQuery) GroupBy(field string, fields ...string) *RepoGroupBy {
-	group := &RepoGroupBy{config: rq.config}
+func (rq *RepositoryQuery) GroupBy(field string, fields ...string) *RepositoryGroupBy {
+	group := &RepositoryGroupBy{config: rq.config}
 	group.fields = append([]string{field}, fields...)
 	group.path = func(ctx context.Context) (prev *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
@@ -502,18 +430,18 @@ func (rq *RepoQuery) GroupBy(field string, fields ...string) *RepoGroupBy {
 //		Name string `json:"name,omitempty"`
 //	}
 //
-//	client.Repo.Query().
-//		Select(repo.FieldName).
+//	client.Repository.Query().
+//		Select(repository.FieldName).
 //		Scan(ctx, &v)
 //
-func (rq *RepoQuery) Select(fields ...string) *RepoSelect {
+func (rq *RepositoryQuery) Select(fields ...string) *RepositorySelect {
 	rq.fields = append(rq.fields, fields...)
-	return &RepoSelect{RepoQuery: rq}
+	return &RepositorySelect{RepositoryQuery: rq}
 }
 
-func (rq *RepoQuery) prepareQuery(ctx context.Context) error {
+func (rq *RepositoryQuery) prepareQuery(ctx context.Context) error {
 	for _, f := range rq.fields {
-		if !repo.ValidColumn(f) {
+		if !repository.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -527,28 +455,26 @@ func (rq *RepoQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
+func (rq *RepositoryQuery) sqlAll(ctx context.Context) ([]*Repository, error) {
 	var (
-		nodes       = []*Repo{}
+		nodes       = []*Repository{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [4]bool{
 			rq.withOwner != nil,
 			rq.withProject != nil,
 			rq.withHead != nil,
 			rq.withCommits != nil,
-			rq.withVulnerabilityReviews != nil,
-			rq.withPolicies != nil,
 		}
 	)
 	if rq.withOwner != nil || rq.withProject != nil {
 		withFKs = true
 	}
 	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, repo.ForeignKeys...)
+		_spec.Node.Columns = append(_spec.Node.Columns, repository.ForeignKeys...)
 	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
-		node := &Repo{config: rq.config}
+		node := &Repository{config: rq.config}
 		nodes = append(nodes, node)
 		return node.scanValues(columns)
 	}
@@ -569,12 +495,12 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 
 	if query := rq.withOwner; query != nil {
 		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*Repo)
+		nodeids := make(map[int][]*Repository)
 		for i := range nodes {
-			if nodes[i].repo_owner == nil {
+			if nodes[i].repository_owner == nil {
 				continue
 			}
-			fk := *nodes[i].repo_owner
+			fk := *nodes[i].repository_owner
 			if _, ok := nodeids[fk]; !ok {
 				ids = append(ids, fk)
 			}
@@ -588,7 +514,7 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 		for _, n := range neighbors {
 			nodes, ok := nodeids[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "repo_owner" returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "repository_owner" returned %v`, n.ID)
 			}
 			for i := range nodes {
 				nodes[i].Edges.Owner = n
@@ -598,12 +524,12 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 
 	if query := rq.withProject; query != nil {
 		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*Repo)
+		nodeids := make(map[int][]*Repository)
 		for i := range nodes {
-			if nodes[i].repo_project == nil {
+			if nodes[i].repository_project == nil {
 				continue
 			}
-			fk := *nodes[i].repo_project
+			fk := *nodes[i].repository_project
 			if _, ok := nodeids[fk]; !ok {
 				ids = append(ids, fk)
 			}
@@ -617,7 +543,7 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 		for _, n := range neighbors {
 			nodes, ok := nodeids[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "repo_project" returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "repository_project" returned %v`, n.ID)
 			}
 			for i := range nodes {
 				nodes[i].Edges.Project = n
@@ -627,27 +553,27 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 
 	if query := rq.withHead; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*Repo)
+		nodeids := make(map[int]*Repository)
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
 		}
 		query.withFKs = true
 		query.Where(predicate.Release(func(s *sql.Selector) {
-			s.Where(sql.InValues(repo.HeadColumn, fks...))
+			s.Where(sql.InValues(repository.HeadColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.repo_head
+			fk := n.repository_head
 			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "repo_head" is nil for node %v`, n.ID)
+				return nil, fmt.Errorf(`foreign-key "repository_head" is nil for node %v`, n.ID)
 			}
 			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "repo_head" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "repository_head" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Head = n
 		}
@@ -655,7 +581,7 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 
 	if query := rq.withCommits; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*Repo)
+		nodeids := make(map[int]*Repository)
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
@@ -663,164 +589,34 @@ func (rq *RepoQuery) sqlAll(ctx context.Context) ([]*Repo, error) {
 		}
 		query.withFKs = true
 		query.Where(predicate.GitCommit(func(s *sql.Selector) {
-			s.Where(sql.InValues(repo.CommitsColumn, fks...))
+			s.Where(sql.InValues(repository.CommitsColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.git_commit_repo
+			fk := n.git_commit_repository
 			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "git_commit_repo" is nil for node %v`, n.ID)
+				return nil, fmt.Errorf(`foreign-key "git_commit_repository" is nil for node %v`, n.ID)
 			}
 			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "git_commit_repo" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "git_commit_repository" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Commits = append(node.Edges.Commits, n)
-		}
-	}
-
-	if query := rq.withVulnerabilityReviews; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*Repo, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.VulnerabilityReviews = []*VulnerabilityReview{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*Repo)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   repo.VulnerabilityReviewsTable,
-				Columns: repo.VulnerabilityReviewsPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(repo.VulnerabilityReviewsPrimaryKey[1], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, rq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "vulnerability_reviews": %w`, err)
-		}
-		query.Where(vulnerabilityreview.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "vulnerability_reviews" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.VulnerabilityReviews = append(nodes[i].Edges.VulnerabilityReviews, n)
-			}
-		}
-	}
-
-	if query := rq.withPolicies; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*Repo, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Policies = []*ReleasePolicy{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*Repo)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   repo.PoliciesTable,
-				Columns: repo.PoliciesPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(repo.PoliciesPrimaryKey[1], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, rq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "policies": %w`, err)
-		}
-		query.Where(releasepolicy.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "policies" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Policies = append(nodes[i].Edges.Policies, n)
-			}
 		}
 	}
 
 	return nodes, nil
 }
 
-func (rq *RepoQuery) sqlCount(ctx context.Context) (int, error) {
+func (rq *RepositoryQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := rq.querySpec()
 	return sqlgraph.CountNodes(ctx, rq.driver, _spec)
 }
 
-func (rq *RepoQuery) sqlExist(ctx context.Context) (bool, error) {
+func (rq *RepositoryQuery) sqlExist(ctx context.Context) (bool, error) {
 	n, err := rq.sqlCount(ctx)
 	if err != nil {
 		return false, fmt.Errorf("ent: check existence: %w", err)
@@ -828,14 +624,14 @@ func (rq *RepoQuery) sqlExist(ctx context.Context) (bool, error) {
 	return n > 0, nil
 }
 
-func (rq *RepoQuery) querySpec() *sqlgraph.QuerySpec {
+func (rq *RepositoryQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := &sqlgraph.QuerySpec{
 		Node: &sqlgraph.NodeSpec{
-			Table:   repo.Table,
-			Columns: repo.Columns,
+			Table:   repository.Table,
+			Columns: repository.Columns,
 			ID: &sqlgraph.FieldSpec{
 				Type:   field.TypeInt,
-				Column: repo.FieldID,
+				Column: repository.FieldID,
 			},
 		},
 		From:   rq.sql,
@@ -846,9 +642,9 @@ func (rq *RepoQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := rq.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, repo.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, repository.FieldID)
 		for i := range fields {
-			if fields[i] != repo.FieldID {
+			if fields[i] != repository.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -876,12 +672,12 @@ func (rq *RepoQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (rq *RepoQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (rq *RepositoryQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(rq.driver.Dialect())
-	t1 := builder.Table(repo.Table)
+	t1 := builder.Table(repository.Table)
 	columns := rq.fields
 	if len(columns) == 0 {
-		columns = repo.Columns
+		columns = repository.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if rq.sql != nil {
@@ -905,8 +701,8 @@ func (rq *RepoQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// RepoGroupBy is the group-by builder for Repo entities.
-type RepoGroupBy struct {
+// RepositoryGroupBy is the group-by builder for Repository entities.
+type RepositoryGroupBy struct {
 	config
 	fields []string
 	fns    []AggregateFunc
@@ -916,13 +712,13 @@ type RepoGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (rgb *RepoGroupBy) Aggregate(fns ...AggregateFunc) *RepoGroupBy {
+func (rgb *RepositoryGroupBy) Aggregate(fns ...AggregateFunc) *RepositoryGroupBy {
 	rgb.fns = append(rgb.fns, fns...)
 	return rgb
 }
 
 // Scan applies the group-by query and scans the result into the given value.
-func (rgb *RepoGroupBy) Scan(ctx context.Context, v interface{}) error {
+func (rgb *RepositoryGroupBy) Scan(ctx context.Context, v interface{}) error {
 	query, err := rgb.path(ctx)
 	if err != nil {
 		return err
@@ -932,7 +728,7 @@ func (rgb *RepoGroupBy) Scan(ctx context.Context, v interface{}) error {
 }
 
 // ScanX is like Scan, but panics if an error occurs.
-func (rgb *RepoGroupBy) ScanX(ctx context.Context, v interface{}) {
+func (rgb *RepositoryGroupBy) ScanX(ctx context.Context, v interface{}) {
 	if err := rgb.Scan(ctx, v); err != nil {
 		panic(err)
 	}
@@ -940,9 +736,9 @@ func (rgb *RepoGroupBy) ScanX(ctx context.Context, v interface{}) {
 
 // Strings returns list of strings from group-by.
 // It is only allowed when executing a group-by query with one field.
-func (rgb *RepoGroupBy) Strings(ctx context.Context) ([]string, error) {
+func (rgb *RepositoryGroupBy) Strings(ctx context.Context) ([]string, error) {
 	if len(rgb.fields) > 1 {
-		return nil, errors.New("ent: RepoGroupBy.Strings is not achievable when grouping more than 1 field")
+		return nil, errors.New("ent: RepositoryGroupBy.Strings is not achievable when grouping more than 1 field")
 	}
 	var v []string
 	if err := rgb.Scan(ctx, &v); err != nil {
@@ -952,7 +748,7 @@ func (rgb *RepoGroupBy) Strings(ctx context.Context) ([]string, error) {
 }
 
 // StringsX is like Strings, but panics if an error occurs.
-func (rgb *RepoGroupBy) StringsX(ctx context.Context) []string {
+func (rgb *RepositoryGroupBy) StringsX(ctx context.Context) []string {
 	v, err := rgb.Strings(ctx)
 	if err != nil {
 		panic(err)
@@ -962,7 +758,7 @@ func (rgb *RepoGroupBy) StringsX(ctx context.Context) []string {
 
 // String returns a single string from a group-by query.
 // It is only allowed when executing a group-by query with one field.
-func (rgb *RepoGroupBy) String(ctx context.Context) (_ string, err error) {
+func (rgb *RepositoryGroupBy) String(ctx context.Context) (_ string, err error) {
 	var v []string
 	if v, err = rgb.Strings(ctx); err != nil {
 		return
@@ -971,15 +767,15 @@ func (rgb *RepoGroupBy) String(ctx context.Context) (_ string, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{repo.Label}
+		err = &NotFoundError{repository.Label}
 	default:
-		err = fmt.Errorf("ent: RepoGroupBy.Strings returned %d results when one was expected", len(v))
+		err = fmt.Errorf("ent: RepositoryGroupBy.Strings returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // StringX is like String, but panics if an error occurs.
-func (rgb *RepoGroupBy) StringX(ctx context.Context) string {
+func (rgb *RepositoryGroupBy) StringX(ctx context.Context) string {
 	v, err := rgb.String(ctx)
 	if err != nil {
 		panic(err)
@@ -989,9 +785,9 @@ func (rgb *RepoGroupBy) StringX(ctx context.Context) string {
 
 // Ints returns list of ints from group-by.
 // It is only allowed when executing a group-by query with one field.
-func (rgb *RepoGroupBy) Ints(ctx context.Context) ([]int, error) {
+func (rgb *RepositoryGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(rgb.fields) > 1 {
-		return nil, errors.New("ent: RepoGroupBy.Ints is not achievable when grouping more than 1 field")
+		return nil, errors.New("ent: RepositoryGroupBy.Ints is not achievable when grouping more than 1 field")
 	}
 	var v []int
 	if err := rgb.Scan(ctx, &v); err != nil {
@@ -1001,7 +797,7 @@ func (rgb *RepoGroupBy) Ints(ctx context.Context) ([]int, error) {
 }
 
 // IntsX is like Ints, but panics if an error occurs.
-func (rgb *RepoGroupBy) IntsX(ctx context.Context) []int {
+func (rgb *RepositoryGroupBy) IntsX(ctx context.Context) []int {
 	v, err := rgb.Ints(ctx)
 	if err != nil {
 		panic(err)
@@ -1011,7 +807,7 @@ func (rgb *RepoGroupBy) IntsX(ctx context.Context) []int {
 
 // Int returns a single int from a group-by query.
 // It is only allowed when executing a group-by query with one field.
-func (rgb *RepoGroupBy) Int(ctx context.Context) (_ int, err error) {
+func (rgb *RepositoryGroupBy) Int(ctx context.Context) (_ int, err error) {
 	var v []int
 	if v, err = rgb.Ints(ctx); err != nil {
 		return
@@ -1020,15 +816,15 @@ func (rgb *RepoGroupBy) Int(ctx context.Context) (_ int, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{repo.Label}
+		err = &NotFoundError{repository.Label}
 	default:
-		err = fmt.Errorf("ent: RepoGroupBy.Ints returned %d results when one was expected", len(v))
+		err = fmt.Errorf("ent: RepositoryGroupBy.Ints returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // IntX is like Int, but panics if an error occurs.
-func (rgb *RepoGroupBy) IntX(ctx context.Context) int {
+func (rgb *RepositoryGroupBy) IntX(ctx context.Context) int {
 	v, err := rgb.Int(ctx)
 	if err != nil {
 		panic(err)
@@ -1038,9 +834,9 @@ func (rgb *RepoGroupBy) IntX(ctx context.Context) int {
 
 // Float64s returns list of float64s from group-by.
 // It is only allowed when executing a group-by query with one field.
-func (rgb *RepoGroupBy) Float64s(ctx context.Context) ([]float64, error) {
+func (rgb *RepositoryGroupBy) Float64s(ctx context.Context) ([]float64, error) {
 	if len(rgb.fields) > 1 {
-		return nil, errors.New("ent: RepoGroupBy.Float64s is not achievable when grouping more than 1 field")
+		return nil, errors.New("ent: RepositoryGroupBy.Float64s is not achievable when grouping more than 1 field")
 	}
 	var v []float64
 	if err := rgb.Scan(ctx, &v); err != nil {
@@ -1050,7 +846,7 @@ func (rgb *RepoGroupBy) Float64s(ctx context.Context) ([]float64, error) {
 }
 
 // Float64sX is like Float64s, but panics if an error occurs.
-func (rgb *RepoGroupBy) Float64sX(ctx context.Context) []float64 {
+func (rgb *RepositoryGroupBy) Float64sX(ctx context.Context) []float64 {
 	v, err := rgb.Float64s(ctx)
 	if err != nil {
 		panic(err)
@@ -1060,7 +856,7 @@ func (rgb *RepoGroupBy) Float64sX(ctx context.Context) []float64 {
 
 // Float64 returns a single float64 from a group-by query.
 // It is only allowed when executing a group-by query with one field.
-func (rgb *RepoGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+func (rgb *RepositoryGroupBy) Float64(ctx context.Context) (_ float64, err error) {
 	var v []float64
 	if v, err = rgb.Float64s(ctx); err != nil {
 		return
@@ -1069,15 +865,15 @@ func (rgb *RepoGroupBy) Float64(ctx context.Context) (_ float64, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{repo.Label}
+		err = &NotFoundError{repository.Label}
 	default:
-		err = fmt.Errorf("ent: RepoGroupBy.Float64s returned %d results when one was expected", len(v))
+		err = fmt.Errorf("ent: RepositoryGroupBy.Float64s returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // Float64X is like Float64, but panics if an error occurs.
-func (rgb *RepoGroupBy) Float64X(ctx context.Context) float64 {
+func (rgb *RepositoryGroupBy) Float64X(ctx context.Context) float64 {
 	v, err := rgb.Float64(ctx)
 	if err != nil {
 		panic(err)
@@ -1087,9 +883,9 @@ func (rgb *RepoGroupBy) Float64X(ctx context.Context) float64 {
 
 // Bools returns list of bools from group-by.
 // It is only allowed when executing a group-by query with one field.
-func (rgb *RepoGroupBy) Bools(ctx context.Context) ([]bool, error) {
+func (rgb *RepositoryGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(rgb.fields) > 1 {
-		return nil, errors.New("ent: RepoGroupBy.Bools is not achievable when grouping more than 1 field")
+		return nil, errors.New("ent: RepositoryGroupBy.Bools is not achievable when grouping more than 1 field")
 	}
 	var v []bool
 	if err := rgb.Scan(ctx, &v); err != nil {
@@ -1099,7 +895,7 @@ func (rgb *RepoGroupBy) Bools(ctx context.Context) ([]bool, error) {
 }
 
 // BoolsX is like Bools, but panics if an error occurs.
-func (rgb *RepoGroupBy) BoolsX(ctx context.Context) []bool {
+func (rgb *RepositoryGroupBy) BoolsX(ctx context.Context) []bool {
 	v, err := rgb.Bools(ctx)
 	if err != nil {
 		panic(err)
@@ -1109,7 +905,7 @@ func (rgb *RepoGroupBy) BoolsX(ctx context.Context) []bool {
 
 // Bool returns a single bool from a group-by query.
 // It is only allowed when executing a group-by query with one field.
-func (rgb *RepoGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+func (rgb *RepositoryGroupBy) Bool(ctx context.Context) (_ bool, err error) {
 	var v []bool
 	if v, err = rgb.Bools(ctx); err != nil {
 		return
@@ -1118,15 +914,15 @@ func (rgb *RepoGroupBy) Bool(ctx context.Context) (_ bool, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{repo.Label}
+		err = &NotFoundError{repository.Label}
 	default:
-		err = fmt.Errorf("ent: RepoGroupBy.Bools returned %d results when one was expected", len(v))
+		err = fmt.Errorf("ent: RepositoryGroupBy.Bools returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // BoolX is like Bool, but panics if an error occurs.
-func (rgb *RepoGroupBy) BoolX(ctx context.Context) bool {
+func (rgb *RepositoryGroupBy) BoolX(ctx context.Context) bool {
 	v, err := rgb.Bool(ctx)
 	if err != nil {
 		panic(err)
@@ -1134,9 +930,9 @@ func (rgb *RepoGroupBy) BoolX(ctx context.Context) bool {
 	return v
 }
 
-func (rgb *RepoGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (rgb *RepositoryGroupBy) sqlScan(ctx context.Context, v interface{}) error {
 	for _, f := range rgb.fields {
-		if !repo.ValidColumn(f) {
+		if !repository.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
 		}
 	}
@@ -1153,7 +949,7 @@ func (rgb *RepoGroupBy) sqlScan(ctx context.Context, v interface{}) error {
 	return sql.ScanSlice(rows, v)
 }
 
-func (rgb *RepoGroupBy) sqlQuery() *sql.Selector {
+func (rgb *RepositoryGroupBy) sqlQuery() *sql.Selector {
 	selector := rgb.sql.Select()
 	aggregation := make([]string, 0, len(rgb.fns))
 	for _, fn := range rgb.fns {
@@ -1174,33 +970,33 @@ func (rgb *RepoGroupBy) sqlQuery() *sql.Selector {
 	return selector.GroupBy(selector.Columns(rgb.fields...)...)
 }
 
-// RepoSelect is the builder for selecting fields of Repo entities.
-type RepoSelect struct {
-	*RepoQuery
+// RepositorySelect is the builder for selecting fields of Repository entities.
+type RepositorySelect struct {
+	*RepositoryQuery
 	// intermediate query (i.e. traversal path).
 	sql *sql.Selector
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (rs *RepoSelect) Scan(ctx context.Context, v interface{}) error {
+func (rs *RepositorySelect) Scan(ctx context.Context, v interface{}) error {
 	if err := rs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	rs.sql = rs.RepoQuery.sqlQuery(ctx)
+	rs.sql = rs.RepositoryQuery.sqlQuery(ctx)
 	return rs.sqlScan(ctx, v)
 }
 
 // ScanX is like Scan, but panics if an error occurs.
-func (rs *RepoSelect) ScanX(ctx context.Context, v interface{}) {
+func (rs *RepositorySelect) ScanX(ctx context.Context, v interface{}) {
 	if err := rs.Scan(ctx, v); err != nil {
 		panic(err)
 	}
 }
 
 // Strings returns list of strings from a selector. It is only allowed when selecting one field.
-func (rs *RepoSelect) Strings(ctx context.Context) ([]string, error) {
+func (rs *RepositorySelect) Strings(ctx context.Context) ([]string, error) {
 	if len(rs.fields) > 1 {
-		return nil, errors.New("ent: RepoSelect.Strings is not achievable when selecting more than 1 field")
+		return nil, errors.New("ent: RepositorySelect.Strings is not achievable when selecting more than 1 field")
 	}
 	var v []string
 	if err := rs.Scan(ctx, &v); err != nil {
@@ -1210,7 +1006,7 @@ func (rs *RepoSelect) Strings(ctx context.Context) ([]string, error) {
 }
 
 // StringsX is like Strings, but panics if an error occurs.
-func (rs *RepoSelect) StringsX(ctx context.Context) []string {
+func (rs *RepositorySelect) StringsX(ctx context.Context) []string {
 	v, err := rs.Strings(ctx)
 	if err != nil {
 		panic(err)
@@ -1219,7 +1015,7 @@ func (rs *RepoSelect) StringsX(ctx context.Context) []string {
 }
 
 // String returns a single string from a selector. It is only allowed when selecting one field.
-func (rs *RepoSelect) String(ctx context.Context) (_ string, err error) {
+func (rs *RepositorySelect) String(ctx context.Context) (_ string, err error) {
 	var v []string
 	if v, err = rs.Strings(ctx); err != nil {
 		return
@@ -1228,15 +1024,15 @@ func (rs *RepoSelect) String(ctx context.Context) (_ string, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{repo.Label}
+		err = &NotFoundError{repository.Label}
 	default:
-		err = fmt.Errorf("ent: RepoSelect.Strings returned %d results when one was expected", len(v))
+		err = fmt.Errorf("ent: RepositorySelect.Strings returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // StringX is like String, but panics if an error occurs.
-func (rs *RepoSelect) StringX(ctx context.Context) string {
+func (rs *RepositorySelect) StringX(ctx context.Context) string {
 	v, err := rs.String(ctx)
 	if err != nil {
 		panic(err)
@@ -1245,9 +1041,9 @@ func (rs *RepoSelect) StringX(ctx context.Context) string {
 }
 
 // Ints returns list of ints from a selector. It is only allowed when selecting one field.
-func (rs *RepoSelect) Ints(ctx context.Context) ([]int, error) {
+func (rs *RepositorySelect) Ints(ctx context.Context) ([]int, error) {
 	if len(rs.fields) > 1 {
-		return nil, errors.New("ent: RepoSelect.Ints is not achievable when selecting more than 1 field")
+		return nil, errors.New("ent: RepositorySelect.Ints is not achievable when selecting more than 1 field")
 	}
 	var v []int
 	if err := rs.Scan(ctx, &v); err != nil {
@@ -1257,7 +1053,7 @@ func (rs *RepoSelect) Ints(ctx context.Context) ([]int, error) {
 }
 
 // IntsX is like Ints, but panics if an error occurs.
-func (rs *RepoSelect) IntsX(ctx context.Context) []int {
+func (rs *RepositorySelect) IntsX(ctx context.Context) []int {
 	v, err := rs.Ints(ctx)
 	if err != nil {
 		panic(err)
@@ -1266,7 +1062,7 @@ func (rs *RepoSelect) IntsX(ctx context.Context) []int {
 }
 
 // Int returns a single int from a selector. It is only allowed when selecting one field.
-func (rs *RepoSelect) Int(ctx context.Context) (_ int, err error) {
+func (rs *RepositorySelect) Int(ctx context.Context) (_ int, err error) {
 	var v []int
 	if v, err = rs.Ints(ctx); err != nil {
 		return
@@ -1275,15 +1071,15 @@ func (rs *RepoSelect) Int(ctx context.Context) (_ int, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{repo.Label}
+		err = &NotFoundError{repository.Label}
 	default:
-		err = fmt.Errorf("ent: RepoSelect.Ints returned %d results when one was expected", len(v))
+		err = fmt.Errorf("ent: RepositorySelect.Ints returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // IntX is like Int, but panics if an error occurs.
-func (rs *RepoSelect) IntX(ctx context.Context) int {
+func (rs *RepositorySelect) IntX(ctx context.Context) int {
 	v, err := rs.Int(ctx)
 	if err != nil {
 		panic(err)
@@ -1292,9 +1088,9 @@ func (rs *RepoSelect) IntX(ctx context.Context) int {
 }
 
 // Float64s returns list of float64s from a selector. It is only allowed when selecting one field.
-func (rs *RepoSelect) Float64s(ctx context.Context) ([]float64, error) {
+func (rs *RepositorySelect) Float64s(ctx context.Context) ([]float64, error) {
 	if len(rs.fields) > 1 {
-		return nil, errors.New("ent: RepoSelect.Float64s is not achievable when selecting more than 1 field")
+		return nil, errors.New("ent: RepositorySelect.Float64s is not achievable when selecting more than 1 field")
 	}
 	var v []float64
 	if err := rs.Scan(ctx, &v); err != nil {
@@ -1304,7 +1100,7 @@ func (rs *RepoSelect) Float64s(ctx context.Context) ([]float64, error) {
 }
 
 // Float64sX is like Float64s, but panics if an error occurs.
-func (rs *RepoSelect) Float64sX(ctx context.Context) []float64 {
+func (rs *RepositorySelect) Float64sX(ctx context.Context) []float64 {
 	v, err := rs.Float64s(ctx)
 	if err != nil {
 		panic(err)
@@ -1313,7 +1109,7 @@ func (rs *RepoSelect) Float64sX(ctx context.Context) []float64 {
 }
 
 // Float64 returns a single float64 from a selector. It is only allowed when selecting one field.
-func (rs *RepoSelect) Float64(ctx context.Context) (_ float64, err error) {
+func (rs *RepositorySelect) Float64(ctx context.Context) (_ float64, err error) {
 	var v []float64
 	if v, err = rs.Float64s(ctx); err != nil {
 		return
@@ -1322,15 +1118,15 @@ func (rs *RepoSelect) Float64(ctx context.Context) (_ float64, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{repo.Label}
+		err = &NotFoundError{repository.Label}
 	default:
-		err = fmt.Errorf("ent: RepoSelect.Float64s returned %d results when one was expected", len(v))
+		err = fmt.Errorf("ent: RepositorySelect.Float64s returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // Float64X is like Float64, but panics if an error occurs.
-func (rs *RepoSelect) Float64X(ctx context.Context) float64 {
+func (rs *RepositorySelect) Float64X(ctx context.Context) float64 {
 	v, err := rs.Float64(ctx)
 	if err != nil {
 		panic(err)
@@ -1339,9 +1135,9 @@ func (rs *RepoSelect) Float64X(ctx context.Context) float64 {
 }
 
 // Bools returns list of bools from a selector. It is only allowed when selecting one field.
-func (rs *RepoSelect) Bools(ctx context.Context) ([]bool, error) {
+func (rs *RepositorySelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(rs.fields) > 1 {
-		return nil, errors.New("ent: RepoSelect.Bools is not achievable when selecting more than 1 field")
+		return nil, errors.New("ent: RepositorySelect.Bools is not achievable when selecting more than 1 field")
 	}
 	var v []bool
 	if err := rs.Scan(ctx, &v); err != nil {
@@ -1351,7 +1147,7 @@ func (rs *RepoSelect) Bools(ctx context.Context) ([]bool, error) {
 }
 
 // BoolsX is like Bools, but panics if an error occurs.
-func (rs *RepoSelect) BoolsX(ctx context.Context) []bool {
+func (rs *RepositorySelect) BoolsX(ctx context.Context) []bool {
 	v, err := rs.Bools(ctx)
 	if err != nil {
 		panic(err)
@@ -1360,7 +1156,7 @@ func (rs *RepoSelect) BoolsX(ctx context.Context) []bool {
 }
 
 // Bool returns a single bool from a selector. It is only allowed when selecting one field.
-func (rs *RepoSelect) Bool(ctx context.Context) (_ bool, err error) {
+func (rs *RepositorySelect) Bool(ctx context.Context) (_ bool, err error) {
 	var v []bool
 	if v, err = rs.Bools(ctx); err != nil {
 		return
@@ -1369,15 +1165,15 @@ func (rs *RepoSelect) Bool(ctx context.Context) (_ bool, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{repo.Label}
+		err = &NotFoundError{repository.Label}
 	default:
-		err = fmt.Errorf("ent: RepoSelect.Bools returned %d results when one was expected", len(v))
+		err = fmt.Errorf("ent: RepositorySelect.Bools returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // BoolX is like Bool, but panics if an error occurs.
-func (rs *RepoSelect) BoolX(ctx context.Context) bool {
+func (rs *RepositorySelect) BoolX(ctx context.Context) bool {
 	v, err := rs.Bool(ctx)
 	if err != nil {
 		panic(err)
@@ -1385,7 +1181,7 @@ func (rs *RepoSelect) BoolX(ctx context.Context) bool {
 	return v
 }
 
-func (rs *RepoSelect) sqlScan(ctx context.Context, v interface{}) error {
+func (rs *RepositorySelect) sqlScan(ctx context.Context, v interface{}) error {
 	rows := &sql.Rows{}
 	query, args := rs.sql.Query()
 	if err := rs.driver.Query(ctx, query, args, rows); err != nil {

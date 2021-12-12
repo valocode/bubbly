@@ -51,7 +51,7 @@ func (Release) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("dependencies", Release.Type).From("subreleases"),
 		edge.From("commit", GitCommit.Type).Ref("release").Unique().Required(),
-		edge.From("head_of", Repo.Type).Ref("head").Unique(),
+		edge.From("head_of", Repository.Type).Ref("head").Unique(),
 		edge.From("log", ReleaseEntry.Type).Ref("release"),
 		edge.From("violations", ReleasePolicyViolation.Type).Ref("release"),
 		edge.From("artifacts", Artifact.Type).Ref("release"),
@@ -91,7 +91,7 @@ func updateReleaseHead(next ent.Mutator) ent.Mutator {
 		client := m.Client()
 		dbCommit, err := client.GitCommit.Query().
 			Where(gitcommit.ID(cID)).
-			WithRepo(func(rq *gen.RepoQuery) {
+			WithRepository(func(rq *gen.RepositoryQuery) {
 				rq.WithHead(func(rq *gen.ReleaseQuery) {
 					rq.WithCommit()
 				})
@@ -99,7 +99,7 @@ func updateReleaseHead(next ent.Mutator) ent.Mutator {
 		if err != nil {
 			return nil, fmt.Errorf("error quering commit and repo data for release: %w", err)
 		}
-		dbRepo := dbCommit.Edges.Repo
+		dbRepo := dbCommit.Edges.Repository
 		if dbRepo == nil {
 			return nil, fmt.Errorf("release commit does not have a repo")
 		}
@@ -108,7 +108,7 @@ func updateReleaseHead(next ent.Mutator) ent.Mutator {
 			// If not found, then the repo does not have a head yet, so assign this
 			m.SetHeadOfID(dbRepo.ID)
 			if dbCommit.Branch == "master" {
-				_, err := client.Repo.UpdateOne(dbRepo).
+				_, err := client.Repository.UpdateOne(dbRepo).
 					SetDefaultBranch("master").
 					Save(ctx)
 				if err != nil {

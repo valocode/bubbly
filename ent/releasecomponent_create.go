@@ -116,9 +116,7 @@ func (rcc *ReleaseComponentCreate) Save(ctx context.Context) (*ReleaseComponent,
 		err  error
 		node *ReleaseComponent
 	)
-	if err := rcc.defaults(); err != nil {
-		return nil, err
-	}
+	rcc.defaults()
 	if len(rcc.hooks) == 0 {
 		if err = rcc.check(); err != nil {
 			return nil, err
@@ -177,12 +175,11 @@ func (rcc *ReleaseComponentCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (rcc *ReleaseComponentCreate) defaults() error {
+func (rcc *ReleaseComponentCreate) defaults() {
 	if _, ok := rcc.mutation.GetType(); !ok {
 		v := releasecomponent.DefaultType
 		rcc.mutation.SetType(v)
 	}
-	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

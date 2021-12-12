@@ -6,19 +6,19 @@ import (
 
 type (
 	ReleaseCreateRequest struct {
-		Project *ent.ProjectModelCreate   `json:"project,omitempty" validate:"required"`
-		Repo    *ent.RepoModelCreate      `json:"repo,omitempty" validate:"required"`
-		Commit  *ent.GitCommitModelCreate `json:"commit,omitempty" validate:"required"`
-		Release *ent.ReleaseModelCreate   `json:"release,omitempty" validate:"required"`
+		Project    *string                    `json:"project,omitempty" validate:"required"`
+		Repository *ent.RepositoryModelCreate `json:"repository,omitempty" validate:"required"`
+		Commit     *ent.GitCommitModelCreate  `json:"commit,omitempty" validate:"required"`
+		Release    *ent.ReleaseModelCreate    `json:"release,omitempty" validate:"required"`
 	}
 
 	ReleaseGetRequest struct {
-		Commit   string `json:"commit,omitempty" query:"commit"`
-		Repos    string `json:"repos,omitempty" query:"repos"`
-		Projects string `json:"projects,omitempty" query:"projects"`
-		Policies bool   `json:"policies,string" query:"policies"`
-		Log      bool   `json:"log,string" query:"log"`
-		HeadOnly bool   `json:"head_only,string" query:"head_only"`
+		Commit       string `json:"commit,omitempty" query:"commit"`
+		Repositories string `json:"repositories,omitempty" query:"repositories"`
+		Projects     string `json:"projects,omitempty" query:"projects"`
+		Policies     bool   `json:"policies,string" query:"policies"`
+		Log          bool   `json:"log,string" query:"log"`
+		HeadOnly     bool   `json:"head_only,string" query:"head_only"`
 
 		SortBy string `json:"sort_by,omitempty" query:"sort_by"`
 	}
@@ -36,15 +36,15 @@ type (
 	}
 	Release struct {
 		Project    *ent.ProjectModelRead                  `json:"project,omitempty" validate:"required"`
-		Repo       *ent.RepoModelRead                     `json:"repo,omitempty" validate:"required"`
+		Repository *ent.RepositoryModelRead               `json:"repository,omitempty" validate:"required"`
 		Commit     *ent.GitCommitModelRead                `json:"commit,omitempty" validate:"required"`
 		Release    *ent.ReleaseModelRead                  `json:"release,omitempty" validate:"required"`
 		Policies   []*ent.ReleasePolicyModelRead          `json:"policies,omitempty" validate:"dive,required"`
 		Violations []*ent.ReleasePolicyViolationModelRead `json:"violations,omitempty" validate:"dive,required"`
 		Entries    []*ent.ReleaseEntryModelRead           `json:"entries,omitempty" validate:"dive,required"`
 	}
-	ArtifactLogRequest struct {
-		Artifact *ent.ArtifactModelCreate `json:"artifact,omitempty"`
-		Commit   *string                  `json:"commit,omitempty"`
-	}
+	// ArtifactLogRequest struct {
+	// 	Artifact *ent.ArtifactModelCreate `json:"artifact,omitempty"`
+	// 	Commit   *string                  `json:"commit,omitempty"`
+	// }
 )

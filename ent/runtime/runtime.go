@@ -16,11 +16,10 @@ import (
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/releasecomponent"
 	"github.com/valocode/bubbly/ent/releaseentry"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	"github.com/valocode/bubbly/ent/schema"
 	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
@@ -183,8 +182,6 @@ func init() {
 	releaseDescVersion := releaseFields[1].Descriptor()
 	// release.VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	release.VersionValidator = releaseDescVersion.Validators[0].(func(string) error)
-	releasecomponentHooks := schema.ReleaseComponent{}.Hooks()
-	releasecomponent.Hooks[0] = releasecomponentHooks[0]
 	releasecomponentFields := schema.ReleaseComponent{}.Fields()
 	_ = releasecomponentFields
 	releaseentryFields := schema.ReleaseEntry{}.Fields()
@@ -223,18 +220,18 @@ func init() {
 	releasepolicyviolationDescMessage := releasepolicyviolationFields[0].Descriptor()
 	// releasepolicyviolation.MessageValidator is a validator for the "message" field. It is called by the builders before save.
 	releasepolicyviolation.MessageValidator = releasepolicyviolationDescMessage.Validators[0].(func(string) error)
-	repoFields := schema.Repo{}.Fields()
-	_ = repoFields
-	// repoDescName is the schema descriptor for name field.
-	repoDescName := repoFields[0].Descriptor()
-	// repo.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	repo.NameValidator = repoDescName.Validators[0].(func(string) error)
-	// repoDescDefaultBranch is the schema descriptor for default_branch field.
-	repoDescDefaultBranch := repoFields[1].Descriptor()
-	// repo.DefaultDefaultBranch holds the default value on creation for the default_branch field.
-	repo.DefaultDefaultBranch = repoDescDefaultBranch.Default.(string)
-	// repo.DefaultBranchValidator is a validator for the "default_branch" field. It is called by the builders before save.
-	repo.DefaultBranchValidator = repoDescDefaultBranch.Validators[0].(func(string) error)
+	repositoryFields := schema.Repository{}.Fields()
+	_ = repositoryFields
+	// repositoryDescName is the schema descriptor for name field.
+	repositoryDescName := repositoryFields[0].Descriptor()
+	// repository.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	repository.NameValidator = repositoryDescName.Validators[0].(func(string) error)
+	// repositoryDescDefaultBranch is the schema descriptor for default_branch field.
+	repositoryDescDefaultBranch := repositoryFields[1].Descriptor()
+	// repository.DefaultDefaultBranch holds the default value on creation for the default_branch field.
+	repository.DefaultDefaultBranch = repositoryDescDefaultBranch.Default.(string)
+	// repository.DefaultBranchValidator is a validator for the "default_branch" field. It is called by the builders before save.
+	repository.DefaultBranchValidator = repositoryDescDefaultBranch.Validators[0].(func(string) error)
 	spdxlicenseHooks := schema.SPDXLicense{}.Hooks()
 	spdxlicense.Hooks[0] = spdxlicenseHooks[0]
 	spdxlicenseFields := schema.SPDXLicense{}.Fields()

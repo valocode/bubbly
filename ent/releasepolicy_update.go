@@ -12,10 +12,8 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
-	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
-	"github.com/valocode/bubbly/ent/repo"
 )
 
 // ReleasePolicyUpdate is the builder for updating ReleasePolicy entities.
@@ -54,36 +52,6 @@ func (rpu *ReleasePolicyUpdate) SetOwner(o *Organization) *ReleasePolicyUpdate {
 	return rpu.SetOwnerID(o.ID)
 }
 
-// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
-func (rpu *ReleasePolicyUpdate) AddProjectIDs(ids ...int) *ReleasePolicyUpdate {
-	rpu.mutation.AddProjectIDs(ids...)
-	return rpu
-}
-
-// AddProjects adds the "projects" edges to the Project entity.
-func (rpu *ReleasePolicyUpdate) AddProjects(p ...*Project) *ReleasePolicyUpdate {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return rpu.AddProjectIDs(ids...)
-}
-
-// AddRepoIDs adds the "repos" edge to the Repo entity by IDs.
-func (rpu *ReleasePolicyUpdate) AddRepoIDs(ids ...int) *ReleasePolicyUpdate {
-	rpu.mutation.AddRepoIDs(ids...)
-	return rpu
-}
-
-// AddRepos adds the "repos" edges to the Repo entity.
-func (rpu *ReleasePolicyUpdate) AddRepos(r ...*Repo) *ReleasePolicyUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return rpu.AddRepoIDs(ids...)
-}
-
 // AddViolationIDs adds the "violations" edge to the ReleasePolicyViolation entity by IDs.
 func (rpu *ReleasePolicyUpdate) AddViolationIDs(ids ...int) *ReleasePolicyUpdate {
 	rpu.mutation.AddViolationIDs(ids...)
@@ -108,48 +76,6 @@ func (rpu *ReleasePolicyUpdate) Mutation() *ReleasePolicyMutation {
 func (rpu *ReleasePolicyUpdate) ClearOwner() *ReleasePolicyUpdate {
 	rpu.mutation.ClearOwner()
 	return rpu
-}
-
-// ClearProjects clears all "projects" edges to the Project entity.
-func (rpu *ReleasePolicyUpdate) ClearProjects() *ReleasePolicyUpdate {
-	rpu.mutation.ClearProjects()
-	return rpu
-}
-
-// RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
-func (rpu *ReleasePolicyUpdate) RemoveProjectIDs(ids ...int) *ReleasePolicyUpdate {
-	rpu.mutation.RemoveProjectIDs(ids...)
-	return rpu
-}
-
-// RemoveProjects removes "projects" edges to Project entities.
-func (rpu *ReleasePolicyUpdate) RemoveProjects(p ...*Project) *ReleasePolicyUpdate {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return rpu.RemoveProjectIDs(ids...)
-}
-
-// ClearRepos clears all "repos" edges to the Repo entity.
-func (rpu *ReleasePolicyUpdate) ClearRepos() *ReleasePolicyUpdate {
-	rpu.mutation.ClearRepos()
-	return rpu
-}
-
-// RemoveRepoIDs removes the "repos" edge to Repo entities by IDs.
-func (rpu *ReleasePolicyUpdate) RemoveRepoIDs(ids ...int) *ReleasePolicyUpdate {
-	rpu.mutation.RemoveRepoIDs(ids...)
-	return rpu
-}
-
-// RemoveRepos removes "repos" edges to Repo entities.
-func (rpu *ReleasePolicyUpdate) RemoveRepos(r ...*Repo) *ReleasePolicyUpdate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return rpu.RemoveRepoIDs(ids...)
 }
 
 // ClearViolations clears all "violations" edges to the ReleasePolicyViolation entity.
@@ -318,114 +244,6 @@ func (rpu *ReleasePolicyUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if rpu.mutation.ProjectsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ProjectsTable,
-			Columns: releasepolicy.ProjectsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rpu.mutation.RemovedProjectsIDs(); len(nodes) > 0 && !rpu.mutation.ProjectsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ProjectsTable,
-			Columns: releasepolicy.ProjectsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rpu.mutation.ProjectsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ProjectsTable,
-			Columns: releasepolicy.ProjectsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if rpu.mutation.ReposCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ReposTable,
-			Columns: releasepolicy.ReposPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: repo.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rpu.mutation.RemovedReposIDs(); len(nodes) > 0 && !rpu.mutation.ReposCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ReposTable,
-			Columns: releasepolicy.ReposPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: repo.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rpu.mutation.ReposIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ReposTable,
-			Columns: releasepolicy.ReposPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: repo.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if rpu.mutation.ViolationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -522,36 +340,6 @@ func (rpuo *ReleasePolicyUpdateOne) SetOwner(o *Organization) *ReleasePolicyUpda
 	return rpuo.SetOwnerID(o.ID)
 }
 
-// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
-func (rpuo *ReleasePolicyUpdateOne) AddProjectIDs(ids ...int) *ReleasePolicyUpdateOne {
-	rpuo.mutation.AddProjectIDs(ids...)
-	return rpuo
-}
-
-// AddProjects adds the "projects" edges to the Project entity.
-func (rpuo *ReleasePolicyUpdateOne) AddProjects(p ...*Project) *ReleasePolicyUpdateOne {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return rpuo.AddProjectIDs(ids...)
-}
-
-// AddRepoIDs adds the "repos" edge to the Repo entity by IDs.
-func (rpuo *ReleasePolicyUpdateOne) AddRepoIDs(ids ...int) *ReleasePolicyUpdateOne {
-	rpuo.mutation.AddRepoIDs(ids...)
-	return rpuo
-}
-
-// AddRepos adds the "repos" edges to the Repo entity.
-func (rpuo *ReleasePolicyUpdateOne) AddRepos(r ...*Repo) *ReleasePolicyUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return rpuo.AddRepoIDs(ids...)
-}
-
 // AddViolationIDs adds the "violations" edge to the ReleasePolicyViolation entity by IDs.
 func (rpuo *ReleasePolicyUpdateOne) AddViolationIDs(ids ...int) *ReleasePolicyUpdateOne {
 	rpuo.mutation.AddViolationIDs(ids...)
@@ -576,48 +364,6 @@ func (rpuo *ReleasePolicyUpdateOne) Mutation() *ReleasePolicyMutation {
 func (rpuo *ReleasePolicyUpdateOne) ClearOwner() *ReleasePolicyUpdateOne {
 	rpuo.mutation.ClearOwner()
 	return rpuo
-}
-
-// ClearProjects clears all "projects" edges to the Project entity.
-func (rpuo *ReleasePolicyUpdateOne) ClearProjects() *ReleasePolicyUpdateOne {
-	rpuo.mutation.ClearProjects()
-	return rpuo
-}
-
-// RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
-func (rpuo *ReleasePolicyUpdateOne) RemoveProjectIDs(ids ...int) *ReleasePolicyUpdateOne {
-	rpuo.mutation.RemoveProjectIDs(ids...)
-	return rpuo
-}
-
-// RemoveProjects removes "projects" edges to Project entities.
-func (rpuo *ReleasePolicyUpdateOne) RemoveProjects(p ...*Project) *ReleasePolicyUpdateOne {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return rpuo.RemoveProjectIDs(ids...)
-}
-
-// ClearRepos clears all "repos" edges to the Repo entity.
-func (rpuo *ReleasePolicyUpdateOne) ClearRepos() *ReleasePolicyUpdateOne {
-	rpuo.mutation.ClearRepos()
-	return rpuo
-}
-
-// RemoveRepoIDs removes the "repos" edge to Repo entities by IDs.
-func (rpuo *ReleasePolicyUpdateOne) RemoveRepoIDs(ids ...int) *ReleasePolicyUpdateOne {
-	rpuo.mutation.RemoveRepoIDs(ids...)
-	return rpuo
-}
-
-// RemoveRepos removes "repos" edges to Repo entities.
-func (rpuo *ReleasePolicyUpdateOne) RemoveRepos(r ...*Repo) *ReleasePolicyUpdateOne {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return rpuo.RemoveRepoIDs(ids...)
 }
 
 // ClearViolations clears all "violations" edges to the ReleasePolicyViolation entity.
@@ -802,114 +548,6 @@ func (rpuo *ReleasePolicyUpdateOne) sqlSave(ctx context.Context) (_node *Release
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: organization.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if rpuo.mutation.ProjectsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ProjectsTable,
-			Columns: releasepolicy.ProjectsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rpuo.mutation.RemovedProjectsIDs(); len(nodes) > 0 && !rpuo.mutation.ProjectsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ProjectsTable,
-			Columns: releasepolicy.ProjectsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rpuo.mutation.ProjectsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ProjectsTable,
-			Columns: releasepolicy.ProjectsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if rpuo.mutation.ReposCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ReposTable,
-			Columns: releasepolicy.ReposPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: repo.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rpuo.mutation.RemovedReposIDs(); len(nodes) > 0 && !rpuo.mutation.ReposCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ReposTable,
-			Columns: releasepolicy.ReposPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: repo.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rpuo.mutation.ReposIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ReposTable,
-			Columns: releasepolicy.ReposPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: repo.FieldID,
 				},
 			},
 		}

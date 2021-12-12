@@ -14,10 +14,8 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
-	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
-	"github.com/valocode/bubbly/ent/repo"
 )
 
 // ReleasePolicyQuery is the builder for querying ReleasePolicy entities.
@@ -31,8 +29,6 @@ type ReleasePolicyQuery struct {
 	predicates []predicate.ReleasePolicy
 	// eager-loading edges.
 	withOwner      *OrganizationQuery
-	withProjects   *ProjectQuery
-	withRepos      *RepoQuery
 	withViolations *ReleasePolicyViolationQuery
 	withFKs        bool
 	// intermediate query (i.e. traversal path).
@@ -86,50 +82,6 @@ func (rpq *ReleasePolicyQuery) QueryOwner() *OrganizationQuery {
 			sqlgraph.From(releasepolicy.Table, releasepolicy.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, releasepolicy.OwnerTable, releasepolicy.OwnerColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryProjects chains the current query on the "projects" edge.
-func (rpq *ReleasePolicyQuery) QueryProjects() *ProjectQuery {
-	query := &ProjectQuery{config: rpq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rpq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rpq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(releasepolicy.Table, releasepolicy.FieldID, selector),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, releasepolicy.ProjectsTable, releasepolicy.ProjectsPrimaryKey...),
-		)
-		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryRepos chains the current query on the "repos" edge.
-func (rpq *ReleasePolicyQuery) QueryRepos() *RepoQuery {
-	query := &RepoQuery{config: rpq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rpq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rpq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(releasepolicy.Table, releasepolicy.FieldID, selector),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, releasepolicy.ReposTable, releasepolicy.ReposPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
 		return fromU, nil
@@ -341,8 +293,6 @@ func (rpq *ReleasePolicyQuery) Clone() *ReleasePolicyQuery {
 		order:          append([]OrderFunc{}, rpq.order...),
 		predicates:     append([]predicate.ReleasePolicy{}, rpq.predicates...),
 		withOwner:      rpq.withOwner.Clone(),
-		withProjects:   rpq.withProjects.Clone(),
-		withRepos:      rpq.withRepos.Clone(),
 		withViolations: rpq.withViolations.Clone(),
 		// clone intermediate query.
 		sql:  rpq.sql.Clone(),
@@ -358,28 +308,6 @@ func (rpq *ReleasePolicyQuery) WithOwner(opts ...func(*OrganizationQuery)) *Rele
 		opt(query)
 	}
 	rpq.withOwner = query
-	return rpq
-}
-
-// WithProjects tells the query-builder to eager-load the nodes that are connected to
-// the "projects" edge. The optional arguments are used to configure the query builder of the edge.
-func (rpq *ReleasePolicyQuery) WithProjects(opts ...func(*ProjectQuery)) *ReleasePolicyQuery {
-	query := &ProjectQuery{config: rpq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	rpq.withProjects = query
-	return rpq
-}
-
-// WithRepos tells the query-builder to eager-load the nodes that are connected to
-// the "repos" edge. The optional arguments are used to configure the query builder of the edge.
-func (rpq *ReleasePolicyQuery) WithRepos(opts ...func(*RepoQuery)) *ReleasePolicyQuery {
-	query := &RepoQuery{config: rpq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	rpq.withRepos = query
 	return rpq
 }
 
@@ -460,10 +388,8 @@ func (rpq *ReleasePolicyQuery) sqlAll(ctx context.Context) ([]*ReleasePolicy, er
 		nodes       = []*ReleasePolicy{}
 		withFKs     = rpq.withFKs
 		_spec       = rpq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [2]bool{
 			rpq.withOwner != nil,
-			rpq.withProjects != nil,
-			rpq.withRepos != nil,
 			rpq.withViolations != nil,
 		}
 	)
@@ -518,136 +444,6 @@ func (rpq *ReleasePolicyQuery) sqlAll(ctx context.Context) ([]*ReleasePolicy, er
 			}
 			for i := range nodes {
 				nodes[i].Edges.Owner = n
-			}
-		}
-	}
-
-	if query := rpq.withProjects; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*ReleasePolicy, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Projects = []*Project{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*ReleasePolicy)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: false,
-				Table:   releasepolicy.ProjectsTable,
-				Columns: releasepolicy.ProjectsPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(releasepolicy.ProjectsPrimaryKey[0], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, rpq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "projects": %w`, err)
-		}
-		query.Where(project.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "projects" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Projects = append(nodes[i].Edges.Projects, n)
-			}
-		}
-	}
-
-	if query := rpq.withRepos; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*ReleasePolicy, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Repos = []*Repo{}
-		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*ReleasePolicy)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: false,
-				Table:   releasepolicy.ReposTable,
-				Columns: releasepolicy.ReposPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(releasepolicy.ReposPrimaryKey[0], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, rpq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "repos": %w`, err)
-		}
-		query.Where(repo.IDIn(edgeids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected "repos" node returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Repos = append(nodes[i].Edges.Repos, n)
 			}
 		}
 	}

@@ -56,7 +56,7 @@ func New(bCtx *config.BubblyConfig) *cobra.Command {
 			color.Green("Release Created!")
 			// Print the release info nicely formatted
 			releaseInfo := []string{
-				"Repo: | " + *req.Repo.Name,
+				"Repo: | " + *req.Repository.Name,
 				"Commit: | " + *req.Commit.Hash,
 				"Tag: | " + tag,
 				"Branch: | " + *req.Commit.Branch,

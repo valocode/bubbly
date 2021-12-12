@@ -230,15 +230,15 @@ func (f ReleaseVulnerabilityFunc) Mutate(ctx context.Context, m ent.Mutation) (e
 	return f(ctx, mv)
 }
 
-// The RepoFunc type is an adapter to allow the use of ordinary
-// function as Repo mutator.
-type RepoFunc func(context.Context, *ent.RepoMutation) (ent.Value, error)
+// The RepositoryFunc type is an adapter to allow the use of ordinary
+// function as Repository mutator.
+type RepositoryFunc func(context.Context, *ent.RepositoryMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f RepoFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.RepoMutation)
+func (f RepositoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.RepositoryMutation)
 	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RepoMutation", m)
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RepositoryMutation", m)
 	}
 	return f(ctx, mv)
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/valocode/bubbly/ent/organization"
 	"github.com/valocode/bubbly/ent/predicate"
 	"github.com/valocode/bubbly/ent/project"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // OrganizationQuery is the builder for querying Organization entities.
@@ -28,8 +28,8 @@ type OrganizationQuery struct {
 	fields     []string
 	predicates []predicate.Organization
 	// eager-loading edges.
-	withProjects *ProjectQuery
-	withRepos    *RepoQuery
+	withProjects     *ProjectQuery
+	withRepositories *RepositoryQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -88,9 +88,9 @@ func (oq *OrganizationQuery) QueryProjects() *ProjectQuery {
 	return query
 }
 
-// QueryRepos chains the current query on the "repos" edge.
-func (oq *OrganizationQuery) QueryRepos() *RepoQuery {
-	query := &RepoQuery{config: oq.config}
+// QueryRepositories chains the current query on the "repositories" edge.
+func (oq *OrganizationQuery) QueryRepositories() *RepositoryQuery {
+	query := &RepositoryQuery{config: oq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := oq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -101,8 +101,8 @@ func (oq *OrganizationQuery) QueryRepos() *RepoQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, selector),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, organization.ReposTable, organization.ReposColumn),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, organization.RepositoriesTable, organization.RepositoriesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
 		return fromU, nil
@@ -286,13 +286,13 @@ func (oq *OrganizationQuery) Clone() *OrganizationQuery {
 		return nil
 	}
 	return &OrganizationQuery{
-		config:       oq.config,
-		limit:        oq.limit,
-		offset:       oq.offset,
-		order:        append([]OrderFunc{}, oq.order...),
-		predicates:   append([]predicate.Organization{}, oq.predicates...),
-		withProjects: oq.withProjects.Clone(),
-		withRepos:    oq.withRepos.Clone(),
+		config:           oq.config,
+		limit:            oq.limit,
+		offset:           oq.offset,
+		order:            append([]OrderFunc{}, oq.order...),
+		predicates:       append([]predicate.Organization{}, oq.predicates...),
+		withProjects:     oq.withProjects.Clone(),
+		withRepositories: oq.withRepositories.Clone(),
 		// clone intermediate query.
 		sql:  oq.sql.Clone(),
 		path: oq.path,
@@ -310,14 +310,14 @@ func (oq *OrganizationQuery) WithProjects(opts ...func(*ProjectQuery)) *Organiza
 	return oq
 }
 
-// WithRepos tells the query-builder to eager-load the nodes that are connected to
-// the "repos" edge. The optional arguments are used to configure the query builder of the edge.
-func (oq *OrganizationQuery) WithRepos(opts ...func(*RepoQuery)) *OrganizationQuery {
-	query := &RepoQuery{config: oq.config}
+// WithRepositories tells the query-builder to eager-load the nodes that are connected to
+// the "repositories" edge. The optional arguments are used to configure the query builder of the edge.
+func (oq *OrganizationQuery) WithRepositories(opts ...func(*RepositoryQuery)) *OrganizationQuery {
+	query := &RepositoryQuery{config: oq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	oq.withRepos = query
+	oq.withRepositories = query
 	return oq
 }
 
@@ -388,7 +388,7 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context) ([]*Organization, error
 		_spec       = oq.querySpec()
 		loadedTypes = [2]bool{
 			oq.withProjects != nil,
-			oq.withRepos != nil,
+			oq.withRepositories != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -440,32 +440,32 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context) ([]*Organization, error
 		}
 	}
 
-	if query := oq.withRepos; query != nil {
+	if query := oq.withRepositories; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[int]*Organization)
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Repos = []*Repo{}
+			nodes[i].Edges.Repositories = []*Repository{}
 		}
 		query.withFKs = true
-		query.Where(predicate.Repo(func(s *sql.Selector) {
-			s.Where(sql.InValues(organization.ReposColumn, fks...))
+		query.Where(predicate.Repository(func(s *sql.Selector) {
+			s.Where(sql.InValues(organization.RepositoriesColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.repo_owner
+			fk := n.repository_owner
 			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "repo_owner" is nil for node %v`, n.ID)
+				return nil, fmt.Errorf(`foreign-key "repository_owner" is nil for node %v`, n.ID)
 			}
 			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "repo_owner" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "repository_owner" returned %v for node %v`, *fk, n.ID)
 			}
-			node.Edges.Repos = append(node.Edges.Repos, n)
+			node.Edges.Repositories = append(node.Edges.Repositories, n)
 		}
 	}
 

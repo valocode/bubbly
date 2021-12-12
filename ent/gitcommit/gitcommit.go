@@ -15,19 +15,19 @@ const (
 	FieldTag = "tag"
 	// FieldTime holds the string denoting the time field in the database.
 	FieldTime = "time"
-	// EdgeRepo holds the string denoting the repo edge name in mutations.
-	EdgeRepo = "repo"
+	// EdgeRepository holds the string denoting the repository edge name in mutations.
+	EdgeRepository = "repository"
 	// EdgeRelease holds the string denoting the release edge name in mutations.
 	EdgeRelease = "release"
 	// Table holds the table name of the gitcommit in the database.
 	Table = "commit"
-	// RepoTable is the table that holds the repo relation/edge.
-	RepoTable = "commit"
-	// RepoInverseTable is the table name for the Repo entity.
-	// It exists in this package in order to avoid circular dependency with the "repo" package.
-	RepoInverseTable = "repo"
-	// RepoColumn is the table column denoting the repo relation/edge.
-	RepoColumn = "git_commit_repo"
+	// RepositoryTable is the table that holds the repository relation/edge.
+	RepositoryTable = "commit"
+	// RepositoryInverseTable is the table name for the Repository entity.
+	// It exists in this package in order to avoid circular dependency with the "repository" package.
+	RepositoryInverseTable = "repositories"
+	// RepositoryColumn is the table column denoting the repository relation/edge.
+	RepositoryColumn = "git_commit_repository"
 	// ReleaseTable is the table that holds the release relation/edge.
 	ReleaseTable = "release"
 	// ReleaseInverseTable is the table name for the Release entity.
@@ -49,7 +49,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "commit"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"git_commit_repo",
+	"git_commit_repository",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

@@ -26,8 +26,8 @@ type Organization struct {
 type OrganizationEdges struct {
 	// Projects holds the value of the projects edge.
 	Projects []*Project `json:"projects,omitempty"`
-	// Repos holds the value of the repos edge.
-	Repos []*Repo `json:"repos,omitempty"`
+	// Repositories holds the value of the repositories edge.
+	Repositories []*Repository `json:"repositories,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -42,13 +42,13 @@ func (e OrganizationEdges) ProjectsOrErr() ([]*Project, error) {
 	return nil, &NotLoadedError{edge: "projects"}
 }
 
-// ReposOrErr returns the Repos value or an error if the edge
+// RepositoriesOrErr returns the Repositories value or an error if the edge
 // was not loaded in eager-loading.
-func (e OrganizationEdges) ReposOrErr() ([]*Repo, error) {
+func (e OrganizationEdges) RepositoriesOrErr() ([]*Repository, error) {
 	if e.loadedTypes[1] {
-		return e.Repos, nil
+		return e.Repositories, nil
 	}
-	return nil, &NotLoadedError{edge: "repos"}
+	return nil, &NotLoadedError{edge: "repositories"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -97,9 +97,9 @@ func (o *Organization) QueryProjects() *ProjectQuery {
 	return (&OrganizationClient{config: o.config}).QueryProjects(o)
 }
 
-// QueryRepos queries the "repos" edge of the Organization entity.
-func (o *Organization) QueryRepos() *RepoQuery {
-	return (&OrganizationClient{config: o.config}).QueryRepos(o)
+// QueryRepositories queries the "repositories" edge of the Organization entity.
+func (o *Organization) QueryRepositories() *RepositoryQuery {
+	return (&OrganizationClient{config: o.config}).QueryRepositories(o)
 }
 
 // Update returns a builder for updating this Organization.

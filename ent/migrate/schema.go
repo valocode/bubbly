@@ -171,7 +171,7 @@ var (
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"evaluate_release", "monitor"}},
 		{Name: "time", Type: field.TypeTime},
 		{Name: "event_release", Type: field.TypeInt, Nullable: true},
-		{Name: "event_repo", Type: field.TypeInt, Nullable: true},
+		{Name: "event_repository", Type: field.TypeInt, Nullable: true},
 		{Name: "event_project", Type: field.TypeInt, Nullable: true},
 	}
 	// EventTable holds the schema information for the "event" table.
@@ -187,9 +187,9 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "event_repo_repo",
+				Symbol:     "event_repositories_repository",
 				Columns:    []*schema.Column{EventColumns[6]},
-				RefColumns: []*schema.Column{RepoColumns[0]},
+				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
@@ -207,7 +207,7 @@ var (
 		{Name: "branch", Type: field.TypeString},
 		{Name: "tag", Type: field.TypeString, Nullable: true},
 		{Name: "time", Type: field.TypeTime},
-		{Name: "git_commit_repo", Type: field.TypeInt, Nullable: true},
+		{Name: "git_commit_repository", Type: field.TypeInt, Nullable: true},
 	}
 	// CommitTable holds the schema information for the "commit" table.
 	CommitTable = &schema.Table{
@@ -216,15 +216,15 @@ var (
 		PrimaryKey: []*schema.Column{CommitColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "commit_repo_repo",
+				Symbol:     "commit_repositories_repository",
 				Columns:    []*schema.Column{CommitColumns[5]},
-				RefColumns: []*schema.Column{RepoColumns[0]},
+				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "gitcommit_hash_git_commit_repo",
+				Name:    "gitcommit_hash_git_commit_repository",
 				Unique:  true,
 				Columns: []*schema.Column{CommitColumns[1], CommitColumns[5]},
 			},
@@ -304,7 +304,7 @@ var (
 		{Name: "version", Type: field.TypeString},
 		{Name: "labels", Type: field.TypeJSON, Nullable: true},
 		{Name: "git_commit_release", Type: field.TypeInt, Unique: true, Nullable: true},
-		{Name: "repo_head", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "repository_head", Type: field.TypeInt, Unique: true, Nullable: true},
 	}
 	// ReleaseTable holds the schema information for the "release" table.
 	ReleaseTable = &schema.Table{
@@ -319,9 +319,9 @@ var (
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "release_repo_head",
+				Symbol:     "release_repositories_head",
 				Columns:    []*schema.Column{ReleaseColumns[5]},
-				RefColumns: []*schema.Column{RepoColumns[0]},
+				RefColumns: []*schema.Column{RepositoriesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -511,39 +511,39 @@ var (
 			},
 		},
 	}
-	// RepoColumns holds the columns for the "repo" table.
-	RepoColumns = []*schema.Column{
+	// RepositoriesColumns holds the columns for the "repositories" table.
+	RepositoriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "default_branch", Type: field.TypeString, Default: "main"},
 		{Name: "labels", Type: field.TypeJSON, Nullable: true},
-		{Name: "repo_owner", Type: field.TypeInt, Nullable: true},
-		{Name: "repo_project", Type: field.TypeInt, Nullable: true},
+		{Name: "repository_owner", Type: field.TypeInt, Nullable: true},
+		{Name: "repository_project", Type: field.TypeInt, Nullable: true},
 	}
-	// RepoTable holds the schema information for the "repo" table.
-	RepoTable = &schema.Table{
-		Name:       "repo",
-		Columns:    RepoColumns,
-		PrimaryKey: []*schema.Column{RepoColumns[0]},
+	// RepositoriesTable holds the schema information for the "repositories" table.
+	RepositoriesTable = &schema.Table{
+		Name:       "repositories",
+		Columns:    RepositoriesColumns,
+		PrimaryKey: []*schema.Column{RepositoriesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "repo_organization_owner",
-				Columns:    []*schema.Column{RepoColumns[4]},
+				Symbol:     "repositories_organization_owner",
+				Columns:    []*schema.Column{RepositoriesColumns[4]},
 				RefColumns: []*schema.Column{OrganizationColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "repo_project_project",
-				Columns:    []*schema.Column{RepoColumns[5]},
+				Symbol:     "repositories_project_project",
+				Columns:    []*schema.Column{RepositoriesColumns[5]},
 				RefColumns: []*schema.Column{ProjectColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "repo_name_repo_owner",
+				Name:    "repository_name_repository_owner",
 				Unique:  true,
-				Columns: []*schema.Column{RepoColumns[1], RepoColumns[4]},
+				Columns: []*schema.Column{RepositoriesColumns[1], RepositoriesColumns[4]},
 			},
 		},
 	}
@@ -796,56 +796,6 @@ var (
 			},
 		},
 	}
-	// ReleasePolicyProjectsColumns holds the columns for the "release_policy_projects" table.
-	ReleasePolicyProjectsColumns = []*schema.Column{
-		{Name: "release_policy_id", Type: field.TypeInt},
-		{Name: "project_id", Type: field.TypeInt},
-	}
-	// ReleasePolicyProjectsTable holds the schema information for the "release_policy_projects" table.
-	ReleasePolicyProjectsTable = &schema.Table{
-		Name:       "release_policy_projects",
-		Columns:    ReleasePolicyProjectsColumns,
-		PrimaryKey: []*schema.Column{ReleasePolicyProjectsColumns[0], ReleasePolicyProjectsColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "release_policy_projects_release_policy_id",
-				Columns:    []*schema.Column{ReleasePolicyProjectsColumns[0]},
-				RefColumns: []*schema.Column{ReleasePolicyColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "release_policy_projects_project_id",
-				Columns:    []*schema.Column{ReleasePolicyProjectsColumns[1]},
-				RefColumns: []*schema.Column{ProjectColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
-	// ReleasePolicyReposColumns holds the columns for the "release_policy_repos" table.
-	ReleasePolicyReposColumns = []*schema.Column{
-		{Name: "release_policy_id", Type: field.TypeInt},
-		{Name: "repo_id", Type: field.TypeInt},
-	}
-	// ReleasePolicyReposTable holds the schema information for the "release_policy_repos" table.
-	ReleasePolicyReposTable = &schema.Table{
-		Name:       "release_policy_repos",
-		Columns:    ReleasePolicyReposColumns,
-		PrimaryKey: []*schema.Column{ReleasePolicyReposColumns[0], ReleasePolicyReposColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "release_policy_repos_release_policy_id",
-				Columns:    []*schema.Column{ReleasePolicyReposColumns[0]},
-				RefColumns: []*schema.Column{ReleasePolicyColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "release_policy_repos_repo_id",
-				Columns:    []*schema.Column{ReleasePolicyReposColumns[1]},
-				RefColumns: []*schema.Column{RepoColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// ReleaseVulnerabilityReviewsColumns holds the columns for the "release_vulnerability_reviews" table.
 	ReleaseVulnerabilityReviewsColumns = []*schema.Column{
 		{Name: "release_vulnerability_id", Type: field.TypeInt},
@@ -867,56 +817,6 @@ var (
 				Symbol:     "release_vulnerability_reviews_vulnerability_review_id",
 				Columns:    []*schema.Column{ReleaseVulnerabilityReviewsColumns[1]},
 				RefColumns: []*schema.Column{VulnerabilityReviewColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
-	// VulnerabilityReviewProjectsColumns holds the columns for the "vulnerability_review_projects" table.
-	VulnerabilityReviewProjectsColumns = []*schema.Column{
-		{Name: "vulnerability_review_id", Type: field.TypeInt},
-		{Name: "project_id", Type: field.TypeInt},
-	}
-	// VulnerabilityReviewProjectsTable holds the schema information for the "vulnerability_review_projects" table.
-	VulnerabilityReviewProjectsTable = &schema.Table{
-		Name:       "vulnerability_review_projects",
-		Columns:    VulnerabilityReviewProjectsColumns,
-		PrimaryKey: []*schema.Column{VulnerabilityReviewProjectsColumns[0], VulnerabilityReviewProjectsColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "vulnerability_review_projects_vulnerability_review_id",
-				Columns:    []*schema.Column{VulnerabilityReviewProjectsColumns[0]},
-				RefColumns: []*schema.Column{VulnerabilityReviewColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "vulnerability_review_projects_project_id",
-				Columns:    []*schema.Column{VulnerabilityReviewProjectsColumns[1]},
-				RefColumns: []*schema.Column{ProjectColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
-	// VulnerabilityReviewReposColumns holds the columns for the "vulnerability_review_repos" table.
-	VulnerabilityReviewReposColumns = []*schema.Column{
-		{Name: "vulnerability_review_id", Type: field.TypeInt},
-		{Name: "repo_id", Type: field.TypeInt},
-	}
-	// VulnerabilityReviewReposTable holds the schema information for the "vulnerability_review_repos" table.
-	VulnerabilityReviewReposTable = &schema.Table{
-		Name:       "vulnerability_review_repos",
-		Columns:    VulnerabilityReviewReposColumns,
-		PrimaryKey: []*schema.Column{VulnerabilityReviewReposColumns[0], VulnerabilityReviewReposColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "vulnerability_review_repos_vulnerability_review_id",
-				Columns:    []*schema.Column{VulnerabilityReviewReposColumns[0]},
-				RefColumns: []*schema.Column{VulnerabilityReviewColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "vulnerability_review_repos_repo_id",
-				Columns:    []*schema.Column{VulnerabilityReviewReposColumns[1]},
-				RefColumns: []*schema.Column{RepoColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -965,7 +865,7 @@ var (
 		ReleasePolicyTable,
 		ReleasePolicyViolationTable,
 		ReleaseVulnerabilityTable,
-		RepoTable,
+		RepositoriesTable,
 		SpdxLicenseTable,
 		TestCaseTable,
 		TestRunTable,
@@ -976,11 +876,7 @@ var (
 		ReleaseDependenciesTable,
 		ReleaseComponentScansTable,
 		ReleaseLicenseScansTable,
-		ReleasePolicyProjectsTable,
-		ReleasePolicyReposTable,
 		ReleaseVulnerabilityReviewsTable,
-		VulnerabilityReviewProjectsTable,
-		VulnerabilityReviewReposTable,
 		VulnerabilityReviewReleasesTable,
 	}
 )
@@ -1009,12 +905,12 @@ func init() {
 		Table: "component",
 	}
 	EventTable.ForeignKeys[0].RefTable = ReleaseTable
-	EventTable.ForeignKeys[1].RefTable = RepoTable
+	EventTable.ForeignKeys[1].RefTable = RepositoriesTable
 	EventTable.ForeignKeys[2].RefTable = ProjectTable
 	EventTable.Annotation = &entsql.Annotation{
 		Table: "event",
 	}
-	CommitTable.ForeignKeys[0].RefTable = RepoTable
+	CommitTable.ForeignKeys[0].RefTable = RepositoriesTable
 	CommitTable.Annotation = &entsql.Annotation{
 		Table: "commit",
 	}
@@ -1031,7 +927,7 @@ func init() {
 		Table: "project",
 	}
 	ReleaseTable.ForeignKeys[0].RefTable = CommitTable
-	ReleaseTable.ForeignKeys[1].RefTable = RepoTable
+	ReleaseTable.ForeignKeys[1].RefTable = RepositoriesTable
 	ReleaseTable.Annotation = &entsql.Annotation{
 		Table: "release",
 	}
@@ -1066,11 +962,8 @@ func init() {
 	ReleaseVulnerabilityTable.Annotation = &entsql.Annotation{
 		Table: "release_vulnerability",
 	}
-	RepoTable.ForeignKeys[0].RefTable = OrganizationTable
-	RepoTable.ForeignKeys[1].RefTable = ProjectTable
-	RepoTable.Annotation = &entsql.Annotation{
-		Table: "repo",
-	}
+	RepositoriesTable.ForeignKeys[0].RefTable = OrganizationTable
+	RepositoriesTable.ForeignKeys[1].RefTable = ProjectTable
 	SpdxLicenseTable.Annotation = &entsql.Annotation{
 		Table: "spdx_license",
 	}
@@ -1101,16 +994,8 @@ func init() {
 	ReleaseComponentScansTable.ForeignKeys[1].RefTable = CodeScanTable
 	ReleaseLicenseScansTable.ForeignKeys[0].RefTable = ReleaseLicenseTable
 	ReleaseLicenseScansTable.ForeignKeys[1].RefTable = CodeScanTable
-	ReleasePolicyProjectsTable.ForeignKeys[0].RefTable = ReleasePolicyTable
-	ReleasePolicyProjectsTable.ForeignKeys[1].RefTable = ProjectTable
-	ReleasePolicyReposTable.ForeignKeys[0].RefTable = ReleasePolicyTable
-	ReleasePolicyReposTable.ForeignKeys[1].RefTable = RepoTable
 	ReleaseVulnerabilityReviewsTable.ForeignKeys[0].RefTable = ReleaseVulnerabilityTable
 	ReleaseVulnerabilityReviewsTable.ForeignKeys[1].RefTable = VulnerabilityReviewTable
-	VulnerabilityReviewProjectsTable.ForeignKeys[0].RefTable = VulnerabilityReviewTable
-	VulnerabilityReviewProjectsTable.ForeignKeys[1].RefTable = ProjectTable
-	VulnerabilityReviewReposTable.ForeignKeys[0].RefTable = VulnerabilityReviewTable
-	VulnerabilityReviewReposTable.ForeignKeys[1].RefTable = RepoTable
 	VulnerabilityReviewReleasesTable.ForeignKeys[0].RefTable = VulnerabilityReviewTable
 	VulnerabilityReviewReleasesTable.ForeignKeys[1].RefTable = ReleaseTable
 }

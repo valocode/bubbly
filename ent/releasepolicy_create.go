@@ -10,10 +10,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/organization"
-	"github.com/valocode/bubbly/ent/project"
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
-	"github.com/valocode/bubbly/ent/repo"
 )
 
 // ReleasePolicyCreate is the builder for creating a ReleasePolicy entity.
@@ -44,36 +42,6 @@ func (rpc *ReleasePolicyCreate) SetOwnerID(id int) *ReleasePolicyCreate {
 // SetOwner sets the "owner" edge to the Organization entity.
 func (rpc *ReleasePolicyCreate) SetOwner(o *Organization) *ReleasePolicyCreate {
 	return rpc.SetOwnerID(o.ID)
-}
-
-// AddProjectIDs adds the "projects" edge to the Project entity by IDs.
-func (rpc *ReleasePolicyCreate) AddProjectIDs(ids ...int) *ReleasePolicyCreate {
-	rpc.mutation.AddProjectIDs(ids...)
-	return rpc
-}
-
-// AddProjects adds the "projects" edges to the Project entity.
-func (rpc *ReleasePolicyCreate) AddProjects(p ...*Project) *ReleasePolicyCreate {
-	ids := make([]int, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return rpc.AddProjectIDs(ids...)
-}
-
-// AddRepoIDs adds the "repos" edge to the Repo entity by IDs.
-func (rpc *ReleasePolicyCreate) AddRepoIDs(ids ...int) *ReleasePolicyCreate {
-	rpc.mutation.AddRepoIDs(ids...)
-	return rpc
-}
-
-// AddRepos adds the "repos" edges to the Repo entity.
-func (rpc *ReleasePolicyCreate) AddRepos(r ...*Repo) *ReleasePolicyCreate {
-	ids := make([]int, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
-	}
-	return rpc.AddRepoIDs(ids...)
 }
 
 // AddViolationIDs adds the "violations" edge to the ReleasePolicyViolation entity by IDs.
@@ -241,44 +209,6 @@ func (rpc *ReleasePolicyCreate) createSpec() (*ReleasePolicy, *sqlgraph.CreateSp
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.release_policy_owner = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rpc.mutation.ProjectsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ProjectsTable,
-			Columns: releasepolicy.ProjectsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: project.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rpc.mutation.ReposIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   releasepolicy.ReposTable,
-			Columns: releasepolicy.ReposPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: repo.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rpc.mutation.ViolationsIDs(); len(nodes) > 0 {

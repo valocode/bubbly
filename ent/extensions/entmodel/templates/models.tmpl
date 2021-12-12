@@ -30,6 +30,13 @@ import (
         return &{{ $n.Name }}ModelCreate{}
     }
 
+    func ({{ $receiver }} *{{ $n.Name }}ModelCreate) FromEnt(value *{{ $n.Name }}) *{{ $n.Name }}ModelCreate {
+        {{- range $f := fieldsModelCreate $n }}
+            {{ $receiver}}.{{ $f.StructField }} = &value.{{ $f.StructField }}
+        {{- end }}
+        return {{ $receiver }}
+    }
+
     {{- range $f := fieldsModelCreate $n }}
         func ({{ $receiver }} *{{ $n.Name }}ModelCreate) Set{{ $f.StructField }}(value {{ $f.Type.String }}) *{{ $n.Name }}ModelCreate {
             {{ $receiver }}.{{ $f.StructField }} = &value

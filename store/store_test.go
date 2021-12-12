@@ -8,7 +8,7 @@ import (
 	"github.com/valocode/bubbly/config"
 	"github.com/valocode/bubbly/ent/release"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 func TestStore(t *testing.T) {
@@ -33,7 +33,7 @@ func TestStore(t *testing.T) {
 	// Get the head of the demo repo
 	//
 	dbRelease, err := client.Release.Query().
-		Where(release.HasHeadOfWith(repo.Name("demo"))).
+		Where(release.HasHeadOfWith(repository.Name("demo"))).
 		WithHeadOf().
 		Only(ctx)
 	require.NoError(t, err)

@@ -25,6 +25,13 @@ type AdapterModelCreate struct {
 func NewAdapterModelCreate() *AdapterModelCreate {
 	return &AdapterModelCreate{}
 }
+
+func (a *AdapterModelCreate) FromEnt(value *Adapter) *AdapterModelCreate {
+	a.Name = &value.Name
+	a.Tag = &value.Tag
+	a.Module = &value.Module
+	return a
+}
 func (a *AdapterModelCreate) SetName(value string) *AdapterModelCreate {
 	a.Name = &value
 	return a
@@ -130,6 +137,15 @@ type ArtifactModelCreate struct {
 
 func NewArtifactModelCreate() *ArtifactModelCreate {
 	return &ArtifactModelCreate{}
+}
+
+func (a *ArtifactModelCreate) FromEnt(value *Artifact) *ArtifactModelCreate {
+	a.Name = &value.Name
+	a.Sha256 = &value.Sha256
+	a.Type = &value.Type
+	a.Time = &value.Time
+	a.Metadata = &value.Metadata
+	return a
 }
 func (a *ArtifactModelCreate) SetName(value string) *ArtifactModelCreate {
 	a.Name = &value
@@ -271,6 +287,15 @@ type CodeIssueModelCreate struct {
 func NewCodeIssueModelCreate() *CodeIssueModelCreate {
 	return &CodeIssueModelCreate{}
 }
+
+func (ci *CodeIssueModelCreate) FromEnt(value *CodeIssue) *CodeIssueModelCreate {
+	ci.RuleID = &value.RuleID
+	ci.Message = &value.Message
+	ci.Severity = &value.Severity
+	ci.Type = &value.Type
+	ci.Metadata = &value.Metadata
+	return ci
+}
 func (ci *CodeIssueModelCreate) SetRuleID(value string) *CodeIssueModelCreate {
 	ci.RuleID = &value
 	return ci
@@ -409,6 +434,13 @@ type CodeScanModelCreate struct {
 func NewCodeScanModelCreate() *CodeScanModelCreate {
 	return &CodeScanModelCreate{}
 }
+
+func (cs *CodeScanModelCreate) FromEnt(value *CodeScan) *CodeScanModelCreate {
+	cs.Tool = &value.Tool
+	cs.Time = &value.Time
+	cs.Metadata = &value.Metadata
+	return cs
+}
 func (cs *CodeScanModelCreate) SetTool(value string) *CodeScanModelCreate {
 	cs.Tool = &value
 	return cs
@@ -517,6 +549,18 @@ type ComponentModelCreate struct {
 
 func NewComponentModelCreate() *ComponentModelCreate {
 	return &ComponentModelCreate{}
+}
+
+func (c *ComponentModelCreate) FromEnt(value *Component) *ComponentModelCreate {
+	c.Scheme = &value.Scheme
+	c.Namespace = &value.Namespace
+	c.Name = &value.Name
+	c.Version = &value.Version
+	c.Description = &value.Description
+	c.URL = &value.URL
+	c.Metadata = &value.Metadata
+	c.Labels = &value.Labels
+	return c
 }
 func (c *ComponentModelCreate) SetScheme(value string) *ComponentModelCreate {
 	c.Scheme = &value
@@ -708,6 +752,14 @@ type EventModelCreate struct {
 func NewEventModelCreate() *EventModelCreate {
 	return &EventModelCreate{}
 }
+
+func (e *EventModelCreate) FromEnt(value *Event) *EventModelCreate {
+	e.Message = &value.Message
+	e.Status = &value.Status
+	e.Type = &value.Type
+	e.Time = &value.Time
+	return e
+}
 func (e *EventModelCreate) SetMessage(value string) *EventModelCreate {
 	e.Message = &value
 	return e
@@ -830,6 +882,14 @@ type GitCommitModelCreate struct {
 func NewGitCommitModelCreate() *GitCommitModelCreate {
 	return &GitCommitModelCreate{}
 }
+
+func (gc *GitCommitModelCreate) FromEnt(value *GitCommit) *GitCommitModelCreate {
+	gc.Hash = &value.Hash
+	gc.Branch = &value.Branch
+	gc.Tag = &value.Tag
+	gc.Time = &value.Time
+	return gc
+}
 func (gc *GitCommitModelCreate) SetHash(value string) *GitCommitModelCreate {
 	gc.Hash = &value
 	return gc
@@ -950,6 +1010,12 @@ type LicenseModelCreate struct {
 func NewLicenseModelCreate() *LicenseModelCreate {
 	return &LicenseModelCreate{}
 }
+
+func (l *LicenseModelCreate) FromEnt(value *License) *LicenseModelCreate {
+	l.LicenseID = &value.LicenseID
+	l.Name = &value.Name
+	return l
+}
 func (l *LicenseModelCreate) SetLicenseID(value string) *LicenseModelCreate {
 	l.LicenseID = &value
 	return l
@@ -1035,6 +1101,11 @@ type OrganizationModelCreate struct {
 func NewOrganizationModelCreate() *OrganizationModelCreate {
 	return &OrganizationModelCreate{}
 }
+
+func (o *OrganizationModelCreate) FromEnt(value *Organization) *OrganizationModelCreate {
+	o.Name = &value.Name
+	return o
+}
 func (o *OrganizationModelCreate) SetName(value string) *OrganizationModelCreate {
 	o.Name = &value
 	return o
@@ -1103,6 +1174,12 @@ type ProjectModelCreate struct {
 
 func NewProjectModelCreate() *ProjectModelCreate {
 	return &ProjectModelCreate{}
+}
+
+func (pr *ProjectModelCreate) FromEnt(value *Project) *ProjectModelCreate {
+	pr.Name = &value.Name
+	pr.Labels = &value.Labels
+	return pr
 }
 func (pr *ProjectModelCreate) SetName(value string) *ProjectModelCreate {
 	pr.Name = &value
@@ -1190,6 +1267,13 @@ type ReleaseModelCreate struct {
 
 func NewReleaseModelCreate() *ReleaseModelCreate {
 	return &ReleaseModelCreate{}
+}
+
+func (r *ReleaseModelCreate) FromEnt(value *Release) *ReleaseModelCreate {
+	r.Name = &value.Name
+	r.Version = &value.Version
+	r.Labels = &value.Labels
+	return r
 }
 func (r *ReleaseModelCreate) SetName(value string) *ReleaseModelCreate {
 	r.Name = &value
@@ -1294,6 +1378,12 @@ type ReleaseEntryModelCreate struct {
 func NewReleaseEntryModelCreate() *ReleaseEntryModelCreate {
 	return &ReleaseEntryModelCreate{}
 }
+
+func (re *ReleaseEntryModelCreate) FromEnt(value *ReleaseEntry) *ReleaseEntryModelCreate {
+	re.Type = &value.Type
+	re.Time = &value.Time
+	return re
+}
 func (re *ReleaseEntryModelCreate) SetType(value releaseentry.Type) *ReleaseEntryModelCreate {
 	re.Type = &value
 	return re
@@ -1379,6 +1469,12 @@ type ReleasePolicyModelCreate struct {
 
 func NewReleasePolicyModelCreate() *ReleasePolicyModelCreate {
 	return &ReleasePolicyModelCreate{}
+}
+
+func (rp *ReleasePolicyModelCreate) FromEnt(value *ReleasePolicy) *ReleasePolicyModelCreate {
+	rp.Name = &value.Name
+	rp.Module = &value.Module
+	return rp
 }
 func (rp *ReleasePolicyModelCreate) SetName(value string) *ReleasePolicyModelCreate {
 	rp.Name = &value
@@ -1466,6 +1562,13 @@ type ReleasePolicyViolationModelCreate struct {
 
 func NewReleasePolicyViolationModelCreate() *ReleasePolicyViolationModelCreate {
 	return &ReleasePolicyViolationModelCreate{}
+}
+
+func (rpv *ReleasePolicyViolationModelCreate) FromEnt(value *ReleasePolicyViolation) *ReleasePolicyViolationModelCreate {
+	rpv.Message = &value.Message
+	rpv.Type = &value.Type
+	rpv.Severity = &value.Severity
+	return rpv
 }
 func (rpv *ReleasePolicyViolationModelCreate) SetMessage(value string) *ReleasePolicyViolationModelCreate {
 	rpv.Message = &value
@@ -1562,39 +1665,46 @@ func (rpv *ReleasePolicyViolationMutation) SetModelUpdate(model *ReleasePolicyVi
 	return rpv
 }
 
-type RepoModelCreate struct {
+type RepositoryModelCreate struct {
 	Name          *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
 	DefaultBranch *string        `json:"default_branch,omitempty"  mapstructure:"default_branch"`
 	Labels        *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
 }
 
-func NewRepoModelCreate() *RepoModelCreate {
-	return &RepoModelCreate{}
+func NewRepositoryModelCreate() *RepositoryModelCreate {
+	return &RepositoryModelCreate{}
 }
-func (r *RepoModelCreate) SetName(value string) *RepoModelCreate {
+
+func (r *RepositoryModelCreate) FromEnt(value *Repository) *RepositoryModelCreate {
+	r.Name = &value.Name
+	r.DefaultBranch = &value.DefaultBranch
+	r.Labels = &value.Labels
+	return r
+}
+func (r *RepositoryModelCreate) SetName(value string) *RepositoryModelCreate {
 	r.Name = &value
 	return r
 }
-func (r *RepoModelCreate) SetDefaultBranch(value string) *RepoModelCreate {
+func (r *RepositoryModelCreate) SetDefaultBranch(value string) *RepositoryModelCreate {
 	r.DefaultBranch = &value
 	return r
 }
-func (r *RepoModelCreate) SetLabels(value schema.Labels) *RepoModelCreate {
+func (r *RepositoryModelCreate) SetLabels(value schema.Labels) *RepositoryModelCreate {
 	r.Labels = &value
 	return r
 }
 
-func (r *RepoCreate) SetModelCreate(model *RepoModelCreate) *RepoCreate {
+func (r *RepositoryCreate) SetModelCreate(model *RepositoryModelCreate) *RepositoryCreate {
 	r.mutation.SetModelCreate(model)
 	return r
 }
 
-func (r *RepoUpdateOne) SetModelCreate(model *RepoModelCreate) *RepoUpdateOne {
+func (r *RepositoryUpdateOne) SetModelCreate(model *RepositoryModelCreate) *RepositoryUpdateOne {
 	r.mutation.SetModelCreate(model)
 	return r
 }
 
-func (r *RepoMutation) SetModelCreate(model *RepoModelCreate) *RepoMutation {
+func (r *RepositoryMutation) SetModelCreate(model *RepositoryModelCreate) *RepositoryMutation {
 	if model.Name != nil {
 		r.SetName(*model.Name)
 	}
@@ -1607,18 +1717,18 @@ func (r *RepoMutation) SetModelCreate(model *RepoModelCreate) *RepoMutation {
 	return r
 }
 
-type RepoModelRead struct {
+type RepositoryModelRead struct {
 	Name          *string        `json:"name,omitempty" validate:"required" mapstructure:"name"`
 	DefaultBranch *string        `json:"default_branch,omitempty"  mapstructure:"default_branch"`
 	Labels        *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
 	ID            *int           `json:"id,omitempty" validate:"required" mapstructure:"id"`
 }
 
-func NewRepoModelRead() *RepoModelRead {
-	return &RepoModelRead{}
+func NewRepositoryModelRead() *RepositoryModelRead {
+	return &RepositoryModelRead{}
 }
 
-func (r *RepoModelRead) FromEnt(value *Repo) *RepoModelRead {
+func (r *RepositoryModelRead) FromEnt(value *Repository) *RepositoryModelRead {
 	r.Name = &value.Name
 	r.DefaultBranch = &value.DefaultBranch
 	r.Labels = &value.Labels
@@ -1626,34 +1736,34 @@ func (r *RepoModelRead) FromEnt(value *Repo) *RepoModelRead {
 	return r
 }
 
-type RepoModelUpdate struct {
+type RepositoryModelUpdate struct {
 	Name          *string        `json:"name,omitempty"  mapstructure:"name"`
 	DefaultBranch *string        `json:"default_branch,omitempty"  mapstructure:"default_branch"`
 	Labels        *schema.Labels `json:"labels,omitempty"  mapstructure:"labels"`
 }
 
-func NewRepoModelUpdate() *RepoModelUpdate {
-	return &RepoModelUpdate{}
+func NewRepositoryModelUpdate() *RepositoryModelUpdate {
+	return &RepositoryModelUpdate{}
 }
-func (r *RepoModelUpdate) SetName(value string) *RepoModelUpdate {
+func (r *RepositoryModelUpdate) SetName(value string) *RepositoryModelUpdate {
 	r.Name = &value
 	return r
 }
-func (r *RepoModelUpdate) SetDefaultBranch(value string) *RepoModelUpdate {
+func (r *RepositoryModelUpdate) SetDefaultBranch(value string) *RepositoryModelUpdate {
 	r.DefaultBranch = &value
 	return r
 }
-func (r *RepoModelUpdate) SetLabels(value schema.Labels) *RepoModelUpdate {
+func (r *RepositoryModelUpdate) SetLabels(value schema.Labels) *RepositoryModelUpdate {
 	r.Labels = &value
 	return r
 }
 
-func (r *RepoUpdateOne) SetModelUpdate(model *RepoModelUpdate) *RepoUpdateOne {
+func (r *RepositoryUpdateOne) SetModelUpdate(model *RepositoryModelUpdate) *RepositoryUpdateOne {
 	r.mutation.SetModelUpdate(model)
 	return r
 }
 
-func (r *RepoMutation) SetModelUpdate(model *RepoModelUpdate) *RepoMutation {
+func (r *RepositoryMutation) SetModelUpdate(model *RepositoryModelUpdate) *RepositoryMutation {
 	if model.Name != nil {
 		r.SetName(*model.Name)
 	}
@@ -1676,6 +1786,15 @@ type SPDXLicenseModelCreate struct {
 
 func NewSPDXLicenseModelCreate() *SPDXLicenseModelCreate {
 	return &SPDXLicenseModelCreate{}
+}
+
+func (sl *SPDXLicenseModelCreate) FromEnt(value *SPDXLicense) *SPDXLicenseModelCreate {
+	sl.LicenseID = &value.LicenseID
+	sl.Name = &value.Name
+	sl.Reference = &value.Reference
+	sl.DetailsURL = &value.DetailsURL
+	sl.IsOsiApproved = &value.IsOsiApproved
+	return sl
 }
 func (sl *SPDXLicenseModelCreate) SetLicenseID(value string) *SPDXLicenseModelCreate {
 	sl.LicenseID = &value
@@ -1817,6 +1936,15 @@ type TestCaseModelCreate struct {
 func NewTestCaseModelCreate() *TestCaseModelCreate {
 	return &TestCaseModelCreate{}
 }
+
+func (tc *TestCaseModelCreate) FromEnt(value *TestCase) *TestCaseModelCreate {
+	tc.Name = &value.Name
+	tc.Result = &value.Result
+	tc.Message = &value.Message
+	tc.Elapsed = &value.Elapsed
+	tc.Metadata = &value.Metadata
+	return tc
+}
 func (tc *TestCaseModelCreate) SetName(value string) *TestCaseModelCreate {
 	tc.Name = &value
 	return tc
@@ -1955,6 +2083,13 @@ type TestRunModelCreate struct {
 func NewTestRunModelCreate() *TestRunModelCreate {
 	return &TestRunModelCreate{}
 }
+
+func (tr *TestRunModelCreate) FromEnt(value *TestRun) *TestRunModelCreate {
+	tr.Tool = &value.Tool
+	tr.Time = &value.Time
+	tr.Metadata = &value.Metadata
+	return tr
+}
 func (tr *TestRunModelCreate) SetTool(value string) *TestRunModelCreate {
 	tr.Tool = &value
 	return tr
@@ -2064,6 +2199,19 @@ type VulnerabilityModelCreate struct {
 
 func NewVulnerabilityModelCreate() *VulnerabilityModelCreate {
 	return &VulnerabilityModelCreate{}
+}
+
+func (v *VulnerabilityModelCreate) FromEnt(value *Vulnerability) *VulnerabilityModelCreate {
+	v.Vid = &value.Vid
+	v.Summary = &value.Summary
+	v.Description = &value.Description
+	v.SeverityScore = &value.SeverityScore
+	v.Severity = &value.Severity
+	v.Published = &value.Published
+	v.Modified = &value.Modified
+	v.Labels = &value.Labels
+	v.Metadata = &value.Metadata
+	return v
 }
 func (v *VulnerabilityModelCreate) SetVid(value string) *VulnerabilityModelCreate {
 	v.Vid = &value
@@ -2270,6 +2418,12 @@ type VulnerabilityReviewModelCreate struct {
 func NewVulnerabilityReviewModelCreate() *VulnerabilityReviewModelCreate {
 	return &VulnerabilityReviewModelCreate{}
 }
+
+func (vr *VulnerabilityReviewModelCreate) FromEnt(value *VulnerabilityReview) *VulnerabilityReviewModelCreate {
+	vr.Note = &value.Note
+	vr.Decision = &value.Decision
+	return vr
+}
 func (vr *VulnerabilityReviewModelCreate) SetNote(value string) *VulnerabilityReviewModelCreate {
 	vr.Note = &value
 	return vr
@@ -2467,7 +2621,7 @@ func (rv *ReleaseVulnerabilityQuery) WhereInput(input *ReleaseVulnerabilityWhere
 	return rv
 }
 
-func (r *RepoQuery) WhereInput(input *RepoWhereInput) *RepoQuery {
+func (r *RepositoryQuery) WhereInput(input *RepositoryWhereInput) *RepositoryQuery {
 	if input != nil {
 		input.Filter(r)
 	}

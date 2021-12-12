@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/valocode/bubbly/ent/gitcommit"
 	"github.com/valocode/bubbly/ent/release"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 )
 
 // GitCommitCreate is the builder for creating a GitCommit entity.
@@ -54,15 +54,15 @@ func (gcc *GitCommitCreate) SetTime(t time.Time) *GitCommitCreate {
 	return gcc
 }
 
-// SetRepoID sets the "repo" edge to the Repo entity by ID.
-func (gcc *GitCommitCreate) SetRepoID(id int) *GitCommitCreate {
-	gcc.mutation.SetRepoID(id)
+// SetRepositoryID sets the "repository" edge to the Repository entity by ID.
+func (gcc *GitCommitCreate) SetRepositoryID(id int) *GitCommitCreate {
+	gcc.mutation.SetRepositoryID(id)
 	return gcc
 }
 
-// SetRepo sets the "repo" edge to the Repo entity.
-func (gcc *GitCommitCreate) SetRepo(r *Repo) *GitCommitCreate {
-	return gcc.SetRepoID(r.ID)
+// SetRepository sets the "repository" edge to the Repository entity.
+func (gcc *GitCommitCreate) SetRepository(r *Repository) *GitCommitCreate {
+	return gcc.SetRepositoryID(r.ID)
 }
 
 // SetReleaseID sets the "release" edge to the Release entity by ID.
@@ -173,8 +173,8 @@ func (gcc *GitCommitCreate) check() error {
 	if _, ok := gcc.mutation.Time(); !ok {
 		return &ValidationError{Name: "time", err: errors.New(`ent: missing required field "time"`)}
 	}
-	if _, ok := gcc.mutation.RepoID(); !ok {
-		return &ValidationError{Name: "repo", err: errors.New("ent: missing required edge \"repo\"")}
+	if _, ok := gcc.mutation.RepositoryID(); !ok {
+		return &ValidationError{Name: "repository", err: errors.New("ent: missing required edge \"repository\"")}
 	}
 	return nil
 }
@@ -235,24 +235,24 @@ func (gcc *GitCommitCreate) createSpec() (*GitCommit, *sqlgraph.CreateSpec) {
 		})
 		_node.Time = value
 	}
-	if nodes := gcc.mutation.RepoIDs(); len(nodes) > 0 {
+	if nodes := gcc.mutation.RepositoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   gitcommit.RepoTable,
-			Columns: []string{gitcommit.RepoColumn},
+			Table:   gitcommit.RepositoryTable,
+			Columns: []string{gitcommit.RepositoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.git_commit_repo = &nodes[0]
+		_node.git_commit_repository = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := gcc.mutation.ReleaseIDs(); len(nodes) > 0 {

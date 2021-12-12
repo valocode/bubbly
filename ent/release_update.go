@@ -20,7 +20,7 @@ import (
 	"github.com/valocode/bubbly/ent/releaselicense"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	schema "github.com/valocode/bubbly/ent/schema/types"
 	"github.com/valocode/bubbly/ent/testrun"
 	"github.com/valocode/bubbly/ent/vulnerabilityreview"
@@ -104,13 +104,13 @@ func (ru *ReleaseUpdate) SetCommit(g *GitCommit) *ReleaseUpdate {
 	return ru.SetCommitID(g.ID)
 }
 
-// SetHeadOfID sets the "head_of" edge to the Repo entity by ID.
+// SetHeadOfID sets the "head_of" edge to the Repository entity by ID.
 func (ru *ReleaseUpdate) SetHeadOfID(id int) *ReleaseUpdate {
 	ru.mutation.SetHeadOfID(id)
 	return ru
 }
 
-// SetNillableHeadOfID sets the "head_of" edge to the Repo entity by ID if the given value is not nil.
+// SetNillableHeadOfID sets the "head_of" edge to the Repository entity by ID if the given value is not nil.
 func (ru *ReleaseUpdate) SetNillableHeadOfID(id *int) *ReleaseUpdate {
 	if id != nil {
 		ru = ru.SetHeadOfID(*id)
@@ -118,8 +118,8 @@ func (ru *ReleaseUpdate) SetNillableHeadOfID(id *int) *ReleaseUpdate {
 	return ru
 }
 
-// SetHeadOf sets the "head_of" edge to the Repo entity.
-func (ru *ReleaseUpdate) SetHeadOf(r *Repo) *ReleaseUpdate {
+// SetHeadOf sets the "head_of" edge to the Repository entity.
+func (ru *ReleaseUpdate) SetHeadOf(r *Repository) *ReleaseUpdate {
 	return ru.SetHeadOfID(r.ID)
 }
 
@@ -311,7 +311,7 @@ func (ru *ReleaseUpdate) ClearCommit() *ReleaseUpdate {
 	return ru
 }
 
-// ClearHeadOf clears the "head_of" edge to the Repo entity.
+// ClearHeadOf clears the "head_of" edge to the Repository entity.
 func (ru *ReleaseUpdate) ClearHeadOf() *ReleaseUpdate {
 	ru.mutation.ClearHeadOf()
 	return ru
@@ -782,7 +782,7 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -798,7 +798,7 @@ func (ru *ReleaseUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -1377,13 +1377,13 @@ func (ruo *ReleaseUpdateOne) SetCommit(g *GitCommit) *ReleaseUpdateOne {
 	return ruo.SetCommitID(g.ID)
 }
 
-// SetHeadOfID sets the "head_of" edge to the Repo entity by ID.
+// SetHeadOfID sets the "head_of" edge to the Repository entity by ID.
 func (ruo *ReleaseUpdateOne) SetHeadOfID(id int) *ReleaseUpdateOne {
 	ruo.mutation.SetHeadOfID(id)
 	return ruo
 }
 
-// SetNillableHeadOfID sets the "head_of" edge to the Repo entity by ID if the given value is not nil.
+// SetNillableHeadOfID sets the "head_of" edge to the Repository entity by ID if the given value is not nil.
 func (ruo *ReleaseUpdateOne) SetNillableHeadOfID(id *int) *ReleaseUpdateOne {
 	if id != nil {
 		ruo = ruo.SetHeadOfID(*id)
@@ -1391,8 +1391,8 @@ func (ruo *ReleaseUpdateOne) SetNillableHeadOfID(id *int) *ReleaseUpdateOne {
 	return ruo
 }
 
-// SetHeadOf sets the "head_of" edge to the Repo entity.
-func (ruo *ReleaseUpdateOne) SetHeadOf(r *Repo) *ReleaseUpdateOne {
+// SetHeadOf sets the "head_of" edge to the Repository entity.
+func (ruo *ReleaseUpdateOne) SetHeadOf(r *Repository) *ReleaseUpdateOne {
 	return ruo.SetHeadOfID(r.ID)
 }
 
@@ -1584,7 +1584,7 @@ func (ruo *ReleaseUpdateOne) ClearCommit() *ReleaseUpdateOne {
 	return ruo
 }
 
-// ClearHeadOf clears the "head_of" edge to the Repo entity.
+// ClearHeadOf clears the "head_of" edge to the Repository entity.
 func (ruo *ReleaseUpdateOne) ClearHeadOf() *ReleaseUpdateOne {
 	ruo.mutation.ClearHeadOf()
 	return ruo
@@ -2079,7 +2079,7 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}
@@ -2095,7 +2095,7 @@ func (ruo *ReleaseUpdateOne) sqlSave(ctx context.Context) (_node *Release, err e
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
-					Column: repo.FieldID,
+					Column: repository.FieldID,
 				},
 			},
 		}

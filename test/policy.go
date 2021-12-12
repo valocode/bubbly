@@ -7,8 +7,8 @@ import (
 	"github.com/valocode/bubbly/store/api"
 )
 
-func ParsePolicies() ([]*api.ReleasePolicySaveRequest, error) {
-	var reqs []*api.ReleasePolicySaveRequest
+func ParsePolicies() ([]*api.ReleasePolicyCreateRequest, error) {
+	var reqs []*api.ReleasePolicyCreateRequest
 	policies, err := policy.BuiltinPolicies()
 	if err != nil {
 		return nil, err
@@ -17,7 +17,7 @@ func ParsePolicies() ([]*api.ReleasePolicySaveRequest, error) {
 		return nil, fmt.Errorf("no builtin policies found")
 	}
 	for _, policy := range policies {
-		reqs = append(reqs, &api.ReleasePolicySaveRequest{
+		reqs = append(reqs, &api.ReleasePolicyCreateRequest{
 			Policy: &api.ReleasePolicyCreate{
 				ReleasePolicyModelCreate: *policy,
 			},

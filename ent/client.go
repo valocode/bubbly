@@ -26,7 +26,7 @@ import (
 	"github.com/valocode/bubbly/ent/releasepolicy"
 	"github.com/valocode/bubbly/ent/releasepolicyviolation"
 	"github.com/valocode/bubbly/ent/releasevulnerability"
-	"github.com/valocode/bubbly/ent/repo"
+	"github.com/valocode/bubbly/ent/repository"
 	"github.com/valocode/bubbly/ent/spdxlicense"
 	"github.com/valocode/bubbly/ent/testcase"
 	"github.com/valocode/bubbly/ent/testrun"
@@ -77,8 +77,8 @@ type Client struct {
 	ReleasePolicyViolation *ReleasePolicyViolationClient
 	// ReleaseVulnerability is the client for interacting with the ReleaseVulnerability builders.
 	ReleaseVulnerability *ReleaseVulnerabilityClient
-	// Repo is the client for interacting with the Repo builders.
-	Repo *RepoClient
+	// Repository is the client for interacting with the Repository builders.
+	Repository *RepositoryClient
 	// SPDXLicense is the client for interacting with the SPDXLicense builders.
 	SPDXLicense *SPDXLicenseClient
 	// TestCase is the client for interacting with the TestCase builders.
@@ -121,7 +121,7 @@ func (c *Client) init() {
 	c.ReleasePolicy = NewReleasePolicyClient(c.config)
 	c.ReleasePolicyViolation = NewReleasePolicyViolationClient(c.config)
 	c.ReleaseVulnerability = NewReleaseVulnerabilityClient(c.config)
-	c.Repo = NewRepoClient(c.config)
+	c.Repository = NewRepositoryClient(c.config)
 	c.SPDXLicense = NewSPDXLicenseClient(c.config)
 	c.TestCase = NewTestCaseClient(c.config)
 	c.TestRun = NewTestRunClient(c.config)
@@ -177,7 +177,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ReleasePolicy:          NewReleasePolicyClient(cfg),
 		ReleasePolicyViolation: NewReleasePolicyViolationClient(cfg),
 		ReleaseVulnerability:   NewReleaseVulnerabilityClient(cfg),
-		Repo:                   NewRepoClient(cfg),
+		Repository:             NewRepositoryClient(cfg),
 		SPDXLicense:            NewSPDXLicenseClient(cfg),
 		TestCase:               NewTestCaseClient(cfg),
 		TestRun:                NewTestRunClient(cfg),
@@ -218,7 +218,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ReleasePolicy:          NewReleasePolicyClient(cfg),
 		ReleasePolicyViolation: NewReleasePolicyViolationClient(cfg),
 		ReleaseVulnerability:   NewReleaseVulnerabilityClient(cfg),
-		Repo:                   NewRepoClient(cfg),
+		Repository:             NewRepositoryClient(cfg),
 		SPDXLicense:            NewSPDXLicenseClient(cfg),
 		TestCase:               NewTestCaseClient(cfg),
 		TestRun:                NewTestRunClient(cfg),
@@ -270,7 +270,7 @@ func (c *Client) Use(hooks ...Hook) {
 	c.ReleasePolicy.Use(hooks...)
 	c.ReleasePolicyViolation.Use(hooks...)
 	c.ReleaseVulnerability.Use(hooks...)
-	c.Repo.Use(hooks...)
+	c.Repository.Use(hooks...)
 	c.SPDXLicense.Use(hooks...)
 	c.TestCase.Use(hooks...)
 	c.TestRun.Use(hooks...)
@@ -1055,15 +1055,15 @@ func (c *EventClient) QueryRelease(e *Event) *ReleaseQuery {
 	return query
 }
 
-// QueryRepo queries the repo edge of a Event.
-func (c *EventClient) QueryRepo(e *Event) *RepoQuery {
-	query := &RepoQuery{config: c.config}
+// QueryRepository queries the repository edge of a Event.
+func (c *EventClient) QueryRepository(e *Event) *RepositoryQuery {
+	query := &RepositoryQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := e.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(event.Table, event.FieldID, id),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, event.RepoTable, event.RepoColumn),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, event.RepositoryTable, event.RepositoryColumn),
 		)
 		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
 		return fromV, nil
@@ -1177,15 +1177,15 @@ func (c *GitCommitClient) GetX(ctx context.Context, id int) *GitCommit {
 	return obj
 }
 
-// QueryRepo queries the repo edge of a GitCommit.
-func (c *GitCommitClient) QueryRepo(gc *GitCommit) *RepoQuery {
-	query := &RepoQuery{config: c.config}
+// QueryRepository queries the repository edge of a GitCommit.
+func (c *GitCommitClient) QueryRepository(gc *GitCommit) *RepositoryQuery {
+	query := &RepositoryQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := gc.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(gitcommit.Table, gitcommit.FieldID, id),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, gitcommit.RepoTable, gitcommit.RepoColumn),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, gitcommit.RepositoryTable, gitcommit.RepositoryColumn),
 		)
 		fromV = sqlgraph.Neighbors(gc.driver.Dialect(), step)
 		return fromV, nil
@@ -1470,15 +1470,15 @@ func (c *OrganizationClient) QueryProjects(o *Organization) *ProjectQuery {
 	return query
 }
 
-// QueryRepos queries the repos edge of a Organization.
-func (c *OrganizationClient) QueryRepos(o *Organization) *RepoQuery {
-	query := &RepoQuery{config: c.config}
+// QueryRepositories queries the repositories edge of a Organization.
+func (c *OrganizationClient) QueryRepositories(o *Organization) *RepositoryQuery {
+	query := &RepositoryQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := o.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, organization.ReposTable, organization.ReposColumn),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, organization.RepositoriesTable, organization.RepositoriesColumn),
 		)
 		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
 		return fromV, nil
@@ -1592,47 +1592,15 @@ func (c *ProjectClient) QueryOwner(pr *Project) *OrganizationQuery {
 	return query
 }
 
-// QueryRepos queries the repos edge of a Project.
-func (c *ProjectClient) QueryRepos(pr *Project) *RepoQuery {
-	query := &RepoQuery{config: c.config}
+// QueryRepositories queries the repositories edge of a Project.
+func (c *ProjectClient) QueryRepositories(pr *Project) *RepositoryQuery {
+	query := &RepositoryQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := pr.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(project.Table, project.FieldID, id),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, project.ReposTable, project.ReposColumn),
-		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryVulnerabilityReviews queries the vulnerability_reviews edge of a Project.
-func (c *ProjectClient) QueryVulnerabilityReviews(pr *Project) *VulnerabilityReviewQuery {
-	query := &VulnerabilityReviewQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, id),
-			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, project.VulnerabilityReviewsTable, project.VulnerabilityReviewsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryPolicies queries the policies edge of a Project.
-func (c *ProjectClient) QueryPolicies(pr *Project) *ReleasePolicyQuery {
-	query := &ReleasePolicyQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, id),
-			sqlgraph.To(releasepolicy.Table, releasepolicy.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, project.PoliciesTable, project.PoliciesPrimaryKey...),
+			sqlgraph.To(repository.Table, repository.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, project.RepositoriesTable, project.RepositoriesColumn),
 		)
 		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
 		return fromV, nil
@@ -1779,13 +1747,13 @@ func (c *ReleaseClient) QueryCommit(r *Release) *GitCommitQuery {
 }
 
 // QueryHeadOf queries the head_of edge of a Release.
-func (c *ReleaseClient) QueryHeadOf(r *Release) *RepoQuery {
-	query := &RepoQuery{config: c.config}
+func (c *ReleaseClient) QueryHeadOf(r *Release) *RepositoryQuery {
+	query := &RepositoryQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(release.Table, release.FieldID, id),
-			sqlgraph.To(repo.Table, repo.FieldID),
+			sqlgraph.To(repository.Table, repository.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, release.HeadOfTable, release.HeadOfColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
@@ -2111,8 +2079,7 @@ func (c *ReleaseComponentClient) QueryLicenses(rc *ReleaseComponent) *ReleaseLic
 
 // Hooks returns the client hooks.
 func (c *ReleaseComponentClient) Hooks() []Hook {
-	hooks := c.hooks.ReleaseComponent
-	return append(hooks[:len(hooks):len(hooks)], releasecomponent.Hooks[:]...)
+	return c.hooks.ReleaseComponent
 }
 
 // ReleaseEntryClient is a client for the ReleaseEntry schema.
@@ -2524,38 +2491,6 @@ func (c *ReleasePolicyClient) QueryOwner(rp *ReleasePolicy) *OrganizationQuery {
 	return query
 }
 
-// QueryProjects queries the projects edge of a ReleasePolicy.
-func (c *ReleasePolicyClient) QueryProjects(rp *ReleasePolicy) *ProjectQuery {
-	query := &ProjectQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := rp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(releasepolicy.Table, releasepolicy.FieldID, id),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, releasepolicy.ProjectsTable, releasepolicy.ProjectsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryRepos queries the repos edge of a ReleasePolicy.
-func (c *ReleasePolicyClient) QueryRepos(rp *ReleasePolicy) *RepoQuery {
-	query := &RepoQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := rp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(releasepolicy.Table, releasepolicy.FieldID, id),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, releasepolicy.ReposTable, releasepolicy.ReposPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryViolations queries the violations edge of a ReleasePolicy.
 func (c *ReleasePolicyClient) QueryViolations(rp *ReleasePolicy) *ReleasePolicyViolationQuery {
 	query := &ReleasePolicyViolationQuery{config: c.config}
@@ -2869,84 +2804,84 @@ func (c *ReleaseVulnerabilityClient) Hooks() []Hook {
 	return c.hooks.ReleaseVulnerability
 }
 
-// RepoClient is a client for the Repo schema.
-type RepoClient struct {
+// RepositoryClient is a client for the Repository schema.
+type RepositoryClient struct {
 	config
 }
 
-// NewRepoClient returns a client for the Repo from the given config.
-func NewRepoClient(c config) *RepoClient {
-	return &RepoClient{config: c}
+// NewRepositoryClient returns a client for the Repository from the given config.
+func NewRepositoryClient(c config) *RepositoryClient {
+	return &RepositoryClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `repo.Hooks(f(g(h())))`.
-func (c *RepoClient) Use(hooks ...Hook) {
-	c.hooks.Repo = append(c.hooks.Repo, hooks...)
+// A call to `Use(f, g, h)` equals to `repository.Hooks(f(g(h())))`.
+func (c *RepositoryClient) Use(hooks ...Hook) {
+	c.hooks.Repository = append(c.hooks.Repository, hooks...)
 }
 
-// Create returns a create builder for Repo.
-func (c *RepoClient) Create() *RepoCreate {
-	mutation := newRepoMutation(c.config, OpCreate)
-	return &RepoCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a create builder for Repository.
+func (c *RepositoryClient) Create() *RepositoryCreate {
+	mutation := newRepositoryMutation(c.config, OpCreate)
+	return &RepositoryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of Repo entities.
-func (c *RepoClient) CreateBulk(builders ...*RepoCreate) *RepoCreateBulk {
-	return &RepoCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Repository entities.
+func (c *RepositoryClient) CreateBulk(builders ...*RepositoryCreate) *RepositoryCreateBulk {
+	return &RepositoryCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for Repo.
-func (c *RepoClient) Update() *RepoUpdate {
-	mutation := newRepoMutation(c.config, OpUpdate)
-	return &RepoUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Repository.
+func (c *RepositoryClient) Update() *RepositoryUpdate {
+	mutation := newRepositoryMutation(c.config, OpUpdate)
+	return &RepositoryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *RepoClient) UpdateOne(r *Repo) *RepoUpdateOne {
-	mutation := newRepoMutation(c.config, OpUpdateOne, withRepo(r))
-	return &RepoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *RepositoryClient) UpdateOne(r *Repository) *RepositoryUpdateOne {
+	mutation := newRepositoryMutation(c.config, OpUpdateOne, withRepository(r))
+	return &RepositoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *RepoClient) UpdateOneID(id int) *RepoUpdateOne {
-	mutation := newRepoMutation(c.config, OpUpdateOne, withRepoID(id))
-	return &RepoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *RepositoryClient) UpdateOneID(id int) *RepositoryUpdateOne {
+	mutation := newRepositoryMutation(c.config, OpUpdateOne, withRepositoryID(id))
+	return &RepositoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for Repo.
-func (c *RepoClient) Delete() *RepoDelete {
-	mutation := newRepoMutation(c.config, OpDelete)
-	return &RepoDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Repository.
+func (c *RepositoryClient) Delete() *RepositoryDelete {
+	mutation := newRepositoryMutation(c.config, OpDelete)
+	return &RepositoryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a delete builder for the given entity.
-func (c *RepoClient) DeleteOne(r *Repo) *RepoDeleteOne {
+func (c *RepositoryClient) DeleteOne(r *Repository) *RepositoryDeleteOne {
 	return c.DeleteOneID(r.ID)
 }
 
 // DeleteOneID returns a delete builder for the given id.
-func (c *RepoClient) DeleteOneID(id int) *RepoDeleteOne {
-	builder := c.Delete().Where(repo.ID(id))
+func (c *RepositoryClient) DeleteOneID(id int) *RepositoryDeleteOne {
+	builder := c.Delete().Where(repository.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &RepoDeleteOne{builder}
+	return &RepositoryDeleteOne{builder}
 }
 
-// Query returns a query builder for Repo.
-func (c *RepoClient) Query() *RepoQuery {
-	return &RepoQuery{
+// Query returns a query builder for Repository.
+func (c *RepositoryClient) Query() *RepositoryQuery {
+	return &RepositoryQuery{
 		config: c.config,
 	}
 }
 
-// Get returns a Repo entity by its id.
-func (c *RepoClient) Get(ctx context.Context, id int) (*Repo, error) {
-	return c.Query().Where(repo.ID(id)).Only(ctx)
+// Get returns a Repository entity by its id.
+func (c *RepositoryClient) Get(ctx context.Context, id int) (*Repository, error) {
+	return c.Query().Where(repository.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *RepoClient) GetX(ctx context.Context, id int) *Repo {
+func (c *RepositoryClient) GetX(ctx context.Context, id int) *Repository {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -2954,15 +2889,15 @@ func (c *RepoClient) GetX(ctx context.Context, id int) *Repo {
 	return obj
 }
 
-// QueryOwner queries the owner edge of a Repo.
-func (c *RepoClient) QueryOwner(r *Repo) *OrganizationQuery {
+// QueryOwner queries the owner edge of a Repository.
+func (c *RepositoryClient) QueryOwner(r *Repository) *OrganizationQuery {
 	query := &OrganizationQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, id),
+			sqlgraph.From(repository.Table, repository.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, repo.OwnerTable, repo.OwnerColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, repository.OwnerTable, repository.OwnerColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -2970,15 +2905,15 @@ func (c *RepoClient) QueryOwner(r *Repo) *OrganizationQuery {
 	return query
 }
 
-// QueryProject queries the project edge of a Repo.
-func (c *RepoClient) QueryProject(r *Repo) *ProjectQuery {
+// QueryProject queries the project edge of a Repository.
+func (c *RepositoryClient) QueryProject(r *Repository) *ProjectQuery {
 	query := &ProjectQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, id),
+			sqlgraph.From(repository.Table, repository.FieldID, id),
 			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, repo.ProjectTable, repo.ProjectColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, repository.ProjectTable, repository.ProjectColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -2986,15 +2921,15 @@ func (c *RepoClient) QueryProject(r *Repo) *ProjectQuery {
 	return query
 }
 
-// QueryHead queries the head edge of a Repo.
-func (c *RepoClient) QueryHead(r *Repo) *ReleaseQuery {
+// QueryHead queries the head edge of a Repository.
+func (c *RepositoryClient) QueryHead(r *Repository) *ReleaseQuery {
 	query := &ReleaseQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, id),
+			sqlgraph.From(repository.Table, repository.FieldID, id),
 			sqlgraph.To(release.Table, release.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, repo.HeadTable, repo.HeadColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, repository.HeadTable, repository.HeadColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -3002,47 +2937,15 @@ func (c *RepoClient) QueryHead(r *Repo) *ReleaseQuery {
 	return query
 }
 
-// QueryCommits queries the commits edge of a Repo.
-func (c *RepoClient) QueryCommits(r *Repo) *GitCommitQuery {
+// QueryCommits queries the commits edge of a Repository.
+func (c *RepositoryClient) QueryCommits(r *Repository) *GitCommitQuery {
 	query := &GitCommitQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, id),
+			sqlgraph.From(repository.Table, repository.FieldID, id),
 			sqlgraph.To(gitcommit.Table, gitcommit.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, repo.CommitsTable, repo.CommitsColumn),
-		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryVulnerabilityReviews queries the vulnerability_reviews edge of a Repo.
-func (c *RepoClient) QueryVulnerabilityReviews(r *Repo) *VulnerabilityReviewQuery {
-	query := &VulnerabilityReviewQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, id),
-			sqlgraph.To(vulnerabilityreview.Table, vulnerabilityreview.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, repo.VulnerabilityReviewsTable, repo.VulnerabilityReviewsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryPolicies queries the policies edge of a Repo.
-func (c *RepoClient) QueryPolicies(r *Repo) *ReleasePolicyQuery {
-	query := &ReleasePolicyQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := r.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(repo.Table, repo.FieldID, id),
-			sqlgraph.To(releasepolicy.Table, releasepolicy.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, repo.PoliciesTable, repo.PoliciesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, repository.CommitsTable, repository.CommitsColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil
@@ -3051,8 +2954,8 @@ func (c *RepoClient) QueryPolicies(r *Repo) *ReleasePolicyQuery {
 }
 
 // Hooks returns the client hooks.
-func (c *RepoClient) Hooks() []Hook {
-	return c.hooks.Repo
+func (c *RepositoryClient) Hooks() []Hook {
+	return c.hooks.Repository
 }
 
 // SPDXLicenseClient is a client for the SPDXLicense schema.
@@ -3640,38 +3543,6 @@ func (c *VulnerabilityReviewClient) QueryVulnerability(vr *VulnerabilityReview) 
 			sqlgraph.From(vulnerabilityreview.Table, vulnerabilityreview.FieldID, id),
 			sqlgraph.To(vulnerability.Table, vulnerability.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, vulnerabilityreview.VulnerabilityTable, vulnerabilityreview.VulnerabilityColumn),
-		)
-		fromV = sqlgraph.Neighbors(vr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryProjects queries the projects edge of a VulnerabilityReview.
-func (c *VulnerabilityReviewClient) QueryProjects(vr *VulnerabilityReview) *ProjectQuery {
-	query := &ProjectQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := vr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(vulnerabilityreview.Table, vulnerabilityreview.FieldID, id),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, vulnerabilityreview.ProjectsTable, vulnerabilityreview.ProjectsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(vr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryRepos queries the repos edge of a VulnerabilityReview.
-func (c *VulnerabilityReviewClient) QueryRepos(vr *VulnerabilityReview) *RepoQuery {
-	query := &RepoQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := vr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(vulnerabilityreview.Table, vulnerabilityreview.FieldID, id),
-			sqlgraph.To(repo.Table, repo.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, vulnerabilityreview.ReposTable, vulnerabilityreview.ReposPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(vr.driver.Dialect(), step)
 		return fromV, nil

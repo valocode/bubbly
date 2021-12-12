@@ -13,10 +13,6 @@ const (
 	FieldModule = "module"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
-	// EdgeProjects holds the string denoting the projects edge name in mutations.
-	EdgeProjects = "projects"
-	// EdgeRepos holds the string denoting the repos edge name in mutations.
-	EdgeRepos = "repos"
 	// EdgeViolations holds the string denoting the violations edge name in mutations.
 	EdgeViolations = "violations"
 	// Table holds the table name of the releasepolicy in the database.
@@ -28,16 +24,6 @@ const (
 	OwnerInverseTable = "organization"
 	// OwnerColumn is the table column denoting the owner relation/edge.
 	OwnerColumn = "release_policy_owner"
-	// ProjectsTable is the table that holds the projects relation/edge. The primary key declared below.
-	ProjectsTable = "release_policy_projects"
-	// ProjectsInverseTable is the table name for the Project entity.
-	// It exists in this package in order to avoid circular dependency with the "project" package.
-	ProjectsInverseTable = "project"
-	// ReposTable is the table that holds the repos relation/edge. The primary key declared below.
-	ReposTable = "release_policy_repos"
-	// ReposInverseTable is the table name for the Repo entity.
-	// It exists in this package in order to avoid circular dependency with the "repo" package.
-	ReposInverseTable = "repo"
 	// ViolationsTable is the table that holds the violations relation/edge.
 	ViolationsTable = "release_policy_violation"
 	// ViolationsInverseTable is the table name for the ReleasePolicyViolation entity.
@@ -59,15 +45,6 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"release_policy_owner",
 }
-
-var (
-	// ProjectsPrimaryKey and ProjectsColumn2 are the table columns denoting the
-	// primary key for the projects relation (M2M).
-	ProjectsPrimaryKey = []string{"release_policy_id", "project_id"}
-	// ReposPrimaryKey and ReposColumn2 are the table columns denoting the
-	// primary key for the repos relation (M2M).
-	ReposPrimaryKey = []string{"release_policy_id", "repo_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

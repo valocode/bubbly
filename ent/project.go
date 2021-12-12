@@ -33,15 +33,11 @@ type Project struct {
 type ProjectEdges struct {
 	// Owner holds the value of the owner edge.
 	Owner *Organization `json:"owner,omitempty"`
-	// Repos holds the value of the repos edge.
-	Repos []*Repo `json:"repos,omitempty"`
-	// VulnerabilityReviews holds the value of the vulnerability_reviews edge.
-	VulnerabilityReviews []*VulnerabilityReview `json:"vulnerability_reviews,omitempty"`
-	// Policies holds the value of the policies edge.
-	Policies []*ReleasePolicy `json:"policies,omitempty"`
+	// Repositories holds the value of the repositories edge.
+	Repositories []*Repository `json:"repositories,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [2]bool
 }
 
 // OwnerOrErr returns the Owner value or an error if the edge
@@ -58,31 +54,13 @@ func (e ProjectEdges) OwnerOrErr() (*Organization, error) {
 	return nil, &NotLoadedError{edge: "owner"}
 }
 
-// ReposOrErr returns the Repos value or an error if the edge
+// RepositoriesOrErr returns the Repositories value or an error if the edge
 // was not loaded in eager-loading.
-func (e ProjectEdges) ReposOrErr() ([]*Repo, error) {
+func (e ProjectEdges) RepositoriesOrErr() ([]*Repository, error) {
 	if e.loadedTypes[1] {
-		return e.Repos, nil
+		return e.Repositories, nil
 	}
-	return nil, &NotLoadedError{edge: "repos"}
-}
-
-// VulnerabilityReviewsOrErr returns the VulnerabilityReviews value or an error if the edge
-// was not loaded in eager-loading.
-func (e ProjectEdges) VulnerabilityReviewsOrErr() ([]*VulnerabilityReview, error) {
-	if e.loadedTypes[2] {
-		return e.VulnerabilityReviews, nil
-	}
-	return nil, &NotLoadedError{edge: "vulnerability_reviews"}
-}
-
-// PoliciesOrErr returns the Policies value or an error if the edge
-// was not loaded in eager-loading.
-func (e ProjectEdges) PoliciesOrErr() ([]*ReleasePolicy, error) {
-	if e.loadedTypes[3] {
-		return e.Policies, nil
-	}
-	return nil, &NotLoadedError{edge: "policies"}
+	return nil, &NotLoadedError{edge: "repositories"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -150,19 +128,9 @@ func (pr *Project) QueryOwner() *OrganizationQuery {
 	return (&ProjectClient{config: pr.config}).QueryOwner(pr)
 }
 
-// QueryRepos queries the "repos" edge of the Project entity.
-func (pr *Project) QueryRepos() *RepoQuery {
-	return (&ProjectClient{config: pr.config}).QueryRepos(pr)
-}
-
-// QueryVulnerabilityReviews queries the "vulnerability_reviews" edge of the Project entity.
-func (pr *Project) QueryVulnerabilityReviews() *VulnerabilityReviewQuery {
-	return (&ProjectClient{config: pr.config}).QueryVulnerabilityReviews(pr)
-}
-
-// QueryPolicies queries the "policies" edge of the Project entity.
-func (pr *Project) QueryPolicies() *ReleasePolicyQuery {
-	return (&ProjectClient{config: pr.config}).QueryPolicies(pr)
+// QueryRepositories queries the "repositories" edge of the Project entity.
+func (pr *Project) QueryRepositories() *RepositoryQuery {
+	return (&ProjectClient{config: pr.config}).QueryRepositories(pr)
 }
 
 // Update returns a builder for updating this Project.

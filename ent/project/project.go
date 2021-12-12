@@ -13,12 +13,8 @@ const (
 	FieldLabels = "labels"
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
-	// EdgeRepos holds the string denoting the repos edge name in mutations.
-	EdgeRepos = "repos"
-	// EdgeVulnerabilityReviews holds the string denoting the vulnerability_reviews edge name in mutations.
-	EdgeVulnerabilityReviews = "vulnerability_reviews"
-	// EdgePolicies holds the string denoting the policies edge name in mutations.
-	EdgePolicies = "policies"
+	// EdgeRepositories holds the string denoting the repositories edge name in mutations.
+	EdgeRepositories = "repositories"
 	// Table holds the table name of the project in the database.
 	Table = "project"
 	// OwnerTable is the table that holds the owner relation/edge.
@@ -28,23 +24,13 @@ const (
 	OwnerInverseTable = "organization"
 	// OwnerColumn is the table column denoting the owner relation/edge.
 	OwnerColumn = "project_owner"
-	// ReposTable is the table that holds the repos relation/edge.
-	ReposTable = "repo"
-	// ReposInverseTable is the table name for the Repo entity.
-	// It exists in this package in order to avoid circular dependency with the "repo" package.
-	ReposInverseTable = "repo"
-	// ReposColumn is the table column denoting the repos relation/edge.
-	ReposColumn = "repo_project"
-	// VulnerabilityReviewsTable is the table that holds the vulnerability_reviews relation/edge. The primary key declared below.
-	VulnerabilityReviewsTable = "vulnerability_review_projects"
-	// VulnerabilityReviewsInverseTable is the table name for the VulnerabilityReview entity.
-	// It exists in this package in order to avoid circular dependency with the "vulnerabilityreview" package.
-	VulnerabilityReviewsInverseTable = "vulnerability_review"
-	// PoliciesTable is the table that holds the policies relation/edge. The primary key declared below.
-	PoliciesTable = "release_policy_projects"
-	// PoliciesInverseTable is the table name for the ReleasePolicy entity.
-	// It exists in this package in order to avoid circular dependency with the "releasepolicy" package.
-	PoliciesInverseTable = "release_policy"
+	// RepositoriesTable is the table that holds the repositories relation/edge.
+	RepositoriesTable = "repositories"
+	// RepositoriesInverseTable is the table name for the Repository entity.
+	// It exists in this package in order to avoid circular dependency with the "repository" package.
+	RepositoriesInverseTable = "repositories"
+	// RepositoriesColumn is the table column denoting the repositories relation/edge.
+	RepositoriesColumn = "repository_project"
 )
 
 // Columns holds all SQL columns for project fields.
@@ -59,15 +45,6 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"project_owner",
 }
-
-var (
-	// VulnerabilityReviewsPrimaryKey and VulnerabilityReviewsColumn2 are the table columns denoting the
-	// primary key for the vulnerability_reviews relation (M2M).
-	VulnerabilityReviewsPrimaryKey = []string{"vulnerability_review_id", "project_id"}
-	// PoliciesPrimaryKey and PoliciesColumn2 are the table columns denoting the
-	// primary key for the policies relation (M2M).
-	PoliciesPrimaryKey = []string{"release_policy_id", "project_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
